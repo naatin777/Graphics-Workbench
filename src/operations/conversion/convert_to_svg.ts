@@ -14,7 +14,8 @@ import {
 import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { validateJobPaths } from '../pdf/pdf_utils.js';
 import { errorMessage } from './raster_conversion.js';
 import { isAbortError } from '../../commands/shared/command_utils.js';
 
@@ -25,7 +26,7 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import type { DrawioBackend, MermaidBackend, PdftocairoBackend, RunPdfToSvg } from './tools/index.js';
-import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
+import { createMermaidCliRenderOptions, createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
@@ -57,7 +58,7 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
   runtime?.signal?.throwIfAborted();
   const maxInputPixels = options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS;
   validateJobs(options.jobs);
-  await validateJobPaths(options.jobs);
+  await validateJobPaths(options.jobs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
 
   await assertPreflightPassed(options.jobs, {
@@ -378,19 +379,6 @@ async function validateGeneratedSvg(outputPath: string): Promise<void> {
   }
 }
 
-async function validateJobPaths(jobs: ConvertToSvgJob[]): Promise<void> {
-  await Promise.all(
-    jobs.flatMap((job) => [
-      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
-      assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
-      assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-svg'),
-        job.workspacePath,
-      ),
-    ]),
-  );
-}
-
 function validateJobs(jobs: ConvertToSvgJob[]): void {
   if (jobs.length === 0) {
     throw new Error('No files were selected.');
@@ -451,14 +439,4 @@ function asSvgOutputPath(outputPath: string): `${string}.svg` {
   }
 
   return outputPath as unknown as `${string}.svg`;
-}
-
-function createMermaidPuppeteerConfig(options: MermaidBackend): Record<string, unknown> {
-  const config: Record<string, unknown> = { headless: true };
-  if (options.executablePath) {
-    config.executablePath = options.executablePath;
-  } else {
-    config.channel = options.browserChannel;
-  }
-  return config;
 }

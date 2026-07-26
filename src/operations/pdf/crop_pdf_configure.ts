@@ -5,6 +5,7 @@ import path from 'node:path';
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { safeName } from './pdf_utils.js';
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
@@ -193,8 +194,4 @@ function validateCropBox(cropBox: CropBox, page: PDFPage): void {
   ) {
     throw new Error('Crop box must be inside the page media box.');
   }
-}
-
-function safeName(value: string): string {
-  return value.replace(/[^A-Za-z0-9._-]/g, '_');
 }

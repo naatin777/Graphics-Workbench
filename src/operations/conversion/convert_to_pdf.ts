@@ -25,14 +25,15 @@ import {
   rasterInputPixelLimitMessage,
 } from './raster_input.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { validateJobPaths } from '../pdf/pdf_utils.js';
 
 import {
   type CommittedConversionOutput,
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
+import { createMermaidCliRenderOptions, createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import {
   runRsvgConvertWithAsciiScratch,
@@ -107,7 +108,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   const maxInputPixels = options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs, options.supportedExtensions ?? DEFAULT_SUPPORTED_IMAGE_EXTENSIONS);
-  await validateJobPaths(options.jobs);
+  await validateJobPaths(options.jobs, 'convert-png-to-pdf');
   runtime?.signal?.throwIfAborted();
 
   await assertPreflightPassed(options.jobs, {
@@ -326,18 +327,6 @@ async function writeMermaidAsPdf(
 
     throw new Error(`Mermaid CLI failed: ${errorMessage(error)}`, { cause: error });
   }
-}
-
-function createMermaidPuppeteerConfig(
-  options: MermaidBackend = { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-): Record<string, unknown> {
-  const config: Record<string, unknown> = { headless: true };
-  if (options.executablePath) {
-    config.executablePath = options.executablePath;
-  } else {
-    config.channel = options.browserChannel;
-  }
-  return config;
 }
 
 function asPdfOutputPath(outputPath: string): `${string}.pdf` {
@@ -639,19 +628,6 @@ async function normalizePdfPageSize(outputPath: string, width: number, height: n
 function setPageSize(page: PDFPage, width: number, height: number): void {
   page.setMediaBox(0, 0, width, height);
   page.setCropBox(0, 0, width, height);
-}
-
-async function validateJobPaths(jobs: ConvertToPdfJob[]): Promise<void> {
-  await Promise.all(
-    jobs.flatMap((job) => [
-      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
-      assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
-      assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', 'convert-png-to-pdf'),
-        job.workspacePath,
-      ),
-    ]),
-  );
 }
 
 function validateJobs(jobs: ConvertToPdfJob[], supportedExtensions: readonly string[]): void {

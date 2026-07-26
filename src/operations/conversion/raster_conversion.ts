@@ -12,6 +12,7 @@ import {
   isSupportedImageInputPath,
 } from '../../application/policy/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
 import { isAbortError } from '../../commands/shared/command_utils.js';
 
 import {
@@ -29,7 +30,7 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import type { DrawioBackend, GhostscriptBackend, MermaidBackend, PdftocairoBackend } from './tools/index.js';
 import { convertEpsToPdf, type EpsToPdfOptions } from './eps_to_pdf.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
+import { createMermaidCliRenderOptions, createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
@@ -51,6 +52,34 @@ export interface RasterConversionDefinition {
   resultExtension: string;
   encoder: RasterEncoder;
   unsupportedInputMessage: (sourcePath: string) => string;
+}
+
+export interface SimpleRasterConversionOptions {
+  operationName: string;
+  resultExtension: string;
+  encoder: RasterEncoder;
+}
+
+export function createSimpleRasterExecutor(options: SimpleRasterConversionOptions) {
+  const definition: RasterConversionDefinition = {
+    operationName: options.operationName,
+    stagingDirectoryName: options.operationName,
+    resultExtension: options.resultExtension,
+    encoder: options.encoder,
+    unsupportedInputMessage: (sourcePath) =>
+      `Unsupported input for ${options.resultExtension.toUpperCase()} conversion: ${sourcePath}`,
+  };
+
+  return (
+    batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
+      maxInputPixels?: number;
+    },
+  ) =>
+    executeRasterConversionBatch({
+      ...batchOptions,
+      maxInputPixels: batchOptions.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
+      definition,
+    });
 }
 
 export interface RasterJob {
@@ -428,16 +457,6 @@ function asPngOutputPath(outputPath: string): `${string}.png` {
   }
 
   return outputPath as unknown as `${string}.png`;
-}
-
-function createMermaidPuppeteerConfig(options: MermaidBackend): Record<string, unknown> {
-  const config: Record<string, unknown> = { headless: true };
-  if (options.executablePath) {
-    config.executablePath = options.executablePath;
-  } else {
-    config.channel = options.browserChannel;
-  }
-  return config;
 }
 
 export function errorMessage(error: unknown): string {

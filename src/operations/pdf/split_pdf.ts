@@ -4,6 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { safeName, validateJobPaths } from './pdf_utils.js';
 
 import {
   type CommittedConversionOutput,
@@ -42,7 +43,7 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<Commit
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
-  await validateInputPaths(options.jobs);
+  await validateJobPaths(options.jobs, 'split-pdf');
   await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
@@ -62,7 +63,7 @@ export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions)
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validatePageGroupJobs(options.jobs);
-  await validatePageGroupInputPaths(options.jobs);
+  await validateJobPaths(options.jobs, 'split-pdf');
   await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
@@ -215,30 +216,6 @@ async function splitPdfPageGroups(params: {
   return stagedGroups;
 }
 
-async function validateInputPaths(jobs: SplitPdfJob[]): Promise<void> {
-  await Promise.all(
-    jobs.flatMap((job) => [
-      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
-      assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', 'split-pdf'),
-        job.workspacePath,
-      ),
-    ]),
-  );
-}
-
-async function validatePageGroupInputPaths(jobs: SplitPdfPageGroupsJob[]): Promise<void> {
-  await Promise.all(
-    jobs.flatMap((job) => [
-      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
-      assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', 'split-pdf'),
-        job.workspacePath,
-      ),
-    ]),
-  );
-}
-
 function validateJobs(jobs: SplitPdfJob[]): void {
   if (jobs.length === 0) {
     throw new Error('No PDF files were selected.');
@@ -285,8 +262,4 @@ function validatePageGroups(pageGroups: number[][], pageCount: number, sourcePat
       }
     }
   }
-}
-
-function safeName(value: string): string {
-  return value.replace(/[^a-zA-Z0-9._-]/g, '_') || 'pdf';
 }

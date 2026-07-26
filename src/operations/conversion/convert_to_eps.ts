@@ -20,7 +20,8 @@ import {
 } from '../external_tools/external_tool_ascii_scratch.js';
 import { writeSourceAsPdf } from './convert_to_pdf.js';
 import type { DrawioBackend, MermaidBackend, RunGhostscript, SvgToPdfBackend } from './tools/index.js';
-import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { validateJobPaths } from '../pdf/pdf_utils.js';
 import {
   isMermaidPath,
   isSameSourceFormat,
@@ -56,7 +57,7 @@ export async function convertToEpsFiles(options: ConvertToEpsFilesOptions): Prom
   options.runtime.signal?.throwIfAborted();
   const supportedExtensions = options.supportedExtensions ?? DEFAULT_EXTENSIONS;
   validateJobs(options.jobs, supportedExtensions);
-  await validateJobPaths(options.jobs);
+  await validateJobPaths(options.jobs, 'convert-to-eps');
   await assertPreflightPassed(options.jobs, {
     ...preflightOptionsFromRuntime(options.runtime),
     ...(options.maxInputPixels === undefined ? {} : { maxInputPixels: options.maxInputPixels }),
@@ -223,19 +224,6 @@ async function validateGeneratedEps(epsPath: string): Promise<void> {
 
 async function executeGhostscript(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
   await execFileAsync(executable, args, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, signal });
-}
-
-async function validateJobPaths(jobs: ConvertToEpsJob[]): Promise<void> {
-  await Promise.all(
-    jobs.flatMap((job) => [
-      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
-      assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
-      assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-eps'),
-        job.workspacePath,
-      ),
-    ]),
-  );
 }
 
 function validateJobs(jobs: ConvertToEpsJob[], supportedExtensions: readonly string[]): void {

@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { safeName, validateJobPaths } from './pdf_utils.js';
 
 import {
   type CommittedConversionOutput,
@@ -61,7 +62,7 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
   validateMargin(options.margin);
-  await validateJobPaths(options.jobs);
+  await validateJobPaths(options.jobs, 'crop-pdf');
 
   await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
@@ -255,19 +256,6 @@ function setPageBounds(page: PDFPage, boundingBox: Box, margin: number): void {
   page.setCropBox(cropBox.left, cropBox.bottom, width, height);
 }
 
-async function validateJobPaths(jobs: CropPdfJob[]): Promise<void> {
-  await Promise.all(
-    jobs.flatMap((job) => [
-      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
-      assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
-      assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', 'crop-pdf'),
-        job.workspacePath,
-      ),
-    ]),
-  );
-}
-
 function validateJobs(jobs: CropPdfJob[]): void {
   if (jobs.length === 0) {
     throw new Error('No PDF files were selected.');
@@ -332,10 +320,6 @@ function addMargin(box: Box, margin: number): Box {
 
 function isEmptyBox(box: Box): boolean {
   return box.left === box.right || box.bottom === box.top;
-}
-
-function safeName(value: string): string {
-  return value.replace(/[^a-zA-Z0-9._-]/g, '_') || 'pdf';
 }
 
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {

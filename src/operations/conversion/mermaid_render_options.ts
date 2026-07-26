@@ -6,6 +6,18 @@ type MermaidCliRunOptions = NonNullable<Parameters<typeof runMermaidCli>[2]>;
 type MermaidCliParseMmdOptions = NonNullable<MermaidCliRunOptions['parseMMDOptions']>;
 type MermaidCliConfig = NonNullable<MermaidCliParseMmdOptions['mermaidConfig']>;
 
+export function createMermaidPuppeteerConfig(
+  options: MermaidBackend = { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
+): Record<string, unknown> {
+  const config: Record<string, unknown> = { headless: true };
+  if (options.executablePath) {
+    config.executablePath = options.executablePath;
+  } else {
+    config.channel = options.browserChannel;
+  }
+  return config;
+}
+
 export function createMermaidCliRenderOptions(
   options: Pick<MermaidBackend, 'theme' | 'backgroundColor'> = {
     theme: 'default',
