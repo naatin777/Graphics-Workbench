@@ -58,10 +58,13 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   ]);
   runtime?.signal?.throwIfAborted();
 
-  await assertPreflightPassed(options.jobs, {
-    ...preflightOptionsFromRuntime(runtime),
-    maxInputPixels: configuredMaxInputPixels,
-  });
+  await assertPreflightPassed(
+    options.jobs.map((job) => ({ ...job, workspacePath: options.workspacePath })),
+    {
+      ...preflightOptionsFromRuntime(runtime),
+      maxInputPixels: configuredMaxInputPixels,
+    },
+  );
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;

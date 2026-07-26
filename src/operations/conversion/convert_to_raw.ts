@@ -1,13 +1,14 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import sharp, { type OutputInfo } from 'sharp';
+import type { OutputInfo } from 'sharp';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+import { isSameSourceFormat } from '../../application/policy/source_format.js';
 import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
 import {
   destroyRasterInput,
@@ -33,6 +34,12 @@ export interface ConvertToRawFilesOptions {
 export async function convertToRawFiles(options: ConvertToRawFilesOptions): Promise<CommittedConversionOutput[]> {
   if (options.jobs.length === 0) {
     throw new Error('No files were selected.');
+  }
+
+  for (const job of options.jobs) {
+    if (isSameSourceFormat(job.sourcePath, '.raw')) {
+      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+    }
   }
 
   await Promise.all(
@@ -67,12 +74,7 @@ export async function convertToRawFiles(options: ConvertToRawFilesOptions): Prom
       await mkdir(stageDirectory, { recursive: true });
       runtime.signal?.throwIfAborted();
 
-      const image =
-        sidecar === undefined
-          ? openRasterInput(job.sourcePath, options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS, job.page)
-          : sharp(await readFile(job.sourcePath), {
-              raw: { width: sidecar.width, height: sidecar.height, channels: sidecar.channels },
-            });
+      const image = openRasterInput(job.sourcePath, options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS, job.page);
       let data: Buffer;
       let info: OutputInfo;
       let colourspace: RawSidecar['colourspace'];
@@ -103,12 +105,14 @@ export async function convertToRawFiles(options: ConvertToRawFilesOptions): Prom
           outputPath: job.outputPath,
           workspacePath: job.workspacePath,
           stagingRootPath,
+          keepBothGroup: { basePath: job.outputPath, suffix: '' },
         },
         {
           stagedOutputPath: stagedSidecarPath,
           outputPath: `${job.outputPath}.json`,
           workspacePath: job.workspacePath,
           stagingRootPath,
+          keepBothGroup: { basePath: job.outputPath, suffix: '.json' },
         },
       ];
       return outputs;

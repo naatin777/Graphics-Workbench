@@ -1,5 +1,5 @@
 import { once } from 'node:events';
-import { readFileSync } from 'node:fs';
+import { createReadStream, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import sharp, { type Sharp } from 'sharp';
@@ -43,11 +43,13 @@ export function openRasterInput(
 ): RasterInput {
   if (path.extname(sourcePath).toLowerCase() === '.raw') {
     const sidecar = readRawSidecar(sourcePath);
-    return sharp(readFileSync(sourcePath), {
+    const image = sharp({
       limitInputPixels: maxInputPixels,
       failOn: 'warning',
       raw: { width: sidecar.width, height: sidecar.height, channels: sidecar.channels },
     });
+    createReadStream(sourcePath).pipe(image);
+    return image;
   }
 
   const inputOptions: Parameters<typeof sharp>[1] = {

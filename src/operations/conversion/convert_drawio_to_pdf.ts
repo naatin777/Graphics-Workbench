@@ -17,6 +17,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import { validateGeneratedPdf } from './convert_to_pdf.js';
 
 export interface DrawioPdfJob {
   sourcePath: string;
@@ -46,7 +47,7 @@ export async function convertDrawioToPdfFiles(
 ): Promise<CommittedConversionOutput[]> {
   const operationName = options.outputMode === 'page-pdfs' ? 'convert-drawio-to-pdf' : 'convert-drawio-to-pdf-directly';
   validateJobs(options.jobs, options.outputMode);
-  await validateJobPaths(options.jobs, operationName);
+  await validateJobPaths(options.jobs, operationName, options.outputMode);
 
   await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(options.runtime));
 
@@ -109,6 +110,7 @@ async function stageDrawioJob(options: {
     runDrawio,
   );
   await assertExistingPathInWorkspace(allPagesPdfPath, job.workspacePath);
+  await validateGeneratedPdf(allPagesPdfPath);
 
   const sourceDocument = await PDFDocument.load(await readFile(allPagesPdfPath));
   const pageCount = sourceDocument.getPageCount();
@@ -160,6 +162,7 @@ async function stageDrawioJob(options: {
     const stagedOutputPath = path.join(pageDirectory, `${index + 1}.pdf`);
     await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
     await writeFile(stagedOutputPath, await pageDocument.save());
+    await validateGeneratedPdf(stagedOutputPath);
 
     const outputPath = resolveOutputPath(
       job.outputTemplate,
@@ -241,12 +244,29 @@ async function executeDrawio(
   await runExternalTool(toolOptions);
 }
 
-async function validateJobPaths(jobs: DrawioPdfJob[], operationName: string): Promise<void> {
+async function validateJobPaths(
+  jobs: DrawioPdfJob[],
+  operationName: string,
+  outputMode: 'page-pdfs' | 'single-pdf',
+): Promise<void> {
   await Promise.all(
     jobs.flatMap((job) => [
       assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
       assertWritablePathInWorkspace(
         path.join(job.workspacePath, '.latex-graphics-helper', operationName),
+        job.workspacePath,
+      ),
+      assertWritablePathInWorkspace(
+        resolveOutputPath(
+          job.outputTemplate,
+          {
+            sourcePath: logicalSourcePathForOutputTemplate(job.sourcePath),
+            workspacePath: job.workspacePath,
+            workspaceName: job.workspaceName,
+            ...(outputMode === 'page-pdfs' ? { page: '1' } : {}),
+          },
+          { allowedExtensions: ['.pdf'] },
+        ),
         job.workspacePath,
       ),
     ]),

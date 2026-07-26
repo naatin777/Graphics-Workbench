@@ -167,6 +167,7 @@ async function createJobs(
       outputTemplate,
       allowedExtensions: ['.webp'],
       maxInputPixels,
+      frameMode: outputMode === 'split' ? 'all' : 'first',
       createJob: (job) => job,
     });
   }

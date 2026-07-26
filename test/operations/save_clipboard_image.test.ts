@@ -39,7 +39,7 @@ suite('Clipboard画像保存のartifact ownership', () => {
               copyFile: async (source, destination, flags) => {
                 copyCount += 1;
 
-                if (destination === outputPath && copyCount === 2) {
+                if (destination !== outputPath && !destination.endsWith('.previous') && copyCount === 2) {
                   throw new Error('injected commit copy failure');
                 }
 

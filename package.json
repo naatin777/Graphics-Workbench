@@ -373,7 +373,7 @@
         {
           "command": "latex-graphics-helper.convertToRaw",
           "group": "latex-graphics-helper.convert@10",
-          "when": "config.latex-graphics-helper.contextMenu.enabled && config.latex-graphics-helper.contextMenu.convertRaw.enabled && resourceExtname =~ /^\\.(png|jpe?g|webp|avif|gif|tiff?|raw)$/i"
+          "when": "config.latex-graphics-helper.contextMenu.enabled && config.latex-graphics-helper.contextMenu.convertRaw.enabled && resourceExtname =~ /^\\.(png|jpe?g|webp|avif|gif|tiff?)$/i"
         },
         {
           "command": "latex-graphics-helper.convertToDrawio",

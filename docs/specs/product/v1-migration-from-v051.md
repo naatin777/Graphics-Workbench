@@ -20,7 +20,7 @@
 | `latex-graphics-helper.cropPdf`            | `latex-graphics-helper.cropPdf.auto`           | quick系の自動crop。Webview GUIで細かく指定するcropは `latex-graphics-helper.cropPdf.configure` として別入口にする。              |
 | `latex-graphics-helper.splitPdf`           | `latex-graphics-helper.splitPdf.allPages`      | quick系の全ページsplit。Webview GUIでページを選択するsplitは `latex-graphics-helper.splitPdf.configure` として別入口にする。     |
 | `latex-graphics-helper.mergePdf`           | `latex-graphics-helper.mergePdf.selectedFiles` | quick系の選択PDF結合。Webview GUIで順序やページを指定するmergeは `latex-graphics-helper.mergePdf.configure` として別入口にする。 |
-| `latex-graphics-helper.convertDrawioToPdf` | `latex-graphics-helper.convertToPdf`           | Draw.io入力をPDF出力形式コマンドへ統合する。                                                                                     |
+| `latex-graphics-helper.convertDrawioToPdf` | `latex-graphics-helper.convertDrawioToPdf`     | v1でもnative Draw.ioのページ分割command IDを維持する。editable Draw.io画像だけが`convertToPdf`へ統合される。                     |
 | `latex-graphics-helper.convertPdfToPng`    | `latex-graphics-helper.convertToPng`           | PDF入力をPNG出力形式コマンドへ統合する。                                                                                         |
 | `latex-graphics-helper.convertPdfToJpeg`   | `latex-graphics-helper.convertToJpeg`          | PDF入力をJPEG出力形式コマンドへ統合する。                                                                                        |
 | `latex-graphics-helper.convertPdfToSvg`    | `latex-graphics-helper.convertToSvg`           | PDF入力をSVG出力形式コマンドへ統合する。                                                                                         |
@@ -72,15 +72,14 @@ README / CHANGELOG / migration noteには、`execPath.pdfcrop`が廃止され、
 
 ### `latex-graphics-helper.puppeteer.browser`
 
-`v1.0.0`では復元しない。
+`v1.0.0`でも設定を維持する。
 
-移行先は設けない。
+SVG変換で`chrome`または`firefox`を選択できる。Firefoxを選択する場合は`puppeteer.executablePath`にFirefoxの実行ファイルを指定する。
 
 理由:
 
 - 現行のPuppeteer利用はChrome系channel / executable pathで制御する
-- Firefox対応を公開設定として維持する実装・検証を行っていない
-- 使えるように見えるが動作保証できない設定を残さない
+- Firefox対応を公開設定として維持し、実行ファイル指定を必須にする
 
 ### `latex-graphics-helper.puppeteer.channel`
 

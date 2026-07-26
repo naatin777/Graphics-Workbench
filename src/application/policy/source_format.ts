@@ -76,6 +76,19 @@ export function isSupportedImageInputPath(sourcePath: string): boolean {
   return isRasterImagePath(sourcePath) || sourceFormatForPath(sourcePath) === 'eps';
 }
 
+export function isSameSourceFormat(sourcePath: string, outputExtension: string): boolean {
+  const sourceFormat = sourceFormatForPath(sourcePath);
+  const normalizedExtension = outputExtension.toLowerCase().replace(/^\./u, '');
+  const outputFormat =
+    normalizedExtension === 'jpg' || normalizedExtension === 'jpeg'
+      ? 'jpeg'
+      : normalizedExtension === 'tif' || normalizedExtension === 'tiff'
+        ? 'tiff'
+        : normalizedExtension;
+
+  return sourceFormat === outputFormat;
+}
+
 export function isMermaidPath(sourcePath: string): boolean {
   return sourceFormatForPath(sourcePath) === 'mermaid';
 }

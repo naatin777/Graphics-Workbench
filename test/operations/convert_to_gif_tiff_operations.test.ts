@@ -13,8 +13,10 @@ suite('GIF/TIFFに変換する処理', () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-gif-tiff-operation-'));
 
     try {
-      const sourcePath = path.join(workspacePath, 'source.gif');
-      await writeAnimatedGif(sourcePath);
+      const gifSourcePath = path.join(workspacePath, 'source.gif');
+      const tiffSourcePath = path.join(workspacePath, 'source.tiff');
+      await writeAnimatedGif(gifSourcePath);
+      await writeAnimatedTiff(tiffSourcePath);
       const common = {
         pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
         ghostscriptTools: { ghostscriptPath: 'gs' },
@@ -23,9 +25,9 @@ suite('GIF/TIFFに変換する処理', () => {
         runtime: {},
       };
 
-      for (const [format, convert] of [
-        ['gif', convertToGifFiles],
-        ['tiff', convertToTiffFiles],
+      for (const [format, convert, sourcePath] of [
+        ['gif', convertToGifFiles, tiffSourcePath],
+        ['tiff', convertToTiffFiles, gifSourcePath],
       ] as const) {
         const outputPaths = [1, 2].map((page) => path.join(workspacePath, `${format}-${page}.${format}`));
         await convert({
@@ -57,5 +59,19 @@ async function writeAnimatedGif(filePath: string): Promise<void> {
   ]);
   await sharp(frames, { join: { animated: true } })
     .gif()
+    .toFile(filePath);
+}
+
+async function writeAnimatedTiff(filePath: string): Promise<void> {
+  const frames = await Promise.all([
+    sharp({ create: { width: 4, height: 4, channels: 4, background: { r: 255, g: 0, b: 0, alpha: 1 } } })
+      .png()
+      .toBuffer(),
+    sharp({ create: { width: 4, height: 4, channels: 4, background: { r: 0, g: 0, b: 255, alpha: 1 } } })
+      .png()
+      .toBuffer(),
+  ]);
+  await sharp(frames, { join: { animated: true } })
+    .tiff()
     .toFile(filePath);
 }

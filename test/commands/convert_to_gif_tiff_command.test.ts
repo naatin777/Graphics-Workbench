@@ -10,11 +10,11 @@ import { convertToGifCommand } from '../../src/commands/conversion/convert_to_gi
 import { convertToTiffCommand } from '../../src/commands/conversion/convert_to_tiff.js';
 
 suite('GIF/TIFFに変換コマンド', () => {
-  test('GIF入力の各フレームを独立TIFFへ変換する', async () => {
+  test('GIF入力の先頭frameをTIFFへ変換する', async () => {
     await assertAnimatedInputIsSplit('gif', 'tiff', convertToTiffCommand);
   });
 
-  test('TIFF入力の各ページを独立GIFへ変換する', async () => {
+  test('TIFF入力の先頭pageをGIFへ変換する', async () => {
     await assertAnimatedInputIsSplit('tiff', 'gif', convertToGifCommand);
   });
 });
@@ -40,12 +40,10 @@ async function assertAnimatedInputIsSplit(
     await configuration.update(key, template, vscode.ConfigurationTarget.Workspace);
     await command(vscode.Uri.file(sourcePath));
 
-    for (const page of [1, 2]) {
-      const outputPath = path.join(workspacePath, `source-${page}.${outputFormat}`);
-      const metadata = await sharp(await readFile(outputPath)).metadata();
-      assert.strictEqual(metadata.format, outputFormat);
-      assert.strictEqual(metadata.pages ?? 1, 1);
-    }
+    const outputPath = path.join(workspacePath, `source-1.${outputFormat}`);
+    const metadata = await sharp(await readFile(outputPath)).metadata();
+    assert.strictEqual(metadata.format, outputFormat);
+    assert.strictEqual(metadata.pages ?? 1, 1);
   } finally {
     sandbox.restore();
     await configuration.update(key, undefined, vscode.ConfigurationTarget.Workspace);

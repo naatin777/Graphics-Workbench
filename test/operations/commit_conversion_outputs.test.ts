@@ -10,7 +10,7 @@
 // - 変換処理そのもの
 
 import assert from 'node:assert/strict';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -139,7 +139,7 @@ suite('変換結果の反映処理', () => {
         resolveConflicts: async () => 'overwrite',
         copyFile: async (source, destination, flags) => {
           await copyFile(source, destination, flags);
-          if (destination === outputPath) {
+          if (destination !== outputPath && !destination.endsWith('.previous')) {
             throw new Error('injected current output copy failure');
           }
         },
@@ -258,12 +258,15 @@ suite('変換結果の反映処理', () => {
     await assert.rejects(
       commitConversionOutputs(outputs, {
         resolveConflicts: async () => 'overwrite',
+        rename: async (source, destination) => {
+          await rename(source, destination);
+          if (destination === outputs[0]?.outputPath) {
+            await writeFile(destination, 'external change after commit');
+          }
+        },
         copyFile: async (source, destination, flags) => {
           copyCount += 1;
           await copyFile(source, destination, flags);
-          if (copyCount === 3) {
-            await writeFile(outputs[0]!.outputPath, 'external change after commit');
-          }
           if (copyCount === 4) {
             throw new Error('injected second output failure');
           }

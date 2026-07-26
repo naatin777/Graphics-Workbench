@@ -146,6 +146,7 @@ async function createJobs(
       outputTemplate,
       allowedExtensions: ['.gif'],
       maxInputPixels,
+      frameMode: outputMode === 'split' ? 'all' : 'first',
       createJob: (job) => job,
     });
   }

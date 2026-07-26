@@ -25,6 +25,7 @@ export async function createRasterFrameJobs(options: {
   outputTemplate: string;
   allowedExtensions: readonly string[];
   maxInputPixels: number;
+  frameMode?: 'first' | 'all';
   createJob: (job: RasterFrameJob) => RasterFrameJob;
 }): Promise<RasterFrameJob[]> {
   await assertExistingPathInWorkspace(options.sourcePath, options.workspacePath);
@@ -41,9 +42,11 @@ export async function createRasterFrameJobs(options: {
     throw new Error(`Could not determine image frame count: ${options.sourcePath}`);
   }
 
-  assertPageTemplateForSplitOutput(options.outputTemplate, pages);
+  const frameMode = options.frameMode ?? 'first';
+  const outputPages = frameMode === 'all' ? pages : 1;
+  assertPageTemplateForSplitOutput(options.outputTemplate, outputPages);
 
-  return Array.from({ length: pages }, (_value, index) => {
+  return Array.from({ length: outputPages }, (_value, index) => {
     const page = index + 1;
     return options.createJob({
       sourcePath: options.sourcePath,
@@ -54,7 +57,7 @@ export async function createRasterFrameJobs(options: {
           sourcePath: options.sourcePath,
           workspacePath: options.workspacePath,
           workspaceName: options.workspaceName,
-          page: formatOutputPage(page, pages),
+          page: formatOutputPage(page, outputPages),
         },
         { allowedExtensions: options.allowedExtensions },
       ),

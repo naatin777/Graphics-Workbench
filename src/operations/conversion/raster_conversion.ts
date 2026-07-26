@@ -8,6 +8,7 @@ import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 import {
   isEditableDrawioImagePath,
   isMermaidPath,
+  isSameSourceFormat,
   isSupportedImageInputPath,
 } from '../../application/policy/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -32,6 +33,7 @@ import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import sharp from 'sharp';
 
 const execFileAsync = promisify(execFile);
 
@@ -141,6 +143,8 @@ async function stageRasterConversion(
   const stagedOutputPath = path.join(stageDirectory, `result.${resultExtension}`);
 
   await writeSourceAsRaster(job, { stageDirectory, stagedOutputPath, stagingRootPath }, context);
+  context.runtime.signal?.throwIfAborted();
+  await validateGeneratedRaster(stagedOutputPath, resultExtension);
   context.runtime.signal?.throwIfAborted();
 
   return {
@@ -287,6 +291,7 @@ async function writeMermaidAsRaster(request: RasterRenderRequest, context: Raste
       quiet: true,
       ...createMermaidCliRenderOptions(context.mermaidTools),
     });
+    context.runtime.signal?.throwIfAborted();
   } catch (error) {
     if (isAbortError(error)) {
       throw error instanceof Error ? error : new Error(String(error));
@@ -382,9 +387,22 @@ function validateJobs(jobs: RasterJob[], definition: RasterConversionDefinition)
   }
 
   for (const job of jobs) {
+    if (!isEditableDrawioImagePath(job.sourcePath) && isSameSourceFormat(job.sourcePath, definition.resultExtension)) {
+      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+    }
+
     if (!isSupportedSourcePath(job.sourcePath)) {
       throw new Error(definition.unsupportedInputMessage(job.sourcePath));
     }
+  }
+}
+
+async function validateGeneratedRaster(outputPath: string, outputExtension: string): Promise<void> {
+  const metadata = await sharp(outputPath).metadata();
+  const expectedFormat = outputExtension === 'jpeg' ? 'jpeg' : outputExtension === 'avif' ? 'heif' : outputExtension;
+
+  if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
+    throw new Error(`Raster conversion produced invalid ${outputExtension.toUpperCase()} output: ${outputPath}`);
   }
 }
 

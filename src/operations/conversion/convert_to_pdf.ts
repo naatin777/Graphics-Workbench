@@ -9,7 +9,12 @@ import { launch, type Browser, type LaunchOptions } from 'puppeteer-core';
 import sharp from 'sharp';
 import { errorMessage, isAbortError } from '../../commands/shared/command_utils.js';
 
-import { isEditableDrawioImagePath, isMermaidPath, isRasterImagePath } from '../../application/policy/source_format.js';
+import {
+  isEditableDrawioImagePath,
+  isMermaidPath,
+  isRasterImagePath,
+  isSameSourceFormat,
+} from '../../application/policy/source_format.js';
 import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import {
@@ -225,7 +230,7 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
     const animation = await readRasterAnimationMetadata(sourcePath, maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS);
     if (animation !== undefined) {
-      await writeAnimatedRasterAsPdf(options, animation.pages);
+      await writeSourceAsPdf({ ...options, page: 1 });
       return;
     }
   }
@@ -265,25 +270,6 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
     maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
     options.page,
   );
-}
-
-async function writeAnimatedRasterAsPdf(options: WriteSourceAsPdfOptions, pageCount: number): Promise<void> {
-  const document = await PDFDocument.create();
-
-  for (let page = 1; page <= pageCount; page += 1) {
-    options.signal?.throwIfAborted();
-    const framePath = `${options.outputPath}.frame-${page}.pdf`;
-    await writeSourceAsPdf({ ...options, outputPath: framePath, page });
-    const frameDocument = await PDFDocument.load(await readFile(framePath));
-    const pages = await document.copyPages(frameDocument, frameDocument.getPageIndices());
-    for (const frame of pages) {
-      document.addPage(frame);
-    }
-  }
-
-  options.signal?.throwIfAborted();
-  await mkdir(path.dirname(options.outputPath), { recursive: true });
-  await writeFile(options.outputPath, await document.save());
 }
 
 async function writeDrawioAsPdf(
@@ -611,7 +597,7 @@ function svgPageHtml(svg: string, size: { width: number; height: number }): stri
   ].join('');
 }
 
-async function validateGeneratedPdf(outputPath: string): Promise<void> {
+export async function validateGeneratedPdf(outputPath: string): Promise<void> {
   let pdfDocument: PDFDocument;
 
   try {
@@ -676,6 +662,10 @@ function validateJobs(jobs: ConvertToPdfJob[], supportedExtensions: readonly str
   const supportedExtensionSet = new Set(supportedExtensions.map((extension) => extension.toLowerCase()));
 
   for (const job of jobs) {
+    if (isSameSourceFormat(job.sourcePath, '.pdf')) {
+      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+    }
+
     if (!isSupportedSourcePath(job.sourcePath, supportedExtensionSet)) {
       throw new Error(`Unsupported image format: ${job.sourcePath}`);
     }

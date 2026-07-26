@@ -177,7 +177,11 @@ function hasPreservedDescendant(targetPath: string, preservePaths: ReadonlySet<s
 }
 
 function isWithin(targetPath: string, parentPath: string): boolean {
-  const relativePath = path.relative(parentPath, targetPath);
+  const normalize = (value: string) => {
+    const resolved = path.resolve(value);
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  };
+  const relativePath = path.relative(normalize(parentPath), normalize(targetPath));
   return relativePath === '' || (!path.isAbsolute(relativePath) && !relativePath.startsWith(`..${path.sep}`));
 }
 

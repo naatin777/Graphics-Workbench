@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
+  isSameSourceFormat,
   logicalSourcePathForOutputTemplate,
   sourceFormatForPath,
 } from '../../src/application/policy/source_format.js';
@@ -20,5 +21,13 @@ suite('source format判定', () => {
     assert.strictEqual(sourceFormatForPath('notes.txt'), undefined);
     assert.strictEqual(isEditableDrawioImagePath('diagram.drawio.png'), true);
     assert.strictEqual(logicalSourcePathForOutputTemplate('diagram.drawio.png'), 'diagram');
+  });
+
+  test('出力形式のaliasを含めてsame-formatを判定する', () => {
+    assert.strictEqual(isSameSourceFormat('image.png', '.png'), true);
+    assert.strictEqual(isSameSourceFormat('image.jpg', '.jpeg'), true);
+    assert.strictEqual(isSameSourceFormat('image.tiff', '.tif'), true);
+    assert.strictEqual(isSameSourceFormat('diagram.drawio.png', '.png'), false);
+    assert.strictEqual(isSameSourceFormat('image.png', '.webp'), false);
   });
 });

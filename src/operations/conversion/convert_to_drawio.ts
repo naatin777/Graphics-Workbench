@@ -5,6 +5,8 @@ import { promisify } from 'node:util';
 
 import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 import { PDFDocument } from 'pdf-lib';
+import { Parser } from 'xml2js';
+import sharp from 'sharp';
 
 import { isMermaidPath } from '../../application/policy/source_format.js';
 import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
@@ -14,7 +16,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
-import { destroyRasterInput, openRasterInput, readRasterAnimationMetadata } from './raster_input.js';
+import { destroyRasterInput, openRasterInput } from './raster_input.js';
 import type { MermaidTools } from './tools/mermaid_tools.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import type { ChromeReleaseChannel } from 'puppeteer-core';
@@ -75,7 +77,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
   }
 
   await assertPreflightPassed(
-    options.jobs.flatMap((job) => job.inputs),
+    options.jobs.flatMap((job) => job.inputs.map((input) => ({ ...input, workspacePath: job.workspacePath }))),
     {
       ...preflightOptionsFromRuntime(options.runtime),
       maxInputPixels: options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
@@ -101,6 +103,8 @@ async function stageDrawio(
   const stagingRootPath = path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-drawio', runId);
   const stageDirectory = path.join(stagingRootPath, 'inputs');
   const stagedOutputPath = path.join(stagingRootPath, `result${drawioExtension(job.outputPath)}`);
+  await assertWritablePathInWorkspace(stagingRootPath, job.workspacePath);
+  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
   await mkdir(stageDirectory, { recursive: true });
   const pages: DrawioPage[] = [];
 
@@ -148,16 +152,13 @@ async function stageDrawio(
       pages.push(await svgPage(svgPath, input));
     } else {
       const maxInputPixels = options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS;
-      const animation = await readRasterAnimationMetadata(input.sourcePath, maxInputPixels);
-      const pageCount = animation?.pages ?? 1;
-      for (let page = 1; page <= pageCount; page += 1) {
-        runtime.signal?.throwIfAborted();
-        pages.push(await rasterPage(input.sourcePath, input, maxInputPixels, pageCount > 1 ? page : undefined));
-      }
+      runtime.signal?.throwIfAborted();
+      pages.push(await rasterPage(input.sourcePath, input, maxInputPixels));
     }
   }
 
   const xml = createDrawioXml(pages);
+  await validateDrawioXml(xml, job.inputs[0]?.sourcePath ?? job.outputPath);
   const xmlPath = path.join(stagingRootPath, 'source.drawio');
   await writeFile(xmlPath, xml);
   if (drawioExtension(job.outputPath) === '.drawio') {
@@ -172,6 +173,13 @@ async function stageDrawio(
       ...(options.runDrawio !== undefined && { runDrawio: options.runDrawio }),
       runtime,
     });
+  }
+  if (drawioExtension(job.outputPath) !== '.drawio') {
+    await validateEmbeddedDrawioImage(
+      stagedOutputPath,
+      drawioExtension(job.outputPath),
+      job.inputs[0]?.sourcePath ?? job.outputPath,
+    );
   }
   await assertExistingPathInWorkspace(stagedOutputPath, job.workspacePath);
   return { stagedOutputPath, outputPath: job.outputPath, workspacePath: job.workspacePath, stagingRootPath };
@@ -213,6 +221,45 @@ async function exportEditableDrawioImage(options: {
     options.runtime.outputChannel,
   );
   await assertExistingPathInWorkspace(options.outputPath, options.workspacePath);
+}
+
+async function validateEmbeddedDrawioImage(outputPath: string, format: string, sourcePath: string): Promise<void> {
+  const content = await readFile(outputPath);
+  const normalizedFormat = format.replace(/^\./u, '').toLowerCase();
+  if (normalizedFormat === 'png') {
+    const metadata = await sharp(content).metadata();
+    if (metadata.format !== 'png' || !metadata.width || !metadata.height) {
+      throw new Error(`Draw.io produced an invalid embedded PNG: ${sourcePath}`);
+    }
+  } else {
+    await validateSvgDocument(content.toString('utf8'), sourcePath);
+  }
+
+  if (!content.includes(Buffer.from('mxfile'))) {
+    throw new Error(`Draw.io output does not contain an embedded diagram: ${sourcePath}`);
+  }
+}
+
+async function validateDrawioXml(xml: string, sourcePath: string): Promise<void> {
+  try {
+    const parsed = (await new Parser().parseStringPromise(xml)) as { mxfile?: { diagram?: unknown[] } };
+    if (parsed.mxfile?.diagram === undefined || parsed.mxfile.diagram.length === 0) {
+      throw new Error('missing diagram');
+    }
+  } catch (error) {
+    throw new Error(`Draw.io produced invalid XML: ${sourcePath}`, { cause: error });
+  }
+}
+
+async function validateSvgDocument(content: string, sourcePath: string): Promise<void> {
+  try {
+    const parsed = (await new Parser().parseStringPromise(content)) as { svg?: unknown };
+    if (parsed.svg === undefined) {
+      throw new Error('missing svg root');
+    }
+  } catch (error) {
+    throw new Error(`Draw.io produced invalid embedded SVG: ${sourcePath}`, { cause: error });
+  }
 }
 
 export interface DrawioPage {
@@ -353,4 +400,5 @@ async function executeMermaid(
     },
     ...(options ? createMermaidCliRenderOptions(options) : {}),
   });
+  signal?.throwIfAborted();
 }

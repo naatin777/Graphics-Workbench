@@ -2,7 +2,7 @@
 // - latex-graphics-helper.convertToPng commandが登録されること
 // - MermaidをPNGに直接変換できること
 // - JPEG、WebP、AVIFをPNGに変換できること
-// - GIF、TIFFを全frame/pageへPNGに分割できること
+// - GIF、TIFFの先頭frame/pageをPNGへ変換できること
 // - SVGをPNGに変換できること
 // - PDFをページごとのPNGに変換できること
 // - PNGからPNGへは変換しないこと
@@ -107,7 +107,7 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('GIFとTIFFを全pageからPNGへ分割する', async () => {
+  test('GIFとTIFFの先頭pageをPNGへ変換する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -132,9 +132,7 @@ suite('PNGに変換コマンド', () => {
         },
       );
 
-      await Promise.all(
-        sourcePaths.flatMap((sourcePath) => [1, 2].map((page) => assertReadablePng(framePath(sourcePath, page)))),
-      );
+      await Promise.all(sourcePaths.map((sourcePath) => assertReadablePng(framePath(sourcePath, 1))));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }

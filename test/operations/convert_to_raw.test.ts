@@ -8,10 +8,10 @@ import sharp from 'sharp';
 import { convertToRawFiles } from '../../src/operations/conversion/convert_to_raw.js';
 
 suite('Raw pixels conversion', () => {
-  test('必須sidecarを使い、rawとsidecarを同じbatchでcommitする', async () => {
+  test('rawとsidecarはkeep-bothでも同じsuffixでcommitする', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-raw-'));
     try {
-      const sourcePath = path.join(workspacePath, 'source.raw');
+      const sourcePath = path.join(workspacePath, 'source.png');
       const outputPath = path.join(workspacePath, 'output.raw');
       const sidecar = {
         version: 1,
@@ -23,21 +23,27 @@ suite('Raw pixels conversion', () => {
         alpha: false,
         layout: 'interleaved',
       };
-      await writeFile(sourcePath, Buffer.from([255, 0, 0, 0, 255, 0]));
-      await writeFile(`${sourcePath}.json`, `${JSON.stringify(sidecar)}\n`);
+      await sharp({ create: { width: 2, height: 1, channels: 3, background: '#ff0000' } })
+        .png()
+        .toFile(sourcePath);
+      await writeFile(outputPath, Buffer.from([0, 0, 0, 0, 0, 0]));
+      await writeFile(`${outputPath}.json`, `${JSON.stringify(sidecar)}\n`);
 
       const outputs = await convertToRawFiles({
         jobs: [{ sourcePath, outputPath, workspacePath }],
-        runtime: { resolveConflicts: async () => 'overwrite' },
+        runtime: { resolveConflicts: async () => 'keep-both' },
         runId: 'test-run',
       });
 
       assert.deepStrictEqual(
         outputs.map((output) => output.outputPath).sort(),
-        [outputPath, `${outputPath}.json`].sort(),
+        [`${outputPath.replace('.raw', '-1.raw')}`, `${outputPath.replace('.raw', '-1.raw')}.json`].sort(),
       );
-      assert.deepStrictEqual(await readFile(outputPath), Buffer.from([255, 0, 0, 0, 255, 0]));
-      assert.deepStrictEqual(JSON.parse(await readFile(`${outputPath}.json`, 'utf8')), sidecar);
+      assert.strictEqual((await readFile(`${outputPath.replace('.raw', '-1.raw')}`)).length, 6);
+      assert.deepStrictEqual(
+        JSON.parse(await readFile(`${outputPath.replace('.raw', '-1.raw')}.json`, 'utf8')),
+        sidecar,
+      );
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
@@ -55,7 +61,7 @@ suite('Raw pixels conversion', () => {
           jobs: [{ sourcePath, outputPath, workspacePath }],
           runtime: { resolveConflicts: async () => 'overwrite' },
         }),
-        /ENOENT|Invalid Raw sidecar|no such file/i,
+        /ENOENT|Invalid Raw sidecar|no such file|Input and output formats must differ/i,
       );
       await assert.rejects(access(outputPath));
       await assert.rejects(access(`${outputPath}.json`));

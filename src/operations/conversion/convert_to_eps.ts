@@ -21,7 +21,11 @@ import {
 import { writeSourceAsPdf } from './convert_to_pdf.js';
 import type { DrawioTools, MermaidTools, RunGhostscript, SvgToPdfTools } from './tools/index.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { isMermaidPath, isSupportedImageInputPath } from '../../application/policy/source_format.js';
+import {
+  isMermaidPath,
+  isSameSourceFormat,
+  isSupportedImageInputPath,
+} from '../../application/policy/source_format.js';
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_EXTENSIONS = ['.pdf', '.svg', '.eps', '.mmd', '.mermaid'] as const;
@@ -241,6 +245,10 @@ function validateJobs(jobs: ConvertToEpsJob[], supportedExtensions: readonly str
   const extensions = new Set(supportedExtensions.map((extension) => extension.toLowerCase()));
   for (const job of jobs) {
     const extension = path.extname(job.sourcePath).toLowerCase();
+    if (isSameSourceFormat(job.sourcePath, '.eps')) {
+      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+    }
+
     if (!extensions.has(extension) && !isSupportedImageInputPath(job.sourcePath) && !isMermaidPath(job.sourcePath)) {
       throw new Error(`Unsupported input format: ${job.sourcePath}`);
     }

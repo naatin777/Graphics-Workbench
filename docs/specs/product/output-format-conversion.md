@@ -6,14 +6,18 @@
 
 ## 公開command
 
-| Command ID                            | 表示名 | 出力形式 |
-| ------------------------------------- | ------ | -------- |
-| `latex-graphics-helper.convertToPdf`  | PDF    | PDF      |
-| `latex-graphics-helper.convertToPng`  | PNG    | PNG      |
-| `latex-graphics-helper.convertToJpeg` | JPEG   | JPEG     |
-| `latex-graphics-helper.convertToWebp` | WebP   | WebP     |
-| `latex-graphics-helper.convertToAvif` | AVIF   | AVIF     |
-| `latex-graphics-helper.convertToSvg`  | SVG    | SVG      |
+| Command ID                            | 表示名 | 出力形式           |
+| ------------------------------------- | ------ | ------------------ |
+| `latex-graphics-helper.convertToPdf`  | PDF    | PDF                |
+| `latex-graphics-helper.convertToPng`  | PNG    | PNG                |
+| `latex-graphics-helper.convertToJpeg` | JPEG   | JPEG               |
+| `latex-graphics-helper.convertToWebp` | WebP   | WebP               |
+| `latex-graphics-helper.convertToAvif` | AVIF   | AVIF               |
+| `latex-graphics-helper.convertToGif`  | GIF    | GIF                |
+| `latex-graphics-helper.convertToTiff` | TIFF   | TIFF               |
+| `latex-graphics-helper.convertToEps`  | EPS    | EPS                |
+| `latex-graphics-helper.convertToRaw`  | Raw    | Raw + JSON sidecar |
+| `latex-graphics-helper.convertToSvg`  | SVG    | SVG                |
 
 Command PaletteとExplorerの`変換`サブメニューでは、出力形式基準commandを表示する。
 
@@ -40,7 +44,7 @@ PDFを画像またはSVGへ変換する場合はページごとに出力を作�
 
 editable Draw.io画像から画像へ変換する場合は、数式を保持するためPDFを経由する。中間結果は利用者向けの出力名へ現れない。
 
-GIF、TIFF、EPSは入力形式として追加し、これらの出力commandは追加しない。EPSの変換経路、Ghostscript実行、生成PDF検証は[EPS変換の内部契約](../internal/eps-conversion.md)で定義する。
+GIF、TIFF、EPS、Rawは入力と出力の両方に対応する。通常のGIF/TIFF入力は先頭page/frameだけを扱い、GIF/WebPのanimation preserve commandとsplit commandだけが全frameを扱う。Raw出力は`.raw`と`.raw.json`を1つのcommit単位として扱う。EPSの変換経路、Ghostscript実行、生成PDF検証は[EPS変換の内部契約](../internal/eps-conversion.md)で定義する。
 
 ## 設定と入力名
 

@@ -14,6 +14,7 @@ import {
   sourceFormatForPath,
   type SourceFormat,
 } from '../../application/policy/source_format.js';
+import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
 import { validateEpsInput } from '../conversion/eps_to_pdf.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
@@ -153,9 +154,16 @@ export function preflightOptionsFromRuntime(runtime?: ConversionRuntime): Assert
 }
 
 export async function assertPreflightPassed(
-  jobs: { sourcePath: string }[],
+  jobs: { sourcePath: string; workspacePath?: string }[],
   options?: AssertPreflightPassedOptions,
 ): Promise<void> {
+  await Promise.all(
+    jobs.flatMap((job) =>
+      sourceFormatForPath(job.sourcePath) === 'raw' && job.workspacePath !== undefined
+        ? [assertExistingPathInWorkspace(`${job.sourcePath}.json`, job.workspacePath)]
+        : [],
+    ),
+  );
   const sourcePaths = jobs.map((job) => job.sourcePath);
   const batchOptions: PreflightBatchOptions = {};
   if (options?.signal !== undefined) {

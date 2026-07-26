@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs';
-import { access, copyFile, mkdir, open, rm, stat } from 'node:fs/promises';
+import { access, copyFile, mkdir, open, rename, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -18,6 +18,10 @@ export interface PreparedConversionOutput {
   outputPath: string;
   workspacePath: string;
   stagingRootPath?: string;
+  keepBothGroup?: {
+    basePath: string;
+    suffix: string;
+  };
 }
 
 export interface CommittedConversionOutput {
@@ -33,6 +37,7 @@ export interface CommitConversionOutputsOptions {
   operationName?: string;
   outputChannel?: LineOutputChannel;
   copyFile?: (source: string, destination: string, flags?: number) => Promise<void>;
+  rename?: typeof rename;
   rm?: typeof rm;
 }
 
@@ -147,20 +152,24 @@ async function resolveOutputPaths(
   decision: OutputConflictDecision,
   conflicts: ExistingOutputSnapshot[],
 ): Promise<ResolvedOutput[]> {
-  const reservedPaths = new Set(outputs.map((item) => path.resolve(item.outputPath)));
-  const snapshots = new Map(conflicts.map((conflict) => [path.resolve(conflict.output.outputPath), conflict]));
+  const reservedPaths = new Set(outputs.map((item) => normalizePath(item.outputPath)));
+  const snapshots = new Map(conflicts.map((conflict) => [normalizePath(conflict.output.outputPath), conflict]));
+  const groupPaths = await resolveKeepBothGroups(outputs, decision, reservedPaths);
   const resolved: ResolvedOutput[] = [];
 
   for (const output of outputs) {
-    const exists = await pathExists(output.outputPath);
     let outputPath = output.outputPath;
+    const groupPath = output.keepBothGroup ? groupPaths.get(normalizePath(output.keepBothGroup.basePath)) : undefined;
 
-    if (exists && decision === 'keep-both') {
+    if (groupPath !== undefined) {
+      outputPath = `${groupPath}${output.keepBothGroup?.suffix ?? ''}`;
+      reservedPaths.add(normalizePath(outputPath));
+    } else if (decision === 'keep-both' && (await pathExists(output.outputPath))) {
       outputPath = await findAvailableOutputPath(output.outputPath, reservedPaths);
-      reservedPaths.add(path.resolve(outputPath));
+      reservedPaths.add(normalizePath(outputPath));
     }
 
-    const snapshot = snapshots.get(path.resolve(output.outputPath));
+    const snapshot = snapshots.get(normalizePath(output.outputPath));
     const existedBeforeCommit = decision === 'overwrite' && snapshot !== undefined;
 
     resolved.push({
@@ -172,6 +181,59 @@ async function resolveOutputPaths(
   }
 
   return resolved;
+}
+
+async function resolveKeepBothGroups(
+  outputs: PreparedConversionOutput[],
+  decision: OutputConflictDecision,
+  reservedPaths: Set<string>,
+): Promise<Map<string, string>> {
+  const groups = new Map<string, PreparedConversionOutput[]>();
+
+  if (decision !== 'keep-both') {
+    return new Map();
+  }
+
+  for (const output of outputs) {
+    if (output.keepBothGroup === undefined) {
+      continue;
+    }
+
+    const key = normalizePath(output.keepBothGroup.basePath);
+    groups.set(key, [...(groups.get(key) ?? []), output]);
+  }
+
+  const resolved = new Map<string, string>();
+  for (const [key, group] of groups) {
+    if (!(await Promise.all(group.map((output) => pathExists(output.outputPath)))).some(Boolean)) {
+      continue;
+    }
+
+    const basePath = group[0]?.keepBothGroup?.basePath;
+    if (basePath === undefined) {
+      continue;
+    }
+
+    for (let suffix = 1; ; suffix += 1) {
+      const candidateBase = appendNumericSuffix(basePath, suffix);
+      const candidatePaths = group.map((output) => `${candidateBase}${output.keepBothGroup?.suffix ?? ''}`);
+      if (
+        candidatePaths.every((candidate) => !reservedPaths.has(normalizePath(candidate))) &&
+        (await Promise.all(candidatePaths.map((candidate) => pathExists(candidate)))).every((exists) => !exists)
+      ) {
+        resolved.set(key, candidateBase);
+        break;
+      }
+    }
+  }
+
+  return resolved;
+}
+
+function appendNumericSuffix(filePath: string, suffix: number): string {
+  const extension = path.extname(filePath);
+  const basename = path.basename(filePath, extension);
+  return path.join(path.dirname(filePath), `${basename}-${suffix}${extension}`);
 }
 
 async function createBackups(
@@ -224,7 +286,7 @@ async function commitResolvedOutputs(
       }
 
       rollbackCandidates.push(output);
-      await copyFileImpl(output.stagedOutputPath, output.outputPath);
+      await copyPreparedOutput(output, options, copyFileImpl);
       output.copyCompleted = true;
       committed.push(output);
       options.signal?.throwIfAborted();
@@ -331,6 +393,46 @@ async function rollbackCommittedOutputs(
   return failures;
 }
 
+async function copyPreparedOutput(
+  output: ResolvedOutput,
+  options: CommitConversionOutputsOptions,
+  copyFileImpl: (source: string, destination: string, flags?: number) => Promise<void>,
+): Promise<void> {
+  if (output.previousFilePath === undefined) {
+    await copyFileImpl(output.stagedOutputPath, output.outputPath);
+    return;
+  }
+
+  const temporaryPath = path.join(
+    path.dirname(output.outputPath),
+    `.${path.basename(output.outputPath)}.lgh-${crypto.randomUUID()}.tmp`,
+  );
+  const renameImpl = options.rename ?? rename;
+
+  try {
+    await assertWritablePathInWorkspace(temporaryPath, output.workspacePath);
+    await copyFileImpl(output.stagedOutputPath, temporaryPath);
+    await assertExistingPathInWorkspace(temporaryPath, output.workspacePath);
+
+    try {
+      await renameImpl(temporaryPath, output.outputPath);
+    } catch (error) {
+      if (!isWindowsRenameConflict(error)) {
+        throw asError(error);
+      }
+
+      await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+      if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
+        throw new Error(`Output changed before atomic replacement: ${output.outputPath}`);
+      }
+      await rm(output.outputPath);
+      await renameImpl(temporaryPath, output.outputPath);
+    }
+  } finally {
+    await rm(temporaryPath, { force: true });
+  }
+}
+
 async function validatePreparedOutputs(outputs: PreparedConversionOutput[]): Promise<void> {
   await Promise.all(
     outputs.flatMap((output) => [
@@ -358,7 +460,7 @@ async function findAvailableOutputPath(requestedPath: string, reservedPaths: Set
 
   for (let suffix = 1; ; suffix++) {
     const candidate = path.join(directory, `${basename}-${suffix}${extension}`);
-    const normalizedCandidate = path.resolve(candidate);
+    const normalizedCandidate = normalizePath(candidate);
 
     if (!reservedPaths.has(normalizedCandidate) && !(await pathExists(candidate))) {
       return candidate;
@@ -370,7 +472,7 @@ function assertUniqueRequestedOutputs(outputs: PreparedConversionOutput[]): void
   const normalizedPaths = new Set<string>();
 
   for (const output of outputs) {
-    const normalizedPath = path.resolve(output.outputPath);
+    const normalizedPath = normalizePath(output.outputPath);
 
     if (normalizedPaths.has(normalizedPath)) {
       throw new Error(`Multiple conversions resolve to the same output: ${output.outputPath}`);
@@ -378,6 +480,11 @@ function assertUniqueRequestedOutputs(outputs: PreparedConversionOutput[]): void
 
     normalizedPaths.add(normalizedPath);
   }
+}
+
+function normalizePath(filePath: string): string {
+  const resolved = path.resolve(filePath);
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
 }
 
 async function pathExists(filePath: string): Promise<boolean> {
@@ -426,6 +533,15 @@ async function readFileIdentity(filePath: string): Promise<FileIdentity> {
 
 function sameFileIdentity(first: FileIdentity, second: FileIdentity): boolean {
   return first.dev === second.dev && first.ino === second.ino;
+}
+
+function isWindowsRenameConflict(error: unknown): boolean {
+  return (
+    process.platform === 'win32' &&
+    error instanceof Error &&
+    'code' in error &&
+    ((error as NodeJS.ErrnoException).code === 'EEXIST' || (error as NodeJS.ErrnoException).code === 'EPERM')
+  );
 }
 
 function asError(error: unknown): Error {

@@ -31,7 +31,7 @@ suite('変換artifactのライフサイクル', () => {
             copyFile: async (source, destination, flags) => {
               copyCount += 1;
 
-              if (destination === outputPath && copyCount === 2) {
+              if (destination !== outputPath && !destination.endsWith('.previous') && copyCount === 2) {
                 await copyFile(source, destination, flags);
                 throw new Error('injected commit copy failure');
               }
@@ -50,7 +50,7 @@ suite('変換artifactのライフサイクル', () => {
         },
       );
 
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'fixture');
+      assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
       assert.strictEqual(await readFile(`${stagedOutputPath}.previous`, 'utf8'), 'original');
       await assert.rejects(access(stagedOutputPath));
     } finally {
@@ -97,7 +97,7 @@ suite('変換artifactのライフサイクル', () => {
               copyCount += 1;
               await copyFile(source, destination, flags);
 
-              if (destination === outputPath && copyCount === 2) {
+              if (destination !== outputPath && !destination.endsWith('.previous') && copyCount === 2) {
                 throw new Error('injected commit failure');
               }
             },

@@ -24,7 +24,7 @@ function assertLogicalPathInWorkspace(targetPath: string, workspacePath: string)
 }
 
 function assertContained(targetPath: string, workspacePath: string, originalPath: string): void {
-  const relativePath = path.relative(workspacePath, targetPath);
+  const relativePath = path.relative(normalizeForComparison(workspacePath), normalizeForComparison(targetPath));
   const isInside =
     relativePath === '' ||
     (!path.isAbsolute(relativePath) && relativePath !== '..' && !relativePath.startsWith(`..${path.sep}`));
@@ -32,6 +32,11 @@ function assertContained(targetPath: string, workspacePath: string, originalPath
   if (!isInside) {
     throw new Error(`File operation is outside the workspace: ${originalPath}`);
   }
+}
+
+function normalizeForComparison(value: string): string {
+  const resolved = path.resolve(value);
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
 }
 
 async function findNearestExistingPath(targetPath: string): Promise<string> {

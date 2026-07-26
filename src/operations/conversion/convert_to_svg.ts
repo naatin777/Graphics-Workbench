@@ -4,8 +4,13 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
+import { Parser } from 'xml2js';
 
-import { isEditableDrawioImagePath, sourceFormatForPath } from '../../application/policy/source_format.js';
+import {
+  isEditableDrawioImagePath,
+  isSameSourceFormat,
+  sourceFormatForPath,
+} from '../../application/policy/source_format.js';
 import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
@@ -333,6 +338,7 @@ async function writeMermaidAsSvg(
       quiet: true,
       ...createMermaidCliRenderOptions(mermaid),
     });
+    signal?.throwIfAborted();
   } catch (error) {
     if (isAbortError(error)) {
       throw error instanceof Error ? error : new Error(String(error));
@@ -358,8 +364,17 @@ async function validateGeneratedSvg(outputPath: string): Promise<void> {
     throw new Error(`SVG conversion produced empty output: ${outputPath}`);
   }
 
-  if (!/<svg(?:\s|>)/iu.test(content)) {
-    throw new Error(`SVG conversion produced non-SVG output: ${outputPath}`);
+  try {
+    const parsed = (await new Parser().parseStringPromise(content)) as { svg?: unknown };
+    if (parsed.svg === undefined) {
+      throw new Error(`SVG conversion produced non-SVG output: ${outputPath}`);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('non-SVG output')) {
+      throw error;
+    }
+
+    throw new Error(`SVG conversion produced invalid SVG output: ${outputPath}`, { cause: error });
   }
 }
 
@@ -382,6 +397,10 @@ function validateJobs(jobs: ConvertToSvgJob[]): void {
   }
 
   for (const job of jobs) {
+    if (!isEditableDrawioImagePath(job.sourcePath) && isSameSourceFormat(job.sourcePath, '.svg')) {
+      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+    }
+
     if (!isSupportedSourcePath(job.sourcePath)) {
       throw new Error(`Unsupported input for SVG conversion: ${job.sourcePath}`);
     }

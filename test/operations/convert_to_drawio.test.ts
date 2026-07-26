@@ -64,7 +64,7 @@ suite('Draw.ioへの集約変換', () => {
     }
   });
 
-  test('ラスターの全フレームをPNGデータURIへ正規化し、ページ寸法を設定する', async () => {
+  test('ラスターの先頭frame/pageをPNGデータURIへ正規化し、ページ寸法を設定する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-to-drawio-raster-frames-'));
     try {
       const red = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
@@ -100,10 +100,10 @@ suite('Draw.ioへの集約変換', () => {
       });
 
       const xml = await readFile(outputPath, 'utf8');
-      assert.strictEqual((xml.match(/shape=image/g) ?? []).length, 6);
-      assert.strictEqual((xml.match(/data:image\/png;base64,/g) ?? []).length, 6);
-      assert.strictEqual((xml.match(/pageWidth="20" pageHeight="10"/g) ?? []).length, 6);
-      assert.strictEqual((xml.match(/<mxGeometry width="20" height="10"/g) ?? []).length, 6);
+      assert.strictEqual((xml.match(/shape=image/g) ?? []).length, 3);
+      assert.strictEqual((xml.match(/data:image\/png;base64,/g) ?? []).length, 3);
+      assert.strictEqual((xml.match(/pageWidth="20" pageHeight="10"/g) ?? []).length, 3);
+      assert.strictEqual((xml.match(/<mxGeometry width="20" height="10"/g) ?? []).length, 3);
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
@@ -127,7 +127,15 @@ suite('Draw.ioへの集約変換', () => {
           runId: extension.slice(1),
           runDrawio: async (executable, args) => {
             call = { executable, args };
-            await writeFile(args[args.indexOf('--output') + 1]!, 'exported');
+            const outputPath = args[args.indexOf('--output') + 1]!;
+            if (outputPath.endsWith('.png')) {
+              const png = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
+                .png()
+                .toBuffer();
+              await writeFile(outputPath, Buffer.concat([png, Buffer.from('mxfile')]));
+            } else {
+              await writeFile(outputPath, '<svg width="20" height="10"><metadata>mxfile</metadata></svg>');
+            }
           },
           runtime: { resolveConflicts: async () => 'overwrite' },
         });
@@ -148,7 +156,7 @@ suite('Draw.ioへの集約変換', () => {
           '--embed-diagram',
         ]);
         assert.match(call?.args[6] ?? '', /source\.drawio$/);
-        assert.strictEqual(await readFile(outputPath, 'utf8'), 'exported');
+        assert.ok((await readFile(outputPath)).length > 0);
       }
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
