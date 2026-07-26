@@ -7,12 +7,12 @@ import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
-  commitConversionOutputs,
+  commitStagedOutputs,
   type CommitConversionOutputsOptions,
   type CommittedConversionOutput,
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { convertToPdfFiles, type ConvertToPdfFilesOptions } from '../conversion/convert_to_pdf.js';
 
 export interface ClipboardImageData {
@@ -43,7 +43,7 @@ export interface SaveClipboardImageTestOverrides {
 /** Saves one clipboard payload through the same staging and commit boundary as conversions. */
 export async function saveClipboardImage(
   request: SaveClipboardImageRequest,
-  runtime: ConversionRuntime,
+  runtime: ConversionExecutionContext,
   testOverrides: SaveClipboardImageTestOverrides = {},
 ): Promise<SavedClipboardImage> {
   const runId = request.runId ?? randomUUID();
@@ -79,7 +79,7 @@ export async function saveClipboardImage(
       if (runtime.outputChannel !== undefined) {
         commitOptions.outputChannel = runtime.outputChannel;
       }
-      outputs = await commitConversionOutputs([stagedImage], commitOptions);
+      outputs = await commitStagedOutputs([stagedImage], commitOptions);
     }
 
     return { outputs, artifact };
@@ -95,7 +95,7 @@ export async function saveClipboardImage(
 export async function cleanupClipboardSourceArtifact(
   saved: SavedClipboardImage,
   undoRecorded: boolean,
-  runtime: Pick<ConversionRuntime, 'outputChannel'> = {},
+  runtime: Pick<ConversionExecutionContext, 'outputChannel'> = {},
 ): Promise<void> {
   await cleanupConversionArtifacts(
     [
@@ -125,7 +125,7 @@ async function saveClipboardImageAsPdf(
   request: SaveClipboardImageRequest,
   stagedImage: PreparedConversionOutput,
   runId: string,
-  runtime: ConversionRuntime,
+  runtime: ConversionExecutionContext,
 ): Promise<CommittedConversionOutput[]> {
   const convertOptions: ConvertToPdfFilesOptions = {
     jobs: [

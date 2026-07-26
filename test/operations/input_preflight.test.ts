@@ -152,7 +152,7 @@ suite('Preflight — 共通検査', () => {
   });
 });
 
-suite('Preflight — batch lifecycle', () => {
+suite('Preflight — バッチライフサイクル', () => {
   test('同時実行数を2件に制限し、完了順に関係なくレポート順を維持する', async () => {
     const sourcePaths = ['first.pdf', 'second.pdf', 'third.pdf', 'fourth.pdf'];
     const gates = new Map(sourcePaths.map((sourcePath) => [sourcePath, createDeferred()]));
@@ -259,7 +259,7 @@ suite('Preflight — PDF', () => {
   });
 });
 
-suite('Preflight — Raster', () => {
+suite('Preflight — ラスタ', () => {
   test('Rawは必須sidecarと一致するbyte長があればokになる', async () => {
     const testRoot = await mkdtemp(path.join(os.tmpdir(), 'lgh-preflight-raw-'));
     const sourcePath = path.join(testRoot, 'pixels.raw');

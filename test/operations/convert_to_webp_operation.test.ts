@@ -14,7 +14,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { convertToWebpFiles } from '../../src/operations/conversion/convert_to_webp.js';
+import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
 
 suite('WebPに変換する処理', () => {
   test('アニメーションメタデータを保持して1つのWebPへ変換する', async () => {
@@ -25,7 +25,7 @@ suite('WebPに変換する処理', () => {
       const outputPath = path.join(workspacePath, 'source.webp');
       await writeAnimatedGifFixture(sourcePath);
 
-      await convertToWebpFiles({
+      await executeWebpConversion({
         jobs: [
           {
             sourcePath,
@@ -62,7 +62,7 @@ suite('WebPに変換する処理', () => {
       await writeFile(sourcePath, 'not an image');
 
       await assert.rejects(
-        convertToWebpFiles({
+        executeWebpConversion({
           jobs: [{ sourcePath, outputPath, workspacePath, animation: { pages: 2, pageHeight: 8 } }],
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
           ghostscriptTools: { ghostscriptPath: 'gs' },
@@ -90,7 +90,7 @@ suite('WebPに変換する処理', () => {
       const pdfToPngCalls: { sourcePath: string; outputPath: string; page: number }[] = [];
       await writeFile(sourcePath, 'editable drawio image placeholder');
 
-      await convertToWebpFiles({
+      await executeWebpConversion({
         jobs: [
           {
             sourcePath,

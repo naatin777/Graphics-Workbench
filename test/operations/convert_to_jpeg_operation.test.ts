@@ -10,8 +10,8 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 
-import { convertToJpegFiles, type ConvertToJpegJob } from '../../src/operations/conversion/convert_to_jpeg.js';
-import type { DrawioTools } from '../../src/operations/conversion/tools/drawio_tools.js';
+import { executeJpegConversion, type ConvertToJpegJob } from '../../src/operations/conversion/convert_to_jpeg.js';
+import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 
 suite('JPEGに変換する処理', () => {
   test('編集可能なDraw.io画像はPDFを経由してJPEGへ変換する', async () => {
@@ -22,7 +22,7 @@ suite('JPEGに変換する処理', () => {
       const outputPath = path.join(workspacePath, 'source.jpeg');
       await writeFile(sourcePath, 'editable drawio image placeholder');
       const drawioCalls: string[][] = [];
-      const drawio: DrawioTools = {
+      const drawio: DrawioBackend = {
         drawioPath: 'drawio',
         runDrawio: async (_executable, args) => {
           drawioCalls.push(args);
@@ -42,7 +42,7 @@ suite('JPEGに変換する処理', () => {
         page: 1,
       };
 
-      await convertToJpegFiles({
+      await executeJpegConversion({
         jobs: [job],
         pdftocairoTools: {
           pdftocairoPath: 'pdftocairo',

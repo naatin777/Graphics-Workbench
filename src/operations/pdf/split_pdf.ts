@@ -9,7 +9,7 @@ import {
   type CommittedConversionOutput,
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 
@@ -28,19 +28,17 @@ interface SplitPdfPageGroupsJob {
 
 export interface SplitPdfOptions {
   jobs: SplitPdfJob[];
-  runtime?: ConversionRuntime;
+  runtime?: ConversionExecutionContext;
   runId?: string;
 }
 
 export interface SplitPdfByPageGroupsOptions {
   jobs: SplitPdfPageGroupsJob[];
-  runtime?: ConversionRuntime;
+  runtime?: ConversionExecutionContext;
   runId?: string;
 }
 
-export type SplitPdfOutput = CommittedConversionOutput;
-
-export async function splitPdfAllPages(options: SplitPdfOptions): Promise<SplitPdfOutput[]> {
+export async function splitPdfAllPages(options: SplitPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
@@ -60,7 +58,7 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<SplitP
   });
 }
 
-export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions): Promise<SplitPdfOutput[]> {
+export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validatePageGroupJobs(options.jobs);

@@ -91,7 +91,7 @@ export class OperationCancelledError extends Error {
   }
 }
 
-export async function commitConversionOutputs(
+export async function commitStagedOutputs(
   outputs: PreparedConversionOutput[],
   options: CommitConversionOutputsOptions = {},
 ): Promise<CommittedConversionOutput[]> {

@@ -10,8 +10,8 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 
-import { convertToPngFiles, type ConvertToPngJob } from '../../src/operations/conversion/convert_to_png.js';
-import type { DrawioTools } from '../../src/operations/conversion/tools/drawio_tools.js';
+import { executePngConversion, type ConvertToPngJob } from '../../src/operations/conversion/convert_to_png.js';
+import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 
 suite('PNGに変換する処理', () => {
   test('Raw pixelsをsidecarどおりにPNGへ変換する', async () => {
@@ -34,7 +34,7 @@ suite('PNGに変換する処理', () => {
         }),
       );
 
-      await convertToPngFiles({
+      await executePngConversion({
         jobs: [{ sourcePath, outputPath, workspacePath }],
         pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
         ghostscriptTools: { ghostscriptPath: 'gs' },
@@ -57,7 +57,7 @@ suite('PNGに変換する処理', () => {
       for (const format of ['gif', 'webp', 'tiff'] as const) {
         const sourcePath = path.join(workspacePath, `source.${format}`);
         await writeAnimatedRaster(sourcePath, format);
-        await convertToPngFiles({
+        await executePngConversion({
           jobs: [1, 2].map((page) => ({
             sourcePath,
             outputPath: path.join(workspacePath, `${format}-${page}.png`),
@@ -91,7 +91,7 @@ suite('PNGに変換する処理', () => {
       const outputPath = path.join(workspacePath, 'source.png');
       await writeFile(sourcePath, 'editable drawio image placeholder');
       const drawioCalls: string[][] = [];
-      const drawio: DrawioTools = {
+      const drawio: DrawioBackend = {
         drawioPath: 'drawio',
         runDrawio: async (_executable, args) => {
           drawioCalls.push(args);
@@ -111,7 +111,7 @@ suite('PNGに変換する処理', () => {
         page: 1,
       };
 
-      await convertToPngFiles({
+      await executePngConversion({
         jobs: [job],
         pdftocairoTools: {
           pdftocairoPath: 'pdftocairo',

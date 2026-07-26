@@ -11,13 +11,13 @@ import sharp from 'sharp';
 import { isMermaidPath } from '../../application/policy/source_format.js';
 import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
-import type { MermaidTools } from './tools/mermaid_tools.js';
+import type { MermaidBackend } from './tools/mermaid_tools.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import type { ChromeReleaseChannel } from 'puppeteer-core';
 
@@ -40,15 +40,15 @@ type RunDrawio = (
   executable: string,
   args: string[],
   signal?: AbortSignal,
-  outputChannel?: ConversionRuntime['outputChannel'],
+  outputChannel?: ConversionExecutionContext['outputChannel'],
 ) => Promise<void>;
 
 export interface ConvertToDrawioOptions {
   jobs: ConvertToDrawioJob[];
   pdftocairoPath?: string;
   ghostscriptPath: string;
-  mermaidTools?: MermaidTools;
-  runtime?: ConversionRuntime;
+  mermaidTools?: MermaidBackend;
+  runtime?: ConversionExecutionContext;
   runId?: string;
   maxInputPixels?: number;
   runPdfToSvg?: RunPdfToSvg;
@@ -97,7 +97,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
 async function stageDrawio(
   job: ConvertToDrawioJob,
   runId: string,
-  runtime: ConversionRuntime,
+  runtime: ConversionExecutionContext,
   options: ConvertToDrawioOptions,
 ): Promise<PreparedConversionOutput> {
   const stagingRootPath = path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-drawio', runId);
@@ -203,7 +203,7 @@ async function exportEditableDrawioImage(options: {
   format: string;
   drawioPath: string;
   runDrawio?: RunDrawio;
-  runtime: ConversionRuntime;
+  runtime: ConversionExecutionContext;
 }): Promise<void> {
   const args = [
     '--export',
@@ -367,7 +367,7 @@ async function executeDrawio(
   executable: string,
   args: string[],
   signal?: AbortSignal,
-  outputChannel?: ConversionRuntime['outputChannel'],
+  outputChannel?: ConversionExecutionContext['outputChannel'],
 ): Promise<void> {
   const toolOptions: Parameters<typeof runExternalTool>[0] = { toolName: 'drawio' as const, executable, args };
   if (signal !== undefined) {
@@ -387,7 +387,7 @@ async function executeMermaid(
   sourcePath: string,
   outputPath: string,
   signal: AbortSignal | undefined,
-  options?: MermaidTools,
+  options?: MermaidBackend,
 ): Promise<void> {
   signal?.throwIfAborted();
   await runMermaidCli(sourcePath as `${string}.mmd`, outputPath as `${string}.svg`, {

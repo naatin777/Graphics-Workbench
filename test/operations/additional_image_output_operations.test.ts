@@ -7,10 +7,10 @@ import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
-import { convertToAvifFiles } from '../../src/operations/conversion/convert_to_avif.js';
-import { convertToJpegFiles } from '../../src/operations/conversion/convert_to_jpeg.js';
-import { convertToPngFiles } from '../../src/operations/conversion/convert_to_png.js';
-import { convertToWebpFiles } from '../../src/operations/conversion/convert_to_webp.js';
+import { executeAvifConversion } from '../../src/operations/conversion/convert_to_avif.js';
+import { executeJpegConversion } from '../../src/operations/conversion/convert_to_jpeg.js';
+import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
+import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
 
 const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
@@ -66,13 +66,13 @@ async function convertImage(
   };
 
   if (outputFormat === 'png') {
-    await convertToPngFiles(common);
+    await executePngConversion(common);
   } else if (outputFormat === 'jpeg') {
-    await convertToJpegFiles(common);
+    await executeJpegConversion(common);
   } else if (outputFormat === 'webp') {
-    await convertToWebpFiles({ ...common, webp: { effort: 0 } });
+    await executeWebpConversion({ ...common, webp: { effort: 0 } });
   } else {
-    await convertToAvifFiles({ ...common, avif: { effort: 0 } });
+    await executeAvifConversion({ ...common, avif: { effort: 0 } });
   }
 }
 

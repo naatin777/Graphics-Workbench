@@ -21,11 +21,11 @@ import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 
-import { convertToAvifFiles } from '../../src/operations/conversion/convert_to_avif.js';
-import { convertToJpegFiles } from '../../src/operations/conversion/convert_to_jpeg.js';
-import { convertToPngFiles } from '../../src/operations/conversion/convert_to_png.js';
+import { executeAvifConversion } from '../../src/operations/conversion/convert_to_avif.js';
+import { executeJpegConversion } from '../../src/operations/conversion/convert_to_jpeg.js';
+import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
-import { convertToWebpFiles } from '../../src/operations/conversion/convert_to_webp.js';
+import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
 
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
 const pdfFixturePath = path.resolve(
@@ -76,7 +76,7 @@ const routes: readonly PdfConversionRoute[] = [
     outputExtension: '.png',
     toolOutputFileName: 'output.png',
     convert: async (context, runPdfTool) => {
-      await convertToPngFiles({
+      await executePngConversion({
         jobs: [createJob(context)],
         pdftocairoTools: {
           pdftocairoPath: 'pdftocairo',
@@ -98,7 +98,7 @@ const routes: readonly PdfConversionRoute[] = [
     outputExtension: '.jpeg',
     toolOutputFileName: 'output.png',
     convert: async (context, runPdfTool) => {
-      await convertToJpegFiles({
+      await executeJpegConversion({
         jobs: [createJob(context)],
         pdftocairoTools: {
           pdftocairoPath: 'pdftocairo',
@@ -120,7 +120,7 @@ const routes: readonly PdfConversionRoute[] = [
     outputExtension: '.webp',
     toolOutputFileName: 'output.png',
     convert: async (context, runPdfTool) => {
-      await convertToWebpFiles({
+      await executeWebpConversion({
         jobs: [createJob(context)],
         pdftocairoTools: {
           pdftocairoPath: 'pdftocairo',
@@ -143,7 +143,7 @@ const routes: readonly PdfConversionRoute[] = [
     outputExtension: '.avif',
     toolOutputFileName: 'output.png',
     convert: async (context, runPdfTool) => {
-      await convertToAvifFiles({
+      await executeAvifConversion({
         jobs: [createJob(context)],
         pdftocairoTools: {
           pdftocairoPath: 'pdftocairo',
@@ -188,7 +188,7 @@ const routes: readonly PdfConversionRoute[] = [
   },
 ];
 
-suite('Windows pdftocairo ASCII scratch', () => {
+suite('Windows pdftocairo ASCIIスクラッチ', () => {
   for (const route of routes) {
     test(`Unicode論理pathを維持して${route.label}へ変換し、成功後にscratchを削除する`, async () => {
       const paths = await prepareFixedFixtureWorkspace(route.outputExtension);

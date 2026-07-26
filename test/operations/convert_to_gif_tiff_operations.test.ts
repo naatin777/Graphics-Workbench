@@ -5,8 +5,8 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { convertToGifFiles } from '../../src/operations/conversion/convert_to_gif.js';
-import { convertToTiffFiles } from '../../src/operations/conversion/convert_to_tiff.js';
+import { executeGifConversion } from '../../src/operations/conversion/convert_to_gif.js';
+import { executeTiffConversion } from '../../src/operations/conversion/convert_to_tiff.js';
 
 suite('GIF/TIFFに変換する処理', () => {
   test('各フレームを独立した静止GIF/TIFFとしてstaging lifecycleで出力する', async () => {
@@ -26,8 +26,8 @@ suite('GIF/TIFFに変換する処理', () => {
       };
 
       for (const [format, convert, sourcePath] of [
-        ['gif', convertToGifFiles, tiffSourcePath],
-        ['tiff', convertToTiffFiles, gifSourcePath],
+        ['gif', executeGifConversion, tiffSourcePath],
+        ['tiff', executeTiffConversion, gifSourcePath],
       ] as const) {
         const outputPaths = [1, 2].map((page) => path.join(workspacePath, `${format}-${page}.${format}`));
         await convert({

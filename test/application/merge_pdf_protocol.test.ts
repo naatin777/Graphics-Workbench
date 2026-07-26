@@ -5,8 +5,8 @@ import {
   isMergePdfWebviewToHostMessage,
 } from '../../src/application/protocols/merge_pdf_protocol.js';
 
-suite('Merge PDF Webview protocol', () => {
-  test('accepts the init and apply message shapes', () => {
+suite('Merge PDF Webviewプロトコル', () => {
+  test('initおよびapplyメッセージの型を受け付ける', () => {
     assert.equal(
       isMergePdfHostToWebviewMessage({
         type: 'init',
@@ -50,7 +50,7 @@ suite('Merge PDF Webview protocol', () => {
     );
   });
 
-  test('rejects filesystem paths and unsupported payload fields', () => {
+  test('ファイルシステムパスと未サポートのペイロードフィールドを拒否する', () => {
     assert.equal(
       isMergePdfHostToWebviewMessage({
         type: 'init',

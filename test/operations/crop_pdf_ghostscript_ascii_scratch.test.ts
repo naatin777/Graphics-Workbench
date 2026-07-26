@@ -48,7 +48,7 @@ type CropPdfFilesWithScratchOptions = (
 // Implementation Phaseで追加するplatform・scratch候補の注入契約を、失敗テストでも型安全に呼ぶ。
 const cropPdfFilesWithScratchOptions = cropPdfFiles as CropPdfFilesWithScratchOptions;
 
-suite('Windows Ghostscript ASCII scratch', () => {
+suite('Windows Ghostscript ASCIIスクラッチ', () => {
   test('Unicode論理入力を固定ASCII名でGhostscriptへ渡し、成功後にscratchを削除する', async () => {
     const paths = await prepareFixedFixtureWorkspace();
     let toolInputPath: string | undefined;

@@ -1,4 +1,4 @@
-import type { MermaidTools } from '../../operations/conversion/tools/index.js';
+import type { MermaidBackend } from '../../operations/conversion/tools/index.js';
 
 export type MermaidLegacySettingsSection = 'convertToPdf' | 'convertToSvg';
 type ConfigurationInspection<T> = {
@@ -22,7 +22,7 @@ export function readPuppeteerExecutablePath(configuration: MermaidConfiguration,
 export function readMermaidPuppeteerOptions(
   configuration: MermaidConfiguration,
   legacySection: MermaidLegacySettingsSection,
-): MermaidTools {
+): MermaidBackend {
   const executablePath = readPuppeteerExecutablePath(
     configuration,
     `${legacySection}.mermaid.puppeteer.executablePath`,

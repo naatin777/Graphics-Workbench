@@ -6,8 +6,8 @@ import {
   type MermaidConfiguration,
 } from '../../src/config/rendering/mermaid_puppeteer_options.js';
 
-suite('Mermaid Puppeteer settings', () => {
-  test('uses the legacy output-specific settings when the common settings are unset', () => {
+suite('Mermaid Puppeteer設定', () => {
+  test('共通設定が未設定のときレガシー出力別設定を使用する', () => {
     const options = readMermaidPuppeteerOptions(
       fakeConfiguration({
         'convertToSvg.mermaid.puppeteer.browserChannel': 'chrome-beta',
@@ -24,7 +24,7 @@ suite('Mermaid Puppeteer settings', () => {
     });
   });
 
-  test('uses common settings even when a value intentionally clears the legacy setting', () => {
+  test('値が意図的にレガシー設定をクリアしても共通設定を使用する', () => {
     const options = readMermaidPuppeteerOptions(
       fakeConfiguration({
         'mermaid.puppeteer.browserChannel': 'chrome-dev',
@@ -42,7 +42,7 @@ suite('Mermaid Puppeteer settings', () => {
     });
   });
 
-  test('shares the common executable path with SVG conversion', () => {
+  test('SVG変換と共通の実行パスを共有する', () => {
     const executablePath = readPuppeteerExecutablePath(
       fakeConfiguration({
         'puppeteer.executablePath': '/shared/chrome',

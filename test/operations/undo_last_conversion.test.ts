@@ -19,7 +19,7 @@ import { createSandbox, type SinonSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import {
-  rememberLastConversion,
+  recordConversionForUndo,
   undoLastConversionCommand,
 } from '../../src/commands/lifecycle/undo_last_conversion.js';
 import {
@@ -53,7 +53,7 @@ suite('直前変換の取り消し処理', () => {
     try {
       await writeFixture(firstOutputPath, 'generated-first');
       await writeFixture(firstBackupPath, 'original-first');
-      await rememberLastConversion([
+      await recordConversionForUndo([
         {
           outputPath: firstOutputPath,
           workspacePath,
@@ -65,7 +65,7 @@ suite('直前変換の取り消し処理', () => {
 
       await writeFixture(secondOutputPath, 'generated-second');
       await writeFixture(secondBackupPath, 'original-second');
-      await rememberLastConversion([
+      await recordConversionForUndo([
         {
           outputPath: secondOutputPath,
           workspacePath,
@@ -89,12 +89,12 @@ suite('直前変換の取り消し処理', () => {
 
     try {
       await writeFixture(outputPath, 'first');
-      const firstRecordId = await rememberLastConversion([{ outputPath, workspacePath, stagingRootPath: firstRoot }]);
+      const firstRecordId = await recordConversionForUndo([{ outputPath, workspacePath, stagingRootPath: firstRoot }]);
 
       const secondBackupPath = path.join(secondRoot, 'output.previous');
       await writeFixture(secondBackupPath, 'first');
       await writeFixture(outputPath, 'second');
-      const secondRecordId = await rememberLastConversion([
+      const secondRecordId = await recordConversionForUndo([
         { outputPath, workspacePath, previousFilePath: secondBackupPath, stagingRootPath: secondRoot },
       ]);
 

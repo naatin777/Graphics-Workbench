@@ -67,7 +67,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     assert.match(String(showErrorMessage.firstCall.args[0]), /Only local files/);
   });
 
-  test('single input resolves a configured relative template without showing Save dialog', async () => {
+  test('単一入力で設定済み相対テンプレートをSaveダイアログなしで解決する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -98,7 +98,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('multiple inputs use an explicitly configured template without showing Save dialog', async () => {
+  test('複数入力で明示的に設定されたテンプレートをSaveダイアログなしで使用する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -132,7 +132,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('reports completed image conversions as M/N through the VS Code progress notification', async () => {
+  test('完了した画像変換をVS Code進捗通知でM/Nとして報告する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -181,7 +181,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('multiple inputs with an unset template show Save dialog', async () => {
+  test('テンプレート未設定の複数入力でSaveダイアログを表示する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -212,7 +212,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('preview preserves input order and allows moving and excluding inputs', async () => {
+  test('プレビューは入力順を保持し、入力の移動と除外が可能', async () => {
     const quickPick = createFakeQuickPick((pick) => {
       const second = pick.items[1]!;
       const first = pick.items[0]!;
@@ -226,7 +226,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     assert.deepStrictEqual(await previewCombineInputs(sourceUris), [sourceUris[1]]);
   });
 
-  test('preview cancellation does not open Save dialog or create output', async () => {
+  test('プレビューキャンセル時にSaveダイアログを開かず出力も作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -249,7 +249,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('registers Undo, removes successful staging, and preserves only an overwrite backup', async () => {
+  test('Undoを登録し、成功したステージングを削除し、上書きバックアップのみを保持する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -288,7 +288,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('does not commit when progress starts with an already-cancelled token and shows the standard notification', async () => {
+  test('キャンセル済みトークンで進捗が開始された場合はコミットせず標準通知を表示する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {

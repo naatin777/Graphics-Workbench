@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { renderTemplate, type TemplateContext } from '../../src/edit_provider/latex_template.js';
 
-suite('LaTeX template renderer', () => {
+suite('LaTeXテンプレートレンダラ', () => {
   const ctx: TemplateContext = {
     path: 'figures/graph.pdf',
     name: 'graph',
@@ -11,32 +11,32 @@ suite('LaTeX template renderer', () => {
     dir: 'figures',
   };
 
-  test('replaces ${path} with relative path', () => {
+  test('${path}を相対パスに置換する', () => {
     const result = renderTemplate('\\includegraphics{${path}}', ctx);
     assert.strictEqual(result, '\\includegraphics{figures/graph.pdf}');
   });
 
-  test('replaces ${name} with basename without extension', () => {
+  test('${name}を拡張子なしのベース名に置換する', () => {
     const result = renderTemplate('\\label{fig:${name}}', ctx);
     assert.strictEqual(result, '\\label{fig:graph}');
   });
 
-  test('replaces ${ext} with extension', () => {
+  test('${ext}を拡張子に置換する', () => {
     const result = renderTemplate('File type: ${ext}', ctx);
     assert.strictEqual(result, 'File type: pdf');
   });
 
-  test('replaces ${page} with page number', () => {
+  test('${page}をページ番号に置換する', () => {
     const result = renderTemplate('page=${page}', ctx);
     assert.strictEqual(result, 'page=2');
   });
 
-  test('replaces ${dir} with directory', () => {
+  test('${dir}をディレクトリに置換する', () => {
     const result = renderTemplate('from ${dir}', ctx);
     assert.strictEqual(result, 'from figures');
   });
 
-  test('renders full figure template', () => {
+  test('完全なfigureテンプレートをレンダリングする', () => {
     const template = [
       '\\begin{figure}[H]',
       '  \\centering',
@@ -56,7 +56,7 @@ suite('LaTeX template renderer', () => {
     assert.strictEqual(renderTemplate(template, ctx), expected);
   });
 
-  test('unknown variables are left as-is', () => {
+  test('未定義の変数はそのまま残す', () => {
     const result = renderTemplate('${unknown}', ctx);
     assert.strictEqual(result, '${unknown}');
   });

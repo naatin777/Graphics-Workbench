@@ -11,7 +11,7 @@ import {
   type CommittedConversionOutput,
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import {
   createAsciiInputScratch,
   defaultWindowsScratchBaseCandidates,
@@ -42,7 +42,7 @@ export interface CropPdfOptions {
   jobs: CropPdfJob[];
   margin: number;
   ghostscriptPath: string;
-  runtime?: ConversionRuntime;
+  runtime?: ConversionExecutionContext;
   runId?: string;
   runGhostscript?: RunGhostscript;
   platform?: NodeJS.Platform;

@@ -7,8 +7,8 @@ import { PDFDocument } from 'pdf-lib';
 
 import { convertToEpsFiles } from '../../src/operations/conversion/convert_to_eps.js';
 
-suite('Convert to EPS operation', () => {
-  test('stages and commits one EPS per PDF page', async () => {
+suite('EPS変換操作', () => {
+  test('PDFページごとにEPSをステージングしてコミットする', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-eps-'));
     const sourcePath = path.join(root, 'source.pdf');
     const outputPaths = [path.join(root, 'source-1.eps'), path.join(root, 'source-2.eps')];
@@ -56,7 +56,7 @@ suite('Convert to EPS operation', () => {
     }
   });
 
-  test('does not commit when Ghostscript fails', async () => {
+  test('Ghostscriptが失敗した場合はコミットしない', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-eps-failure-'));
     const sourcePath = path.join(root, 'source.pdf');
     const outputPath = path.join(root, 'source.eps');

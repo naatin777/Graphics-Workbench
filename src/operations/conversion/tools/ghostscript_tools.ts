@@ -1,6 +1,6 @@
 export type RunGhostscript = (executable: string, args: string[], signal?: AbortSignal) => Promise<void>;
 
-export interface GhostscriptTools {
+export interface GhostscriptBackend {
   ghostscriptPath: string;
   platform?: NodeJS.Platform;
   scratchBaseCandidates?: readonly string[];

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { escapeLatex, escapeLatexLabel } from '../../src/edit_provider/latex_escape.js';
 
-suite('LaTeX text escaping', () => {
+suite('LaTeXテキストエスケープ', () => {
   test('caption textでLaTeXの特殊文字をすべてescapeする', () => {
     assert.strictEqual(
       escapeLatex('a\\b{c}$d&e#f%g_h^i~j'),

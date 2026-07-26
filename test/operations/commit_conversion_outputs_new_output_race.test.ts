@@ -3,10 +3,7 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promi
 import os from 'node:os';
 import path from 'node:path';
 
-import {
-  commitConversionOutputs,
-  CommitRollbackError,
-} from '../../src/operations/lifecycle/commit_conversion_outputs.js';
+import { commitStagedOutputs, CommitRollbackError } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
 
 suite('変換結果rollbackの外部変更保護', () => {
   test('commit後に外部編集された新規出力を削除しない', async () => {
@@ -24,7 +21,7 @@ suite('変換結果rollbackの外部変更保護', () => {
       let outputCopyCount = 0;
 
       await assert.rejects(
-        commitConversionOutputs(
+        commitStagedOutputs(
           [
             {
               stagedOutputPath: firstStagedPath,

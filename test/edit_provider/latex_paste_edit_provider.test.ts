@@ -8,7 +8,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import {
-  rememberLastConversion,
+  recordConversionForUndo,
   undoLastConversionCommand,
 } from '../../src/commands/lifecycle/undo_last_conversion.js';
 import { LatexPasteEditProvider } from '../../src/edit_provider/latex_paste_edit_provider.js';
@@ -92,7 +92,7 @@ suite('LaTeXクリップボード画像挿入', () => {
       const showWarningMessage = sandbox.stub(vscode.window, 'showWarningMessage').resolves(undefined);
       const document = await vscode.workspace.openTextDocument(documentUri);
       const provider = new LatexPasteEditProvider({
-        rememberLastConversion: async () => {
+        recordConversionForUndo: async () => {
           throw new Error('backup unavailable');
         },
       });
@@ -159,10 +159,10 @@ suite('LaTeXクリップボード画像挿入', () => {
       const provider = new LatexPasteEditProvider({
         resolveOutputConflicts: async () => 'overwrite',
         outputChannel: { appendLine: (line) => outputLines.push(line) },
-        rememberLastConversion: async (outputs) => {
+        recordConversionForUndo: async (outputs) => {
           assert.ok(outputs[0]?.previousFilePath);
           conversionRoot = outputs[0]?.stagingRootPath;
-          const id = await rememberLastConversion(outputs, {
+          const id = await recordConversionForUndo(outputs, {
             appendLine: (line) => outputLines.push(line),
           });
           await assert.doesNotReject(access(outputs[0]?.previousFilePath ?? ''));

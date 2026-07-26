@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { assertPreflightPassed, runPreflightBatch } from '../../src/operations/input/input_preflight.js';
 
-suite('Preflight adversarial inputs', () => {
+suite('preflightアダバサリアル入力', () => {
   let testRootPath: string;
 
   setup(async () => {
@@ -16,7 +16,7 @@ suite('Preflight adversarial inputs', () => {
     await rm(testRootPath, { recursive: true, force: true });
   });
 
-  test('streams a multi-chunk Mermaid file without truncating it', async () => {
+  test('複数チャンクのMermaidファイルを切断せずにストリーミングする', async () => {
     const sourcePath = path.join(testRootPath, 'large.mmd');
     const edgeCount = 20_000;
     await writeFile(sourcePath, `graph TD\n${'A-->B\n'.repeat(edgeCount)}`);
@@ -29,7 +29,7 @@ suite('Preflight adversarial inputs', () => {
     assert.equal(result.reports[0]?.details?.lines, edgeCount + 2);
   });
 
-  test('does not reject an SVG based only on pixel count', async () => {
+  test('ピクセル数のみでSVGを拒否しない', async () => {
     const sourcePath = path.join(testRootPath, 'large-dimensions.svg');
     await writeFile(
       sourcePath,
@@ -43,7 +43,7 @@ suite('Preflight adversarial inputs', () => {
     assert.equal(result.reports[0]?.result, 'ok');
   });
 
-  test('finds Draw.io structure when a marker is split across stream chunks', async () => {
+  test('マーカーがストリームチャンクにまたがってもDraw.io構造を検出する', async () => {
     const sourcePath = path.join(testRootPath, 'split-marker.drawio');
     const prefix = ' '.repeat(64 * 1024 - 3);
     await writeFile(sourcePath, `${prefix}<mxfile><diagram /></mxfile>`);
@@ -54,7 +54,7 @@ suite('Preflight adversarial inputs', () => {
     assert.equal(result.reports[0]?.result, 'ok');
   });
 
-  test('does not decode editable Draw.io PNG bytes as UTF-8 text', async () => {
+  test('編集可能なDraw.io PNGのバイト列をUTF-8テキストとしてデコードしない', async () => {
     const sourcePath = path.join(testRootPath, 'diagram.drawio.png');
     await writeFile(sourcePath, Buffer.from([0x89, 0x50, 0x4e, 0x47, 0xff, 0xfe, 0xfd]));
 
@@ -64,7 +64,7 @@ suite('Preflight adversarial inputs', () => {
     assert.equal(result.reports[0]?.result, 'ok');
   });
 
-  test('includes every failing input path in the batch error', async () => {
+  test('バッチエラーに失敗した入力パスをすべて含める', async () => {
     const firstPath = path.join(testRootPath, 'first.pdf');
     const secondPath = path.join(testRootPath, 'second.png');
 

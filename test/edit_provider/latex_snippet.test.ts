@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { LatexSnippet } from '../../src/edit_provider/latex_snippet.js';
 
-suite('LaTeX snippet option builder', () => {
+suite('LaTeXスニペットオプションビルダー', () => {
   test('figure alignmentも他のoptionと同じchoice処理を使う', () => {
     const snippet = new LatexSnippet({
       figurePlacementOptions: ['[H]', '[t]'],

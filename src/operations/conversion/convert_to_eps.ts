@@ -4,7 +4,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import {
   type CommittedConversionOutput,
   type PreparedConversionOutput,
@@ -19,7 +19,7 @@ import {
   type LineOutputChannel,
 } from '../external_tools/external_tool_ascii_scratch.js';
 import { writeSourceAsPdf } from './convert_to_pdf.js';
-import type { DrawioTools, MermaidTools, RunGhostscript, SvgToPdfTools } from './tools/index.js';
+import type { DrawioBackend, MermaidBackend, RunGhostscript, SvgToPdfBackend } from './tools/index.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import {
   isMermaidPath,
@@ -39,11 +39,11 @@ export interface ConvertToEpsJob {
 
 export interface ConvertToEpsFilesOptions {
   jobs: ConvertToEpsJob[];
-  runtime: ConversionRuntime;
+  runtime: ConversionExecutionContext;
   ghostscriptPath: string;
-  svgToPdfTools?: SvgToPdfTools;
-  mermaidTools?: MermaidTools;
-  drawioTools?: DrawioTools;
+  svgToPdfTools?: SvgToPdfBackend;
+  mermaidTools?: MermaidBackend;
+  drawioTools?: DrawioBackend;
   maxInputPixels?: number;
   runGhostscript?: RunGhostscript;
   runId?: string;
@@ -77,7 +77,7 @@ async function stageSourceToEps(
   job: ConvertToEpsJob,
   index: number,
   runId: string,
-  runtime: ConversionRuntime,
+  runtime: ConversionExecutionContext,
   options: ConvertToEpsFilesOptions,
 ): Promise<PreparedConversionOutput> {
   runtime.signal?.throwIfAborted();

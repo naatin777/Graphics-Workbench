@@ -7,8 +7,8 @@ import { PDFDocument } from 'pdf-lib';
 
 import { convertEpsToPdf, validateEpsInput } from '../../src/operations/conversion/eps_to_pdf.js';
 
-suite('EPS conversion contract', () => {
-  test('rejects a missing BoundingBox but allows deferred and large valid coordinates', async () => {
+suite('EPS変換契約', () => {
+  test('BoundingBox欠損を拒否するが、遅延値と大きな有効座標は許可する', async () => {
     const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-contract-bbox-'));
     const missingPath = path.join(testRootPath, 'missing.eps');
     const atendPath = path.join(testRootPath, 'atend.eps');
@@ -30,7 +30,7 @@ suite('EPS conversion contract', () => {
     }
   });
 
-  test('parses the generated PDF and requires exactly one page with positive finite boxes', async () => {
+  test('生成されたPDFを解析し、正有限のボックスを持つ1ページのみを要求する', async () => {
     const paths = await prepareWorkspace();
 
     try {
@@ -59,7 +59,7 @@ suite('EPS conversion contract', () => {
     }
   });
 
-  test('uses ASCII scratch input and output on Windows, then cleans successful scratch', async () => {
+  test('WindowsではASCIIスクラッチの入出力を使用し、成功後にスクラッチを削除する', async () => {
     const paths = await prepareWorkspace();
     const logs: string[] = [];
     let toolInputPath: string | undefined;
@@ -94,7 +94,7 @@ suite('EPS conversion contract', () => {
     }
   });
 
-  test('retains failed and cancelled Windows scratch for diagnostics', async () => {
+  test('失敗またはキャンセルされたWindowsスクラッチを診断用に保持する', async () => {
     const failedPaths = await prepareWorkspace();
     const failedLogs: string[] = [];
     let failedToolInputPath: string | undefined;

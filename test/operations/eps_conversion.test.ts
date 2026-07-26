@@ -8,14 +8,14 @@ import { validateEpsInput } from '../../src/operations/conversion/eps_to_pdf.js'
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'eps');
 
-suite('EPS preflight validation', () => {
-  test('accepts a valid minimal EPS file', async () => {
+suite('EPS入力preflight検証', () => {
+  test('有効な最小EPSファイルを受け付ける', async () => {
     const epsPath = path.join(FIXTURES_DIR, 'minimal.eps');
     await validateEpsInput(epsPath);
     ok(true, 'validateEpsInput did not throw for valid EPS');
   });
 
-  test('rejects a file without PostScript header', async () => {
+  test('PostScriptヘッダのないファイルを拒否する', async () => {
     const epsPath = path.join(FIXTURES_DIR, 'no-header.eps');
     try {
       await validateEpsInput(epsPath);
@@ -30,7 +30,7 @@ suite('EPS preflight validation', () => {
     ok(false, 'Expected validateEpsInput to throw');
   });
 
-  test('rejects EPS with invalid BoundingBox', async () => {
+  test('無効なBoundingBoxのEPSを拒否する', async () => {
     const epsPath = path.join(FIXTURES_DIR, 'invalid-bbox.eps');
     try {
       await validateEpsInput(epsPath);
@@ -46,8 +46,8 @@ suite('EPS preflight validation', () => {
   });
 });
 
-suite('EPS source format detection', () => {
-  test('detects .eps extension as eps format', () => {
+suite('EPSソース形式検出', () => {
+  test('.eps拡張子をeps形式として検出する', () => {
     strictEqual(sourceFormatForPath('/test/file.eps'), 'eps');
     strictEqual(sourceFormatForPath('/test/FILE.EPS'), 'eps');
   });

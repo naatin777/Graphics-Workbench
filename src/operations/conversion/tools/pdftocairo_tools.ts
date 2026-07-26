@@ -2,7 +2,7 @@ type RunPdfToPng = (sourcePath: string, outputPath: string, page: number, signal
 
 export type RunPdfToSvg = (sourcePath: string, outputPath: string, page: number, signal?: AbortSignal) => Promise<void>;
 
-export interface PdftocairoTools {
+export interface PdftocairoBackend {
   pdftocairoPath: string;
   platform?: NodeJS.Platform;
   scratchBaseCandidates?: readonly string[];

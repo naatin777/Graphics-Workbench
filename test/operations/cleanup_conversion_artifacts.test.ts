@@ -3,10 +3,7 @@ import { access, copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } fr
 import os from 'node:os';
 import path from 'node:path';
 
-import {
-  commitConversionOutputs,
-  CommitRollbackError,
-} from '../../src/operations/lifecycle/commit_conversion_outputs.js';
+import { commitStagedOutputs, CommitRollbackError } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
 import {
   cleanupConversionArtifacts,
   withStagingCleanup,
@@ -26,7 +23,7 @@ suite('変換artifactのライフサイクル', () => {
 
       await assert.rejects(
         withStagingCleanup([{ rootPath, workspacePath }], () =>
-          commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath: rootPath }], {
+          commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath: rootPath }], {
             resolveConflicts: async () => 'overwrite',
             copyFile: async (source, destination, flags) => {
               copyCount += 1;
@@ -91,7 +88,7 @@ suite('変換artifactのライフサイクル', () => {
 
       await assert.rejects(
         withStagingCleanup([{ rootPath, workspacePath }], () =>
-          commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath: rootPath }], {
+          commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath: rootPath }], {
             resolveConflicts: async () => 'overwrite',
             copyFile: async (source, destination, flags) => {
               copyCount += 1;

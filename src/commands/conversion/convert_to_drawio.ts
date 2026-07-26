@@ -11,7 +11,7 @@ import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/conversion/convert_to_drawio.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertFileScheme, selectedUris } from '../shared/command_utils.js';
 
@@ -65,7 +65,7 @@ export async function convertToDrawioCommand(
         workspacePath: workspace.uri.fsPath,
       },
     ];
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'convert-to-drawio',
       ...(dependencies?.outputChannel !== undefined && { outputChannel: dependencies.outputChannel }),
       resolveConflicts: resolveOutputConflicts,

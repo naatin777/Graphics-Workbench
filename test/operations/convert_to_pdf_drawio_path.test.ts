@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
-import type { DrawioTools } from '../../src/operations/conversion/tools/drawio_tools.js';
+import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
 const drawioFixturePath = path.resolve(
@@ -65,7 +65,7 @@ suite('Draw.ioの複雑なpath変換', () => {
       assert.match(sourceText, /name="ページ3"/u);
 
       const drawioCalls: { executable: string; args: string[] }[] = [];
-      const drawio: DrawioTools = {
+      const drawio: DrawioBackend = {
         drawioPath: 'drawio',
         runDrawio: async (executable, args) => {
           drawioCalls.push({ executable, args });

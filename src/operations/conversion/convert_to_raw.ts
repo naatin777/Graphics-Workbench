@@ -5,7 +5,7 @@ import type { OutputInfo } from 'sharp';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { isSameSourceFormat } from '../../application/policy/source_format.js';
@@ -26,7 +26,7 @@ export interface ConvertToRawJob {
 
 export interface ConvertToRawFilesOptions {
   jobs: ConvertToRawJob[];
-  runtime: ConversionRuntime;
+  runtime: ConversionExecutionContext;
   runId?: string;
   maxInputPixels?: number;
 }

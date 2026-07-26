@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { rememberLastConversion } from '../../src/commands/lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo } from '../../src/commands/lifecycle/undo_last_conversion.js';
 import { mergePdf } from '../../src/operations/pdf/merge_pdf.js';
 import {
   createConversionUndoRecord,
@@ -35,7 +35,7 @@ suite('PDF結合operation', () => {
         runId: 'safe-mode',
         runtime: { resolveConflicts: async () => 'keep-both' },
       });
-      await rememberLastConversion(outputs);
+      await recordConversionForUndo(outputs);
 
       assert.strictEqual(outputs[0]?.outputPath, path.join(workspacePath, 'merged-1.pdf'));
       assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing output');

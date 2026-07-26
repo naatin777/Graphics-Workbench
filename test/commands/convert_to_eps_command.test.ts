@@ -7,8 +7,8 @@ import * as vscode from 'vscode';
 
 import { createEpsJobs } from '../../src/commands/conversion/convert_to_eps.js';
 
-suite('Convert to EPS command jobs', () => {
-  test('creates a separate ${page} job for every PDF page', async () => {
+suite('EPS変換コマンドジョブ', () => {
+  test('PDFページごとに${page}ジョブを個別に作成する', async () => {
     const workspace = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspace);
     const root = await mkdtemp(path.join(workspace.uri.fsPath, 'lgh-convert-to-eps-command-'));

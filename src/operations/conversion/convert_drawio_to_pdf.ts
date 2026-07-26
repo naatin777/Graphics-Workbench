@@ -16,7 +16,7 @@ import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/inp
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { validateGeneratedPdf } from './convert_to_pdf.js';
 
 export interface DrawioPdfJob {
@@ -31,7 +31,7 @@ export interface ConvertDrawioToPdfOptions {
   drawioPath: string;
   outputMode: 'page-pdfs' | 'single-pdf';
   runId?: string;
-  runtime?: ConversionRuntime;
+  runtime?: ConversionExecutionContext;
   runDrawio?: RunDrawio;
 }
 
@@ -39,7 +39,7 @@ type RunDrawio = (
   executable: string,
   args: string[],
   signal?: AbortSignal,
-  outputChannel?: ConversionRuntime['outputChannel'],
+  outputChannel?: ConversionExecutionContext['outputChannel'],
 ) => Promise<void>;
 
 export async function convertDrawioToPdfFiles(
@@ -80,7 +80,7 @@ async function stageDrawioJob(options: {
   outputMode: 'page-pdfs' | 'single-pdf';
   drawioPath: string;
   runDrawio?: RunDrawio;
-  runtime: ConversionRuntime;
+  runtime: ConversionExecutionContext;
 }): Promise<PreparedConversionOutput[]> {
   const { job, index: jobIndex, runId, operationName, outputMode, drawioPath, runDrawio, runtime } = options;
   const stageRootPath = path.join(job.workspacePath, '.latex-graphics-helper', operationName, runId);
@@ -190,7 +190,7 @@ async function prepareDrawioInput(options: {
   workspacePath: string;
   drawioPath: string;
   runDrawio?: RunDrawio;
-  runtime: ConversionRuntime;
+  runtime: ConversionExecutionContext;
 }): Promise<string> {
   const drawioSourcePath = path.join(options.stageDirectory, 'source.drawio');
   await assertWritablePathInWorkspace(drawioSourcePath, options.workspacePath);
@@ -222,7 +222,7 @@ async function readDrawioPageNames(sourcePath: string): Promise<string[]> {
 async function runDrawioCommand(
   executable: string,
   args: string[],
-  runtime: ConversionRuntime,
+  runtime: ConversionExecutionContext,
   runDrawio?: RunDrawio,
 ): Promise<void> {
   await (runDrawio ?? executeDrawio)(executable, args, runtime.signal, runtime.outputChannel);
@@ -232,7 +232,7 @@ async function executeDrawio(
   executable: string,
   args: string[],
   signal?: AbortSignal,
-  outputChannel?: ConversionRuntime['outputChannel'],
+  outputChannel?: ConversionExecutionContext['outputChannel'],
 ): Promise<void> {
   const toolOptions: Parameters<typeof runExternalTool>[0] = { toolName: 'drawio' as const, executable, args };
   if (signal !== undefined) {

@@ -20,7 +20,7 @@ export const UNDO_LAST_CONVERSION_COMMAND = 'latex-graphics-helper.undoLastConve
 const conversionHistory: ConversionUndoRecord[] = [];
 let historyLock: Promise<void> = Promise.resolve();
 
-export async function rememberLastConversion(
+export async function recordConversionForUndo(
   outputs: ConversionOutput[],
   outputChannel?: LineOutputChannel,
 ): Promise<string> {

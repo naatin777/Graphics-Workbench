@@ -18,11 +18,11 @@ import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_pupp
 import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
-import { convertToGifFiles, type ConvertToGifJob } from '../../operations/conversion/convert_to_gif.js';
+import { executeGifConversion, type ConvertToGifJob } from '../../operations/conversion/convert_to_gif.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { createRasterFrameJobs, readRasterAnimationMetadata } from './create_raster_frame_jobs.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
@@ -56,16 +56,18 @@ export async function convertToGifCommand(
     const maxInputPixels = getMaxInputPixels(configuration);
     const jobs = (
       await Promise.all(
-        sourceUris.map((sourceUri) => createJobs(sourceUri, configuration, maxInputPixels, options?.outputMode)),
+        sourceUris.map((sourceUri) =>
+          planGifConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
+        ),
       )
     ).flat();
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'convert-to-gif',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('GIF', sourceUris.length),
       run: (runtime) =>
-        convertToGifFiles({
+        executeGifConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
@@ -88,7 +90,7 @@ export async function convertToGifCommand(
   }
 }
 
-async function createJobs(
+async function planGifConversionJobs(
   sourceUri: vscode.Uri,
   configuration: vscode.WorkspaceConfiguration,
   maxInputPixels: number,

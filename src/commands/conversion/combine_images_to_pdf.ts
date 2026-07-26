@@ -10,7 +10,7 @@ import { assertWritablePathInWorkspace } from '../../security/workspace_path.js'
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { selectedUris } from '../shared/command_utils.js';
@@ -56,7 +56,7 @@ export async function combineImagesToPdfCommand(
     const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     const jobs = previewedUris.map((sourceUri) => ({ sourcePath: sourceUri.fsPath }));
 
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'combine-images-to-pdf',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,

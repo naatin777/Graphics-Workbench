@@ -15,7 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
-  commitConversionOutputs,
+  commitStagedOutputs,
   CommitRollbackError,
   OperationCancelledError,
 } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
@@ -29,7 +29,7 @@ suite('変換結果の反映処理', () => {
     await writeFixture(outputPath, 'old');
     await writeFixture(path.join(workspacePath, 'sample-1.pdf'), 'old-1');
 
-    const committed = await commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+    const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
       resolveConflicts: async () => 'keep-both',
     });
 
@@ -51,7 +51,7 @@ suite('変換結果の反映処理', () => {
     );
     const decisions: string[][] = [];
 
-    await commitConversionOutputs(outputs, {
+    await commitStagedOutputs(outputs, {
       resolveConflicts: async (conflicts: string[]) => {
         decisions.push(conflicts);
         return 'keep-both';
@@ -70,7 +70,7 @@ suite('変換結果の反映処理', () => {
     await writeFixture(outputPath, 'old');
 
     await assert.rejects(
-      commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
         resolveConflicts: async () => 'cancel',
       }),
       /cancelled/,
@@ -86,7 +86,7 @@ suite('変換結果の反映処理', () => {
     await writeFixture(stagedOutputPath, 'new');
     await writeFixture(outputPath, 'old');
 
-    const committed = await commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+    const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
       resolveConflicts: async () => 'overwrite',
     });
 
@@ -110,7 +110,7 @@ suite('変換結果の反映処理', () => {
     let copyCount = 0;
 
     await assert.rejects(
-      commitConversionOutputs(outputs, {
+      commitStagedOutputs(outputs, {
         resolveConflicts: async () => 'overwrite',
         copyFile: async (source, destination, flags) => {
           copyCount += 1;
@@ -135,7 +135,7 @@ suite('変換結果の反映処理', () => {
     await writeFixture(outputPath, 'old');
 
     await assert.rejects(
-      commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
         resolveConflicts: async () => 'overwrite',
         copyFile: async (source, destination, flags) => {
           await copyFile(source, destination, flags);
@@ -158,7 +158,7 @@ suite('変換結果の反映処理', () => {
     await writeFixture(stagedOutputPath, 'new');
 
     await assert.rejects(
-      commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], {
         copyFile: async (source, destination, flags) => {
           await copyFile(source, destination, flags);
           if (destination === outputPath) {
@@ -187,7 +187,7 @@ suite('変換結果の反映処理', () => {
     let copyCount = 0;
 
     await assert.rejects(
-      commitConversionOutputs(outputs, {
+      commitStagedOutputs(outputs, {
         resolveConflicts: async () => 'overwrite',
         operationName: 'test-rollback',
         outputChannel: { appendLine: (line) => lines.push(line) },
@@ -223,7 +223,7 @@ suite('変換結果の反映処理', () => {
     let copyCount = 0;
 
     await assert.rejects(
-      commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
         signal: controller.signal,
         resolveConflicts: async () => 'overwrite',
         copyFile: async (source, destination, flags) => {
@@ -256,7 +256,7 @@ suite('変換結果の反映処理', () => {
     let recoveryBackupPath = '';
 
     await assert.rejects(
-      commitConversionOutputs(outputs, {
+      commitStagedOutputs(outputs, {
         resolveConflicts: async () => 'overwrite',
         rename: async (source, destination) => {
           await rename(source, destination);
@@ -296,7 +296,7 @@ suite('変換結果の反映処理', () => {
     await writeFixture(outputPath, 'old');
 
     await assert.rejects(
-      commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
         resolveConflicts: async () => {
           await writeFile(outputPath, 'changed while dialog was open');
           return 'overwrite';
@@ -317,7 +317,7 @@ suite('変換結果の反映処理', () => {
     await writeFixture(unrelatedPath, 'keep');
 
     await assert.rejects(
-      commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
         copyFile: async (source, destination, flags) => {
           await copyFile(source, destination, flags);
           if (destination === outputPath) {

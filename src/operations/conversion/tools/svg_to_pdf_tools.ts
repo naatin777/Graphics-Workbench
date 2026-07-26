@@ -3,7 +3,7 @@ import type { RunRsvgConvert } from '../../external_tools/run_rsvg_convert_with_
 
 export type SvgToPdfEngine = 'puppeteer' | 'rsvg-convert';
 
-export interface SvgToPdfTools {
+export interface SvgToPdfBackend {
   engine: SvgToPdfEngine;
   rsvgConvertPath: string;
   puppeteerBrowser: SupportedBrowser;

@@ -18,11 +18,11 @@ import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_pupp
 import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
-import { convertToTiffFiles, type ConvertToTiffJob } from '../../operations/conversion/convert_to_tiff.js';
+import { executeTiffConversion, type ConvertToTiffJob } from '../../operations/conversion/convert_to_tiff.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
@@ -47,15 +47,15 @@ export async function convertToTiffCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const jobs = (
-      await Promise.all(sourceUris.map((sourceUri) => createJobs(sourceUri, configuration, maxInputPixels)))
+      await Promise.all(sourceUris.map((sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)))
     ).flat();
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'convert-to-tiff',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('TIFF', sourceUris.length),
       run: (runtime) =>
-        convertToTiffFiles({
+        executeTiffConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
@@ -78,7 +78,7 @@ export async function convertToTiffCommand(
   }
 }
 
-async function createJobs(
+async function planTiffConversionJobs(
   sourceUri: vscode.Uri,
   configuration: vscode.WorkspaceConfiguration,
   maxInputPixels: number,

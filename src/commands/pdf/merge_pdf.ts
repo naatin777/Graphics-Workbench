@@ -15,9 +15,9 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import type { ConversionRuntime } from '../../operations/lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { createPreflightWarningConfirmation } from '../lifecycle/preflight_warning_confirmation.js';
-import { rememberLastConversion, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../shared/command_utils.js';
 
@@ -56,7 +56,7 @@ export async function mergePdfSelectedFilesCommand(
       },
       async (_progress, token) => {
         return withCancellationSignal(token, async (signal) => {
-          const runtime: ConversionRuntime = {
+          const runtime: ConversionExecutionContext = {
             signal,
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
@@ -76,7 +76,7 @@ export async function mergePdfSelectedFilesCommand(
     let undoId: string;
 
     try {
-      undoId = await rememberLastConversion(outputs, outputChannel);
+      undoId = await recordConversionForUndo(outputs, outputChannel);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
@@ -233,7 +233,7 @@ async function applyConfiguredMerge(params: {
             abortController.abort();
           }
 
-          const runtime: ConversionRuntime = {
+          const runtime: ConversionExecutionContext = {
             signal: abortController.signal,
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
@@ -255,7 +255,7 @@ async function applyConfiguredMerge(params: {
     let undoId: string;
 
     try {
-      undoId = await rememberLastConversion(outputs, outputChannel);
+      undoId = await recordConversionForUndo(outputs, outputChannel);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));

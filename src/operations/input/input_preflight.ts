@@ -26,7 +26,7 @@ import {
   readRawSidecar,
   rasterInputPixelLimitMessage,
 } from '../conversion/raster_input.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 type PreflightResult = 'ok' | 'warning' | 'error';
 
@@ -139,7 +139,7 @@ function formatPreflightReport(report: PreflightReport): string {
  * called to decide whether to proceed. If it returns false, the operation
  * is cancelled via AbortError.
  */
-export function preflightOptionsFromRuntime(runtime?: ConversionRuntime): AssertPreflightPassedOptions {
+export function preflightOptionsFromRuntime(runtime?: ConversionExecutionContext): AssertPreflightPassedOptions {
   const options: AssertPreflightPassedOptions = {};
   if (runtime?.outputChannel !== undefined) {
     options.outputChannel = runtime.outputChannel;

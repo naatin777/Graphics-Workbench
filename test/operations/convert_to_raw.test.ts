@@ -7,7 +7,7 @@ import sharp from 'sharp';
 
 import { convertToRawFiles } from '../../src/operations/conversion/convert_to_raw.js';
 
-suite('Raw pixels conversion', () => {
+suite('Rawピクセル変換', () => {
   test('rawとsidecarはkeep-bothでも同じsuffixでcommitする', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-raw-'));
     try {

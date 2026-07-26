@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { isCropConfigureMessage } from '../../src/application/protocols/crop_pdf_protocol.js';
 
-suite('Crop PDF Webview protocol', () => {
+suite('Crop PDF Webviewプロトコル', () => {
   test('valid apply payloadを受け入れる', () => {
     assert.equal(
       isCropConfigureMessage({

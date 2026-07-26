@@ -19,7 +19,7 @@ import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/ou
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import {
-  convertToWebpFiles,
+  executeWebpConversion,
   type ConvertToWebpJob,
   type WebpOutputOptions,
 } from '../../operations/conversion/convert_to_webp.js';
@@ -27,7 +27,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import { createRasterFrameJobs, readRasterAnimationMetadata } from './create_raster_frame_jobs.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
@@ -64,7 +64,9 @@ export async function convertToWebpCommand(
     const maxInputPixels = getMaxInputPixels(configuration);
     const jobs = (
       await Promise.all(
-        sourceUris.map((sourceUri) => createJobs(sourceUri, configuration, maxInputPixels, options?.outputMode)),
+        sourceUris.map((sourceUri) =>
+          planWebpConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
+        ),
       )
     ).flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration, 'convertToPdf');
@@ -75,13 +77,13 @@ export async function convertToWebpCommand(
       ghostscriptPath: readGhostscriptExecutablePath(configuration),
       platform: process.platform,
     };
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'convert-to-webp',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('WebP', sourceUris.length),
       run: (runtime) =>
-        convertToWebpFiles({
+        executeWebpConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools,
@@ -103,7 +105,7 @@ export async function convertToWebpCommand(
   }
 }
 
-async function createJobs(
+async function planWebpConversionJobs(
   sourceUri: vscode.Uri,
   configuration: vscode.WorkspaceConfiguration,
   maxInputPixels: number,

@@ -14,7 +14,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { convertToAvifFiles } from '../../src/operations/conversion/convert_to_avif.js';
+import { executeAvifConversion } from '../../src/operations/conversion/convert_to_avif.js';
 
 suite('AVIFに変換する処理', () => {
   test('編集可能なDraw.io画像はPDFとPNGを経由してAVIFへ変換する', async () => {
@@ -27,7 +27,7 @@ suite('AVIFに変換する処理', () => {
       const pdfToPngCalls: { sourcePath: string; outputPath: string; page: number }[] = [];
       await writeFile(sourcePath, 'editable drawio image placeholder');
 
-      await convertToAvifFiles({
+      await executeAvifConversion({
         jobs: [
           {
             sourcePath,

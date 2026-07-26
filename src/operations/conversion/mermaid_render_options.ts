@@ -1,13 +1,13 @@
 import type { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 
-import type { MermaidTools } from './tools/index.js';
+import type { MermaidBackend } from './tools/index.js';
 
 type MermaidCliRunOptions = NonNullable<Parameters<typeof runMermaidCli>[2]>;
 type MermaidCliParseMmdOptions = NonNullable<MermaidCliRunOptions['parseMMDOptions']>;
 type MermaidCliConfig = NonNullable<MermaidCliParseMmdOptions['mermaidConfig']>;
 
 export function createMermaidCliRenderOptions(
-  options: Pick<MermaidTools, 'theme' | 'backgroundColor'> = {
+  options: Pick<MermaidBackend, 'theme' | 'backgroundColor'> = {
     theme: 'default',
     backgroundColor: 'white',
   },

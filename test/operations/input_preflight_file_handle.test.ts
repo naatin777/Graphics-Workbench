@@ -7,7 +7,7 @@ import sharp from 'sharp';
 
 import { runPreflightBatch } from '../../src/operations/input/input_preflight.js';
 
-suite('Raster preflight file handle', () => {
+suite('ラスタpreflightファイルハンドル', () => {
   test('WebP検査後すぐに入力ファイルを移動できる', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'lgh-preflight-handle-'));
 

@@ -19,9 +19,9 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import type { ConversionRuntime } from '../../operations/lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { createPreflightWarningConfirmation } from '../lifecycle/preflight_warning_confirmation.js';
-import { rememberLastConversion, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, selectedUris } from '../shared/command_utils.js';
 
@@ -44,7 +44,7 @@ export async function splitPdfAllPagesCommand(
 
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const outputTemplate = configuration.get<string>('outputPath.splitPdf', DEFAULT_OUTPUT_PATH);
-    const jobs = sourceUris.map((sourceUri) => createJob(sourceUri, outputTemplate));
+    const jobs = sourceUris.map((sourceUri) => planSplitPdfJob(sourceUri, outputTemplate));
     const outputs = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -54,7 +54,7 @@ export async function splitPdfAllPagesCommand(
       async (progress, token) => {
         return withCancellationSignal(token, async (signal) => {
           progress.report({ message: userMessage('message.progress.preparePdfSplit') });
-          const runtime: ConversionRuntime = {
+          const runtime: ConversionExecutionContext = {
             signal,
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
@@ -69,7 +69,7 @@ export async function splitPdfAllPagesCommand(
     let undoId: string;
 
     try {
-      undoId = await rememberLastConversion(outputs, outputChannel);
+      undoId = await recordConversionForUndo(outputs, outputChannel);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
@@ -93,7 +93,7 @@ export async function splitPdfAllPagesCommand(
   }
 }
 
-function createJob(sourceUri: vscode.Uri, outputTemplate: string): SplitPdfJob {
+function planSplitPdfJob(sourceUri: vscode.Uri, outputTemplate: string): SplitPdfJob {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local PDF files are supported: ${sourceUri.toString()}`);
   }
@@ -302,7 +302,7 @@ async function applyConfiguredSplit(params: {
           }
 
           progress.report({ message: userMessage('message.progress.preparePdfSplit') });
-          const runtime: ConversionRuntime = {
+          const runtime: ConversionExecutionContext = {
             signal: abortController.signal,
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
@@ -337,7 +337,7 @@ async function applyConfiguredSplit(params: {
     let undoId: string;
 
     try {
-      undoId = await rememberLastConversion(outputs, outputChannel);
+      undoId = await recordConversionForUndo(outputs, outputChannel);
     } catch (error) {
       panel.dispose();
       const message = error instanceof Error ? error.message : String(error);

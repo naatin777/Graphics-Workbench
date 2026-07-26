@@ -8,12 +8,12 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
-  commitConversionOutputs,
+  commitStagedOutputs,
   type CommitConversionOutputsOptions,
   type CommittedConversionOutput,
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 
 export interface CropBox {
@@ -40,7 +40,7 @@ interface CropPdfConfigureJob {
 
 export interface CropPdfConfigureOptions {
   job: CropPdfConfigureJob;
-  runtime?: ConversionRuntime;
+  runtime?: ConversionExecutionContext;
   runId?: string;
 }
 
@@ -70,7 +70,7 @@ export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions)
     if (runtime?.outputChannel !== undefined) {
       commitOptions.outputChannel = runtime.outputChannel;
     }
-    return await commitConversionOutputs([preparedOutput], commitOptions);
+    return await commitStagedOutputs([preparedOutput], commitOptions);
   } catch (error) {
     await cleanupConversionArtifacts(artifacts, runtime?.outputChannel, error);
     throw error instanceof Error ? error : new Error(String(error));

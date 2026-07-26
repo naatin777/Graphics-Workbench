@@ -15,21 +15,21 @@ import {
 import { splitPdfByPageGroups } from '../../src/operations/pdf/split_pdf.js';
 
 suite('PDFページグループ分割', () => {
-  test('parses page expressions in input order with ranges and duplicates', () => {
+  test('入力順でページ式を解析し、範囲と重複を処理する', () => {
     assert.deepEqual(parseSplitPdfPages('10, 3-5, 3, -2, 7-', 10), {
       ok: true,
       pages: [10, 3, 4, 5, 3, 1, 2, 7, 8, 9, 10],
     });
   });
 
-  test('rejects malformed, descending, and out-of-range page expressions', () => {
+  test('不正な形式、降順、範囲外のページ式を拒否する', () => {
     assert.equal(parseSplitPdfPages('1,,3', 3).ok, false);
     assert.equal(parseSplitPdfPages('-', 3).ok, false);
     assert.equal(parseSplitPdfPages('3-1', 3).ok, false);
     assert.equal(parseSplitPdfPages('4', 3).ok, false);
   });
 
-  test('creates grouped PDFs in supplied order and preserves duplicate pages', async () => {
+  test('指定順でグループ化PDFを作成し、重複ページを保持する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-split-groups-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
 
@@ -67,7 +67,7 @@ suite('PDFページグループ分割', () => {
     }
   });
 
-  test('rejects a malformed PDF during common preflight before creating staging', async () => {
+  test('ステージング作成前に不正なPDFを共通preflightで拒否する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-split-groups-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'group.pdf');
@@ -108,7 +108,7 @@ suite('PDFページグループ分割', () => {
     }
   });
 
-  test('rejects empty and out-of-range groups before committing output', async () => {
+  test('空のグループと範囲外のグループをコミット前に拒否する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-split-groups-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'group.pdf');
@@ -149,7 +149,7 @@ suite('PDFページグループ分割', () => {
     }
   });
 
-  test('accepts only the defined protocol shapes', () => {
+  test('定義されたプロトコルの型のみを受け付ける', () => {
     const labels: SplitPdfLabels = {
       title: 'Split PDF',
       description: 'Split pages into groups.',

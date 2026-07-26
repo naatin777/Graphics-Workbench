@@ -10,7 +10,7 @@ import * as vscode from 'vscode';
 
 import { readGhostscriptExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { combineImagesToPdf } from '../../src/operations/conversion/combine_images_to_pdf.js';
-import type { SvgToPdfTools } from '../../src/operations/conversion/tools/index.js';
+import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const VALID_PNG = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
@@ -189,7 +189,7 @@ suite('画像→1PDF結合', () => {
       const sourcePdf = await PDFDocument.create();
       sourcePdf.addPage([7, 11]);
       const calls: string[][] = [];
-      const svgToPdfTools: SvgToPdfTools = {
+      const svgToPdfTools: SvgToPdfBackend = {
         engine: 'rsvg-convert',
         rsvgConvertPath: 'configured-rsvg-convert',
         puppeteerBrowser: 'chrome',
@@ -431,7 +431,7 @@ async function writeAnimatedImageFixture(
   await (format === 'gif' ? output.gif() : output.tiff()).toFile(filePath);
 }
 
-function createStubSvgToPdfOptions(): SvgToPdfTools {
+function createStubSvgToPdfOptions(): SvgToPdfBackend {
   return {
     engine: 'rsvg-convert',
     rsvgConvertPath: 'configured-rsvg-convert',

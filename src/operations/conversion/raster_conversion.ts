@@ -25,8 +25,8 @@ import {
 } from '../lifecycle/commit_conversion_outputs.js';
 
 export type { CommittedConversionOutput };
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
-import type { DrawioTools, GhostscriptTools, MermaidTools, PdftocairoTools } from './tools/index.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
+import type { DrawioBackend, GhostscriptBackend, MermaidBackend, PdftocairoBackend } from './tools/index.js';
 import { convertEpsToPdf, type EpsToPdfOptions } from './eps_to_pdf.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
@@ -61,13 +61,13 @@ export interface RasterJob {
   animation?: RasterAnimationMetadata;
 }
 
-export interface ConvertToRasterFilesOptions {
+export interface ExecuteRasterConversionBatchOptions {
   jobs: RasterJob[];
-  runtime: ConversionRuntime;
-  pdftocairoTools: PdftocairoTools;
-  ghostscriptTools: GhostscriptTools;
-  mermaidTools: MermaidTools;
-  drawioTools: DrawioTools;
+  runtime: ConversionExecutionContext;
+  pdftocairoTools: PdftocairoBackend;
+  ghostscriptTools: GhostscriptBackend;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
   maxInputPixels: number;
   runId?: string | undefined;
   definition: RasterConversionDefinition;
@@ -75,11 +75,11 @@ export interface ConvertToRasterFilesOptions {
 
 interface RasterStageContext {
   runId: string;
-  runtime: ConversionRuntime;
-  pdftocairoTools: PdftocairoTools;
-  ghostscriptTools: GhostscriptTools;
-  mermaidTools: MermaidTools;
-  drawioTools: DrawioTools;
+  runtime: ConversionExecutionContext;
+  pdftocairoTools: PdftocairoBackend;
+  ghostscriptTools: GhostscriptBackend;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
   definition: RasterConversionDefinition;
   maxInputPixels: number;
 }
@@ -99,7 +99,9 @@ interface RasterRenderRequest {
   animation?: RasterAnimationMetadata;
 }
 
-export async function convertRasterFiles(options: ConvertToRasterFilesOptions): Promise<CommittedConversionOutput[]> {
+export async function executeRasterConversionBatch(
+  options: ExecuteRasterConversionBatchOptions,
+): Promise<CommittedConversionOutput[]> {
   options.runtime.signal?.throwIfAborted();
   validateJobs(options.jobs, options.definition);
   await validateJobPaths(options.jobs, options.definition.stagingDirectoryName);
@@ -428,7 +430,7 @@ function asPngOutputPath(outputPath: string): `${string}.png` {
   return outputPath as unknown as `${string}.png`;
 }
 
-function createMermaidPuppeteerConfig(options: MermaidTools): Record<string, unknown> {
+function createMermaidPuppeteerConfig(options: MermaidBackend): Record<string, unknown> {
   const config: Record<string, unknown> = { headless: true };
   if (options.executablePath) {
     config.executablePath = options.executablePath;

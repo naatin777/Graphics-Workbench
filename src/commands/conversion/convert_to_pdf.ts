@@ -24,11 +24,11 @@ import {
   type ConvertToPdfJob,
   type SvgToPdfEngine,
 } from '../../operations/conversion/convert_to_pdf.js';
-import type { SvgToPdfTools } from '../../operations/conversion/tools/index.js';
+import type { SvgToPdfBackend } from '../../operations/conversion/tools/index.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
@@ -124,7 +124,7 @@ async function convertSelectedSourcesToPdf(
     const jobs = (
       await Promise.all(
         sourceUris.map((sourceUri) =>
-          createJobs(
+          planToPdfConversionJobs(
             sourceUri,
             outputTemplateForSource(sourceUri, configuration, outputTemplate),
             logicalSourcePathForOutputTemplate(sourceUri.fsPath),
@@ -133,7 +133,7 @@ async function convertSelectedSourcesToPdf(
         ),
       )
     ).flat();
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: messages.operationName,
       ...(messages.outputChannel !== undefined && { outputChannel: messages.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
@@ -212,7 +212,7 @@ export function outputTemplateForSource(
   }
 }
 
-export function readSvgToPdfOptions(configuration: vscode.WorkspaceConfiguration): SvgToPdfTools {
+export function readSvgToPdfOptions(configuration: vscode.WorkspaceConfiguration): SvgToPdfBackend {
   const executablePath = readPuppeteerExecutablePath(configuration, 'convertToPdf.svg.puppeteer.executablePath');
 
   return {
@@ -224,7 +224,7 @@ export function readSvgToPdfOptions(configuration: vscode.WorkspaceConfiguration
   };
 }
 
-async function createJobs(
+async function planToPdfConversionJobs(
   sourceUri: vscode.Uri,
   outputTemplate: string,
   templateSourcePath: string,

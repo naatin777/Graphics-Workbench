@@ -13,11 +13,11 @@ import {
   readPdftocairoExecutablePath,
 } from '../../src/config/external_tools/external_tool_paths.js';
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
-import { convertToAvifFiles } from '../../src/operations/conversion/convert_to_avif.js';
-import { convertToJpegFiles } from '../../src/operations/conversion/convert_to_jpeg.js';
-import { convertToPngFiles } from '../../src/operations/conversion/convert_to_png.js';
+import { executeAvifConversion } from '../../src/operations/conversion/convert_to_avif.js';
+import { executeJpegConversion } from '../../src/operations/conversion/convert_to_jpeg.js';
+import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
-import { convertToWebpFiles } from '../../src/operations/conversion/convert_to_webp.js';
+import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const EPS_FIXTURE = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'eps', 'minimal.eps');
@@ -55,7 +55,7 @@ suite('EPSの出力経路', () => {
       const outputPath = path.join(workspacePath, 'output.png');
       await writeFile(sourcePath, await readFile(EPS_FIXTURE));
 
-      await convertToPngFiles({
+      await executePngConversion({
         jobs: [{ sourcePath, outputPath, workspacePath }],
         pdftocairoTools: { pdftocairoPath: PDFTOCAIRO_PATH },
         ghostscriptTools: { ghostscriptPath: GHOSTSCRIPT_PATH },
@@ -81,7 +81,7 @@ suite('EPSの出力経路', () => {
       const outputPath = path.join(workspacePath, 'output.jpeg');
       await writeFile(sourcePath, await readFile(EPS_FIXTURE));
 
-      await convertToJpegFiles({
+      await executeJpegConversion({
         jobs: [{ sourcePath, outputPath, workspacePath }],
         pdftocairoTools: { pdftocairoPath: PDFTOCAIRO_PATH },
         ghostscriptTools: { ghostscriptPath: GHOSTSCRIPT_PATH },
@@ -106,7 +106,7 @@ suite('EPSの出力経路', () => {
       const outputPath = path.join(workspacePath, 'output.webp');
       await writeFile(sourcePath, await readFile(EPS_FIXTURE));
 
-      await convertToWebpFiles({
+      await executeWebpConversion({
         jobs: [{ sourcePath, outputPath, workspacePath }],
         pdftocairoTools: { pdftocairoPath: PDFTOCAIRO_PATH },
         ghostscriptTools: { ghostscriptPath: GHOSTSCRIPT_PATH },
@@ -132,7 +132,7 @@ suite('EPSの出力経路', () => {
       const outputPath = path.join(workspacePath, 'output.avif');
       await writeFile(sourcePath, await readFile(EPS_FIXTURE));
 
-      await convertToAvifFiles({
+      await executeAvifConversion({
         jobs: [{ sourcePath, outputPath, workspacePath }],
         pdftocairoTools: { pdftocairoPath: PDFTOCAIRO_PATH },
         ghostscriptTools: { ghostscriptPath: GHOSTSCRIPT_PATH },

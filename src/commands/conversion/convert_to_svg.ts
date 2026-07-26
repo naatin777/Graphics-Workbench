@@ -21,7 +21,7 @@ import { convertToSvgFiles, type ConvertToSvgJob } from '../../operations/conver
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
@@ -47,7 +47,9 @@ export async function convertToSvgCommand(
 
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
-    const jobs = (await Promise.all(sourceUris.map((sourceUri) => createJobs(sourceUri, configuration)))).flat();
+    const jobs = (
+      await Promise.all(sourceUris.map((sourceUri) => planSvgConversionJobs(sourceUri, configuration)))
+    ).flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration, 'convertToSvg');
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
@@ -55,7 +57,7 @@ export async function convertToSvgCommand(
       ghostscriptPath: readGhostscriptExecutablePath(configuration),
       platform: process.platform,
     };
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'convert-to-svg',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
@@ -82,7 +84,7 @@ export async function convertToSvgCommand(
   }
 }
 
-async function createJobs(
+async function planSvgConversionJobs(
   sourceUri: vscode.Uri,
   configuration: vscode.WorkspaceConfiguration,
 ): Promise<ConvertToSvgJob[]> {

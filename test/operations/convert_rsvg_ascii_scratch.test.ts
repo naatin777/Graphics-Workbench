@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 
 import { convertToPdfFiles, type ConvertToPdfFilesOptions } from '../../src/operations/conversion/convert_to_pdf.js';
-import type { SvgToPdfTools } from '../../src/operations/conversion/tools/index.js';
+import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';
 
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
 const svgFixturePath = path.resolve(
@@ -56,7 +56,7 @@ interface WindowsScratchOptions {
 
 type RunRsvgConvert = (executable: string, args: string[], signal?: AbortSignal) => Promise<void>;
 
-interface RsvgToPdfOptions extends SvgToPdfTools {
+interface RsvgToPdfOptions extends SvgToPdfBackend {
   runRsvgConvert: RunRsvgConvert;
 }
 
@@ -78,7 +78,7 @@ interface FixedFixtureWorkspace {
   outputPath: string;
 }
 
-suite('Windows rsvg-convert ASCII scratch', () => {
+suite('Windows rsvg-convert ASCIIスクラッチ', () => {
   test('Unicode論理pathを維持してPDFへ変換し、成功後にscratchを削除する', async () => {
     const paths = await prepareFixedFixtureWorkspace();
     let toolInputPath: string | undefined;

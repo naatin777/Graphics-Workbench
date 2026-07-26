@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 
 const execFileAsync = promisify(execFile);
 
-suite('NLS consistency check', () => {
+suite('NLS整合性チェック', () => {
   test('英日NLSのkeyとplaceholderを検証できる', async () => {
     const extension = vscode.extensions.getExtension('naatin777.latex-graphics-helper');
     assert.ok(extension);

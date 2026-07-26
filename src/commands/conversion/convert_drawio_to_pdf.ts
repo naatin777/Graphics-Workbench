@@ -8,7 +8,7 @@ import { convertDrawioToPdfFiles, type DrawioPdfJob } from '../../operations/con
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { selectedUris } from '../shared/command_utils.js';
 
@@ -86,10 +86,10 @@ async function runDrawioPdfCommand(options: {
     if (options.outputMode === 'page-pdfs') {
       assertPageTemplateForSplitOutput(outputTemplate, 2);
     }
-    const jobs = sourceUris.map((sourceUri) => createJob(sourceUri, outputTemplate));
+    const jobs = sourceUris.map((sourceUri) => planDrawioPdfJob(sourceUri, outputTemplate));
     const drawioPath = readDrawioExecutablePath(configuration);
 
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: options.operationName,
       ...(options.outputChannel !== undefined && { outputChannel: options.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
@@ -143,7 +143,7 @@ async function runDrawioPdfCommand(options: {
   }
 }
 
-function createJob(sourceUri: vscode.Uri, outputTemplate: string): DrawioPdfJob {
+function planDrawioPdfJob(sourceUri: vscode.Uri, outputTemplate: string): DrawioPdfJob {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local Draw.io files are supported: ${sourceUri.toString()}`);
   }

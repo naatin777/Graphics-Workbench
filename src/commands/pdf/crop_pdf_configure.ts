@@ -12,7 +12,7 @@ import {
 } from '../../application/protocols/crop_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { localeMap } from '../../locale_map.js';
-import type { ConversionRuntime } from '../../operations/lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
@@ -22,7 +22,7 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { createPreflightWarningConfirmation } from '../lifecycle/preflight_warning_confirmation.js';
-import { rememberLastConversion, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../shared/command_utils.js';
 
@@ -192,7 +192,7 @@ async function applyConfiguredCrop(params: {
       async (progress, token) =>
         withCancellationSignal(token, async (signal) => {
           progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
-          const runtime: ConversionRuntime = {
+          const runtime: ConversionExecutionContext = {
             signal,
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
@@ -215,7 +215,7 @@ async function applyConfiguredCrop(params: {
     let undoId: string;
 
     try {
-      undoId = await rememberLastConversion(outputs, outputChannel);
+      undoId = await recordConversionForUndo(outputs, outputChannel);
     } catch (error) {
       panel.dispose();
       const message = error instanceof Error ? error.message : String(error);

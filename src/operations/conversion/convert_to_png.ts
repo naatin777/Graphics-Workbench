@@ -1,26 +1,26 @@
 import {
   type CommittedConversionOutput,
-  convertRasterFiles,
+  executeRasterConversionBatch,
   type RasterConversionDefinition,
   type RasterJob,
 } from './raster_conversion.js';
 import { openRasterInput } from './raster_input.js';
 import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
-import type { DrawioTools } from './tools/drawio_tools.js';
-import type { GhostscriptTools } from './tools/ghostscript_tools.js';
-import type { MermaidTools } from './tools/mermaid_tools.js';
-import type { PdftocairoTools } from './tools/pdftocairo_tools.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
+import type { DrawioBackend } from './tools/drawio_tools.js';
+import type { GhostscriptBackend } from './tools/ghostscript_tools.js';
+import type { MermaidBackend } from './tools/mermaid_tools.js';
+import type { PdftocairoBackend } from './tools/pdftocairo_tools.js';
 
 export type ConvertToPngJob = RasterJob;
 
-export interface ConvertToPngFilesOptions {
+export interface ExecutePngConversionOptions {
   jobs: ConvertToPngJob[];
-  runtime: ConversionRuntime;
-  pdftocairoTools: PdftocairoTools;
-  ghostscriptTools: GhostscriptTools;
-  mermaidTools: MermaidTools;
-  drawioTools: DrawioTools;
+  runtime: ConversionExecutionContext;
+  pdftocairoTools: PdftocairoBackend;
+  ghostscriptTools: GhostscriptBackend;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
   runId?: string | undefined;
   maxInputPixels?: number;
 }
@@ -35,8 +35,8 @@ const pngDefinition: RasterConversionDefinition = {
   unsupportedInputMessage: (sourcePath) => `Unsupported input for PNG conversion: ${sourcePath}`,
 };
 
-export async function convertToPngFiles(options: ConvertToPngFilesOptions): Promise<CommittedConversionOutput[]> {
-  return convertRasterFiles({
+export async function executePngConversion(options: ExecutePngConversionOptions): Promise<CommittedConversionOutput[]> {
+  return executeRasterConversionBatch({
     ...options,
     maxInputPixels: options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
     definition: pngDefinition,

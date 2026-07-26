@@ -22,9 +22,9 @@ import {
   type CommittedConversionOutput,
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
-import type { DrawioTools, MermaidTools, PdftocairoTools, RunPdfToSvg } from './tools/index.js';
+import type { DrawioBackend, MermaidBackend, PdftocairoBackend, RunPdfToSvg } from './tools/index.js';
 import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
@@ -42,11 +42,11 @@ export interface ConvertToSvgJob {
 
 export interface ConvertToSvgFilesOptions {
   jobs: ConvertToSvgJob[];
-  pdftocairoTools: PdftocairoTools;
+  pdftocairoTools: PdftocairoBackend;
   ghostscriptTools: { ghostscriptPath: string; platform?: NodeJS.Platform; scratchBaseCandidates?: readonly string[] };
-  mermaidTools: MermaidTools;
-  drawioTools: DrawioTools;
-  runtime?: ConversionRuntime;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
+  runtime?: ConversionExecutionContext;
   runPdfToSvg?: RunPdfToSvg;
   runId?: string;
   maxInputPixels?: number;
@@ -94,10 +94,10 @@ async function stageSvgConversion(
   job: ConvertToSvgJob,
   index: number,
   runId: string,
-  pdftocairoTools: PdftocairoTools,
+  pdftocairoTools: PdftocairoBackend,
   ghostscriptTools: { ghostscriptPath: string; platform?: NodeJS.Platform; scratchBaseCandidates?: readonly string[] },
-  mermaidTools: MermaidTools,
-  drawioTools: DrawioTools,
+  mermaidTools: MermaidBackend,
+  drawioTools: DrawioBackend,
   runPdfToSvg: RunPdfToSvg | undefined,
   outputChannel: LineOutputChannel | undefined,
   maxInputPixels: number,
@@ -140,10 +140,10 @@ async function stageSvgConversion(
 async function writeSourceAsSvg(
   job: ConvertToSvgJob,
   outputPath: string,
-  pdftocairoTools: PdftocairoTools,
+  pdftocairoTools: PdftocairoBackend,
   ghostscriptTools: { ghostscriptPath: string; platform?: NodeJS.Platform; scratchBaseCandidates?: readonly string[] },
-  mermaidTools: MermaidTools,
-  drawioTools: DrawioTools,
+  mermaidTools: MermaidBackend,
+  drawioTools: DrawioBackend,
   runPdfToSvg: RunPdfToSvg | undefined,
   outputChannel: LineOutputChannel | undefined,
   maxInputPixels: number,
@@ -198,7 +198,7 @@ async function writeEpsAsSvg(
   outputPath: string,
   workspacePath: string,
   ghostscriptTools: { ghostscriptPath: string; platform?: NodeJS.Platform; scratchBaseCandidates?: readonly string[] },
-  pdftocairoTools: PdftocairoTools,
+  pdftocairoTools: PdftocairoBackend,
   page: number | undefined,
   runPdfToSvg: RunPdfToSvg | undefined,
   outputChannel: LineOutputChannel | undefined,
@@ -247,7 +247,7 @@ async function writeDrawioAsSvg(
   sourcePath: string,
   outputPath: string,
   workspacePath: string,
-  drawio: DrawioTools,
+  drawio: DrawioBackend,
   signal?: AbortSignal,
 ): Promise<void> {
   signal?.throwIfAborted();
@@ -274,7 +274,7 @@ async function writePdfPageAsSvg(
   sourcePath: string,
   outputPath: string,
   workspacePath: string,
-  pdftocairoTools: PdftocairoTools,
+  pdftocairoTools: PdftocairoBackend,
   page = 1,
   runPdfToSvg: RunPdfToSvg | undefined,
   outputChannel: LineOutputChannel | undefined,
@@ -323,7 +323,7 @@ async function writeMermaidAsSvg(
   sourcePath: string,
   outputPath: string,
   workspacePath: string,
-  mermaid: MermaidTools,
+  mermaid: MermaidBackend,
   signal?: AbortSignal,
 ): Promise<void> {
   signal?.throwIfAborted();
@@ -453,7 +453,7 @@ function asSvgOutputPath(outputPath: string): `${string}.svg` {
   return outputPath as unknown as `${string}.svg`;
 }
 
-function createMermaidPuppeteerConfig(options: MermaidTools): Record<string, unknown> {
+function createMermaidPuppeteerConfig(options: MermaidBackend): Record<string, unknown> {
   const config: Record<string, unknown> = { headless: true };
   if (options.executablePath) {
     config.executablePath = options.executablePath;

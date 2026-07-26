@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 
 import { withCancellationSignal } from '../commands/lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../commands/lifecycle/safe_mode.js';
-import { rememberLastConversion } from '../commands/lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo } from '../commands/lifecycle/undo_last_conversion.js';
 import { userMessage } from '../commands/shared/user_messages.js';
 import { isAbortError } from '../commands/shared/command_utils.js';
 import { resolveOutputPath } from '../config/output/resolve_output_path.js';
@@ -38,7 +38,7 @@ interface PasteQuickPickItem extends vscode.QuickPickItem {
 
 export interface LatexPasteEditProviderOptions {
   resolveOutputConflicts?: (conflicts: string[]) => Promise<OutputConflictDecision>;
-  rememberLastConversion?: (outputs: CommittedConversionOutput[]) => Promise<string>;
+  recordConversionForUndo?: (outputs: CommittedConversionOutput[]) => Promise<string>;
   outputChannel?: LineOutputChannel;
 }
 
@@ -51,7 +51,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
     this.resolveConflicts = options.resolveOutputConflicts ?? resolveOutputConflicts;
     this.outputChannel = options.outputChannel;
     this.rememberConversion =
-      options.rememberLastConversion ?? ((outputs) => rememberLastConversion(outputs, this.outputChannel));
+      options.recordConversionForUndo ?? ((outputs) => recordConversionForUndo(outputs, this.outputChannel));
   }
 
   async provideDocumentPasteEdits(

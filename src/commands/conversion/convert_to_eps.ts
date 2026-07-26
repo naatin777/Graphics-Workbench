@@ -13,7 +13,7 @@ import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { convertToEpsFiles, type ConvertToEpsJob } from '../../operations/conversion/convert_to_eps.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { assertFileScheme, isAbortError, selectedUris } from '../shared/command_utils.js';
@@ -37,7 +37,7 @@ export async function convertToEpsCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const jobs = (await Promise.all(sourceUris.map((sourceUri) => createEpsJobs(sourceUri, configuration)))).flat();
     const svgToPdfTools = readSvgToPdfOptions(configuration);
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'convert-to-eps',
       ...(dependencies?.outputChannel === undefined ? {} : { outputChannel: dependencies.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
@@ -81,7 +81,7 @@ export async function createEpsJobs(
     const template = readOutputPathsTemplate(configuration, 'convertPdfToEps', DEFAULT_PDF_OUTPUT_PATH);
     assertPageTemplateForSplitOutput(template, pageCount);
     return Array.from({ length: pageCount }, (_value, index) =>
-      createJob(sourcePath, workspace, template, index + 1, pageCount),
+      planEpsConversionJob(sourcePath, workspace, template, index + 1, pageCount),
     );
   }
 
@@ -136,7 +136,7 @@ function outputPathTemplateForSource(sourcePath: string, configuration: vscode.W
   }
 }
 
-function createJob(
+function planEpsConversionJob(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   template: string,

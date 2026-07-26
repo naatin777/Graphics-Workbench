@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { runStagedConversionBatch } from '../../src/operations/lifecycle/run_staged_conversion_batch.js';
 
-suite('staged conversion batch', () => {
+suite('ステージング済み変換バッチ', () => {
   test('成功時はcommit後もUndo登録前のoperation artifactを保持する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-staged-batch-'));
     const outputPath = path.join(workspacePath, 'result.png');

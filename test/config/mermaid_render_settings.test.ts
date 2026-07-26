@@ -5,19 +5,19 @@ import {
   type MermaidConfiguration,
 } from '../../src/config/rendering/mermaid_puppeteer_options.js';
 
-suite('Mermaid theme and backgroundColor settings', () => {
-  test('defaults to theme=default and backgroundColor=white', () => {
+suite('MermaidテーマおよびbackgroundColor設定', () => {
+  test('デフォルトはtheme=default、backgroundColor=white', () => {
     const options = readMermaidPuppeteerOptions(fakeConfiguration({}), 'convertToPdf');
     assert.strictEqual(options.theme, 'default');
     assert.strictEqual(options.backgroundColor, 'white');
   });
 
-  test('reads custom theme from mermaid.theme', () => {
+  test('mermaid.themeからカスタムテーマを読み取る', () => {
     const options = readMermaidPuppeteerOptions(fakeConfiguration({ 'mermaid.theme': 'dark' }), 'convertToPdf');
     assert.strictEqual(options.theme, 'dark');
   });
 
-  test('reads custom backgroundColor from mermaid.backgroundColor', () => {
+  test('mermaid.backgroundColorからカスタムbackgroundColorを読み取る', () => {
     const options = readMermaidPuppeteerOptions(
       fakeConfiguration({ 'mermaid.backgroundColor': 'transparent' }),
       'convertToPdf',
@@ -25,7 +25,7 @@ suite('Mermaid theme and backgroundColor settings', () => {
     assert.strictEqual(options.backgroundColor, 'transparent');
   });
 
-  test('theme and backgroundColor are included alongside executablePath', () => {
+  test('themeとbackgroundColorはexecutablePathと共に含まれる', () => {
     const options = readMermaidPuppeteerOptions(
       fakeConfiguration({
         'puppeteer.executablePath': '/usr/bin/chrome',

@@ -6,7 +6,7 @@ import { isRasterImagePath } from '../../application/policy/source_format.js';
 import { convertToRawFiles, type ConvertToRawJob } from '../../operations/conversion/convert_to_raw.js';
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertFileScheme, isAbortError, selectedUris } from '../shared/command_utils.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -31,9 +31,9 @@ export async function convertToRawCommand(
     const outputTemplate = readOutputPathsTemplate(configuration, 'convertToRaw', DEFAULT_OUTPUT_PATH);
     const maxInputPixels = getMaxInputPixels(configuration);
     const jobs = (
-      await Promise.all(sourceUris.map((sourceUri) => createJobs(sourceUri, outputTemplate, maxInputPixels)))
+      await Promise.all(sourceUris.map((sourceUri) => planRawConversionJobs(sourceUri, outputTemplate, maxInputPixels)))
     ).flat();
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'convert-to-raw',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
@@ -51,7 +51,7 @@ export async function convertToRawCommand(
   }
 }
 
-async function createJobs(
+async function planRawConversionJobs(
   sourceUri: vscode.Uri,
   outputTemplate: string,
   maxInputPixels: number,

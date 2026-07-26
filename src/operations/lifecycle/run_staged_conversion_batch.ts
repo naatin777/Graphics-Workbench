@@ -2,12 +2,12 @@ import pLimit from 'p-limit';
 
 import { stagingArtifactsForJobs, withStagingCleanup } from './cleanup_conversion_artifacts.js';
 import {
-  commitConversionOutputs,
+  commitStagedOutputs,
   type CommitConversionOutputsOptions,
   type CommittedConversionOutput,
   type PreparedConversionOutput,
 } from './commit_conversion_outputs.js';
-import type { ConversionRuntime } from './conversion_runtime.js';
+import type { ConversionExecutionContext } from './conversion_runtime.js';
 import { isAbortError } from '../../commands/shared/command_utils.js';
 
 const CONVERSION_CONCURRENCY = 2;
@@ -17,12 +17,12 @@ export interface StagedConversionBatch<Job extends { workspacePath: string }> {
   operationName: string;
   stagingOperationName?: string;
   runId: string;
-  runtime?: ConversionRuntime;
+  runtime?: ConversionExecutionContext;
   stage: (
     job: Job,
     index: number,
     runId: string,
-    runtime: ConversionRuntime,
+    runtime: ConversionExecutionContext,
   ) => Promise<PreparedConversionOutput | PreparedConversionOutput[]>;
 }
 
@@ -45,7 +45,7 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
     options.runtime?.signal?.addEventListener('abort', abortFromCaller, { once: true });
   }
 
-  const batchRuntime: ConversionRuntime = {
+  const batchRuntime: ConversionExecutionContext = {
     ...runtime,
     signal: abortController.signal,
   };
@@ -86,7 +86,7 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
         if (runtime.outputChannel !== undefined) {
           commitOptions.outputChannel = runtime.outputChannel;
         }
-        return commitConversionOutputs(stagedOutputs, commitOptions);
+        return commitStagedOutputs(stagedOutputs, commitOptions);
       },
       runtime.outputChannel,
     );

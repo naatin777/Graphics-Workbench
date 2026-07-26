@@ -7,18 +7,18 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
-  commitConversionOutputs,
+  commitStagedOutputs,
   type CommitConversionOutputsOptions,
   type CommittedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
-import type { ConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 
 export interface MergePdfOptions {
   sourcePaths: string[];
   outputPath: string;
   workspacePath: string;
-  runtime?: ConversionRuntime;
+  runtime?: ConversionExecutionContext;
   runId?: string;
 }
 
@@ -87,7 +87,7 @@ export async function mergePdf(options: MergePdfOptions): Promise<CommittedConve
     if (runtime?.outputChannel !== undefined) {
       commitOptions.outputChannel = runtime.outputChannel;
     }
-    return commitConversionOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], commitOptions);
+    return commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], commitOptions);
   } catch (error) {
     await cleanupConversionArtifacts(artifacts, runtime?.outputChannel, error);
     throw error instanceof Error ? error : new Error(String(error));

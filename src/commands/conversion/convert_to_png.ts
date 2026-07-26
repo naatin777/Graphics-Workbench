@@ -18,12 +18,12 @@ import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_pupp
 import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
-import { convertToPngFiles, type ConvertToPngJob } from '../../operations/conversion/convert_to_png.js';
+import { executePngConversion, type ConvertToPngJob } from '../../operations/conversion/convert_to_png.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createOutputConversionMessages, runOutputConversion } from '../lifecycle/run_output_conversion.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
@@ -50,7 +50,7 @@ export async function convertToPngCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const jobs = (
-      await Promise.all(sourceUris.map((sourceUri) => createJobs(sourceUri, configuration, maxInputPixels)))
+      await Promise.all(sourceUris.map((sourceUri) => planPngConversionJobs(sourceUri, configuration, maxInputPixels)))
     ).flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration, 'convertToPdf');
     const drawioTools = readDrawioOptions(configuration);
@@ -59,13 +59,13 @@ export async function convertToPngCommand(
       ghostscriptPath: readGhostscriptExecutablePath(configuration),
       platform: process.platform,
     };
-    await runOutputConversion({
+    await runConversionLifecycle({
       operationName: 'convert-to-png',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('PNG', sourceUris.length),
       run: (runtime) =>
-        convertToPngFiles({
+        executePngConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools,
@@ -86,7 +86,7 @@ export async function convertToPngCommand(
   }
 }
 
-async function createJobs(
+async function planPngConversionJobs(
   sourceUri: vscode.Uri,
   configuration: vscode.WorkspaceConfiguration,
   maxInputPixels: number,
@@ -106,7 +106,7 @@ async function createJobs(
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, configuration);
+    return planPdfToPngJobs(sourcePath, workspace, configuration);
   }
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
@@ -143,7 +143,7 @@ async function createJobs(
   ];
 }
 
-async function createPdfJobs(
+async function planPdfToPngJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: vscode.WorkspaceConfiguration,

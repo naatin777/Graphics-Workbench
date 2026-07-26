@@ -6,7 +6,8 @@ import { PDFDocument } from 'pdf-lib';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
 import type { MergePdfOptions } from '../../../src/operations/pdf/merge_pdf.js';
-import type { SplitPdfOptions, SplitPdfOutput } from '../../../src/operations/pdf/split_pdf.js';
+import type { SplitPdfOptions } from '../../../src/operations/pdf/split_pdf.js';
+import type { CommittedConversionOutput } from '../../../src/operations/lifecycle/commit_conversion_outputs.js';
 
 import { captureCropPdfScreenshot } from './helpers/crop_pdf_screenshot.js';
 import {
@@ -42,7 +43,7 @@ type PackagedMergePdfModule = {
   mergePdf(options: MergePdfOptions): Promise<unknown>;
 };
 type PackagedSplitPdfModule = {
-  splitPdfAllPages(options: SplitPdfOptions): Promise<SplitPdfOutput[]>;
+  splitPdfAllPages(options: SplitPdfOptions): Promise<CommittedConversionOutput[]>;
 };
 
 test('VSIXをinstallしてextensionをactivateできる', async ({ playwright }, testInfo) => {
