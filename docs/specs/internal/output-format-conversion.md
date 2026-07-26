@@ -6,6 +6,18 @@
 
 command層は選択された入力をbatchとして受け取り、入力ごとのformat-specific processingへ渡す。入力判定、outputPathの解決、Safe Mode、Undo、progress、cancellationは、それぞれの共通boundaryへ接続し、format-specific coreへVS Code APIを渡さない。
 
+## Output path and template source
+
+command IDは`convertToPdf`などの出力形式基準とする。出力path templateは入力形式と出力形式のpairを基準にする。
+
+- `${page}`を含まない単一出力は`outputPath.convertXToY`から読む。
+- `${page}`を含む複数出力は`outputPaths` objectの`convertXToY` entryから読む。
+- `outputPath.convertToY`と`outputPaths` object内の`convertToY` entryは読まない。
+
+この命名と粒度は[ADR-0021](../../adr/0021-use-pair-specific-output-path-settings.md)を正本とする。
+
+templateの`${file}`、`${fileBasename}`、`${fileBasenameNoExtension}`などのsource系変数は、変換対象として扱う論理入力pathを基準にする。editable Draw.io画像（`.drawio.png`、`.dio.png`、`.drawio.svg`、`.dio.svg`）ではwrapper suffixを除いたpathを使用する。通常の入力では元の入力pathをそのまま使用し、元ファイルpath専用の追加template変数は提供しない。
+
 ## Batch transaction
 
 1回のcommand実行に対応するoperation rootを作り、入力ごとの中間artifactと完成artifactをfinal pathから分離して保持する。

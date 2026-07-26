@@ -2,7 +2,7 @@
 
 ## Status
 
-Todo
+Done — 2026-07-26
 
 ## 目的
 
@@ -14,6 +14,15 @@ Todo
 - deprecated表示やREADME上の説明方針を決める
 - 削除しない場合の理由を記録する
 - 削除・deprecated化する場合は影響と移行手順を記録する
+
+## 決定
+
+- command IDは`convertToPdf`などの出力形式基準を維持する。
+- `${page}`を含まない単一出力は`outputPath.convertXToY`を正本とする。
+- `${page}`を含む複数出力は`outputPaths` objectの`convertXToY` entryを正本とする。
+- `outputPath.convertToY`と`outputPaths.convertToY`は使用しない。
+
+永続判断は[ADR-0021](../adr/0021-use-pair-specific-output-path-settings.md)に記録した。
 
 ## 変更可能なファイル
 
@@ -35,4 +44,4 @@ Todo
 
 ## 確認方法
 
-- 移行判断がADRまたはspecに記録されていることを確認する
+- 移行判断がADRと内部specに記録され、command IDとoutput path keyの粒度が一致することを確認した。
