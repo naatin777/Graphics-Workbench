@@ -8,6 +8,7 @@ import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 import {
   isEditableDrawioImagePath,
   isMermaidPath,
+  isNativeDrawioPath,
   isSameSourceFormat,
   isSupportedImageInputPath,
 } from '../../application/policy/source_format.js';
@@ -199,6 +200,11 @@ async function writeSourceAsRaster(
     return;
   }
 
+  if (isNativeDrawioPath(sourcePath)) {
+    await writeNativeDrawioAsRaster(job, paths, context);
+    return;
+  }
+
   const request: RasterRenderRequest = {
     sourcePath,
     outputPath: paths.stagedOutputPath,
@@ -256,6 +262,25 @@ async function writeDrawioAsRaster(
     },
     context,
   );
+}
+
+async function writeNativeDrawioAsRaster(
+  job: RasterJob,
+  paths: RasterStagePaths,
+  context: RasterStageContext,
+): Promise<void> {
+  context.runtime.signal?.throwIfAborted();
+  const pngPath = path.join(paths.stageDirectory, 'drawio.png');
+  await assertWritablePathInWorkspace(pngPath, job.workspacePath);
+  await mkdir(path.dirname(pngPath), { recursive: true });
+  context.runtime.signal?.throwIfAborted();
+
+  await (context.drawioTools.runDrawio ?? executeDrawio)(
+    context.drawioTools.drawioPath,
+    ['-x', '-f', 'png', '-o', pngPath, job.sourcePath],
+    context.runtime.signal,
+  );
+  await writeImageAsRaster({ ...job, sourcePath: pngPath, outputPath: paths.stagedOutputPath }, context);
 }
 
 async function writePdfPageAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
@@ -418,7 +443,11 @@ function validateJobs(jobs: RasterJob[], definition: RasterConversionDefinition)
   }
 
   for (const job of jobs) {
-    if (!isEditableDrawioImagePath(job.sourcePath) && isSameSourceFormat(job.sourcePath, definition.resultExtension)) {
+    if (
+      !isEditableDrawioImagePath(job.sourcePath) &&
+      !isNativeDrawioPath(job.sourcePath) &&
+      isSameSourceFormat(job.sourcePath, definition.resultExtension)
+    ) {
       throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
     }
 
@@ -447,7 +476,8 @@ function isSupportedSourcePath(sourcePath: string): boolean {
     isMermaidPath(sourcePath) ||
     isSupportedImageInputPath(sourcePath) ||
     extension === '.raw' ||
-    isEditableDrawioImagePath(sourcePath)
+    isEditableDrawioImagePath(sourcePath) ||
+    isNativeDrawioPath(sourcePath)
   );
 }
 

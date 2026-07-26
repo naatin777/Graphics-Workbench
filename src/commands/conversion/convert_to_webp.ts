@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 
 import {
   isEditableDrawioImagePath,
+  isNativeDrawioPath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
@@ -231,7 +232,7 @@ function outputTemplateForSource(
     return pageTemplate || readOutputPathTemplate(configuration, `outputPath.${key}`, splitDefault ?? defaultValue);
   };
 
-  if (isEditableDrawioImagePath(sourcePath)) {
+  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return readOutputPathsTemplate(configuration, 'convertDrawioToWebp', DEFAULT_DRAWIO_OUTPUT_PATH);
   }
 

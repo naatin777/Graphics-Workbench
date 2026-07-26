@@ -8,6 +8,7 @@ import { Parser } from 'xml2js';
 
 import {
   isEditableDrawioImagePath,
+  isNativeDrawioPath,
   isSameSourceFormat,
   sourceFormatForPath,
 } from '../../application/policy/source_format.js';
@@ -157,6 +158,11 @@ async function writeSourceAsSvg(
     return;
   }
 
+  if (isNativeDrawioPath(job.sourcePath)) {
+    await writeNativeDrawioAsSvg(job.sourcePath, outputPath, job.workspacePath, drawioTools, signal);
+    return;
+  }
+
   if (extension === '.eps') {
     await writeEpsAsSvg(
       job.sourcePath,
@@ -245,6 +251,33 @@ async function writeEpsAsSvg(
 }
 
 async function writeDrawioAsSvg(
+  sourcePath: string,
+  outputPath: string,
+  workspacePath: string,
+  drawio: DrawioBackend,
+  signal?: AbortSignal,
+): Promise<void> {
+  signal?.throwIfAborted();
+  await assertWritablePathInWorkspace(outputPath, workspacePath);
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  signal?.throwIfAborted();
+
+  try {
+    await (drawio.runDrawio ?? executeDrawio)(
+      drawio.drawioPath,
+      ['-x', '-f', 'svg', '-o', outputPath, sourcePath],
+      signal,
+    );
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+
+    throw new Error(`Draw.io CLI failed: ${errorMessage(error)}`, { cause: error });
+  }
+}
+
+async function writeNativeDrawioAsSvg(
   sourcePath: string,
   outputPath: string,
   workspacePath: string,
@@ -385,7 +418,11 @@ function validateJobs(jobs: ConvertToSvgJob[]): void {
   }
 
   for (const job of jobs) {
-    if (!isEditableDrawioImagePath(job.sourcePath) && isSameSourceFormat(job.sourcePath, '.svg')) {
+    if (
+      !isEditableDrawioImagePath(job.sourcePath) &&
+      !isNativeDrawioPath(job.sourcePath) &&
+      isSameSourceFormat(job.sourcePath, '.svg')
+    ) {
       throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
     }
 
@@ -403,7 +440,8 @@ function isSupportedSourcePath(sourcePath: string): boolean {
     extension === '.eps' ||
     sourceFormatForPath(sourcePath) === 'raw' ||
     sourceFormatForPath(sourcePath) === 'mermaid' ||
-    isEditableDrawioImagePath(sourcePath)
+    isEditableDrawioImagePath(sourcePath) ||
+    isNativeDrawioPath(sourcePath)
   );
 }
 

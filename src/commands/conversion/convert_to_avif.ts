@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 
 import {
   isEditableDrawioImagePath,
+  isNativeDrawioPath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
@@ -188,7 +189,7 @@ async function createPdfJobs(
 function outputTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
   const extension = path.extname(sourcePath).toLowerCase();
 
-  if (isEditableDrawioImagePath(sourcePath)) {
+  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return readOutputPathsTemplate(configuration, 'convertDrawioToAvif', DEFAULT_DRAWIO_OUTPUT_PATH);
   }
 

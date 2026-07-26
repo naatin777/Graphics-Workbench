@@ -16,14 +16,44 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertFileScheme, selectedUris } from '../shared/command_utils.js';
 
 export const CONVERT_TO_DRAWIO_COMMAND = 'latex-graphics-helper.convertToDrawio';
+export const CONVERT_TO_DRAWIO_PNG_COMMAND = 'latex-graphics-helper.convertToDrawioPng';
+export const CONVERT_TO_DRAWIO_SVG_COMMAND = 'latex-graphics-helper.convertToDrawioSvg';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.dio';
+const DEFAULT_PNG_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.drawio.png';
+const DEFAULT_SVG_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.drawio.svg';
 const DRAWIO_EXTENSIONS = ['.drawio', '.dio', '.drawio.png', '.dio.png', '.drawio.svg', '.dio.svg'] as const;
 
 export async function convertToDrawioCommand(
   uri?: vscode.Uri,
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,
+): Promise<void> {
+  await convertToDrawioWithDefaults(uri, uris, dependencies, 'outputPath.convertToDrawio', DEFAULT_OUTPUT_PATH);
+}
+
+export async function convertToDrawioPngCommand(
+  uri?: vscode.Uri,
+  uris?: vscode.Uri[],
+  dependencies?: CommandDependencies,
+): Promise<void> {
+  await convertToDrawioWithDefaults(uri, uris, dependencies, 'outputPath.convertToDrawioPng', DEFAULT_PNG_OUTPUT_PATH);
+}
+
+export async function convertToDrawioSvgCommand(
+  uri?: vscode.Uri,
+  uris?: vscode.Uri[],
+  dependencies?: CommandDependencies,
+): Promise<void> {
+  await convertToDrawioWithDefaults(uri, uris, dependencies, 'outputPath.convertToDrawioSvg', DEFAULT_SVG_OUTPUT_PATH);
+}
+
+async function convertToDrawioWithDefaults(
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies | undefined,
+  settingKey: string,
+  defaultOutputPath: string,
 ): Promise<void> {
   try {
     const sourceUris = selectedUris(uri, uris);
@@ -40,7 +70,7 @@ export async function convertToDrawioCommand(
     if (!workspace) {
       throw new Error(`The file must be inside an open workspace: ${first.fsPath}`);
     }
-    const template = readOutputPathTemplate(configuration, 'outputPath.convertToDrawio', DEFAULT_OUTPUT_PATH);
+    const template = readOutputPathTemplate(configuration, settingKey, defaultOutputPath);
     const outputPath = resolveOutputPath(
       template,
       {

@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 
 import {
   isEditableDrawioImagePath,
+  isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
 import {
@@ -106,6 +107,20 @@ async function planSvgConversionJobs(
     return createPdfJobs(sourcePath, workspace, configuration);
   }
 
+  if (isNativeDrawioPath(sourcePath)) {
+    const outputTemplate = readOutputPathsTemplate(configuration, 'convertDrawioToSvg', DEFAULT_DRAWIO_OUTPUT_PATH);
+    const outputPath = resolveOutputPath(
+      outputTemplate,
+      {
+        sourcePath,
+        workspacePath: workspace.uri.fsPath,
+        workspaceName: workspace.name,
+      },
+      { allowedExtensions: ['.svg'] },
+    );
+    return [{ sourcePath, workspacePath: workspace.uri.fsPath, outputPath }];
+  }
+
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
   const outputTemplate = outputTemplateForSource(sourcePath, configuration);
   const outputPath = resolveOutputPath(
@@ -167,7 +182,7 @@ async function createPdfJobs(
 function outputTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
   const extension = path.extname(sourcePath).toLowerCase();
 
-  if (isEditableDrawioImagePath(sourcePath)) {
+  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return readOutputPathsTemplate(configuration, 'convertDrawioToSvg', DEFAULT_DRAWIO_OUTPUT_PATH);
   }
 

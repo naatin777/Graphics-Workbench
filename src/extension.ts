@@ -32,7 +32,14 @@ import {
 import { convertToTiffCommand, CONVERT_TO_TIFF_COMMAND } from './commands/conversion/convert_to_tiff.js';
 import { convertToEpsCommand, CONVERT_TO_EPS_COMMAND } from './commands/conversion/convert_to_eps.js';
 import { convertToRawCommand, CONVERT_TO_RAW_COMMAND } from './commands/conversion/convert_to_raw.js';
-import { convertToDrawioCommand, CONVERT_TO_DRAWIO_COMMAND } from './commands/conversion/convert_to_drawio.js';
+import {
+  convertToDrawioCommand,
+  convertToDrawioPngCommand,
+  convertToDrawioSvgCommand,
+  CONVERT_TO_DRAWIO_COMMAND,
+  CONVERT_TO_DRAWIO_PNG_COMMAND,
+  CONVERT_TO_DRAWIO_SVG_COMMAND,
+} from './commands/conversion/convert_to_drawio.js';
 import {
   combineImagesToPdfCommand,
   COMBINE_IMAGES_TO_PDF_COMMAND,
@@ -147,6 +154,12 @@ function registerCommands(context: vscode.ExtensionContext, dependencies: Comman
   registerFileCommand(context, CONVERT_TO_RAW_COMMAND, (uri, uris) => convertToRawCommand(uri, uris, dependencies));
   registerFileCommand(context, CONVERT_TO_DRAWIO_COMMAND, (uri, uris) =>
     convertToDrawioCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_DRAWIO_PNG_COMMAND, (uri, uris) =>
+    convertToDrawioPngCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_DRAWIO_SVG_COMMAND, (uri, uris) =>
+    convertToDrawioSvgCommand(uri, uris, dependencies),
   );
   registerFileCommand(context, COMBINE_IMAGES_TO_PDF_COMMAND, (uri, uris) =>
     combineImagesToPdfCommand(uri, uris, dependencies),

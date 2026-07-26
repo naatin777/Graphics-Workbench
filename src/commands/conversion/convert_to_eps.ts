@@ -4,7 +4,12 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { isRasterImagePath, logicalSourcePathForOutputTemplate } from '../../application/policy/source_format.js';
+import {
+  isEditableDrawioImagePath,
+  isNativeDrawioPath,
+  isRasterImagePath,
+  logicalSourcePathForOutputTemplate,
+} from '../../application/policy/source_format.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
@@ -85,6 +90,25 @@ export async function createEpsJobs(
     );
   }
 
+  if (isNativeDrawioPath(sourcePath)) {
+    const outputTemplate = outputPathTemplateForSource(sourcePath, configuration);
+    return [
+      {
+        sourcePath,
+        workspacePath: workspace.uri.fsPath,
+        outputPath: resolveOutputPath(
+          outputTemplate,
+          {
+            sourcePath: logicalSourcePathForOutputTemplate(sourcePath),
+            workspacePath: workspace.uri.fsPath,
+            workspaceName: workspace.name,
+          },
+          { allowedExtensions: ['.eps'] },
+        ),
+      },
+    ];
+  }
+
   const outputTemplate = outputPathTemplateForSource(sourcePath, configuration);
 
   if (isRasterImagePath(sourcePath)) {
@@ -116,6 +140,9 @@ export async function createEpsJobs(
 }
 
 function outputPathTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
+  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
+    return readOutputPathsTemplate(configuration, 'convertDrawioToEps', DEFAULT_OUTPUT_PATH);
+  }
   switch (path.extname(sourcePath).toLowerCase()) {
     case '.png':
       return readOutputPathTemplate(configuration, 'outputPath.convertPngToEps', DEFAULT_OUTPUT_PATH);
