@@ -44,6 +44,7 @@ import {
   combineImagesToPdfCommand,
   COMBINE_IMAGES_TO_PDF_COMMAND,
 } from './commands/conversion/combine_images_to_pdf.js';
+import { compressPdfCommand, COMPRESS_PDF_COMMAND } from './commands/pdf/compress_pdf.js';
 import { cropPdfAutoCommand, CROP_PDF_AUTO_COMMAND } from './commands/pdf/crop_pdf_auto.js';
 import { cropPdfConfigureCommand, CROP_PDF_CONFIGURE_COMMAND } from './commands/pdf/crop_pdf_configure.js';
 import {
@@ -66,6 +67,7 @@ import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provide
 const latexDocumentSelector: vscode.DocumentSelector = [{ language: 'latex' }, { language: 'tex' }];
 
 export const PUBLIC_COMMAND_IDS = [
+  COMPRESS_PDF_COMMAND,
   CROP_PDF_AUTO_COMMAND,
   CROP_PDF_CONFIGURE_COMMAND,
   SPLIT_PDF_ALL_PAGES_COMMAND,
@@ -90,6 +92,8 @@ export const PUBLIC_COMMAND_IDS = [
   CONVERT_TO_EPS_COMMAND,
   CONVERT_TO_RAW_COMMAND,
   CONVERT_TO_DRAWIO_COMMAND,
+  CONVERT_TO_DRAWIO_PNG_COMMAND,
+  CONVERT_TO_DRAWIO_SVG_COMMAND,
   COMBINE_IMAGES_TO_PDF_COMMAND,
   TOGGLE_SAFE_MODE_COMMAND,
 ] as const;
@@ -104,6 +108,7 @@ function registerFileCommand(context: vscode.ExtensionContext, id: string, handl
 }
 
 function registerCommands(context: vscode.ExtensionContext, dependencies: CommandDependencies): void {
+  registerFileCommand(context, COMPRESS_PDF_COMMAND, (uri, uris) => compressPdfCommand(uri, uris, dependencies));
   registerFileCommand(context, CROP_PDF_AUTO_COMMAND, (uri, uris) => cropPdfAutoCommand(uri, uris, dependencies));
   registerFileCommand(context, CROP_PDF_CONFIGURE_COMMAND, (uri, uris) =>
     cropPdfConfigureCommand(context, uri, uris, dependencies),

@@ -35,10 +35,18 @@ export function renderTemplate(template: string, context: TemplateContext): stri
     .replaceAll('${dir}', context.dir);
 }
 
-export function getPdfTemplate(configuration: vscode.WorkspaceConfiguration): string {
-  return configuration.get<string>('insertLatex.pdfTemplate') || DEFAULT_PDF_TEMPLATE;
+export function getPdfTemplates(configuration: vscode.WorkspaceConfiguration): string[] {
+  const raw = configuration.get<string | string[]>('insertLatex.pdfTemplate');
+  if (Array.isArray(raw)) {
+    return raw.length > 0 ? raw : [DEFAULT_PDF_TEMPLATE];
+  }
+  return [raw || DEFAULT_PDF_TEMPLATE];
 }
 
-export function getImageTemplate(configuration: vscode.WorkspaceConfiguration): string {
-  return configuration.get<string>('insertLatex.imageTemplate') || DEFAULT_IMAGE_TEMPLATE;
+export function getImageTemplates(configuration: vscode.WorkspaceConfiguration): string[] {
+  const raw = configuration.get<string | string[]>('insertLatex.imageTemplate');
+  if (Array.isArray(raw)) {
+    return raw.length > 0 ? raw : [DEFAULT_IMAGE_TEMPLATE];
+  }
+  return [raw || DEFAULT_IMAGE_TEMPLATE];
 }

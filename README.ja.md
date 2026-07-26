@@ -140,26 +140,22 @@ Draw.io Desktop は以下からインストールしてください。
 
 主な設定項目は以下の通りです。
 
-| 設定                                                          | 既定値                                          | 説明                                                                                                           |
-| ------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `latex-graphics-helper.outputPath.clipboardImage`             | `${fileDirname}/${dateNow}`                     | クリップボード画像を貼り付けるときに表示する既定の保存先です。貼り付け時に編集でき、拡張子は自動で追加されます |
-| `latex-graphics-helper.figure.placementOptions`               | `[H]` など                                      | `figure` 環境の配置オプション候補です                                                                          |
-| `latex-graphics-helper.figure.alignmentOptions`               | `\centering` など                               | `figure` 内の配置コマンド候補です                                                                              |
-| `latex-graphics-helper.figure.graphicsOptions`                | `[width=1.0\linewidth]` など                    | `includegraphics` のオプション候補です                                                                         |
-| `latex-graphics-helper.subfigure.verticalAlignmentOptions`    | `[t]` など                                      | 複数PDFをdropしたときの `minipage` 縦位置候補です                                                              |
-| `latex-graphics-helper.subfigure.widthOptions`                | `{0.45\linewidth}` など                         | 複数PDFをdropしたときの `minipage` 幅候補です                                                                  |
-| `latex-graphics-helper.subfigure.spacingOptions`              | `\hspace{0.01\linewidth}` など                  | 複数PDFをdropしたときの図間スペース候補です                                                                    |
-| `latex-graphics-helper.execPath.drawio`                       | 空文字                                          | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                             |
-| `latex-graphics-helper.execPath.ghostscript`                  | 空文字                                          | Ghostscript 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                         |
-| `latex-graphics-helper.execPath.pdftocairo`                   | `pdftocairo`                                    | `pdftocairo` 実行ファイルへのパスです                                                                          |
-| `latex-graphics-helper.execPath.rsvgConvert`                  | `rsvg-convert`                                  | `rsvg-convert` 実行ファイルへのパスです                                                                        |
-| `latex-graphics-helper.convertToPdf.svg.engine`               | `puppeteer`                                     | SVGをPDFへ変換するときのバックエンドです。`puppeteer` または `rsvg-convert` を選択できます                     |
-| `latex-graphics-helper.puppeteer.browser`                     | `chrome`                                        | SVG変換でPuppeteerが使用するブラウザです。`chrome` または `firefox` を選択できます                             |
-| `latex-graphics-helper.mermaid.puppeteer.browserChannel`      | `chrome`                                        | Mermaid CLIが使用するChromeチャンネルです                                                                      |
-| `latex-graphics-helper.puppeteer.executablePath`              | 空文字                                          | SVG変換とMermaid変換で共有するブラウザ実行ファイルです。チャンネルより優先されます                             |
-| `latex-graphics-helper.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Draw.ioの全ページを1つのPDFへ出力するパスです                                                                  |
-| `latex-graphics-helper.convertToWebp.effort`                  | `4`                                             | WebP出力のエンコードeffortです                                                                                 |
-| `latex-graphics-helper.convertToAvif.effort`                  | `4`                                             | AVIF出力のエンコードeffortです                                                                                 |
+| 設定                                                          | 既定値                                          | 説明                                                                                                                    |
+| ------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `latex-graphics-helper.outputPath.clipboardImage`             | `${fileDirname}/${dateNow}`                     | クリップボード画像を貼り付けるときに表示する既定の保存先です。貼り付け時に編集でき、拡張子は自動で追加されます          |
+| `latex-graphics-helper.insertLatex.pdfTemplate`               | `\begin{figure}[H]...`                          | PDF drag&drop時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます |
+| `latex-graphics-helper.insertLatex.imageTemplate`             | `\begin{figure}[H]...`                          | 画像ペースト時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます  |
+| `latex-graphics-helper.execPath.drawio`                       | 空文字                                          | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                      |
+| `latex-graphics-helper.execPath.ghostscript`                  | 空文字                                          | Ghostscript 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                  |
+| `latex-graphics-helper.execPath.pdftocairo`                   | `pdftocairo`                                    | `pdftocairo` 実行ファイルへのパスです                                                                                   |
+| `latex-graphics-helper.execPath.rsvgConvert`                  | `rsvg-convert`                                  | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
+| `latex-graphics-helper.convertToPdf.svg.engine`               | `puppeteer`                                     | SVGをPDFへ変換するときのバックエンドです。`puppeteer` または `rsvg-convert` を選択できます                              |
+| `latex-graphics-helper.puppeteer.browser`                     | `chrome`                                        | SVG変換でPuppeteerが使用するブラウザです。`chrome` または `firefox` を選択できます                                      |
+| `latex-graphics-helper.mermaid.puppeteer.browserChannel`      | `chrome`                                        | Mermaid CLIが使用するChromeチャンネルです                                                                               |
+| `latex-graphics-helper.puppeteer.executablePath`              | 空文字                                          | SVG変換とMermaid変換で共有するブラウザ実行ファイルです。チャンネルより優先されます                                      |
+| `latex-graphics-helper.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Draw.ioの全ページを1つのPDFへ出力するパスです                                                                           |
+| `latex-graphics-helper.convertToWebp.effort`                  | `4`                                             | WebP出力のエンコードeffortです                                                                                          |
+| `latex-graphics-helper.convertToAvif.effort`                  | `4`                                             | AVIF出力のエンコードeffortです                                                                                          |
 
 出力ファイル名や LaTeX snippet の候補も VS Code の設定から変更できます。
 

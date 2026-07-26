@@ -1,6 +1,7 @@
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 
-import { readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { readConvertToRawOutputPath } from '../../config/output/output_path_settings.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { isRasterImagePath } from '../../application/policy/source_format.js';
 import { convertToRawFiles, type ConvertToRawJob } from '../../operations/conversion/convert_to_raw.js';
@@ -28,7 +29,8 @@ export async function convertToRawCommand(
     }
 
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
-    const outputTemplate = readOutputPathsTemplate(configuration, 'convertToRaw', DEFAULT_OUTPUT_PATH);
+    const sourceExt = path.extname(sourceUris[0]?.fsPath ?? '');
+    const outputTemplate = readConvertToRawOutputPath(configuration, sourceExt, DEFAULT_OUTPUT_PATH);
     const maxInputPixels = getMaxInputPixels(configuration);
     const jobs = (
       await Promise.all(sourceUris.map((sourceUri) => planRawConversionJobs(sourceUri, outputTemplate, maxInputPixels)))

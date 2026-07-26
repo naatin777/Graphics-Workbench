@@ -21,15 +21,14 @@ suite('LaTeXファイルdrag挿入', () => {
       await writePdf(pdfUri);
 
       const document = await vscode.workspace.openTextDocument(documentUri);
-      const edit = await provideDropEdit(document, [pdfUri], testAppConfig(['\\raggedleft']));
+      const edit = await provideDropEdit(document, [pdfUri]);
       const snippet = snippetValue(edit);
 
       assert.match(snippet, /\\begin\{figure\}/);
-      assert.ok(snippet.includes('\\raggedleft'));
-      assert.ok(!snippet.includes('\\centering'));
-      assert.ok(snippet.includes('\\includegraphics[width=0.8\\linewidth]{figures/sample.pdf}'));
-      assert.ok(snippet.includes('\\caption{${1:sample}}'));
-      assert.ok(snippet.includes('\\label{fig:${2:sample}}'));
+      assert.ok(snippet.includes('\\centering'));
+      assert.ok(snippet.includes('\\includegraphics[width=\\linewidth]{figures/sample.pdf}'));
+      assert.ok(snippet.includes('\\caption{sample}'));
+      assert.ok(snippet.includes('\\label{fig:sample}'));
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -54,8 +53,8 @@ suite('LaTeXファイルdrag挿入', () => {
       const snippet = snippetValue(edit);
 
       assert.strictEqual(snippet.split('\\begin{minipage}').length - 1, 2);
-      assert.ok(snippet.includes('\\includegraphics[width=0.8\\linewidth]{figures/first.pdf}'));
-      assert.ok(snippet.includes('\\includegraphics[width=0.8\\linewidth]{figures/second.pdf}'));
+      assert.ok(snippet.includes('figures/first.pdf'));
+      assert.ok(snippet.includes('figures/second.pdf'));
       assert.ok(snippet.includes('\\hfill'));
     } finally {
       await rm(directory, { recursive: true, force: true });
@@ -133,7 +132,7 @@ suite('LaTeXファイルdrag挿入', () => {
 
       assert.ok(edit);
       const snippet = snippetValue(edit);
-      assert.ok(snippet.includes('\\includegraphics[width=0.8\\linewidth]{../'));
+      assert.ok(snippet.includes('{../'));
       assert.ok(snippet.includes('outside.pdf'));
     } finally {
       await rm(directory, { recursive: true, force: true });
@@ -170,12 +169,8 @@ suite('LaTeXファイルdrag挿入', () => {
   });
 });
 
-async function provideDropEdit(
-  document: vscode.TextDocument,
-  uris: vscode.Uri[],
-  config = testAppConfig(),
-): Promise<vscode.DocumentDropEdit> {
-  const edit = await provideDropResult(document, uris.map((uri) => uri.toString()).join('\r\n'), undefined, config);
+async function provideDropEdit(document: vscode.TextDocument, uris: vscode.Uri[]): Promise<vscode.DocumentDropEdit> {
+  const edit = await provideDropResult(document, uris.map((uri) => uri.toString()).join('\r\n'));
   assert.ok(edit);
   return edit;
 }
@@ -184,7 +179,6 @@ async function provideDropResult(
   document: vscode.TextDocument,
   uriList: string,
   token?: vscode.CancellationToken,
-  config = testAppConfig(),
 ): Promise<vscode.DocumentDropEdit | undefined> {
   const provider = new LatexDropEditProvider();
   const dataTransfer = new vscode.DataTransfer();
@@ -197,7 +191,6 @@ async function provideDropResult(
       new vscode.Position(0, 0),
       dataTransfer,
       token ?? tokenSource.token,
-      config,
     );
   } finally {
     tokenSource.dispose();
@@ -223,16 +216,4 @@ async function createTemporaryWorkspaceDirectory(prefix: string): Promise<string
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
   return mkdtemp(path.join(workspaceFolder.uri.fsPath, prefix));
-}
-
-function testAppConfig(figureAlignmentOptions = ['\\centering']) {
-  return {
-    outputPathClipboardImage: '${fileDirname}/${dateNow}',
-    figurePlacementOptions: ['[H]'],
-    figureAlignmentOptions,
-    figureGraphicsOptions: ['[width=0.8\\linewidth]'],
-    subfigureVerticalAlignmentOptions: ['[t]'],
-    subfigureWidthOptions: ['{0.45\\linewidth}'],
-    subfigureSpacingOptions: ['\\hfill'],
-  };
 }

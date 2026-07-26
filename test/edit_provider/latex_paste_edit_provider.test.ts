@@ -46,10 +46,6 @@ suite('LaTeXクリップボード画像挿入', () => {
           pngDataTransfer(),
           {} as unknown as vscode.DocumentPasteEditContext,
           tokenSource.token,
-          {
-            ...testAppConfig(),
-            outputPathClipboardImage: path.join(directory, 'pasted'),
-          },
         );
 
         assert.ok(edits);
@@ -57,11 +53,10 @@ suite('LaTeXクリップボード画像挿入', () => {
         const edit = edits[0];
         assert.ok(edit);
         assert.ok(showInputBox.calledOnce);
-        assert.strictEqual(showInputBox.firstCall.args[0]?.value, path.join(directory, 'pasted'));
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         const snippet = normalizeSnippetValue(edit.insertText.value);
-        assert.ok(snippet.includes('\\includegraphics[width=0.8\\linewidth]{edited.png}'));
-        assert.ok(snippet.includes('\\caption{${1:edited}}'));
+        assert.ok(snippet.includes('\\includegraphics{edited.png}'));
+        assert.ok(snippet.includes('\\caption{edited}'));
         assert.ok(await readFile(path.join(directory, 'edited.png')));
       } finally {
         tokenSource.dispose();
@@ -105,10 +100,6 @@ suite('LaTeXクリップボード画像挿入', () => {
           pngDataTransfer(),
           {} as unknown as vscode.DocumentPasteEditContext,
           tokenSource.token,
-          {
-            ...testAppConfig(),
-            outputPathClipboardImage: path.join(directory, 'pasted'),
-          },
         );
 
         assert.ok(edits);
@@ -178,10 +169,6 @@ suite('LaTeXクリップボード画像挿入', () => {
           pngDataTransfer(),
           {} as unknown as vscode.DocumentPasteEditContext,
           tokenSource.token,
-          {
-            ...testAppConfig(),
-            outputPathClipboardImage: path.join(directory, 'pasted'),
-          },
         );
 
         assert.ok(edits);
@@ -190,7 +177,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         assert.ok(edit);
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         const snippet = normalizeSnippetValue(edit.insertText.value);
-        assert.ok(snippet.includes('\\includegraphics[width=0.8\\linewidth]{pasted.pdf}'));
+        assert.ok(snippet.includes('\\includegraphics{pasted.pdf}'));
         const pdf = await PDFDocument.load(await readFile(path.join(directory, 'pasted.pdf')));
         assert.strictEqual(pdf.getPageCount(), 1);
         assert.strictEqual(await readFile(existingImagePath, 'utf8'), 'existing clipboard image');
@@ -218,10 +205,6 @@ suite('LaTeXクリップボード画像挿入', () => {
           pngDataTransfer(),
           {} as unknown as vscode.DocumentPasteEditContext,
           tokenSource.token,
-          {
-            ...testAppConfig(),
-            outputPathClipboardImage: path.join(directory, 'pasted'),
-          },
         );
         assert.ok(keepBothEdits);
         assert.ok(await readFile(path.join(directory, 'pasted-1.pdf')));
@@ -270,10 +253,6 @@ suite('LaTeXクリップボード画像挿入', () => {
           pngDataTransfer(),
           {} as unknown as vscode.DocumentPasteEditContext,
           tokenSource.token,
-          {
-            ...testAppConfig(),
-            outputPathClipboardImage: path.join(directory, 'pasted'),
-          },
         );
 
         assert.ok(edits);
@@ -315,10 +294,6 @@ suite('LaTeXクリップボード画像挿入', () => {
         pngDataTransfer(),
         {} as unknown as vscode.DocumentPasteEditContext,
         tokenSource.token,
-        {
-          ...testAppConfig(),
-          outputPathClipboardImage: path.join(directory, 'pasted'),
-        },
       );
 
       assert.strictEqual(edits, undefined);
@@ -367,10 +342,6 @@ suite('LaTeXクリップボード画像挿入', () => {
         pngDataTransfer(),
         {} as unknown as vscode.DocumentPasteEditContext,
         tokenSource.token,
-        {
-          ...testAppConfig(),
-          outputPathClipboardImage: path.join(directory, 'pasted'),
-        },
       );
 
       assert.strictEqual(edits, undefined);
@@ -403,17 +374,6 @@ function pngDataTransfer(): vscode.DataTransfer {
       };
     },
   } as unknown as vscode.DataTransfer;
-}
-
-function testAppConfig() {
-  return {
-    figurePlacementOptions: ['[H]'],
-    figureAlignmentOptions: ['\\centering'],
-    figureGraphicsOptions: ['[width=0.8\\linewidth]'],
-    subfigureVerticalAlignmentOptions: ['[t]'],
-    subfigureWidthOptions: ['{0.45\\linewidth}'],
-    subfigureSpacingOptions: ['\\hfill'],
-  };
 }
 
 function normalizeSnippetValue(value: string): string {

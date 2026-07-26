@@ -20,10 +20,7 @@ import {
   type ClipboardPasteKind,
 } from '../operations/input/save_clipboard_image.js';
 
-import { readLatexInsertionConfig, type LatexInsertionConfig } from './latex_config.js';
-import { escapeLatex, escapeLatexLabel } from './latex_escape.js';
-import { LatexSnippet } from './latex_snippet.js';
-import { getImageTemplate, renderTemplate, type TemplateContext } from './latex_template.js';
+import { getImageTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
 
 const CLIPBOARD_IMAGE_TYPES = [
   { mime: 'image/png', ext: 'png' },
@@ -60,7 +57,6 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
     dataTransfer: vscode.DataTransfer,
     _context: vscode.DocumentPasteEditContext,
     token: vscode.CancellationToken,
-    config: LatexInsertionConfig = readLatexInsertionConfig(),
   ): Promise<vscode.DocumentPasteEdit[] | undefined> {
     const data = await readClipboardImageData(dataTransfer);
 
@@ -99,7 +95,12 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
           return undefined;
         }
 
-        const defaultOutputPath = resolveOutputPath(config.outputPathClipboardImage, {
+        const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+        const outputPathClipboardImage = configuration.get<string>(
+          'outputPath.clipboardImage',
+          '${fileDirname}/${dateNow}',
+        );
+        const defaultOutputPath = resolveOutputPath(outputPathClipboardImage, {
           workspacePath: workspaceFolder.uri.fsPath,
           workspaceName: workspaceFolder.name,
           sourcePath: document.uri.fsPath,
@@ -156,7 +157,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
 
           const relativeFilePath = path.relative(path.dirname(document.uri.fsPath), outputFilePath);
           const basename = path.basename(outputFilePath, path.extname(outputFilePath));
-          const snippet = this.createSingleFileSnippet(config, basename, relativeFilePath);
+          const snippet = this.createSingleFileSnippet(basename, relativeFilePath);
 
           return [new vscode.DocumentPasteEdit(snippet, pickedItem.label, vscode.DocumentDropOrPasteEditKind.Empty)];
         } finally {
@@ -177,47 +178,28 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
     }
   }
 
-  createSingleFileSnippet(
-    config: LatexInsertionConfig,
-    fileName: string,
-    relativeFilePath: string,
-  ): vscode.SnippetString {
-    // Use template if customized
+  createSingleFileSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
-    const template = getImageTemplate(configuration);
-    const defaultTemplate = configuration.inspect<string>('insertLatex.imageTemplate')?.defaultValue;
-    if (template !== defaultTemplate) {
-      const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
-      const ctx: TemplateContext = {
-        path: relativeFilePath,
-        name: fileName,
-        ext,
-        dir: path.dirname(relativeFilePath) || '.',
-      };
-      return new vscode.SnippetString(renderTemplate(template, ctx));
+    const templates = getImageTemplates(configuration);
+    const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
+    const ctx: TemplateContext = {
+      path: relativeFilePath,
+      name: fileName,
+      ext,
+      dir: path.dirname(relativeFilePath) || '.',
+    };
+
+    const snippet = new vscode.SnippetString();
+    if (templates.length === 1) {
+      snippet.appendText(renderTemplate(templates[0] ?? '', ctx));
+      return snippet;
     }
 
-    const snippet = new LatexSnippet(config);
-
-    snippet.wrapEnvironment('figure', () => {
-      snippet.appendFigurePlacement().lineBreak();
-      snippet.appendFigureAlignment().lineBreak();
-      snippet
-        .appendCommand(
-          'includegraphics',
-          () => snippet.appendGraphicsOptions(),
-          () => snippet.appendText(snippet.convertToLatexPath(relativeFilePath)),
-        )
-        .lineBreak();
-      snippet
-        .appendCommand('caption', undefined, () => snippet.appendPlaceholder(escapeLatex(fileName)))
-        .appendCommand('label', undefined, () => {
-          snippet.appendText('fig:').appendPlaceholder(escapeLatexLabel(fileName));
-        })
-        .lineEnd();
-    });
-
-    return snippet.snippet;
+    snippet.appendChoice(
+      templates.map((t) => renderTemplate(t, ctx)),
+      1,
+    );
+    return snippet;
   }
 }
 

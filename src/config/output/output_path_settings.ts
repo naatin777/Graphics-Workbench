@@ -16,3 +16,26 @@ export function readOutputPathsTemplate(configuration: ConfigurationReader, key:
   const template = (outputPaths as Record<string, unknown>)[key];
   return typeof template === 'string' && template.trim() !== '' ? template : defaultValue;
 }
+
+const EXTENSION_TO_FORMAT: Record<string, string> = {
+  '.png': 'Png',
+  '.jpg': 'Jpeg',
+  '.jpeg': 'Jpeg',
+  '.webp': 'Webp',
+  '.avif': 'Avif',
+  '.gif': 'Gif',
+  '.tiff': 'Tiff',
+  '.tif': 'Tiff',
+};
+
+export function readConvertToRawOutputPath(
+  configuration: ConfigurationReader,
+  sourceExtension: string,
+  defaultValue: string,
+): string {
+  const format = EXTENSION_TO_FORMAT[sourceExtension.toLowerCase()];
+  if (format) {
+    return readOutputPathsTemplate(configuration, `convert${format}ToRaw`, defaultValue);
+  }
+  return readOutputPathsTemplate(configuration, 'convertToRaw', defaultValue);
+}

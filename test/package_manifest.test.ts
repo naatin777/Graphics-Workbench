@@ -79,7 +79,7 @@ interface PackageJson {
       properties: Record<
         string,
         {
-          type: string;
+          type: string | string[];
           default: unknown;
           minimum?: number;
           maximum?: number;
@@ -255,8 +255,8 @@ suite('package.jsonの変換メニュー定義', () => {
 
   test('画像を1つのPDFへ結合するコマンドを複合Draw.io画像から除外する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
-    const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
-    const combineImagesToSinglePdf = explorerContext.find(
+    const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
+    const combineImagesToSinglePdf = convertMenu.find(
       (entry) => entry.command === COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND,
     );
 
@@ -598,66 +598,6 @@ suite('package.jsonの変換メニュー定義', () => {
       type: 'string',
       default: '${fileDirname}/${dateNow}',
       description: '%config.outputPath.clipboardImage%',
-    });
-    assert.deepStrictEqual(properties['latex-graphics-helper.figure.placementOptions'], {
-      type: 'array',
-      default: [
-        '[H]',
-        '[h]',
-        '[t]',
-        '[b]',
-        '[p]',
-        '[ht]',
-        '[hb]',
-        '[hp]',
-        '[tb]',
-        '[tp]',
-        '[bp]',
-        '[htb]',
-        '[htp]',
-        '[hbp]',
-        '[tbp]',
-        '[htbp]',
-      ],
-      description: '%config.figure.placementOptions%',
-    });
-    assert.deepStrictEqual(properties['latex-graphics-helper.figure.alignmentOptions'], {
-      type: 'array',
-      default: ['\\centering', '\\raggedright', '\\raggedleft'],
-      description: '%config.figure.alignmentOptions%',
-    });
-    assert.deepStrictEqual(properties['latex-graphics-helper.figure.graphicsOptions'], {
-      type: 'array',
-      default: [
-        '[width=1.0\\linewidth]',
-        '[width=0.9\\linewidth]',
-        '[width=0.8\\linewidth]',
-        '[width=0.7\\linewidth]',
-        '[width=0.6\\linewidth]',
-        '[width=0.5\\linewidth]',
-      ],
-      description: '%config.figure.graphicsOptions%',
-    });
-    assert.deepStrictEqual(properties['latex-graphics-helper.subfigure.verticalAlignmentOptions'], {
-      type: 'array',
-      default: ['[t]', '[c]', '[b]'],
-      description: '%config.subfigure.verticalAlignmentOptions%',
-    });
-    assert.deepStrictEqual(properties['latex-graphics-helper.subfigure.widthOptions'], {
-      type: 'array',
-      default: ['{0.45\\linewidth}', '{0.35\\linewidth}', '{0.25\\linewidth}', '{0.15\\linewidth}'],
-      description: '%config.subfigure.widthOptions%',
-    });
-    assert.deepStrictEqual(properties['latex-graphics-helper.subfigure.spacingOptions'], {
-      type: 'array',
-      default: [
-        '\\hspace{0.01\\linewidth}',
-        '\\hspace{0.02\\linewidth}',
-        '\\hspace{0.03\\linewidth}',
-        '\\hspace{0.04\\linewidth}',
-        '\\hspace{0.05\\linewidth}',
-      ],
-      description: '%config.subfigure.spacingOptions%',
     });
   });
 });
