@@ -51,7 +51,7 @@ export async function convertToSvgCommand(
     const jobs = (
       await Promise.all(sourceUris.map((sourceUri) => planSvgConversionJobs(sourceUri, configuration)))
     ).flat();
-    const mermaidTools = readMermaidPuppeteerOptions(configuration, 'convertToSvg');
+    const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
     const ghostscriptTools = {

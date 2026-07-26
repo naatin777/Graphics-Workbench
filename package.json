@@ -527,65 +527,6 @@
           "default": "puppeteer",
           "description": "%config.convertToPdf.svg.engine%"
         },
-        "latex-graphics-helper.convertToPdf.svg.puppeteer.browserChannel": {
-          "type": "string",
-          "enum": [
-            "chrome",
-            "chrome-beta",
-            "chrome-dev",
-            "chrome-canary"
-          ],
-          "default": "chrome",
-          "description": "%config.convertToPdf.svg.puppeteer.browserChannel%"
-        },
-        "latex-graphics-helper.convertToPdf.svg.puppeteer.executablePath": {
-          "type": "string",
-          "default": "",
-          "description": "%config.convertToPdf.svg.puppeteer.executablePath%"
-        },
-        "latex-graphics-helper.convertToPdf.mermaid.puppeteer.browserChannel": {
-          "type": "string",
-          "enum": [
-            "chrome",
-            "chrome-beta",
-            "chrome-dev",
-            "chrome-canary"
-          ],
-          "default": "chrome",
-          "description": "%config.convertToPdf.mermaid.puppeteer.browserChannel%"
-        },
-        "latex-graphics-helper.convertToPdf.mermaid.puppeteer.executablePath": {
-          "type": "string",
-          "default": "",
-          "description": "%config.convertToPdf.mermaid.puppeteer.executablePath%"
-        },
-        "latex-graphics-helper.convertToSvg.mermaid.puppeteer.browserChannel": {
-          "type": "string",
-          "enum": [
-            "chrome",
-            "chrome-beta",
-            "chrome-dev",
-            "chrome-canary"
-          ],
-          "default": "chrome",
-          "description": "%config.convertToSvg.mermaid.puppeteer.browserChannel%"
-        },
-        "latex-graphics-helper.convertToSvg.mermaid.puppeteer.executablePath": {
-          "type": "string",
-          "default": "",
-          "description": "%config.convertToSvg.mermaid.puppeteer.executablePath%"
-        },
-        "latex-graphics-helper.mermaid.puppeteer.browserChannel": {
-          "type": "string",
-          "enum": [
-            "chrome",
-            "chrome-beta",
-            "chrome-dev",
-            "chrome-canary"
-          ],
-          "default": "chrome",
-          "description": "%config.mermaid.puppeteer.browserChannel%"
-        },
         "latex-graphics-helper.mermaid.theme": {
           "type": "string",
           "enum": [

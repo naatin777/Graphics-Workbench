@@ -7,21 +7,18 @@ import {
 
 suite('MermaidテーマおよびbackgroundColor設定', () => {
   test('デフォルトはtheme=default、backgroundColor=white', () => {
-    const options = readMermaidPuppeteerOptions(fakeConfiguration({}), 'convertToPdf');
+    const options = readMermaidPuppeteerOptions(fakeConfiguration({}));
     assert.strictEqual(options.theme, 'default');
     assert.strictEqual(options.backgroundColor, 'white');
   });
 
   test('mermaid.themeからカスタムテーマを読み取る', () => {
-    const options = readMermaidPuppeteerOptions(fakeConfiguration({ 'mermaid.theme': 'dark' }), 'convertToPdf');
+    const options = readMermaidPuppeteerOptions(fakeConfiguration({ 'mermaid.theme': 'dark' }));
     assert.strictEqual(options.theme, 'dark');
   });
 
   test('mermaid.backgroundColorからカスタムbackgroundColorを読み取る', () => {
-    const options = readMermaidPuppeteerOptions(
-      fakeConfiguration({ 'mermaid.backgroundColor': 'transparent' }),
-      'convertToPdf',
-    );
+    const options = readMermaidPuppeteerOptions(fakeConfiguration({ 'mermaid.backgroundColor': 'transparent' }));
     assert.strictEqual(options.backgroundColor, 'transparent');
   });
 
@@ -31,7 +28,6 @@ suite('MermaidテーマおよびbackgroundColor設定', () => {
         'puppeteer.executablePath': '/usr/bin/chrome',
         'mermaid.theme': 'forest',
       }),
-      'convertToSvg',
     );
     assert.strictEqual(options.theme, 'forest');
     assert.strictEqual(options.backgroundColor, 'white');
@@ -43,9 +39,6 @@ function fakeConfiguration(values: Record<string, string>): MermaidConfiguration
   return {
     get<T>(key: string, defaultValue: T): T {
       return (key in values ? values[key] : defaultValue) as T;
-    },
-    inspect<T>(key: string) {
-      return key in values ? { workspaceValue: values[key] as T } : {};
     },
   };
 }

@@ -70,7 +70,7 @@ export async function convertToWebpCommand(
         ),
       )
     ).flat();
-    const mermaidTools = readMermaidPuppeteerOptions(configuration, 'convertToPdf');
+    const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const webp = readWebpOutputOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };

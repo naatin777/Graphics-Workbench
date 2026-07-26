@@ -118,7 +118,7 @@ async function convertSelectedSourcesToPdf(
     const outputTemplate = readOutputPathTemplate(configuration, 'outputPath.convertPngToPdf', DEFAULT_OUTPUT_PATH);
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
-    const mermaidTools = readMermaidPuppeteerOptions(configuration, 'convertToPdf');
+    const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     const jobs = (
@@ -213,13 +213,13 @@ export function outputTemplateForSource(
 }
 
 export function readSvgToPdfOptions(configuration: vscode.WorkspaceConfiguration): SvgToPdfBackend {
-  const executablePath = readPuppeteerExecutablePath(configuration, 'convertToPdf.svg.puppeteer.executablePath');
+  const executablePath = readPuppeteerExecutablePath(configuration);
 
   return {
     engine: configuration.get<SvgToPdfEngine>('convertToPdf.svg.engine', 'puppeteer'),
     rsvgConvertPath: readRsvgConvertExecutablePath(configuration),
     puppeteerBrowser: configuration.get<'chrome' | 'firefox'>('puppeteer.browser', 'chrome'),
-    puppeteerBrowserChannel: configuration.get('convertToPdf.svg.puppeteer.browserChannel', 'chrome'),
+    puppeteerBrowserChannel: configuration.get('puppeteer.browser', 'chrome'),
     ...(executablePath ? { puppeteerExecutablePath: executablePath } : {}),
   };
 }

@@ -53,7 +53,7 @@ export async function convertToPngCommand(
     const jobs = (
       await Promise.all(sourceUris.map((sourceUri) => planPngConversionJobs(sourceUri, configuration, maxInputPixels)))
     ).flat();
-    const mermaidTools = readMermaidPuppeteerOptions(configuration, 'convertToPdf');
+    const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
     const ghostscriptTools = {

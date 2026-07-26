@@ -58,7 +58,7 @@ export async function convertToAvifCommand(
     const jobs = (
       await Promise.all(sourceUris.map((sourceUri) => planAvifConversionJobs(sourceUri, configuration, maxInputPixels)))
     ).flat();
-    const mermaidTools = readMermaidPuppeteerOptions(configuration, 'convertToPdf');
+    const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const avif = readAvifOutputOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };

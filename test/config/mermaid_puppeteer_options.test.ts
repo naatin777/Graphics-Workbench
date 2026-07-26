@@ -7,51 +7,64 @@ import {
 } from '../../src/config/rendering/mermaid_puppeteer_options.js';
 
 suite('Mermaid Puppeteer設定', () => {
-  test('共通設定が未設定のときレガシー出力別設定を使用する', () => {
+  test('puppeteer.browserからbrowserChannelを読み取る', () => {
     const options = readMermaidPuppeteerOptions(
       fakeConfiguration({
-        'convertToSvg.mermaid.puppeteer.browserChannel': 'chrome-beta',
-        'convertToSvg.mermaid.puppeteer.executablePath': '/legacy/chrome',
+        'puppeteer.browser': 'firefox',
       }),
-      'convertToSvg',
     );
 
     assert.deepEqual(options, {
-      browserChannel: 'chrome-beta',
-      executablePath: '/legacy/chrome',
+      browserChannel: 'firefox',
       theme: 'default',
       backgroundColor: 'white',
     });
   });
 
-  test('値が意図的にレガシー設定をクリアしても共通設定を使用する', () => {
+  test('puppeteer.executablePathが設定されているとき実行パスを返す', () => {
     const options = readMermaidPuppeteerOptions(
       fakeConfiguration({
-        'mermaid.puppeteer.browserChannel': 'chrome-dev',
-        'puppeteer.executablePath': '',
-        'convertToPdf.mermaid.puppeteer.browserChannel': 'chrome-canary',
-        'convertToPdf.mermaid.puppeteer.executablePath': '/legacy/chrome',
+        'puppeteer.executablePath': '/usr/bin/chrome',
       }),
-      'convertToPdf',
     );
 
     assert.deepEqual(options, {
-      browserChannel: 'chrome-dev',
+      browserChannel: 'chrome',
+      executablePath: '/usr/bin/chrome',
       theme: 'default',
       backgroundColor: 'white',
     });
   });
 
-  test('SVG変換と共通の実行パスを共有する', () => {
+  test('mermaidのテーマと背景色を読み取る', () => {
+    const options = readMermaidPuppeteerOptions(
+      fakeConfiguration({
+        'mermaid.theme': 'dark',
+        'mermaid.backgroundColor': '#000',
+      }),
+    );
+
+    assert.deepEqual(options, {
+      browserChannel: 'chrome',
+      theme: 'dark',
+      backgroundColor: '#000',
+    });
+  });
+
+  test('readPuppeteerExecutablePathはpuppeteer.executablePathを返す', () => {
     const executablePath = readPuppeteerExecutablePath(
       fakeConfiguration({
         'puppeteer.executablePath': '/shared/chrome',
-        'convertToPdf.svg.puppeteer.executablePath': '/legacy/chrome',
       }),
-      'convertToPdf.svg.puppeteer.executablePath',
     );
 
     assert.strictEqual(executablePath, '/shared/chrome');
+  });
+
+  test('readPuppeteerExecutablePathは空文字のとき空文字を返す', () => {
+    const executablePath = readPuppeteerExecutablePath(fakeConfiguration({}));
+
+    assert.strictEqual(executablePath, '');
   });
 });
 
@@ -59,9 +72,6 @@ function fakeConfiguration(values: Record<string, string>): MermaidConfiguration
   return {
     get<T>(key: string, defaultValue: T): T {
       return (key in values ? values[key] : defaultValue) as T;
-    },
-    inspect<T>(key: string) {
-      return key in values ? { workspaceValue: values[key] as T } : {};
     },
   };
 }

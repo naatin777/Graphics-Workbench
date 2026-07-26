@@ -76,7 +76,7 @@ export async function convertToGifCommand(
             ghostscriptPath: readGhostscriptExecutablePath(configuration),
             platform: process.platform,
           },
-          mermaidTools: readMermaidPuppeteerOptions(configuration, 'convertToPdf'),
+          mermaidTools: readMermaidPuppeteerOptions(configuration),
           drawioTools: readDrawioOptions(configuration),
           runtime,
         }),
