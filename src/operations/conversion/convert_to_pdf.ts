@@ -111,10 +111,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   await validateJobPaths(options.jobs, 'convert-png-to-pdf');
   runtime?.signal?.throwIfAborted();
 
-  await assertPreflightPassed(options.jobs, {
-    ...preflightOptionsFromRuntime(runtime),
-    maxInputPixels,
-  });
+  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;

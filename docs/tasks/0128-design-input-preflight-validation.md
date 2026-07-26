@@ -2,7 +2,7 @@
 
 ## Status
 
-Spec Complete — `docs/specs/internal/input-preflight.md` に記録済み。残る実装は0204で追跡する。
+Superseded — 形式別の深いpreflightは削除し、安価なjob/path validationだけに簡素化した。詳細は0204を参照。
 
 ## 目的
 

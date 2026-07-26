@@ -2,11 +2,9 @@ import * as vscode from 'vscode';
 
 import type { CommittedConversionOutput } from '../../operations/lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import type { ConfirmWarningsHandler } from '../../operations/input/input_preflight.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 
 import { withCancellationSignal } from './progress_cancellation.js';
-import { createPreflightWarningConfirmation } from './preflight_warning_confirmation.js';
 import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from './undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, errorMessage } from '../shared/command_utils.js';
@@ -53,7 +51,6 @@ export async function runConversionLifecycle(options: {
   messages: ConversionCommandMessages;
   outputChannel?: LineOutputChannel;
   resolveConflicts?: ConversionExecutionContext['resolveConflicts'];
-  onConfirmWarnings?: ConfirmWarningsHandler;
   run: (runtime: ConversionExecutionContext) => Promise<CommittedConversionOutput[]>;
 }): Promise<void> {
   try {
@@ -78,8 +75,6 @@ export async function runConversionLifecycle(options: {
           if (options.resolveConflicts !== undefined) {
             runtimeOptions.resolveConflicts = options.resolveConflicts;
           }
-          runtimeOptions.onConfirmWarnings =
-            options.onConfirmWarnings ?? createPreflightWarningConfirmation(options.operationName);
           return options.run(runtimeOptions);
         }),
     );

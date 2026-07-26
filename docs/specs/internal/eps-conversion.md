@@ -2,7 +2,7 @@
 
 ## 目的
 
-EPS（Encapsulated PostScript）を既存の出力形式基準commandの入力として安全に扱うための変換経路、security境界、preflight条件を定義する。
+EPS（Encapsulated PostScript）を既存の出力形式基準commandの入力として安全に扱うための変換経路、security境界、job validation条件を定義する。
 
 EPSはPostScript programであり、通常の画像形式とは異なり任意のPostScript codeを実行できる。そのため、Ghostscriptのsafe mode、resource制限、生成PDFの検証を必須とする。
 
@@ -21,9 +21,9 @@ EPS (.eps)
 
 ### 変換手順
 
-1. EPS入力のpreflight（BoundingBox、PostScript parse、resource上限）を実施する
+1. EPS入力のpreflight（形式判定、file存在、regular file、空でない）を実施する
 2. Ghostscript `-dSAFER -dNOPAUSE -dBATCH -dEPSCrop -sDEVICE=pdfwrite` でEPSをPDFへ変換する
-3. 生成PDFのpreflight（1 page、MediaBox有限、破損なし）を確認する
+3. 生成PDFの出力形式検証（1 page、MediaBox有限、破損なし）を確認する
 4. 生成PDFを既存の変換経路へ渡す
 
 Ghostscriptが生成したPDFは、既存のPDF-to-anything変換経路へそのまま渡すことができる。EPSから直接pdftocairoへ渡さず、必ずPDF中間artifactを経由する。
@@ -50,7 +50,7 @@ case '.eps':
   return 'eps';
 ```
 
-`isSupportedImageInputPath` は `format === 'eps'` を含めない。EPSは既存の画像入力と同じUIで扱うが、preflightとresource制限を通過したものだけを変換する。
+`isSupportedImageInputPath` は `format === 'eps'` を含めない。EPSは既存の画像入力と同じUIで扱うが、job validationとresource制限を通過したものだけを変換する。
 
 EPS入力は次の経路で有効にする。
 
@@ -63,27 +63,11 @@ EPS入力は次の経路で有効にする。
 
 ## Preflight条件
 
-### BoundingBox
-
-EPS headerの `%%BoundingBox` を確認する。
-
-| 状態      | 扱い                                        |
-| --------- | ------------------------------------------- |
-| 正常      | 4つの整数値。llx < urx、lly < uryを確認する |
-| 欠落      | 変換しない。エラーとして通知する            |
-| 不正な値  | 非整数、NaN → 変換しない                    |
-| `(atend)` | Ghostscript依存。事前parseで検出しwarning   |
-
-BoundingBoxが `%%BoundingBox: (atend)` の場合は、一度Ghostscriptで処理してから生成PDFのMediaBoxを確認する。この場合は事前rejectせず、変換後に検証する。
+入力段階では、形式判定、file存在、regular file、空でないことを確認する。EPS固有のPostScript構造・BoundingBox検査は行わない。
 
 ### PostScript構造
 
-Preflightでは次の確認を行う。
-
-1. ファイルの先頭が `%!PS-Adobe-` または `%!PS` で始まることを確認する
-2. 埋め込みfile操作（`file`、`renamefile`、`deletefile`）をPostScript codeから静的に検出しない。`-dSAFER` への信頼により対応する
-
-完全なPostScript parseは行わない。構造確認はheader文字列確認に留める。
+EPS固有のPostScript header確認は行わない。不正なEPSはGhostscriptがエラーとして検出する。
 
 ### 生成PDFの検証
 
@@ -122,7 +106,7 @@ EPS入力ファイルは論理入力からASCII scratchへcopyし、Ghostscript�
 
 ### 生成PDFの扱い
 
-Ghostscriptが生成したPDF中間artifactは、ASCII scratch内で管理する。workspace内transaction stagingへのcopyは、生成PDFのpreflight通過後に行う。
+Ghostscriptが生成したPDF中間artifactは、ASCII scratch内で管理する。workspace内transaction stagingへのcopyは、生成PDFの出力形式検証通過後に行う。
 
 ## Resource制限
 
@@ -221,6 +205,6 @@ BoundingBox欠落・不正のfixtureも別途用意する。
 - [外部コマンド用ASCII scratch仕様](external-tool-ascii-scratch.md)
 - [変換処理の進捗表示とキャンセルの内部契約](conversion-progress-and-cancellation.md)
 - [sharpとGhostscriptの追加形式予備調査](../../research/2026-07-10-sharp-ghostscript-additional-formats.md)
-- [変換入力preflightタスク](../../tasks/0128-design-input-preflight-validation.md)
+- [入力job validationの内部契約](input-preflight.md)
 - [ADR-0010: CIの外部ツール検証はVS Code設定経由で行う](../../adr/0010-verify-external-tools-through-vscode-settings.md)
 - [ADR-0012: Unicode非互換のWindows外部コマンドにはOS一時scratchを使う](../../adr/0012-use-os-temp-for-incompatible-windows-tools.md)

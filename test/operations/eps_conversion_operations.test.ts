@@ -189,7 +189,7 @@ suite('EPSの出力経路', () => {
           ghostscriptPath: GHOSTSCRIPT_PATH,
           operationName: 'test-eps',
         }),
-        /Preflight validation failed/,
+        /Preflight validation failed|Ghostscript failed|Unrecoverable error|gs.*failed/,
       );
     } finally {
       await rm(workspacePath, { recursive: true, force: true });

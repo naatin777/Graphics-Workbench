@@ -57,6 +57,5 @@ Raster入力で次のcontractを採用する。
 
 ## 関連
 
-- [Raster入力preflightの内部契約](../specs/internal/input-preflight.md)
-- [Raster入力のfile-handle回帰test](../../test/operations/input_preflight_file_handle.test.ts)
+- [変換入力job validationの内部契約](../specs/internal/input-preflight.md)
 - [ADRの運用方針](README.md)

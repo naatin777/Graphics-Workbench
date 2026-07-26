@@ -137,10 +137,7 @@ export async function executeRasterConversionBatch(
   await validateJobPaths(options.jobs, options.definition.stagingDirectoryName);
   options.runtime.signal?.throwIfAborted();
 
-  await assertPreflightPassed(options.jobs, {
-    ...preflightOptionsFromRuntime(options.runtime),
-    maxInputPixels: options.maxInputPixels,
-  });
+  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(options.runtime));
   options.runtime.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;

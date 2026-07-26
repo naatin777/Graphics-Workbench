@@ -42,7 +42,7 @@ Taskは小さな作業手順やPR単位ではなく、達成する成果また�
 
 - [0099: Mermaid描画設定の仕様を決める](0099-design-mermaid-render-settings.md) — Spec Complete
 - [0119: LaTeX挿入フォーマットの仕様を決める](0119-design-latex-insertion-format.md) — Spec Complete
-- [0128: 変換入力preflightの仕様を決める](0128-design-input-preflight-validation.md) — Spec Complete
+- [0128: 変換入力preflightの仕様を決める](0128-design-input-preflight-validation.md) — Superseded
 
 ### Implementation
 
@@ -76,7 +76,7 @@ _No pending migration tasks._
 - [0101: sharp更新のDependabot対応を再評価する](0101-evaluate-sharp-dependabot-update.md) — Done — Superseded
 - [0202: npm移行で失われた依存install security policyを復元する](0202-restore-npm-dependency-security-policy.md)
 - [0180: パッケージ済みVSIXのオフライン3 OS smoke testを追加する](0180-add-packaged-vsix-offline-smoke-tests.md)
-- [0204: 変換入力preflightの未実装契約を完了する](0204-complete-input-preflight-implementation.md)
+- [0204: 変換入力preflightの未実装契約を完了する](0204-complete-input-preflight-implementation.md) — Done
 - [0201: Node-level testの実行基盤を決定する](0201-decide-node-test-runtime.md)
 - [0200: Node test runtimeを小規模検証する](0200-experiment-node-test-runtime.md)
 - [0199: v1 test Evidence inventoryを完了する](0199-complete-test-evidence-inventory.md)

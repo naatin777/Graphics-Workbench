@@ -119,7 +119,7 @@ separatorはNode.js `path`が生成したnative形式をそのまま引数とし
 
 別名file、0 byte file、途中fileは成功扱いしない。期待外のfileはscratch内に残してよいが、transaction stagingや論理出力へcopyしない。
 
-PDF・画像として内容が妥当かを検証するpreflightは[変換入力preflightタスク](../../tasks/0128-design-input-preflight-validation.md)で別に決める。
+PDF・画像として内容が妥当かを検証する生成物検証は各変換operationが担当する。
 
 ## Safe ModeとUndo
 

@@ -78,10 +78,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
 
   await assertPreflightPassed(
     options.jobs.flatMap((job) => job.inputs.map((input) => ({ ...input, workspacePath: job.workspacePath }))),
-    {
-      ...preflightOptionsFromRuntime(options.runtime),
-      maxInputPixels: options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
-    },
+    preflightOptionsFromRuntime(options.runtime),
   );
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
 

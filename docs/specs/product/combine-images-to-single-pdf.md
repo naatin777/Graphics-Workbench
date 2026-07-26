@@ -6,9 +6,9 @@
 
 ## コマンド
 
-| Command ID | 表示名 | 出力形式 |
-|-----------|--------|---------|
-| `latex-graphics-helper.convertImagesToSinglePdf` | 画像を1つのPDFに結合 | PDF |
+| Command ID                                       | 表示名               | 出力形式 |
+| ------------------------------------------------ | -------------------- | -------- |
+| `latex-graphics-helper.convertImagesToSinglePdf` | 画像を1つのPDFに結合 | PDF      |
 
 ## 対象入力形式
 
@@ -96,5 +96,5 @@ outputPath 設定は `outputPath.convertImagesToSinglePdf` で提供する。未
 - [出力形式基準の変換仕様](output-format-conversion.md)
 - [Safe Mode仕様](safe-mode.md)
 - [EPS変換の内部契約](../internal/eps-conversion.md)
-- [変換入力preflightの内部契約](../internal/input-preflight.md)
+- [変換入力job validationの内部契約](../internal/input-preflight.md)
 - [0096: 複数画像を1つのPDFへ結合する仕様を決める](../../tasks/0096-design-combine-images-to-single-pdf.md)

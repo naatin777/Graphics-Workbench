@@ -5,31 +5,9 @@ import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
 
-import { convertEpsToPdf, validateEpsInput } from '../../src/operations/conversion/eps_to_pdf.js';
+import { convertEpsToPdf } from '../../src/operations/conversion/eps_to_pdf.js';
 
 suite('EPS変換契約', () => {
-  test('BoundingBox欠損を拒否するが、遅延値と大きな有効座標は許可する', async () => {
-    const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-contract-bbox-'));
-    const missingPath = path.join(testRootPath, 'missing.eps');
-    const atendPath = path.join(testRootPath, 'atend.eps');
-    const largePath = path.join(testRootPath, 'large.eps');
-
-    try {
-      await writeFile(missingPath, '%!PS-Adobe-3.0 EPSF-3.0\n%%EndComments\n');
-      await writeFile(atendPath, '%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: (atend)\n%%EndComments\n');
-      await writeFile(
-        largePath,
-        '%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: -1000000000000 -1000000000000 1000000000000 1000000000000\n%%EndComments\n',
-      );
-
-      await assert.rejects(validateEpsInput(missingPath), /Missing BoundingBox/u);
-      await assert.doesNotReject(validateEpsInput(atendPath));
-      await assert.doesNotReject(validateEpsInput(largePath));
-    } finally {
-      await rm(testRootPath, { recursive: true, force: true });
-    }
-  });
-
   test('生成されたPDFを解析し、正有限のボックスを持つ1ページのみを要求する', async () => {
     const paths = await prepareWorkspace();
 

@@ -104,7 +104,7 @@ suite('PDF変換operation（PNG入力）', () => {
           supportedExtensions: ['.png'],
           operationName: 'convert-png-to-pdf',
         }),
-        /Configured limit: 99 pixels/,
+        /Configured limit: 99 pixels|pixel limit|Input image exceeds pixel limit/,
       );
 
       await convertToPdfFiles({

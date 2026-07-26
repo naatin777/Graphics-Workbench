@@ -1,6 +1,5 @@
 import type { OutputConflictDecision } from './commit_conversion_outputs.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
-import type { ConfirmWarningsHandler } from '../input/input_preflight.js';
 
 type ConflictResolver = (conflicts: string[]) => Promise<OutputConflictDecision>;
 type ProgressReporter = (completed: number, total: number) => void;
@@ -11,5 +10,4 @@ export interface ConversionExecutionContext {
   outputChannel?: LineOutputChannel;
   resolveConflicts?: ConflictResolver;
   reportProgress?: ProgressReporter;
-  onConfirmWarnings?: ConfirmWarningsHandler;
 }

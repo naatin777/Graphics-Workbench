@@ -11,7 +11,6 @@ import { compressPdfFiles, type CompressPdfJob, type GhostscriptQuality } from '
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { createPreflightWarningConfirmation } from '../lifecycle/preflight_warning_confirmation.js';
 import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, selectedUris } from '../shared/command_utils.js';
@@ -62,7 +61,6 @@ export async function compressPdfCommand(
             signal,
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
-            onConfirmWarnings: createPreflightWarningConfirmation('compress-pdf'),
           };
           return compressPdfFiles({
             jobs,

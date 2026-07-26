@@ -51,10 +51,7 @@ export async function convertToRawFiles(options: ConvertToRawFilesOptions): Prom
   );
   const sidecars = await Promise.all(options.jobs.map((job) => readRawSidecar(job.sourcePath, job.workspacePath)));
   options.runtime.signal?.throwIfAborted();
-  await assertPreflightPassed(options.jobs, {
-    ...preflightOptionsFromRuntime(options.runtime),
-    maxInputPixels: options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
-  });
+  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(options.runtime));
 
   return runStagedConversionBatch({
     jobs: options.jobs,

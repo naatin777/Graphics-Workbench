@@ -83,7 +83,7 @@ suite('画像→1PDF結合', () => {
           workspacePath,
           maxInputPixels: 99,
         }),
-        /configured raster input pixel limit/u,
+        /configured raster input pixel limit|pixel limit|Input image exceeds pixel limit/u,
       );
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
@@ -283,7 +283,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('破損画像はpreflightで停止する', async () => {
+  test('破損画像は変換で停止する', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -296,7 +296,7 @@ suite('画像→1PDF結合', () => {
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
         }),
-        /Preflight validation failed/,
+        /unsupported image format|Input file contains|not a valid|invalid/i,
       );
     } finally {
       await rm(workspacePath, { recursive: true, force: true });

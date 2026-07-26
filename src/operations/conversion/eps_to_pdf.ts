@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { copyFile, mkdir, open, readFile, stat } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -200,52 +200,6 @@ async function validateGeneratedPdf(pdfPath: string): Promise<void> {
     if (!values.every(Number.isFinite) || box.width <= 0 || box.height <= 0) {
       throw new Error(`EPS conversion produced invalid ${boxName} dimensions: ${pdfPath}`);
     }
-  }
-}
-
-/** Performs a minimal preflight check on an EPS file. */
-export async function validateEpsInput(epsPath: string): Promise<void> {
-  const handle = await open(epsPath, 'r');
-  let head: string;
-
-  try {
-    const buffer = Buffer.alloc(1024);
-    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-    head = buffer.subarray(0, bytesRead).toString('utf8');
-  } finally {
-    await handle.close();
-  }
-
-  if (!head.startsWith('%!PS-Adobe-') && !head.startsWith('%!PS')) {
-    throw new Error(`Not a valid EPS file (missing PostScript header): ${epsPath}`);
-  }
-
-  const bbMatch = head.match(/^%%BoundingBox:\s*(.*?)\s*$/m);
-
-  if (!bbMatch) {
-    throw new Error(`Missing BoundingBox in EPS: ${epsPath}`);
-  }
-
-  const boundingBox = bbMatch[1]!.trim();
-
-  if (boundingBox === '(atend)') {
-    return;
-  }
-
-  const values = boundingBox.split(/\s+/u);
-
-  if (values.length !== 4 || values.some((value) => !/^-?\d+$/u.test(value))) {
-    throw new Error(`Invalid BoundingBox in EPS: ${epsPath}`);
-  }
-
-  const numericValues = values.map((value) => Number(value));
-  const llx = numericValues[0] ?? Number.NaN;
-  const lly = numericValues[1] ?? Number.NaN;
-  const urx = numericValues[2] ?? Number.NaN;
-  const ury = numericValues[3] ?? Number.NaN;
-
-  if (![llx, lly, urx, ury].every(Number.isSafeInteger) || llx >= urx || lly >= ury) {
-    throw new Error(`Invalid BoundingBox in EPS (llx=${llx}, lly=${lly}, urx=${urx}, ury=${ury}): ${epsPath}`);
   }
 }
 

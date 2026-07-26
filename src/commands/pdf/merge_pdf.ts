@@ -16,7 +16,6 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import { createPreflightWarningConfirmation } from '../lifecycle/preflight_warning_confirmation.js';
 import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../shared/command_utils.js';
@@ -60,7 +59,6 @@ export async function mergePdfSelectedFilesCommand(
             signal,
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
-            onConfirmWarnings: createPreflightWarningConfirmation('merge-pdf'),
           };
           return mergePdf({
             sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
@@ -237,7 +235,6 @@ async function applyConfiguredMerge(params: {
             signal: abortController.signal,
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
-            onConfirmWarnings: createPreflightWarningConfirmation('merge-pdf'),
           };
           return await mergePdf({
             sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),

@@ -62,10 +62,7 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
   await validateJobPaths(options.jobs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
 
-  await assertPreflightPassed(options.jobs, {
-    ...preflightOptionsFromRuntime(runtime),
-    maxInputPixels,
-  });
+  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;

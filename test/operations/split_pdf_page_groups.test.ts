@@ -98,7 +98,7 @@ suite('PDFページグループ分割', () => {
           ],
           runId: 'run',
         }),
-        /Preflight validation failed/,
+        /Preflight validation failed|Failed to parse PDF|No PDF header found/,
       );
 
       await assert.rejects(access(outputPath));

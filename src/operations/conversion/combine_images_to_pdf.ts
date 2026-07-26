@@ -60,10 +60,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
 
   await assertPreflightPassed(
     options.jobs.map((job) => ({ ...job, workspacePath: options.workspacePath })),
-    {
-      ...preflightOptionsFromRuntime(runtime),
-      maxInputPixels: configuredMaxInputPixels,
-    },
+    preflightOptionsFromRuntime(runtime),
   );
   runtime?.signal?.throwIfAborted();
 
