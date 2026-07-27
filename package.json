@@ -86,7 +86,7 @@
     "oxlint": "^1.74.0",
     "oxlint-tsgolint": "^0.25.0",
     "pdfjs-dist": "^6.1.200",
-    "sinon": "^22.0.0",
+    "sinon": "^22.1.0",
     "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
