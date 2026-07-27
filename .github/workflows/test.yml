@@ -154,14 +154,14 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Download Extension Host coverage reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: vscode-extension-host-coverage-*
           path: coverage-input
           merge-multiple: false
 
       - name: Download Webview coverage report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: webview-vitest-coverage
           path: coverage-input/webview-vitest-coverage
