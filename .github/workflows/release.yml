@@ -191,7 +191,7 @@ jobs:
                   LGH_VSIX_PATH: ${{ github.workspace }}/latex-graphics-helper-${{ matrix.label }}.vsix
 
             - if: failure()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: packaged-electron-playwright-${{ matrix.artifact_suffix }}
                   path: |
@@ -200,7 +200,7 @@ jobs:
                   if-no-files-found: ignore
 
             - if: success()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: vsix-${{ matrix.artifact_suffix }}
                   path: latex-graphics-helper-${{ matrix.label }}.vsix
