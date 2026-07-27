@@ -1,0 +1,31 @@
+# lefthook.yml
+
+pre-commit:
+  parallel: false
+
+  commands:
+    format:
+      glob: "*.{ts,tsx,js,jsx,json,jsonc,md,html,css}"
+      run: npx --no -- oxfmt --config ./oxfmt.config.ts --write {staged_files}
+      stage_fixed: true
+
+    lint:
+      glob: "*.{ts,tsx,js,jsx}"
+      run: npx --no oxlint {staged_files}
+
+commit-msg:
+  parallel: false
+
+  commands:
+    commitlint:
+      run: npx --no -- commitlint --edit {1}
+
+pre-push:
+  parallel: false
+
+  commands:
+    typecheck:
+      run: npm run check:all
+
+    build:
+      run: npm run build

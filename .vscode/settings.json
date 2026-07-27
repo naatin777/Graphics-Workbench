@@ -1,0 +1,24 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+  "files.exclude": {
+    "out": true,
+    "media": true
+  },
+  "search.exclude": {
+    "out": true,
+    "media": true
+  },
+  // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
+  "js/ts.tsc.autoDetect": "off",
+  "npm.packageManager": "npm",
+  "[javascript][javascriptreact][typescript][typescriptreact][json][jsonc]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "explicit"
+  },
+  "oxc.path.oxfmt": "${workspaceFolder}/node_modules/.bin/oxfmt",
+  "oxc.path.oxlint": "${workspaceFolder}/node_modules/.bin/oxlint"
+}

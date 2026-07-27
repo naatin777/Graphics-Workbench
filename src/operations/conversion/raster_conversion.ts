@@ -1,0 +1,496 @@
+import { execFile } from 'node:child_process';
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import { promisify } from 'node:util';
+
+import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
+
+import {
+  isEditableDrawioImagePath,
+  isMermaidPath,
+  isNativeDrawioPath,
+  isSameSourceFormat,
+  isSupportedImageInputPath,
+} from '../../application/policy/source_format.js';
+import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
+import { isAbortError } from '../../commands/shared/command_utils.js';
+
+import {
+  isRasterInputPixelLimitError,
+  rasterInputPixelLimitMessage,
+  type RasterAnimationMetadata,
+} from './raster_input.js';
+import {
+  type CommittedConversionOutput,
+  type PreparedConversionOutput,
+} from '../lifecycle/commit_conversion_outputs.js';
+
+export type { CommittedConversionOutput };
+import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
+import type { DrawioBackend, GhostscriptBackend, MermaidBackend, PdftocairoBackend } from './tools/index.js';
+import { convertEpsToPdf, type EpsToPdfOptions } from './eps_to_pdf.js';
+import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+import { createMermaidCliRenderOptions, createMermaidPuppeteerConfig } from './mermaid_render_options.js';
+import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
+import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import sharp from 'sharp';
+
+const execFileAsync = promisify(execFile);
+
+type RasterEncoder = (
+  sourcePath: string,
+  outputPath: string,
+  maxInputPixels: number,
+  page?: number,
+  animation?: RasterAnimationMetadata,
+) => Promise<void>;
+
+export interface RasterConversionDefinition {
+  operationName: string;
+  stagingDirectoryName: string;
+  resultExtension: string;
+  encoder: RasterEncoder;
+  unsupportedInputMessage: (sourcePath: string) => string;
+}
+
+export interface SimpleRasterConversionOptions {
+  operationName: string;
+  resultExtension: string;
+  encoder: RasterEncoder;
+}
+
+export function createSimpleRasterExecutor(options: SimpleRasterConversionOptions) {
+  const definition: RasterConversionDefinition = {
+    operationName: options.operationName,
+    stagingDirectoryName: options.operationName,
+    resultExtension: options.resultExtension,
+    encoder: options.encoder,
+    unsupportedInputMessage: (sourcePath) =>
+      `Unsupported input for ${options.resultExtension.toUpperCase()} conversion: ${sourcePath}`,
+  };
+
+  return (
+    batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
+      maxInputPixels?: number;
+    },
+  ) =>
+    executeRasterConversionBatch({
+      ...batchOptions,
+      maxInputPixels: batchOptions.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
+      definition,
+    });
+}
+
+export interface RasterJob {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  page?: number;
+  animation?: RasterAnimationMetadata;
+}
+
+export interface ExecuteRasterConversionBatchOptions {
+  jobs: RasterJob[];
+  runtime: ConversionExecutionContext;
+  pdftocairoTools: PdftocairoBackend;
+  ghostscriptTools: GhostscriptBackend;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
+  maxInputPixels: number;
+  runId?: string | undefined;
+  definition: RasterConversionDefinition;
+}
+
+interface RasterStageContext {
+  runId: string;
+  runtime: ConversionExecutionContext;
+  pdftocairoTools: PdftocairoBackend;
+  ghostscriptTools: GhostscriptBackend;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
+  definition: RasterConversionDefinition;
+  maxInputPixels: number;
+}
+
+interface RasterStagePaths {
+  stageDirectory: string;
+  stagedOutputPath: string;
+  stagingRootPath: string;
+}
+
+interface RasterRenderRequest {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  stageDirectory?: string;
+  page?: number;
+  animation?: RasterAnimationMetadata;
+}
+
+export async function executeRasterConversionBatch(
+  options: ExecuteRasterConversionBatchOptions,
+): Promise<CommittedConversionOutput[]> {
+  options.runtime.signal?.throwIfAborted();
+  validateJobs(options.jobs, options.definition);
+  await validateJobPaths(options.jobs, options.definition.stagingDirectoryName);
+  options.runtime.signal?.throwIfAborted();
+
+  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(options.runtime));
+  options.runtime.signal?.throwIfAborted();
+
+  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  return runStagedConversionBatch({
+    jobs: options.jobs,
+    operationName: options.definition.operationName,
+    runId,
+    runtime: options.runtime,
+    stage: (job, index, stageRunId, stageRuntime) =>
+      stageRasterConversion(job, index, {
+        runId: stageRunId,
+        runtime: stageRuntime,
+        pdftocairoTools: options.pdftocairoTools,
+        ghostscriptTools: options.ghostscriptTools,
+        mermaidTools: options.mermaidTools,
+        drawioTools: options.drawioTools,
+        definition: options.definition,
+        maxInputPixels: options.maxInputPixels,
+      }),
+  });
+}
+
+async function stageRasterConversion(
+  job: RasterJob,
+  index: number,
+  context: RasterStageContext,
+): Promise<PreparedConversionOutput> {
+  context.runtime.signal?.throwIfAborted();
+  const { stagingDirectoryName, resultExtension } = context.definition;
+  const stagingRootPath = path.join(job.workspacePath, '.latex-graphics-helper', stagingDirectoryName, context.runId);
+  const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
+  const stagedOutputPath = path.join(stageDirectory, `result.${resultExtension}`);
+
+  await writeSourceAsRaster(job, { stageDirectory, stagedOutputPath, stagingRootPath }, context);
+  context.runtime.signal?.throwIfAborted();
+  await validateGeneratedRaster(stagedOutputPath, resultExtension);
+  context.runtime.signal?.throwIfAborted();
+
+  return {
+    stagedOutputPath,
+    outputPath: job.outputPath,
+    workspacePath: job.workspacePath,
+    stagingRootPath,
+  };
+}
+
+async function writeSourceAsRaster(
+  job: RasterJob,
+  paths: RasterStagePaths,
+  context: RasterStageContext,
+): Promise<void> {
+  const sourcePath = job.sourcePath;
+  const extension = path.extname(sourcePath).toLowerCase();
+
+  if (isEditableDrawioImagePath(sourcePath)) {
+    await writeDrawioAsRaster(job, paths, context);
+    return;
+  }
+
+  if (isNativeDrawioPath(sourcePath)) {
+    await writeNativeDrawioAsRaster(job, paths, context);
+    return;
+  }
+
+  const request: RasterRenderRequest = {
+    sourcePath,
+    outputPath: paths.stagedOutputPath,
+    workspacePath: job.workspacePath,
+    stageDirectory: paths.stageDirectory,
+  };
+  if (job.page !== undefined) {
+    request.page = job.page;
+  }
+  if (job.animation !== undefined) {
+    request.animation = job.animation;
+  }
+
+  if (extension === '.pdf') {
+    await writePdfPageAsRaster(request, context);
+    return;
+  }
+
+  if (extension === '.eps') {
+    await writeEpsAsRaster(job, paths, context);
+    return;
+  }
+
+  if (isMermaidPath(sourcePath)) {
+    await writeMermaidAsRaster(request, context);
+    return;
+  }
+
+  await writeImageAsRaster(request, context);
+}
+
+async function writeDrawioAsRaster(
+  job: RasterJob,
+  paths: RasterStagePaths,
+  context: RasterStageContext,
+): Promise<void> {
+  context.runtime.signal?.throwIfAborted();
+  const pdfPath = path.join(paths.stageDirectory, 'drawio.pdf');
+  await assertWritablePathInWorkspace(pdfPath, job.workspacePath);
+  await mkdir(path.dirname(pdfPath), { recursive: true });
+  context.runtime.signal?.throwIfAborted();
+
+  await (context.drawioTools.runDrawio ?? executeDrawio)(
+    context.drawioTools.drawioPath,
+    ['-x', '-f', 'pdf', '-o', pdfPath, job.sourcePath],
+    context.runtime.signal,
+  );
+  await writePdfPageAsRaster(
+    {
+      sourcePath: pdfPath,
+      outputPath: paths.stagedOutputPath,
+      workspacePath: job.workspacePath,
+      stageDirectory: paths.stageDirectory,
+      page: job.page ?? 1,
+    },
+    context,
+  );
+}
+
+async function writeNativeDrawioAsRaster(
+  job: RasterJob,
+  paths: RasterStagePaths,
+  context: RasterStageContext,
+): Promise<void> {
+  context.runtime.signal?.throwIfAborted();
+  const pngPath = path.join(paths.stageDirectory, 'drawio.png');
+  await assertWritablePathInWorkspace(pngPath, job.workspacePath);
+  await mkdir(path.dirname(pngPath), { recursive: true });
+  context.runtime.signal?.throwIfAborted();
+
+  await (context.drawioTools.runDrawio ?? executeDrawio)(
+    context.drawioTools.drawioPath,
+    ['-x', '-f', 'png', '-o', pngPath, job.sourcePath],
+    context.runtime.signal,
+  );
+  await writeImageAsRaster({ ...job, sourcePath: pngPath, outputPath: paths.stagedOutputPath }, context);
+}
+
+async function writePdfPageAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
+  const pngPath = path.join(request.stageDirectory ?? path.dirname(request.outputPath), 'source.png');
+  context.runtime.signal?.throwIfAborted();
+  await assertWritablePathInWorkspace(pngPath, request.workspacePath);
+  await mkdir(path.dirname(pngPath), { recursive: true });
+  context.runtime.signal?.throwIfAborted();
+
+  await runPdftocairoWithAsciiScratch({
+    sourcePath: request.sourcePath,
+    outputPath: pngPath,
+    scratchOutputFileName: 'output.png',
+    scratch: context.pdftocairoTools,
+    signal: context.runtime.signal,
+    outputChannel: context.runtime.outputChannel,
+    run: async (toolSourcePath, toolOutputPath) => {
+      if (context.pdftocairoTools.runPdfToPng) {
+        await context.pdftocairoTools.runPdfToPng(
+          toolSourcePath,
+          toolOutputPath,
+          request.page ?? 1,
+          context.runtime.signal,
+        );
+        return;
+      }
+
+      const outputPrefix = toolOutputPath.slice(0, -path.extname(toolOutputPath).length);
+      await execFileAsync(
+        context.pdftocairoTools.pdftocairoPath,
+        [
+          '-png',
+          '-singlefile',
+          '-f',
+          String(request.page ?? 1),
+          '-l',
+          String(request.page ?? 1),
+          toolSourcePath,
+          outputPrefix,
+        ],
+        {
+          encoding: 'utf8',
+          maxBuffer: 10 * 1024 * 1024,
+          signal: context.runtime.signal,
+        },
+      );
+    },
+  });
+
+  await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
+}
+
+async function writeMermaidAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
+  const pngPath = path.join(request.stageDirectory ?? path.dirname(request.outputPath), 'mermaid.png');
+  context.runtime.signal?.throwIfAborted();
+  await assertWritablePathInWorkspace(pngPath, request.workspacePath);
+  await mkdir(path.dirname(pngPath), { recursive: true });
+  context.runtime.signal?.throwIfAborted();
+
+  try {
+    await runMermaidCli(request.sourcePath, asPngOutputPath(pngPath), {
+      outputFormat: 'png',
+      puppeteerConfig: createMermaidPuppeteerConfig(context.mermaidTools),
+      quiet: true,
+      ...createMermaidCliRenderOptions(context.mermaidTools),
+    });
+    context.runtime.signal?.throwIfAborted();
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+
+    throw new Error(`Mermaid CLI failed: ${errorMessage(error)}`, { cause: error });
+  }
+
+  await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
+}
+
+async function writeEpsAsRaster(job: RasterJob, paths: RasterStagePaths, context: RasterStageContext): Promise<void> {
+  context.runtime.signal?.throwIfAborted();
+  const epsStaging = path.join(paths.stageDirectory, 'eps');
+  await mkdir(epsStaging, { recursive: true });
+  context.runtime.signal?.throwIfAborted();
+
+  const epsOptions: EpsToPdfOptions = {
+    epsPath: job.sourcePath,
+    workspacePath: job.workspacePath,
+    ghostscriptPath: context.ghostscriptTools.ghostscriptPath,
+    stagingDirectory: epsStaging,
+  };
+  if (context.runtime.signal !== undefined) {
+    epsOptions.signal = context.runtime.signal;
+  }
+  if (context.runtime.outputChannel !== undefined) {
+    epsOptions.outputChannel = context.runtime.outputChannel;
+  }
+  if (context.ghostscriptTools.scratchBaseCandidates !== undefined) {
+    epsOptions.scratchBaseCandidates = context.ghostscriptTools.scratchBaseCandidates;
+  }
+  if (context.ghostscriptTools.platform !== undefined) {
+    epsOptions.platform = context.ghostscriptTools.platform;
+  }
+  const { pdfPath } = await convertEpsToPdf(epsOptions);
+
+  context.runtime.signal?.throwIfAborted();
+  await writePdfPageAsRaster(
+    { sourcePath: pdfPath, outputPath: paths.stagedOutputPath, workspacePath: job.workspacePath, page: 1 },
+    context,
+  );
+}
+
+async function writeImageAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
+  context.runtime.signal?.throwIfAborted();
+  await assertWritablePathInWorkspace(request.outputPath, request.workspacePath);
+  await mkdir(path.dirname(request.outputPath), { recursive: true });
+  context.runtime.signal?.throwIfAborted();
+
+  try {
+    await context.definition.encoder(
+      request.sourcePath,
+      request.outputPath,
+      context.maxInputPixels,
+      request.page,
+      request.animation,
+    );
+  } catch (error) {
+    if (isRasterInputPixelLimitError(error)) {
+      throw new Error(rasterInputPixelLimitMessage(context.maxInputPixels), { cause: error });
+    }
+
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+}
+
+async function executeDrawio(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
+  await runExternalTool({
+    toolName: 'drawio',
+    executable,
+    args,
+    ...(signal !== undefined && { signal }),
+  });
+}
+
+async function validateJobPaths(jobs: RasterJob[], stagingDirectoryName: string): Promise<void> {
+  await Promise.all(
+    jobs.flatMap((job) => [
+      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
+      assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
+      assertWritablePathInWorkspace(
+        path.join(job.workspacePath, '.latex-graphics-helper', stagingDirectoryName),
+        job.workspacePath,
+      ),
+    ]),
+  );
+}
+
+function validateJobs(jobs: RasterJob[], definition: RasterConversionDefinition): void {
+  if (jobs.length === 0) {
+    throw new Error('No files were selected.');
+  }
+
+  for (const job of jobs) {
+    if (
+      !isEditableDrawioImagePath(job.sourcePath) &&
+      !isNativeDrawioPath(job.sourcePath) &&
+      isSameSourceFormat(job.sourcePath, definition.resultExtension)
+    ) {
+      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+    }
+
+    if (!isSupportedSourcePath(job.sourcePath)) {
+      throw new Error(definition.unsupportedInputMessage(job.sourcePath));
+    }
+  }
+}
+
+async function validateGeneratedRaster(outputPath: string, outputExtension: string): Promise<void> {
+  const metadata = await sharp(outputPath).metadata();
+  const expectedFormat = outputExtension === 'jpeg' ? 'jpeg' : outputExtension === 'avif' ? 'heif' : outputExtension;
+
+  if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
+    throw new Error(`Raster conversion produced invalid ${outputExtension.toUpperCase()} output: ${outputPath}`);
+  }
+}
+
+function isSupportedSourcePath(sourcePath: string): boolean {
+  const extension = path.extname(sourcePath).toLowerCase();
+
+  return (
+    extension === '.pdf' ||
+    extension === '.eps' ||
+    extension === '.svg' ||
+    isMermaidPath(sourcePath) ||
+    isSupportedImageInputPath(sourcePath) ||
+    extension === '.raw' ||
+    isEditableDrawioImagePath(sourcePath) ||
+    isNativeDrawioPath(sourcePath)
+  );
+}
+
+function asPngOutputPath(outputPath: string): `${string}.png` {
+  if (!outputPath.toLowerCase().endsWith('.png')) {
+    throw new Error(`PNG output path must end with .png: ${outputPath}`);
+  }
+
+  return outputPath as unknown as `${string}.png`;
+}
+
+export function errorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    const stderr = 'stderr' in error && typeof error.stderr === 'string' ? error.stderr.trim() : '';
+    return stderr ? `${error.message}\n${stderr}` : error.message;
+  }
+
+  return String(error);
+}

@@ -1,0 +1,323 @@
+name: Release VSCode Extension
+
+on:
+    push:
+        tags:
+            - 'v*.*.*'
+
+jobs:
+    check:
+        name: Release static checks
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '22.23.1'
+                  package-manager-cache: false
+
+            - run: npm install -g npm@12.0.1
+              shell: bash
+
+            - run: npm ci
+              shell: bash
+
+            - run: npm run check:all
+              shell: bash
+
+    extension-host:
+        name: Release Extension Host (${{ matrix.label }})
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 25
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      label: Linux
+                      test_command: xvfb-run npm run test:coverage:run
+                    - os: macos-latest
+                      label: macOS
+                      test_command: npm run test:coverage:run
+                    - os: windows-latest
+                      label: Windows
+                      test_command: npm run test:coverage:run
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '22.23.1'
+                  package-manager-cache: false
+
+            - run: npm install -g npm@12.0.1
+              shell: bash
+
+            - run: npm ci
+              shell: bash
+
+            - name: Build extension and Webview
+              run: npm run build
+              shell: bash
+
+            - if: matrix.os == 'ubuntu-latest'
+              run: bash .github/scripts/install-test-tools-linux.sh
+              shell: bash
+
+            - if: matrix.os == 'macos-latest'
+              run: bash .github/scripts/install-image-tools-macos.sh
+              shell: bash
+
+            - if: matrix.os == 'windows-latest'
+              run: .github/scripts/install-image-tools-windows.ps1
+              shell: pwsh
+
+            - if: matrix.os != 'windows-latest'
+              run: bash .github/scripts/verify-image-tools-unix.sh
+              shell: bash
+
+            - if: matrix.os == 'windows-latest'
+              run: .github/scripts/verify-image-tools-windows.ps1
+              shell: pwsh
+
+            - name: Run Extension Host tests
+              run: ${{ matrix.test_command }}
+              shell: bash
+              env:
+                  LGH_VSCODE_TEST_USER_DATA_DIR: .vscode-test-release-data
+
+            - if: failure()
+              uses: actions/upload-artifact@v7
+              with:
+                  name: release-extension-host-${{ matrix.label }}
+                  path: .vscode-test-release-data/
+                  if-no-files-found: ignore
+
+            - if: always()
+              name: Cleanup Extension Host test data
+              run: |
+                  node --input-type=module -e "import { rm } from 'node:fs/promises'; await rm('.vscode-test-release-data', { recursive: true, force: true, maxRetries: 20, retryDelay: 200 });"
+              shell: bash
+
+    webview:
+        name: Release Webview tests
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '22.23.1'
+                  package-manager-cache: false
+
+            - run: npm install -g npm@12.0.1
+              shell: bash
+
+            - run: npm ci
+              shell: bash
+
+            - run: npm run test:webview:crop_pdf -- --coverage
+              shell: bash
+
+            - run: npm run test:webview:merge_pdf -- --coverage
+              shell: bash
+
+            - run: npm run test:webview:split_pdf -- --coverage
+              shell: bash
+
+    package:
+        name: Package and test (${{ matrix.label }})
+        runs-on: ${{ matrix.os }}
+        permissions:
+            contents: read
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      label: Linux
+                      test_command: xvfb-run npm run test:playwright:vsix
+                      artifact_suffix: linux
+                    - os: macos-latest
+                      label: macOS
+                      test_command: npm run test:playwright:vsix
+                      artifact_suffix: macos
+                    - os: windows-latest
+                      label: Windows
+                      test_command: npm run test:playwright:vsix
+                      artifact_suffix: windows
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Validate tag matches package.json version
+              shell: bash
+              run: |
+                  TAG="${{ github.ref_name }}"
+                  PKG_VERSION="v$(node -p "require('./package.json').version")"
+                  if [[ "$TAG" != "$PKG_VERSION" ]]; then
+                    echo "::error::Tag $TAG does not match package.json version $PKG_VERSION"
+                    exit 1
+                  fi
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '22.23.1'
+                  package-manager-cache: false
+
+            - run: npm install -g npm@12.0.1
+              shell: bash
+
+            - run: node --version && npm --version
+              shell: bash
+
+            - run: npm ci
+              shell: bash
+
+            - name: Build extension and Webview
+              run: npm run build
+              shell: bash
+
+            - name: Package current runner VSIX
+              run: npm run package:vsix -- --out "latex-graphics-helper-${{ matrix.label }}.vsix"
+              shell: bash
+
+            - name: Install VSIX and run Electron Playwright
+              run: ${{ matrix.test_command }}
+              shell: bash
+              env:
+                  LGH_VSIX_PATH: ${{ github.workspace }}/latex-graphics-helper-${{ matrix.label }}.vsix
+
+            - if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: packaged-electron-playwright-${{ matrix.artifact_suffix }}
+                  path: |
+                      playwright-report/
+                      test-results/
+                  if-no-files-found: ignore
+
+            - if: success()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: vsix-${{ matrix.artifact_suffix }}
+                  path: latex-graphics-helper-${{ matrix.label }}.vsix
+                  if-no-files-found: error
+
+    publish-github:
+        name: Publish GitHub Release
+        needs:
+            - check
+            - extension-host
+            - webview
+            - package
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/download-artifact@v4
+              with:
+                  pattern: vsix-*
+                  merge-multiple: true
+                  path: .
+
+            - name: GitHub Release (VSIX + Full Changelog compare link)
+              shell: bash
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  repo="${{ github.repository }}"
+                  tag="${{ github.ref_name }}"
+                  prev=$(gh api "repos/$repo/releases/latest" --jq .tag_name 2>/dev/null || true)
+                  if [[ -n "$prev" ]]; then
+                    notes="**Full Changelog**: https://github.com/$repo/compare/$prev...$tag"
+                  else
+                    notes="**Full Changelog**: https://github.com/$repo/commits/$tag"
+                  fi
+                  if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+                    gh release upload "$tag" ./*.vsix --repo "$repo" --clobber
+                  else
+                    gh release create "$tag" ./*.vsix --repo "$repo" --notes "$notes"
+                  fi
+
+    publish-marketplace:
+        name: Publish Visual Studio Marketplace
+        needs:
+            - check
+            - extension-host
+            - webview
+            - package
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '22.23.1'
+                  package-manager-cache: false
+
+            - run: npm install -g npm@12.0.1
+              shell: bash
+
+            - run: npm ci
+              shell: bash
+
+            - uses: actions/download-artifact@v4
+              with:
+                  pattern: vsix-*
+                  merge-multiple: true
+                  path: .
+
+            - name: Publish tested VSIX packages
+              shell: bash
+              env:
+                  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+              run: |
+                  for vsix in ./*.vsix; do
+                    npx --no-install vsce publish --packagePath "$vsix" --pat "$VSCE_PAT"
+                  done
+
+    publish-open-vsx:
+        name: Publish Open VSX
+        needs:
+            - check
+            - extension-host
+            - webview
+            - package
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '22.23.1'
+                  package-manager-cache: false
+
+            - run: npm install -g npm@12.0.1
+              shell: bash
+
+            - run: npm ci
+              shell: bash
+
+            - uses: actions/download-artifact@v4
+              with:
+                  pattern: vsix-*
+                  merge-multiple: true
+                  path: .
+
+            - name: Publish tested VSIX packages
+              shell: bash
+              env:
+                  OVSX_PAT: ${{ secrets.OVSX_PAT }}
+              run: |
+                  for vsix in ./*.vsix; do
+                    npx --no-install ovsx publish "$vsix" --pat "$OVSX_PAT"
+                  done
