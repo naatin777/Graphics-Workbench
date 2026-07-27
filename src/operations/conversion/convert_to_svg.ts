@@ -150,13 +150,8 @@ async function writeSourceAsSvg(
 ): Promise<void> {
   const extension = path.extname(job.sourcePath).toLowerCase();
 
-  if (isEditableDrawioImagePath(job.sourcePath)) {
+  if (isEditableDrawioImagePath(job.sourcePath) || isNativeDrawioPath(job.sourcePath)) {
     await writeDrawioAsSvg(job.sourcePath, outputPath, job.workspacePath, drawioTools, signal);
-    return;
-  }
-
-  if (isNativeDrawioPath(job.sourcePath)) {
-    await writeNativeDrawioAsSvg(job.sourcePath, outputPath, job.workspacePath, drawioTools, signal);
     return;
   }
 
@@ -248,33 +243,6 @@ async function writeEpsAsSvg(
 }
 
 async function writeDrawioAsSvg(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  drawio: DrawioBackend,
-  signal?: AbortSignal,
-): Promise<void> {
-  signal?.throwIfAborted();
-  await assertWritablePathInWorkspace(outputPath, workspacePath);
-  await mkdir(path.dirname(outputPath), { recursive: true });
-  signal?.throwIfAborted();
-
-  try {
-    await (drawio.runDrawio ?? executeDrawio)(
-      drawio.drawioPath,
-      ['-x', '-f', 'svg', '-o', outputPath, sourcePath],
-      signal,
-    );
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw error instanceof Error ? error : new Error(String(error));
-    }
-
-    throw new Error(`Draw.io CLI failed: ${errorMessage(error)}`, { cause: error });
-  }
-}
-
-async function writeNativeDrawioAsSvg(
   sourcePath: string,
   outputPath: string,
   workspacePath: string,

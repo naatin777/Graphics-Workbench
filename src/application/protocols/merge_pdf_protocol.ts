@@ -1,3 +1,12 @@
+import {
+  hasExactKeys,
+  isNonEmptyString,
+  isOptionalWebviewUri,
+  isRecord,
+  isString,
+  isWebviewUri,
+} from './protocol_utils.js';
+
 export interface MergePdfSource {
   sourceId: string;
   fileName: string;
@@ -149,44 +158,4 @@ function isMergePdfSource(value: unknown): value is MergePdfSource {
     isNonEmptyString(value.fileName) &&
     isWebviewUri(value.pdfSrc)
   );
-}
-
-function hasExactKeys(
-  value: Record<string, unknown>,
-  requiredKeys: readonly string[],
-  optionalKeys: readonly string[] = [],
-): boolean {
-  const allowedKeys = new Set([...requiredKeys, ...optionalKeys]);
-  const keys = Object.keys(value);
-
-  return requiredKeys.every((key) => key in value) && keys.every((key) => allowedKeys.has(key));
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isString(value: unknown): value is string {
-  return typeof value === 'string';
-}
-
-function isNonEmptyString(value: unknown): value is string {
-  return isString(value) && value.length > 0;
-}
-
-function isOptionalWebviewUri(value: unknown): value is string | undefined {
-  return value === undefined || isWebviewUri(value);
-}
-
-function isWebviewUri(value: unknown): value is string {
-  if (!isNonEmptyString(value)) {
-    return false;
-  }
-
-  try {
-    const protocol = new URL(value).protocol;
-    return protocol === 'vscode-resource:' || protocol === 'vscode-webview-resource:' || protocol === 'https:';
-  } catch {
-    return false;
-  }
 }

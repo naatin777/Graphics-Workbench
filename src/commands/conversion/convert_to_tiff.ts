@@ -16,7 +16,8 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { readOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { executeTiffConversion, type ConvertToTiffJob } from '../../operations/conversion/convert_to_tiff.js';
@@ -185,13 +186,4 @@ function outputTemplateForSource(sourcePath: string, configuration: vscode.Works
     default:
       return DEFAULT_OUTPUT_PATH;
   }
-}
-
-function readOutputPathOrPathsTemplate(
-  configuration: vscode.WorkspaceConfiguration,
-  key: string,
-  defaultValue: string,
-): string {
-  const pageTemplate = readOutputPathsTemplate(configuration, key, '');
-  return pageTemplate || readOutputPathTemplate(configuration, `outputPath.${key}`, defaultValue);
 }
