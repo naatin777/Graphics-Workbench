@@ -34,6 +34,13 @@ suite('LaTeXファイルdrag挿入', () => {
     }
   });
 
+  test('Windowsのpath separatorをLaTeX向けに正規化する', () => {
+    const provider = new LatexDropEditProvider();
+    const snippet = normalizeSnippetValue(provider.createSinglePdfSnippet('sample', 'figures\\sample.pdf').value);
+
+    assert.ok(snippet.includes('\\includegraphics[width=\\linewidth]{figures/sample.pdf}'));
+  });
+
   test('複数PDFのdropから複数図用snippetを作る', async () => {
     const directory = await createTemporaryWorkspaceDirectory('lgh-latex-drop-multiple-');
 
