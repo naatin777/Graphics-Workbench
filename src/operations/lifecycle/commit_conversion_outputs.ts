@@ -206,7 +206,8 @@ async function resolveKeepBothGroups(
 
   const resolved = new Map<string, string>();
   for (const [key, group] of groups) {
-    if (!(await Promise.all(group.map((output) => pathExists(output.outputPath)))).some(Boolean)) {
+    const existingPaths = await Promise.all(group.map((output) => pathExists(output.outputPath)));
+    if (!existingPaths.some(Boolean)) {
       continue;
     }
 
@@ -218,9 +219,10 @@ async function resolveKeepBothGroups(
     for (let suffix = 1; ; suffix += 1) {
       const candidateBase = appendNumericSuffix(basePath, suffix);
       const candidatePaths = group.map((output) => `${candidateBase}${output.keepBothGroup?.suffix ?? ''}`);
+      const candidatePathsExist = await Promise.all(candidatePaths.map((candidate) => pathExists(candidate)));
       if (
         candidatePaths.every((candidate) => !reservedPaths.has(normalizePath(candidate))) &&
-        (await Promise.all(candidatePaths.map((candidate) => pathExists(candidate)))).every((exists) => !exists)
+        candidatePathsExist.every((exists) => !exists)
       ) {
         resolved.set(key, candidateBase);
         break;

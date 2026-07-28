@@ -22,8 +22,12 @@ export function SourceCard(props: {
     <article
       class='source-card'
       classList={{ 'source-card--drop-target': props.dropTargetId === props.source.sourceId }}
-      onDragOver={(event) => props.onDragOver(event, props.source.sourceId)}
-      onDrop={(event) => props.onDrop(event, props.source.sourceId)}
+      onDragOver={(event) => {
+        props.onDragOver(event, props.source.sourceId);
+      }}
+      onDrop={(event) => {
+        props.onDrop(event, props.source.sourceId);
+      }}
     >
       <PreviewThumbnail
         source={props.source}
@@ -43,7 +47,9 @@ export function SourceCard(props: {
             type='button'
             draggable={true}
             aria-label={props.labels.dragHandle}
-            onDragStart={(event) => props.onDragStart(event, props.source.sourceId)}
+            onDragStart={(event) => {
+              props.onDragStart(event, props.source.sourceId);
+            }}
             onDragEnd={props.onDragEnd}
           >
             ::
@@ -53,7 +59,9 @@ export function SourceCard(props: {
             type='button'
             disabled={props.index() === 0}
             aria-label={props.labels.moveUp}
-            onClick={() => props.onMove(props.source.sourceId, -1)}
+            onClick={() => {
+              props.onMove(props.source.sourceId, -1);
+            }}
           >
             {props.labels.moveUp}
           </button>
@@ -62,7 +70,9 @@ export function SourceCard(props: {
             type='button'
             disabled={props.index() === props.sourceCount - 1}
             aria-label={props.labels.moveDown}
-            onClick={() => props.onMove(props.source.sourceId, 1)}
+            onClick={() => {
+              props.onMove(props.source.sourceId, 1);
+            }}
           >
             {props.labels.moveDown}
           </button>
@@ -70,7 +80,9 @@ export function SourceCard(props: {
             class='button button--danger'
             type='button'
             aria-label={`${props.labels.removeSource}: ${props.source.fileName}`}
-            onClick={() => props.onRemove(props.source.sourceId)}
+            onClick={() => {
+              props.onRemove(props.source.sourceId);
+            }}
           >
             {props.labels.removeSource}
           </button>

@@ -28,6 +28,7 @@ import {
   isSupportedImageInputPath,
 } from '../../application/policy/source_format.js';
 
+// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
 const DEFAULT_EXTENSIONS = ['.pdf', '.svg', '.eps', '.mmd', '.mermaid'] as const;
 

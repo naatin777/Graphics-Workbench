@@ -33,6 +33,7 @@ import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
 
+// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
 
 export interface ConvertToSvgJob {
@@ -357,7 +358,8 @@ async function executeDrawio(executable: string, args: string[], signal?: AbortS
 }
 
 async function validateGeneratedSvg(outputPath: string): Promise<void> {
-  const content = (await readFile(outputPath, 'utf8')).trim();
+  const source = await readFile(outputPath, 'utf8');
+  const content = source.trim();
 
   if (content.length === 0) {
     throw new Error(`SVG conversion produced empty output: ${outputPath}`);

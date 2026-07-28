@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 12
+Status: In progress — Phase 15
 
 ## Objective
 
@@ -79,6 +79,18 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 `typescript/strict-boolean-expressions`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。nullableな文字列・数値・booleanのtruthiness判定を、空文字・ゼロ・nullishの意味を保った明示条件へ置き換える。テストコードと、未型付けのESTree visitor APIを扱う独自Oxlintプラグインは対象外とする。
 
+## Phase 13
+
+`typescript/strict-void-return`をproductionコードとWebview本体でerrorへ強化する。Webviewのref、イベントハンドラ、setter callbackは値を暗黙に返さないブロック本体へ置き換える。Node.jsの`execFile`は、`promisify`がvoid callbackを要求する一方でNodeのoverloadが`ChildProcess`を返す型定義になっているため、9箇所に理由付きの局所抑制を残す。
+
+## Phase 14
+
+`typescript/no-confusing-void-expression`をproductionコードとWebview本体でerrorへ強化する。イベント登録、Solid callback、キャンセル処理でvoid式をarrow shorthandから返さず、明示的なブロック本体へ統一する。Phase 13の`strict-void-return`と同じく、テストコードは対象外とする。
+
+## Phase 15
+
+`unicorn/no-await-expression-member`をproductionコードでerrorへ強化する。`await`式の直後にmember accessやメソッド呼び出しを連結せず、非同期結果を一度ローカル変数へ受けてから利用する。画像・PDF変換jobの計画結果、PDFページ数、生成物の内容検証を対象とし、テストコードは対象外とする。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -93,12 +105,15 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `typescript/no-unnecessary-condition` の既存違反は35件で、production・自動化コードに18件、テストコードに17件あった。Phase 10では18件を解消し、非同期dispose判定の1件だけ理由付き抑制を残す
 - `unicorn/prefer-string-replace-all` の既存違反は16件で、出力名の安全化、LaTeX/XML/HTMLエスケープ、テンプレート展開、テストhelperに分散していた
 - `typescript/strict-boolean-expressions` の既存違反は72件で、productionコード、Webview本体、Node.js/GitHub Actionsスクリプトに分散していた。Phase 12では、nullableな文字列・数値・booleanを暗黙にtruthiness判定していた箇所を明示条件へ置き換え、テストコードと独自Oxlintプラグインは対象外にする
+- `typescript/strict-void-return` の既存違反は25件で、Node.jsの`execFile`とWebviewのref・イベントハンドラ・setter callbackに分散していた。Phase 13では16件のWebview callbackを明示的なブロックへ置き換え、`execFile`の9件はNodeのoverloadと`promisify`の型定義の不一致を理由に局所抑制する
+- `typescript/no-confusing-void-expression` の既存違反は31件で、Webviewのイベント・ref・入力callbackと、extension側のイベント登録・キャンセル処理に分散していた。Phase 14ではvoid式を返すarrow shorthandをすべて明示的なブロックへ置き換える
+- `unicorn/no-await-expression-member` の既存違反は18件で、画像・PDF変換jobの計画結果、PDFのページ数、画像buffer、出力内容の検証に分散していた。Phase 15ではawait結果をローカル変数へ受けてからmember accessする形へ置き換える
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
 ## Completion criteria
 
-- Phase 1からPhase 12までの制限をCIの通常lintで強制できる
+- Phase 1からPhase 15までの制限をCIの通常lintで強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

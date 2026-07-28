@@ -14,6 +14,7 @@ import {
   validateAsciiScratchOutput,
 } from '../external_tools/external_tool_ascii_scratch.js';
 
+// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
 
 export interface EpsToPdfResult {

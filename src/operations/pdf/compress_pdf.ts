@@ -14,6 +14,7 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 
+// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
 
 export interface CompressPdfJob {

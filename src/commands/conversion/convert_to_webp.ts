@@ -63,13 +63,12 @@ export async function convertToWebpCommand(
 
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
-    const jobs = (
-      await Promise.all(
-        sourceUris.map((sourceUri) =>
-          planWebpConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
-        ),
-      )
-    ).flat();
+    const plannedJobs = await Promise.all(
+      sourceUris.map((sourceUri) =>
+        planWebpConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
+      ),
+    );
+    const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const webp = readWebpOutputOptions(configuration);

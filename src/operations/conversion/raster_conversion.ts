@@ -37,6 +37,7 @@ import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import sharp from 'sharp';
 
+// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
 
 type RasterEncoder = (
