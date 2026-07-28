@@ -68,6 +68,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0206: 現行テスト契約を整理する](0206-organize-current-test-contracts.md) — Done — current test matrix synchronized; golden content fixtures deferred
 - [0205: v1のtest contractを整理する](0205-organize-test-contracts.md) — Done — Evidence matrix and runtime records synchronized
 - [0100: editable Draw.io画像用の元ファイル名テンプレート変数を決める](0100-design-original-source-template-variables.md) — Done — 追加変数なし
 - [0098: 既存ペア別outputPath設定の移行方針を決める](0098-decide-pair-output-path-settings-migration.md) — Done — pair-specific outputPathを正本化
