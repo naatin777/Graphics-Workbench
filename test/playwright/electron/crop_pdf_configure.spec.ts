@@ -24,10 +24,13 @@ import {
   writeVscodeUserSettings,
 } from './helpers/vscode_electron_test.js';
 import {
+  disposePreparedElectronTest,
   loadPackagedOperation,
+  prepareElectronTest,
   resolvePackagedVsixPath,
   setupElectronTest,
   type ElectronTestEnv,
+  type PreparedElectronTest,
 } from './helpers/electron_test_env.js';
 
 const packagedVsixPath = resolvePackagedVsixPath();
@@ -46,12 +49,33 @@ type PackagedSplitPdfModule = {
   splitPdfAllPages(options: SplitPdfOptions): Promise<CommittedConversionOutput[]>;
 };
 
-test('VSIXをinstallしてextensionをactivateできる', async ({ playwright }, testInfo) => {
+let preparedElectronTest: PreparedElectronTest | undefined;
+
+test.beforeAll(async () => {
+  preparedElectronTest = await prepareElectronTest(packagedVsixPath);
+});
+
+test.afterAll(async () => {
+  if (preparedElectronTest) {
+    await disposePreparedElectronTest(preparedElectronTest);
+    preparedElectronTest = undefined;
+  }
+});
+
+function preparedOptions(): { prepared: PreparedElectronTest } {
+  if (!preparedElectronTest) {
+    throw new Error('Packaged Electron test environment was not prepared.');
+  }
+
+  return { prepared: preparedElectronTest };
+}
+
+test('インストール済みVSIXからextensionをactivateできる', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(240_000);
   let env: ElectronTestEnv | undefined;
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath);
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
 
     await expect(env.window.getByText('Safe Mode: ON', { exact: true })).toBeVisible();
     await expect(env.window.getByRole('tree', { name: 'Files Explorer' })).toBeVisible();
@@ -81,7 +105,7 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath);
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
     env.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -183,7 +207,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath);
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
     env.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -257,7 +281,7 @@ test('package済みmoduleでMergeが動く', async ({ playwright }, testInfo) =>
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath);
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
     env.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -308,7 +332,7 @@ test('package済みmoduleでSplitが動く', async ({ playwright }, testInfo) =>
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath);
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
     env.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -362,7 +386,7 @@ test('native Sharp dependencyをloadしてPNG→JPEG変換できる', async ({ p
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath);
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
     env.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -405,7 +429,7 @@ test('外部networkが遮断されている', async ({ playwright }, testInfo) =
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath);
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
     env.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -438,7 +462,7 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath);
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
     env.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
