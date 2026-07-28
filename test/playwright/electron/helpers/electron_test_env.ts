@@ -1,6 +1,6 @@
 import { cp, mkdir, mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { isAbsolute, join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { statSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
@@ -34,31 +34,19 @@ export interface ElectronTestOptions {
   copyFixtures?: boolean;
 }
 
-export function resolvePackagedVsixPath(value: string | undefined): string {
-  if (!value) {
-    throw new Error(
-      'LGH_VSIX_PATH is required. Package a VSIX and pass its absolute path before running Electron Playwright.',
-    );
-  }
-
-  if (!isAbsolute(value)) {
-    throw new Error(`LGH_VSIX_PATH must be an absolute path: ${value}`);
-  }
-
-  if (!value.toLowerCase().endsWith('.vsix')) {
-    throw new Error(`LGH_VSIX_PATH must point to a .vsix file: ${value}`);
-  }
+export function resolvePackagedVsixPath(): string {
+  const value = resolve(process.cwd(), 'latex-graphics-helper.vsix');
 
   let fileStats;
 
   try {
     fileStats = statSync(value);
   } catch {
-    throw new Error(`LGH_VSIX_PATH does not exist: ${value}`);
+    throw new Error(`Packaged VSIX does not exist: ${value}. Run package:vsix before Electron Playwright.`);
   }
 
   if (!fileStats.isFile()) {
-    throw new Error(`LGH_VSIX_PATH must point to a regular file: ${value}`);
+    throw new Error(`Packaged VSIX must be a regular file: ${value}`);
   }
 
   return value;

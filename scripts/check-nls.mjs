@@ -1,15 +1,17 @@
-import { readdirSync, readFileSync } from "node:fs";
-import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-import { LanguageVariant, SyntaxKind, createScanner } from "typescript/unstable/ast";
+import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/ast';
 
 function placeholders(value) {
   return [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1]).sort();
 }
 
 export function validateUserMessageSource(sourcePath, source, english) {
-  if (!source.includes("userMessage")) return [];
+  if (!source.includes('userMessage')) {
+    return [];
+  }
   const errors = [];
   const scanner = createScanner(true, LanguageVariant.Standard, source, 0, source.length);
   let token = scanner.scan();
@@ -17,8 +19,10 @@ export function validateUserMessageSource(sourcePath, source, english) {
 
   while (token !== SyntaxKind.EndOfFile) {
     tokenCount++;
-    if (tokenCount > source.length * 2) break;
-    if (token === SyntaxKind.Identifier && scanner.getTokenText() === "userMessage") {
+    if (tokenCount > source.length * 2) {
+      break;
+    }
+    if (token === SyntaxKind.Identifier && scanner.getTokenText() === 'userMessage') {
       const callStart = scanner.getTokenStart();
       if (scanner.scan() === SyntaxKind.OpenParenToken) {
         const call = scanCallArguments(scanner);
@@ -28,11 +32,11 @@ export function validateUserMessageSource(sourcePath, source, english) {
             0,
           );
           if (call.argumentCount - 1 < requiredArguments) {
-            const line = source.slice(0, callStart).split("\n").length;
+            const line = source.slice(0, callStart).split('\n').length;
             errors.push(`userMessage call has too few arguments for ${call.key}: ${sourcePath}:${line}`);
           }
         } else if (call?.key !== undefined) {
-          const line = source.slice(0, callStart).split("\n").length;
+          const line = source.slice(0, callStart).split('\n').length;
           errors.push(`userMessage call references missing NLS key ${call.key}: ${sourcePath}:${line}`);
         }
       }
@@ -51,15 +55,21 @@ function scanCallArguments(scanner) {
 
   while (true) {
     const token = scanner.scan();
-    if (token === SyntaxKind.EndOfFile) return undefined;
+    if (token === SyntaxKind.EndOfFile) {
+      return undefined;
+    }
 
     if (depth === 0 && token === SyntaxKind.CloseParenToken) {
-      if (hasToken) argumentCount += 1;
+      if (hasToken) {
+        argumentCount += 1;
+      }
       return { argumentCount, key };
     }
 
     if (depth === 0 && token === SyntaxKind.CommaToken) {
-      if (hasToken) argumentCount += 1;
+      if (hasToken) {
+        argumentCount += 1;
+      }
       hasToken = false;
       continue;
     }
@@ -88,14 +98,16 @@ function scanCallArguments(scanner) {
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) return sourceFiles(entryPath);
-    return entry.name.endsWith(".ts") ? [entryPath] : [];
+    if (entry.isDirectory()) {
+      return sourceFiles(entryPath);
+    }
+    return entry.name.endsWith('.ts') ? [entryPath] : [];
   });
 }
 
 export function checkNls(root) {
-  const english = JSON.parse(readFileSync(path.join(root, "package.nls.json"), "utf8"));
-  const japanese = JSON.parse(readFileSync(path.join(root, "package.nls.ja.json"), "utf8"));
+  const english = JSON.parse(readFileSync(path.join(root, 'package.nls.json'), 'utf8'));
+  const japanese = JSON.parse(readFileSync(path.join(root, 'package.nls.ja.json'), 'utf8'));
   const errors = [];
 
   const englishKeys = Object.keys(english).sort();
@@ -110,22 +122,24 @@ export function checkNls(root) {
     }
   }
 
-  const packageJson = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
+  const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
   function walk(value) {
-    if (typeof value === "string") {
+    if (typeof value === 'string') {
       for (const match of value.matchAll(/%([^%]+)%/g)) {
-        if (!(match[1] in english)) errors.push(`package.json references missing NLS key: ${match[1]}`);
+        if (!(match[1] in english)) {
+          errors.push(`package.json references missing NLS key: ${match[1]}`);
+        }
       }
     } else if (Array.isArray(value)) {
       value.forEach(walk);
-    } else if (value && typeof value === "object") {
+    } else if (value && typeof value === 'object') {
       Object.values(value).forEach(walk);
     }
   }
   walk(packageJson);
 
-  for (const sourcePath of sourceFiles(path.join(root, "src"))) {
-    errors.push(...validateUserMessageSource(sourcePath, readFileSync(sourcePath, "utf8"), english));
+  for (const sourcePath of sourceFiles(path.join(root, 'src'))) {
+    errors.push(...validateUserMessageSource(sourcePath, readFileSync(sourcePath, 'utf8'), english));
   }
 
   return { errors, keyCount: englishKeys.length };
@@ -134,7 +148,9 @@ export function checkNls(root) {
 function run(root) {
   const { errors, keyCount } = checkNls(root);
   if (errors.length > 0) {
-    for (const error of errors) console.error(error);
+    for (const error of errors) {
+      console.error(error);
+    }
     process.exitCode = 1;
   } else {
     console.log(`NLS consistency OK (${keyCount} keys)`);

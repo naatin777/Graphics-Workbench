@@ -52,7 +52,7 @@ function parsePackageArguments(args) {
   }
 
   return {
-    outputPath: path.resolve(rootDirectory, values.out ?? `latex-graphics-helper-${target}.vsix`),
+    outputPath: path.resolve(rootDirectory, values.out ?? 'latex-graphics-helper.vsix'),
     target,
   };
 }

@@ -30,7 +30,7 @@ import {
   type ElectronTestEnv,
 } from './helpers/electron_test_env.js';
 
-const packagedVsixPath = resolvePackagedVsixPath(process.env.LGH_VSIX_PATH);
+const packagedVsixPath = resolvePackagedVsixPath();
 const alternateTheme = 'Default Light Modern';
 const expectedCropBox = {
   x: cropConfigureFixture.cropBox.left,
