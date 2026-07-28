@@ -73,8 +73,8 @@ suite('PDF変換operation（PNG入力）', () => {
         operationName: 'convert-png-to-pdf',
       });
 
-      const { PDFDocument } = await import('pdf-lib');
-      const pdf = await PDFDocument.load(await import('node:fs/promises').then((fs) => fs.readFile(outputPath)));
+      const { PDFDocument: LoadedPdfDocument } = await import('pdf-lib');
+      const pdf = await LoadedPdfDocument.load(await import('node:fs/promises').then((fs) => fs.readFile(outputPath)));
       assert.strictEqual(pdf.getPageCount(), 1);
     } finally {
       await rm(workspacePath, { recursive: true, force: true });

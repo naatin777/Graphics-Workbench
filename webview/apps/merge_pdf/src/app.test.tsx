@@ -3,11 +3,11 @@ import { render } from 'solid-js/web';
 import type { ExtensionToWebviewMessage, MergePdfLabels } from './messages';
 import { App } from './app';
 
-const postMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
+const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderFirstPdfPage = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
 vi.mock('./vscode', () => ({
-  vscode: { postMessage },
+  vscode: { sendMessage },
 }));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderFirstPdfPage }));
 
@@ -47,7 +47,7 @@ describe('Merge PDF Webview', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>';
-    postMessage.mockReset();
+    sendMessage.mockReset();
     renderFirstPdfPage.mockResolvedValue(undefined);
     const root = document.querySelector('#root');
 
@@ -88,7 +88,7 @@ describe('Merge PDF Webview', () => {
     document.querySelector<HTMLButtonElement>('button[aria-label="Remove from list: three.pdf"]')?.click();
     document.querySelector<HTMLButtonElement>('button.button--primary')?.click();
 
-    expect(postMessage).toHaveBeenLastCalledWith({
+    expect(sendMessage).toHaveBeenLastCalledWith({
       type: 'apply',
       payload: { sourceIds: ['source-2', 'source-1'] },
     });

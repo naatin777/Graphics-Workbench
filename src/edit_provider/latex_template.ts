@@ -40,7 +40,7 @@ export function getPdfTemplates(configuration: vscode.WorkspaceConfiguration): s
   if (Array.isArray(raw)) {
     return raw.length > 0 ? raw : [DEFAULT_PDF_TEMPLATE];
   }
-  return [raw || DEFAULT_PDF_TEMPLATE];
+  return [raw === undefined || raw === '' ? DEFAULT_PDF_TEMPLATE : raw];
 }
 
 export function getImageTemplates(configuration: vscode.WorkspaceConfiguration): string[] {
@@ -48,5 +48,5 @@ export function getImageTemplates(configuration: vscode.WorkspaceConfiguration):
   if (Array.isArray(raw)) {
     return raw.length > 0 ? raw : [DEFAULT_IMAGE_TEMPLATE];
   }
-  return [raw || DEFAULT_IMAGE_TEMPLATE];
+  return [raw === undefined || raw === '' ? DEFAULT_IMAGE_TEMPLATE : raw];
 }

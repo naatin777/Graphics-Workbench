@@ -50,11 +50,11 @@ export async function captureCropPdfScreenshot(
           if (!isDataUrlFunction(toDataURL)) {
             throw new Error('PDF preview element is not a canvas.');
           }
-          const dataUrl: unknown = toDataURL.call(element, 'image/png');
-          if (typeof dataUrl !== 'string') {
+          const canvasDataUrl: unknown = toDataURL.call(element, 'image/png');
+          if (typeof canvasDataUrl !== 'string') {
             throw new Error('PDF preview canvas did not return a data URL.');
           }
-          return dataUrl;
+          return canvasDataUrl;
         }),
       ]);
 

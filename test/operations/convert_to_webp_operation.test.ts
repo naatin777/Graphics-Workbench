@@ -102,11 +102,11 @@ suite('WebPに変換する処理', () => {
         ],
         pdftocairoTools: {
           pdftocairoPath: 'pdftocairo',
-          runPdfToPng: async (sourcePath, outputPath, page) => {
-            pdfToPngCalls.push({ sourcePath, outputPath, page });
+          runPdfToPng: async (pdfSourcePath, pngOutputPath, page) => {
+            pdfToPngCalls.push({ sourcePath: pdfSourcePath, outputPath: pngOutputPath, page });
             await sharp({ create: { width: 4, height: 4, channels: 4, background: '#ff0000' } })
               .png()
-              .toFile(outputPath);
+              .toFile(pngOutputPath);
           },
         },
         ghostscriptTools: { ghostscriptPath: 'gs' },

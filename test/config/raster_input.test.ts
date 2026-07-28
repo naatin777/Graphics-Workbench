@@ -34,7 +34,7 @@ suite('Raster入力pixel上限設定', () => {
       assert.strictEqual(
         getMaxInputPixels({
           get(_key: string, defaultValue: unknown): unknown {
-            return value === undefined ? defaultValue : value;
+            return value ?? defaultValue;
           },
         }),
         DEFAULT_MAX_INPUT_PIXELS,

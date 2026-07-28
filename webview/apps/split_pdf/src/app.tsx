@@ -17,7 +17,7 @@ type RowRefs = Partial<Record<InputKind, HTMLInputElement>>;
 type InitPayload = Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'];
 
 function cancel() {
-  vscode.postMessage({ type: 'cancel' });
+  vscode.sendMessage({ type: 'cancel' });
 }
 
 export function App() {
@@ -268,7 +268,7 @@ export function App() {
       type: 'apply',
       payload: { rows: result.rows },
     };
-    vscode.postMessage(message);
+    vscode.sendMessage(message);
   };
 
   const updatePreviewVisibility = () => {
@@ -335,7 +335,7 @@ export function App() {
           const message = error instanceof Error ? error.message : String(error);
           setRenderError(message);
           setPreviewReady(false);
-          vscode.postMessage({ type: 'previewLoadFailed', payload: { message } });
+          vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
         },
       });
 
@@ -353,7 +353,7 @@ export function App() {
       const message = error instanceof Error ? error.message : String(error);
       setRenderError(message);
       setPreviewReady(false);
-      vscode.postMessage({ type: 'previewLoadFailed', payload: { message } });
+      vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
     }
   };
 
@@ -396,7 +396,7 @@ export function App() {
     };
 
     window.addEventListener('message', handleMessage);
-    vscode.postMessage({ type: 'ready' });
+    vscode.sendMessage({ type: 'ready' });
 
     onCleanup(() => {
       window.removeEventListener('message', handleMessage);

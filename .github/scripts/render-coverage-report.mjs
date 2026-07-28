@@ -189,7 +189,8 @@ function summarize(lineCoverage, includeFile) {
 function sourceLink(filePath) {
   const server = process.env.GITHUB_SERVER_URL;
   const repository = process.env.GITHUB_REPOSITORY;
-  const sha = process.env.COVERAGE_SOURCE_SHA || process.env.GITHUB_SHA;
+  const coverageSha = process.env.COVERAGE_SOURCE_SHA;
+  const sha = coverageSha === undefined || coverageSha === '' ? process.env.GITHUB_SHA : coverageSha;
   if (!server || !repository || !sha) {
     return `\`${filePath}\``;
   }
@@ -210,15 +211,21 @@ function coverageCell(file) {
  */
 function collectCrossPlatformPriorityFiles(reports) {
   const paths = new Set(reports.flatMap((report) => [...report.summary.files.keys()]));
-  return [...paths]
-    .map((filePath) => {
-      const byOs = new Map(reports.map((report) => [report.os, report.summary.files.get(filePath)]));
-      const maxUncovered = Math.max(...[...byOs.values()].map((file) => file?.uncovered ?? 0));
-      return { path: filePath, byOs, maxUncovered };
-    })
+  /** @type {PriorityFile[]} */
+  const files = [...paths].map((filePath) => {
+    /** @type {Map<string, FileCoverage | undefined>} */
+    const byOs = new Map(reports.map((report) => [report.os, report.summary.files.get(filePath)]));
+    const maxUncovered = Math.max(...[...byOs.values()].map((file) => file?.uncovered ?? 0));
+    return { path: filePath, byOs, maxUncovered };
+  });
+  /** @type {PriorityFile[]} */
+  const sortedFiles = files
     .filter((file) => file.maxUncovered > 0)
+    // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
+    // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
     .toSorted((left, right) => right.maxUncovered - left.maxUncovered || left.path.localeCompare(right.path))
     .slice(0, PRIORITY_FILE_LIMIT);
+  return sortedFiles;
 }
 
 /**
@@ -227,13 +234,18 @@ function collectCrossPlatformPriorityFiles(reports) {
  */
 function collectCrossPlatformUncoveredFiles(reports) {
   const paths = new Set(reports.flatMap((report) => [...report.summary.files.keys()]));
-  return [...paths]
-    .map((filePath) => ({
-      path: filePath,
-      byOs: new Map(reports.map((report) => [report.os, report.summary.files.get(filePath)])),
-    }))
+  /** @type {Array<{ path: string; byOs: Map<string, FileCoverage | undefined> }>} */
+  const files = [...paths].map((filePath) => ({
+    path: filePath,
+    byOs: new Map(reports.map((report) => [report.os, report.summary.files.get(filePath)])),
+  }));
+  /** @type {Array<{ path: string; byOs: Map<string, FileCoverage | undefined> }>} */
+  const sortedFiles = files
     .filter((file) => [...file.byOs.values()].some((entry) => entry && entry.total > 0 && entry.covered === 0))
+    // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
+    // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
     .toSorted((left, right) => left.path.localeCompare(right.path));
+  return sortedFiles;
 }
 
 /**
@@ -241,10 +253,15 @@ function collectCrossPlatformUncoveredFiles(reports) {
  * @returns {Array<[string, FileCoverage]>}
  */
 function collectPriorityFiles(summary) {
-  return [...summary.files.entries()]
-    .filter(([, file]) => file.uncovered > 0)
+  /** @type {Array<[string, FileCoverage]>} */
+  const files = [...summary.files.entries()].filter(([, file]) => file.uncovered > 0);
+  /** @type {Array<[string, FileCoverage]>} */
+  const sortedFiles = files
+    // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
+    // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
     .toSorted((left, right) => right[1].uncovered - left[1].uncovered || left[0].localeCompare(right[0]))
     .slice(0, PRIORITY_FILE_LIMIT);
+  return sortedFiles;
 }
 
 /**
@@ -252,9 +269,13 @@ function collectPriorityFiles(summary) {
  * @returns {Array<[string, FileCoverage]>}
  */
 function collectUncoveredFiles(summary) {
-  return [...summary.files.entries()]
-    .filter(([, file]) => file.total > 0 && file.covered === 0)
-    .toSorted((left, right) => left[0].localeCompare(right[0]));
+  /** @type {Array<[string, FileCoverage]>} */
+  const files = [...summary.files.entries()].filter(([, file]) => file.total > 0 && file.covered === 0);
+  /** @type {Array<[string, FileCoverage]>} */
+  // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
+  // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
+  const sortedFiles = files.toSorted((left, right) => left[0].localeCompare(right[0]));
+  return sortedFiles;
 }
 
 function actionsRunUrl() {

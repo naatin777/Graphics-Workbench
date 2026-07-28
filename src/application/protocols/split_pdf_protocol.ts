@@ -118,7 +118,8 @@ export function parseSplitPdfPages(raw: string, pageCount: number): SplitPdfPage
 
     const isLeadingOpenRange = token.startsWith('-');
     const start = Number(isLeadingOpenRange ? '1' : range[1]);
-    const end = Number(isLeadingOpenRange ? range[1] : range[2] || pageCount.toString());
+    const rangeEnd = range[2] === '' ? pageCount.toString() : range[2];
+    const end = Number(isLeadingOpenRange ? range[1] : rangeEnd);
 
     if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end)) {
       return { ok: false, kind: 'wholeNumber', token };
