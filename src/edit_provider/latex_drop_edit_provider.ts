@@ -69,12 +69,13 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
   createSinglePdfSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const templates = getPdfTemplates(configuration);
-    const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
+    const latexRelativeFilePath = normalizeLatexPath(relativeFilePath);
+    const ext = path.extname(latexRelativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {
-      path: relativeFilePath,
+      path: latexRelativeFilePath,
       name: fileName,
       ext,
-      dir: path.dirname(relativeFilePath) || '.',
+      dir: path.dirname(latexRelativeFilePath) || '.',
     };
     return buildTemplateSnippet(templates, ctx);
   }
@@ -88,6 +89,7 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
     relativeFilePaths.forEach((relativeFilePath, index) => {
       const name = fileNames[index] ?? '';
       const label = escapeLatexLabel(name);
+      const latexRelativeFilePath = normalizeLatexPath(relativeFilePath);
 
       snippet.appendText('\t\\begin{minipage}');
       snippet.appendChoice(['[t]', '[c]', '[b]'], tabstop++);
@@ -97,7 +99,7 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
       snippet.appendText('\t\t\\centering\n');
       snippet.appendText(`\t\t\\includegraphics`);
       snippet.appendChoice(['[width=1.0\\linewidth]', '[width=0.9\\linewidth]'], tabstop++);
-      snippet.appendText(`{${relativeFilePath.split(/[\\/]+/).join('/')}}\n`);
+      snippet.appendText(`{${latexRelativeFilePath}}\n`);
       snippet.appendText('\t\t\\caption{');
       snippet.appendPlaceholder(escapeLatex(name), tabstop++);
       snippet.appendText('}\n');
@@ -116,6 +118,10 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
     snippet.appendText('\\end{figure}');
     return snippet;
   }
+}
+
+function normalizeLatexPath(filePath: string): string {
+  return filePath.split(/[\\/]+/).join('/');
 }
 
 function buildTemplateSnippet(templates: string[], ctx: TemplateContext): vscode.SnippetString {
