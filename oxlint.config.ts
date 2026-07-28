@@ -148,7 +148,7 @@ export default defineConfig({
   },
 
   options: {
-    reportUnusedDisableDirectives: 'warn',
+    reportUnusedDisableDirectives: 'error',
     typeAware: true,
   },
 
@@ -174,8 +174,8 @@ export default defineConfig({
      * Basic safety and readability
      */
     curly: ['error', 'all'],
-    eqeqeq: 'warn',
-    'no-console': 'warn',
+    eqeqeq: 'error',
+    'no-console': 'error',
     'no-await-in-loop': 'off',
 
     /*
@@ -183,7 +183,7 @@ export default defineConfig({
      */
     'no-unused-vars': 'off',
     'typescript/no-unused-vars': 'error',
-    'typescript/consistent-type-imports': 'warn',
+    'typescript/consistent-type-imports': 'error',
     'typescript/no-explicit-any': 'error',
     'typescript/no-require-imports': 'error',
 
