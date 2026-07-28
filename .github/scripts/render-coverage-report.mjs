@@ -165,7 +165,7 @@ function collectCrossPlatformPriorityFiles(reports) {
       return { path: filePath, byOs, maxUncovered };
     })
     .filter((file) => file.maxUncovered > 0)
-    .sort((left, right) => right.maxUncovered - left.maxUncovered || left.path.localeCompare(right.path))
+    .toSorted((left, right) => right.maxUncovered - left.maxUncovered || left.path.localeCompare(right.path))
     .slice(0, PRIORITY_FILE_LIMIT);
 }
 
@@ -177,20 +177,20 @@ function collectCrossPlatformUncoveredFiles(reports) {
       byOs: new Map(reports.map((report) => [report.os, report.summary.files.get(filePath)])),
     }))
     .filter((file) => [...file.byOs.values()].some((entry) => entry && entry.total > 0 && entry.covered === 0))
-    .sort((left, right) => left.path.localeCompare(right.path));
+    .toSorted((left, right) => left.path.localeCompare(right.path));
 }
 
 function collectPriorityFiles(summary) {
   return [...summary.files.entries()]
     .filter(([, file]) => file.uncovered > 0)
-    .sort((left, right) => right[1].uncovered - left[1].uncovered || left[0].localeCompare(right[0]))
+    .toSorted((left, right) => right[1].uncovered - left[1].uncovered || left[0].localeCompare(right[0]))
     .slice(0, PRIORITY_FILE_LIMIT);
 }
 
 function collectUncoveredFiles(summary) {
   return [...summary.files.entries()]
     .filter(([, file]) => file.total > 0 && file.covered === 0)
-    .sort((left, right) => left[0].localeCompare(right[0]));
+    .toSorted((left, right) => left[0].localeCompare(right[0]));
 }
 
 function actionsRunUrl() {

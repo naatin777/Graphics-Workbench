@@ -387,7 +387,7 @@ async function executeMermaid(
   options?: MermaidBackend,
 ): Promise<void> {
   signal?.throwIfAborted();
-  await runMermaidCli(sourcePath as `${string}.mmd`, outputPath as `${string}.svg`, {
+  await runMermaidCli(sourcePath, outputPath as `${string}.svg`, {
     outputFormat: 'svg',
     quiet: true,
     puppeteerConfig: {

@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 1
+Status: In progress — Phase 3
 
 ## Objective
 
@@ -23,15 +23,27 @@ Status: In progress — Phase 1
 
 `test`、設定ファイル、ビルド用スクリプトなど既存の明示的な例外は維持する。
 
+Phase 1はPR #16でmainへ反映済み。
+
+## Phase 2
+
+`unicorn/no-array-sort`をerrorへ強化する。既存の11箇所はNode.js 22で利用できる`toSorted()`へ置き換え、配列の破壊的変更を避ける。
+
+## Phase 3
+
+`typescript/no-unnecessary-type-assertion`をerrorへ強化する。既存の78箇所から不要な非nullアサーションと型アサーションを削除し、型がすでに保証されている箇所での重複した保証をなくす。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
 - `eqeqeq`、`no-console`、`typescript/consistent-type-imports` をerrorとして試行しても既存違反なし
+- `unicorn/no-array-sort` の既存違反は11件で、スクリプトとテストに限定されていた
+- `typescript/no-unnecessary-type-assertion` の既存違反は78件で、主にテストコードの不要な非nullアサーションだった
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
 ## Completion criteria
 
-- Phase 1の4制限をCIの通常lintで強制できる
+- Phase 1からPhase 3までの制限をCIの通常lintで強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

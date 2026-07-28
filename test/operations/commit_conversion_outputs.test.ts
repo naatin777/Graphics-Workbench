@@ -19,6 +19,7 @@ import {
   CommitRollbackError,
   OperationCancelledError,
 } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('変換結果の反映処理', () => {
   test('両方残す場合は最小の連番suffixで保存する', async () => {
@@ -283,8 +284,8 @@ suite('変換結果の反映処理', () => {
       },
     );
 
-    assert.strictEqual(await readFile(outputs[0]!.outputPath, 'utf8'), 'external change after commit');
-    assert.strictEqual(await readFile(outputs[1]!.outputPath, 'utf8'), 'old-second');
+    assert.strictEqual(await readFile(requireValue(outputs[0]).outputPath, 'utf8'), 'external change after commit');
+    assert.strictEqual(await readFile(requireValue(outputs[1]).outputPath, 'utf8'), 'old-second');
     assert.strictEqual(await readFile(recoveryBackupPath, 'utf8'), 'old-first');
   });
 

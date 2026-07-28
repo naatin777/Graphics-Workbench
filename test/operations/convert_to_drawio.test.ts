@@ -9,6 +9,7 @@ import {
   createDrawioXml,
   parseSvgSize,
 } from '../../src/operations/conversion/convert_to_drawio.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('Draw.ioへの集約変換', () => {
   test('XML生成は画像を1オブジェクトにし、同名ページを連番化する', () => {
@@ -127,7 +128,7 @@ suite('Draw.ioへの集約変換', () => {
           runId: extension.slice(1),
           runDrawio: async (executable, args) => {
             call = { executable, args };
-            const outputPath = args[args.indexOf('--output') + 1]!;
+            const outputPath = requireValue(args[args.indexOf('--output') + 1]);
             if (outputPath.endsWith('.png')) {
               const png = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
                 .png()

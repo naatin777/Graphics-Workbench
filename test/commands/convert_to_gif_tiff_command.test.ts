@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 
 import { convertToGifCommand } from '../../src/commands/conversion/convert_to_gif.js';
 import { convertToTiffCommand } from '../../src/commands/conversion/convert_to_tiff.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('GIF/TIFFに変換コマンド', () => {
   test('GIF入力の先頭frameをTIFFへ変換する', async () => {
@@ -25,7 +26,7 @@ async function assertAnimatedInputIsSplit(
   command: (uri?: vscode.Uri, uris?: vscode.Uri[]) => Promise<void>,
 ): Promise<void> {
   const workspacePath = await mkdtemp(
-    path.join(vscode.workspace.workspaceFolders![0]!.uri.fsPath, `lgh-${format}-command-`),
+    path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, `lgh-${format}-command-`),
   );
   const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
   const sandbox = createSandbox();

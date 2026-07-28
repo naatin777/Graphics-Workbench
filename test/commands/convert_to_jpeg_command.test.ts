@@ -30,6 +30,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
+import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -74,7 +75,7 @@ suite('JPEGに変換コマンド', () => {
 
       const commandExecution = vscode.commands.executeCommand(
         CONVERT_TO_JPEG_COMMAND,
-        vscode.Uri.file(sourcePaths[0]!),
+        vscode.Uri.file(requireValue(sourcePaths[0])),
         sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
       );
       await runCommandAndClearNotificationsUntilDone(commandExecution);

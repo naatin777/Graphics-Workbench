@@ -12,6 +12,7 @@ import sharp from 'sharp';
 
 import { executeJpegConversion, type ConvertToJpegJob } from '../../src/operations/conversion/convert_to_jpeg.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('JPEGに変換する処理', () => {
   test('編集可能なDraw.io画像はPDFを経由してJPEGへ変換する', async () => {
@@ -68,7 +69,7 @@ suite('JPEGに変換する処理', () => {
       });
 
       assert.strictEqual(drawioCalls.length, 1);
-      const args = drawioCalls[0]!;
+      const args = requireValue(drawioCalls[0]);
       assert.strictEqual(args[0], '-x');
       assert.strictEqual(args[1], '-f');
       assert.strictEqual(args[2], 'pdf');

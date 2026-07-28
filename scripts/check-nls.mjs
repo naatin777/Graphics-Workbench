@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/ast';
 
 function placeholders(value) {
-  return [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1]).sort();
+  return [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1]).toSorted();
 }
 
 export function validateUserMessageSource(sourcePath, source, english) {
@@ -110,8 +110,8 @@ export function checkNls(root) {
   const japanese = JSON.parse(readFileSync(path.join(root, 'package.nls.ja.json'), 'utf8'));
   const errors = [];
 
-  const englishKeys = Object.keys(english).sort();
-  const japaneseKeys = Object.keys(japanese).sort();
+  const englishKeys = Object.keys(english).toSorted();
+  const japaneseKeys = Object.keys(japanese).toSorted();
   if (JSON.stringify(englishKeys) !== JSON.stringify(japaneseKeys)) {
     errors.push(`NLS key sets differ: en=${englishKeys.length}, ja=${japaneseKeys.length}`);
   }

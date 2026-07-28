@@ -3,6 +3,8 @@ import path from 'node:path';
 
 import { runVSCodeCommand } from '@vscode/test-electron';
 
+import { requireValue } from '../../../helpers/required.js';
+
 interface PackagedVsixOptions {
   extensionsDir: string;
   userDataDir: string;
@@ -52,7 +54,7 @@ async function findInstalledExtension(extensionsDir: string): Promise<InstalledE
     throw new Error(`Expected one installed LaTeX Graphics Helper extension, found ${matches.length}.`);
   }
 
-  return matches[0]!;
+  return requireValue(matches[0]);
 }
 
 async function readManifest(manifestPath: string): Promise<{ name?: string; publisher?: string } | undefined> {
