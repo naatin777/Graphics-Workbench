@@ -43,9 +43,19 @@ export async function captureCropPdfScreenshot(
     (await canvases.all()).map(async (canvas) => {
       const [bounds, dataUrl] = await Promise.all([
         canvas.boundingBox(),
-        canvas.evaluate((element) =>
-          (element as unknown as { toDataURL: (type: string) => string }).toDataURL('image/png'),
-        ),
+        canvas.evaluate((element) => {
+          const isDataUrlFunction = (value: unknown): value is (this: object, type: string) => unknown =>
+            typeof value === 'function';
+          const toDataURL = Reflect.get(element, 'toDataURL');
+          if (!isDataUrlFunction(toDataURL)) {
+            throw new Error('PDF preview element is not a canvas.');
+          }
+          const dataUrl: unknown = toDataURL.call(element, 'image/png');
+          if (typeof dataUrl !== 'string') {
+            throw new Error('PDF preview canvas did not return a data URL.');
+          }
+          return dataUrl;
+        }),
       ]);
 
       if (!bounds) {

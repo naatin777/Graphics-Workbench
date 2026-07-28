@@ -34,11 +34,12 @@ suite('Safe Mode状態', () => {
 class MemoryState {
   readonly #values = new Map<string, unknown>();
 
-  get<T>(key: string, defaultValue?: T): T | undefined {
-    return (this.#values.has(key) ? this.#values.get(key) : defaultValue) as T | undefined;
+  get(key: 'safeMode.enabled', defaultValue?: boolean): boolean | undefined {
+    const value = this.#values.get(key);
+    return typeof value === 'boolean' ? value : defaultValue;
   }
 
-  async update(key: string, value: unknown): Promise<void> {
+  async update(key: 'safeMode.enabled', value: boolean): Promise<void> {
     this.#values.set(key, value);
   }
 }

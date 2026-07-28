@@ -116,10 +116,10 @@ function isCropBox(value: unknown): value is CropBox {
     return false;
   }
 
-  const record = value as Record<string, unknown>;
-  return ['left', 'bottom', 'right', 'top'].every(
-    (key) => typeof record[key] === 'number' && Number.isFinite(record[key]),
-  );
+  return ['left', 'bottom', 'right', 'top'].every((key) => {
+    const coordinate = Reflect.get(value, key);
+    return typeof coordinate === 'number' && Number.isFinite(coordinate);
+  });
 }
 
 function isCropTarget(value: unknown): value is CropTarget {

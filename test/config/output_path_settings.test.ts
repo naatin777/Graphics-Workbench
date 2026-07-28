@@ -4,8 +4,8 @@ import { readOutputPathTemplate, readOutputPathsTemplate } from '../../src/confi
 
 function configuration(values: Record<string, unknown>) {
   return {
-    get<T>(key: string, defaultValue: T): T {
-      return (values[key] ?? defaultValue) as T;
+    get(key: string, defaultValue: unknown): unknown {
+      return values[key] ?? defaultValue;
     },
   };
 }

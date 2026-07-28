@@ -540,7 +540,7 @@ function isWindowsRenameConflict(error: unknown): boolean {
     process.platform === 'win32' &&
     error instanceof Error &&
     'code' in error &&
-    ((error as NodeJS.ErrnoException).code === 'EEXIST' || (error as NodeJS.ErrnoException).code === 'EPERM')
+    (error.code === 'EEXIST' || error.code === 'EPERM')
   );
 }
 

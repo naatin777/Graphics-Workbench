@@ -6,12 +6,12 @@ import { getWebviewHtml } from '../../src/presentation/webview/get_webview_html.
 
 suite('Webview HTML生成', () => {
   test('PDF.jsがPDFとworkerを読み込めるCSPを含める', () => {
-    const webview = {
+    const webview: Pick<vscode.Webview, 'cspSource' | 'asWebviewUri'> = {
       cspSource: 'vscode-resource:',
       asWebviewUri(uri: vscode.Uri): vscode.Uri {
         return uri;
       },
-    } as unknown as vscode.Webview;
+    };
 
     const html = getWebviewHtml({
       webview,

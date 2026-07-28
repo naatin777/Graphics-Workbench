@@ -479,11 +479,15 @@ function isSupportedSourcePath(sourcePath: string): boolean {
 }
 
 function asPngOutputPath(outputPath: string): `${string}.png` {
-  if (!outputPath.toLowerCase().endsWith('.png')) {
+  if (!isPngOutputPath(outputPath)) {
     throw new Error(`PNG output path must end with .png: ${outputPath}`);
   }
 
-  return outputPath as unknown as `${string}.png`;
+  return outputPath;
+}
+
+function isPngOutputPath(outputPath: string): outputPath is `${string}.png` {
+  return outputPath.toLowerCase().endsWith('.png');
 }
 
 export function errorMessage(error: unknown): string {

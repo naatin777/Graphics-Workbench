@@ -624,9 +624,110 @@ suite('package.jsonの変換メニュー定義', () => {
   });
 });
 
-async function readJson<T>(relativePath: string): Promise<T> {
+async function readJson<T extends PackageJson>(relativePath: 'package.json'): Promise<T>;
+async function readJson<T extends Record<string, string>>(
+  relativePath: 'package.nls.json' | 'package.nls.ja.json',
+): Promise<T>;
+async function readJson(relativePath: string): Promise<PackageJson | Record<string, string>> {
   const content = await readFile(path.join(repositoryRoot, relativePath), 'utf8');
-  return JSON.parse(content) as T;
+  const value: unknown = JSON.parse(content);
+  if (relativePath === 'package.json') {
+    if (!isPackageJson(value)) {
+      throw new Error('package.json has an unexpected structure.');
+    }
+    return value;
+  }
+  if (!isStringRecord(value)) {
+    throw new Error(`${relativePath} has an unexpected structure.`);
+  }
+  return value;
+}
+
+function isPackageJson(value: unknown): value is PackageJson {
+  if (!isRecord(value) || !isRecord(value.devEngines) || !isRecord(value.engines) || !isRecord(value.contributes)) {
+    return false;
+  }
+
+  const devEngines = value.devEngines;
+  const engines = value.engines;
+  const contributes = value.contributes;
+  const configuration = contributes.configuration;
+
+  return (
+    isRecord(devEngines.packageManager) &&
+    isRecord(devEngines.runtime) &&
+    typeof devEngines.packageManager.name === 'string' &&
+    typeof devEngines.packageManager.version === 'string' &&
+    typeof devEngines.packageManager.onFail === 'string' &&
+    typeof devEngines.runtime.name === 'string' &&
+    typeof devEngines.runtime.version === 'string' &&
+    typeof devEngines.runtime.onFail === 'string' &&
+    typeof engines.vscode === 'string' &&
+    (engines.node === undefined || typeof engines.node === 'string') &&
+    (value.activationEvents === undefined || isStringArray(value.activationEvents)) &&
+    isCommandArray(contributes.commands) &&
+    isRecord(configuration) &&
+    isConfigurationProperties(configuration.properties) &&
+    isMenuRecord(contributes.menus) &&
+    isSubmenuArray(contributes.submenus)
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return isRecord(value) && Object.values(value).every((entry) => typeof entry === 'string');
+}
+
+function isCommandArray(value: unknown): value is PackageJson['contributes']['commands'] {
+  return (
+    Array.isArray(value) &&
+    value.every((entry) => isRecord(entry) && typeof entry.command === 'string' && typeof entry.title === 'string')
+  );
+}
+
+function isConfigurationProperties(value: unknown): value is PackageJson['contributes']['configuration']['properties'] {
+  return (
+    isRecord(value) &&
+    Object.values(value).every(
+      (entry) =>
+        isRecord(entry) &&
+        (typeof entry.type === 'string' ||
+          (Array.isArray(entry.type) && entry.type.every((type) => typeof type === 'string'))) &&
+        typeof entry.description === 'string' &&
+        'default' in entry,
+    )
+  );
+}
+
+function isMenuRecord(value: unknown): value is PackageJson['contributes']['menus'] {
+  return (
+    isRecord(value) &&
+    Object.values(value).every(
+      (entries) =>
+        Array.isArray(entries) &&
+        entries.every(
+          (entry) =>
+            isRecord(entry) &&
+            (entry.command === undefined || typeof entry.command === 'string') &&
+            (entry.submenu === undefined || typeof entry.submenu === 'string') &&
+            (entry.when === undefined || typeof entry.when === 'string'),
+        ),
+    )
+  );
+}
+
+function isSubmenuArray(value: unknown): value is PackageJson['contributes']['submenus'] {
+  return (
+    Array.isArray(value) &&
+    value.every((entry) => isRecord(entry) && typeof entry.id === 'string' && typeof entry.label === 'string')
+  );
 }
 
 function sortedKeys(record: Record<string, string>): string[] {

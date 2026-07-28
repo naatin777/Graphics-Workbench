@@ -1,6 +1,13 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+/** @typedef {Map<number, number>} LineCoverage */
+/** @typedef {Map<string, LineCoverage>} CoverageMap */
+/** @typedef {{ total: number; covered: number; uncovered: number; percent: number }} FileCoverage */
+/** @typedef {{ files: Map<string, FileCoverage>; total: number; covered: number; percent: number; uncoveredFiles: number }} CoverageSummary */
+/** @typedef {{ os: string; summary: CoverageSummary }} ExtensionReport */
+/** @typedef {{ path: string; byOs: Map<string, FileCoverage | undefined>; maxUncovered: number }} PriorityFile */
+
 const EXTENSION_REPORTS = [
   ['Linux', 'vscode-extension-host-coverage-Linux/lcov.info'],
   ['macOS', 'vscode-extension-host-coverage-macOS/lcov.info'],
@@ -15,7 +22,12 @@ const WEBVIEW_REPORTS = [
 
 const PRIORITY_FILE_LIMIT = 15;
 
+/**
+ * @param {string[]} argv
+ * @returns {{ input: string; output: string }}
+ */
 function readArguments(argv) {
+  /** @type {Map<string, string>} */
   const values = new Map();
   for (let index = 0; index < argv.length; index += 2) {
     const key = argv[index];
@@ -34,6 +46,11 @@ function readArguments(argv) {
   return { input, output };
 }
 
+/**
+ * @param {string} source
+ * @param {string | undefined} fallbackPrefix
+ * @returns {string}
+ */
 function normalizeSourcePath(source, fallbackPrefix) {
   const normalized = source.replaceAll('\\', '/');
 
@@ -64,7 +81,13 @@ function normalizeSourcePath(source, fallbackPrefix) {
   return fallbackPrefix ? `${fallbackPrefix}${relative}` : relative;
 }
 
+/**
+ * @param {string} content
+ * @param {string | undefined} fallbackPrefix
+ * @returns {CoverageMap}
+ */
 function parseLcov(content, fallbackPrefix) {
+  /** @type {CoverageMap} */
   const files = new Map();
   let currentPath;
 
@@ -89,13 +112,21 @@ function parseLcov(content, fallbackPrefix) {
     }
 
     const lines = files.get(currentPath);
+    if (!lines) {
+      throw new Error(`Coverage file was not initialized: ${currentPath}`);
+    }
     lines.set(lineNumber, (lines.get(lineNumber) ?? 0) + (Number.isFinite(hits) ? hits : 0));
   }
 
   return files;
 }
 
+/**
+ * @param {CoverageMap[]} maps
+ * @returns {CoverageMap}
+ */
 function mergeCoverageMaps(maps) {
+  /** @type {CoverageMap} */
   const merged = new Map();
   for (const files of maps) {
     for (const [filePath, lines] of files) {
@@ -103,6 +134,9 @@ function mergeCoverageMaps(maps) {
         merged.set(filePath, new Map());
       }
       const target = merged.get(filePath);
+      if (!target) {
+        throw new Error(`Coverage file was not initialized: ${filePath}`);
+      }
       for (const [lineNumber, hits] of lines) {
         target.set(lineNumber, (target.get(lineNumber) ?? 0) + hits);
       }
@@ -111,7 +145,13 @@ function mergeCoverageMaps(maps) {
   return merged;
 }
 
+/**
+ * @param {CoverageMap} lineCoverage
+ * @param {(filePath: string) => boolean} includeFile
+ * @returns {CoverageSummary}
+ */
 function summarize(lineCoverage, includeFile) {
+  /** @type {Map<string, FileCoverage>} */
   const files = new Map(
     [...lineCoverage.entries()]
       .filter(([filePath]) => includeFile(filePath))
@@ -142,6 +182,10 @@ function summarize(lineCoverage, includeFile) {
   };
 }
 
+/**
+ * @param {string} filePath
+ * @returns {string}
+ */
 function sourceLink(filePath) {
   const server = process.env.GITHUB_SERVER_URL;
   const repository = process.env.GITHUB_REPOSITORY;
@@ -152,10 +196,18 @@ function sourceLink(filePath) {
   return `[\`${filePath}\`](${server}/${repository}/blob/${sha}/${filePath})`;
 }
 
+/**
+ * @param {FileCoverage | undefined} file
+ * @returns {string}
+ */
 function coverageCell(file) {
   return file ? `${file.percent.toFixed(1)}% · ${file.uncovered}行` : '—';
 }
 
+/**
+ * @param {ExtensionReport[]} reports
+ * @returns {PriorityFile[]}
+ */
 function collectCrossPlatformPriorityFiles(reports) {
   const paths = new Set(reports.flatMap((report) => [...report.summary.files.keys()]));
   return [...paths]
@@ -169,6 +221,10 @@ function collectCrossPlatformPriorityFiles(reports) {
     .slice(0, PRIORITY_FILE_LIMIT);
 }
 
+/**
+ * @param {ExtensionReport[]} reports
+ * @returns {Array<{ path: string; byOs: Map<string, FileCoverage | undefined> }>}
+ */
 function collectCrossPlatformUncoveredFiles(reports) {
   const paths = new Set(reports.flatMap((report) => [...report.summary.files.keys()]));
   return [...paths]
@@ -180,6 +236,10 @@ function collectCrossPlatformUncoveredFiles(reports) {
     .toSorted((left, right) => left.path.localeCompare(right.path));
 }
 
+/**
+ * @param {CoverageSummary} summary
+ * @returns {Array<[string, FileCoverage]>}
+ */
 function collectPriorityFiles(summary) {
   return [...summary.files.entries()]
     .filter(([, file]) => file.uncovered > 0)
@@ -187,6 +247,10 @@ function collectPriorityFiles(summary) {
     .slice(0, PRIORITY_FILE_LIMIT);
 }
 
+/**
+ * @param {CoverageSummary} summary
+ * @returns {Array<[string, FileCoverage]>}
+ */
 function collectUncoveredFiles(summary) {
   return [...summary.files.entries()]
     .filter(([, file]) => file.total > 0 && file.covered === 0)
@@ -200,6 +264,10 @@ function actionsRunUrl() {
   return server && repository && runId ? `${server}/${repository}/actions/runs/${runId}` : undefined;
 }
 
+/**
+ * @param {string[]} output
+ * @param {ExtensionReport[]} reports
+ */
 function renderExtensionCoverage(output, reports) {
   output.push(
     '### Extension Host',
@@ -257,6 +325,10 @@ function renderExtensionCoverage(output, reports) {
   );
 }
 
+/**
+ * @param {string[]} output
+ * @param {CoverageSummary} summary
+ */
 function renderWebviewCoverage(output, summary) {
   output.push(
     '',
@@ -298,6 +370,11 @@ function renderWebviewCoverage(output, summary) {
   output.push('', '</details>');
 }
 
+/**
+ * @param {ExtensionReport[]} extensionReports
+ * @param {CoverageSummary} webviewSummary
+ * @returns {string}
+ */
 function renderReport(extensionReports, webviewSummary) {
   const output = ['## Automated Test Coverage', ''];
   renderExtensionCoverage(output, extensionReports);
@@ -322,6 +399,7 @@ function renderReport(extensionReports, webviewSummary) {
 
 const { input, output } = readArguments(process.argv.slice(2));
 
+/** @type {ExtensionReport[]} */
 const extensionReports = [];
 for (const [os, relativePath] of EXTENSION_REPORTS) {
   const content = await readFile(path.join(input, relativePath), 'utf8');
@@ -332,6 +410,7 @@ for (const [os, relativePath] of EXTENSION_REPORTS) {
   extensionReports.push({ os, summary });
 }
 
+/** @type {CoverageMap[]} */
 const webviewCoverageMaps = [];
 for (const [appName, relativePath] of WEBVIEW_REPORTS) {
   const content = await readFile(path.join(input, relativePath), 'utf8');

@@ -234,10 +234,10 @@ suite('PDFに変換コマンド', () => {
   test('editable Draw.io画像をConvert to PDFで変換するときは直接PDF設定を使う', () => {
     const settings: Record<string, string> = {};
     const configuration = {
-      get<T>(key: string, defaultValue: T): T {
-        return (settings[key] ?? defaultValue) as T;
+      get(key: string, defaultValue: string): string {
+        return settings[key] ?? defaultValue;
       },
-    } as vscode.WorkspaceConfiguration;
+    };
     const sourceUri = vscode.Uri.file(path.join('workspace', 'source.drawio.png'));
 
     assert.strictEqual(

@@ -24,8 +24,8 @@ suite('外部tool実行ファイルの既定値', () => {
 
   test('設定値を優先し、空白なら各toolの既定値へ戻す', () => {
     const configuration = {
-      get<T>(key: string, defaultValue: T): T {
-        return key === 'execPath.ghostscript' ? (' /custom/gs ' as T) : defaultValue;
+      get(key: string, defaultValue: string): string {
+        return key === 'execPath.ghostscript' ? ' /custom/gs ' : defaultValue;
       },
     };
 
@@ -33,7 +33,7 @@ suite('外部tool実行ファイルの既定値', () => {
     assert.strictEqual(readDrawioExecutablePath(configuration), process.platform === 'win32' ? 'drawio.exe' : 'drawio');
     assert.strictEqual(
       readGhostscriptExecutablePath({
-        get<T>(_key: string, defaultValue: T): T {
+        get(_key: string, defaultValue: string): string {
           return defaultValue;
         },
       }),
@@ -46,8 +46,8 @@ suite('外部tool実行ファイルの既定値', () => {
   test('Draw.ioの設定値をtrimして優先する', () => {
     assert.strictEqual(
       readDrawioExecutablePath({
-        get<T>(_key: string, _defaultValue: T): T {
-          return ' /custom/drawio ' as unknown as T;
+        get(_key: string, _defaultValue: string): string {
+          return ' /custom/drawio ';
         },
       }),
       '/custom/drawio',

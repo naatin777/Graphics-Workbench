@@ -364,8 +364,8 @@ async function validateGeneratedSvg(outputPath: string): Promise<void> {
   }
 
   try {
-    const parsed = (await new Parser().parseStringPromise(content)) as { svg?: unknown };
-    if (parsed.svg === undefined) {
+    const parsed: unknown = await new Parser().parseStringPromise(content);
+    if (typeof parsed !== 'object' || parsed === null || !('svg' in parsed) || parsed.svg === undefined) {
       throw new Error(`SVG conversion produced non-SVG output: ${outputPath}`);
     }
   } catch (error) {
@@ -437,9 +437,13 @@ async function writeRawAsSvg(
 }
 
 function asSvgOutputPath(outputPath: string): `${string}.svg` {
-  if (!outputPath.toLowerCase().endsWith('.svg')) {
+  if (!isSvgOutputPath(outputPath)) {
     throw new Error(`SVG output path must end with .svg: ${outputPath}`);
   }
 
-  return outputPath as unknown as `${string}.svg`;
+  return outputPath;
+}
+
+function isSvgOutputPath(outputPath: string): outputPath is `${string}.svg` {
+  return outputPath.toLowerCase().endsWith('.svg');
 }
