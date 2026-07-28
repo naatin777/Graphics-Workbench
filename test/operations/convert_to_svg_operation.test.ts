@@ -17,6 +17,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('SVGに変換する処理', () => {
   test('編集可能なDraw.io画像はDraw.io CLIでSVGへ変換する', async () => {
@@ -50,14 +51,14 @@ suite('SVGに変換する処理', () => {
             drawioCalls.push(args);
             const outputIndex = args.indexOf('-o') + 1;
             assert.ok(outputIndex > 0);
-            await writeFile(args[outputIndex]!, '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+            await writeFile(requireValue(args[outputIndex]), '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
           },
         },
         runId: 'test-run',
       });
 
       assert.strictEqual(drawioCalls.length, 1);
-      const args = drawioCalls[0]!;
+      const args = requireValue(drawioCalls[0]);
       assert.deepStrictEqual(args.slice(0, 5), [
         '-x',
         '-f',
@@ -89,7 +90,7 @@ suite('SVGに変換する処理', () => {
           drawioTools: {
             drawioPath: 'drawio',
             runDrawio: async (_executable, args) => {
-              await writeFile(args[args.indexOf('-o') + 1]!, '<html>not svg</html>');
+              await writeFile(requireValue(args[args.indexOf('-o') + 1]), '<html>not svg</html>');
             },
           },
           runId: 'invalid-output',

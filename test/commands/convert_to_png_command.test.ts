@@ -31,6 +31,7 @@ import * as vscode from 'vscode';
 import { CONVERT_TO_PNG_COMMAND } from '../../src/commands/conversion/convert_to_png.js';
 
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
+import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -94,7 +95,7 @@ suite('PNGに変換コマンド', () => {
 
       const commandExecution = vscode.commands.executeCommand(
         CONVERT_TO_PNG_COMMAND,
-        vscode.Uri.file(sourcePaths[0]!),
+        vscode.Uri.file(requireValue(sourcePaths[0])),
         sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
       );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
@@ -130,7 +131,7 @@ suite('PNGに変換コマンド', () => {
         async () => {
           const commandExecution = vscode.commands.executeCommand(
             CONVERT_TO_PNG_COMMAND,
-            vscode.Uri.file(sourcePaths[0]!),
+            vscode.Uri.file(requireValue(sourcePaths[0])),
             sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
           );
           await runCommandAndClearNotificationsUntilDone(commandExecution);

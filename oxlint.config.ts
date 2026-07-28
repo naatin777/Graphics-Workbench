@@ -186,6 +186,8 @@ export default defineConfig({
     'typescript/consistent-type-imports': 'error',
     'typescript/no-explicit-any': 'error',
     'typescript/no-require-imports': 'error',
+    'typescript/no-unnecessary-type-assertion': 'error',
+    'unicorn/no-array-sort': 'error',
 
     /*
      * Error handling
@@ -232,7 +234,6 @@ export default defineConfig({
     'typescript/no-unsafe-member-access': 'off',
     'typescript/no-unsafe-return': 'off',
     'typescript/no-unsafe-type-assertion': 'off',
-    'typescript/no-unnecessary-type-assertion': 'off',
     'typescript/no-unnecessary-condition': 'off',
 
     /*

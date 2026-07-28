@@ -15,6 +15,7 @@ import { userMessage } from '../../src/commands/shared/user_messages.js';
 import { UNDO_LAST_CONVERSION_COMMAND } from '../../src/commands/lifecycle/undo_last_conversion.js';
 
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
+import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -214,10 +215,10 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
 
   test('プレビューは入力順を保持し、入力の移動と除外が可能', async () => {
     const quickPick = createFakeQuickPick((pick) => {
-      const second = pick.items[1]!;
-      const first = pick.items[0]!;
-      pick.triggerItemButton(second, second.buttons![0]!);
-      pick.triggerItemButton(first, first.buttons![2]!);
+      const second = requireValue(pick.items[1]);
+      const first = requireValue(pick.items[0]);
+      pick.triggerItemButton(second, requireValue(requireValue(second.buttons)[0]));
+      pick.triggerItemButton(first, requireValue(requireValue(first.buttons)[2]));
       pick.accept();
     });
     createQuickPick.callsFake(() => quickPick as never);
@@ -237,10 +238,11 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       const quickPick = createFakeQuickPick((pick) => pick.hide());
       createQuickPick.callsFake(() => quickPick as never);
 
-      await vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(sourcePaths[0]!), [
-        vscode.Uri.file(sourcePaths[0]!),
-        vscode.Uri.file(sourcePaths[1]!),
-      ]);
+      await vscode.commands.executeCommand(
+        COMBINE_IMAGES_TO_PDF_COMMAND,
+        vscode.Uri.file(requireValue(sourcePaths[0])),
+        [vscode.Uri.file(requireValue(sourcePaths[0])), vscode.Uri.file(requireValue(sourcePaths[1]))],
+      );
 
       await assertFileDoesNotExist(outputPath);
       assert.strictEqual(showSaveDialog.called, false);
@@ -275,14 +277,14 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
         (runDirectory) => !existingRunDirectories.has(runDirectory),
       );
       assert.strictEqual(runDirectories.length, 1);
-      const runRoot = path.join(stagingRoot, runDirectories[0]!);
+      const runRoot = path.join(stagingRoot, requireValue(runDirectories[0]));
       await access(path.join(runRoot, 'result.pdf.previous'));
       await assertFileDoesNotExist(path.join(runRoot, 'result.pdf'));
 
       await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND);
 
       assert.deepStrictEqual(await readFile(outputPath), originalOutput);
-      await assertDirectoryMissingOrEmpty(path.join(stagingRoot, runDirectories[0]!));
+      await assertDirectoryMissingOrEmpty(path.join(stagingRoot, requireValue(runDirectories[0])));
     } finally {
       await rm(temporaryDirectory, { recursive: true, force: true });
     }

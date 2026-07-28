@@ -11,6 +11,7 @@ import { executeAvifConversion } from '../../src/operations/conversion/convert_t
 import { executeJpegConversion } from '../../src/operations/conversion/convert_to_jpeg.js';
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
+import { requireValue } from '../helpers/required.js';
 
 const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
@@ -119,8 +120,8 @@ async function assertFirstFrameOutput(outputFormat: (typeof outputFormats)[numbe
   assert.strictEqual(info.format, 'raw');
 
   for (let index = 0; index < data.length; index += 4) {
-    assert.ok(data[index]! > 220);
-    assert.ok(data[index + 1]! < 30);
-    assert.ok(data[index + 2]! < 30);
+    assert.ok(requireValue(data[index]) > 220);
+    assert.ok(requireValue(data[index + 1]) < 30);
+    assert.ok(requireValue(data[index + 2]) < 30);
   }
 }
