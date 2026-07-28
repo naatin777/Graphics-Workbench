@@ -144,6 +144,7 @@ export default defineConfig({
 
   categories: {
     correctness: 'error',
+    suspicious: 'error',
     perf: 'warn',
   },
 
@@ -187,6 +188,14 @@ export default defineConfig({
     'typescript/no-explicit-any': 'error',
     'typescript/no-require-imports': 'error',
     'typescript/no-unnecessary-type-assertion': 'error',
+    'typescript/prefer-nullish-coalescing': 'error',
+    'eslint/no-underscore-dangle': ['error', { allow: ['_electron'] }],
+    'import/no-unassigned-import': [
+      'error',
+      {
+        allow: ['**/*.css', '**/install_map_get_or_insert_computed', 'pdfjs-dist/build/pdf.worker.mjs'],
+      },
+    ],
     'unicorn/no-array-sort': 'error',
 
     /*
@@ -258,6 +267,19 @@ export default defineConfig({
 
   overrides: [
     {
+      files: [
+        'src/**/*.ts',
+        'webview/apps/**/*.ts',
+        'webview/apps/**/*.tsx',
+        'webview/shared/**/*.ts',
+        'scripts/**/*.mjs',
+        '.github/scripts/**/*.mjs',
+      ],
+      rules: {
+        'typescript/no-unsafe-return': 'error',
+      },
+    },
+    {
       files: ['src/application/**/*.ts', 'src/operations/**/*.ts', 'src/config/**/*.ts'],
       rules: restrictedImports(corePaths, corePatterns),
     },
@@ -273,12 +295,6 @@ export default defineConfig({
 
     ...appOverrides,
 
-    {
-      files: ['webview/apps/crop_pdf/src/**/*.ts', 'webview/apps/crop_pdf/src/**/*.tsx'],
-      rules: {
-        'unicorn/require-post-message-target-origin': 'off',
-      },
-    },
     {
       files: [
         'webview/vite.config.ts',
@@ -297,6 +313,7 @@ export default defineConfig({
       rules: {
         'no-console': 'off',
         'typescript/no-explicit-any': 'off',
+        'typescript/no-unsafe-return': 'off',
         'unicorn/consistent-function-scoping': 'off',
       },
     },

@@ -11,5 +11,5 @@ const localeTable: Record<string, string> = {
   ...(<{ [key: string]: Record<string, string> }>{ ja: localeJa })[localeTableKey],
 };
 
-const localeString = (key: string): string => localeTable[key] || key;
+const localeString = (key: string): string => localeTable[key] ?? key;
 export const localeMap = (key: LocaleKeyType): string => localeString(key);

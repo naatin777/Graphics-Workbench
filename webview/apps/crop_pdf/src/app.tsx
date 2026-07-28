@@ -44,7 +44,7 @@ const defaultLabels: CropPdfLabels = {
 
 function cancel() {
   const message: WebviewToExtensionMessage = { type: 'cancel' };
-  vscode.postMessage(message);
+  vscode.sendMessage(message);
 }
 
 export function App() {
@@ -111,7 +111,7 @@ export function App() {
         onRenderError: (error: unknown) => {
           const message = error instanceof Error ? error.message : String(error);
           setRenderError(message);
-          vscode.postMessage({ type: 'previewLoadFailed', payload: { message } });
+          vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
         },
       })
         .then((controller) => {
@@ -145,11 +145,13 @@ export function App() {
               });
             }
           }
+
+          return undefined;
         });
     };
 
     window.addEventListener('message', handleMessage);
-    vscode.postMessage({ type: 'ready' });
+    vscode.sendMessage({ type: 'ready' });
     onCleanup(() => {
       window.removeEventListener('message', handleMessage);
       void renderController?.dispose();
@@ -192,7 +194,7 @@ export function App() {
       },
     };
 
-    vscode.postMessage(message);
+    vscode.sendMessage(message);
   };
 
   const updatePreviewZoom = (value: number, anchorTarget?: EventTarget | null, clientX?: number, clientY?: number) => {

@@ -37,9 +37,9 @@ suite('Rawピクセル変換', () => {
 
       assert.deepStrictEqual(
         outputs.map((output) => output.outputPath).toSorted(),
-        [`${outputPath.replace('.raw', '-1.raw')}`, `${outputPath.replace('.raw', '-1.raw')}.json`].toSorted(),
+        [outputPath.replace('.raw', '-1.raw'), `${outputPath.replace('.raw', '-1.raw')}.json`].toSorted(),
       );
-      assert.strictEqual((await readFile(`${outputPath.replace('.raw', '-1.raw')}`)).length, 6);
+      assert.strictEqual((await readFile(outputPath.replace('.raw', '-1.raw'))).length, 6);
       assert.deepStrictEqual(
         JSON.parse(await readFile(`${outputPath.replace('.raw', '-1.raw')}.json`, 'utf8')),
         sidecar,
