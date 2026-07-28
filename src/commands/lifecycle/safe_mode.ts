@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { SafeModeState } from '../../application/policy/safe_mode.js';
+import { SafeModeState, type StateStorage } from '../../application/policy/safe_mode.js';
 import type { OutputConflictDecision } from '../../operations/lifecycle/commit_conversion_outputs.js';
 
 import { userMessage } from '../shared/user_messages.js';
@@ -10,7 +10,12 @@ export const TOGGLE_SAFE_MODE_COMMAND = 'latex-graphics-helper.toggleSafeMode';
 let safeModeState: SafeModeState | undefined;
 let statusBarItem: vscode.StatusBarItem | undefined;
 
-export function initializeSafeMode(context: vscode.ExtensionContext): void {
+type SafeModeContext = {
+  globalState: StateStorage;
+  subscriptions: vscode.Disposable[];
+};
+
+export function initializeSafeMode(context: SafeModeContext): void {
   safeModeState = new SafeModeState(context.globalState);
   statusBarItem = vscode.window.createStatusBarItem(
     'latex-graphics-helper.safeMode',

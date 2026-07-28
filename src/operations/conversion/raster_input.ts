@@ -112,38 +112,45 @@ export function readRawSidecar(sourcePath: string): RawSidecar {
     throw new Error(`Invalid Raw sidecar: ${sidecarPath}`);
   }
 
-  const candidate = value as Record<string, unknown>;
+  const version = Reflect.get(value, 'version');
+  const width = Reflect.get(value, 'width');
+  const height = Reflect.get(value, 'height');
+  const channels = Reflect.get(value, 'channels');
+  const depth = Reflect.get(value, 'depth');
+  const colourspace = Reflect.get(value, 'colourspace');
+  const alpha = Reflect.get(value, 'alpha');
+  const layout = Reflect.get(value, 'layout');
   if (
-    candidate.version !== 1 ||
-    !isPositiveInteger(candidate.width) ||
-    !isPositiveInteger(candidate.height) ||
-    (candidate.channels !== 1 && candidate.channels !== 2 && candidate.channels !== 3 && candidate.channels !== 4) ||
-    candidate.depth !== 'uchar' ||
-    typeof candidate.colourspace !== 'string' ||
-    candidate.colourspace.length === 0 ||
-    typeof candidate.alpha !== 'boolean' ||
-    candidate.layout !== 'interleaved'
+    version !== 1 ||
+    !isPositiveInteger(width) ||
+    !isPositiveInteger(height) ||
+    (channels !== 1 && channels !== 2 && channels !== 3 && channels !== 4) ||
+    depth !== 'uchar' ||
+    typeof colourspace !== 'string' ||
+    colourspace.length === 0 ||
+    typeof alpha !== 'boolean' ||
+    layout !== 'interleaved'
   ) {
     throw new Error(
       `Invalid Raw sidecar: ${sidecarPath}; expected version 1, uchar depth, dimensions, colourspace, alpha, and interleaved layout.`,
     );
   }
 
-  const expected = RAW_SIDECAR_CONSTRAINTS[candidate.channels]!;
-  if (candidate.colourspace !== expected.colourspace || candidate.alpha !== expected.alpha) {
+  const expected = RAW_SIDECAR_CONSTRAINTS[channels]!;
+  if (colourspace !== expected.colourspace || alpha !== expected.alpha) {
     throw new Error(
-      `Invalid Raw sidecar: ${sidecarPath}; channels ${candidate.channels} requires colourspace '${expected.colourspace}' and alpha ${expected.alpha}, got colourspace '${candidate.colourspace}' and alpha ${candidate.alpha}.`,
+      `Invalid Raw sidecar: ${sidecarPath}; channels ${channels} requires colourspace '${expected.colourspace}' and alpha ${expected.alpha}, got colourspace '${colourspace}' and alpha ${alpha}.`,
     );
   }
 
   return {
     version: 1,
-    width: candidate.width,
-    height: candidate.height,
-    channels: candidate.channels,
-    depth: candidate.depth,
-    colourspace: candidate.colourspace,
-    alpha: candidate.alpha,
+    width,
+    height,
+    channels,
+    depth,
+    colourspace,
+    alpha,
     layout: 'interleaved',
   };
 }

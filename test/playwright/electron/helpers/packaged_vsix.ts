@@ -59,10 +59,22 @@ async function findInstalledExtension(extensionsDir: string): Promise<InstalledE
 
 async function readManifest(manifestPath: string): Promise<{ name?: string; publisher?: string } | undefined> {
   return readFile(manifestPath, 'utf8')
-    .then((contents) => JSON.parse(contents) as unknown as { name?: unknown; publisher?: unknown })
-    .then((manifest) => ({
-      ...(typeof manifest.name === 'string' ? { name: manifest.name } : {}),
-      ...(typeof manifest.publisher === 'string' ? { publisher: manifest.publisher } : {}),
-    }))
+    .then((contents) => JSON.parse(contents) as unknown)
+    .then((manifest) => {
+      if (typeof manifest !== 'object' || manifest === null) {
+        return undefined;
+      }
+      const name = 'name' in manifest && typeof manifest.name === 'string' ? manifest.name : undefined;
+      const publisher =
+        'publisher' in manifest && typeof manifest.publisher === 'string' ? manifest.publisher : undefined;
+      const result: { name?: string; publisher?: string } = {};
+      if (name !== undefined) {
+        result.name = name;
+      }
+      if (publisher !== undefined) {
+        result.publisher = publisher;
+      }
+      return result;
+    })
     .catch(() => undefined);
 }

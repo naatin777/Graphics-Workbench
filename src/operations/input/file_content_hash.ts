@@ -7,6 +7,9 @@ export async function hashFile(filePath: string): Promise<string> {
   const stream = createReadStream(filePath);
 
   for await (const chunk of stream) {
+    if (!Buffer.isBuffer(chunk)) {
+      throw new TypeError('Expected the file stream to yield Buffer chunks.');
+    }
     hash.update(chunk);
   }
 

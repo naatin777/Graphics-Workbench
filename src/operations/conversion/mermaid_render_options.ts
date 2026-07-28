@@ -29,6 +29,9 @@ export function createMermaidCliRenderOptions(
       backgroundColor: options.backgroundColor,
       mermaidConfig: {
         // Settings intentionally remain strings so invalid values are rejected by Mermaid CLI at render time.
+        // Mermaid CLI accepts custom and invalid strings here and performs validation at render time.
+        // Its declaration currently narrows this runtime setting to the built-in theme union.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- preserve Mermaid CLI's runtime validation contract
         theme: options.theme as NonNullable<MermaidCliConfig['theme']>,
       },
     },

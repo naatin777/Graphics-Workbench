@@ -13,7 +13,11 @@ import {
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import {
+  readOutputPathTemplate,
+  readOutputPathsTemplate,
+  type ConfigurationReader,
+} from '../../config/output/output_path_settings.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { convertToEpsFiles, type ConvertToEpsJob } from '../../operations/conversion/convert_to_eps.js';
@@ -69,7 +73,7 @@ export async function convertToEpsCommand(
 
 export async function createEpsJobs(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: ConfigurationReader,
 ): Promise<ConvertToEpsJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -139,7 +143,7 @@ export async function createEpsJobs(
   ];
 }
 
-function outputPathTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
+function outputPathTemplateForSource(sourcePath: string, configuration: ConfigurationReader): string {
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return readOutputPathsTemplate(configuration, 'convertDrawioToEps', DEFAULT_OUTPUT_PATH);
   }

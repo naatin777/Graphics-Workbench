@@ -1,9 +1,9 @@
 type ConfigurationReader = {
-  get<T>(key: string, defaultValue: T): T;
+  get(key: string, defaultValue: string): string;
 };
 
 export function readDrawioExecutablePath(configuration: ConfigurationReader): string {
-  const configuredPath = configuration.get<string>('execPath.drawio', '').trim();
+  const configuredPath = configuration.get('execPath.drawio', '').trim();
   return configuredPath || defaultDrawioPath();
 }
 
@@ -28,6 +28,6 @@ export function readRsvgConvertExecutablePath(configuration: ConfigurationReader
 }
 
 function readExecutablePath(configuration: ConfigurationReader, key: string, fallback: string): string {
-  const configuredPath = configuration.get<string>(key, '').trim();
+  const configuredPath = configuration.get(key, '').trim();
   return configuredPath || fallback;
 }

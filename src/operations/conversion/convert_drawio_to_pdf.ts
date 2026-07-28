@@ -211,12 +211,18 @@ async function prepareDrawioInput(options: {
 
 async function readDrawioPageNames(sourcePath: string): Promise<string[]> {
   const source = await readFile(sourcePath, 'utf8');
-  const parsed = (await new Parser().parseStringPromise(source)) as {
-    mxfile?: { diagram?: Array<{ $?: { name?: string } }> };
-  };
-  const diagrams = parsed.mxfile?.diagram ?? [];
+  const parsed: unknown = await new Parser().parseStringPromise(source);
+  const mxfile = isRecord(parsed) && isRecord(parsed.mxfile) ? parsed.mxfile : undefined;
+  const diagrams = mxfile && Array.isArray(mxfile.diagram) ? mxfile.diagram : [];
 
-  return diagrams.map((diagram, index) => diagram.$?.name ?? String(index + 1));
+  return diagrams.map((diagram, index) => {
+    const attributes = isRecord(diagram) && isRecord(diagram.$) ? diagram.$ : undefined;
+    return typeof attributes?.name === 'string' ? attributes.name : String(index + 1);
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 async function runDrawioCommand(

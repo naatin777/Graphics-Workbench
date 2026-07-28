@@ -50,9 +50,7 @@ suite('PDF crop outputPath検証', () => {
       const withProgress = sandbox
         .stub(vscode.window, 'withProgress')
         .rejects(new Error('withProgress must not be called for an invalid output path.'));
-      const createOutputChannel = sandbox
-        .stub(vscode.window, 'createOutputChannel')
-        .returns({ dispose() {} } as unknown as vscode.LogOutputChannel);
+      const createOutputChannel = sandbox.stub(vscode.window, 'createOutputChannel');
 
       await cropPdfAutoCommand(vscode.Uri.file(sourcePath));
 

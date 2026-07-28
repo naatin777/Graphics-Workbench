@@ -2,11 +2,11 @@
 export const DEFAULT_MAX_INPUT_PIXELS = 268_402_689;
 
 type ConfigurationReader = {
-  get<T>(key: string, defaultValue: T): T;
+  get(key: string, defaultValue: unknown): unknown;
 };
 
 export function getMaxInputPixels(configuration: ConfigurationReader): number {
-  const configuredValue = configuration.get<unknown>('raster.maxInputPixels', DEFAULT_MAX_INPUT_PIXELS);
+  const configuredValue = configuration.get('raster.maxInputPixels', DEFAULT_MAX_INPUT_PIXELS);
 
   if (typeof configuredValue === 'number' && Number.isSafeInteger(configuredValue) && configuredValue >= 1) {
     return configuredValue;

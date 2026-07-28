@@ -21,10 +21,10 @@ suite('EPS変換コマンドジョブ', () => {
       document.addPage([100, 80]);
       await writeFile(sourcePath, await document.save());
       const configuration = {
-        get<T>(_key: string, defaultValue: T): T {
+        get(_key: string, defaultValue: unknown): unknown {
           return defaultValue;
         },
-      } as vscode.WorkspaceConfiguration;
+      };
       const jobs = await createEpsJobs(vscode.Uri.file(sourcePath), configuration);
 
       assert.deepStrictEqual(
@@ -52,13 +52,13 @@ suite('EPS変換コマンドジョブ', () => {
       document.addPage([100, 80]);
       await writeFile(sourcePath, await document.save());
       const configuration = {
-        get<T>(key: string, defaultValue: T): T {
+        get(key: string, defaultValue: unknown): unknown {
           if (key === 'outputPaths') {
-            return { convertPdfToEps: '${fileDirname}/custom-${fileBasenameNoExtension}-${page}.eps' } as T;
+            return { convertPdfToEps: '${fileDirname}/custom-${fileBasenameNoExtension}-${page}.eps' };
           }
           return defaultValue;
         },
-      } as vscode.WorkspaceConfiguration;
+      };
       const jobs = await createEpsJobs(vscode.Uri.file(sourcePath), configuration);
 
       assert.strictEqual(jobs.length, 1);

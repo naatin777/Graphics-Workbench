@@ -85,7 +85,7 @@ const forbidRasterInputLimitBypass = {
           }
         }
 
-        const inputName = input?.type === 'Identifier' ? input.name : '';
+        const inputName = input?.type === 'Identifier' ? String(input.name) : '';
         const isBufferLikeInput = /(?:buffer|data)/iu.test(inputName);
         const readsFileDirectly =
           input?.type === 'AwaitExpression' &&

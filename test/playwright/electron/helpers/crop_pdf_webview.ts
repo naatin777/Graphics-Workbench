@@ -158,21 +158,40 @@ export async function waitForWebviewTheme(
   await expect
     .poll(() =>
       body.evaluate((element) => {
-        const browser = globalThis as unknown as {
-          document: {
-            documentElement: typeof element;
-            querySelector: (selector: string) => typeof element | null;
-          };
-          getComputedStyle: (target: typeof element) => {
-            color: string;
-            backgroundColor: string;
-            getPropertyValue: (name: string) => string;
+        const isCallable = (value: unknown): value is (this: unknown, ...args: unknown[]) => unknown =>
+          typeof value === 'function';
+        const browserDocument = Reflect.get(globalThis, 'document');
+        const getComputedStyle = Reflect.get(globalThis, 'getComputedStyle');
+        if (typeof browserDocument !== 'object' || browserDocument === null || typeof getComputedStyle !== 'function') {
+          return false;
+        }
+        const querySelector = Reflect.get(browserDocument, 'querySelector');
+        const documentElement = Reflect.get(browserDocument, 'documentElement');
+        if (!isCallable(querySelector) || documentElement === undefined) {
+          return false;
+        }
+        const query = (selector: string): unknown => querySelector.call(browserDocument, selector);
+        const readStyle = (target: unknown) => {
+          const style: unknown = getComputedStyle.call(globalThis, target);
+          if (typeof style !== 'object' || style === null) {
+            return { color: '', backgroundColor: '', getPropertyValue: () => '' };
+          }
+          const color = Reflect.get(style, 'color');
+          const backgroundColor = Reflect.get(style, 'backgroundColor');
+          const getPropertyValue = Reflect.get(style, 'getPropertyValue');
+          return {
+            color: typeof color === 'string' ? color : '',
+            backgroundColor: typeof backgroundColor === 'string' ? backgroundColor : '',
+            getPropertyValue: (name: string) => {
+              const value: unknown = isCallable(getPropertyValue) ? getPropertyValue.call(style, name) : undefined;
+              return typeof value === 'string' ? value : '';
+            },
           };
         };
-        const rootStyle = browser.getComputedStyle(browser.document.documentElement);
-        const panel = browser.document.querySelector('.panel');
-        const input = browser.document.querySelector('.input');
-        const primaryButton = browser.document.querySelector('.button--primary');
+        const rootStyle = readStyle(documentElement);
+        const panel = query('.panel');
+        const input = query('.input');
+        const primaryButton = query('.button--primary');
 
         if (!panel || !input || !primaryButton) {
           return false;
@@ -190,12 +209,7 @@ export async function waitForWebviewTheme(
           '--vscode-button-secondaryForeground',
           '--vscode-button-secondaryBackground',
         ];
-        const computedStyles = [
-          browser.getComputedStyle(element),
-          browser.getComputedStyle(panel),
-          browser.getComputedStyle(input),
-          browser.getComputedStyle(primaryButton),
-        ];
+        const computedStyles = [readStyle(element), readStyle(panel), readStyle(input), readStyle(primaryButton)];
 
         return (
           requiredVariables.every((variableName) => rootStyle.getPropertyValue(variableName).trim().length > 0) &&
@@ -214,23 +228,41 @@ export async function waitForWebviewTheme(
     .toBe(true);
 
   return body.evaluate((element) => {
-    const browser = globalThis as unknown as {
-      getComputedStyle: (target: typeof element) => {
-        color: string;
-        backgroundColor: string;
-      };
-    };
-    const style = browser.getComputedStyle(element);
+    const getComputedStyle = Reflect.get(globalThis, 'getComputedStyle');
+    if (typeof getComputedStyle !== 'function') {
+      throw new Error('Webview does not expose getComputedStyle.');
+    }
+    const style: unknown = getComputedStyle.call(globalThis, element);
+    if (typeof style !== 'object' || style === null) {
+      throw new Error('Webview returned an invalid computed style.');
+    }
+    const backgroundColor = Reflect.get(style, 'backgroundColor');
+    const color = Reflect.get(style, 'color');
+    if (typeof backgroundColor !== 'string' || typeof color !== 'string') {
+      throw new Error('Webview computed style did not contain colors.');
+    }
     return {
-      bodyBackground: style.backgroundColor,
-      bodyForeground: style.color,
+      bodyBackground: backgroundColor,
+      bodyForeground: color,
     };
   });
 }
 
 async function captureCanvasWhitePixelRatios(canvases: Locator): Promise<number[]> {
   const dataUrls = await canvases.evaluateAll((elements) =>
-    elements.map((element) => (element as unknown as { toDataURL: (type: string) => string }).toDataURL('image/png')),
+    elements.map((element) => {
+      const isDataUrlFunction = (value: unknown): value is (this: object, type: string) => unknown =>
+        typeof value === 'function';
+      const toDataURL = Reflect.get(element, 'toDataURL');
+      if (!isDataUrlFunction(toDataURL)) {
+        throw new Error('PDF preview element is not a canvas.');
+      }
+      const dataUrl: unknown = toDataURL.call(element, 'image/png');
+      if (typeof dataUrl !== 'string') {
+        throw new Error('PDF preview canvas did not return a data URL.');
+      }
+      return dataUrl;
+    }),
   );
 
   return Promise.all(

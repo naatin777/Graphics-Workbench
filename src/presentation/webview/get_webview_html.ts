@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import * as vscode from 'vscode';
 
 export function getWebviewHtml(params: {
-  webview: vscode.Webview;
+  webview: Pick<vscode.Webview, 'cspSource' | 'asWebviewUri'>;
   extensionUri: vscode.Uri;
   title: string;
   appName: string;
