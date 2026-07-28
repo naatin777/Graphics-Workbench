@@ -8,13 +8,47 @@ import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/
 /** @typedef {{ argumentCount: number; key?: string }} CallArguments */
 
 /**
+ * @param {string[]} values
+ * @returns {string[]}
+ */
+function sortStrings(values) {
+  // TypeScript's JavaScript checker currently reports toSorted as any for JavaScript arrays.
+  // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating string ordering
+  return values.toSorted();
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is NlsMessages}
+ */
+function isNlsMessages(value) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  return Object.values(value).every((entry) => typeof entry === 'string');
+}
+
+/**
+ * @param {string} content
+ * @param {string} filePath
+ * @returns {NlsMessages}
+ */
+function parseNlsMessages(content, filePath) {
+  /** @type {unknown} */
+  const value = JSON.parse(content);
+  if (!isNlsMessages(value)) {
+    throw new Error(`Invalid NLS messages file: ${filePath}`);
+  }
+  return value;
+}
+
+/**
  * @param {unknown} value
  * @returns {string[]}
  */
 function placeholders(value) {
-  const values = [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1] ?? '');
-  /** @type {string[]} */
-  const sortedValues = values.toSorted();
+  const values = [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1]);
+  const sortedValues = sortStrings(values);
   return sortedValues;
 }
 
@@ -75,7 +109,7 @@ function scanCallArguments(scanner) {
   /** @type {string | undefined} */
   let key;
 
-  while (true) {
+  for (;;) {
     const token = scanner.scan();
     if (token === SyntaxKind.EndOfFile) {
       return undefined;
@@ -136,15 +170,15 @@ function sourceFiles(directory) {
  * @returns {{ errors: string[]; keyCount: number }}
  */
 export function checkNls(root) {
-  /** @type {NlsMessages} */
-  const english = JSON.parse(readFileSync(path.join(root, 'package.nls.json'), 'utf8'));
-  /** @type {NlsMessages} */
-  const japanese = JSON.parse(readFileSync(path.join(root, 'package.nls.ja.json'), 'utf8'));
+  const englishPath = path.join(root, 'package.nls.json');
+  const japanesePath = path.join(root, 'package.nls.ja.json');
+  const english = parseNlsMessages(readFileSync(englishPath, 'utf8'), englishPath);
+  const japanese = parseNlsMessages(readFileSync(japanesePath, 'utf8'), japanesePath);
   /** @type {string[]} */
   const errors = [];
 
-  const englishKeys = Object.keys(english).toSorted();
-  const japaneseKeys = Object.keys(japanese).toSorted();
+  const englishKeys = sortStrings(Object.keys(english));
+  const japaneseKeys = sortStrings(Object.keys(japanese));
   if (JSON.stringify(englishKeys) !== JSON.stringify(japaneseKeys)) {
     errors.push(`NLS key sets differ: en=${englishKeys.length}, ja=${japaneseKeys.length}`);
   }
@@ -170,7 +204,7 @@ export function checkNls(root) {
       }
     } else if (Array.isArray(value)) {
       value.forEach(walk);
-    } else if (value && typeof value === 'object') {
+    } else if (value !== null && typeof value === 'object') {
       Object.values(value).forEach(walk);
     }
   }

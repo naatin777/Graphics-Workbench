@@ -42,7 +42,7 @@ function normalizeForComparison(value: string): string {
 async function findNearestExistingPath(targetPath: string): Promise<string> {
   let candidatePath = path.resolve(targetPath);
 
-  while (true) {
+  for (;;) {
     try {
       await lstat(candidatePath);
       return candidatePath;

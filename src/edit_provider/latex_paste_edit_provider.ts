@@ -117,7 +117,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
 
         signal.throwIfAborted();
 
-        if (!inputOutputPath) {
+        if (inputOutputPath === undefined || inputOutputPath === '') {
           return undefined;
         }
 
@@ -151,7 +151,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
           signal.throwIfAborted();
           const outputFilePath = saved.outputs[0]?.outputPath;
 
-          if (!outputFilePath) {
+          if (outputFilePath === undefined || outputFilePath === '') {
             throw new Error('Clipboard paste did not produce an output file.');
           }
 

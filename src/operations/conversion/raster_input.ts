@@ -35,6 +35,10 @@ const RAW_SIDECAR_CONSTRAINTS: Record<number, { colourspace: string; alpha: bool
   4: { colourspace: 'srgb', alpha: true },
 };
 
+function readProperty(object: object, key: string): unknown {
+  return Reflect.get(object, key) as unknown;
+}
+
 export function openRasterInput(
   sourcePath: string,
   maxInputPixels: number,
@@ -112,14 +116,14 @@ export function readRawSidecar(sourcePath: string): RawSidecar {
     throw new Error(`Invalid Raw sidecar: ${sidecarPath}`);
   }
 
-  const version = Reflect.get(value, 'version');
-  const width = Reflect.get(value, 'width');
-  const height = Reflect.get(value, 'height');
-  const channels = Reflect.get(value, 'channels');
-  const depth = Reflect.get(value, 'depth');
-  const colourspace = Reflect.get(value, 'colourspace');
-  const alpha = Reflect.get(value, 'alpha');
-  const layout = Reflect.get(value, 'layout');
+  const version = readProperty(value, 'version');
+  const width = readProperty(value, 'width');
+  const height = readProperty(value, 'height');
+  const channels = readProperty(value, 'channels');
+  const depth = readProperty(value, 'depth');
+  const colourspace = readProperty(value, 'colourspace');
+  const alpha = readProperty(value, 'alpha');
+  const layout = readProperty(value, 'layout');
   if (
     version !== 1 ||
     !isPositiveInteger(width) ||

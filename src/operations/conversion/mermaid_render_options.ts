@@ -10,7 +10,7 @@ export function createMermaidPuppeteerConfig(
   options: MermaidBackend = { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
 ): Record<string, unknown> {
   const config: Record<string, unknown> = { headless: true };
-  if (options.executablePath) {
+  if (options.executablePath !== undefined && options.executablePath !== '') {
     config.executablePath = options.executablePath;
   } else {
     config.channel = options.browserChannel;

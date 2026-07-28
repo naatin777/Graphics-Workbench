@@ -315,17 +315,27 @@ export function parseSvgSize(source: string): { width: number; height: number } 
   const viewBoxHeight = cssNumber(viewBox?.[3]);
   const resolvedWidth = width ?? viewBoxWidth;
   const resolvedHeight = height ?? viewBoxHeight;
-  const aspectWidth = viewBoxWidth && viewBoxHeight ? viewBoxWidth / viewBoxHeight : undefined;
-  const sizedWidth = width ?? (height && aspectWidth ? height * aspectWidth : resolvedWidth);
-  const sizedHeight = height ?? (width && aspectWidth ? width / aspectWidth : resolvedHeight);
-  if (!sizedWidth || !sizedHeight || !Number.isFinite(sizedWidth) || !Number.isFinite(sizedHeight)) {
+  const aspectWidth =
+    viewBoxWidth !== undefined && viewBoxHeight !== undefined ? viewBoxWidth / viewBoxHeight : undefined;
+  const sizedWidth =
+    width ?? (height !== undefined && aspectWidth !== undefined ? height * aspectWidth : resolvedWidth);
+  const sizedHeight =
+    height ?? (width !== undefined && aspectWidth !== undefined ? width / aspectWidth : resolvedHeight);
+  if (
+    sizedWidth === undefined ||
+    sizedWidth === 0 ||
+    sizedHeight === undefined ||
+    sizedHeight === 0 ||
+    !Number.isFinite(sizedWidth) ||
+    !Number.isFinite(sizedHeight)
+  ) {
     throw new Error('SVG has no usable dimensions.');
   }
   return { width: sizedWidth, height: sizedHeight };
 }
 
 function cssNumber(value: string | undefined): number | undefined {
-  const number = value ? Number.parseFloat(value) : Number.NaN;
+  const number = value === undefined || value === '' ? Number.NaN : Number.parseFloat(value);
   return Number.isFinite(number) && number > 0 ? number : undefined;
 }
 
@@ -342,7 +352,7 @@ export function createDrawioXml(pages: DrawioPage[]): string {
 }
 
 function uniquePageName(value: string, used: Set<string>): string {
-  const base = value.replace(/[\\/:*?"<>|]/g, '_').trim() || 'Page';
+  const base = value.replaceAll(/[\\/:*?"<>|]/g, '_').trim() || 'Page';
   let candidate = base;
   for (let suffix = 2; used.has(candidate.toLowerCase()); suffix += 1) {
     candidate = `${base}-${suffix}`;
@@ -352,7 +362,7 @@ function uniquePageName(value: string, used: Set<string>): string {
 }
 
 function escapeXml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 async function executePdfToSvg(
@@ -398,7 +408,9 @@ async function executeMermaid(
     puppeteerConfig: {
       headless: true,
       channel: toChromeReleaseChannel(options?.browserChannel ?? 'chrome'),
-      ...(options?.executablePath ? { executablePath: options.executablePath } : {}),
+      ...(options?.executablePath !== undefined && options.executablePath !== ''
+        ? { executablePath: options.executablePath }
+        : {}),
     },
     ...(options ? createMermaidCliRenderOptions(options) : {}),
   });

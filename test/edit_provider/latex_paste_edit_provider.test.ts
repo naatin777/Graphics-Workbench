@@ -377,7 +377,7 @@ function pasteContext(): vscode.DocumentPasteEditContext {
 }
 
 function normalizeSnippetValue(value: string): string {
-  return value.replace(/\\\\/g, '\\').replace(/\\([{}])/g, '$1');
+  return value.replaceAll('\\\\', '\\').replaceAll(/\\([{}])/g, '$1');
 }
 
 async function createPdfBytes(text: string): Promise<Buffer> {

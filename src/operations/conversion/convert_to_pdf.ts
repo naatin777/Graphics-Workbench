@@ -49,20 +49,25 @@ const execFileAsync = promisify(execFile);
 export type { SvgToPdfEngine };
 
 export function validateSvgToPdfOptions(options: SvgToPdfBackend): void {
-  if (options.engine === 'puppeteer' && options.puppeteerBrowser === 'firefox' && !options.puppeteerExecutablePath) {
+  if (
+    options.engine === 'puppeteer' &&
+    options.puppeteerBrowser === 'firefox' &&
+    (options.puppeteerExecutablePath === undefined || options.puppeteerExecutablePath === '')
+  ) {
     throw new Error('puppeteer.executablePath must be set when puppeteer.browser is firefox.');
   }
 }
 
 export function createSvgPuppeteerLaunchOptions(options: SvgToPdfBackend): LaunchOptions {
   validateSvgToPdfOptions(options);
+  const executablePath = options.puppeteerExecutablePath;
 
   return {
     headless: true,
     env: puppeteerLaunchEnv(),
     browser: options.puppeteerBrowser,
-    ...(options.puppeteerExecutablePath
-      ? { executablePath: options.puppeteerExecutablePath }
+    ...(executablePath !== undefined && executablePath !== ''
+      ? { executablePath }
       : { channel: options.puppeteerBrowserChannel }),
   };
 }
@@ -346,7 +351,7 @@ async function writeEpsAsPdf(
   ghostscriptPath: string | undefined,
   scratchOptions: RsvgToolScratchOptions,
 ): Promise<void> {
-  if (!ghostscriptPath) {
+  if (ghostscriptPath === undefined || ghostscriptPath === '') {
     throw new Error('Ghostscript is required for EPS conversion');
   }
 

@@ -24,7 +24,7 @@ export async function renderFirstPdfPage(
 ): Promise<void> {
   const pdfjs = await loadPdfJs();
 
-  if (options.workerSrc) {
+  if (options.workerSrc !== undefined && options.workerSrc !== '') {
     pdfjs.GlobalWorkerOptions.workerSrc = options.workerSrc;
   }
 
@@ -48,7 +48,7 @@ export async function renderPdfPages(
 ): Promise<PdfRenderController> {
   const pdfjs = await loadPdfJs();
 
-  if (options.workerSrc) {
+  if (options.workerSrc !== undefined && options.workerSrc !== '') {
     pdfjs.GlobalWorkerOptions.workerSrc = options.workerSrc;
   }
 
@@ -57,7 +57,7 @@ export async function renderPdfPages(
   const renderPromises = new Map<number, Promise<void>>();
   const pages = new Map<number, PDFPageProxy>();
   const renderTasks = new Set<ReturnType<PDFPageProxy['render']>>();
-  let disposed = false;
+  const renderState = { disposed: false };
 
   container.replaceChildren();
   const pageFrames: HTMLElement[] = [];
@@ -97,14 +97,16 @@ export async function renderPdfPages(
     }
 
     const renderPromise = (async () => {
-      if (disposed) {
+      if (renderState.disposed) {
         return;
       }
 
       const page = await document.getPage(pageNumber);
       pages.set(pageNumber, page);
 
-      if (disposed) {
+      // The returned controller can dispose this state while getPage is pending.
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- preserve async disposal cleanup
+      if (renderState.disposed) {
         page.cleanup();
         return;
       }
@@ -156,11 +158,11 @@ export async function renderPdfPages(
   return {
     firstPageReady,
     async dispose(): Promise<void> {
-      if (disposed) {
+      if (renderState.disposed) {
         return;
       }
 
-      disposed = true;
+      renderState.disposed = true;
       observer?.disconnect();
       for (const renderTask of renderTasks) {
         renderTask.cancel();
@@ -211,9 +213,11 @@ function createDocumentOptions(pdfSrc: string, options: PdfRenderOptions): Param
     url: pdfSrc,
     cMapPacked: true,
     useWorkerFetch: false,
-    ...(options.cMapUrl ? { cMapUrl: options.cMapUrl } : {}),
-    ...(options.standardFontDataUrl ? { standardFontDataUrl: options.standardFontDataUrl } : {}),
-    ...(options.wasmUrl ? { wasmUrl: options.wasmUrl } : {}),
+    ...(options.cMapUrl !== undefined && options.cMapUrl !== '' ? { cMapUrl: options.cMapUrl } : {}),
+    ...(options.standardFontDataUrl !== undefined && options.standardFontDataUrl !== ''
+      ? { standardFontDataUrl: options.standardFontDataUrl }
+      : {}),
+    ...(options.wasmUrl !== undefined && options.wasmUrl !== '' ? { wasmUrl: options.wasmUrl } : {}),
   };
 }
 

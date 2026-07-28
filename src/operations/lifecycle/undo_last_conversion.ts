@@ -40,9 +40,10 @@ export async function createConversionUndoRecord(outputs: ConversionOutput[]): P
       uniquePaths.add(normalizedPath);
 
       await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
-      const previousSha256 = output.previousFilePath
-        ? await recordPreviousFile(output.previousFilePath, output.workspacePath)
-        : undefined;
+      const previousSha256 =
+        output.previousFilePath !== undefined && output.previousFilePath !== ''
+          ? await recordPreviousFile(output.previousFilePath, output.workspacePath)
+          : undefined;
 
       return {
         ...output,
@@ -70,7 +71,7 @@ export async function undoConversionOutputs(
       // 検証後の差し替え時間を短くするため、削除直前にも同じ条件を確認する。
       await validateUnchangedOutput(output);
 
-      if (output.previousFilePath) {
+      if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
         await assertExistingPathInWorkspace(output.previousFilePath, output.workspacePath);
         await copyFile(output.previousFilePath, output.outputPath);
       } else {
@@ -144,7 +145,7 @@ async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<vo
     throw new Error(`Output changed after conversion: ${output.outputPath}`);
   }
 
-  if (output.previousFilePath) {
+  if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
     await assertExistingPathInWorkspace(output.previousFilePath, output.workspacePath);
 
     if ((await calculateSha256(output.previousFilePath)) !== output.previousSha256) {
@@ -164,6 +165,8 @@ async function calculateSha256(filePath: string): Promise<string> {
 
 function toArtifactRoots(record: ConversionUndoRecord): ConversionArtifactRoot[] {
   return record.outputs.flatMap((output) =>
-    output.stagingRootPath ? [{ rootPath: output.stagingRootPath, workspacePath: output.workspacePath }] : [],
+    output.stagingRootPath !== undefined && output.stagingRootPath !== ''
+      ? [{ rootPath: output.stagingRootPath, workspacePath: output.workspacePath }]
+      : [],
   );
 }

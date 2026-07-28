@@ -23,7 +23,7 @@ export function resolveOutputPath(
   const platform = options.platform ?? currentOutputPathPlatform();
   const pathApi = platform === 'win32' ? path.win32 : path.posix;
   const values = createTemplateValues(context, pathApi);
-  const expandedPath = templatePath.replace(/\${([^}]+)}/g, (_match, variable: string) => {
+  const expandedPath = templatePath.replaceAll(/\${([^}]+)}/g, (_match, variable: string) => {
     const value = values[variable];
 
     if (value === undefined) {
