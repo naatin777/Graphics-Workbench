@@ -55,6 +55,6 @@ capabilityごとにEvidenceの強さとgapを記録します。
 
 | Runner                               | Files | Cases | Config                                            |
 | ------------------------------------ | ----- | ----- | ------------------------------------------------- |
-| VS Code Extension Host (Mocha)       | 69    | 376   | `.vscode-test.mjs` — VS Code 1.128.0              |
+| VS Code Extension Host (Mocha)       | 69    | 377   | `.vscode-test.mjs` — VS Code 1.128.0              |
 | Vitest (JSDOM)                       | 3     | 4     | webview app vitest configs                        |
 | Playwright Electron (installed VSIX) | 1     | 8     | `playwright.config.mjs` — vscode-electron project |

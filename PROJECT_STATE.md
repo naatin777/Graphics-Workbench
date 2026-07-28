@@ -48,6 +48,8 @@ LaTeX Graphics Helper は、VS Code 上で PDF・画像・Draw.io・LaTeX への
 - test runnerは、runner統一ではなく、守るcontractとoracleから選ぶ。
 - pre-package testはすべて`vscode-test`で実行し、Node専用runnerやExtension Hostからの除外を持たない。
 - Extension Host testはLinux、macOS、Windowsで恒久的に維持し、required statusは設定しない。
+- extension manifestのNode制約は置かず、repositoryの開発・install用Node制約は`devEngines.runtime`で管理する。
+- CIのnpm cacheは、npm 12.0.1への更新後に`actions/cache`で復元し、`setup-node`の自動cacheは使わない。
 - Browser Playwrightは廃止し、実VS Codeを必要とする配布物E2Eはpackage済みVSIXのElectron Playwrightで確認する。
 - required platform、quality priority、不可逆な変更はmaintainerが決める。
 - Selection Gateが決まるまで、大規模なproduction architecture変更を開始しない。

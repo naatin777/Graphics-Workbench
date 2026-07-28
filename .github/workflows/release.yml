@@ -21,6 +21,18 @@ jobs:
             - run: npm install -g npm@12.0.1
               shell: bash
 
+            - id: npm_cache
+              name: Locate npm cache
+              run: echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
+              shell: bash
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ steps.npm_cache.outputs.dir }}
+                  key: npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-
+
             - run: npm ci
               shell: bash
 
@@ -54,6 +66,18 @@ jobs:
 
             - run: npm install -g npm@12.0.1
               shell: bash
+
+            - id: npm_cache
+              name: Locate npm cache
+              run: echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
+              shell: bash
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ steps.npm_cache.outputs.dir }}
+                  key: npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-
 
             - run: npm ci
               shell: bash
@@ -116,6 +140,18 @@ jobs:
             - run: npm install -g npm@12.0.1
               shell: bash
 
+            - id: npm_cache
+              name: Locate npm cache
+              run: echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
+              shell: bash
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ steps.npm_cache.outputs.dir }}
+                  key: npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-
+
             - run: npm ci
               shell: bash
 
@@ -169,6 +205,18 @@ jobs:
 
             - run: npm install -g npm@12.0.1
               shell: bash
+
+            - id: npm_cache
+              name: Locate npm cache
+              run: echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
+              shell: bash
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ steps.npm_cache.outputs.dir }}
+                  key: npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-
 
             - run: node --version && npm --version
               shell: bash
@@ -267,6 +315,18 @@ jobs:
             - run: npm install -g npm@12.0.1
               shell: bash
 
+            - id: npm_cache
+              name: Locate npm cache
+              run: echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
+              shell: bash
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ steps.npm_cache.outputs.dir }}
+                  key: npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-
+
             - run: npm ci
               shell: bash
 
@@ -305,6 +365,18 @@ jobs:
 
             - run: npm install -g npm@12.0.1
               shell: bash
+
+            - id: npm_cache
+              name: Locate npm cache
+              run: echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
+              shell: bash
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ steps.npm_cache.outputs.dir }}
+                  key: npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-
 
             - run: npm ci
               shell: bash
