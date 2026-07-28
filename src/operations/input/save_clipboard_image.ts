@@ -104,7 +104,9 @@ export async function cleanupClipboardSourceArtifact(
         ...(undoRecorded
           ? {
               preservePaths: saved.outputs.flatMap((output) =>
-                output.previousFilePath && isWithin(output.previousFilePath, saved.artifact.rootPath)
+                output.previousFilePath !== undefined &&
+                output.previousFilePath !== '' &&
+                isWithin(output.previousFilePath, saved.artifact.rootPath)
                   ? [output.previousFilePath]
                   : [],
               ),

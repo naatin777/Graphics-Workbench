@@ -7,6 +7,10 @@ import { localeMap } from '../locale_map.js';
 import { escapeLatex, escapeLatexLabel } from './latex_escape.js';
 import { getPdfTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
 
+function isCancellationRequested(token: vscode.CancellationToken): boolean {
+  return token.isCancellationRequested;
+}
+
 export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
   async provideDocumentDropEdits(
     document: vscode.TextDocument,
@@ -14,7 +18,7 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
     dataTransfer: vscode.DataTransfer,
     token: vscode.CancellationToken,
   ): Promise<vscode.DocumentDropEdit | undefined> {
-    if (token.isCancellationRequested || document.uri.scheme !== 'file') {
+    if (isCancellationRequested(token) || document.uri.scheme !== 'file') {
       return undefined;
     }
 
@@ -32,13 +36,13 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
       return undefined;
     }
 
-    if (token.isCancellationRequested) {
+    if (isCancellationRequested(token)) {
       return undefined;
     }
 
     const uris = parsePdfUris(uriList, token);
 
-    if (!uris || uris.length === 0 || token.isCancellationRequested) {
+    if (!uris || uris.length === 0 || isCancellationRequested(token)) {
       return undefined;
     }
 
@@ -50,7 +54,7 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
       return undefined;
     }
 
-    if (token.isCancellationRequested) {
+    if (isCancellationRequested(token)) {
       return undefined;
     }
 
@@ -59,7 +63,7 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
         ? this.createSinglePdfSnippet(fileNames[0] ?? '', relativeFilePaths[0] ?? '')
         : this.createMultiplePdfSnippet(fileNames, relativeFilePaths);
 
-    if (token.isCancellationRequested) {
+    if (isCancellationRequested(token)) {
       return undefined;
     }
 
@@ -142,7 +146,7 @@ function parsePdfUris(uriList: string, token: vscode.CancellationToken): vscode.
   const uniqueUris = new Map<string, vscode.Uri>();
 
   for (const rawLine of uriList.split(/\r?\n/)) {
-    if (token.isCancellationRequested) {
+    if (isCancellationRequested(token)) {
       return undefined;
     }
 

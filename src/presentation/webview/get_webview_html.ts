@@ -54,7 +54,7 @@ function getNonce(): string {
 }
 
 function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => {
+  return value.replaceAll(/[&<>"']/g, (char) => {
     switch (char) {
       case '&':
         return '&amp;';

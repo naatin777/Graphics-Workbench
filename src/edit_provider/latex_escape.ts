@@ -13,9 +13,9 @@ const LATEX_TEXT_ESCAPES: Readonly<Record<string, string>> = {
 };
 
 export function escapeLatex(value: string): string {
-  return value.replace(LATEX_TEXT_SPECIALS, (character) => LATEX_TEXT_ESCAPES[character] ?? character);
+  return value.replaceAll(LATEX_TEXT_SPECIALS, (character) => LATEX_TEXT_ESCAPES[character] ?? character);
 }
 
 export function escapeLatexLabel(value: string): string {
-  return value.replace(/[\\/\s{}$&#%_^~]+/g, '-');
+  return value.replaceAll(/[\\/\s{}$&#%_^~]+/g, '-');
 }

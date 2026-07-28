@@ -61,7 +61,7 @@ export async function runPreflightBatch(
           completed += 1;
           options.onProgress?.(completed, total);
         } catch (error) {
-          if (options.signal?.aborted) {
+          if (options.signal?.aborted === true) {
             options.signal.throwIfAborted();
           }
 
@@ -78,7 +78,7 @@ export async function runPreflightBatch(
 
 function formatPreflightReport(report: PreflightReport): string {
   let line = `[preflight] ${report.sourcePath}: ${report.result}`;
-  if (report.reason) {
+  if (report.reason !== undefined && report.reason !== '') {
     line += ` — ${report.reason}`;
   }
   return line;

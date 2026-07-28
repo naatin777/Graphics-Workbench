@@ -256,9 +256,9 @@ async function applyConfiguredSplit(params: {
 }): Promise<void> {
   const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, panel, outputChannel } = params;
   const abortController = new AbortController();
-  let panelDisposed = false;
+  const panelState = { disposed: false };
   const panelDisposeSubscription = panel.onDidDispose(() => {
-    panelDisposed = true;
+    panelState.disposed = true;
     abortController.abort();
   });
 
@@ -282,7 +282,7 @@ async function applyConfiguredSplit(params: {
     }
 
     abortController.signal.throwIfAborted();
-    if (panelDisposed) {
+    if (panelState.disposed) {
       return;
     }
 

@@ -23,7 +23,19 @@ const WEBVIEW_REPORTS = [
 const PRIORITY_FILE_LIMIT = 15;
 
 /**
- * @param {string[]} argv
+ * @template T
+ * @param {T[]} values
+ * @param {(left: T, right: T) => number} compare
+ * @returns {T[]}
+ */
+function sortCopy(values, compare) {
+  // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
+  // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
+  return values.toSorted(compare);
+}
+
+/**
+ * @param {Array<string | undefined>} argv
  * @returns {{ input: string; output: string }}
  */
 function readArguments(argv) {
@@ -32,7 +44,7 @@ function readArguments(argv) {
   for (let index = 0; index < argv.length; index += 2) {
     const key = argv[index];
     const value = argv[index + 1];
-    if (!key?.startsWith('--') || value === undefined) {
+    if (key === undefined || key === '' || !key.startsWith('--') || value === undefined) {
       throw new Error('Usage: render-coverage-report.mjs --input <directory> --output <file>');
     }
     values.set(key.slice(2), value);
@@ -40,7 +52,7 @@ function readArguments(argv) {
 
   const input = values.get('input');
   const output = values.get('output');
-  if (!input || !output) {
+  if (input === undefined || input === '' || output === undefined || output === '') {
     throw new Error('Both --input and --output are required');
   }
   return { input, output };
@@ -62,7 +74,7 @@ function normalizeSourcePath(source, fallbackPrefix) {
     return normalized;
   }
 
-  if (fallbackPrefix) {
+  if (fallbackPrefix !== undefined && fallbackPrefix !== '') {
     const sharedIndex = normalized.lastIndexOf('/shared/');
     if (sharedIndex >= 0) {
       return `webview/${normalized.slice(sharedIndex + 1)}`;
@@ -74,11 +86,11 @@ function normalizeSourcePath(source, fallbackPrefix) {
     return normalized.slice(srcIndex + 1);
   }
   if (normalized.startsWith('src/')) {
-    return fallbackPrefix ? `${fallbackPrefix}${normalized}` : normalized;
+    return fallbackPrefix !== undefined && fallbackPrefix !== '' ? `${fallbackPrefix}${normalized}` : normalized;
   }
 
   const relative = normalized.replace(/^(?:[A-Za-z]:)?\/+|^\.\//u, '');
-  return fallbackPrefix ? `${fallbackPrefix}${relative}` : relative;
+  return fallbackPrefix !== undefined && fallbackPrefix !== '' ? `${fallbackPrefix}${relative}` : relative;
 }
 
 /**
@@ -100,7 +112,7 @@ function parseLcov(content, fallbackPrefix) {
       }
       continue;
     }
-    if (!currentPath || !line.startsWith('DA:')) {
+    if (currentPath === undefined || currentPath === '' || !line.startsWith('DA:')) {
       continue;
     }
 
@@ -191,7 +203,14 @@ function sourceLink(filePath) {
   const repository = process.env.GITHUB_REPOSITORY;
   const coverageSha = process.env.COVERAGE_SOURCE_SHA;
   const sha = coverageSha === undefined || coverageSha === '' ? process.env.GITHUB_SHA : coverageSha;
-  if (!server || !repository || !sha) {
+  if (
+    server === undefined ||
+    server === '' ||
+    repository === undefined ||
+    repository === '' ||
+    sha === undefined ||
+    sha === ''
+  ) {
     return `\`${filePath}\``;
   }
   return `[\`${filePath}\`](${server}/${repository}/blob/${sha}/${filePath})`;
@@ -219,12 +238,10 @@ function collectCrossPlatformPriorityFiles(reports) {
     return { path: filePath, byOs, maxUncovered };
   });
   /** @type {PriorityFile[]} */
-  const sortedFiles = files
-    .filter((file) => file.maxUncovered > 0)
-    // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
-    // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
-    .toSorted((left, right) => right.maxUncovered - left.maxUncovered || left.path.localeCompare(right.path))
-    .slice(0, PRIORITY_FILE_LIMIT);
+  const sortedFiles = sortCopy(
+    files.filter((file) => file.maxUncovered > 0),
+    (left, right) => right.maxUncovered - left.maxUncovered || left.path.localeCompare(right.path),
+  ).slice(0, PRIORITY_FILE_LIMIT);
   return sortedFiles;
 }
 
@@ -240,11 +257,12 @@ function collectCrossPlatformUncoveredFiles(reports) {
     byOs: new Map(reports.map((report) => [report.os, report.summary.files.get(filePath)])),
   }));
   /** @type {Array<{ path: string; byOs: Map<string, FileCoverage | undefined> }>} */
-  const sortedFiles = files
-    .filter((file) => [...file.byOs.values()].some((entry) => entry && entry.total > 0 && entry.covered === 0))
-    // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
-    // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
-    .toSorted((left, right) => left.path.localeCompare(right.path));
+  const sortedFiles = sortCopy(
+    files.filter((file) =>
+      [...file.byOs.values()].some((entry) => entry !== undefined && entry.total > 0 && entry.covered === 0),
+    ),
+    (left, right) => left.path.localeCompare(right.path),
+  );
   return sortedFiles;
 }
 
@@ -256,11 +274,10 @@ function collectPriorityFiles(summary) {
   /** @type {Array<[string, FileCoverage]>} */
   const files = [...summary.files.entries()].filter(([, file]) => file.uncovered > 0);
   /** @type {Array<[string, FileCoverage]>} */
-  const sortedFiles = files
-    // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
-    // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
-    .toSorted((left, right) => right[1].uncovered - left[1].uncovered || left[0].localeCompare(right[0]))
-    .slice(0, PRIORITY_FILE_LIMIT);
+  const sortedFiles = sortCopy(
+    files,
+    (left, right) => right[1].uncovered - left[1].uncovered || left[0].localeCompare(right[0]),
+  ).slice(0, PRIORITY_FILE_LIMIT);
   return sortedFiles;
 }
 
@@ -272,9 +289,7 @@ function collectUncoveredFiles(summary) {
   /** @type {Array<[string, FileCoverage]>} */
   const files = [...summary.files.entries()].filter(([, file]) => file.total > 0 && file.covered === 0);
   /** @type {Array<[string, FileCoverage]>} */
-  // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
-  // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating coverage ordering
-  const sortedFiles = files.toSorted((left, right) => left[0].localeCompare(right[0]));
+  const sortedFiles = sortCopy(files, (left, right) => left[0].localeCompare(right[0]));
   return sortedFiles;
 }
 
@@ -282,7 +297,17 @@ function actionsRunUrl() {
   const server = process.env.GITHUB_SERVER_URL;
   const repository = process.env.GITHUB_REPOSITORY;
   const runId = process.env.GITHUB_RUN_ID;
-  return server && repository && runId ? `${server}/${repository}/actions/runs/${runId}` : undefined;
+  if (
+    server === undefined ||
+    server === '' ||
+    repository === undefined ||
+    repository === '' ||
+    runId === undefined ||
+    runId === ''
+  ) {
+    return undefined;
+  }
+  return `${server}/${repository}/actions/runs/${runId}`;
 }
 
 /**
@@ -409,7 +434,7 @@ function renderReport(extensionReports, webviewSummary) {
   const runUrl = actionsRunUrl();
   output.push(
     '',
-    runUrl
+    runUrl !== undefined && runUrl !== ''
       ? `[行ごとのHTMLレポートはActions artifactsから確認できます。](${runUrl})`
       : '行ごとのHTMLレポートはActions artifactsから確認できます。',
     '',

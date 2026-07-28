@@ -53,7 +53,7 @@ export async function undoLastConversionCommand(
         return;
       }
 
-      if (expectedId && expectedId !== record.id) {
+      if (expectedId !== undefined && expectedId !== '' && expectedId !== record.id) {
         await vscode.window.showWarningMessage(userMessage('message.undo.newerConversionCompleted'));
         return;
       }
@@ -89,7 +89,7 @@ function toArtifactRoots(
 ): ConversionArtifactRoot[] {
   return (
     outputs?.flatMap((output) =>
-      output.stagingRootPath
+      output.stagingRootPath !== undefined && output.stagingRootPath !== ''
         ? [
             {
               rootPath: output.stagingRootPath,

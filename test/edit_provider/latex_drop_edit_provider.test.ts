@@ -210,7 +210,7 @@ function snippetValue(edit: vscode.DocumentDropEdit): string {
 }
 
 function normalizeSnippetValue(value: string): string {
-  return value.replace(/\\\\/g, '\\').replace(/\\([{}])/g, '$1');
+  return value.replaceAll('\\\\', '\\').replaceAll(/\\([{}])/g, '$1');
 }
 
 async function writePdf(uri: vscode.Uri): Promise<void> {

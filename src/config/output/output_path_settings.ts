@@ -2,6 +2,10 @@ export type ConfigurationReader = {
   get(key: string, defaultValue: unknown): unknown;
 };
 
+function readProperty(object: object, key: string): unknown {
+  return Reflect.get(object, key) as unknown;
+}
+
 export function readOutputPathTemplate(configuration: ConfigurationReader, key: string, defaultValue: string): string {
   const template = configuration.get(key, defaultValue);
   return typeof template === 'string' && template.trim() !== '' ? template : defaultValue;
@@ -13,7 +17,7 @@ export function readOutputPathsTemplate(configuration: ConfigurationReader, key:
     return defaultValue;
   }
 
-  const template = Reflect.get(outputPaths, key);
+  const template = readProperty(outputPaths, key);
   return typeof template === 'string' && template.trim() !== '' ? template : defaultValue;
 }
 
@@ -34,7 +38,7 @@ export function readConvertToRawOutputPath(
   defaultValue: string,
 ): string {
   const format = EXTENSION_TO_FORMAT[sourceExtension.toLowerCase()];
-  if (format) {
+  if (format !== undefined) {
     return readOutputPathsTemplate(configuration, `convert${format}ToRaw`, defaultValue);
   }
   return readOutputPathsTemplate(configuration, 'convertToRaw', defaultValue);

@@ -21,7 +21,7 @@ export function defaultWindowsScratchBaseCandidates(): string[] {
   const candidates = [os.tmpdir()];
   const systemRoot = process.env.SystemRoot;
 
-  if (systemRoot) {
+  if (systemRoot !== undefined && systemRoot !== '') {
     candidates.push(path.join(systemRoot, 'Temp'));
   }
 
@@ -56,7 +56,7 @@ export async function createAsciiInputScratch(options: {
         throw error instanceof Error ? error : new Error(String(error));
       }
 
-      if (scratchRootPath) {
+      if (scratchRootPath !== undefined) {
         await rm(scratchRootPath, { recursive: true, force: true }).catch(() => undefined);
       }
 
