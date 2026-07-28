@@ -192,6 +192,14 @@ export async function setupElectronTest(
   };
 }
 
-export async function loadPackagedOperation<T>(extensionPath: string, relativePath: string): Promise<T> {
-  return (await import(pathToFileURL(join(extensionPath, relativePath)).href)) as T;
+export async function loadPackagedOperation<T>(
+  extensionPath: string,
+  relativePath: string,
+  isModule: (value: unknown) => value is T,
+): Promise<T> {
+  const module: unknown = await import(pathToFileURL(join(extensionPath, relativePath)).href);
+  if (!isModule(module)) {
+    throw new Error(`Packaged module has an unexpected shape: ${relativePath}`);
+  }
+  return module;
 }

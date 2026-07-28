@@ -27,6 +27,10 @@ import {
 import type { SvgToPdfBackend } from '../../operations/conversion/tools/index.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 
+type StringConfigurationReader = {
+  get(key: string, defaultValue: string): string;
+};
+
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
@@ -171,17 +175,14 @@ async function convertSelectedSourcesToPdf(
 
 export function outputTemplateForSource(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: StringConfigurationReader,
   pngOutputTemplate: string,
 ): string {
   const sourcePath = sourceUri.fsPath;
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath)) {
-    const configuredPath = configuration.get<string>(
-      'outputPath.convertDrawioToPdfDirectly',
-      DEFAULT_DRAWIO_OUTPUT_PATH,
-    );
+    const configuredPath = configuration.get('outputPath.convertDrawioToPdfDirectly', DEFAULT_DRAWIO_OUTPUT_PATH);
     return configuredPath.trim() ? configuredPath : DEFAULT_DRAWIO_OUTPUT_PATH;
   }
 

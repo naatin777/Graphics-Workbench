@@ -4,14 +4,28 @@ import { pathToFileURL } from 'node:url';
 
 import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/ast';
 
+/** @typedef {Record<string, string>} NlsMessages */
+/** @typedef {{ argumentCount: number; key?: string }} CallArguments */
+
+/**
+ * @param {unknown} value
+ * @returns {string[]}
+ */
 function placeholders(value) {
   return [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1]).toSorted();
 }
 
+/**
+ * @param {string} sourcePath
+ * @param {string} source
+ * @param {NlsMessages} english
+ * @returns {string[]}
+ */
 export function validateUserMessageSource(sourcePath, source, english) {
   if (!source.includes('userMessage')) {
     return [];
   }
+  /** @type {string[]} */
   const errors = [];
   const scanner = createScanner(true, LanguageVariant.Standard, source, 0, source.length);
   let token = scanner.scan();
@@ -47,10 +61,15 @@ export function validateUserMessageSource(sourcePath, source, english) {
   return errors;
 }
 
+/**
+ * @param {ReturnType<typeof createScanner>} scanner
+ * @returns {CallArguments | undefined}
+ */
 function scanCallArguments(scanner) {
   let depth = 0;
   let argumentCount = 0;
   let hasToken = false;
+  /** @type {string | undefined} */
   let key;
 
   while (true) {
@@ -95,6 +114,10 @@ function scanCallArguments(scanner) {
   }
 }
 
+/**
+ * @param {string} directory
+ * @returns {string[]}
+ */
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = path.join(directory, entry.name);
@@ -105,9 +128,16 @@ function sourceFiles(directory) {
   });
 }
 
+/**
+ * @param {string} root
+ * @returns {{ errors: string[]; keyCount: number }}
+ */
 export function checkNls(root) {
+  /** @type {NlsMessages} */
   const english = JSON.parse(readFileSync(path.join(root, 'package.nls.json'), 'utf8'));
+  /** @type {NlsMessages} */
   const japanese = JSON.parse(readFileSync(path.join(root, 'package.nls.ja.json'), 'utf8'));
+  /** @type {string[]} */
   const errors = [];
 
   const englishKeys = Object.keys(english).toSorted();
@@ -122,7 +152,12 @@ export function checkNls(root) {
     }
   }
 
+  /** @type {unknown} */
   const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
+
+  /**
+   * @param {unknown} value
+   */
   function walk(value) {
     if (typeof value === 'string') {
       for (const match of value.matchAll(/%([^%]+)%/g)) {
@@ -145,6 +180,9 @@ export function checkNls(root) {
   return { errors, keyCount: englishKeys.length };
 }
 
+/**
+ * @param {string} root
+ */
 function run(root) {
   const { errors, keyCount } = checkNls(root);
   if (errors.length > 0) {

@@ -31,7 +31,7 @@ suite('Safe Modeダイアログの判断', () => {
     sandbox = createSandbox();
     storage = new MemoryState();
     showWarningMessageStub = sandbox.stub(vscode.window, 'showWarningMessage');
-    sandbox.stub(vscode.window, 'createStatusBarItem').returns(new FakeStatusBarItem() as vscode.StatusBarItem);
+    sandbox.stub(vscode.window, 'createStatusBarItem').returns(new FakeStatusBarItem());
     sandbox.stub(vscode.commands, 'registerCommand').returns(new FakeDisposable());
     initializeSafeMode(createExtensionContext(storage));
   });
@@ -69,7 +69,7 @@ suite('Safe Modeダイアログの判断', () => {
 
     await resolveOutputConflicts(['/workspace/sample.pdf']);
 
-    const items = showWarningMessageStub.firstCall.args.slice(2) as vscode.MessageItem[];
+    const items = showWarningMessageStub.firstCall.args.slice(2).filter(isMessageItem);
     assert.deepStrictEqual(
       items.map((item) => item.title),
       ['Keep Both', 'Do Not Overwrite', 'Overwrite'],
@@ -102,31 +102,45 @@ suite('Safe Modeダイアログの判断', () => {
   });
 });
 
-function createExtensionContext(globalState: MemoryState): vscode.ExtensionContext {
+function createExtensionContext(globalState: MemoryState): Parameters<typeof initializeSafeMode>[0] {
   return {
     globalState,
     subscriptions: [],
-  } as unknown as vscode.ExtensionContext;
+  };
 }
 
 class MemoryState {
   readonly #values = new Map<string, unknown>();
 
-  get<T>(key: string, defaultValue?: T): T | undefined {
-    return (this.#values.has(key) ? this.#values.get(key) : defaultValue) as T | undefined;
+  get(key: 'safeMode.enabled', defaultValue?: boolean): boolean | undefined {
+    const value = this.#values.get(key);
+    return typeof value === 'boolean' ? value : defaultValue;
   }
 
-  async update(key: string, value: unknown): Promise<void> {
+  async update(key: 'safeMode.enabled', value: boolean): Promise<void> {
     this.#values.set(key, value);
   }
 }
 
-class FakeStatusBarItem {
+function isMessageItem(value: unknown): value is vscode.MessageItem {
+  return typeof value === 'object' && value !== null && 'title' in value && typeof value.title === 'string';
+}
+
+class FakeStatusBarItem implements vscode.StatusBarItem {
+  readonly id = 'test.safe-mode';
+  readonly alignment = vscode.StatusBarAlignment.Right;
+  readonly priority = 100;
+  name = 'Test Safe Mode';
   command: string | undefined;
   text = '';
-  tooltip = '';
+  tooltip: vscode.StatusBarItem['tooltip'] = undefined;
+  color: vscode.StatusBarItem['color'] = undefined;
+  backgroundColor: vscode.StatusBarItem['backgroundColor'] = undefined;
+  accessibilityInformation: vscode.StatusBarItem['accessibilityInformation'] = undefined;
 
   show(): void {}
+
+  hide(): void {}
 
   dispose(): void {}
 }

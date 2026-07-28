@@ -57,6 +57,12 @@ function parsePackageArguments(args) {
   };
 }
 
+/**
+ * @param {string} command
+ * @param {readonly string[]} args
+ * @param {import('node:child_process').SpawnOptionsWithoutStdio} options
+ * @returns {Promise<void>}
+ */
 function runCommand(command, args, options) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {

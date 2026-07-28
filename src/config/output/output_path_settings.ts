@@ -1,19 +1,19 @@
-type ConfigurationReader = {
-  get<T>(key: string, defaultValue: T): T;
+export type ConfigurationReader = {
+  get(key: string, defaultValue: unknown): unknown;
 };
 
 export function readOutputPathTemplate(configuration: ConfigurationReader, key: string, defaultValue: string): string {
-  const template = configuration.get<unknown>(key, defaultValue);
+  const template = configuration.get(key, defaultValue);
   return typeof template === 'string' && template.trim() !== '' ? template : defaultValue;
 }
 
 export function readOutputPathsTemplate(configuration: ConfigurationReader, key: string, defaultValue: string): string {
-  const outputPaths = configuration.get<unknown>('outputPaths', {});
+  const outputPaths = configuration.get('outputPaths', {});
   if (outputPaths === null || typeof outputPaths !== 'object' || Array.isArray(outputPaths)) {
     return defaultValue;
   }
 
-  const template = (outputPaths as Record<string, unknown>)[key];
+  const template = Reflect.get(outputPaths, key);
   return typeof template === 'string' && template.trim() !== '' ? template : defaultValue;
 }
 

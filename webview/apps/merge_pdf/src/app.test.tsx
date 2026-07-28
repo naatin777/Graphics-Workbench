@@ -73,12 +73,12 @@ describe('Merge PDF Webview', () => {
       throw new Error('Merge source cards were not rendered.');
     }
 
-    const dataTransfer = {
+    const dataTransfer: DragDataTransfer = {
       effectAllowed: '',
       dropEffect: '',
       getData: () => 'source-1',
-      setData: vi.fn<() => void>(),
-    } as unknown as DataTransfer;
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
     dispatchDragEvent(firstHandle, 'dragstart', dataTransfer);
     dispatchDragEvent(targetCard, 'dragover', dataTransfer);
     dispatchDragEvent(targetCard, 'drop', dataTransfer);
@@ -99,7 +99,14 @@ function sourceNames(): string[] {
   return [...document.querySelectorAll('.source-card h3')].map((heading) => heading.textContent ?? '');
 }
 
-function dispatchDragEvent(target: Element, type: string, dataTransfer: DataTransfer): void {
+type DragDataTransfer = {
+  effectAllowed: string;
+  dropEffect: string;
+  getData(format: string): string;
+  setData(format: string, data: string): void;
+};
+
+function dispatchDragEvent(target: Element, type: string, dataTransfer: DragDataTransfer): void {
   const event = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(event, 'dataTransfer', { value: dataTransfer });
   target.dispatchEvent(event);

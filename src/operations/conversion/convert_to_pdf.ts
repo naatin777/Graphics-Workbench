@@ -327,11 +327,15 @@ async function writeMermaidAsPdf(
 }
 
 function asPdfOutputPath(outputPath: string): `${string}.pdf` {
-  if (!outputPath.toLowerCase().endsWith('.pdf')) {
+  if (!isPdfOutputPath(outputPath)) {
     throw new Error(`Mermaid PDF output path must end with .pdf: ${outputPath}`);
   }
 
-  return outputPath as unknown as `${string}.pdf`;
+  return outputPath;
+}
+
+function isPdfOutputPath(outputPath: string): outputPath is `${string}.pdf` {
+  return outputPath.toLowerCase().endsWith('.pdf');
 }
 
 async function writeEpsAsPdf(

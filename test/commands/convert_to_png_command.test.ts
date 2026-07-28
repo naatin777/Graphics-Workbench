@@ -113,10 +113,9 @@ suite('PNGに変換コマンド', () => {
 
     try {
       const sourcePaths = await Promise.all(
-        ['gif', 'tiff'].map(async (extension) => {
+        (['gif', 'tiff'] as const).map(async (extension) => {
           const sourcePath = path.join(temporaryDirectory, `source-${extension}.${extension}`);
-          const format = extension as 'gif' | 'tiff';
-          await writeAnimatedImageFixture(sourcePath, format);
+          await writeAnimatedImageFixture(sourcePath, extension);
           return sourcePath;
         }),
       );

@@ -8,6 +8,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import {
+  type CombinePreviewItem,
   COMBINE_IMAGES_TO_PDF_COMMAND,
   previewCombineInputs,
 } from '../../src/commands/conversion/combine_images_to_pdf.js';
@@ -33,7 +34,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
     createQuickPick = sandbox
       .stub(vscode.window, 'createQuickPick')
-      .callsFake(() => createFakeQuickPick((pick) => pick.accept()) as never);
+      .callsFake(() => createFakeQuickPick((pick) => pick.accept()));
   });
 
   teardown(() => {
@@ -221,7 +222,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       pick.triggerItemButton(first, requireValue(requireValue(first.buttons)[2]));
       pick.accept();
     });
-    createQuickPick.callsFake(() => quickPick as never);
+    createQuickPick.callsFake(() => quickPick);
     const sourceUris = [vscode.Uri.file('/workspace/a.png'), vscode.Uri.file('/workspace/b.png')];
 
     assert.deepStrictEqual(await previewCombineInputs(sourceUris), [sourceUris[1]]);
@@ -236,7 +237,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       await Promise.all(sourcePaths.map((sourcePath) => copyFile(VALID_PNG, sourcePath)));
       const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
       const quickPick = createFakeQuickPick((pick) => pick.hide());
-      createQuickPick.callsFake(() => quickPick as never);
+      createQuickPick.callsFake(() => quickPick);
 
       await vscode.commands.executeCommand(
         COMBINE_IMAGES_TO_PDF_COMMAND,
@@ -347,51 +348,70 @@ async function readDirectoryNames(directoryPath: string): Promise<string[]> {
 }
 
 function createFakeQuickPick(onShow: (quickPick: FakeQuickPick) => void): FakeQuickPick {
-  const quickPick = {
-    items: [] as vscode.QuickPickItem[],
-    onAccept: undefined as (() => void) | undefined,
-    onHide: undefined as (() => void) | undefined,
-    onItemButton: undefined as
-      | ((event: { item: vscode.QuickPickItem; button: vscode.QuickInputButton }) => void)
-      | undefined,
-    onDidAccept: (listener: () => void) => {
-      quickPick.onAccept = listener;
-      return { dispose: () => undefined };
-    },
-    onDidHide: (listener: () => void) => {
-      quickPick.onHide = listener;
-      return { dispose: () => undefined };
-    },
-    onDidTriggerItemButton: (
-      listener: (event: { item: vscode.QuickPickItem; button: vscode.QuickInputButton }) => void,
-    ) => {
-      quickPick.onItemButton = listener;
-      return { dispose: () => undefined };
-    },
-    show: () => onShow(quickPick),
-    hide: () => quickPick.onHide?.(),
-    dispose: () => undefined,
-    accept: () => quickPick.onAccept?.(),
-    triggerItemButton: (item: vscode.QuickPickItem, button: vscode.QuickInputButton) =>
-      quickPick.onItemButton?.({ item, button }),
-  } satisfies FakeQuickPick;
-
-  return quickPick;
+  return new FakeQuickPick(onShow);
 }
 
-interface FakeQuickPick {
-  items: vscode.QuickPickItem[];
-  onAccept: (() => void) | undefined;
-  onHide: (() => void) | undefined;
-  onItemButton: ((event: { item: vscode.QuickPickItem; button: vscode.QuickInputButton }) => void) | undefined;
-  onDidAccept(listener: () => void): vscode.Disposable;
-  onDidHide(listener: () => void): vscode.Disposable;
-  onDidTriggerItemButton(
-    listener: (event: { item: vscode.QuickPickItem; button: vscode.QuickInputButton }) => void,
-  ): vscode.Disposable;
-  show(): void;
-  hide(): void;
-  dispose(): void;
-  accept(): void;
-  triggerItemButton(item: vscode.QuickPickItem, button: vscode.QuickInputButton): void;
+class FakeQuickPick implements vscode.QuickPick<CombinePreviewItem> {
+  title: string | undefined;
+  step: number | undefined;
+  totalSteps: number | undefined;
+  enabled = true;
+  busy = false;
+  ignoreFocusOut = false;
+  value = '';
+  placeholder: string | undefined;
+  prompt: string | undefined;
+  buttons: readonly vscode.QuickInputButton[] = [];
+  items: readonly CombinePreviewItem[] = [];
+  canSelectMany = false;
+  matchOnDescription = false;
+  matchOnDetail = false;
+  keepScrollPosition = false;
+  activeItems: readonly CombinePreviewItem[] = [];
+  selectedItems: readonly CombinePreviewItem[] = [];
+
+  private acceptListener: (() => void) | undefined;
+  private hideListener: (() => void) | undefined;
+  private itemButtonListener: ((event: vscode.QuickPickItemButtonEvent<CombinePreviewItem>) => void) | undefined;
+
+  readonly onDidHide: vscode.Event<void> = (listener) => {
+    this.hideListener = listener;
+    return new FakeDisposable();
+  };
+  readonly onDidChangeValue: vscode.Event<string> = () => new FakeDisposable();
+  readonly onDidAccept: vscode.Event<void> = (listener) => {
+    this.acceptListener = listener;
+    return new FakeDisposable();
+  };
+  readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton> = () => new FakeDisposable();
+  readonly onDidTriggerItemButton: vscode.Event<vscode.QuickPickItemButtonEvent<CombinePreviewItem>> = (listener) => {
+    this.itemButtonListener = listener;
+    return new FakeDisposable();
+  };
+  readonly onDidChangeActive: vscode.Event<readonly CombinePreviewItem[]> = () => new FakeDisposable();
+  readonly onDidChangeSelection: vscode.Event<readonly CombinePreviewItem[]> = () => new FakeDisposable();
+
+  constructor(private readonly onShow: (quickPick: FakeQuickPick) => void) {}
+
+  show(): void {
+    this.onShow(this);
+  }
+
+  hide(): void {
+    this.hideListener?.();
+  }
+
+  dispose(): void {}
+
+  accept(): void {
+    this.acceptListener?.();
+  }
+
+  triggerItemButton(item: CombinePreviewItem, button: vscode.QuickInputButton): void {
+    this.itemButtonListener?.({ item, button });
+  }
+}
+
+class FakeDisposable implements vscode.Disposable {
+  dispose(): void {}
 }

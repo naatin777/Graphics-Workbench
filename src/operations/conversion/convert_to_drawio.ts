@@ -239,8 +239,9 @@ async function validateEmbeddedDrawioImage(outputPath: string, format: string, s
 
 async function validateDrawioXml(xml: string, sourcePath: string): Promise<void> {
   try {
-    const parsed = (await new Parser().parseStringPromise(xml)) as { mxfile?: { diagram?: unknown[] } };
-    if (parsed.mxfile?.diagram === undefined || parsed.mxfile.diagram.length === 0) {
+    const parsed: unknown = await new Parser().parseStringPromise(xml);
+    const mxfile = isRecord(parsed) && isRecord(parsed.mxfile) ? parsed.mxfile : undefined;
+    if (!mxfile || !Array.isArray(mxfile.diagram) || mxfile.diagram.length === 0) {
       throw new Error('missing diagram');
     }
   } catch (error) {
@@ -250,13 +251,17 @@ async function validateDrawioXml(xml: string, sourcePath: string): Promise<void>
 
 async function validateSvgDocument(content: string, sourcePath: string): Promise<void> {
   try {
-    const parsed = (await new Parser().parseStringPromise(content)) as { svg?: unknown };
-    if (parsed.svg === undefined) {
+    const parsed: unknown = await new Parser().parseStringPromise(content);
+    if (typeof parsed !== 'object' || parsed === null || !('svg' in parsed) || parsed.svg === undefined) {
       throw new Error('missing svg root');
     }
   } catch (error) {
     throw new Error(`Draw.io produced invalid embedded SVG: ${sourcePath}`, { cause: error });
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 export interface DrawioPage {
@@ -387,15 +392,39 @@ async function executeMermaid(
   options?: MermaidBackend,
 ): Promise<void> {
   signal?.throwIfAborted();
-  await runMermaidCli(sourcePath, outputPath as `${string}.svg`, {
+  await runMermaidCli(sourcePath, asSvgOutputPath(outputPath), {
     outputFormat: 'svg',
     quiet: true,
     puppeteerConfig: {
       headless: true,
-      channel: (options?.browserChannel ?? 'chrome') as ChromeReleaseChannel,
+      channel: toChromeReleaseChannel(options?.browserChannel ?? 'chrome'),
       ...(options?.executablePath ? { executablePath: options.executablePath } : {}),
     },
     ...(options ? createMermaidCliRenderOptions(options) : {}),
   });
   signal?.throwIfAborted();
+}
+
+function toChromeReleaseChannel(value: string): ChromeReleaseChannel {
+  switch (value) {
+    case 'chrome':
+    case 'chrome-beta':
+    case 'chrome-canary':
+    case 'chrome-dev':
+      return value;
+    default:
+      throw new Error(`Unsupported Mermaid browser channel: ${value}`);
+  }
+}
+
+function asSvgOutputPath(outputPath: string): `${string}.svg` {
+  if (!isSvgOutputPath(outputPath)) {
+    throw new Error(`Mermaid SVG output path must end with .svg: ${outputPath}`);
+  }
+
+  return outputPath;
+}
+
+function isSvgOutputPath(outputPath: string): outputPath is `${string}.svg` {
+  return outputPath.toLowerCase().endsWith('.svg');
 }

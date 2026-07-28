@@ -121,11 +121,10 @@ suite('PDF結合コマンド', () => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
 
-      await mergePdfConfigureCommand(
-        { extensionUri: vscode.Uri.file(compiledTestDirectory) } as unknown as vscode.ExtensionContext,
-        undefined,
-        [vscode.Uri.file(firstPdfPath), vscode.Uri.file(linkedPdfPath)],
-      );
+      await mergePdfConfigureCommand({ extensionUri: vscode.Uri.file(compiledTestDirectory) }, undefined, [
+        vscode.Uri.file(firstPdfPath),
+        vscode.Uri.file(linkedPdfPath),
+      ]);
 
       assert.strictEqual(createWebviewPanel.called, false);
       assert.strictEqual(showErrorMessage.calledOnce, true);

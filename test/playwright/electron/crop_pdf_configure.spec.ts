@@ -49,6 +49,18 @@ type PackagedSplitPdfModule = {
   splitPdfAllPages(options: SplitPdfOptions): Promise<CommittedConversionOutput[]>;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isPackagedMergePdfModule(value: unknown): value is PackagedMergePdfModule {
+  return isRecord(value) && typeof value.mergePdf === 'function';
+}
+
+function isPackagedSplitPdfModule(value: unknown): value is PackagedSplitPdfModule {
+  return isRecord(value) && typeof value.splitPdfAllPages === 'function';
+}
+
 let preparedElectronTest: PreparedElectronTest | undefined;
 
 test.beforeAll(async () => {
@@ -294,6 +306,7 @@ test('package済みmoduleでMergeが動く', async ({ playwright }, testInfo) =>
     const mergeModule = await loadPackagedOperation<PackagedMergePdfModule>(
       env.extensionPath,
       'out/operations/pdf/merge_pdf.js',
+      isPackagedMergePdfModule,
     );
     await mergeModule.mergePdf({
       sourcePaths: [env.inputPath, env.outputPath],
@@ -342,6 +355,7 @@ test('package済みmoduleでSplitが動く', async ({ playwright }, testInfo) =>
     const splitModule = await loadPackagedOperation<PackagedSplitPdfModule>(
       env.extensionPath,
       'out/operations/pdf/split_pdf.js',
+      isPackagedSplitPdfModule,
     );
     const splitOutputs = await splitModule.splitPdfAllPages({
       jobs: [

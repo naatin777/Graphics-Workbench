@@ -99,7 +99,7 @@ export async function mergePdfSelectedFilesCommand(
 }
 
 export async function mergePdfConfigureCommand(
-  context: vscode.ExtensionContext,
+  context: Pick<vscode.ExtensionContext, 'extensionUri'>,
   uri?: vscode.Uri,
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,

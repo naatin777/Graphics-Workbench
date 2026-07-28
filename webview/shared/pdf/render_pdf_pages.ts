@@ -137,7 +137,7 @@ export async function renderPdfPages(
                 continue;
               }
 
-              const pageNumber = Number((entry.target as unknown as HTMLElement).dataset.pdfPage);
+              const pageNumber = Number(entry.target instanceof HTMLElement ? entry.target.dataset.pdfPage : undefined);
               void renderPage(pageNumber).catch(() => undefined);
             }
           },

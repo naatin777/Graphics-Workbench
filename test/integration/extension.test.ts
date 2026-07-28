@@ -107,7 +107,8 @@ suite('拡張機能の基本動作', () => {
     const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-crop-auto-'));
 
     try {
-      sandbox.stub(vscode.window, 'showQuickPick').resolves({ label: '0 pt', description: '', margin: 0 } as any);
+      const selectedMargin = { label: '0 pt', description: '', margin: 0 };
+      sandbox.stub(vscode.window, 'showQuickPick').resolves(selectedMargin);
       sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 

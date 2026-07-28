@@ -79,15 +79,20 @@ export async function combineImagesToPdfCommand(
   }
 }
 
-interface CombinePreviewItem extends vscode.QuickPickItem {
+export interface CombinePreviewItem extends vscode.QuickPickItem {
   sourceUri: vscode.Uri;
   removeButton: vscode.QuickInputButton;
   moveUpButton: vscode.QuickInputButton;
   moveDownButton: vscode.QuickInputButton;
 }
 
-export function previewCombineInputs(sourceUris: vscode.Uri[]): Promise<vscode.Uri[] | undefined> {
-  const quickPick = vscode.window.createQuickPick<CombinePreviewItem>();
+export type CombineQuickPickFactory = () => vscode.QuickPick<CombinePreviewItem>;
+
+export function previewCombineInputs(
+  sourceUris: vscode.Uri[],
+  createQuickPick: CombineQuickPickFactory = () => vscode.window.createQuickPick<CombinePreviewItem>(),
+): Promise<vscode.Uri[] | undefined> {
+  const quickPick = createQuickPick();
   const removeButton = { iconPath: new vscode.ThemeIcon('close'), tooltip: localeMap('quickPick.combine.remove') };
   const moveUpButton = { iconPath: new vscode.ThemeIcon('arrow-up'), tooltip: localeMap('quickPick.combine.moveUp') };
   const moveDownButton = {

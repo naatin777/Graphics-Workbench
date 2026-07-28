@@ -44,7 +44,7 @@ suite('LaTeXクリップボード画像挿入', () => {
           document,
           [new vscode.Range(0, 0, 0, 0)],
           pngDataTransfer(),
-          {} as unknown as vscode.DocumentPasteEditContext,
+          pasteContext(),
           tokenSource.token,
         );
 
@@ -98,7 +98,7 @@ suite('LaTeXクリップボード画像挿入', () => {
           document,
           [new vscode.Range(0, 0, 0, 0)],
           pngDataTransfer(),
-          {} as unknown as vscode.DocumentPasteEditContext,
+          pasteContext(),
           tokenSource.token,
         );
 
@@ -167,7 +167,7 @@ suite('LaTeXクリップボード画像挿入', () => {
           document,
           [new vscode.Range(0, 0, 0, 0)],
           pngDataTransfer(),
-          {} as unknown as vscode.DocumentPasteEditContext,
+          pasteContext(),
           tokenSource.token,
         );
 
@@ -203,7 +203,7 @@ suite('LaTeXクリップボード画像挿入', () => {
           document,
           [new vscode.Range(0, 0, 0, 0)],
           pngDataTransfer(),
-          {} as unknown as vscode.DocumentPasteEditContext,
+          pasteContext(),
           tokenSource.token,
         );
         assert.ok(keepBothEdits);
@@ -251,7 +251,7 @@ suite('LaTeXクリップボード画像挿入', () => {
           document,
           [new vscode.Range(0, 0, 0, 0)],
           pngDataTransfer(),
-          {} as unknown as vscode.DocumentPasteEditContext,
+          pasteContext(),
           tokenSource.token,
         );
 
@@ -292,7 +292,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         document,
         [new vscode.Range(0, 0, 0, 0)],
         pngDataTransfer(),
-        {} as unknown as vscode.DocumentPasteEditContext,
+        pasteContext(),
         tokenSource.token,
       );
 
@@ -340,7 +340,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         document,
         [new vscode.Range(0, 0, 0, 0)],
         pngDataTransfer(),
-        {} as unknown as vscode.DocumentPasteEditContext,
+        pasteContext(),
         tokenSource.token,
       );
 
@@ -357,23 +357,23 @@ suite('LaTeXクリップボード画像挿入', () => {
 });
 
 function pngDataTransfer(): vscode.DataTransfer {
-  return {
-    get(mime: string) {
-      if (mime !== 'image/png') {
-        return undefined;
-      }
-
-      return {
-        asFile() {
-          return {
-            async data() {
-              return readFile(path.join(fixtureDirectory, 'test.png'));
-            },
-          };
-        },
-      };
+  const item = new vscode.DataTransferItem(undefined);
+  item.asFile = () => ({
+    name: 'test.png',
+    async data() {
+      return readFile(path.join(fixtureDirectory, 'test.png'));
     },
-  } as unknown as vscode.DataTransfer;
+  });
+  const dataTransfer = new vscode.DataTransfer();
+  dataTransfer.set('image/png', item);
+  return dataTransfer;
+}
+
+function pasteContext(): vscode.DocumentPasteEditContext {
+  return {
+    only: undefined,
+    triggerKind: vscode.DocumentPasteTriggerKind.Automatic,
+  };
 }
 
 function normalizeSnippetValue(value: string): string {

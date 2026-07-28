@@ -38,12 +38,14 @@ suite('Safe Modeステータスバー', () => {
     subscriptions = [];
     registeredCommand = undefined;
 
-    sandbox.stub(vscode.window, 'createStatusBarItem').returns(statusBarItem as unknown as vscode.StatusBarItem);
+    sandbox.stub(vscode.window, 'createStatusBarItem').returns(statusBarItem);
     sandbox
       .stub(vscode.commands, 'registerCommand')
       .callsFake((command: string, callback: (...args: never[]) => unknown) => {
         assert.strictEqual(command, TOGGLE_SAFE_MODE_COMMAND);
-        registeredCommand = callback as () => Promise<void>;
+        registeredCommand = async () => {
+          await callback();
+        };
         return new FakeDisposable();
       });
   });
@@ -92,34 +94,47 @@ suite('Safe Modeステータスバー', () => {
   });
 });
 
-function createExtensionContext(globalState: MemoryState, subscriptions: vscode.Disposable[]): vscode.ExtensionContext {
+function createExtensionContext(
+  globalState: MemoryState,
+  subscriptions: vscode.Disposable[] = [],
+): Parameters<typeof initializeSafeMode>[0] {
   return {
     globalState,
     subscriptions,
-  } as unknown as vscode.ExtensionContext;
+  };
 }
 
 class MemoryState {
   readonly #values = new Map<string, unknown>();
 
-  get<T>(key: string, defaultValue?: T): T | undefined {
-    return (this.#values.has(key) ? this.#values.get(key) : defaultValue) as T | undefined;
+  get(key: 'safeMode.enabled', defaultValue?: boolean): boolean | undefined {
+    const value = this.#values.get(key);
+    return typeof value === 'boolean' ? value : defaultValue;
   }
 
-  async update(key: string, value: unknown): Promise<void> {
+  async update(key: 'safeMode.enabled', value: boolean): Promise<void> {
     this.#values.set(key, value);
   }
 }
 
-class FakeStatusBarItem {
+class FakeStatusBarItem implements vscode.StatusBarItem {
+  readonly id = 'test.safe-mode';
+  readonly alignment = vscode.StatusBarAlignment.Right;
+  readonly priority = 100;
+  name = 'Test Safe Mode';
   command: string | undefined;
   text = '';
-  tooltip = '';
+  tooltip: vscode.StatusBarItem['tooltip'] = undefined;
+  color: vscode.StatusBarItem['color'] = undefined;
+  backgroundColor: vscode.StatusBarItem['backgroundColor'] = undefined;
+  accessibilityInformation: vscode.StatusBarItem['accessibilityInformation'] = undefined;
   showCallCount = 0;
 
   show(): void {
     this.showCallCount += 1;
   }
+
+  hide(): void {}
 
   dispose(): void {}
 }

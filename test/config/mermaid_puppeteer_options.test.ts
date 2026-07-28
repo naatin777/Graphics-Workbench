@@ -70,8 +70,8 @@ suite('Mermaid Puppeteer設定', () => {
 
 function fakeConfiguration(values: Record<string, string>): MermaidConfiguration {
   return {
-    get<T>(key: string, defaultValue: T): T {
-      return (key in values ? values[key] : defaultValue) as T;
+    get(key: string, defaultValue: string): string {
+      return values[key] ?? defaultValue;
     },
   };
 }
