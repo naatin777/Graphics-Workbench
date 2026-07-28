@@ -28,7 +28,7 @@ LaTeX Graphics Helper は、VS Code 上で PDF・画像・Draw.io・LaTeX への
 
 ## In progress
 
-- なし。次の作業が必要な場合は `docs/tasks/README.md` のCurrent Taskへ追加する。
+- [0208: oxlintの制限を段階的に強化する](docs/tasks/0208-gradually-strengthen-oxlint.md) — Phase 1
 
 ## Non-goals
 
