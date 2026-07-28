@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PUBLIC_COMMAND_IDS } from '../src/extension.js';
+import { requireValue } from './helpers/required.js';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -597,7 +598,9 @@ suite('package.jsonの変換メニュー定義', () => {
 
   test('outputPathsのスキーマはadditionalPropertiesを禁止する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
-    const outputPaths = packageJson.contributes.configuration.properties['latex-graphics-helper.outputPaths']!;
+    const outputPaths = requireValue(
+      packageJson.contributes.configuration.properties['latex-graphics-helper.outputPaths'],
+    );
 
     assert.deepStrictEqual(outputPaths.additionalProperties, false);
     assert.ok(outputPaths.properties, 'outputPaths must have explicit properties');
@@ -629,5 +632,5 @@ async function readJson<T>(relativePath: string): Promise<T> {
 function sortedKeys(record: Record<string, string>): string[] {
   const keys = Object.keys(record);
   // 比較用の一時配列だけを並び替えるため、呼び出し元の値は変更しない。
-  return keys.sort();
+  return keys.toSorted();
 }

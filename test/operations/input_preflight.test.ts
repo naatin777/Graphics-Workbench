@@ -9,6 +9,7 @@ import {
   runPreflightBatch,
   type PreflightReport,
 } from '../../src/operations/input/input_preflight.js';
+import { requireValue } from '../helpers/required.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'preflight');
@@ -36,20 +37,20 @@ suite('Preflight — 共通検査', () => {
     const result = await runPreflightBatch([path.join(FIXTURES, 'empty.pdf')]);
     strictEqual(result.canProceed, false);
     strictEqual(result.errors.length, 1);
-    assertError(result.errors[0]!, 'Empty file');
+    assertError(requireValue(result.errors[0]), 'Empty file');
   });
 
   test('読み込めない入力をFile not readable errorとして検出する', async () => {
     const result = await runPreflightBatch([path.join(FIXTURES, 'missing.pdf')]);
     strictEqual(result.canProceed, false);
     strictEqual(result.errors.length, 1);
-    assertError(result.errors[0]!, 'File not readable');
+    assertError(requireValue(result.errors[0]), 'File not readable');
   });
 
   test('未対応の拡張子をerrorとして検出する', async () => {
     const result = await runPreflightBatch([path.join(FIXTURES, 'valid.pdf') + '.unknown']);
     strictEqual(result.canProceed, false);
-    assertError(result.errors[0]!, 'Unsupported format');
+    assertError(requireValue(result.errors[0]), 'Unsupported format');
   });
 
   test('対応拡張子を持つdirectoryを入力fileとして扱わない', async () => {
@@ -60,7 +61,7 @@ suite('Preflight — 共通検査', () => {
       await mkdir(disguisedDirectory);
       const result = await runPreflightBatch([disguisedDirectory]);
       strictEqual(result.canProceed, false);
-      assertError(result.errors[0]!, 'not a regular file');
+      assertError(requireValue(result.errors[0]), 'not a regular file');
     } finally {
       await rm(testRoot, { recursive: true, force: true });
     }
@@ -74,7 +75,7 @@ suite('Preflight — 共通検査', () => {
     ]);
     strictEqual(result.canProceed, false);
     strictEqual(result.errors.length, 1);
-    strictEqual(result.errors[0]!.result, 'error');
+    strictEqual(requireValue(result.errors[0]).result, 'error');
     const oks = result.reports.filter((report) => report.result === 'ok');
     strictEqual(oks.length, 2);
   });
@@ -150,7 +151,7 @@ suite('Preflight — Raw sidecar検査', () => {
         }),
       );
       const result = await runPreflightBatch([sourcePath]);
-      assertOk(result.reports[0]!);
+      assertOk(requireValue(result.reports[0]));
     } finally {
       await rm(testRoot, { recursive: true, force: true });
     }
@@ -204,8 +205,8 @@ suite('Preflight — 進捗報告', () => {
     strictEqual(result.canProceed, true);
     strictEqual(result.reports.length, 3);
     strictEqual(calls.length, 3);
-    deepStrictEqual(calls[0]!, { completed: 1, total: 3 });
-    deepStrictEqual(calls[2]!, { completed: 3, total: 3 });
+    deepStrictEqual(requireValue(calls[0]), { completed: 1, total: 3 });
+    deepStrictEqual(requireValue(calls[2]), { completed: 3, total: 3 });
   });
 });
 

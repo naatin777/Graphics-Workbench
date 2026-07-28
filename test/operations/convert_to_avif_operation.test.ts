@@ -15,6 +15,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import { executeAvifConversion } from '../../src/operations/conversion/convert_to_avif.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('AVIFに変換する処理', () => {
   test('編集可能なDraw.io画像はPDFとPNGを経由してAVIFへ変換する', async () => {
@@ -64,7 +65,7 @@ suite('AVIFに変換する処理', () => {
             drawioCalls.push(args);
             const outputIndex = args.indexOf('-o') + 1;
             assert.ok(outputIndex > 0);
-            await writeFile(args[outputIndex]!, '%PDF-1.7\n');
+            await writeFile(requireValue(args[outputIndex]), '%PDF-1.7\n');
           },
         },
         avif: {
@@ -75,7 +76,7 @@ suite('AVIFに変換する処理', () => {
       });
 
       assert.strictEqual(drawioCalls.length, 1);
-      const drawioArgs = drawioCalls[0]!;
+      const drawioArgs = requireValue(drawioCalls[0]);
       const expectedPdfPath = path.join(
         workspacePath,
         '.latex-graphics-helper',

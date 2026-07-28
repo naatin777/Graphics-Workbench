@@ -26,6 +26,7 @@ import { executeJpegConversion } from '../../src/operations/conversion/convert_t
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
 import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
+import { requireValue } from '../helpers/required.js';
 
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
 const pdfFixturePath = path.resolve(
@@ -225,7 +226,7 @@ suite('Windows pdftocairo ASCIIスクラッチ', () => {
 
     try {
       await assert.rejects(
-        routes[0]!.convert(paths, async (sourcePath, outputPath) => {
+        requireValue(routes[0]).convert(paths, async (sourcePath, outputPath) => {
           assert.strictEqual(path.extname(sourcePath), '.pdf');
           unexpectedOutputPath = path.join(path.dirname(outputPath), 'output-garbled.png');
           await copyFile(pngFixturePath, unexpectedOutputPath);
@@ -247,7 +248,7 @@ suite('Windows pdftocairo ASCIIスクラッチ', () => {
 
     try {
       await assert.rejects(
-        routes[0]!.convert(paths, async (sourcePath, outputPath) => {
+        requireValue(routes[0]).convert(paths, async (sourcePath, outputPath) => {
           toolOutputPath = outputPath;
           assert.strictEqual(path.extname(sourcePath), '.pdf');
           await writeFile(outputPath, Buffer.alloc(0));

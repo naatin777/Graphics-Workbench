@@ -15,6 +15,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('WebPに変換する処理', () => {
   test('アニメーションメタデータを保持して1つのWebPへ変換する', async () => {
@@ -120,7 +121,7 @@ suite('WebPに変換する処理', () => {
             drawioCalls.push(args);
             const outputIndex = args.indexOf('-o') + 1;
             assert.ok(outputIndex > 0);
-            await writeFile(args[outputIndex]!, '%PDF-1.7\n');
+            await writeFile(requireValue(args[outputIndex]), '%PDF-1.7\n');
           },
         },
         webp: {
@@ -131,7 +132,7 @@ suite('WebPに変換する処理', () => {
       });
 
       assert.strictEqual(drawioCalls.length, 1);
-      const drawioArgs = drawioCalls[0]!;
+      const drawioArgs = requireValue(drawioCalls[0]);
       const expectedPdfPath = path.join(
         workspacePath,
         '.latex-graphics-helper',

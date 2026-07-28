@@ -12,6 +12,7 @@ import sharp from 'sharp';
 
 import { executePngConversion, type ConvertToPngJob } from '../../src/operations/conversion/convert_to_png.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('PNGに変換する処理', () => {
   test('Raw pixelsをsidecarどおりにPNGへ変換する', async () => {
@@ -72,10 +73,12 @@ suite('PNGに変換する処理', () => {
         });
 
         assert.ok(
-          (await sharp(await readFile(path.join(workspacePath, `${format}-1.png`))).stats()).channels[0]!.mean > 200,
+          requireValue((await sharp(await readFile(path.join(workspacePath, `${format}-1.png`))).stats()).channels[0])
+            .mean > 200,
         );
         assert.ok(
-          (await sharp(await readFile(path.join(workspacePath, `${format}-2.png`))).stats()).channels[2]!.mean > 200,
+          requireValue((await sharp(await readFile(path.join(workspacePath, `${format}-2.png`))).stats()).channels[2])
+            .mean > 200,
         );
       }
     } finally {
@@ -137,7 +140,7 @@ suite('PNGに変換する処理', () => {
       });
 
       assert.strictEqual(drawioCalls.length, 1);
-      const args = drawioCalls[0]!;
+      const args = requireValue(drawioCalls[0]);
       assert.strictEqual(args[0], '-x');
       assert.strictEqual(args[1], '-f');
       assert.strictEqual(args[2], 'pdf');

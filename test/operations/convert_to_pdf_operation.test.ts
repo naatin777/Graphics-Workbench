@@ -23,6 +23,7 @@ import {
   createSvgPuppeteerLaunchOptions,
   validateSvgToPdfOptions,
 } from '../../src/operations/conversion/convert_to_pdf.js';
+import { requireValue } from '../helpers/required.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -135,7 +136,7 @@ suite('PDF変換operation（PNG入力）', () => {
           drawioTools: {
             drawioPath: 'drawio',
             runDrawio: async (_executable, args) => {
-              await writeFile(args[args.indexOf('-o') + 1]!, 'not a PDF');
+              await writeFile(requireValue(args[args.indexOf('-o') + 1]), 'not a PDF');
             },
           },
         }),

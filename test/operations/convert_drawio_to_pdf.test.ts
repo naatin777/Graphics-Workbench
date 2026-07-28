@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
+import { requireValue } from '../helpers/required.js';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const drawioFixturePath = path.join(repositoryRoot, 'test', 'fixtures', 'pdf-operations', 'user-files', 'q a.drawio');
@@ -38,8 +39,8 @@ suite('Draw.io PDF変換', () => {
         runDrawio: async (_executable, args) => {
           calls.push(args);
           assert.notStrictEqual(args[0], sourcePath);
-          await writeFile(args[0]!, `${originalSource}\n<!-- mutated staged source -->`);
-          await copyFile(pdfFixturePath, args[args.indexOf('-o') + 1]!);
+          await writeFile(requireValue(args[0]), `${originalSource}\n<!-- mutated staged source -->`);
+          await copyFile(pdfFixturePath, requireValue(args[args.indexOf('-o') + 1]));
         },
       });
 
@@ -73,11 +74,11 @@ suite('Draw.io PDF変換', () => {
         '--crop',
       ]);
       assert.strictEqual(
-        await PDFDocument.load(await readFile(outputs[0]!.outputPath)).then((pdf) => pdf.getPageCount()),
+        await PDFDocument.load(await readFile(requireValue(outputs[0]).outputPath)).then((pdf) => pdf.getPageCount()),
         1,
       );
       assert.strictEqual(
-        await PDFDocument.load(await readFile(outputs[1]!.outputPath)).then((pdf) => pdf.getPageCount()),
+        await PDFDocument.load(await readFile(requireValue(outputs[1]).outputPath)).then((pdf) => pdf.getPageCount()),
         1,
       );
       assert.strictEqual(await readFile(sourcePath, 'utf8'), originalSource);
@@ -108,7 +109,7 @@ suite('Draw.io PDF変換', () => {
         runId: 'direct-test',
         runtime: { resolveConflicts: async () => 'overwrite' },
         runDrawio: async (_executable, args) => {
-          await copyFile(pdfFixturePath, args[args.indexOf('-o') + 1]!);
+          await copyFile(pdfFixturePath, requireValue(args[args.indexOf('-o') + 1]));
         },
       });
 
@@ -143,7 +144,7 @@ suite('Draw.io PDF変換', () => {
         runId: 'names-test',
         runtime: { resolveConflicts: async () => 'overwrite' },
         runDrawio: async (_executable, args) => {
-          await copyFile(pdfFixturePath, args[args.indexOf('-o') + 1]!);
+          await copyFile(pdfFixturePath, requireValue(args[args.indexOf('-o') + 1]));
         },
       });
 

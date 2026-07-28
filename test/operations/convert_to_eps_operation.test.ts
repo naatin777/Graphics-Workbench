@@ -6,6 +6,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 
 import { convertToEpsFiles } from '../../src/operations/conversion/convert_to_eps.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('EPS変換操作', () => {
   test('PDFページごとにEPSをステージングしてコミットする', async () => {
@@ -46,7 +47,7 @@ suite('EPS変換操作', () => {
       assert.deepStrictEqual(
         calls
           .map((args) => args.find((arg) => arg.startsWith('-dFirstPage=')))
-          .sort((first, second) => first!.localeCompare(second!)),
+          .toSorted((first, second) => requireValue(first).localeCompare(requireValue(second))),
         ['-dFirstPage=1', '-dFirstPage=2'],
       );
       await Promise.all(outputPaths.map((outputPath) => access(outputPath)));

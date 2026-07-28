@@ -129,7 +129,7 @@ export function readRawSidecar(sourcePath: string): RawSidecar {
     );
   }
 
-  const expected = RAW_SIDECAR_CONSTRAINTS[candidate.channels as 1 | 2 | 3 | 4]!;
+  const expected = RAW_SIDECAR_CONSTRAINTS[candidate.channels]!;
   if (candidate.colourspace !== expected.colourspace || candidate.alpha !== expected.alpha) {
     throw new Error(
       `Invalid Raw sidecar: ${sidecarPath}; channels ${candidate.channels} requires colourspace '${expected.colourspace}' and alpha ${expected.alpha}, got colourspace '${candidate.colourspace}' and alpha ${candidate.alpha}.`,

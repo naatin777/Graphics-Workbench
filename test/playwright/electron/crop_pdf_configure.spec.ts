@@ -166,7 +166,7 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
       })
       .toBe(2);
 
-    const outputDocument = await PDFDocument.load(await readFile(env!.outputPath));
+    const outputDocument = await PDFDocument.load(await readFile(env.outputPath));
     expect(outputDocument.getPageCount()).toBe(2);
 
     for (const page of outputDocument.getPages()) {
@@ -174,13 +174,13 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
       expect(page.getCropBox()).toEqual(expectedCropBox);
     }
 
-    expect(await readFile(env!.inputPath)).toEqual(env!.sourceFixtureBytes);
+    expect(await readFile(env.inputPath)).toEqual(env.sourceFixtureBytes);
 
-    const successNotification = env!.window.getByText('Cropped 1 PDF file(s).', {
+    const successNotification = env.window.getByText('Cropped 1 PDF file(s).', {
       exact: true,
     });
     await expect(successNotification).toBeVisible();
-    await env!.window.keyboard.press('Escape');
+    await env.window.keyboard.press('Escape');
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,
@@ -243,7 +243,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
     );
     const lightScreenshot = await captureCropPdfScreenshot(env.window, body, {
       canvases,
-      snapshotPrefix: join(env!.temporaryRoot, 'crop-pdf-light'),
+      snapshotPrefix: join(env.temporaryRoot, 'crop-pdf-light'),
     });
     await testInfo.attach('crop-pdf-configure-light', {
       body: lightScreenshot,
@@ -468,7 +468,7 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
     });
 
     await convertPdfToJpeg(env.window, cropConfigureFixture.fileName);
-    await expect(env!.window.getByRole('alert').filter({ hasText: 'Failed to convert to JPEG:' })).toBeVisible();
+    await expect(env.window.getByRole('alert').filter({ hasText: 'Failed to convert to JPEG:' })).toBeVisible();
 
     const failedPdfJpegOutputPaths = [1, 2].map((page) => join(env!.workspacePath, `q a-${page}.jpeg`));
     for (const failedOutputPath of failedPdfJpegOutputPaths) {
@@ -483,7 +483,7 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
         })
         .toBe(true);
     }
-    await env!.window.keyboard.press('Escape');
+    await env.window.keyboard.press('Escape');
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,
