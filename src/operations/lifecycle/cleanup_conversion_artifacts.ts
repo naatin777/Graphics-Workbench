@@ -177,12 +177,13 @@ function hasPreservedDescendant(targetPath: string, preservePaths: ReadonlySet<s
 }
 
 function isWithin(targetPath: string, parentPath: string): boolean {
-  const normalize = (value: string) => {
-    const resolved = path.resolve(value);
-    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
-  };
-  const relativePath = path.relative(normalize(parentPath), normalize(targetPath));
+  const relativePath = path.relative(normalizeComparisonPath(parentPath), normalizeComparisonPath(targetPath));
   return relativePath === '' || (!path.isAbsolute(relativePath) && !relativePath.startsWith(`..${path.sep}`));
+}
+
+function normalizeComparisonPath(value: string): string {
+  const resolved = path.resolve(value);
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
 }
 
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {

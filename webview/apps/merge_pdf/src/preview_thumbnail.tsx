@@ -39,7 +39,7 @@ export function PreviewThumbnail(props: {
           const message = error instanceof Error ? error.message : String(error);
           setStatus('error');
           props.onError();
-          vscode.postMessage({ type: 'previewLoadFailed', payload: { message } });
+          vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
         });
     };
 

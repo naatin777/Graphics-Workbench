@@ -12,7 +12,10 @@ import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/
  * @returns {string[]}
  */
 function placeholders(value) {
-  return [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1]).toSorted();
+  const values = [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1] ?? '');
+  /** @type {string[]} */
+  const sortedValues = values.toSorted();
+  return sortedValues;
 }
 
 /**

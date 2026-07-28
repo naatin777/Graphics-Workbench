@@ -3,11 +3,11 @@ import { render } from 'solid-js/web';
 import type { CropPdfLabels, ExtensionToWebviewMessage } from './messages';
 import { App } from './app';
 
-const postMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
+const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderPdfPages = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
 vi.mock('./vscode', () => ({
-  vscode: { postMessage },
+  vscode: { sendMessage },
 }));
 vi.mock('../../../shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
@@ -64,7 +64,7 @@ describe('Crop PDF Webview', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>';
-    postMessage.mockReset();
+    sendMessage.mockReset();
     renderPdfPages.mockResolvedValue({ firstPageReady: Promise.resolve(), dispose: vi.fn<() => void>() });
     const root = document.querySelector('#root');
 
@@ -83,7 +83,7 @@ describe('Crop PDF Webview', () => {
 
   test('shows input errors, toggles selected pages, and applies the target', async () => {
     await flushPromises();
-    postMessage.mockClear();
+    sendMessage.mockClear();
 
     const radios = document.querySelectorAll<HTMLInputElement>('input[type="radio"]');
     radios[1]?.click();
@@ -102,7 +102,7 @@ describe('Crop PDF Webview', () => {
     await flushPromises();
 
     expect(document.querySelector('[role="alert"]')?.textContent).toContain('positive width and height');
-    expect(postMessage).not.toHaveBeenCalledWith({
+    expect(sendMessage).not.toHaveBeenCalledWith({
       type: 'apply',
       payload: { cropBox: expect.anything(), target: expect.anything() },
     });
@@ -113,7 +113,7 @@ describe('Crop PDF Webview', () => {
     document.querySelector<HTMLButtonElement>('button.button--primary')?.click();
     await flushPromises();
 
-    expect(postMessage).toHaveBeenLastCalledWith({
+    expect(sendMessage).toHaveBeenLastCalledWith({
       type: 'apply',
       payload: {
         cropBox: { left: 0, bottom: 0, right: 600, top: 800 },

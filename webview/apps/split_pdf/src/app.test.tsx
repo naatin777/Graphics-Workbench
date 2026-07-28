@@ -3,11 +3,11 @@ import { render } from 'solid-js/web';
 import type { ExtensionToWebviewMessage, SplitPdfLabels } from './messages';
 import { App } from './app';
 
-const postMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
+const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderPdfPages = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
 vi.mock('./vscode', () => ({
-  vscode: { postMessage },
+  vscode: { sendMessage },
 }));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
@@ -65,7 +65,7 @@ describe('Split PDF Webview', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>';
-    postMessage.mockReset();
+    sendMessage.mockReset();
     renderPdfPages.mockResolvedValue({ firstPageReady: Promise.resolve(), dispose: vi.fn<() => void>() });
     const root = document.querySelector('#root');
 
@@ -103,7 +103,7 @@ describe('Split PDF Webview', () => {
 
   test('toggles all-page preview, changes zoom, and applies groups', async () => {
     await flushPromises();
-    postMessage.mockClear();
+    sendMessage.mockClear();
 
     const pages = findInput('Pages 1');
     setInput(pages, '1-2');
@@ -120,7 +120,7 @@ describe('Split PDF Webview', () => {
     expect(zoom.value).toBe('200');
 
     document.querySelector<HTMLButtonElement>('button.button--primary')?.click();
-    expect(postMessage).toHaveBeenLastCalledWith({
+    expect(sendMessage).toHaveBeenLastCalledWith({
       type: 'apply',
       payload: { rows: [{ pages: [1, 2], outputName: '1-2' }] },
     });

@@ -80,9 +80,8 @@ suite('Draw.ioへの集約変換', () => {
         ['multipage.tiff', 'tiff'],
       ] as const;
       for (const [name, format] of inputs) {
-        await sharp([red, blue], { join: { animated: true } })
-          [format]()
-          .toFile(path.join(workspacePath, name));
+        const animatedImage = sharp([red, blue], { join: { animated: true } });
+        await animatedImage[format]().toFile(path.join(workspacePath, name));
       }
 
       const outputPath = path.join(workspacePath, 'result.drawio');
@@ -128,14 +127,14 @@ suite('Draw.ioへの集約変換', () => {
           runId: extension.slice(1),
           runDrawio: async (executable, args) => {
             call = { executable, args };
-            const outputPath = requireValue(args[args.indexOf('--output') + 1]);
-            if (outputPath.endsWith('.png')) {
+            const generatedOutputPath = requireValue(args[args.indexOf('--output') + 1]);
+            if (generatedOutputPath.endsWith('.png')) {
               const png = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
                 .png()
                 .toBuffer();
-              await writeFile(outputPath, Buffer.concat([png, Buffer.from('mxfile')]));
+              await writeFile(generatedOutputPath, Buffer.concat([png, Buffer.from('mxfile')]));
             } else {
-              await writeFile(outputPath, '<svg width="20" height="10"><metadata>mxfile</metadata></svg>');
+              await writeFile(generatedOutputPath, '<svg width="20" height="10"><metadata>mxfile</metadata></svg>');
             }
           },
           runtime: { resolveConflicts: async () => 'overwrite' },

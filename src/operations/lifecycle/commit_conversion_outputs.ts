@@ -423,7 +423,7 @@ async function copyPreparedOutput(
 
       await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
       if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
-        throw new Error(`Output changed before atomic replacement: ${output.outputPath}`);
+        throw new Error(`Output changed before atomic replacement: ${output.outputPath}`, { cause: error });
       }
       await rm(output.outputPath);
       await renameImpl(temporaryPath, output.outputPath);

@@ -38,7 +38,7 @@ export function App() {
     };
 
     window.addEventListener('message', handleMessage);
-    vscode.postMessage({ type: 'ready' });
+    vscode.sendMessage({ type: 'ready' });
 
     onCleanup(() => window.removeEventListener('message', handleMessage));
   });
@@ -101,7 +101,9 @@ export function App() {
 
   const handleDrop = (event: DragEvent, targetId: string) => {
     event.preventDefault();
-    const sourceId = draggedSourceId() || event.dataTransfer?.getData('text/plain') || '';
+    const draggedId = draggedSourceId();
+    const transferId = event.dataTransfer?.getData('text/plain');
+    const sourceId = draggedId !== '' ? draggedId : transferId !== undefined && transferId !== '' ? transferId : '';
     moveSourceTo(sourceId, targetId);
     setDraggedSourceId('');
     setDropTargetId('');
@@ -131,7 +133,7 @@ export function App() {
       return;
     }
 
-    vscode.postMessage({
+    vscode.sendMessage({
       type: 'apply',
       payload: { sourceIds: sources().map((source) => source.sourceId) },
     });
@@ -222,5 +224,5 @@ export function App() {
 }
 
 function cancel() {
-  vscode.postMessage({ type: 'cancel' });
+  vscode.sendMessage({ type: 'cancel' });
 }
