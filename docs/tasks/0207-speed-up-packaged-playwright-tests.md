@@ -1,6 +1,6 @@
 # 0207: パッケージ済みPlaywrightテストの実行時間を短縮する
 
-Status: In progress — 2026-07-28
+Status: Done — 2026-07-28
 
 ## Objective
 
@@ -20,9 +20,9 @@ Status: In progress — 2026-07-28
 - [x] 各テストの一時workspaceとuser-dataを個別に作成・削除する
 - [x] 既存の8件のパッケージ済みElectronテストがローカルで成功する
 - [x] typecheck、check、buildが成功する
-- [ ] Windows CIで速度と安定性を確認する
+- [x] Windows CIで速度と安定性を確認する
 
 ## Follow-up
 
-- Windows CIで改善幅を確認する
-- 必要なら、テストごとのElectron起動・終了もスイート単位へ集約できるか、分離条件を再確認して判断する
+- Windows CIでPlaywright部分が7.6分から2.0分へ短縮された
+- Electronの起動・終了はテストごとに残し、workspaceとuser-dataの分離を維持した
