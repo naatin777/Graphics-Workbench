@@ -417,7 +417,9 @@ export function App() {
 
       <div class='workspace'>
         <section
-          ref={(element) => (pdfPreview = element)}
+          ref={(element) => {
+            pdfPreview = element;
+          }}
           aria-label={labels().previewAriaLabel}
           class='pdf-preview'
           onWheel={zoomWithWheel}
@@ -426,11 +428,17 @@ export function App() {
             labels={labels()}
             previewMode={previewMode()}
             zoomPercent={zoomPercent()}
-            onPreviewModeChange={setPreviewMode}
-            onZoomChange={(value) => updateZoom(value)}
+            onPreviewModeChange={(value) => {
+              setPreviewMode(value);
+            }}
+            onZoomChange={(value) => {
+              updateZoom(value);
+            }}
           />
           <div
-            ref={(element) => (pdfPages = element)}
+            ref={(element) => {
+              pdfPages = element;
+            }}
             class='pdf-preview__pages'
           />
           <Show when={renderError()}>
@@ -475,7 +483,9 @@ export function App() {
                   outputPathTemplate={outputPathTemplate()}
                   focused={focusedRowId() === row.id}
                   setInputRef={setInputRef}
-                  onFocus={setFocusedRowId}
+                  onFocus={(rowId) => {
+                    setFocusedRowId(rowId);
+                  }}
                   onPagesChange={updatePages}
                   onOutputNameChange={updateOutputName}
                   onKeyDown={handleRowKeyDown}
@@ -489,7 +499,9 @@ export function App() {
                     }
                   }}
                   onDragEnd={() => (draggedRowId = undefined)}
-                  onDragOver={(event) => event.preventDefault()}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                  }}
                   onDrop={dropRow}
                 />
               )}

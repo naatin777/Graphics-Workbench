@@ -293,7 +293,9 @@ async function applyConfiguredSplit(params: {
         cancellable: true,
       },
       async (progress, token) => {
-        const cancellationSubscription = token.onCancellationRequested(() => abortController.abort());
+        const cancellationSubscription = token.onCancellationRequested(() => {
+          abortController.abort();
+        });
 
         try {
           if (token.isCancellationRequested) {

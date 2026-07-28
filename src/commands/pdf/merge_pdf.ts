@@ -225,7 +225,9 @@ async function applyConfiguredMerge(params: {
         cancellable: true,
       },
       async (_progress, token) => {
-        const cancellationSubscription = token.onCancellationRequested(() => abortController.abort());
+        const cancellationSubscription = token.onCancellationRequested(() => {
+          abortController.abort();
+        });
 
         try {
           if (token.isCancellationRequested) {

@@ -50,9 +50,10 @@ export async function convertToJpegCommand(
 
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
-    const jobs = (
-      await Promise.all(sourceUris.map((sourceUri) => planJpegConversionJobs(sourceUri, configuration, maxInputPixels)))
-    ).flat();
+    const plannedJobs = await Promise.all(
+      sourceUris.map((sourceUri) => planJpegConversionJobs(sourceUri, configuration, maxInputPixels)),
+    );
+    const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };

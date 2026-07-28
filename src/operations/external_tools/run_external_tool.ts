@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 
 import type { LineOutputChannel } from './external_tool_ascii_scratch.js';
 
+// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
 const MAX_BUFFER = 10 * 1024 * 1024;
 

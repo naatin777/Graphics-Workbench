@@ -144,8 +144,12 @@ export function previewCombineInputs(
       }
       refresh();
     });
-    quickPick.onDidAccept(() => finish(items.length > 0 ? items.map((item) => item.sourceUri) : undefined));
-    quickPick.onDidHide(() => finish(undefined));
+    quickPick.onDidAccept(() => {
+      finish(items.length > 0 ? items.map((item) => item.sourceUri) : undefined);
+    });
+    quickPick.onDidHide(() => {
+      finish(undefined);
+    });
     refresh();
     quickPick.show();
   });

@@ -21,6 +21,7 @@ import type { MermaidBackend } from './tools/mermaid_tools.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import type { ChromeReleaseChannel } from 'puppeteer-core';
 
+// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
 interface DrawioInput {
   sourcePath: string;
@@ -283,7 +284,8 @@ async function rasterPage(
     if (!metadata.width || !metadata.height) {
       throw new Error(`Could not determine image dimensions: ${sourcePath}`);
     }
-    const dataUri = `data:image/png;base64,${(await image.png().toBuffer()).toString('base64')}`;
+    const pngBuffer = await image.png().toBuffer();
+    const dataUri = `data:image/png;base64,${pngBuffer.toString('base64')}`;
     return {
       name: input.pageName ?? `${path.basename(sourcePath)}${page === undefined ? '' : `-${page}`}`,
       dataUri,

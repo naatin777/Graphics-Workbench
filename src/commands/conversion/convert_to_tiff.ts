@@ -48,9 +48,10 @@ export async function convertToTiffCommand(
     }
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
-    const jobs = (
-      await Promise.all(sourceUris.map((sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)))
-    ).flat();
+    const plannedJobs = await Promise.all(
+      sourceUris.map((sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)),
+    );
+    const jobs = plannedJobs.flat();
     await runConversionLifecycle({
       operationName: 'convert-to-tiff',
       ...(outputChannel !== undefined && { outputChannel }),
@@ -136,7 +137,8 @@ async function createPdfJobs(
   workspace: vscode.WorkspaceFolder,
   configuration: vscode.WorkspaceConfiguration,
 ): Promise<ConvertToTiffJob[]> {
-  const pageCount = (await PDFDocument.load(await readFile(sourcePath))).getPageCount();
+  const document = await PDFDocument.load(await readFile(sourcePath));
+  const pageCount = document.getPageCount();
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }

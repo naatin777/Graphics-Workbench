@@ -48,9 +48,10 @@ export async function convertToSvgCommand(
 
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
-    const jobs = (
-      await Promise.all(sourceUris.map((sourceUri) => planSvgConversionJobs(sourceUri, configuration)))
-    ).flat();
+    const plannedJobs = await Promise.all(
+      sourceUris.map((sourceUri) => planSvgConversionJobs(sourceUri, configuration)),
+    );
+    const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };

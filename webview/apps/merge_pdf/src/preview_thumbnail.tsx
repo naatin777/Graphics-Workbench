@@ -59,18 +59,24 @@ export function PreviewThumbnail(props: {
     );
 
     observer.observe(frame);
-    onCleanup(() => observer.disconnect());
+    onCleanup(() => {
+      observer.disconnect();
+    });
   });
 
   return (
     <div
-      ref={(element) => (frame = element)}
+      ref={(element) => {
+        frame = element;
+      }}
       class='thumbnail'
       aria-label={`${props.labels.previewAriaLabel}: ${props.source.fileName}`}
       aria-busy={status() === 'loading'}
     >
       <canvas
-        ref={(element) => (canvas = element)}
+        ref={(element) => {
+          canvas = element;
+        }}
         class='thumbnail__canvas'
         aria-label={`${props.labels.preview}: ${props.source.fileName}`}
       />

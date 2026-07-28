@@ -33,7 +33,8 @@ export async function createRasterFrameJobs(options: {
   let pages: number;
 
   try {
-    pages = (await image.metadata()).pages ?? 1;
+    const metadata = await image.metadata();
+    pages = metadata.pages ?? 1;
   } finally {
     await destroyRasterInput(image);
   }
