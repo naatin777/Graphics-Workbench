@@ -73,6 +73,11 @@ const LEGACY_TO_PDF_COMMANDS = [
 
 interface PackageJson {
   activationEvents?: string[];
+  devEngines: {
+    packageManager: { name: string; version: string; onFail: string };
+    runtime: { name: string; version: string; onFail: string };
+  };
+  engines: { node?: string; vscode: string };
   contributes: {
     commands: { command: string; title: string }[];
     configuration: {
@@ -93,6 +98,20 @@ interface PackageJson {
     submenus: { id: string; label: string }[];
   };
 }
+
+suite('package.jsonのruntime制約', () => {
+  test('Extension Hostとrepository開発環境のNode.js制約を分離する', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+
+    assert.strictEqual(packageJson.engines.node, undefined);
+    assert.strictEqual(packageJson.engines.vscode, '^1.105.0');
+    assert.deepStrictEqual(packageJson.devEngines.runtime, {
+      name: 'node',
+      version: '>=22.22.2',
+      onFail: 'error',
+    });
+  });
+});
 
 suite('package.jsonの変換メニュー定義', () => {
   test('公開command・menu・extension登録のID一覧が整合する', async () => {

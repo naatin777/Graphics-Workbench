@@ -32,13 +32,16 @@ VS Code integration testは固定versionを使う。互換性確認用のlatest 
 
 pnpmからnpmへの移行(PR #367)で失われたinstall時のsecurity policyを、npmの公式機能で復元する。package managerはnpmのまま変更しない。
 
-採用npm versionは`npm@12.0.1`。CIは各workflowで`actions/setup-node`の`node-version: 22.23.1`(npm@12.0.1が要求するNode下限)のあと、`npm install -g npm@12.0.1`を実行してから`npm ci`する。Node 22同梱のnpmは10系でinstall-script policyやmin-release-ageを持たないため、明示的に上書きする。localでは`devEngines.packageManager`を`12.0.1`に固定し`onFail: error`とする。これによりnpm 10など12.0.1以外では`npm ci`が`EBADDEVENGINES`で即時失敗し、policyを迂回できない。`packageManager`フィールドだけではnpm versionは切り替わらない。localでもnpm 12.0.1を使うには、corepack/手動でnpm 12.0.1を有効にするか、CIと同じく`npm install -g npm@12.0.1`で上書きする必要がある。`setup-node`の`cache: npm`はpackage-lock.jsonからcacheをrestoreする際にdevEnginesを評価するため、`onFail: error`ではnpm 12へupgradeする前にnpm 10のまま`EBADDEVENGINES`で落ちる。このためCIからは`cache: npm`を外し、さらに`setup-node@v6`が`packageManager`フィールドから自動で有効にする`package-manager-cache`も`false`にしてnpm 12 install後に`npm ci`でpolicyを適用する。
+採用npm versionは`npm@12.0.1`。CIは各workflowで`actions/setup-node`の`node-version: 22.23.1`(npm@12.0.1が要求するNode下限)をsetupしたあと、`npm install -g npm@12.0.1`を実行してから`npm ci`する。Node 22同梱のnpmは10系でinstall-script policyやmin-release-ageを持たないため、明示的に上書きする。localでは`devEngines.packageManager`を`12.0.1`に固定し`onFail: error`とする。これによりnpm 10など12.0.1以外では`npm ci`が`EBADDEVENGINES`で即時失敗し、policyを迂回できない。`packageManager`フィールドだけではnpm versionは切り替わらない。localでもnpm 12.0.1を使うには、corepack/手動でnpm 12.0.1を有効にするか、CIと同じく`npm install -g npm@12.0.1`で上書きする必要がある。
+
+CIのnpm download cacheは各jobで`actions/cache@v4`を使って有効化する。`setup-node@v6`の`package-manager-cache`は`false`のままにする。`setup-node`の自動cacheは、npm 12へupgradeする前のnpm 10で`npm config get cache`を実行し、`devEngines`の`packageManager`制約により`EBADDEVENGINES`で停止するためである。各jobはnpm 12.0.1へのupgrade後に`npm config get cache`でcache directoryを取得し、OS、architecture、Node.js 22.23.1、npm 12.0.1、`package-lock.json`のhashを含むkeyでcacheをrestoreする。`node_modules`はcacheせず、OS別native dependencyのinstallを`npm ci`で継続する。
 
 責務の分離:
 
 - `devEngines.packageManager`(`onFail: error`): localでnpm versionを強制し、12.0.1以外のinstallを即時拒否する。
-- `devEngines.runtime` / `engines.node`(`>=22.22.2`): 実行・installに必要な最小Node versionを強制する(`engine-strict=true`と組み合わせ)。
-- CIの`setup-node` + `npm install -g npm@12.0.1`: CI環境でもnpm 12.0.1とNode 22.22.2以上を確実に用意する。CIの強制は`devEngines`ではなくこのpinで担保する。
+- `devEngines.runtime`(`>=22.22.2`): repositoryのlocal開発・installに必要な最小Node versionを強制する。これはnpm 12.0.1の実行条件を含む。
+- `engines.vscode`(`^1.105.0`): VSIXが対象とするVS Code versionを宣言する。Extension HostのNode versionはVS Codeが管理するため、extension manifestに`engines.node`は置かない。
+- CIの`setup-node` + `npm install -g npm@12.0.1`: CI環境でもnpm 12.0.1とNode 22.23.1を確実に用意する。CIの強制は`devEngines`ではなくこのpinで担保する。
 - `.npmrc`: install-script policy(`strict-allow-scripts`)、engine厳格化(`engine-strict`)、peer厳格化、release age(`min-release-age`)を定義する。
 
 `.npmrc`のpolicy:
