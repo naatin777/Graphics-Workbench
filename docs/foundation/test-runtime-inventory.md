@@ -32,16 +32,16 @@
 
 ## 2. Runner and script inventory
 
-| Entry                  | Actual execution                                      | Platform / trigger                              | Meaning gap                                      |
-| ---------------------- | ----------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------ |
-| `test`                 | `vscode-test`                                         | local / Test workflow 3 OS                      | fixed VS Code 1.128.0、build-free Host suite     |
-| `test:webview`         | three app Vitest configs                              | local / Test workflow 3 OS                      | JSDOM component interaction、build-free          |
-| `test:playwright:vsix` | Electron projectのみ                                  | local / Playwright workflow 3 OS / release 3 OS | required `LGH_VSIX_PATH`のinstalled VSIX journey |
-| `check:all`            | lint / format / TS / NLS                              | Check workflow                                  | runtime testではない                             |
-| Test workflow          | build + Host + JSDOM component test 3 OS              | PR / main push、docs-only skipなし              | pre-package runtime Evidenceを提供する           |
-| Playwright workflow    | build + runner VSIX package + installed Electron 3 OS | PR / main push                                  | packaged artifact Evidenceを提供する             |
-| Release workflow       | VSIX package / packaged Electron smoke 3 OS           | tag                                             | distribution Evidenceを提供する                  |
-| Vitest config          | `test:webview`                                        | formal root scriptあり                          | PDF.js real renderingやElectronの証明には不十分  |
+| Entry                  | Actual execution                                      | Platform / trigger                              | Meaning gap                                          |
+| ---------------------- | ----------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------- |
+| `test`                 | `vscode-test`                                         | local / Test workflow 3 OS                      | fixed VS Code 1.128.0、build-free Host suite         |
+| `test:webview`         | three app Vitest configs                              | local / Test workflow 3 OS                      | JSDOM component interaction、build-free              |
+| `test:playwright:vsix` | Electron projectのみ                                  | local / Playwright workflow 3 OS / release 3 OS | `latex-graphics-helper.vsix`のinstalled VSIX journey |
+| `check:all`            | lint / format / TS / NLS                              | Check workflow                                  | runtime testではない                                 |
+| Test workflow          | build + Host + JSDOM component test 3 OS              | PR / main push、docs-only skipなし              | pre-package runtime Evidenceを提供する               |
+| Playwright workflow    | build + runner VSIX package + installed Electron 3 OS | PR / main push                                  | packaged artifact Evidenceを提供する                 |
+| Release workflow       | VSIX package / packaged Electron smoke 3 OS           | tag                                             | distribution Evidenceを提供する                      |
+| Vitest config          | `test:webview`                                        | formal root scriptあり                          | PDF.js real renderingやElectronの証明には不十分      |
 
 ## 3. Tests whose contract is Node-level
 

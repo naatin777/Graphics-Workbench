@@ -56,7 +56,7 @@ GIF、TIFF、EPS、Rawは入力と出力の両方に対応する。通常のGIF/
 
 Mermaid（`.mmd`、`.mermaid`）は出力形式基準commandの入力として扱う。PDF、SVG、PNGなどの出力形式への対応と出力pathは、対応する形式の設定に従う。
 
-SVG変換とMermaid CLIで共有する`puppeteer.executablePath`設定を優先する。SVGのPuppeteer backendは`puppeteer.browser`でChromeまたはFirefoxを選択でき、Chromeの場合だけ変換経路ごとのbrowser channelを使う。旧`convertToPdf.svg.puppeteer.executablePath`、`convertToPdf.mermaid.puppeteer.executablePath`、`convertToSvg.mermaid.puppeteer.executablePath`は、共通設定が未指定の場合だけfallbackとして使用する。
+SVG変換とMermaid CLIで共有する`puppeteer.executablePath`設定を優先する。`puppeteer.browser`でChromeまたはFirefoxを選択し、実行ファイルを指定した場合はその実行ファイルを使う。旧`convertToPdf.svg.puppeteer.executablePath`、`convertToPdf.mermaid.puppeteer.executablePath`、`convertToSvg.mermaid.puppeteer.executablePath`は、共通設定が未指定の場合だけfallbackとして使用する。
 
 ## Native Draw.io PDF
 

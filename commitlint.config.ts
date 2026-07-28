@@ -49,19 +49,7 @@ const config: UserConfig = {
     'type-enum': [
       2,
       'always',
-      [
-        'feat',
-        'fix',
-        'docs',
-        'refactor',
-        'test',
-        'chore',
-        'ci',
-        'build',
-        'perf',
-        'style',
-        'revert',
-      ],
+      ['feat', 'fix', 'docs', 'refactor', 'test', 'chore', 'ci', 'build', 'perf', 'style', 'revert'],
     ],
     // スコープは任意（空欄可）。強制しない。
     'scope-enum': [0],
