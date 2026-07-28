@@ -87,13 +87,12 @@ SVG変換で`chrome`または`firefox`を選択できる。Firefoxを選択す�
 
 移行先:
 
-- SVG → PDF: `latex-graphics-helper.convertToPdf.svg.puppeteer.browserChannel`
-- Mermaid: `latex-graphics-helper.mermaid.puppeteer.browserChannel`
+- SVG / Mermaid: `latex-graphics-helper.puppeteer.browser`
 
 理由:
 
-- `execPath.puppeteer`と同じく、SVG変換とMermaid CLIの設定境界を分ける
-- Mermaidの出力形式間では同じchannel設定を共有する
+- SVG変換とMermaid CLIで同じブラウザ設定を共有する
+- Mermaidの出力形式間でも同じブラウザ設定を使う
 - 変換処理ごとの検証範囲を明確にする
 
 ## READMEに書く内容

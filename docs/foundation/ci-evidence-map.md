@@ -17,14 +17,14 @@
 
 ## 2. Local command semantics
 
-| Command                        | Includes                                       | Excludes                        | Interpretation                    |
-| ------------------------------ | ---------------------------------------------- | ------------------------------- | --------------------------------- |
-| `npm run check`                | lint、format、4種typecheck                     | runtime tests、package、NLS     | static verification               |
-| `npm run build`                | clean、compile、test compile、Webview build    | runtime tests、package          | shared prerequisite               |
-| `npm test`                     | fixed VS Code Extension Host test-cli          | Browser、Electron、package      | Host / operation integration      |
-| `npm run test:webview`         | crop、merge、split JSDOM component tests       | PDF.js real rendering、Electron | fast component interaction checks |
-| `npm run test:playwright:vsix` | Electron project with required `LGH_VSIX_PATH` | Browser、Host Mocha             | installed VSIX journey            |
-| `npm run package:vsix`         | runner-matched target package                  | installed execution             | artifact creation only            |
+| Command                        | Includes                                                        | Excludes                        | Interpretation                    |
+| ------------------------------ | --------------------------------------------------------------- | ------------------------------- | --------------------------------- |
+| `npm run check`                | lint、format、4種typecheck                                      | runtime tests、package、NLS     | static verification               |
+| `npm run build`                | clean、compile、test compile、Webview build                     | runtime tests、package          | shared prerequisite               |
+| `npm test`                     | fixed VS Code Extension Host test-cli                           | Browser、Electron、package      | Host / operation integration      |
+| `npm run test:webview`         | crop、merge、split JSDOM component tests                        | PDF.js real rendering、Electron | fast component interaction checks |
+| `npm run test:playwright:vsix` | Electron project with the packaged `latex-graphics-helper.vsix` | Browser、Host Mocha             | installed VSIX journey            |
+| `npm run package:vsix`         | runner-matched target package                                   | installed execution             | artifact creation only            |
 
 ## 3. PR Evidence currently available
 
@@ -53,7 +53,7 @@ Test workflowはLinux、macOS、WindowsでVS Code Extension Host suiteを実行�
 
 ### Packaged Electron on three OS
 
-Playwright workflowはLinux、macOS、Windowsでrunner-matched VSIXをpackageし、`LGH_VSIX_PATH`でそのVSIXだけをElectronへinstallして実行する。
+Playwright workflowはLinux、macOS、Windowsでrunner-matched VSIXをpackageし、`latex-graphics-helper.vsix`としてそのVSIXだけをElectronへinstallして実行する。
 
 - real VS Code window / Webview
 - VSIX由来のtheme、Host bridge、CSP、PDF.js canvas
