@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- なし
+- [0207: パッケージ済みPlaywrightテストの実行時間を短縮する](0207-speed-up-packaged-playwright-tests.md) — In progress
 
 ## Task boundaries
 

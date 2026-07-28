@@ -8,7 +8,7 @@ import { type ElectronApplication, type Page } from '@playwright/test';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 
 import { cropConfigureFixture } from '../../../helpers/crop_configure_fixture.js';
-import { writeVscodeUserSettings } from './vscode_electron_test.js';
+import { disposeElectronTest, writeVscodeUserSettings } from './vscode_electron_test.js';
 import { installPackagedVsix } from './packaged_vsix.js';
 
 const vscodeVersion = '1.128.0';
@@ -28,10 +28,45 @@ export interface ElectronTestEnv {
   sourceFixtureBytes: Uint8Array;
 }
 
+export interface PreparedElectronTest {
+  extensionPath: string;
+  extensionsDir: string;
+  installationRoot: string;
+  vscodeExecutablePath: string;
+}
+
 export interface ElectronTestOptions {
   colorTheme?: string;
   extraSettings?: Record<string, unknown>;
   copyFixtures?: boolean;
+  prepared?: PreparedElectronTest;
+}
+
+export async function prepareElectronTest(packagedVsixPath: string): Promise<PreparedElectronTest> {
+  const installationRoot = await mkdtemp(join(temporaryBase, 'lgh-electron-package-'));
+  const extensionsDir = join(installationRoot, 'extensions');
+  const userDataDir = join(installationRoot, 'user-data');
+
+  await Promise.all([mkdir(extensionsDir), mkdir(userDataDir)]);
+
+  const vscodeExecutablePath = await downloadAndUnzipVSCode({ version: vscodeVersion });
+  const installedExtension = await installPackagedVsix({
+    extensionsDir,
+    userDataDir,
+    version: vscodeVersion,
+    vsixPath: packagedVsixPath,
+  });
+
+  return {
+    extensionPath: installedExtension.extensionPath,
+    extensionsDir,
+    installationRoot,
+    vscodeExecutablePath,
+  };
+}
+
+export async function disposePreparedElectronTest(prepared: PreparedElectronTest): Promise<void> {
+  await disposeElectronTest(undefined, prepared.installationRoot);
 }
 
 export function resolvePackagedVsixPath(): string {
@@ -62,6 +97,7 @@ export async function setupElectronTest(
   const colorTheme = options.colorTheme ?? 'Default Dark Modern';
   const extraSettings = options.extraSettings ?? {};
   const copyFixtures = options.copyFixtures ?? true;
+  const prepared = options.prepared;
 
   const temporaryRoot = await mkdtemp(join(temporaryBase, 'lgh-electron-'));
   const workspacePath = join(temporaryRoot, 'workspace');
@@ -69,7 +105,7 @@ export async function setupElectronTest(
   const userSettingsDir = join(userDataDir, 'User');
   const userSettingsPath = join(userSettingsDir, 'settings.json');
   const sharedDataDir = join(temporaryRoot, 'shared-data');
-  const extensionsDir = join(temporaryRoot, 'extensions');
+  const extensionsDir = prepared?.extensionsDir ?? join(temporaryRoot, 'extensions');
 
   const projectRoot = process.cwd();
   const sourceFixture = join(
@@ -84,12 +120,11 @@ export async function setupElectronTest(
   const inputPath = join(workspacePath, cropConfigureFixture.fileName);
   const outputPath = join(workspacePath, 'q a-crop.pdf');
 
-  await Promise.all([
-    mkdir(workspacePath),
-    mkdir(userSettingsDir, { recursive: true }),
-    mkdir(sharedDataDir),
-    mkdir(extensionsDir),
-  ]);
+  const directories = [mkdir(workspacePath), mkdir(userSettingsDir, { recursive: true }), mkdir(sharedDataDir)];
+  if (!prepared) {
+    directories.push(mkdir(extensionsDir));
+  }
+  await Promise.all(directories);
 
   if (copyFixtures) {
     await Promise.all([
@@ -106,14 +141,18 @@ export async function setupElectronTest(
     ...extraSettings,
   });
 
-  const vscodeExecutablePath = await downloadAndUnzipVSCode({ version: vscodeVersion });
-
-  const installedExtension = await installPackagedVsix({
-    extensionsDir,
-    userDataDir,
-    version: vscodeVersion,
-    vsixPath: packagedVsixPath,
-  });
+  const vscodeExecutablePath =
+    prepared?.vscodeExecutablePath ?? (await downloadAndUnzipVSCode({ version: vscodeVersion }));
+  const extensionPath =
+    prepared?.extensionPath ??
+    (
+      await installPackagedVsix({
+        extensionsDir,
+        userDataDir,
+        version: vscodeVersion,
+        vsixPath: packagedVsixPath,
+      })
+    ).extensionPath;
 
   const electronApp = await electron.launch({
     executablePath: vscodeExecutablePath,
@@ -145,7 +184,7 @@ export async function setupElectronTest(
     userDataDir,
     sharedDataDir,
     extensionsDir,
-    extensionPath: installedExtension.extensionPath,
+    extensionPath,
     temporaryRoot,
     inputPath,
     outputPath,
