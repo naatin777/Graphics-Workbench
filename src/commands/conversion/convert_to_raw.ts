@@ -32,9 +32,10 @@ export async function convertToRawCommand(
     const sourceExt = path.extname(sourceUris[0]?.fsPath ?? '');
     const outputTemplate = readConvertToRawOutputPath(configuration, sourceExt, DEFAULT_OUTPUT_PATH);
     const maxInputPixels = getMaxInputPixels(configuration);
-    const jobs = (
-      await Promise.all(sourceUris.map((sourceUri) => planRawConversionJobs(sourceUri, outputTemplate, maxInputPixels)))
-    ).flat();
+    const plannedJobs = await Promise.all(
+      sourceUris.map((sourceUri) => planRawConversionJobs(sourceUri, outputTemplate, maxInputPixels)),
+    );
+    const jobs = plannedJobs.flat();
     await runConversionLifecycle({
       operationName: 'convert-to-raw',
       ...(outputChannel !== undefined && { outputChannel }),

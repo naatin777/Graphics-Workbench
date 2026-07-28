@@ -42,7 +42,9 @@ export function App() {
     window.addEventListener('message', handleMessage);
     vscode.sendMessage({ type: 'ready' });
 
-    onCleanup(() => window.removeEventListener('message', handleMessage));
+    onCleanup(() => {
+      window.removeEventListener('message', handleMessage);
+    });
   });
 
   const moveSource = (sourceId: string, offset: number) => {
@@ -186,7 +188,9 @@ export function App() {
                   onDrop={handleDrop}
                   onDragEnd={clearDragState}
                   onRemove={removeSource}
-                  onPreviewError={() => setPreviewErrors((current) => new Set(current).add(source.sourceId))}
+                  onPreviewError={() => {
+                    setPreviewErrors((current) => new Set(current).add(source.sourceId));
+                  }}
                 />
               )}
             </For>

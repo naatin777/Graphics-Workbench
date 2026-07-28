@@ -248,7 +248,9 @@ export function App() {
 
       <div class='workspace'>
         <section
-          ref={(element) => (pdfPreview = element)}
+          ref={(element) => {
+            pdfPreview = element;
+          }}
           aria-label={labels().previewAriaLabel}
           class='pdf-preview'
           onWheel={zoomWithWheel}
@@ -282,7 +284,9 @@ export function App() {
             </div>
           </div>
           <div
-            ref={(element) => (pdfPages = element)}
+            ref={(element) => {
+              pdfPages = element;
+            }}
             class='pdf-preview__pages'
           />
           {renderError() ? (
@@ -311,7 +315,9 @@ export function App() {
                   inputmode='decimal'
                   type='number'
                   value={cropBox().left}
-                  onInput={(event) => setCropBox({ ...cropBox(), left: event.currentTarget.value })}
+                  onInput={(event) => {
+                    setCropBox({ ...cropBox(), left: event.currentTarget.value });
+                  }}
                 />
               </label>
 
@@ -322,7 +328,9 @@ export function App() {
                   inputmode='decimal'
                   type='number'
                   value={cropBox().bottom}
-                  onInput={(event) => setCropBox({ ...cropBox(), bottom: event.currentTarget.value })}
+                  onInput={(event) => {
+                    setCropBox({ ...cropBox(), bottom: event.currentTarget.value });
+                  }}
                 />
               </label>
 
@@ -333,7 +341,9 @@ export function App() {
                   inputmode='decimal'
                   type='number'
                   value={cropBox().right}
-                  onInput={(event) => setCropBox({ ...cropBox(), right: event.currentTarget.value })}
+                  onInput={(event) => {
+                    setCropBox({ ...cropBox(), right: event.currentTarget.value });
+                  }}
                 />
               </label>
 
@@ -344,7 +354,9 @@ export function App() {
                   inputmode='decimal'
                   type='number'
                   value={cropBox().top}
-                  onInput={(event) => setCropBox({ ...cropBox(), top: event.currentTarget.value })}
+                  onInput={(event) => {
+                    setCropBox({ ...cropBox(), top: event.currentTarget.value });
+                  }}
                 />
               </label>
             </div>
@@ -362,7 +374,9 @@ export function App() {
                 checked={targetType() === 'all'}
                 name='target'
                 type='radio'
-                onChange={() => setTargetType('all')}
+                onChange={() => {
+                  setTargetType('all');
+                }}
               />
               {labels().allPages}
             </label>
@@ -372,7 +386,9 @@ export function App() {
                 checked={targetType() === 'selected'}
                 name='target'
                 type='radio'
-                onChange={() => setTargetType('selected')}
+                onChange={() => {
+                  setTargetType('selected');
+                }}
               />
               {labels().selectedPages}
             </label>
@@ -385,7 +401,9 @@ export function App() {
                 placeholder={labels().pagesPlaceholder}
                 type='text'
                 value={selectedPages()}
-                onInput={(event) => setSelectedPages(event.currentTarget.value)}
+                onInput={(event) => {
+                  setSelectedPages(event.currentTarget.value);
+                }}
               />
             </label>
           </fieldset>

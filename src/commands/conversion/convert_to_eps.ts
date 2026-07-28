@@ -44,7 +44,8 @@ export async function convertToEpsCommand(
       throw new Error('No files were selected.');
     }
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
-    const jobs = (await Promise.all(sourceUris.map((sourceUri) => createEpsJobs(sourceUri, configuration)))).flat();
+    const plannedJobs = await Promise.all(sourceUris.map((sourceUri) => createEpsJobs(sourceUri, configuration)));
+    const jobs = plannedJobs.flat();
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     await runConversionLifecycle({
       operationName: 'convert-to-eps',
@@ -83,7 +84,8 @@ export async function createEpsJobs(
   const sourcePath = sourceUri.fsPath;
   if (path.extname(sourcePath).toLowerCase() === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    const pageCount = (await PDFDocument.load(await readFile(sourcePath))).getPageCount();
+    const document = await PDFDocument.load(await readFile(sourcePath));
+    const pageCount = document.getPageCount();
     if (pageCount === 0) {
       throw new Error(`PDF has no pages: ${sourcePath}`);
     }

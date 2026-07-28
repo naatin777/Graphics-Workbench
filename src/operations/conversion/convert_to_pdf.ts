@@ -44,6 +44,7 @@ import type { DrawioBackend, MermaidBackend, SvgToPdfEngine, SvgToPdfBackend } f
 
 const DEFAULT_SUPPORTED_IMAGE_EXTENSIONS = ['.png'] as const;
 const SVG_EXTENSION = '.svg';
+// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
 
 export type { SvgToPdfEngine };

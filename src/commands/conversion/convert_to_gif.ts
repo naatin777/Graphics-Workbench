@@ -55,13 +55,12 @@ export async function convertToGifCommand(
     }
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
-    const jobs = (
-      await Promise.all(
-        sourceUris.map((sourceUri) =>
-          planGifConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
-        ),
-      )
-    ).flat();
+    const plannedJobs = await Promise.all(
+      sourceUris.map((sourceUri) =>
+        planGifConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
+      ),
+    );
+    const jobs = plannedJobs.flat();
     await runConversionLifecycle({
       operationName: 'convert-to-gif',
       ...(outputChannel !== undefined && { outputChannel }),
@@ -168,7 +167,8 @@ async function createPdfJobs(
   workspace: vscode.WorkspaceFolder,
   configuration: vscode.WorkspaceConfiguration,
 ): Promise<ConvertToGifJob[]> {
-  const pageCount = (await PDFDocument.load(await readFile(sourcePath))).getPageCount();
+  const document = await PDFDocument.load(await readFile(sourcePath));
+  const pageCount = document.getPageCount();
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }

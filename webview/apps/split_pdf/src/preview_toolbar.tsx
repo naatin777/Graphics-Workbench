@@ -26,7 +26,9 @@ export function PreviewToolbar(props: {
             class='segmented__button'
             class:segmented__button--active={props.previewMode === 'focused'}
             type='button'
-            onClick={() => props.onPreviewModeChange('focused')}
+            onClick={() => {
+              props.onPreviewModeChange('focused');
+            }}
           >
             {props.labels.focusedPages}
           </button>
@@ -35,7 +37,9 @@ export function PreviewToolbar(props: {
             class='segmented__button'
             class:segmented__button--active={props.previewMode === 'all'}
             type='button'
-            onClick={() => props.onPreviewModeChange('all')}
+            onClick={() => {
+              props.onPreviewModeChange('all');
+            }}
           >
             {props.labels.allPages}
           </button>
@@ -49,7 +53,9 @@ export function PreviewToolbar(props: {
             step='5'
             type='range'
             value={props.zoomPercent}
-            onInput={(event) => props.onZoomChange(Number(event.currentTarget.value))}
+            onInput={(event) => {
+              props.onZoomChange(Number(event.currentTarget.value));
+            }}
           />
           <span class='zoom__number'>
             <input
@@ -59,7 +65,9 @@ export function PreviewToolbar(props: {
               step='5'
               type='number'
               value={props.zoomPercent}
-              onInput={(event) => props.onZoomChange(Number(event.currentTarget.value))}
+              onInput={(event) => {
+                props.onZoomChange(Number(event.currentTarget.value));
+              }}
             />
             <span aria-hidden='true'>%</span>
           </span>
