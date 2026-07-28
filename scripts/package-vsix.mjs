@@ -25,14 +25,17 @@ function getCurrentTarget() {
     x64: 'x64',
   }[process.arch];
 
-  if (!platform || !architecture) {
+  if (platform === undefined || platform === '' || architecture === undefined || architecture === '') {
     throw new Error(`Unsupported packaging platform: ${process.platform}/${process.arch}`);
   }
   return `${platform}-${architecture}`;
 }
 
+/**
+ * @param {readonly string[]} args
+ */
 function parsePackageArguments(args) {
-  const normalizedArgs = args[0] === '--' ? args.slice(1) : args;
+  const normalizedArgs = args[0] === '--' ? [...args].slice(1) : [...args];
   const { values } = parseArgs({
     args: normalizedArgs,
     options: {

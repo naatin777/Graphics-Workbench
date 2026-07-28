@@ -196,6 +196,7 @@ export default defineConfig({
         allow: ['**/*.css', '**/install_map_get_or_insert_computed', 'pdfjs-dist/build/pdf.worker.mjs'],
       },
     ],
+    'unicorn/prefer-string-replace-all': 'error',
     'unicorn/no-array-sort': 'error',
 
     /*
@@ -276,7 +277,18 @@ export default defineConfig({
         '.github/scripts/**/*.mjs',
       ],
       rules: {
+        'typescript/no-unsafe-assignment': 'error',
+        'typescript/no-unnecessary-condition': 'error',
         'typescript/no-unsafe-return': 'error',
+        'typescript/strict-boolean-expressions': 'error',
+      },
+    },
+    {
+      files: ['scripts/oxlint-project-plugin.mjs'],
+      rules: {
+        // The custom plugin consumes Oxlint's untyped ESTree visitor API.
+        'typescript/no-unsafe-assignment': 'off',
+        'typescript/strict-boolean-expressions': 'off',
       },
     },
     {
@@ -313,7 +325,10 @@ export default defineConfig({
       rules: {
         'no-console': 'off',
         'typescript/no-explicit-any': 'off',
+        'typescript/no-unsafe-assignment': 'off',
+        'typescript/no-unnecessary-condition': 'off',
         'typescript/no-unsafe-return': 'off',
+        'typescript/strict-boolean-expressions': 'off',
         'unicorn/consistent-function-scoping': 'off',
       },
     },

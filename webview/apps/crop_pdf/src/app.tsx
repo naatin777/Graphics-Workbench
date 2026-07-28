@@ -77,13 +77,13 @@ export function App() {
       void renderController?.dispose();
       renderController = undefined;
 
-      const initialPage = event.data.payload.initialPage ?? 1;
-      const totalPages = event.data.payload.pageCount ?? 1;
+      const initialPage = event.data.payload.initialPage;
+      const totalPages = event.data.payload.pageCount;
       const pageWidth = event.data.payload.width ?? 0;
       const pageHeight = event.data.payload.height ?? 0;
 
-      setFileName(event.data.payload.fileName ?? '');
-      setLabels(event.data.payload.labels ?? defaultLabels);
+      setFileName(event.data.payload.fileName);
+      setLabels(event.data.payload.labels);
       setPageCount(totalPages);
       setPageSize({
         width: pageWidth,
@@ -101,12 +101,18 @@ export function App() {
       setRenderError('');
       renderPromise = renderPdfPages(event.data.payload.pdfSrc, pdfPages, {
         ...(pdfPreview !== undefined && { root: pdfPreview }),
-        ...(event.data.payload.workerSrc ? { workerSrc: event.data.payload.workerSrc } : {}),
-        ...(event.data.payload.cMapUrl ? { cMapUrl: event.data.payload.cMapUrl } : {}),
-        ...(event.data.payload.standardFontDataUrl
+        ...(event.data.payload.workerSrc !== undefined && event.data.payload.workerSrc !== ''
+          ? { workerSrc: event.data.payload.workerSrc }
+          : {}),
+        ...(event.data.payload.cMapUrl !== undefined && event.data.payload.cMapUrl !== ''
+          ? { cMapUrl: event.data.payload.cMapUrl }
+          : {}),
+        ...(event.data.payload.standardFontDataUrl !== undefined && event.data.payload.standardFontDataUrl !== ''
           ? { standardFontDataUrl: event.data.payload.standardFontDataUrl }
           : {}),
-        ...(event.data.payload.wasmUrl ? { wasmUrl: event.data.payload.wasmUrl } : {}),
+        ...(event.data.payload.wasmUrl !== undefined && event.data.payload.wasmUrl !== ''
+          ? { wasmUrl: event.data.payload.wasmUrl }
+          : {}),
         pageLabel: labels().pageLabel,
         onRenderError: (error: unknown) => {
           const message = error instanceof Error ? error.message : String(error);

@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 8
+Status: In progress — Phase 12
 
 ## Objective
 
@@ -59,6 +59,26 @@ VS Codeの`Webview.postMessage`はブラウザの`window.postMessage`と異な�
 
 `typescript/prefer-nullish-coalescing`をerrorへ強化する。既存の7件はlocale、ページ範囲、LaTeXテンプレート、Webviewのdrag and drop、coverage report、テスト設定のfallbackを、空文字の意味を維持した明示的な条件または`??`へ置き換える。
 
+## Phase 9
+
+`typescript/no-unsafe-assignment`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。動的JSONとプロパティ境界は`unknown`と実行時検証へ寄せ、coverage reportとNLS checkerの`toSorted()`は理由付きの共通ヘルパーへ集約する。
+
+独自Oxlintプラグインは、未型付けのESTree visitor APIからASTを受け取るため、このルールをファイル単位で対象外にする。テストコードも既存のtest overrideで対象外にする。
+
+## Phase 10
+
+`typescript/no-unnecessary-condition`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。必須フィールドのfallbackを削除し、非同期で変化するcancel/dispose状態は型チェッカーが追跡できる状態オブジェクトまたは理由付きの局所抑制で表現する。
+
+Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今回のLint強化のために`zod`は導入しない。既存の例外ベースの処理を`neverthrow`へ置き換える必要もない。入力境界が増えた場合に、別taskとして再評価する。
+
+## Phase 11
+
+`unicorn/prefer-string-replace-all`をerrorへ強化する。グローバル正規表現を使う置換を`replaceAll()`へ統一し、複数回の置換が必要なXMLエスケープやLaTeX文字列処理の意図を明確にする。
+
+## Phase 12
+
+`typescript/strict-boolean-expressions`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。nullableな文字列・数値・booleanのtruthiness判定を、空文字・ゼロ・nullishの意味を保った明示条件へ置き換える。テストコードと、未型付けのESTree visitor APIを扱う独自Oxlintプラグインは対象外とする。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -69,12 +89,16 @@ VS Codeの`Webview.postMessage`はブラウザの`window.postMessage`と異な�
 - `typescript/no-unsafe-type-assertion` の既存違反は59件で、JSON/XML解析結果、出力拡張子、VS Code APIのテストダブル、動的importに分散していた
 - `typescript/no-unsafe-return` の既存違反は22件で、productionコード・自動化スクリプトに9件、Vitest/Solidとテストhelperに13件あった。Phase 7では前者だけをerror化し、後者はtest overrideで保留する
 - `typescript/prefer-nullish-coalescing` の既存違反は7件で、値が未設定の場合のfallbackと、空文字を意味のある値として扱う処理が混在していた
+- `typescript/no-unsafe-assignment` の既存違反は62件で、production・自動化コードに24件、独自Oxlintプラグインに7件、テストコードに31件あった。Phase 9ではproduction・自動化コードの24件だけを解消し、残りは境界の制約を理由付きで保留する
+- `typescript/no-unnecessary-condition` の既存違反は35件で、production・自動化コードに18件、テストコードに17件あった。Phase 10では18件を解消し、非同期dispose判定の1件だけ理由付き抑制を残す
+- `unicorn/prefer-string-replace-all` の既存違反は16件で、出力名の安全化、LaTeX/XML/HTMLエスケープ、テンプレート展開、テストhelperに分散していた
+- `typescript/strict-boolean-expressions` の既存違反は72件で、productionコード、Webview本体、Node.js/GitHub Actionsスクリプトに分散していた。Phase 12では、nullableな文字列・数値・booleanを暗黙にtruthiness判定していた箇所を明示条件へ置き換え、テストコードと独自Oxlintプラグインは対象外にする
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
 ## Completion criteria
 
-- Phase 1からPhase 8までの制限をCIの通常lintで強制できる
+- Phase 1からPhase 12までの制限をCIの通常lintで強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 export function safeName(value: string): string {
-  return value.replace(/[^a-zA-Z0-9._-]/g, '_') || 'pdf';
+  return value.replaceAll(/[^a-zA-Z0-9._-]/g, '_') || 'pdf';
 }
 
 interface PdfJob {

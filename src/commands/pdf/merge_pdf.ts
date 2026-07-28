@@ -200,9 +200,9 @@ async function applyConfiguredMerge(params: {
 }): Promise<void> {
   const { sourceById, sourceIds, workspace, panel, outputChannel } = params;
   const abortController = new AbortController();
-  let panelDisposed = false;
+  const panelState = { disposed: false };
   const panelDisposeSubscription = panel.onDidDispose(() => {
-    panelDisposed = true;
+    panelState.disposed = true;
     abortController.abort();
   });
 
@@ -214,7 +214,7 @@ async function applyConfiguredMerge(params: {
       saveLabel: 'Merge',
     });
 
-    if (!outputUri || panelDisposed) {
+    if (!outputUri || panelState.disposed) {
       return;
     }
 

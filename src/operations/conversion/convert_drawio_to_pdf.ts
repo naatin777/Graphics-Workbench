@@ -296,16 +296,16 @@ function validateJobs(jobs: DrawioPdfJob[], outputMode: 'page-pdfs' | 'single-pd
 }
 
 function safeName(value: string): string {
-  return value.replace(/[^a-zA-Z0-9._-]/g, '_') || 'drawio';
+  return value.replaceAll(/[^a-zA-Z0-9._-]/g, '_') || 'drawio';
 }
 
 function safePageName(value: string | undefined, page: number): string {
   const normalized = Array.from(value ?? String(page))
     .map((character) => (character.charCodeAt(0) <= 31 ? '_' : character))
     .join('')
-    .replace(/[\\/<>:"|?*]/g, '_')
+    .replaceAll(/[\\/<>:"|?*]/g, '_')
     .trim()
-    .replace(/[. ]+$/g, '');
+    .replaceAll(/[. ]+$/g, '');
 
   const pageName = normalized || String(page);
   return isWindowsReservedPathComponent(pageName) ? `_${pageName}` : pageName;

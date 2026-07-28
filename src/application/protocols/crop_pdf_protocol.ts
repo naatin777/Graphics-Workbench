@@ -76,6 +76,10 @@ export type CropConfigureWebviewToHost =
       payload: { message: string };
     };
 
+function readProperty(object: object, key: string): unknown {
+  return Reflect.get(object, key) as unknown;
+}
+
 export function isCropConfigureMessage(value: unknown): value is CropConfigureWebviewToHost {
   if (typeof value !== 'object' || value === null || !('type' in value)) {
     return false;
@@ -117,7 +121,7 @@ function isCropBox(value: unknown): value is CropBox {
   }
 
   return ['left', 'bottom', 'right', 'top'].every((key) => {
-    const coordinate = Reflect.get(value, key);
+    const coordinate = readProperty(value, key);
     return typeof coordinate === 'number' && Number.isFinite(coordinate);
   });
 }

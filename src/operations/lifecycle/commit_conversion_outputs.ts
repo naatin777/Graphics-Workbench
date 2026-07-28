@@ -171,12 +171,13 @@ async function resolveOutputPaths(
 
     const snapshot = snapshots.get(normalizePath(output.outputPath));
     const existedBeforeCommit = decision === 'overwrite' && snapshot !== undefined;
+    const contentHashBeforeConflict = decision === 'overwrite' ? snapshot?.contentHash : undefined;
 
     resolved.push({
       ...output,
       outputPath,
       existedBeforeCommit,
-      ...(existedBeforeCommit && snapshot !== undefined ? { contentHashBeforeConflict: snapshot.contentHash } : {}),
+      ...(contentHashBeforeConflict !== undefined ? { contentHashBeforeConflict } : {}),
     });
   }
 
@@ -275,7 +276,7 @@ async function commitResolvedOutputs(
       await mkdir(path.dirname(output.outputPath), { recursive: true });
       options.signal?.throwIfAborted();
 
-      if (output.previousFilePath) {
+      if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
         await assertExistingPathInWorkspace(output.previousFilePath, output.workspacePath);
 
         if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
@@ -308,7 +309,9 @@ async function commitResolvedOutputs(
       }
       const recoveryBackupPaths = rollbackErrors.flatMap((failure) => {
         const output = outputs.find((item) => item.outputPath === failure.outputPath);
-        return output?.previousFilePath ? [output.previousFilePath] : [];
+        return output?.previousFilePath !== undefined && output.previousFilePath !== ''
+          ? [output.previousFilePath]
+          : [];
       });
       throw new CommitRollbackError(error, rollbackErrors, recoveryBackupPaths);
     }
@@ -335,7 +338,7 @@ async function commitResolvedOutputs(
 
 function toArtifactRoots(outputs: PreparedConversionOutput[]): ConversionArtifactRoot[] {
   return outputs.flatMap((output) =>
-    output.stagingRootPath
+    output.stagingRootPath !== undefined && output.stagingRootPath !== ''
       ? [
           {
             rootPath: output.stagingRootPath,
@@ -364,10 +367,13 @@ async function rollbackCommittedOutputs(
     try {
       await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
 
-      if (output.previousFilePath) {
+      if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
         await assertExistingPathInWorkspace(output.previousFilePath, output.workspacePath);
 
-        if (output.copyCompleted && !(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))) {
+        if (
+          output.copyCompleted === true &&
+          !(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))
+        ) {
           throw new Error('Output changed after commit; the recovery backup was preserved.');
         }
 
@@ -379,7 +385,10 @@ async function rollbackCommittedOutputs(
           throw new Error('Output was replaced by another process; it was not removed.');
         }
 
-        if (output.copyCompleted && !(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))) {
+        if (
+          output.copyCompleted === true &&
+          !(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))
+        ) {
           throw new Error('New output changed after commit; it was not removed.');
         }
 
@@ -445,7 +454,7 @@ async function validatePreparedOutputs(outputs: PreparedConversionOutput[]): Pro
 async function findExistingOutputs(outputs: PreparedConversionOutput[]): Promise<ExistingOutputSnapshot[]> {
   const existence = await Promise.all(outputs.map((output) => pathExists(output.outputPath)));
   return Promise.all(
-    outputs.flatMap((output, index) => (existence[index] ? [createExistingOutputSnapshot(output)] : [])),
+    outputs.flatMap((output, index) => (existence[index] === true ? [createExistingOutputSnapshot(output)] : [])),
   );
 }
 

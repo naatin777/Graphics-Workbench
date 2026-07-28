@@ -278,7 +278,7 @@ export function App() {
 
     const focusedRow = rows().find((row) => row.id === focusedRowId());
     const parsedPages = focusedRow ? parsePages(focusedRow.pages, pageCount()) : undefined;
-    const focusedPages = new Set(parsedPages?.ok ? parsedPages.pages : []);
+    const focusedPages = new Set(parsedPages?.ok === true ? parsedPages.pages : []);
 
     for (const frame of pdfPages.querySelectorAll<HTMLElement>('[data-pdf-page]')) {
       const pageNumber = Number(frame.dataset.pdfPage);
@@ -325,10 +325,12 @@ export function App() {
 
     try {
       const controller = await renderPdfPages(payload.pdfSrc, pdfPages, {
-        ...(payload.workerSrc ? { workerSrc: payload.workerSrc } : {}),
-        ...(payload.cMapUrl ? { cMapUrl: payload.cMapUrl } : {}),
-        ...(payload.standardFontDataUrl ? { standardFontDataUrl: payload.standardFontDataUrl } : {}),
-        ...(payload.wasmUrl ? { wasmUrl: payload.wasmUrl } : {}),
+        ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
+        ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
+        ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''
+          ? { standardFontDataUrl: payload.standardFontDataUrl }
+          : {}),
+        ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
         ...(pdfPreview !== undefined ? { root: pdfPreview } : {}),
         pageLabel: labels().pageLabel,
         onRenderError: (error: unknown) => {
@@ -369,10 +371,6 @@ export function App() {
     const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>) => {
       if (event.data.type === 'error') {
         setApplyError(event.data.payload.message);
-        return;
-      }
-
-      if (event.data.type !== 'init') {
         return;
       }
 
