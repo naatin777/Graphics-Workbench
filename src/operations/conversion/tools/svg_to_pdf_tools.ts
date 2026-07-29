@@ -1,7 +1,7 @@
 import type { ChromeReleaseChannel, SupportedBrowser } from 'puppeteer-core';
 import type { RunRsvgConvert } from '../../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 
-export type SvgToPdfEngine = 'puppeteer' | 'rsvg-convert';
+type SvgToPdfEngine = 'puppeteer' | 'rsvg-convert';
 
 export interface SvgToPdfBackend {
   engine: SvgToPdfEngine;

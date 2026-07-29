@@ -4,6 +4,8 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
+import type { Configuration } from '../../generated-extension-meta.js';
+
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
@@ -16,8 +18,8 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
-import { readOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { executeTiffConversion, type ConvertToTiffJob } from '../../operations/conversion/convert_to_tiff.js';
@@ -27,13 +29,18 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import {
+  assertFileScheme,
+  getCommandConfiguration,
+  isAbortError,
+  readDrawioOptions,
+  selectedUris,
+} from '../shared/command_utils.js';
 
 export const CONVERT_TO_TIFF_COMMAND = 'graphics-workbench.convertToTiff';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.tiff';
-const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.tiff';
-const DEFAULT_DRAWIO_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.tiff';
+const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.tiff';
+const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.tiff';
 
 export async function convertToTiffCommand(
   uri?: vscode.Uri,
@@ -46,7 +53,7 @@ export async function convertToTiffCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)),
@@ -83,7 +90,7 @@ export async function convertToTiffCommand(
 
 async function planTiffConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
   maxInputPixels: number,
 ): Promise<ConvertToTiffJob[]> {
   assertFileScheme(sourceUri);
@@ -135,14 +142,14 @@ async function planTiffConversionJobs(
 async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
 ): Promise<ConvertToTiffJob[]> {
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }
-  const outputTemplate = readOutputPathsTemplate(configuration, 'convertPdfToTiff', DEFAULT_PDF_OUTPUT_PATH);
+  const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToTiff', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
   return Array.from({ length: pageCount }, (_value, index) => {
     const page = index + 1;
@@ -164,36 +171,40 @@ async function createPdfJobs(
   });
 }
 
-function outputTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
+function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return readOutputPathsTemplate(configuration, 'convertDrawioToTiff', DEFAULT_DRAWIO_OUTPUT_PATH);
+    return resolveOutputPathsTemplate(configuration, 'convertDrawioToTiff', defaultDrawioOutputPath);
   }
   switch (path.extname(sourcePath).toLowerCase()) {
     case '.png': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertPngToTiff', DEFAULT_OUTPUT_PATH);
+      return configuration.outputPath.convertPngToTiff();
     }
     case '.jpg':
     case '.jpeg': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertJpegToTiff', DEFAULT_OUTPUT_PATH);
+      return configuration.outputPath.convertJpegToTiff();
     }
     case '.webp': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertWebpToTiff', DEFAULT_OUTPUT_PATH);
+      return configuration.outputPath.convertWebpToTiff();
     }
     case '.avif': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertAvifToTiff', DEFAULT_OUTPUT_PATH);
+      return configuration.outputPath.convertAvifToTiff();
     }
     case '.gif': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertGifToTiff', DEFAULT_OUTPUT_PATH);
+      return resolveOutputPathOrPathsTemplate(
+        configuration,
+        'convertGifToTiff',
+        configuration.outputPath.convertGifToTiff,
+      );
     }
     case '.svg': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertSvgToTiff', DEFAULT_OUTPUT_PATH);
+      return configuration.outputPath.convertSvgToTiff();
     }
     case '.mmd':
     case '.mermaid': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertMermaidToTiff', DEFAULT_OUTPUT_PATH);
+      return configuration.outputPath.convertMermaidToTiff();
     }
     default: {
-      return DEFAULT_OUTPUT_PATH;
+      throw new Error(`Unsupported TIFF input format: ${sourcePath}`);
     }
   }
 }

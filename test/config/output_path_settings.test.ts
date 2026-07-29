@@ -1,46 +1,40 @@
 import assert from 'node:assert/strict';
 
-import { readOutputPathTemplate, readOutputPathsTemplate } from '../../src/config/output/output_path_settings.js';
-
-function configuration(values: Record<string, unknown>) {
-  return {
-    get(key: string, defaultValue: unknown): unknown {
-      return values[key] ?? defaultValue;
-    },
-  };
-}
+import { resolveOutputPathsTemplate } from '../../src/config/output/output_path_settings.js';
+import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('outputPath設定', () => {
   test('outputPathの設定を読み取る', () => {
-    const config = configuration({
+    const config = fakeConfiguration({
       'outputPath.convertPngToJpeg': 'flat/${file}.jpeg',
     });
 
-    assert.strictEqual(
-      readOutputPathTemplate(config, 'outputPath.convertPngToJpeg', 'default.jpeg'),
-      'flat/${file}.jpeg',
-    );
+    assert.strictEqual(config.outputPath.convertPngToJpeg(), 'flat/${file}.jpeg');
   });
 
-  test('空のoutputPath設定は既定値へfallbackする', () => {
-    const config = configuration({
+  test('空のoutputPath設定をフォールバックせず読み取る', () => {
+    const config = fakeConfiguration({
       'outputPath.convertPngToJpeg': '  ',
     });
 
-    assert.strictEqual(readOutputPathTemplate(config, 'outputPath.convertPngToJpeg', 'default.jpeg'), 'default.jpeg');
+    assert.strictEqual(config.outputPath.convertPngToJpeg(), '  ');
   });
 
   test('pageを含むoutputPathsの設定を読み取る', () => {
-    const config = configuration({ outputPaths: { convertPdfToPng: 'pdf/${page}.png' } });
+    const config = fakeConfiguration({ outputPaths: { convertPdfToPng: 'pdf/${page}.png' } });
 
-    assert.strictEqual(readOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'), 'pdf/${page}.png');
+    assert.strictEqual(resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'), 'pdf/${page}.png');
   });
 
-  test('outputPathsが配列や非文字列の場合は既定値を使う', () => {
-    const config = configuration({
-      outputPaths: ['invalid'],
-    });
+  test('outputPathsがスキーマに合わない場合は例外にする', () => {
+    const invalidValues = [['invalid'], null, { convertPdfToPng: 1 }];
 
-    assert.strictEqual(readOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'), 'default.png');
+    for (const outputPaths of invalidValues) {
+      const config = fakeConfiguration({ outputPaths });
+      assert.throws(
+        () => resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'),
+        /Invalid configuration value for graphics-workbench\.outputPaths: expected object, received/,
+      );
+    }
   });
 });

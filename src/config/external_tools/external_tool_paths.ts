@@ -1,33 +1,17 @@
-type ConfigurationReader = {
-  get(key: string, defaultValue: string): string;
-};
+import type { Configuration } from '../../generated-extension-meta.js';
 
-export function readDrawioExecutablePath(configuration: ConfigurationReader): string {
-  const configuredPath = configuration.get('execPath.drawio', '').trim();
-  return configuredPath || defaultDrawioPath();
+export function readDrawioExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.drawio();
 }
 
-export function defaultDrawioPath(platform: NodeJS.Platform = process.platform): string {
-  return platform === 'win32' ? 'drawio.exe' : 'drawio';
+export function readGhostscriptExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.ghostscript();
 }
 
-export function readGhostscriptExecutablePath(configuration: ConfigurationReader): string {
-  return readExecutablePath(configuration, 'execPath.ghostscript', defaultGhostscriptPath());
+export function readPdftocairoExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.pdftocairo();
 }
 
-export function defaultGhostscriptPath(platform: NodeJS.Platform = process.platform): string {
-  return platform === 'win32' ? 'gswin64c.exe' : 'gs';
-}
-
-export function readPdftocairoExecutablePath(configuration: ConfigurationReader): string {
-  return readExecutablePath(configuration, 'execPath.pdftocairo', 'pdftocairo');
-}
-
-export function readRsvgConvertExecutablePath(configuration: ConfigurationReader): string {
-  return readExecutablePath(configuration, 'execPath.rsvgConvert', 'rsvg-convert');
-}
-
-function readExecutablePath(configuration: ConfigurationReader, key: string, fallback: string): string {
-  const configuredPath = configuration.get(key, '').trim();
-  return configuredPath || fallback;
+export function readRsvgConvertExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.rsvgConvert();
 }

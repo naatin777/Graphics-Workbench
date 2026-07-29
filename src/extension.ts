@@ -53,7 +53,7 @@ import {
   MERGE_PDF_CONFIGURE_COMMAND,
   MERGE_PDF_SELECTED_FILES_COMMAND,
 } from './commands/pdf/merge_pdf.js';
-import { initializeSafeMode, TOGGLE_SAFE_MODE_COMMAND } from './commands/lifecycle/safe_mode.js';
+import { initializeSafeMode } from './commands/lifecycle/safe_mode.js';
 import {
   splitPdfAllPagesCommand,
   splitPdfConfigureCommand,
@@ -63,40 +63,12 @@ import {
 import { undoLastConversionCommand, UNDO_LAST_CONVERSION_COMMAND } from './commands/lifecycle/undo_last_conversion.js';
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
+import { getExtensionConfiguration } from './generated-extension-config.js';
+import { publicCommandIds } from './generated-extension-meta.js';
 
 const latexDocumentSelector: vscode.DocumentSelector = [{ language: 'latex' }, { language: 'tex' }];
 
-export const PUBLIC_COMMAND_IDS = [
-  COMPRESS_PDF_COMMAND,
-  CROP_PDF_AUTO_COMMAND,
-  CROP_PDF_CONFIGURE_COMMAND,
-  SPLIT_PDF_ALL_PAGES_COMMAND,
-  SPLIT_PDF_CONFIGURE_COMMAND,
-  MERGE_PDF_SELECTED_FILES_COMMAND,
-  MERGE_PDF_CONFIGURE_COMMAND,
-  UNDO_LAST_CONVERSION_COMMAND,
-  CONVERT_TO_PDF_COMMAND,
-  CONVERT_DRAWIO_TO_PDF_COMMAND,
-  CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND,
-  CONVERT_TO_PNG_COMMAND,
-  CONVERT_TO_JPEG_COMMAND,
-  CONVERT_TO_WEBP_COMMAND,
-  CONVERT_TO_WEBP_PRESERVE_COMMAND,
-  CONVERT_TO_WEBP_SEPARATELY_COMMAND,
-  CONVERT_TO_AVIF_COMMAND,
-  CONVERT_TO_SVG_COMMAND,
-  CONVERT_TO_GIF_COMMAND,
-  CONVERT_TO_GIF_PRESERVE_COMMAND,
-  CONVERT_TO_GIF_SEPARATELY_COMMAND,
-  CONVERT_TO_TIFF_COMMAND,
-  CONVERT_TO_EPS_COMMAND,
-  CONVERT_TO_RAW_COMMAND,
-  CONVERT_TO_DRAWIO_COMMAND,
-  CONVERT_TO_DRAWIO_PNG_COMMAND,
-  CONVERT_TO_DRAWIO_SVG_COMMAND,
-  COMBINE_IMAGES_TO_PDF_COMMAND,
-  TOGGLE_SAFE_MODE_COMMAND,
-] as const;
+export const PUBLIC_COMMAND_IDS = publicCommandIds;
 
 export const INTERNAL_COMMAND_IDS = [CONVERT_PNG_TO_PDF_COMMAND] as const;
 export const REGISTERED_COMMAND_IDS = [...PUBLIC_COMMAND_IDS, ...INTERNAL_COMMAND_IDS] as const;
@@ -198,7 +170,7 @@ function registerCommands(context: vscode.ExtensionContext, dependencies: Comman
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initializeSafeMode(context);
   const outputChannel = vscode.window.createOutputChannel('Graphics Workbench');
-  const dependencies = { outputChannel } satisfies CommandDependencies;
+  const dependencies = { getConfiguration: getExtensionConfiguration, outputChannel } satisfies CommandDependencies;
   context.subscriptions.push(outputChannel);
 
   registerCommands(context, dependencies);
@@ -208,7 +180,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.languages.registerDocumentPasteEditProvider(
       latexDocumentSelector,
-      new LatexPasteEditProvider({ outputChannel }),
+      new LatexPasteEditProvider({ getConfiguration: getExtensionConfiguration, outputChannel }),
       {
         providedPasteEditKinds: [vscode.DocumentDropOrPasteEditKind.Empty],
         pasteMimeTypes: ['image/png', 'image/jpeg'],

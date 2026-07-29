@@ -2,7 +2,7 @@ import { lstat, mkdtemp, realpath, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { errorMessage, isAbortError } from '../../commands/shared/command_utils.js';
+import { errorMessage, isAbortError } from '../../application/error_utils.js';
 
 export interface LineOutputChannel {
   appendLine: (message: string) => void;

@@ -23,9 +23,8 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError, selectedUris } from '../shared/command_utils.js';
+import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
 export const SPLIT_PDF_ALL_PAGES_COMMAND = 'graphics-workbench.splitPdf.allPages';
 export const SPLIT_PDF_CONFIGURE_COMMAND = 'graphics-workbench.splitPdf.configure';
 
@@ -42,8 +41,7 @@ export async function splitPdfAllPagesCommand(
       throw new Error('No PDF files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-    const outputTemplate = configuration.get<string>('outputPath.splitPdf', DEFAULT_OUTPUT_PATH);
+    const outputTemplate = getCommandConfiguration(dependencies).outputPath.splitPdf();
     const jobs = sourceUris.map((sourceUri) => planSplitPdfJob(sourceUri, outputTemplate));
     const outputs = await vscode.window.withProgress(
       {
@@ -131,7 +129,7 @@ export async function splitPdfConfigureCommand(
   const outputChannel = dependencies?.outputChannel;
 
   try {
-    await runSplitPdfConfigureCommand(context, uri, uris, outputChannel);
+    await runSplitPdfConfigureCommand(context, uri, uris, dependencies);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel?.appendLine(`[split-pdf-configure] failure: ${message}`);
@@ -148,8 +146,9 @@ async function runSplitPdfConfigureCommand(
   context: vscode.ExtensionContext,
   uri?: vscode.Uri,
   uris?: vscode.Uri[],
-  outputChannel?: LineOutputChannel,
+  dependencies?: CommandDependencies,
 ): Promise<void> {
+  const outputChannel = dependencies?.outputChannel;
   const inputUri = resolveSinglePdfUri(uri, uris);
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
@@ -165,8 +164,7 @@ async function runSplitPdfConfigureCommand(
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
   }
 
-  const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-  const outputTemplate = configuration.get<string>('outputPath.splitPdf', DEFAULT_OUTPUT_PATH);
+  const outputTemplate = getCommandConfiguration(dependencies).outputPath.splitPdf();
 
   if (!outputTemplate.includes('${page}')) {
     throw new Error('outputPath.splitPdf must contain ${page} for splitPdf.configure.');

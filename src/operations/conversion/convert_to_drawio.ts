@@ -9,7 +9,7 @@ import { Parser } from 'xml2js';
 import sharp from 'sharp';
 
 import { isMermaidPath } from '../../application/policy/source_format.js';
-import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
+import { getDefaultConfiguration } from '../../generated-extension-meta.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
@@ -166,7 +166,9 @@ async function stageDrawioInput(
       ],
       runtime.signal,
     );
-    return [await rasterPage(pngPath, input, options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS)];
+    return [
+      await rasterPage(pngPath, input, options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels()),
+    ];
   }
   if (extension === '.svg') {
     return [await svgPage(input.sourcePath, input)];
@@ -181,7 +183,13 @@ async function stageDrawioInput(
     return [await svgPage(svgPath, input)];
   }
 
-  return [await rasterPage(input.sourcePath, input, options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS)];
+  return [
+    await rasterPage(
+      input.sourcePath,
+      input,
+      options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
+    ),
+  ];
 }
 
 async function stagePdfDrawioInput(

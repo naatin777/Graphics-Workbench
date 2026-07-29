@@ -4,6 +4,8 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
+import type { Configuration, OutputPaths } from '../../generated-extension-meta.js';
+
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
@@ -16,7 +18,8 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { executeGifConversion, type ConvertToGifJob } from '../../operations/conversion/convert_to_gif.js';
@@ -26,16 +29,21 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import {
+  assertFileScheme,
+  getCommandConfiguration,
+  isAbortError,
+  readDrawioOptions,
+  selectedUris,
+} from '../shared/command_utils.js';
 
 export const CONVERT_TO_GIF_COMMAND = 'graphics-workbench.convertToGif';
 export const CONVERT_TO_GIF_PRESERVE_COMMAND = 'graphics-workbench.convertToGifPreserveAnimation';
 export const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'graphics-workbench.convertToGifSeparately';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.gif';
-const DEFAULT_SPLIT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.gif';
-const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.gif';
-const DEFAULT_DRAWIO_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.gif';
+const defaultSplitOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.gif';
+const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.gif';
+const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.gif';
 
 export interface ConvertToGifCommandOptions {
   outputMode?: 'auto' | 'preserve' | 'split';
@@ -53,7 +61,7 @@ export async function convertToGifCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) =>
@@ -92,7 +100,7 @@ export async function convertToGifCommand(
 
 async function planGifConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
   maxInputPixels: number,
   outputMode?: 'auto' | 'preserve' | 'split',
 ): Promise<ConvertToGifJob[]> {
@@ -165,14 +173,14 @@ async function planGifConversionJobs(
 async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
 ): Promise<ConvertToGifJob[]> {
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }
-  const outputTemplate = readOutputPathsTemplate(configuration, 'convertPdfToGif', DEFAULT_PDF_OUTPUT_PATH);
+  const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToGif', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
   return Array.from({ length: pageCount }, (_value, index) => {
     const page = index + 1;
@@ -196,12 +204,12 @@ async function createPdfJobs(
 
 function outputTemplateForSource(
   sourcePath: string,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
   outputMode?: 'auto' | 'preserve' | 'split',
 ): string {
-  const splitDefault = outputMode === 'split' ? DEFAULT_SPLIT_OUTPUT_PATH : undefined;
+  const splitDefault = outputMode === 'split' ? defaultSplitOutputPath : undefined;
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return readOutputPathsTemplate(configuration, 'convertDrawioToGif', DEFAULT_DRAWIO_OUTPUT_PATH);
+    return resolveOutputPathsTemplate(configuration, 'convertDrawioToGif', defaultDrawioOutputPath);
   }
 
   return outputTemplateForExtension(path.extname(sourcePath).toLowerCase(), configuration, splitDefault);
@@ -209,41 +217,39 @@ function outputTemplateForSource(
 
 function outputTemplateForExtension(
   extension: string,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
   splitDefault: string | undefined,
 ): string {
-  const readPairTemplate = (key: string, defaultValue: string): string => {
-    const pageTemplate = readOutputPathsTemplate(configuration, key, '');
-    return pageTemplate || readOutputPathTemplate(configuration, `outputPath.${key}`, splitDefault ?? defaultValue);
-  };
+  const readPairTemplate = (key: keyof OutputPaths, setting: () => string): string =>
+    resolveOutputPathOrPathsTemplate(configuration, key, setting, splitDefault);
 
   switch (extension) {
     case '.png': {
-      return readPairTemplate('convertPngToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+      return readPairTemplate('convertPngToGif', configuration.outputPath.convertPngToGif);
     }
     case '.jpg':
     case '.jpeg': {
-      return readPairTemplate('convertJpegToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+      return readPairTemplate('convertJpegToGif', configuration.outputPath.convertJpegToGif);
     }
     case '.webp': {
-      return readPairTemplate('convertWebpToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+      return readPairTemplate('convertWebpToGif', configuration.outputPath.convertWebpToGif);
     }
     case '.avif': {
-      return readPairTemplate('convertAvifToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+      return readPairTemplate('convertAvifToGif', configuration.outputPath.convertAvifToGif);
     }
     case '.tif':
     case '.tiff': {
-      return readPairTemplate('convertTiffToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+      return readPairTemplate('convertTiffToGif', configuration.outputPath.convertTiffToGif);
     }
     case '.svg': {
-      return readPairTemplate('convertSvgToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+      return readPairTemplate('convertSvgToGif', configuration.outputPath.convertSvgToGif);
     }
     case '.mmd':
     case '.mermaid': {
-      return readPairTemplate('convertMermaidToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+      return readPairTemplate('convertMermaidToGif', configuration.outputPath.convertMermaidToGif);
     }
     default: {
-      return splitDefault ?? DEFAULT_OUTPUT_PATH;
+      throw new Error(`Unsupported GIF input extension: ${extension}`);
     }
   }
 }
