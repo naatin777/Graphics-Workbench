@@ -244,6 +244,29 @@ importと型宣言の重複・曖昧さを別方向から制限する。
 
 既存違反はcaseのbrace不足43件、単純なif/else 3件、`window`参照3件、`innerText`参照2件だった。caseをブロック化し、非同期二択処理をternaryへ移し、Webviewテストのglobal参照を置き換えた。Electronの診断helperはレイアウト後の本文を記録する既存契約を保つため`prefer-dom-node-text-content`のtest overrideで対象外とする。production/Webview側の将来違反はerrorとして検出する。
 
+## Phase 38（実験）
+
+通常の`lint`を変更せず、`lint:strict-experimental`で次の大規模な制限を一時的に適用できるようにする。
+
+- `-D all`でcorrectness、suspicious、perf、pedantic、style、restrictionの全カテゴリをerrorへ強化する
+- `-D nursery`で開発中のnurseryカテゴリもerrorへ強化する
+- `--type-aware`で型情報を必要とするルールを有効にする
+
+mainの現行コード219ファイルに対する初回測定では、14,208件のerrorが検出された。違反数の多いルールは次のとおりだった。
+
+- `eslint/no-magic-numbers`: 1,285件
+- `typescript/prefer-readonly-parameter-types`: 1,172件
+- `eslint/sort-keys`: 1,094件
+- `eslint/no-use-before-define`: 1,062件
+- `oxc/no-async-await`: 1,009件
+- `eslint/no-undef`: 749件
+- `eslint/func-style`: 745件
+- `eslint/sort-imports`: 629件
+- `oxc/no-optional-chaining`: 596件
+- `typescript/no-unsafe-call`: 568件
+
+既存の通常lintとCIのmerge gateは変更しない。今回の実験は、現行設計を大きく変えるルールと、段階的にerror化できる候補を分離するための基準値として扱う。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
