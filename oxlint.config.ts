@@ -229,6 +229,7 @@ export default defineConfig({
     /*
      * Promise correctness
      */
+    'typescript/no-floating-promises': 'error',
     'typescript/no-misused-promises': 'error',
 
     /*
@@ -339,6 +340,7 @@ export default defineConfig({
         'no-console': 'off',
         'typescript/no-explicit-any': 'off',
         'typescript/explicit-function-return-type': 'off',
+        'typescript/no-floating-promises': 'off',
         'promise/prefer-await-to-then': 'off',
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unnecessary-condition': 'off',

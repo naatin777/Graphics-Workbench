@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 24
+Status: In progress — Phase 25
 
 ## Objective
 
@@ -127,6 +127,10 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 `promise/prefer-await-to-then`をproductionコードとWebview本体でerrorへ強化する。Promise chainの`.then()`を`await`と`try/catch`へ置き換え、非同期処理の成功経路と例外経路を同じ制御フローで確認できるようにする。テストコードは対象外とする。
 
+## Phase 25
+
+`typescript/no-floating-promises`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。処理結果を待たずに破棄するPromiseを禁止し、変換・dispose・ファイル操作などの失敗を呼び出し側で扱う契約を維持する。意図的なfire-and-forgetは`void`で明示し、テストコードは対象外とする。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -153,12 +157,13 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `typescript/promise-function-async` の既存違反は82件で、productionコード、Webview本体、Node.js/GitHub Actionsスクリプトの35ファイルに分散していた。Phase 22ではPromiseを返す関数の宣言へ`async`を追加する。テストコードの107件は対象外とする
 - `typescript/explicit-function-return-type` の既存違反は55件で、productionコード、Webview本体、Webview build config、Node.js/GitHub Actionsスクリプトの18ファイルに分散していた。Phase 23では関数・callbackの戻り値型を明示する。テストコードの35件は対象外とする
 - `promise/prefer-await-to-then` の既存違反は12件で、PDF変換command、PDF preview、Webviewのエラー処理に分散していた。Phase 24ではPromise chainを`await`と`try/catch`へ置き換える
+- `typescript/no-floating-promises` の既存違反は0件だった。Phase 25では未処理Promiseをerrorとして監視し、意図的に待たない処理は`void`で明示する
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
 ## Completion criteria
 
-- Phase 1からPhase 24までの制限をCIの通常lintで強制できる
+- Phase 1からPhase 25までの制限をCIの通常lintで強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 
