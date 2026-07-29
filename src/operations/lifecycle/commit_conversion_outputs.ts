@@ -12,6 +12,7 @@ import {
 import { OperationCancelledError } from './operation_cancelled_error.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import { filesHaveEqualContents, hashFile } from '../input/file_content_hash.js';
+
 export type OutputConflictDecision = 'keep-both' | 'cancel' | 'overwrite';
 
 export interface PreparedConversionOutput {
