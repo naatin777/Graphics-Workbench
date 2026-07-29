@@ -185,6 +185,19 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 
 既存のproduction違反は、WebviewのPDFページ描画で`async`関数から`Promise.reject()`を返していた1件だけだったため、直接throwへ置き換える。これにより非同期関数のrejection契約を保ったまま、例外の制御フローを明示する。
 
+## Phase 33
+
+既存コードに修正を要求せず、異なる方向から将来の混入を防ぐ次の制限をerrorへ強化する。
+
+- `eslint/no-constant-condition`で到達不能な条件式を禁止する
+- `eslint/no-duplicate-case`でswitch内の重複caseを禁止する
+- `eslint/no-unsafe-optional-chaining`で`undefined`になり得るoptional chainingの後続利用を禁止する
+- `typescript/no-duplicate-enum-values`でenum値の重複を禁止する
+- `typescript/no-unsafe-function-type`で型安全性を失う汎用`Function`型を禁止する
+- `promise/no-return-wrap`でPromise callbackの値を不要にresolve/rejectで包むことを禁止する
+
+既存違反はいずれも0件だったため、コードの挙動を変更せず、通常lintで将来の違反をerrorとして検出する。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -220,6 +233,7 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 - `no-warning-comments` と `typescript/no-empty-object-type` は既存違反0件だったため、将来の未完了コメントと曖昧な空オブジェクト型の混入をerrorとして監視する
 - `eslint/no-unsafe-finally`、`import/no-cycle`、`typescript/no-redundant-type-constituents` は既存違反0件だったため、危険な制御フロー・循環依存・冗長な型の混入をerrorとして監視する。`eslint/no-unreachable-loop` はテストのpolling helperに1件、`unicorn/no-array-reduce` はNLS checkerに1件を検出した。Phase 31ではテストのloopを対象外にし、集計処理を`for...of`へ置き換える
 - `eslint/no-promise-executor-return` はproduction code、Webview本体、Node.js/GitHub Actionsスクリプトに既存違反がなく、テストコードに8件あった。Phase 32ではproduction系をerrorにし、テスト用Promise executorはoverrideで対象外とする。`unicorn/no-useless-promise-resolve-reject` はWebviewのPDFページ描画に1件あり、直接throwへ置き換えてerror化する
+- `eslint/no-constant-condition`、`eslint/no-duplicate-case`、`eslint/no-unsafe-optional-chaining`、`typescript/no-duplicate-enum-values`、`typescript/no-unsafe-function-type`、`promise/no-return-wrap` は既存違反0件だったため、Phase 33で将来の危険な式・重複構成・汎用型・不要なPromise wrapperをerrorとして監視する
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
@@ -233,6 +247,7 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 - Phase 30のimport、型変換、クラス構成、未完了コメント、空オブジェクト型の制限を通常lintでerrorとして強制できる
 - Phase 31の制御フロー、依存関係、型構成、集計処理の制限を通常lintでerrorとして強制できる
 - Phase 32のPromise executorと不要なPromise rejection wrapperの制限を通常lintでerrorとして強制できる
+- Phase 33の危険な式、重複構成、汎用Function型、不要なPromise wrapperの制限を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 
