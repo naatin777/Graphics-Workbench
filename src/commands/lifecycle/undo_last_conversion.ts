@@ -15,7 +15,7 @@ import {
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { userMessage } from '../shared/user_messages.js';
 
-export const UNDO_LAST_CONVERSION_COMMAND = 'latex-graphics-helper.undoLastConversion';
+export const UNDO_LAST_CONVERSION_COMMAND = 'graphics-workbench.undoLastConversion';
 
 const conversionHistory: ConversionUndoRecord[] = [];
 let historyLock: Promise<void> = Promise.resolve();

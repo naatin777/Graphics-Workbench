@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPdf`でSVGをPDFへ変換できるようにする。
+`graphics-workbench.convertToPdf`でSVGをPDFへ変換できるようにする。
 
 ## 背景
 

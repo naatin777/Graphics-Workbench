@@ -110,7 +110,7 @@ jobs:
               run: ${{ matrix.test_command }}
               shell: bash
               env:
-                  LGH_VSCODE_TEST_USER_DATA_DIR: .vscode-test-release-data
+                  GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR: .vscode-test-release-data
 
             - if: failure()
               uses: actions/upload-artifact@v7
@@ -229,11 +229,11 @@ jobs:
               shell: bash
 
             - name: Package current runner VSIX
-              run: npm run package:vsix -- --out "latex-graphics-helper-${{ matrix.label }}.vsix"
+              run: npm run package:vsix -- --out "graphics-workbench-${{ matrix.label }}.vsix"
               shell: bash
 
             - name: Prepare Playwright VSIX path
-              run: cp "latex-graphics-helper-${{ matrix.label }}.vsix" latex-graphics-helper.vsix
+              run: cp "graphics-workbench-${{ matrix.label }}.vsix" graphics-workbench.vsix
               shell: bash
 
             - name: Install VSIX and run Electron Playwright
@@ -253,7 +253,7 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: vsix-${{ matrix.artifact_suffix }}
-                  path: latex-graphics-helper-${{ matrix.label }}.vsix
+                  path: graphics-workbench-${{ matrix.label }}.vsix
                   if-no-files-found: error
 
     publish-github:

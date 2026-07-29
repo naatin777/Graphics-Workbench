@@ -10,7 +10,7 @@
 
 ## 背景
 
-LaTeX Graphics Helperは、PDF・SVG・Mermaid・Draw.io関連の変換で外部ツールを使用する。
+Graphics Workbenchは、PDF・SVG・Mermaid・Draw.io関連の変換で外部ツールを使用する。
 
 代表的な外部ツールは以下である。
 

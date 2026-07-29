@@ -1,5 +1,5 @@
 // Test target:
-// - latex-graphics-helper.convertToWebp commandが登録されること
+// - graphics-workbench.convertToWebp commandが登録されること
 // - PNGをWebPへ変換できること
 // - JPEG、AVIFをWebPへ変換できること
 // - SVGをWebPへ変換できること
@@ -49,13 +49,13 @@ suite('WebPに変換コマンド', () => {
     sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
     sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
     await vscode.workspace
-      .getConfiguration('latex-graphics-helper')
+      .getConfiguration('graphics-workbench')
       .update('convertToWebp.effort', 0, vscode.ConfigurationTarget.Workspace);
   });
 
   teardown(async () => {
     await vscode.workspace
-      .getConfiguration('latex-graphics-helper')
+      .getConfiguration('graphics-workbench')
       .update('convertToWebp.effort', undefined, vscode.ConfigurationTarget.Workspace);
     sandbox.restore();
   });
@@ -148,7 +148,7 @@ suite('WebPに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertPngToWebp': '${fileDirname}/custom-${fileBasenameNoExtension}.webp',
+          'graphics-workbench.outputPath.convertPngToWebp': '${fileDirname}/custom-${fileBasenameNoExtension}.webp',
         },
         async () => {
           await vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
@@ -171,7 +171,7 @@ suite('WebPに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertPngToWebp': '',
+          'graphics-workbench.outputPath.convertPngToWebp': '',
         },
         async () => {
           await vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
@@ -205,7 +205,9 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-convert-to-webp-'));
+  const temporaryDirectory = await mkdtemp(
+    path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-convert-to-webp-'),
+  );
   await mkdir(temporaryDirectory, { recursive: true });
   return temporaryDirectory;
 }

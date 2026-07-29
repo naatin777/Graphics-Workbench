@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPdf`でeditable Draw.io画像を扱うときも、既存変換フローのSafe Mode・Undo・cancellationに乗ることを失敗テストとして追加する。
+`graphics-workbench.convertToPdf`でeditable Draw.io画像を扱うときも、既存変換フローのSafe Mode・Undo・cancellationに乗ることを失敗テストとして追加する。
 
 ## 完了条件
 

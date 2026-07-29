@@ -107,7 +107,7 @@ Local experimentの判定は**Successful experiment**だった。正式化後の
 
 ### Remote results
 
-PR #356のTest workflow run [#444](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29506886218)で、独立した`node-test-experiment` jobの結果を確認した。各jobは正式化前の`pnpm run test:node:experiment`を実行し、Node 22で完了した。正式化後は同じ3 OS matrixを`node-test` / `pnpm run test:node`として恒久的に維持する。job durationは取得できるEvidenceに含まれていないため、推測しない。
+PR #356のTest workflow run [#444](https://github.com/naatin777/Graphics-Workbench/actions/runs/29506886218)で、独立した`node-test-experiment` jobの結果を確認した。各jobは正式化前の`pnpm run test:node:experiment`を実行し、Node 22で完了した。正式化後は同じ3 OS matrixを`node-test` / `pnpm run test:node`として恒久的に維持する。job durationは取得できるEvidenceに含まれていないため、推測しない。
 
 | OS      | Workflow result | Cases | Skipped | Node version | Duration     |
 | ------- | --------------- | ----: | ------: | ------------ | ------------ |

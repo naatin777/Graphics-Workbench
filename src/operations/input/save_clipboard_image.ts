@@ -146,7 +146,7 @@ async function saveClipboardImageAsPdf(
 }
 
 function clipboardStagingRoot(workspacePath: string, runId: string): string {
-  return path.join(workspacePath, '.latex-graphics-helper', 'clipboard-paste', runId);
+  return path.join(workspacePath, '.graphics-workbench', 'clipboard-paste', runId);
 }
 
 async function stageClipboardImage(
@@ -155,7 +155,7 @@ async function stageClipboardImage(
 ): Promise<PreparedConversionOutput> {
   const stagedOutputPath = path.join(
     request.workspacePath,
-    '.latex-graphics-helper',
+    '.graphics-workbench',
     'clipboard-paste',
     runId,
     `source.${request.data.type.ext}`,

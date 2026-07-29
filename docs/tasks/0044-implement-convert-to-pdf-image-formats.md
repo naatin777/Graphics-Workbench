@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPdf`で、PNGに加えてJPEG、WebP、AVIFをPDFへ変換できるようにする。
+`graphics-workbench.convertToPdf`で、PNGに加えてJPEG、WebP、AVIFをPDFへ変換できるようにする。
 
 0043で追加した失敗テストを通すための最小実装だけを行う。
 

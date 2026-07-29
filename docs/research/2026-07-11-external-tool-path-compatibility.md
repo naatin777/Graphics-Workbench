@@ -100,7 +100,7 @@ Draw.io CLIはGUI application実体であるため、Codexの通常sandbox内で
 
 ## GitHub Actions実測環境
 
-[External Tool Path Probe run #2](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29142706622)で、固定fixtureを各runnerの一時directoryへコピーして実測した。
+[External Tool Path Probe run #2](https://github.com/naatin777/Graphics-Workbench/actions/runs/29142706622)で、固定fixtureを各runnerの一時directoryへコピーして実測した。
 
 | OS          | Ghostscript | pdftocairo | rsvg-convert | Draw.io | pdfcrop     | qpdf   |
 | ----------- | ----------- | ---------- | ------------ | ------- | ----------- | ------ |

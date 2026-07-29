@@ -11,8 +11,8 @@ import {
 
 suite('変換artifactのライフサイクル', () => {
   test('外側cleanupでもrollback失敗に必要なrecovery backupだけを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(rootPath, 'result.pdf');
     const outputPath = path.join(workspacePath, 'result.pdf');
     let copyCount = 0;
@@ -56,8 +56,8 @@ suite('変換artifactのライフサイクル', () => {
   });
 
   test('通常のerrorではpreviousという名前のartifactも保持しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
 
     try {
       await writeFixture(path.join(rootPath, 'result.pdf.previous'));
@@ -76,8 +76,8 @@ suite('変換artifactのライフサイクル', () => {
   });
 
   test('rollbackが成功した場合はrecovery backupを保持しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(rootPath, 'result.pdf');
     const outputPath = path.join(workspacePath, 'result.pdf');
     let copyCount = 0;
@@ -111,8 +111,8 @@ suite('変換artifactのライフサイクル', () => {
   });
 
   test('Undo用backupを残してstaging結果と入力コピーを削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const resultPath = path.join(rootPath, 'result.pdf');
     const sourcePath = path.join(rootPath, 'source.pdf');
     const backupPath = path.join(rootPath, 'result.pdf.previous');
@@ -133,10 +133,10 @@ suite('変換artifactのライフサイクル', () => {
   });
 
   test('workspace外へ解決するsymlinkをcleanupしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-workspace-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-outside-'));
     const outsideFile = path.join(outsidePath, 'keep.txt');
-    const symlinkPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const symlinkPath = path.join(workspacePath, '.graphics-workbench', 'run');
 
     try {
       await writeFixture(outsideFile);
@@ -154,10 +154,10 @@ suite('変換artifactのライフサイクル', () => {
   });
 
   test('cleanup失敗を成功結果へ伝播させずworkspace内の出力を維持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-workspace-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-outside-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
-    const symlinkPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const symlinkPath = path.join(workspacePath, '.graphics-workbench', 'run');
 
     try {
       await writeFixture(outputPath);
@@ -174,14 +174,14 @@ suite('変換artifactのライフサイクル', () => {
   });
 
   test('operation cleanupは別session・未知directory・harness log・symlinkを削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-workspace-'));
-    const currentRoot = path.join(workspacePath, '.latex-graphics-helper', 'merge-pdf', 'current');
-    const activePath = path.join(workspacePath, '.latex-graphics-helper', 'merge-pdf', 'other-active', 'result.pdf');
-    const unknownPath = path.join(workspacePath, '.latex-graphics-helper', 'unknown', 'keep.txt');
-    const harnessLogPath = path.join(workspacePath, '.latex-graphics-helper', 'harness', 'stop.log');
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-cleanup-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const currentRoot = path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'current');
+    const activePath = path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'other-active', 'result.pdf');
+    const unknownPath = path.join(workspacePath, '.graphics-workbench', 'unknown', 'keep.txt');
+    const harnessLogPath = path.join(workspacePath, '.graphics-workbench', 'harness', 'stop.log');
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-outside-'));
     const outsideFile = path.join(outsidePath, 'keep.txt');
-    const symlinkPath = path.join(workspacePath, '.latex-graphics-helper', 'link');
+    const symlinkPath = path.join(workspacePath, '.graphics-workbench', 'link');
 
     try {
       await writeFixture(path.join(currentRoot, 'result.pdf'));

@@ -67,7 +67,7 @@ npmで管理しているproduction dependencyをVSIXへ確実に同梱し、`sha
 
 - `node --check scripts/package-vsix.mjs`
 - `npx --no-install oxfmt --check scripts/package-vsix.mjs package.json`
-- `npm run package:vsix -- --target darwin-arm64 --out /tmp/lgh-darwin-arm64-script.vsix`
+- `npm run package:vsix -- --target darwin-arm64 --out /tmp/graphics-workbench-darwin-arm64-script.vsix`
 - 生成VSIXのmanifest、target、runtime dependency、sharp native binary、不要なdevelopment/repository filesを`unzip -l`で確認した
 
 Linux、Windowsの実VSIX生成とnetwork遮断下での起動・機能確認は、タスク0180の対象とする。

@@ -27,7 +27,7 @@
 
 - PDFファイルのdrag & dropは `DocumentDropEditProvider` と `text/uri-list` で扱う。
 - クリップボード画像pasteは `DocumentPasteEditProvider` と `image/png` / `image/jpeg` で扱う。
-- clipboard画像の保存先は `latex-graphics-helper.outputPath.clipboardImage` を展開した値を `showInputBox` の初期値として表示し、その場で編集できるようにする。
+- clipboard画像の保存先は `graphics-workbench.outputPath.clipboardImage` を展開した値を `showInputBox` の初期値として表示し、その場で編集できるようにする。
 - 入力された保存先はworkspace内に制限する。
 
 ## 未確認事項

@@ -47,7 +47,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
   });
 
   test('open workspace外の入力をworkspaceとして扱わない', async () => {
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'lgh-combine-command-'));
+    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-combine-command-'));
 
     try {
       const sourcePath = path.join(outsideDirectory, 'outside.png');
@@ -81,7 +81,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertImagesToSinglePdf':
+          'graphics-workbench.outputPath.convertImagesToSinglePdf':
             '${relativeFileDirname}/custom-${fileBasenameNoExtension}.pdf',
         },
         async () => {
@@ -112,7 +112,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertImagesToSinglePdf':
+          'graphics-workbench.outputPath.convertImagesToSinglePdf':
             '${fileDirname}/combined-${fileBasenameNoExtension}.pdf',
         },
         async () => {
@@ -161,7 +161,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       );
 
       await withWorkspaceSettings(
-        { 'latex-graphics-helper.outputPath.convertImagesToSinglePdf': '${fileDirname}/combined-progress.pdf' },
+        { 'graphics-workbench.outputPath.convertImagesToSinglePdf': '${fileDirname}/combined-progress.pdf' },
         async () => {
           await vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
             vscode.Uri.file(firstSourcePath),
@@ -193,17 +193,14 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
       const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
 
-      await withWorkspaceSettings(
-        { 'latex-graphics-helper.outputPath.convertImagesToSinglePdf': undefined },
-        async () => {
-          await runCommandAndClearNotificationsUntilDone(
-            vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
-              vscode.Uri.file(firstSourcePath),
-              vscode.Uri.file(secondSourcePath),
-            ]),
-          );
-        },
-      );
+      await withWorkspaceSettings({ 'graphics-workbench.outputPath.convertImagesToSinglePdf': undefined }, async () => {
+        await runCommandAndClearNotificationsUntilDone(
+          vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
+            vscode.Uri.file(firstSourcePath),
+            vscode.Uri.file(secondSourcePath),
+          ]),
+        );
+      });
 
       assert.strictEqual(showErrorMessage.called, false, String(showErrorMessage.firstCall?.args[0]));
       assert.strictEqual(showSaveDialog.calledOnce, true);
@@ -261,7 +258,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       const originalOutput = Buffer.from('original output');
       const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       assert.ok(workspacePath);
-      const stagingRoot = path.join(workspacePath, '.latex-graphics-helper', 'combine-images');
+      const stagingRoot = path.join(workspacePath, '.graphics-workbench', 'combine-images');
       const existingRunDirectories = new Set(await readDirectoryNames(stagingRoot));
       await copyFile(VALID_PNG, sourcePath);
       await writeFile(outputPath, originalOutput);
@@ -320,7 +317,7 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  return mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-combine-command-'));
+  return mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-combine-command-'));
 }
 
 async function assertFileDoesNotExist(filePath: string): Promise<void> {

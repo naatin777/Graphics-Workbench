@@ -21,7 +21,7 @@ Todo
 - Windows規則で無効になる`outputPath.splitPdf`を設定する
 - command実行時にエラー通知が表示される
 - `withProgress`を開始しない
-- `.latex-graphics-helper/split-pdf`へ入力コピーや出力を作成しない
+- `.graphics-workbench/split-pdf`へ入力コピーや出力を作成しない
 - PDF分割処理を開始しない
 
 ## 変更可能なファイル

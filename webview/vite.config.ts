@@ -27,9 +27,27 @@ export function defineWebviewConfig(config: WebviewBuildConfig): UserConfig {
     resolve: {
       alias: {
         '@webview-shared': resolve(webviewRoot, 'shared'),
-        '@lgh-crop-pdf-protocol': resolve(projectRoot, 'src', 'application', 'protocols', 'crop_pdf_protocol.ts'),
-        '@lgh-merge-pdf-protocol': resolve(projectRoot, 'src', 'application', 'protocols', 'merge_pdf_protocol.ts'),
-        '@lgh-split-pdf-protocol': resolve(projectRoot, 'src', 'application', 'protocols', 'split_pdf_protocol.ts'),
+        '@graphics-workbench-crop-pdf-protocol': resolve(
+          projectRoot,
+          'src',
+          'application',
+          'protocols',
+          'crop_pdf_protocol.ts',
+        ),
+        '@graphics-workbench-merge-pdf-protocol': resolve(
+          projectRoot,
+          'src',
+          'application',
+          'protocols',
+          'merge_pdf_protocol.ts',
+        ),
+        '@graphics-workbench-split-pdf-protocol': resolve(
+          projectRoot,
+          'src',
+          'application',
+          'protocols',
+          'split_pdf_protocol.ts',
+        ),
       },
     },
 

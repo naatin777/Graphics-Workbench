@@ -1,6 +1,6 @@
 // Test target:
 // - editable Draw.io画像をSVGへ変換するとき、Draw.io CLIへSVG出力を要求すること
-// - 変換結果を.latex-graphics-helper配下で作成してから指定出力先へ反映すること
+// - 変換結果を.graphics-workbench配下で作成してから指定出力先へ反映すること
 // - Draw.io CLI / pdftocairo の失敗をユーザー向けエラーに包むこと
 // - external toolが成功終了しても不正なSVGをcommitしないこと
 //
@@ -21,7 +21,7 @@ import { requireValue } from '../helpers/required.js';
 
 suite('SVGに変換する処理', () => {
   test('編集可能なDraw.io画像はDraw.io CLIでSVGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-svg-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-svg-operation-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.drawio.png');
@@ -64,7 +64,7 @@ suite('SVGに変換する処理', () => {
         '-f',
         'svg',
         '-o',
-        path.join(workspacePath, '.latex-graphics-helper', 'convert-to-svg', 'test-run', '1', 'result.svg'),
+        path.join(workspacePath, '.graphics-workbench', 'convert-to-svg', 'test-run', '1', 'result.svg'),
       ]);
       assert.strictEqual(args.at(-1), sourcePath);
       assert.match(await readFile(outputPath, 'utf8'), /<svg[\s>]/);
@@ -74,7 +74,7 @@ suite('SVGに変換する処理', () => {
   });
 
   test('Draw.io CLIが成功終了しても非SVG出力をcommitしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-svg-invalid-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-svg-invalid-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.drawio.png');
@@ -104,7 +104,7 @@ suite('SVGに変換する処理', () => {
   });
 
   test('Draw.io CLIの失敗をstderrつきのエラーに包む', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-svg-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-svg-operation-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.drawio.png');
@@ -144,7 +144,7 @@ suite('SVGに変換する処理', () => {
   });
 
   test('pdftocairoが成功終了しても空SVGをcommitしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-svg-empty-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-svg-empty-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.pdf');
@@ -174,7 +174,7 @@ suite('SVGに変換する処理', () => {
   });
 
   test('pdftocairoの失敗をstderrつきのエラーに包む', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-svg-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-svg-operation-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.pdf');

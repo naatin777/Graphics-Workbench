@@ -51,7 +51,7 @@ async function findInstalledExtension(extensionsDir: string): Promise<InstalledE
   ).filter((match): match is InstalledExtension => match !== undefined);
 
   if (matches.length !== 1) {
-    throw new Error(`Expected one installed LaTeX Graphics Helper extension, found ${matches.length}.`);
+    throw new Error(`Expected one installed Graphics Workbench extension, found ${matches.length}.`);
   }
 
   return requireValue(matches[0]);

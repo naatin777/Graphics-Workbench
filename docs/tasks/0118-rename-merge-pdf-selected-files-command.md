@@ -8,18 +8,18 @@ Done
 
 PDF結合のquick系command IDを、ページ選択ではなくファイル選択であることが分かる名前へ変更する。
 
-現行実装に `latex-graphics-helper.mergePdf.selectedPages` が残っている場合は、`latex-graphics-helper.mergePdf.selectedFiles` へ寄せる。
+現行実装に `graphics-workbench.mergePdf.selectedPages` が残っている場合は、`graphics-workbench.mergePdf.selectedFiles` へ寄せる。
 
 ## 背景
 
 PDF結合quick系は、Explorerで選択したPDFファイルを結合する操作であり、ページを選択する操作ではない。
 
-ページ単位の選択や順序変更は、Webview GUIの `latex-graphics-helper.mergePdf.configure` で扱う。
+ページ単位の選択や順序変更は、Webview GUIの `graphics-workbench.mergePdf.configure` で扱う。
 
 ## 完了条件
 
-- `latex-graphics-helper.mergePdf.selectedFiles` が登録されている
-- 旧 `latex-graphics-helper.mergePdf.selectedPages` をv1向けに残すか削除するかを決める
+- `graphics-workbench.mergePdf.selectedFiles` が登録されている
+- 旧 `graphics-workbench.mergePdf.selectedPages` をv1向けに残すか削除するかを決める
   - 基本方針ではv1.0.0の破壊的変更として互換aliasを実装しない
 - package manifest / NLS / tests / docs のcommand IDが整合している
 - 既存の選択PDF結合テストが新command IDで通る
@@ -52,6 +52,6 @@ PDF結合quick系は、Explorerで選択したPDFファイルを結合する操�
 
 ## 実施内容
 
-- `latex-graphics-helper.mergePdf.selectedPages` を `latex-graphics-helper.mergePdf.selectedFiles` へ変更した
-- 旧 `latex-graphics-helper.mergePdf.selectedPages` は登録しない方針にした
+- `graphics-workbench.mergePdf.selectedPages` を `graphics-workbench.mergePdf.selectedFiles` へ変更した
+- 旧 `graphics-workbench.mergePdf.selectedPages` は登録しない方針にした
 - package manifest / NLS / VS Code command test / 関連docsを同期した

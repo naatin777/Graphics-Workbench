@@ -1,6 +1,6 @@
 ---
-name: lgh-release
-description: LaTeX Graphics Helperのバージョン更新、リリース前検証、VSIX作成、リリースノート準備を行う。ユーザーがリリース、公開、バージョン更新、VSIX作成を明示的に依頼した場合だけ使用する。通常の実装では使用しない。
+name: graphics-workbench-release
+description: Graphics Workbenchのバージョン更新、リリース前検証、VSIX作成、リリースノート準備を行う。ユーザーがリリース、公開、バージョン更新、VSIX作成を明示的に依頼した場合だけ使用する。通常の実装では使用しない。
 ---
 
 # LHGリリース

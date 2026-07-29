@@ -58,10 +58,10 @@ $settingsDir = Join-Path 'test/fixtures/workspace' '.vscode'
 New-Item -ItemType Directory -Force -Path $settingsDir | Out-Null
 $settingsPath = Join-Path $settingsDir 'settings.json'
 $settings = [ordered]@{
-	'latex-graphics-helper.execPath.ghostscript' = $gs.FullName
-	'latex-graphics-helper.execPath.pdftocairo' = $pdftocairo.FullName
-	'latex-graphics-helper.execPath.rsvgConvert' = $rsvgConvert
-	'latex-graphics-helper.puppeteer.executablePath' = $chrome
+	'graphics-workbench.execPath.ghostscript' = $gs.FullName
+	'graphics-workbench.execPath.pdftocairo' = $pdftocairo.FullName
+	'graphics-workbench.execPath.rsvgConvert' = $rsvgConvert
+	'graphics-workbench.puppeteer.executablePath' = $chrome
 }
 $settings | ConvertTo-Json | Set-Content $settingsPath -Encoding utf8
 Get-Content $settingsPath

@@ -269,7 +269,7 @@ interface FixedFixtureWorkspace extends ConversionContext {
 }
 
 async function prepareFixedFixtureWorkspace(outputExtension: string): Promise<FixedFixtureWorkspace> {
-  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'lgh-pdftocairo-scratch-test-'));
+  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-pdftocairo-scratch-test-'));
   const workspacePath = path.join(testRootPath, 'workspace 日本語 हिन्दी 🌹');
   const scratchBasePath = path.join(testRootPath, 'scratch');
   const sourcePath = path.join(workspacePath, complexSourceFileName);

@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPdf`で、Draw.ioの編集情報を含む画像ファイルをPDFへ変換できるようにする。
+`graphics-workbench.convertToPdf`で、Draw.ioの編集情報を含む画像ファイルをPDFへ変換できるようにする。
 
 対象拡張子は以下。
 

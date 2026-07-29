@@ -33,7 +33,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_TO_AVIF_COMMAND = 'latex-graphics-helper.convertToAvif';
+export const CONVERT_TO_AVIF_COMMAND = 'graphics-workbench.convertToAvif';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.avif';
 const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.avif';
@@ -53,7 +53,7 @@ export async function convertToAvifCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planAvifConversionJobs(sourceUri, configuration, maxInputPixels)),

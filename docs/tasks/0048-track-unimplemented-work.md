@@ -14,13 +14,13 @@ AIが「仕様には書いてあるが実装済みではないもの」を実装
 
 出力形式基準の変換コマンドは段階的に実装している。
 
-現時点では`latex-graphics-helper.convertToPdf`は実装済みだが、他の出力形式基準コマンドはまだ実装されていない。
+現時点では`graphics-workbench.convertToPdf`は実装済みだが、他の出力形式基準コマンドはまだ実装されていない。
 
 また、Mermaid変換は段階的に実装している。
 
 ## 現在実装済み
 
-- `latex-graphics-helper.convertToPdf`
+- `graphics-workbench.convertToPdf`
   - PNG → PDF
   - JPEG → PDF
   - WebP → PDF
@@ -29,13 +29,13 @@ AIが「仕様には書いてあるが実装済みではないもの」を実装
   - Mermaid → PDF
     - `.mmd`
     - `.mermaid`
-- `latex-graphics-helper.convertToSvg`
+- `graphics-workbench.convertToSvg`
   - PDF → SVG
   - Draw.io → SVG
   - Mermaid → SVG
     - `.mmd`
     - `.mermaid`
-- `latex-graphics-helper.convertToPng`
+- `graphics-workbench.convertToPng`
   - PDF → PNG
   - JPEG → PNG
   - WebP → PNG
@@ -43,7 +43,7 @@ AIが「仕様には書いてあるが実装済みではないもの」を実装
   - SVG → PNG
   - Mermaid → PNG
   - Draw.io → PNG
-- `latex-graphics-helper.convertToJpeg`
+- `graphics-workbench.convertToJpeg`
   - PDF → JPEG
   - PNG → JPEG
   - WebP → JPEG
@@ -51,7 +51,7 @@ AIが「仕様には書いてあるが実装済みではないもの」を実装
   - SVG → JPEG
   - Mermaid → JPEG
   - Draw.io → JPEG
-- `latex-graphics-helper.convertToWebp`
+- `graphics-workbench.convertToWebp`
   - PDF → WebP
   - PNG → WebP
   - JPEG → WebP
@@ -59,7 +59,7 @@ AIが「仕様には書いてあるが実装済みではないもの」を実装
   - SVG → WebP
   - Mermaid → WebP
   - Draw.io → WebP
-- `latex-graphics-helper.convertToAvif`
+- `graphics-workbench.convertToAvif`
   - PDF → AVIF
   - PNG → AVIF
   - JPEG → AVIF
@@ -79,7 +79,7 @@ AIが「仕様には書いてあるが実装済みではないもの」を実装
 - Safe Mode
 - Undo last conversion
 - progress / cancellation の基本
-- workspace内作業領域 `.latex-graphics-helper/` を使った安全な反映
+- workspace内作業領域 `.graphics-workbench/` を使った安全な反映
 
 ## 未実装・保留
 

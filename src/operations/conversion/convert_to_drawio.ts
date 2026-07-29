@@ -71,7 +71,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
       ...job.inputs.map(async (input) => assertExistingPathInWorkspace(input.sourcePath, job.workspacePath)),
       assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
       assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-drawio'),
+        path.join(job.workspacePath, '.graphics-workbench', 'convert-to-drawio'),
         job.workspacePath,
       ),
     ]);
@@ -98,7 +98,7 @@ async function stageDrawio(
   runtime: ConversionExecutionContext,
   options: ConvertToDrawioOptions,
 ): Promise<PreparedConversionOutput> {
-  const stagingRootPath = path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-drawio', runId);
+  const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-drawio', runId);
   const stageDirectory = path.join(stagingRootPath, 'inputs');
   const stagedOutputPath = path.join(stagingRootPath, `result${drawioExtension(job.outputPath)}`);
   await assertWritablePathInWorkspace(stagingRootPath, job.workspacePath);

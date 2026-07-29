@@ -32,7 +32,7 @@ Done
 ## 対象外
 
 - extensionからqpdfを実行する機能
-- `latex-graphics-helper.execPath.qpdf`設定の公開
+- `graphics-workbench.execPath.qpdf`設定の公開
 - PDF処理バックエンドの採用決定
 - 外部コマンドのUnicode path互換性調査
 

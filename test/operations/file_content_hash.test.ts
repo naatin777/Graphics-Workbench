@@ -7,7 +7,7 @@ import { filesHaveEqualContents, hashFile } from '../../src/operations/input/fil
 
 suite('大きなファイルの内容比較', () => {
   test('streaming hashで同一内容と相違内容を判定する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-hash-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-hash-test-'));
     const firstPath = path.join(workspacePath, 'first.bin');
     const secondPath = path.join(workspacePath, 'second.bin');
     const differentPath = path.join(workspacePath, 'different.bin');

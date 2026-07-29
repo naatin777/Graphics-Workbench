@@ -80,7 +80,7 @@ async function compressPdf(params: {
   signal?.throwIfAborted();
 
   const itemName = `${params.index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const workDirectory = path.join(job.workspacePath, '.latex-graphics-helper', 'compress-pdf', runId, itemName);
+  const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'compress-pdf', runId, itemName);
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
@@ -120,7 +120,7 @@ async function compressPdf(params: {
     stagedOutputPath,
     outputPath: job.outputPath,
     workspacePath: job.workspacePath,
-    stagingRootPath: path.join(job.workspacePath, '.latex-graphics-helper', 'compress-pdf', runId),
+    stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'compress-pdf', runId),
   };
 }
 

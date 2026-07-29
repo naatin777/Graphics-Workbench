@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPng`を実装する前に、対象入力と変換経路の期待を失敗テストとして固定する。
+`graphics-workbench.convertToPng`を実装する前に、対象入力と変換経路の期待を失敗テストとして固定する。
 
 ## 背景
 
@@ -63,7 +63,7 @@ CI=true pnpm run test -- --grep "PNGに変換|package.jsonの変換メニュー�
 
 確認した主な失敗理由:
 
-- `latex-graphics-helper.convertToPng`がまだ登録されていない
+- `graphics-workbench.convertToPng`がまだ登録されていない
 - `package.json`に`convertToPng`のmenu定義がない
 - `package.nls.ja.json`に`command.convertToPng`がない
 - `src/operations/convert_to_png.ts`がまだ存在しない

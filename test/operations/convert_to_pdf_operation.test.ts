@@ -30,7 +30,7 @@ const dirname = path.dirname(filename);
 
 suite('PDF変換operation（PNG入力）', () => {
   test('複数フレームのGIF jobは1フレーム1ページPDFとして変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-gif-to-pdf-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-gif-to-pdf-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.gif');
@@ -60,7 +60,7 @@ suite('PDF変換operation（PNG入力）', () => {
   });
 
   test('PNGをPDFへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-png-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-png-test-'));
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.pdf');
 
@@ -81,7 +81,7 @@ suite('PDF変換operation（PNG入力）', () => {
     }
   });
   test('preflightと実変換で設定pixel上限を共有する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-png-pixel-limit-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-png-pixel-limit-'));
     const sourcePath = path.join(workspacePath, 'ten-by-ten.png');
     const limitedOutputPath = path.join(workspacePath, 'limited-output.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -121,7 +121,7 @@ suite('PDF変換operation（PNG入力）', () => {
   });
 
   test('Draw.io runnerが成功終了しても非PDF出力をcommitしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-pdf-invalid-output-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-pdf-invalid-output-'));
     const sourcePath = path.join(workspacePath, 'source.drawio.png');
     const outputPath = path.join(workspacePath, 'output.pdf');
 

@@ -15,9 +15,9 @@ import { createOutputConversionMessages, runConversionLifecycle } from '../lifec
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertFileScheme, selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_TO_DRAWIO_COMMAND = 'latex-graphics-helper.convertToDrawio';
-export const CONVERT_TO_DRAWIO_PNG_COMMAND = 'latex-graphics-helper.convertToDrawioPng';
-export const CONVERT_TO_DRAWIO_SVG_COMMAND = 'latex-graphics-helper.convertToDrawioSvg';
+export const CONVERT_TO_DRAWIO_COMMAND = 'graphics-workbench.convertToDrawio';
+export const CONVERT_TO_DRAWIO_PNG_COMMAND = 'graphics-workbench.convertToDrawioPng';
+export const CONVERT_TO_DRAWIO_SVG_COMMAND = 'graphics-workbench.convertToDrawioSvg';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.dio';
 const DEFAULT_PNG_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.drawio.png';
@@ -60,7 +60,7 @@ async function convertToDrawioWithDefaults(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const first = sourceUris[0];
     if (first === undefined) {
       throw new Error('No files were selected.');

@@ -18,7 +18,7 @@ const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
 
 suite('GIF/TIFFの出力経路', () => {
   test('GIF/TIFFを各supported outputへ変換し、PDFでも先頭frame/pageだけを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-additional-image-output-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-additional-image-output-'));
 
     try {
       for (const inputFormat of inputFormats) {

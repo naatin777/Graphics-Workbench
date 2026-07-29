@@ -174,7 +174,7 @@ async function stageRasterConversion(
 ): Promise<PreparedConversionOutput> {
   context.runtime.signal?.throwIfAborted();
   const { stagingDirectoryName, resultExtension } = context.definition;
-  const stagingRootPath = path.join(job.workspacePath, '.latex-graphics-helper', stagingDirectoryName, context.runId);
+  const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', stagingDirectoryName, context.runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, `result.${resultExtension}`);
 
@@ -434,7 +434,7 @@ async function validateJobPaths(jobs: RasterJob[], stagingDirectoryName: string)
       assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
       assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
       assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', stagingDirectoryName),
+        path.join(job.workspacePath, '.graphics-workbench', stagingDirectoryName),
         job.workspacePath,
       ),
     ]),

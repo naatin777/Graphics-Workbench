@@ -29,7 +29,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_TO_TIFF_COMMAND = 'latex-graphics-helper.convertToTiff';
+export const CONVERT_TO_TIFF_COMMAND = 'graphics-workbench.convertToTiff';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.tiff';
 const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.tiff';
@@ -46,7 +46,7 @@ export async function convertToTiffCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)),

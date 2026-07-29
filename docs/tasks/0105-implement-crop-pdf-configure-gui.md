@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-追加済みの失敗テストを通す最小範囲で、`latex-graphics-helper.cropPdf.configure` を実装する。
+追加済みの失敗テストを通す最小範囲で、`graphics-workbench.cropPdf.configure` を実装する。
 
 ## 完了条件
 
@@ -55,7 +55,7 @@ Done
 
 - `cropPdf.configure` の `apply` messageをHost側で受け取り、PDF出力処理を開始するようにした
 - cropBoxをPDFポイントのbboxとして検証し、対象ページのMediaBox/CropBoxへ反映する処理を追加した
-- 作業ファイルを `.latex-graphics-helper/crop-pdf-configure/` 配下に残すようにした
+- 作業ファイルを `.graphics-workbench/crop-pdf-configure/` 配下に残すようにした
 - 出力反映を既存のSafe Mode / Undo処理へ接続した
 - Webview起動直後のmessage取りこぼしを避けるため、Webviewから `ready` を送ってからHostが `init` を返す流れにした
 - PDF previewはWebview内のPDF.jsでcanvas-only描画する

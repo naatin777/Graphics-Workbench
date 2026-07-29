@@ -5,10 +5,10 @@ Write-Host 'Verifying image conversion tools...'
 $settingsPath = Join-Path 'test/fixtures/workspace/.vscode' 'settings.json'
 $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
 
-$gs = $settings.'latex-graphics-helper.execPath.ghostscript'
-$pdftocairo = $settings.'latex-graphics-helper.execPath.pdftocairo'
-$rsvgConvert = $settings.'latex-graphics-helper.execPath.rsvgConvert'
-$chrome = $settings.'latex-graphics-helper.puppeteer.executablePath'
+$gs = $settings.'graphics-workbench.execPath.ghostscript'
+$pdftocairo = $settings.'graphics-workbench.execPath.pdftocairo'
+$rsvgConvert = $settings.'graphics-workbench.execPath.rsvgConvert'
+$chrome = $settings.'graphics-workbench.puppeteer.executablePath'
 
 if (-not (Test-Path $gs)) { throw "missing Ghostscript: $gs" }
 if (-not (Test-Path $pdftocairo)) { throw "missing pdftocairo: $pdftocairo" }
@@ -28,7 +28,7 @@ Write-Host "Chrome from settings.json: $chrome"
 $chromeVersion = (Get-Item $chrome).VersionInfo.ProductVersion
 Write-Host "Chrome file version: $chromeVersion"
 
-$workDir = Join-Path $env:RUNNER_TEMP "lgh-tool-smoke-$([guid]::NewGuid())"
+$workDir = Join-Path $env:RUNNER_TEMP "graphics-workbench-tool-smoke-$([guid]::NewGuid())"
 New-Item -ItemType Directory -Force -Path $workDir | Out-Null
 
 try {

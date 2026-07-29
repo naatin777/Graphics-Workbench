@@ -6,16 +6,16 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToWebp` を追加し、複数の入力形式をWebPへ変換できるようにする。
+`graphics-workbench.convertToWebp` を追加し、複数の入力形式をWebPへ変換できるようにする。
 
 ## 完了条件
 
-- `latex-graphics-helper.convertToWebp` を公開コマンドとして登録する
+- `graphics-workbench.convertToWebp` を公開コマンドとして登録する
 - Explorerの `変換 > WebP` へ統合する
 - PDF / PNG / JPEG / AVIF / SVG / Mermaid / Draw.io 入力をWebPへ変換できる
 - WebP入力はWebP変換対象外として拒否する
 - Draw.io → WebP は Draw.io CLIで直接WebP/JPEGへ出さず、PDF → PNG → WebP を経由する
-- 変換結果は `.latex-graphics-helper/` 作業領域で作成してからSafe Mode / Undo対応の反映処理に乗せる
+- 変換結果は `.graphics-workbench/` 作業領域で作成してからSafe Mode / Undo対応の反映処理に乗せる
 - 変換テストでは実ファイル読み込み経路を通す
 
 ## 変更可能なファイル

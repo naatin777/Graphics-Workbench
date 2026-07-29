@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`.latex-graphics-helper/` で完成した変換後ファイルを指定出力先へ反映する操作を、VS CodeのUndo対象にする。
+`.graphics-workbench/` で完成した変換後ファイルを指定出力先へ反映する操作を、VS CodeのUndo対象にする。
 
 ユーザーには「変換前から変換後への変更」だけを意識させ、内部作業領域はUndo対象として扱わない。
 
@@ -14,7 +14,7 @@ Done
 
 - 完成ファイルの出力反映に `vscode.WorkspaceEdit` を使用する
 - Explorerへフォーカスした状態のVS CodeのUndoで、変換後ファイルの作成を戻せる
-- `.latex-graphics-helper/` 内の作業ファイルはUndo対象外である
+- `.graphics-workbench/` 内の作業ファイルはUndo対象外である
 - 複数出力を1回の操作として扱う
 
 ## 変更可能なファイル
@@ -30,7 +30,7 @@ Done
 
 ## 対象外
 
-- `.latex-graphics-helper/` の削除やUndo
+- `.graphics-workbench/` の削除やUndo
 - safe modeの上書き確認UI
 
 ## 関連

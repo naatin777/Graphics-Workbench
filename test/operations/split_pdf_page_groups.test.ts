@@ -30,7 +30,7 @@ suite('PDFページグループ分割', () => {
   });
 
   test('指定順でグループ化PDFを作成し、重複ページを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-split-groups-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-split-groups-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
 
     try {
@@ -59,19 +59,17 @@ suite('PDFページグループ分割', () => {
         secondGroup.getPages().map((page) => page.getWidth()),
         [102],
       );
-      await access(
-        path.join(workspacePath, '.latex-graphics-helper', 'split-pdf', 'run', '1-source', 'groups', '1.pdf'),
-      );
+      await access(path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run', '1-source', 'groups', '1.pdf'));
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   test('ステージング作成前に不正なPDFを共通preflightで拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-split-groups-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-split-groups-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'group.pdf');
-    const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'split-pdf', 'run');
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run');
     const invalidPdfPath = path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
       '..',
@@ -109,7 +107,7 @@ suite('PDFページグループ分割', () => {
   });
 
   test('空のグループと範囲外のグループをコミット前に拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-split-groups-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-split-groups-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'group.pdf');
 
@@ -195,7 +193,7 @@ suite('PDFページグループ分割', () => {
           fileName: 'source.pdf',
           pageCount: 3,
           pdfSrc: 'vscode-resource://source.pdf',
-          outputPathTemplate: 'source/__LGH_OUTPUT_NAME__.pdf',
+          outputPathTemplate: 'source/__GRAPHICS_WORKBENCH_OUTPUT_NAME__.pdf',
           workerSrc: 'vscode-resource://worker.mjs',
           cMapUrl: 'vscode-resource://cmaps/',
           standardFontDataUrl: 'vscode-resource://fonts/',
@@ -213,7 +211,7 @@ suite('PDFページグループ分割', () => {
           fileName: 'source.pdf',
           pageCount: 3,
           pdfSrc: 'vscode-resource://source.pdf',
-          outputPathTemplate: 'source/__LGH_OUTPUT_NAME__.pdf',
+          outputPathTemplate: 'source/__GRAPHICS_WORKBENCH_OUTPUT_NAME__.pdf',
           labels,
           sourcePath: '/not-allowed',
         },
@@ -236,7 +234,7 @@ suite('PDFページグループ分割', () => {
           fileName: 'source.pdf',
           pageCount: 3,
           pdfSrc: '/workspace/source.pdf',
-          outputPathTemplate: 'source/__LGH_OUTPUT_NAME__.pdf',
+          outputPathTemplate: 'source/__GRAPHICS_WORKBENCH_OUTPUT_NAME__.pdf',
           labels,
         },
       }),

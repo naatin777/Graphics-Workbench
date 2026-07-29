@@ -6,12 +6,12 @@ Done
 
 ## 目的
 
-0070で追加した失敗テストを通す最小実装として、`latex-graphics-helper.convertToJpeg` を追加する。
+0070で追加した失敗テストを通す最小実装として、`graphics-workbench.convertToJpeg` を追加する。
 
 ## 完了条件
 
-- `latex-graphics-helper.convertToJpeg` をpackage manifestへ追加する
-- `latex-graphics-helper.convertToJpeg` をVS Code commandとして登録する
+- `graphics-workbench.convertToJpeg` をpackage manifestへ追加する
+- `graphics-workbench.convertToJpeg` をVS Code commandとして登録する
 - PNGをJPEGへ変換できる
 - WebP / AVIF / SVG / PDF / MermaidをJPEGへ変換できる
 - JPEG出力がSafe Mode / Undo / progress / cancellationの既存フローに乗る

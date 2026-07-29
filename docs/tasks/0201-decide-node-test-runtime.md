@@ -47,7 +47,7 @@ Node-level contractをどのruntimeで実行するか決定し、local script、
 
 #### Remote Evidence
 
-PR #356のTest workflow run [#444](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29506886218)で、各OSの`node-test-experiment` jobがNode 22でsuccessした。job durationは取得できるEvidenceに含まれていない。
+PR #356のTest workflow run [#444](https://github.com/naatin777/Graphics-Workbench/actions/runs/29506886218)で、各OSの`node-test-experiment` jobがNode 22でsuccessした。job durationは取得できるEvidenceに含まれていない。
 
 | OS      | Result | Cases | Skipped | Node |
 | ------- | ------ | ----: | ------: | ---: |

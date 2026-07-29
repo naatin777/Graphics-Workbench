@@ -1,4 +1,4 @@
-import type { CropBox, CropPdfLabels, CropTarget } from '@lgh-crop-pdf-protocol';
+import type { CropBox, CropPdfLabels, CropTarget } from '@graphics-workbench-crop-pdf-protocol';
 
 export type Parsed<T> = { ok: true; value: T } | { ok: false; message: string };
 

@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.cropPdf.configure` で、PDFをWebview上に表示し、ユーザーがcrop範囲と対象ページを指定してPDFを出力する仕様を決める。
+`graphics-workbench.cropPdf.configure` で、PDFをWebview上に表示し、ユーザーがcrop範囲と対象ページを指定してPDFを出力する仕様を決める。
 
 `manual` という名前は使わない。
 
@@ -63,6 +63,6 @@ Done
 - 1つのbboxを全ページまたは選択ページへ適用する方針にした
 - ページごとに異なるcrop範囲、複数PDF同時処理、margin指定は初期実装の対象外にした
 - Host / Webview間のmessage protocolを決めた
-- 出力先は `latex-graphics-helper.outputPath.cropPdf` を使う方針にした
+- 出力先は `graphics-workbench.outputPath.cropPdf` を使う方針にした
 - Safe Mode / Undo / progress / cancellation の扱いを決めた
 - `local/refactor-ddd-architecture` から参考にする内容と採用しない内容を記録した

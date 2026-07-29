@@ -2,7 +2,7 @@
 
 ## 目的
 
-`latex-graphics-helper.cropPdf.configure`は、PDFを画面で確認しながらcrop範囲と対象ページを指定してPDFを出力する。
+`graphics-workbench.cropPdf.configure`は、PDFを画面で確認しながらcrop範囲と対象ページを指定してPDFを出力する。
 
 初期範囲は単一PDF、1つのcrop範囲、全ページまたは選択ページへの適用、1つの出力PDFとする。複数PDF、ページごとに異なるcrop範囲、crop後のページ削除や並べ替えは扱わない。
 
@@ -28,7 +28,7 @@ crop範囲はPDFポイントのbboxで指定する。
 
 ## 出力とキャンセル
 
-- 出力先は`latex-graphics-helper.outputPath.cropPdf`を元PDFのパス情報で展開する。
+- 出力先は`graphics-workbench.outputPath.cropPdf`を元PDFのパス情報で展開する。
 - 相対パスは入力PDFが属するworkspaceを基準に解決する。
 - 出力PDFのページ数は元PDFと同じにする。
 - 出力先の競合時は[Safe Mode仕様](safe-mode.md)に従う。

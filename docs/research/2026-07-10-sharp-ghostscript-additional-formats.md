@@ -36,9 +36,9 @@ Ghostscript `10.07.1`へ最小EPSをstdinで渡し、`-dSAFER -dEPSCrop -sDEVICE
 
 ### Remote evidence
 
-- Check: https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29719192043
-- Test: https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29719192017
-- Packaged Electron Playwright regression: https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29719192024
+- Check: https://github.com/naatin777/Graphics-Workbench/actions/runs/29719192043
+- Test: https://github.com/naatin777/Graphics-Workbench/actions/runs/29719192017
+- Packaged Electron Playwright regression: https://github.com/naatin777/Graphics-Workbench/actions/runs/29719192024
 - HEIF / HEIC、JP2、JPEG XL、BMP、ICOは現時点でdefault対応にしない。
 
 ### Current sources

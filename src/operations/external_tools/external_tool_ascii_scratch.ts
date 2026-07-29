@@ -44,7 +44,7 @@ export async function createAsciiInputScratch(options: {
     try {
       const realBasePath = await validateScratchBase(candidate);
       options.signal?.throwIfAborted();
-      scratchRootPath = await mkdtemp(path.join(candidate, 'latex-graphics-helper-'));
+      scratchRootPath = await mkdtemp(path.join(candidate, 'graphics-workbench-'));
       await validateScratchRoot(scratchRootPath, realBasePath);
 
       const inputPath = path.join(scratchRootPath, options.inputFileName);

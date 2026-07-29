@@ -1,6 +1,6 @@
 ---
-name: lgh-vscode-testing
-description: LaTeX Graphics HelperのVS Code API、Extension Host、Webview、SolidJS UI、VS Code Electron、Playwrightに関係する変更のテスト方法を選択する。コマンド登録、Webview操作、VS Code上でのファイル操作を変更したときに使用する。
+name: graphics-workbench-vscode-testing
+description: Graphics WorkbenchのVS Code API、Extension Host、Webview、SolidJS UI、VS Code Electron、Playwrightに関係する変更のテスト方法を選択する。コマンド登録、Webview操作、VS Code上でのファイル操作を変更したときに使用する。
 ---
 
 # LHG VS Codeテスト

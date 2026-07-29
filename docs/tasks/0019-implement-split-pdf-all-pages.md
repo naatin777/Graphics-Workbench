@@ -13,7 +13,7 @@ Done
 - `outputPath.splitPdf`をページごとに展開する
 - 複数PDFを処理できる
 - `pdf-lib`で1ページごとのPDFを作成する
-- `.latex-graphics-helper/split-pdf/`で処理する
+- `.graphics-workbench/split-pdf/`で処理する
 - 全変換成功後に指定出力先へ一括反映する
 - 既存出力と出力重複があれば全体停止する
 - workspace境界を検証する
@@ -55,10 +55,10 @@ Done
 
 ## 実施結果
 
-- `latex-graphics-helper.outputPath.splitPdf`を追加し、既定値を`${fileDirname}/${fileBasenameNoExtension}/${page}.pdf`にした
+- `graphics-workbench.outputPath.splitPdf`を追加し、既定値を`${fileDirname}/${fileBasenameNoExtension}/${page}.pdf`にした
 - `${page}`を1始まり・ゼロ埋めなしで展開する
 - 1件以上のPDFを選択できるcommandを登録した
-- 元PDFを`.latex-graphics-helper/split-pdf/`へコピーし、`pdf-lib`で1ページごとのPDFを作成する
+- 元PDFを`.graphics-workbench/split-pdf/`へコピーし、`pdf-lib`で1ページごとのPDFを作成する
 - 全入力・全ページの生成後に、出力重複・既存出力・workspace境界を検証してから反映する
 - 出力反映途中の失敗では、今回反映済みのページだけをロールバックする
 - 通知領域のwithProgressとキャンセルに対応した

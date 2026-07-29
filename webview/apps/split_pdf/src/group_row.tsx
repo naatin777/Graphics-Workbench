@@ -1,7 +1,7 @@
 import type { Accessor } from 'solid-js';
 import type { JSX } from 'solid-js';
 
-import type { SplitPdfLabels } from '@lgh-split-pdf-protocol';
+import type { SplitPdfLabels } from '@graphics-workbench-split-pdf-protocol';
 
 import type { InputKind, Row } from './types';
 
@@ -131,7 +131,7 @@ export function GroupRow(props: {
       </div>
       <p class='group-row__output-path'>
         <span>{props.labels.outputPath}:</span>{' '}
-        {props.outputPathTemplate.split('__LGH_OUTPUT_NAME__').join(props.row.outputName)}
+        {props.outputPathTemplate.split('__GRAPHICS_WORKBENCH_OUTPUT_NAME__').join(props.row.outputName)}
       </p>
     </article>
   );

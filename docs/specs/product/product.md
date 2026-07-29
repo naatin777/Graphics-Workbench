@@ -2,7 +2,7 @@
 
 ## Product Name
 
-LaTeX Graphics Helper
+Graphics Workbench
 
 ## Purpose
 

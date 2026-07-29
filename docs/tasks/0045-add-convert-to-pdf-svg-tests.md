@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPdf`でSVGをPDFへ変換できるようにするための失敗テストを追加する。
+`graphics-workbench.convertToPdf`でSVGをPDFへ変換できるようにするための失敗テストを追加する。
 
 このタスクではテストだけを追加し、実装は変更しない。
 

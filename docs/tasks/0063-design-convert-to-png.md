@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-出力形式基準コマンド`latex-graphics-helper.convertToPng`を実装する前に、対象入力、変換経路、テスト方針を決める。
+出力形式基準コマンド`graphics-workbench.convertToPng`を実装する前に、対象入力、変換経路、テスト方針を決める。
 
 ## 背景
 
@@ -76,7 +76,7 @@ Draw.ioはまずPDFへ変換し、そのPDFをPNGへ変換する。
 
 既存変換と同じ扱いにする。
 
-- `.latex-graphics-helper/`内で作業ファイルを作る
+- `.graphics-workbench/`内で作業ファイルを作る
 - すべての変換が成功してから出力先へ反映する
 - 失敗時は全体停止する
 - Safe Modeの競合確認はバッチ全体で1回だけ行う
@@ -87,13 +87,13 @@ Draw.ioはまずPDFへ変換し、そのPDFをPNGへ変換する。
 
 既存のペア別設定を使う。
 
-- PDF → PNG: `latex-graphics-helper.outputPath.convertPdfToPng`
-- Draw.io → PNG: `latex-graphics-helper.outputPath.convertDrawioToPng`
-- Mermaid → PNG: `latex-graphics-helper.outputPath.convertMermaidToPng`
-- SVG → PNG: `latex-graphics-helper.outputPath.convertSvgToPng`
-- JPEG → PNG: `latex-graphics-helper.outputPath.convertJpegToPng`
-- WebP → PNG: `latex-graphics-helper.outputPath.convertWebpToPng`
-- AVIF → PNG: `latex-graphics-helper.outputPath.convertAvifToPng`
+- PDF → PNG: `graphics-workbench.outputPath.convertPdfToPng`
+- Draw.io → PNG: `graphics-workbench.outputPath.convertDrawioToPng`
+- Mermaid → PNG: `graphics-workbench.outputPath.convertMermaidToPng`
+- SVG → PNG: `graphics-workbench.outputPath.convertSvgToPng`
+- JPEG → PNG: `graphics-workbench.outputPath.convertJpegToPng`
+- WebP → PNG: `graphics-workbench.outputPath.convertWebpToPng`
+- AVIF → PNG: `graphics-workbench.outputPath.convertAvifToPng`
 
 出力形式基準の`outputPath.convertToPng`はこのタスクでは追加しない。
 

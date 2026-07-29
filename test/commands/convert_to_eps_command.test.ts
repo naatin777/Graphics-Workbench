@@ -11,7 +11,7 @@ suite('EPS変換コマンドジョブ', () => {
   test('PDFページごとに${page}ジョブを個別に作成する', async () => {
     const workspace = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspace);
-    const root = await mkdtemp(path.join(workspace.uri.fsPath, 'lgh-convert-to-eps-command-'));
+    const root = await mkdtemp(path.join(workspace.uri.fsPath, 'graphics-workbench-convert-to-eps-command-'));
     const sourcePath = path.join(root, 'source.pdf');
 
     try {
@@ -43,7 +43,7 @@ suite('EPS変換コマンドジョブ', () => {
   test('outputPaths.convertPdfToEpsが設定されている場合はカスタムテンプレートを使う', async () => {
     const workspace = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspace);
-    const root = await mkdtemp(path.join(workspace.uri.fsPath, 'lgh-convert-to-eps-output-path-'));
+    const root = await mkdtemp(path.join(workspace.uri.fsPath, 'graphics-workbench-convert-to-eps-output-path-'));
     const sourcePath = path.join(root, 'source.pdf');
 
     try {

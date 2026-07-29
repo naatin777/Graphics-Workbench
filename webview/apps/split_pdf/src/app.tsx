@@ -3,7 +3,7 @@ import type { JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 
-import type { SplitPdfPageGroupRow } from '@lgh-split-pdf-protocol';
+import type { SplitPdfPageGroupRow } from '@graphics-workbench-split-pdf-protocol';
 
 import { GroupRow } from './group_row';
 import { formatLabel, pageFailureMessage } from './helpers';

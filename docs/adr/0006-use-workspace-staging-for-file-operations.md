@@ -16,7 +16,7 @@ PDFや画像の変換処理で元ファイルを直接操作すると、コマ�
 
 ## 決定
 
-変換対象はworkspace直下の `.latex-graphics-helper/` へコピーし、コピーに対して変換処理を行う。
+変換対象はworkspace直下の `.graphics-workbench/` へコピーし、コピーに対して変換処理を行う。
 
 全変換が成功するまで指定出力先には反映しない。完成ファイルを出力先へ反映する処理と、内部作業領域での処理を分離する。
 
@@ -34,12 +34,12 @@ PDFや画像の変換処理で元ファイルを直接操作すると、コマ�
 - workspace内に処理中の作業ファイルが作成され、成功後は不要なものが削除される
 - 同じ変換でも一時的に追加のディスク容量を使う
 - 変換処理と出力反映処理を分けて実装する必要がある
-- `.latex-graphics-helper/` はユーザー向けの変換結果ではなく、内部作業領域として扱う
+- `.graphics-workbench/` はユーザー向けの変換結果ではなく、内部作業領域として扱う
 
 ## 運用ルール
 
 - 元ファイルは読み取りと作業領域へのコピーだけに使用する
-- 作業領域は `<workspace>/.latex-graphics-helper/<operation>/<一意ID>/` とする
+- 作業領域は `<workspace>/.graphics-workbench/<operation>/<一意ID>/` とする
 - OS一時scratchはADR-0012の対象toolと用途だけに限定する
 - 作業ファイルは成功後に不要なものを削除し、上書き前backupだけを現在のUndo recordのために保持する
 - 変換失敗・キャンセル時は今回のoperation rootだけを削除する。拡張機能起動時にworkspace直下のruntime root全体を削除しない。

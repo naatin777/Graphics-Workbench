@@ -10,7 +10,7 @@ Done
 
 ## 完了条件
 
-- PNG変換を`.latex-graphics-helper/`内で完了する
+- PNG変換を`.graphics-workbench/`内で完了する
 - 既存出力をSafe Modeで処理する
 - 上書き時にバックアップを作成する
 - 直前の変換取消へ対応する
@@ -51,7 +51,7 @@ Done
 ## 実施結果
 
 - `convertPngToPdfFiles`で複数PNGを1つのバッチとして処理するようにした
-- PNG変換を`.latex-graphics-helper/`内で完了するようにした
+- PNG変換を`.graphics-workbench/`内で完了するようにした
 - 全PNGの変換成功後に`commitConversionOutputs`を1回だけ呼び出すようにした
 - command層から`resolveOutputConflicts`を渡し、Safe Modeの状態とダイアログを接続した
 - 上書き時にバックアップを作成するようにした

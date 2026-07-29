@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPdf`で、Draw.ioの編集情報を含む画像ファイルをPDF変換対象として扱うための失敗テストを追加する。
+`graphics-workbench.convertToPdf`で、Draw.ioの編集情報を含む画像ファイルをPDF変換対象として扱うための失敗テストを追加する。
 
 対象拡張子は以下。
 
@@ -18,7 +18,7 @@ Done
 ## 完了条件
 
 - `package.json`の変換メニュー条件に、editable Draw.io画像が含まれることをテストする
-- `latex-graphics-helper.convertToPdf`がeditable Draw.io画像をunsupported inputとして拒否しないことをテストする
+- `graphics-workbench.convertToPdf`がeditable Draw.io画像をunsupported inputとして拒否しないことをテストする
 - このタスクでは失敗テスト追加に留め、実装変更は行わない
 
 ## 変更可能なファイル

@@ -10,7 +10,7 @@ Done
 
 ## Test target
 
-- `latex-graphics-helper.convertToPdf` commandが登録されること
+- `graphics-workbench.convertToPdf` commandが登録されること
 - PNGを`PDFに変換`できること
 - 複数PNGを1回のコマンドでPDFへ変換できること
 - 異なる画像形式を同時に選択した場合の検証方針を固定すること

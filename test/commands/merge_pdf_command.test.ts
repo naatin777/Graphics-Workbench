@@ -33,7 +33,7 @@ suite('PDF結合コマンド', () => {
     const commands = await vscode.commands.getCommands(true);
 
     assert.ok(commands.includes(MERGE_PDF_SELECTED_FILES_COMMAND));
-    assert.ok(!commands.includes('latex-graphics-helper.mergePdf.selectedPages'));
+    assert.ok(!commands.includes('graphics-workbench.mergePdf.selectedPages'));
   });
 
   test('複数PDFを選択順に1つのPDFへ結合する', async () => {
@@ -41,7 +41,9 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-merge-pdf-command-'));
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-'),
+    );
 
     try {
       const firstPdfPath = path.join(temporaryDirectory, 'q a.PDF');
@@ -106,8 +108,10 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-merge-pdf-configure-'));
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'lgh-merge-pdf-outside-'));
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-configure-'),
+    );
+    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-pdf-outside-'));
 
     try {
       const firstPdfPath = path.join(temporaryDirectory, 'first.pdf');
@@ -140,7 +144,9 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-merge-pdf-command-') + '-');
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+    );
 
     try {
       const firstPdfPath = path.join(temporaryDirectory, 'q a.pdf');
@@ -176,7 +182,9 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-merge-pdf-command-') + '-');
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+    );
 
     try {
       const firstPdfPath = path.join(temporaryDirectory, 'first.pdf');
@@ -209,7 +217,9 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-merge-pdf-command-') + '-');
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+    );
 
     try {
       const pdfPath = path.join(temporaryDirectory, 'q a.pdf');
@@ -240,7 +250,9 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-merge-pdf-command-') + '-');
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+    );
 
     try {
       const firstPdfPath = path.join(temporaryDirectory, 'q a.pdf');
@@ -277,7 +289,9 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-merge-pdf-command-') + '-');
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+    );
 
     try {
       const firstPdfPath = path.join(temporaryDirectory, 'q a.pdf');

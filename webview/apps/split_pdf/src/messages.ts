@@ -2,4 +2,4 @@ export type {
   SplitPdfHostToWebview as ExtensionToWebviewMessage,
   SplitPdfLabels,
   SplitPdfWebviewToHost as WebviewToExtensionMessage,
-} from '@lgh-split-pdf-protocol';
+} from '@graphics-workbench-split-pdf-protocol';

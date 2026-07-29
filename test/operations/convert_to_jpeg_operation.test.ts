@@ -16,7 +16,7 @@ import { requireValue } from '../helpers/required.js';
 
 suite('JPEGに変換する処理', () => {
   test('編集可能なDraw.io画像はPDFを経由してJPEGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-jpeg-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-jpeg-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.drawio.png');

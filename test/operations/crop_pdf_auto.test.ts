@@ -21,7 +21,7 @@ import { cropPdfFiles, parseBoundingBoxes, type RunGhostscript } from '../../src
 
 suite('PDF自動crop処理', () => {
   test('bbox取得にGhostscriptを1回だけ使い、全ページをpdf-libでcropする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output', 'source-crop.pdf');
     await writeFixturePdf(sourcePath);
@@ -51,7 +51,7 @@ suite('PDF自動crop処理', () => {
     assert.strictEqual(calls.length, 1);
     const copiedSourcePath = path.join(
       workspacePath,
-      '.latex-graphics-helper',
+      '.graphics-workbench',
       'crop-pdf',
       'run',
       '1-source',
@@ -83,14 +83,14 @@ suite('PDF自動crop処理', () => {
       height: 160,
     });
 
-    const workDirectory = path.join(workspacePath, '.latex-graphics-helper', 'crop-pdf', 'run', '1-source');
+    const workDirectory = path.join(workspacePath, '.graphics-workbench', 'crop-pdf', 'run', '1-source');
     await access(path.join(workDirectory, 'source.pdf'));
     await access(path.join(workDirectory, 'result.pdf'));
     await assert.rejects(access(path.join(workDirectory, 'pages'), constants.F_OK));
   });
 
   test('空白ページでは元のMediaBoxを維持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const sourcePath = path.join(workspacePath, 'blank.pdf');
     const outputPath = path.join(workspacePath, 'blank-crop.pdf');
     const document = await PDFDocument.create();
@@ -117,7 +117,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('p-limitでPDF変換の同時実行数を制限する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const jobs = await Promise.all(
       ['first', 'second', 'third', 'fourth'].map(async (name) => {
         const sourcePath = path.join(workspacePath, `${name}.pdf`);
@@ -156,7 +156,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('既存の出力を上書きしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);
@@ -178,8 +178,8 @@ suite('PDF自動crop処理', () => {
   });
 
   test('Ghostscript実行前に宣言workspace外の入力ファイルを拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-workspace-'));
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'lgh-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
+    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-outside-'));
     const sourcePath = path.join(outsideDirectory, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);
@@ -203,8 +203,8 @@ suite('PDF自動crop処理', () => {
   });
 
   test('Ghostscript実行前にworkspace外の出力パスを拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-workspace-'));
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'lgh-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
+    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-outside-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(outsideDirectory, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);
@@ -228,7 +228,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('既にキャンセル済みの場合はGhostscriptを開始しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     const abortController = new AbortController();
@@ -256,7 +256,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('実行中のGhostscript処理へキャンセルを伝える', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     const abortController = new AbortController();
@@ -287,7 +287,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('キャンセル後はqueue内の変換を開始しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const abortController = new AbortController();
     const jobs = await Promise.all(
       ['first', 'second', 'third', 'fourth'].map(async (name) => {
@@ -334,7 +334,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('Ghostscript実行ファイルが見つからない場合はエラーにする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);
@@ -359,7 +359,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('Ghostscript実行が失敗した場合はエラーにする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);
@@ -382,7 +382,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('Ghostscript実行失敗をOutput channelへ記録する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);

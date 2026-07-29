@@ -33,9 +33,9 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_TO_WEBP_COMMAND = 'latex-graphics-helper.convertToWebp';
-export const CONVERT_TO_WEBP_PRESERVE_COMMAND = 'latex-graphics-helper.convertToWebpPreserveAnimation';
-export const CONVERT_TO_WEBP_SEPARATELY_COMMAND = 'latex-graphics-helper.convertToWebpSeparately';
+export const CONVERT_TO_WEBP_COMMAND = 'graphics-workbench.convertToWebp';
+export const CONVERT_TO_WEBP_PRESERVE_COMMAND = 'graphics-workbench.convertToWebpPreserveAnimation';
+export const CONVERT_TO_WEBP_SEPARATELY_COMMAND = 'graphics-workbench.convertToWebpSeparately';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.webp';
 const DEFAULT_SPLIT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.webp';
@@ -61,7 +61,7 @@ export async function convertToWebpCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) =>

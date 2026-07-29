@@ -131,7 +131,7 @@ import * as vscode from 'vscode';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const sourcePng = path.join(testDirectory, '..', '..', 'test', 'fixtures', 'test.png');
-const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-test-'));
+const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-test-'));
 
 try {
   const sourceWebp = path.join(temporaryDirectory, 'source.webp');

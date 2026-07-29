@@ -18,7 +18,7 @@ export async function validateJobPaths(jobs: PdfJob[], stagingDirectoryName: str
       assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
       ...(job.outputPath === undefined ? [] : [assertWritablePathInWorkspace(job.outputPath, job.workspacePath)]),
       assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', stagingDirectoryName),
+        path.join(job.workspacePath, '.graphics-workbench', stagingDirectoryName),
         job.workspacePath,
       ),
     ]),

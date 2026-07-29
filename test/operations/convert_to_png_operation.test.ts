@@ -16,7 +16,7 @@ import { requireValue } from '../helpers/required.js';
 
 suite('PNGに変換する処理', () => {
   test('Raw pixelsをsidecarどおりにPNGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-png-raw-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-png-raw-'));
     try {
       const sourcePath = path.join(workspacePath, 'source.raw');
       const outputPath = path.join(workspacePath, 'output.png');
@@ -52,7 +52,7 @@ suite('PNGに変換する処理', () => {
   });
 
   test('GIF、アニメーションWebP、TIFFのframeを個別に変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-png-frames-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-png-frames-'));
 
     try {
       for (const format of ['gif', 'webp', 'tiff'] as const) {
@@ -87,7 +87,7 @@ suite('PNGに変換する処理', () => {
   });
 
   test('編集可能なDraw.io画像はPDFを経由してPNGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-png-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-png-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.drawio.png');

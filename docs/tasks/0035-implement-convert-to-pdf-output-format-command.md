@@ -10,18 +10,18 @@ Done
 
 ## 方針
 
-- 公開command IDは`latex-graphics-helper.convertToPdf`にする
+- 公開command IDは`graphics-workbench.convertToPdf`にする
 - 表示名は`PDFに変換`にする
 - まず既存のPNG→PDF実装を委譲して、出力形式基準コマンドの骨格を作る
 - JPEG、WebP、AVIF、SVG、Draw.io対応は、同じタスクで無理に広げない
 - 対応していない入力が含まれる場合は、変換全体を開始しない
 - 複数入力は1つの変換バッチとして扱う
 - Safe Mode、Undo、Progress、Cancellationは既存仕様に従う
-- 旧`latex-graphics-helper.convertPngToPdf`は、必要なら非公開aliasとして新commandへ委譲する
+- 旧`graphics-workbench.convertPngToPdf`は、必要なら非公開aliasとして新commandへ委譲する
 
 ## 完了条件
 
-- `latex-graphics-helper.convertToPdf`が登録されている
+- `graphics-workbench.convertToPdf`が登録されている
 - PNGを`PDFに変換`できる
 - 複数PNGを1回のコマンドでPDFへ変換できる
 - PDFページサイズが入力画像のpixel幅・高さと同じ数値のpointになる

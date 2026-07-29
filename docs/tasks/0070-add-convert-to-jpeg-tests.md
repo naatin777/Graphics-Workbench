@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-出力形式基準コマンドの次の段階として、`latex-graphics-helper.convertToJpeg` の期待挙動を実装前にテストで固定する。
+出力形式基準コマンドの次の段階として、`graphics-workbench.convertToJpeg` の期待挙動を実装前にテストで固定する。
 
 ## 完了条件
 
@@ -44,7 +44,7 @@ Done
 - `CI=true pnpm run check` は成功した
 - `CI=true pnpm run test -- --grep "JPEGに変換|変換サブメニューにJPEG"` は、`convertToJpeg` 未実装を理由に想定どおり失敗した
 - 失敗内容:
-  - package manifestに `latex-graphics-helper.convertToJpeg` がない
+  - package manifestに `graphics-workbench.convertToJpeg` がない
   - `package.nls.ja.json` に `command.convertToJpeg` がない
-  - VS Code commandとして `latex-graphics-helper.convertToJpeg` が登録されていない
-  - `latex-graphics-helper.convertToJpeg` 実行時にcommand not foundになる
+  - VS Code commandとして `graphics-workbench.convertToJpeg` が登録されていない
+  - `graphics-workbench.convertToJpeg` 実行時にcommand not foundになる

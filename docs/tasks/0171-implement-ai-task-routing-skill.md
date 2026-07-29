@@ -10,7 +10,7 @@ Done
 
 ## 完了条件
 
-- repository共有skillとして `.agents/skills/lgh-task-runner/SKILL.md` を追加している
+- repository共有skillとして `.agents/skills/graphics-workbench-task-runner/SKILL.md` を追加している
 - skillのfrontmatter `description` が、docs/tasksを進める場合にtriggerし、一般的な実装作業へ過剰にtriggerしない内容になっている
 - AGENTS.md / RuleSync ruleと同じ長い手順を重複させていない
 - task開始時に読む文書、1タスク1目的、変更範囲、確認方法、handoffの手順を短く示している
@@ -22,9 +22,9 @@ Done
 
 ## 変更可能なファイル
 
-- `.agents/skills/lgh-task-runner/SKILL.md`
-- `.agents/skills/lgh-task-runner/agents/openai.yaml`
-- 必要な `.agents/skills/lgh-task-runner/references/`
+- `.agents/skills/graphics-workbench-task-runner/SKILL.md`
+- `.agents/skills/graphics-workbench-task-runner/agents/openai.yaml`
+- 必要な `.agents/skills/graphics-workbench-task-runner/references/`
 - `docs/tasks/0171-implement-ai-task-routing-skill.md`
 - `docs/tasks/README.md`
 
@@ -50,7 +50,7 @@ Done
 
 ## 実施結果
 
-- repository共有skillとして `.agents/skills/lgh-task-runner/SKILL.md` を追加した
+- repository共有skillとして `.agents/skills/graphics-workbench-task-runner/SKILL.md` を追加した
 - `agents/openai.yaml` を追加し、明示呼び出し用のdefault promptと暗黙呼び出し許可を設定した
 - skillはinstruction-onlyとし、script、references、assetsは追加しなかった
 - AGENTS.md / RuleSync ruleと同じ長い手順は複製せず、task開始、scope境界、risk triage、Luna委譲、verification、Git / PR、handoffに限定した
