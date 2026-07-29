@@ -179,6 +179,12 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 既存のproduction違反はなく、NLS checkerとcoverage reportの集計処理に残っていた`reduce()`をloopへ置き換える。テストのpolling loopは対象外とする。
 
+## Phase 32
+
+Promise executorから値を返すことを禁止する`eslint/no-promise-executor-return`と、`Promise.reject()`を不要に包んだ戻り値を禁止する`unicorn/no-useless-promise-resolve-reject`をerrorへ強化する。前者はproduction code、Webview本体、Node.js/GitHub Actionsスクリプトへ適用し、テストコードではPromise executorを使ったタイマー・stubが既存の8件あるため対象外とする。後者は全対象で適用する。
+
+既存のproduction違反は、WebviewのPDFページ描画で`async`関数から`Promise.reject()`を返していた1件だけだったため、直接throwへ置き換える。これにより非同期関数のrejection契約を保ったまま、例外の制御フローを明示する。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -213,6 +219,7 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `import/no-duplicates` は4件、`eslint/no-implicit-coercion` は1件、`eslint/max-classes-per-file` はproduction codeに1件、テストdoubleに3件を検出した。Phase 30ではproduction codeのクラスを分離し、重複importと暗黙変換を修正する。テストdoubleは対象外とする
 - `no-warning-comments` と `typescript/no-empty-object-type` は既存違反0件だったため、将来の未完了コメントと曖昧な空オブジェクト型の混入をerrorとして監視する
 - `eslint/no-unsafe-finally`、`import/no-cycle`、`typescript/no-redundant-type-constituents` は既存違反0件だったため、危険な制御フロー・循環依存・冗長な型の混入をerrorとして監視する。`eslint/no-unreachable-loop` はテストのpolling helperに1件、`unicorn/no-array-reduce` はNLS checkerに1件を検出した。Phase 31ではテストのloopを対象外にし、集計処理を`for...of`へ置き換える
+- `eslint/no-promise-executor-return` はproduction code、Webview本体、Node.js/GitHub Actionsスクリプトに既存違反がなく、テストコードに8件あった。Phase 32ではproduction系をerrorにし、テスト用Promise executorはoverrideで対象外とする。`unicorn/no-useless-promise-resolve-reject` はWebviewのPDFページ描画に1件あり、直接throwへ置き換えてerror化する
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
@@ -225,6 +232,7 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - Phase 29の引数数ルールを通常lintでerrorとして強制できる
 - Phase 30のimport、型変換、クラス構成、未完了コメント、空オブジェクト型の制限を通常lintでerrorとして強制できる
 - Phase 31の制御フロー、依存関係、型構成、集計処理の制限を通常lintでerrorとして強制できる
+- Phase 32のPromise executorと不要なPromise rejection wrapperの制限を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 
