@@ -33,10 +33,9 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { CONVERT_TO_PDF_COMMAND } from '../../src/commands/conversion/convert_to_pdf.js';
+import { CONVERT_TO_PDF_COMMAND, outputTemplateForSource } from '../../src/commands/conversion/convert_to_pdf.js';
 
 import { logicalSourcePathForOutputTemplate } from '../../src/application/policy/source_format.js';
-import { outputTemplateForSource } from '../../src/commands/conversion/convert_to_pdf.js';
 
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';

@@ -9,6 +9,7 @@ import {
   type CleanupPreservingError,
   type ConversionArtifactRoot,
 } from './cleanup_conversion_artifacts.js';
+import { OperationCancelledError } from './operation_cancelled_error.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import { filesHaveEqualContents, hashFile } from '../input/file_content_hash.js';
 export type OutputConflictDecision = 'keep-both' | 'cancel' | 'overwrite';
@@ -84,12 +85,7 @@ export class CommitRollbackError extends Error implements CleanupPreservingError
   }
 }
 
-export class OperationCancelledError extends Error {
-  constructor(message = 'Operation was cancelled.') {
-    super(message);
-    this.name = 'AbortError';
-  }
-}
+export { OperationCancelledError } from './operation_cancelled_error.js';
 
 export async function commitStagedOutputs(
   outputs: PreparedConversionOutput[],
