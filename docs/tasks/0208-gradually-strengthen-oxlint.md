@@ -198,6 +198,20 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 
 既存違反はいずれも0件だったため、コードの挙動を変更せず、通常lintで将来の違反をerrorとして検出する。
 
+## Phase 34
+
+さらにAPI利用と構造の重複を別方向から制限する。
+
+- `eslint/no-prototype-builtins`でprototype経由の予期しないproperty shadowingを避ける
+- `typescript/no-empty-function`、`typescript/no-extraneous-class`、`typescript/no-useless-constructor`で意味のない空実装・utility class・constructorを禁止する
+- `typescript/no-unnecessary-parameter-property-assignment`でparameter propertyの重複代入を禁止する
+- `typescript/prefer-find`と`typescript/prefer-includes`で配列の検索意図をAPIへ合わせる
+- `unicorn/no-useless-switch-case`で空のswitch caseを禁止する
+- `unicorn/prefer-set-has`でSetに対する線形検索を禁止する
+- `promise/no-new-statics`でPromise subclassの誤ったstatic利用を禁止する
+
+`typescript/no-empty-function`は本番コードに2件、テストdoubleに9件あった。本番のbest-effort cleanup callbackには意図を示すコメントを追加し、テストdoubleは既存のテストoverrideで対象外とする。その他の9ルールは既存違反0件で、挙動変更なしで通常lintへ追加する。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -234,6 +248,7 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 - `eslint/no-unsafe-finally`、`import/no-cycle`、`typescript/no-redundant-type-constituents` は既存違反0件だったため、危険な制御フロー・循環依存・冗長な型の混入をerrorとして監視する。`eslint/no-unreachable-loop` はテストのpolling helperに1件、`unicorn/no-array-reduce` はNLS checkerに1件を検出した。Phase 31ではテストのloopを対象外にし、集計処理を`for...of`へ置き換える
 - `eslint/no-promise-executor-return` はproduction code、Webview本体、Node.js/GitHub Actionsスクリプトに既存違反がなく、テストコードに8件あった。Phase 32ではproduction系をerrorにし、テスト用Promise executorはoverrideで対象外とする。`unicorn/no-useless-promise-resolve-reject` はWebviewのPDFページ描画に1件あり、直接throwへ置き換えてerror化する
 - `eslint/no-constant-condition`、`eslint/no-duplicate-case`、`eslint/no-unsafe-optional-chaining`、`typescript/no-duplicate-enum-values`、`typescript/no-unsafe-function-type`、`promise/no-return-wrap` は既存違反0件だったため、Phase 33で将来の危険な式・重複構成・汎用型・不要なPromise wrapperをerrorとして監視する
+- `eslint/no-prototype-builtins`、`typescript/no-extraneous-class`、`typescript/no-unnecessary-parameter-property-assignment`、`typescript/no-useless-constructor`、`typescript/prefer-find`、`typescript/prefer-includes`、`unicorn/no-useless-switch-case`、`unicorn/prefer-set-has`、`promise/no-new-statics` は既存違反0件だった。`typescript/no-empty-function`は本番2件とテスト9件を検出し、本番は意図コメント、テストはoverrideで解消した。Phase 34でAPI利用・構造・collection検索・Promise契約の違反をerrorとして監視する
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
@@ -248,6 +263,7 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 - Phase 31の制御フロー、依存関係、型構成、集計処理の制限を通常lintでerrorとして強制できる
 - Phase 32のPromise executorと不要なPromise rejection wrapperの制限を通常lintでerrorとして強制できる
 - Phase 33の危険な式、重複構成、汎用Function型、不要なPromise wrapperの制限を通常lintでerrorとして強制できる
+- Phase 34のAPI利用、構造の重複、collection検索、Promise/Node callback契約の制限を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 
