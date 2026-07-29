@@ -195,16 +195,14 @@ async function prepareDrawioInput(options: {
   const drawioSourcePath = path.join(options.stageDirectory, 'source.drawio');
   await assertWritablePathInWorkspace(drawioSourcePath, options.workspacePath);
   options.runtime.signal?.throwIfAborted();
-  if (isEditableDrawioImagePath(options.sourcePath)) {
-    await runDrawioCommand(
-      options.drawioPath,
-      ['-x', '-f', 'xml', '-o', drawioSourcePath, options.sourcePath],
-      options.runtime,
-      options.runDrawio,
-    );
-  } else {
-    await copyFile(options.sourcePath, drawioSourcePath);
-  }
+  await (isEditableDrawioImagePath(options.sourcePath)
+    ? runDrawioCommand(
+        options.drawioPath,
+        ['-x', '-f', 'xml', '-o', drawioSourcePath, options.sourcePath],
+        options.runtime,
+        options.runDrawio,
+      )
+    : copyFile(options.sourcePath, drawioSourcePath));
   await assertExistingPathInWorkspace(drawioSourcePath, options.workspacePath);
   return drawioSourcePath;
 }

@@ -233,6 +233,17 @@ importと型宣言の重複・曖昧さを別方向から制限する。
 
 既存違反は重複import 5件、`prefer-const` 1件、import後の空行不足2件、配列型4件、統合可能なoverload 1件だった。型importを同一importへ統合し、配列型・変数宣言・空行を機械的に修正した。テストhelperのoverloadはunionを受ける1つのgeneric signatureへまとめ、戻り値型の指定を維持する。挙動変更はない。
 
+## Phase 37
+
+分岐のスコープとAPI選択を明示する方向へ制限を広げる。
+
+- `unicorn/switch-case-braces`でswitchの各caseをブロック化し、case間の変数スコープ混在を防ぐ
+- `unicorn/prefer-ternary`で単純な二択の非同期処理を1つの式へまとめる
+- `unicorn/prefer-global-this`で環境依存のglobal aliasを`globalThis`へ統一する
+- `unicorn/prefer-dom-node-text-content`でDOM本文取得に`textContent`を使い、レイアウト依存の`innerText`を避ける
+
+既存違反はcaseのbrace不足43件、単純なif/else 3件、`window`参照3件、`innerText`参照2件だった。caseをブロック化し、非同期二択処理をternaryへ移し、Webviewテストのglobal参照を置き換えた。Electronの診断helperはレイアウト後の本文を記録する既存契約を保つため`prefer-dom-node-text-content`のtest overrideで対象外とする。production/Webview側の将来違反はerrorとして検出する。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -288,6 +299,7 @@ importと型宣言の重複・曖昧さを別方向から制限する。
 - Phase 34のAPI利用、構造の重複、collection検索、Promise/Node callback契約の制限を通常lintでerrorとして強制できる
 - Phase 35の不要な戻り値とiterator callback参照の制限を通常lintでerrorとして強制できる
 - Phase 36のimportと型宣言の重複・表記の制限を通常lintでerrorとして強制できる
+- Phase 37のswitchスコープ、二択制御、global/DOM API選択の制限を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

@@ -116,19 +116,17 @@ async function stageDrawio(
   await validateDrawioXml(xml, job.inputs[0]?.sourcePath ?? job.outputPath);
   const xmlPath = path.join(stagingRootPath, 'source.drawio');
   await writeFile(xmlPath, xml);
-  if (drawioExtension(job.outputPath) === '.drawio') {
-    await writeFile(stagedOutputPath, xml);
-  } else {
-    await exportEditableDrawioImage({
-      xmlPath,
-      outputPath: stagedOutputPath,
-      workspacePath: job.workspacePath,
-      format: drawioExtension(job.outputPath).slice(1),
-      drawioPath: options.tools.drawioPath,
-      ...(options.tools.runDrawio !== undefined && { runDrawio: options.tools.runDrawio }),
-      runtime,
-    });
-  }
+  await (drawioExtension(job.outputPath) === '.drawio'
+    ? writeFile(stagedOutputPath, xml)
+    : exportEditableDrawioImage({
+        xmlPath,
+        outputPath: stagedOutputPath,
+        workspacePath: job.workspacePath,
+        format: drawioExtension(job.outputPath).slice(1),
+        drawioPath: options.tools.drawioPath,
+        ...(options.tools.runDrawio !== undefined && { runDrawio: options.tools.runDrawio }),
+        runtime,
+      }));
   if (drawioExtension(job.outputPath) !== '.drawio') {
     await validateEmbeddedDrawioImage(
       stagedOutputPath,
@@ -486,10 +484,12 @@ function toChromeReleaseChannel(value: string): ChromeReleaseChannel {
     case 'chrome':
     case 'chrome-beta':
     case 'chrome-canary':
-    case 'chrome-dev':
+    case 'chrome-dev': {
       return value;
-    default:
+    }
+    default: {
       throw new Error(`Unsupported Mermaid browser channel: ${value}`);
+    }
   }
 }
 

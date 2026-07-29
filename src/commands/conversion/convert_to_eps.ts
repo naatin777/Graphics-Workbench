@@ -152,22 +152,29 @@ function outputPathTemplateForSource(sourcePath: string, configuration: Configur
     return readOutputPathsTemplate(configuration, 'convertDrawioToEps', DEFAULT_OUTPUT_PATH);
   }
   switch (path.extname(sourcePath).toLowerCase()) {
-    case '.png':
+    case '.png': {
       return readOutputPathTemplate(configuration, 'outputPath.convertPngToEps', DEFAULT_OUTPUT_PATH);
+    }
     case '.jpg':
-    case '.jpeg':
+    case '.jpeg': {
       return readOutputPathTemplate(configuration, 'outputPath.convertJpegToEps', DEFAULT_OUTPUT_PATH);
-    case '.webp':
+    }
+    case '.webp': {
       return readOutputPathTemplate(configuration, 'outputPath.convertWebpToEps', DEFAULT_OUTPUT_PATH);
-    case '.avif':
+    }
+    case '.avif': {
       return readOutputPathTemplate(configuration, 'outputPath.convertAvifToEps', DEFAULT_OUTPUT_PATH);
-    case '.svg':
+    }
+    case '.svg': {
       return readOutputPathTemplate(configuration, 'outputPath.convertSvgToEps', DEFAULT_OUTPUT_PATH);
+    }
     case '.mmd':
-    case '.mermaid':
+    case '.mermaid': {
       return readOutputPathTemplate(configuration, 'outputPath.convertMermaidToEps', DEFAULT_OUTPUT_PATH);
-    default:
+    }
+    default: {
       return DEFAULT_OUTPUT_PATH;
+    }
   }
 }
 

@@ -512,11 +512,9 @@ async function writeSvgAsPdf({
   await mkdir(path.dirname(outputPath), { recursive: true });
   signal?.throwIfAborted();
 
-  if (options.engine === 'rsvg-convert') {
-    await writeSvgAsPdfWithRsvgConvert(sourcePath, outputPath, options, scratchOptions, signal);
-  } else {
-    await writeSvgAsPdfWithPuppeteer(sourcePath, outputPath, size, options, signal);
-  }
+  await (options.engine === 'rsvg-convert'
+    ? writeSvgAsPdfWithRsvgConvert(sourcePath, outputPath, options, scratchOptions, signal)
+    : writeSvgAsPdfWithPuppeteer(sourcePath, outputPath, size, options, signal));
 
   signal?.throwIfAborted();
   await normalizePdfPageSize(outputPath, size.width, size.height);
