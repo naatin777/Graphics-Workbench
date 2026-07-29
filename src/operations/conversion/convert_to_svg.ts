@@ -55,6 +55,59 @@ export interface ConvertToSvgFilesOptions {
   maxInputPixels?: number;
 }
 
+type SvgGhostscriptTools = ConvertToSvgFilesOptions['ghostscriptTools'];
+
+interface SvgRenderTools {
+  pdftocairoTools: PdftocairoBackend;
+  ghostscriptTools: SvgGhostscriptTools;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
+  runPdfToSvg: RunPdfToSvg | undefined;
+  outputChannel: LineOutputChannel | undefined;
+}
+
+interface StageSvgConversionOptions {
+  pdftocairoTools: PdftocairoBackend;
+  ghostscriptTools: SvgGhostscriptTools;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
+  runPdfToSvg: RunPdfToSvg | undefined;
+  outputChannel: LineOutputChannel | undefined;
+  maxInputPixels: number;
+  signal: AbortSignal | undefined;
+}
+
+interface WriteSourceAsSvgOptions {
+  job: ConvertToSvgJob;
+  outputPath: string;
+  tools: SvgRenderTools;
+  maxInputPixels: number;
+  signal: AbortSignal | undefined;
+}
+
+interface WriteEpsAsSvgOptions {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  ghostscriptTools: SvgGhostscriptTools;
+  pdftocairoTools: PdftocairoBackend;
+  page: number | undefined;
+  runPdfToSvg: RunPdfToSvg | undefined;
+  outputChannel: LineOutputChannel | undefined;
+  signal: AbortSignal | undefined;
+}
+
+interface WritePdfPageAsSvgOptions {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  pdftocairoTools: PdftocairoBackend;
+  page: number | undefined;
+  runPdfToSvg: RunPdfToSvg | undefined;
+  outputChannel: LineOutputChannel | undefined;
+  signal: AbortSignal | undefined;
+}
+
 export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
@@ -74,19 +127,16 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
     runId,
     runtime: runtime ?? {},
     stage: async (job, index, currentRunId, batchRuntime) =>
-      stageSvgConversion(
-        job,
-        index,
-        currentRunId,
-        options.pdftocairoTools,
-        options.ghostscriptTools,
-        options.mermaidTools,
-        options.drawioTools,
-        options.runPdfToSvg,
-        batchRuntime.outputChannel,
+      stageSvgConversion(job, index, currentRunId, {
+        pdftocairoTools: options.pdftocairoTools,
+        ghostscriptTools: options.ghostscriptTools,
+        mermaidTools: options.mermaidTools,
+        drawioTools: options.drawioTools,
+        runPdfToSvg: options.runPdfToSvg,
+        outputChannel: batchRuntime.outputChannel,
         maxInputPixels,
-        batchRuntime.signal,
-      ),
+        signal: batchRuntime.signal,
+      }),
   });
 }
 
@@ -94,22 +144,9 @@ async function stageSvgConversion(
   job: ConvertToSvgJob,
   index: number,
   runId: string,
-  pdftocairoTools: PdftocairoBackend,
-  ghostscriptTools: { ghostscriptPath: string; platform?: NodeJS.Platform; scratchBaseCandidates?: readonly string[] },
-  mermaidTools: MermaidBackend,
-  drawioTools: DrawioBackend,
-  runPdfToSvg: RunPdfToSvg | undefined,
-  outputChannel: LineOutputChannel | undefined,
-  maxInputPixels: number,
-  signal?: AbortSignal,
+  options: StageSvgConversionOptions,
 ): Promise<PreparedConversionOutput> {
-  signal?.throwIfAborted();
-  const stageDirectory = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-svg', runId, `${index + 1}`);
-  const stagedOutputPath = path.join(stageDirectory, 'result.svg');
-
-  await writeSourceAsSvg(
-    job,
-    stagedOutputPath,
+  const {
     pdftocairoTools,
     ghostscriptTools,
     mermaidTools,
@@ -118,7 +155,25 @@ async function stageSvgConversion(
     outputChannel,
     maxInputPixels,
     signal,
-  );
+  } = options;
+  signal?.throwIfAborted();
+  const stageDirectory = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-svg', runId, `${index + 1}`);
+  const stagedOutputPath = path.join(stageDirectory, 'result.svg');
+
+  await writeSourceAsSvg({
+    job,
+    outputPath: stagedOutputPath,
+    tools: {
+      pdftocairoTools,
+      ghostscriptTools,
+      mermaidTools,
+      drawioTools,
+      runPdfToSvg,
+      outputChannel,
+    },
+    maxInputPixels,
+    signal,
+  });
   signal?.throwIfAborted();
   await validateGeneratedSvg(stagedOutputPath);
   signal?.throwIfAborted();
@@ -131,18 +186,14 @@ async function stageSvgConversion(
   };
 }
 
-async function writeSourceAsSvg(
-  job: ConvertToSvgJob,
-  outputPath: string,
-  pdftocairoTools: PdftocairoBackend,
-  ghostscriptTools: { ghostscriptPath: string; platform?: NodeJS.Platform; scratchBaseCandidates?: readonly string[] },
-  mermaidTools: MermaidBackend,
-  drawioTools: DrawioBackend,
-  runPdfToSvg: RunPdfToSvg | undefined,
-  outputChannel: LineOutputChannel | undefined,
-  maxInputPixels: number,
-  signal?: AbortSignal,
-): Promise<void> {
+async function writeSourceAsSvg({
+  job,
+  outputPath,
+  tools,
+  maxInputPixels,
+  signal,
+}: WriteSourceAsSvgOptions): Promise<void> {
+  const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools, runPdfToSvg, outputChannel } = tools;
   const extension = path.extname(job.sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(job.sourcePath) || isNativeDrawioPath(job.sourcePath)) {
@@ -151,31 +202,31 @@ async function writeSourceAsSvg(
   }
 
   if (extension === '.eps') {
-    await writeEpsAsSvg(
-      job.sourcePath,
+    await writeEpsAsSvg({
+      sourcePath: job.sourcePath,
       outputPath,
-      job.workspacePath,
+      workspacePath: job.workspacePath,
       ghostscriptTools,
       pdftocairoTools,
-      job.page,
+      page: job.page,
       runPdfToSvg,
       outputChannel,
       signal,
-    );
+    });
     return;
   }
 
   if (extension === '.pdf') {
-    await writePdfPageAsSvg(
-      job.sourcePath,
+    await writePdfPageAsSvg({
+      sourcePath: job.sourcePath,
       outputPath,
-      job.workspacePath,
+      workspacePath: job.workspacePath,
       pdftocairoTools,
-      job.page,
+      page: job.page,
       runPdfToSvg,
       outputChannel,
       signal,
-    );
+    });
     return;
   }
 
@@ -187,17 +238,17 @@ async function writeSourceAsSvg(
   await writeMermaidAsSvg(job.sourcePath, outputPath, job.workspacePath, mermaidTools, signal);
 }
 
-async function writeEpsAsSvg(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  ghostscriptTools: { ghostscriptPath: string; platform?: NodeJS.Platform; scratchBaseCandidates?: readonly string[] },
-  pdftocairoTools: PdftocairoBackend,
-  page: number | undefined,
-  runPdfToSvg: RunPdfToSvg | undefined,
-  outputChannel: LineOutputChannel | undefined,
-  signal?: AbortSignal,
-): Promise<void> {
+async function writeEpsAsSvg({
+  sourcePath,
+  outputPath,
+  workspacePath,
+  ghostscriptTools,
+  pdftocairoTools,
+  page,
+  runPdfToSvg,
+  outputChannel,
+  signal,
+}: WriteEpsAsSvgOptions): Promise<void> {
   signal?.throwIfAborted();
   const epsStaging = path.join(path.dirname(outputPath), 'eps-staging');
   await mkdir(epsStaging, { recursive: true });
@@ -225,16 +276,16 @@ async function writeEpsAsSvg(
   const { pdfPath } = await convertEpsToPdf(epsOptions);
 
   signal?.throwIfAborted();
-  await writePdfPageAsSvg(
-    pdfPath,
+  await writePdfPageAsSvg({
+    sourcePath: pdfPath,
     outputPath,
     workspacePath,
     pdftocairoTools,
-    page ?? 1,
+    page: page ?? 1,
     runPdfToSvg,
     outputChannel,
     signal,
-  );
+  });
 }
 
 async function writeDrawioAsSvg(
@@ -264,16 +315,16 @@ async function writeDrawioAsSvg(
   }
 }
 
-async function writePdfPageAsSvg(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  pdftocairoTools: PdftocairoBackend,
+async function writePdfPageAsSvg({
+  sourcePath,
+  outputPath,
+  workspacePath,
+  pdftocairoTools,
   page = 1,
-  runPdfToSvg: RunPdfToSvg | undefined,
-  outputChannel: LineOutputChannel | undefined,
-  signal?: AbortSignal,
-): Promise<void> {
+  runPdfToSvg,
+  outputChannel,
+  signal,
+}: WritePdfPageAsSvgOptions): Promise<void> {
   signal?.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });

@@ -180,6 +180,7 @@ export default defineConfig({
     'no-await-in-loop': 'off',
     complexity: ['error', { max: 20 }],
     'max-depth': ['error', { max: 4 }],
+    'max-params': ['error', { max: 5 }],
     'unicorn/no-negated-condition': 'error',
 
     /*
@@ -307,6 +308,7 @@ export default defineConfig({
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unsafe-return': 'off',
         complexity: 'off',
+        'max-params': 'off',
         'typescript/strict-boolean-expressions': 'off',
         'unicorn/no-useless-undefined': 'off',
         'unicorn/no-nested-ternary': 'off',
@@ -319,6 +321,7 @@ export default defineConfig({
         // The test exercises the untyped AST helper exported by the custom plugin.
         'typescript/no-unsafe-assignment': 'off',
         complexity: 'off',
+        'max-params': 'off',
       },
     },
     {
@@ -355,6 +358,7 @@ export default defineConfig({
       rules: {
         'no-console': 'off',
         complexity: 'off',
+        'max-params': 'off',
         'typescript/no-explicit-any': 'off',
         'typescript/explicit-function-return-type': 'off',
         'typescript/no-floating-promises': 'off',

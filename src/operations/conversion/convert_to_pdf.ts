@@ -96,6 +96,43 @@ export interface WriteSourceAsPdfOptions {
   scratchOptions?: RsvgToolScratchOptions;
 }
 
+interface StageSourceToPdfOptions {
+  signal: AbortSignal | undefined;
+  svgToPdfTools: SvgToPdfBackend | undefined;
+  mermaidTools: MermaidBackend | undefined;
+  drawioTools: DrawioBackend | undefined;
+  scratchOptions: RsvgToolScratchOptions;
+  ghostscriptPath: string | undefined;
+  maxInputPixels: number | undefined;
+}
+
+interface WriteEpsAsPdfOptions {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  signal: AbortSignal | undefined;
+  ghostscriptPath: string | undefined;
+  scratchOptions: RsvgToolScratchOptions;
+}
+
+interface WriteRasterImageAsPdfOptions {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  signal: AbortSignal | undefined;
+  maxInputPixels: number;
+  framePage: number | undefined;
+}
+
+interface WriteSvgAsPdfOptions {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  signal: AbortSignal | undefined;
+  svgToPdf: SvgToPdfBackend | undefined;
+  scratchOptions: RsvgToolScratchOptions;
+}
+
 export interface ConvertToPdfFilesOptions {
   jobs: ConvertToPdfJob[];
   runtime?: ConversionExecutionContext;
@@ -142,18 +179,15 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
     runId,
     runtime: runtime ?? {},
     stage: async (job, index, currentRunId, batchRuntime) =>
-      stageSourceToPdf(
-        job,
-        index,
-        currentRunId,
-        batchRuntime.signal,
-        options.tools?.svgToPdfTools,
-        options.tools?.mermaidTools,
-        options.tools?.drawioTools,
+      stageSourceToPdf(job, index, currentRunId, {
+        signal: batchRuntime.signal,
+        svgToPdfTools: options.tools?.svgToPdfTools,
+        mermaidTools: options.tools?.mermaidTools,
+        drawioTools: options.tools?.drawioTools,
         scratchOptions,
-        options.tools?.ghostscriptPath,
+        ghostscriptPath: options.tools?.ghostscriptPath,
         maxInputPixels,
-      ),
+      }),
   });
 }
 
@@ -161,14 +195,9 @@ async function stageSourceToPdf(
   job: ConvertToPdfJob,
   index: number,
   runId: string,
-  signal?: AbortSignal,
-  svgToPdfTools?: SvgToPdfBackend,
-  mermaidTools?: MermaidBackend,
-  drawioTools?: DrawioBackend,
-  scratchOptions: RsvgToolScratchOptions = {},
-  ghostscriptPath?: string,
-  maxInputPixels?: number,
+  options: StageSourceToPdfOptions,
 ): Promise<PreparedConversionOutput> {
+  const { signal, svgToPdfTools, mermaidTools, drawioTools, scratchOptions, ghostscriptPath, maxInputPixels } = options;
   signal?.throwIfAborted();
   const stagedOutputPath = path.join(
     job.workspacePath,
@@ -251,23 +280,30 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
   }
 
   if (extension === SVG_EXTENSION) {
-    await writeSvgAsPdf(sourcePath, outputPath, workspacePath, signal, svgToPdfTools, scratchOptions);
+    await writeSvgAsPdf({
+      sourcePath,
+      outputPath,
+      workspacePath,
+      signal,
+      svgToPdf: svgToPdfTools,
+      scratchOptions,
+    });
     return;
   }
 
   if (extension === '.eps') {
-    await writeEpsAsPdf(sourcePath, outputPath, workspacePath, signal, ghostscriptPath, scratchOptions);
+    await writeEpsAsPdf({ sourcePath, outputPath, workspacePath, signal, ghostscriptPath, scratchOptions });
     return;
   }
 
-  await writeRasterImageAsPdf(
+  await writeRasterImageAsPdf({
     sourcePath,
     outputPath,
     workspacePath,
     signal,
-    maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
-    options.page,
-  );
+    maxInputPixels: maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
+    framePage: options.page,
+  });
 }
 
 async function writeDrawioAsPdf(
@@ -339,14 +375,14 @@ function isPdfOutputPath(outputPath: string): outputPath is `${string}.pdf` {
   return outputPath.toLowerCase().endsWith('.pdf');
 }
 
-async function writeEpsAsPdf(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  signal: AbortSignal | undefined,
-  ghostscriptPath: string | undefined,
-  scratchOptions: RsvgToolScratchOptions,
-): Promise<void> {
+async function writeEpsAsPdf({
+  sourcePath,
+  outputPath,
+  workspacePath,
+  signal,
+  ghostscriptPath,
+  scratchOptions,
+}: WriteEpsAsPdfOptions): Promise<void> {
   if (ghostscriptPath === undefined || ghostscriptPath === '') {
     throw new Error('Ghostscript is required for EPS conversion');
   }
@@ -383,14 +419,14 @@ async function writeEpsAsPdf(
   await writeFile(outputPath, await readFile(pdfPath));
 }
 
-async function writeRasterImageAsPdf(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  signal: AbortSignal | undefined,
-  maxInputPixels: number,
-  framePage?: number,
-): Promise<void> {
+async function writeRasterImageAsPdf({
+  sourcePath,
+  outputPath,
+  workspacePath,
+  signal,
+  maxInputPixels,
+  framePage,
+}: WriteRasterImageAsPdfOptions): Promise<void> {
   signal?.throwIfAborted();
   const metadataImage = openRasterInput(sourcePath, maxInputPixels, framePage);
   let width: number;
@@ -455,14 +491,14 @@ async function writeRasterImageAsPdf(
   await writeFile(outputPath, pdfBytes);
 }
 
-async function writeSvgAsPdf(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  signal?: AbortSignal,
-  svgToPdf?: SvgToPdfBackend,
-  scratchOptions: RsvgToolScratchOptions = {},
-): Promise<void> {
+async function writeSvgAsPdf({
+  sourcePath,
+  outputPath,
+  workspacePath,
+  signal,
+  svgToPdf,
+  scratchOptions,
+}: WriteSvgAsPdfOptions): Promise<void> {
   const options = svgToPdf ?? {
     engine: 'puppeteer',
     rsvgConvertPath: 'rsvg-convert',
