@@ -183,8 +183,12 @@ function summarize(lineCoverage, includeFile) {
   );
 
   const values = [...files.values()];
-  const total = values.reduce((sum, file) => sum + file.total, 0);
-  const covered = values.reduce((sum, file) => sum + file.covered, 0);
+  let total = 0;
+  let covered = 0;
+  for (const file of values) {
+    total += file.total;
+    covered += file.covered;
+  }
   return {
     files,
     total,

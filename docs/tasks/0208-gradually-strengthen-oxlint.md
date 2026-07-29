@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 30 (experiment)
+Status: In progress — Phase 31 (experiment)
 
 ## Objective
 
@@ -167,6 +167,18 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 既存違反は重複import 4件、暗黙の型変換1件、productionの複数クラス1件だった。対象外のテストdoubleを除き、すべて修正してerror化する。
 
+## Phase 31
+
+さらに別の方向から、次の制限をerrorへ強化する。
+
+- `eslint/no-unsafe-finally`で`finally`内の`return`・`throw`・loop controlによる例外や戻り値の上書きを禁止する
+- `eslint/no-unreachable-loop`で静的に2回目へ到達できないloopを禁止する。テストのpolling helperは静的解析の誤検知を避けるため対象外とする
+- `import/no-cycle`で依存関係の循環を禁止する
+- `typescript/no-redundant-type-constituents`でunion/intersection内の無効な構成要素を禁止する
+- `unicorn/no-array-reduce`で集計処理を`for...of`へ置き換え、途中の値と処理順序を明示する
+
+既存のproduction違反はなく、NLS checkerとcoverage reportの集計処理に残っていた`reduce()`をloopへ置き換える。テストのpolling loopは対象外とする。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -200,6 +212,7 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `max-params` は既定上限3ではproduction codeとWebview本体に76件、上限5では6個以上の関数を8件検出した。Phase 29では上限5をerror化し、PDF/SVG変換の8件を引数オブジェクトへまとめて解消する。テストコードと独自Oxlintプラグインは対象外にする
 - `import/no-duplicates` は4件、`eslint/no-implicit-coercion` は1件、`eslint/max-classes-per-file` はproduction codeに1件、テストdoubleに3件を検出した。Phase 30ではproduction codeのクラスを分離し、重複importと暗黙変換を修正する。テストdoubleは対象外とする
 - `no-warning-comments` と `typescript/no-empty-object-type` は既存違反0件だったため、将来の未完了コメントと曖昧な空オブジェクト型の混入をerrorとして監視する
+- `eslint/no-unsafe-finally`、`import/no-cycle`、`typescript/no-redundant-type-constituents` は既存違反0件だったため、危険な制御フロー・循環依存・冗長な型の混入をerrorとして監視する。`eslint/no-unreachable-loop` はテストのpolling helperに1件、`unicorn/no-array-reduce` はNLS checkerに1件を検出した。Phase 31ではテストのloopを対象外にし、集計処理を`for...of`へ置き換える
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
@@ -211,6 +224,7 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - Phase 28のネスト深度ルールを通常lintでerrorとして強制できる
 - Phase 29の引数数ルールを通常lintでerrorとして強制できる
 - Phase 30のimport、型変換、クラス構成、未完了コメント、空オブジェクト型の制限を通常lintでerrorとして強制できる
+- Phase 31の制御フロー、依存関係、型構成、集計処理の制限を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 
