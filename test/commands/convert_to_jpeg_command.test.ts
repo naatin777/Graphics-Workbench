@@ -1,5 +1,5 @@
 // Test target:
-// - latex-graphics-helper.convertToJpeg commandが登録されること
+// - graphics-workbench.convertToJpeg commandが登録されること
 // - PNGをJPEGへ変換できること
 // - WebP、AVIFをJPEGへ変換できること
 // - SVGをJPEGへ変換できること
@@ -124,7 +124,7 @@ suite('JPEGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertPngToJpeg': '${fileDirname}/custom-${fileBasenameNoExtension}.jpeg',
+          'graphics-workbench.outputPath.convertPngToJpeg': '${fileDirname}/custom-${fileBasenameNoExtension}.jpeg',
         },
         async () => {
           await vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
@@ -147,7 +147,7 @@ suite('JPEGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertPngToJpeg': '',
+          'graphics-workbench.outputPath.convertPngToJpeg': '',
         },
         async () => {
           await vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
@@ -181,7 +181,9 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-convert-to-jpeg-'));
+  const temporaryDirectory = await mkdtemp(
+    path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-convert-to-jpeg-'),
+  );
   await mkdir(temporaryDirectory, { recursive: true });
   return temporaryDirectory;
 }

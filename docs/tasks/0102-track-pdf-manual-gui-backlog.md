@@ -14,10 +14,10 @@ PDF crop / split / merge のconfigure GUI機能について、現在の未実装
 
 現行 `package.json` には以下のコマンドが定義されている。
 
-- `latex-graphics-helper.cropPdf.configure`
-- `latex-graphics-helper.splitPdf.configure`
-- `latex-graphics-helper.mergePdf.selectedFiles`
-- `latex-graphics-helper.mergePdf.configure`
+- `graphics-workbench.cropPdf.configure`
+- `graphics-workbench.splitPdf.configure`
+- `graphics-workbench.mergePdf.selectedFiles`
+- `graphics-workbench.mergePdf.configure`
 
 ただし、このタスク作成時点の `src/extension.ts` ではこれらのconfigure GUI系コマンドは登録されていない。
 

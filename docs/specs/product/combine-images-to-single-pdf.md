@@ -6,9 +6,9 @@
 
 ## コマンド
 
-| Command ID                                       | 表示名               | 出力形式 |
-| ------------------------------------------------ | -------------------- | -------- |
-| `latex-graphics-helper.convertImagesToSinglePdf` | 画像を1つのPDFに結合 | PDF      |
+| Command ID                                    | 表示名               | 出力形式 |
+| --------------------------------------------- | -------------------- | -------- |
+| `graphics-workbench.convertImagesToSinglePdf` | 画像を1つのPDFに結合 | PDF      |
 
 ## 対象入力形式
 

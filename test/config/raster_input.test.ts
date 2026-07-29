@@ -6,17 +6,17 @@ import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
 suite('Raster入力pixel上限設定', () => {
   test('未設定時はSharp既定値を返す', async () => {
-    await withWorkspaceSettings({ 'latex-graphics-helper.raster.maxInputPixels': undefined }, async () => {
+    await withWorkspaceSettings({ 'graphics-workbench.raster.maxInputPixels': undefined }, async () => {
       assert.strictEqual(
-        getMaxInputPixels(vscode.workspace.getConfiguration('latex-graphics-helper')),
+        getMaxInputPixels(vscode.workspace.getConfiguration('graphics-workbench')),
         DEFAULT_MAX_INPUT_PIXELS,
       );
     });
   });
 
   test('正の整数のカスタム値を返す', async () => {
-    await withWorkspaceSettings({ 'latex-graphics-helper.raster.maxInputPixels': 100 }, async () => {
-      assert.strictEqual(getMaxInputPixels(vscode.workspace.getConfiguration('latex-graphics-helper')), 100);
+    await withWorkspaceSettings({ 'graphics-workbench.raster.maxInputPixels': 100 }, async () => {
+      assert.strictEqual(getMaxInputPixels(vscode.workspace.getConfiguration('graphics-workbench')), 100);
     });
   });
 
@@ -43,7 +43,7 @@ suite('Raster入力pixel上限設定', () => {
     }
   });
   test('設定項目がworkspace設定として公開される', () => {
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     assert.strictEqual(configuration.get<number>('raster.maxInputPixels'), DEFAULT_MAX_INPUT_PIXELS);
   });
 });

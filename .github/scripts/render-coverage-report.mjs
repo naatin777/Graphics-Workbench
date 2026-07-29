@@ -439,7 +439,7 @@ function renderReport(extensionReports, webviewSummary) {
       ? `[行ごとのHTMLレポートはActions artifactsから確認できます。](${runUrl})`
       : '行ごとのHTMLレポートはActions artifactsから確認できます。',
     '',
-    '<!-- latex-graphics-helper-coverage-report -->',
+    '<!-- graphics-workbench-coverage-report -->',
   );
   return `${output.join('\n')}\n`;
 }

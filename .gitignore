@@ -7,7 +7,7 @@ node_modules
 playwright-report/
 test-results/
 media/
-.latex-graphics-helper/
+.graphics-workbench/
 .codex/rules/
 .serena/
 *.vsix

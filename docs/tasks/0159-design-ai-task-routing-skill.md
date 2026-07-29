@@ -76,7 +76,7 @@ Done
 ## 実施結果
 
 - 現行の公式Codex manualを確認し、skill配置、呼び出し方法、AGENTS.md、hooks、rules、subagentの責務境界をresearch noteへ記録した
-- このprojectのtask実行workflowは、repository共有skillとして `.agents/skills/lgh-task-runner` に置く方針にした
+- このprojectのtask実行workflowは、repository共有skillとして `.agents/skills/graphics-workbench-task-runner` に置く方針にした
 - skillはinstruction-onlyから開始し、script、hook、RuleSync rule、個人Codex設定はこのskillへ含めない方針にした
 - AGENTS.md / RuleSync ruleには常に守る短い制約だけを置き、skillには必要時に読む反復手順を置く方針にした
 - Luna `xhigh` への委譲は、読み取り中心の調査、CI/log分析、test gap確認、独立した小さいpatchに限定する方針にした
@@ -90,7 +90,7 @@ Done
 
 ### 配置
 
-task実行skillはrepository共有にする。配置候補は `.agents/skills/lgh-task-runner`。
+task実行skillはrepository共有にする。配置候補は `.agents/skills/graphics-workbench-task-runner`。
 
 理由は、このworkflowがこのrepositoryの `docs/tasks/`、ADR、RuleSync rule、branch運用、確認commandに依存するため。個人skillへ置くと、他のAIや別環境で同じ作業手順を共有しにくい。
 

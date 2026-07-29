@@ -26,7 +26,7 @@ import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecy
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../shared/command_utils.js';
 
-export const CROP_PDF_CONFIGURE_COMMAND = 'latex-graphics-helper.cropPdf.configure';
+export const CROP_PDF_CONFIGURE_COMMAND = 'graphics-workbench.cropPdf.configure';
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-crop.pdf';
 
 export async function cropPdfConfigureCommand(
@@ -67,7 +67,7 @@ async function runCropPdfConfigureCommand(
   const pdf = await PDFDocument.load(await readFile(inputUri.fsPath));
   const firstPage = pdf.getPages()[0];
   const firstPageMediaBox = firstPage?.getMediaBox();
-  const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+  const configuration = vscode.workspace.getConfiguration('graphics-workbench');
   const outputTemplate = configuration.get<string>('outputPath.cropPdf', DEFAULT_OUTPUT_PATH);
   const initMessage: CropConfigureHostToWebview = {
     type: 'init',
@@ -86,7 +86,7 @@ async function runCropPdfConfigureCommand(
     },
   };
   const panel = vscode.window.createWebviewPanel(
-    'latex-graphics-helper.cropPdf.configure',
+    'graphics-workbench.cropPdf.configure',
     `Crop PDF: ${path.basename(inputUri.fsPath)}`,
     vscode.ViewColumn.Active,
     {

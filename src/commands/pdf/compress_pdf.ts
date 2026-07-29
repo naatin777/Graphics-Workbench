@@ -23,7 +23,7 @@ const QUALITY_OPTIONS: { quality: GhostscriptQuality; label: string; description
   { quality: 'prepress', label: 'Prepress', description: localeMap('quickPick.compressPdf.quality.prepress') },
   { quality: 'default', label: 'Default', description: localeMap('quickPick.compressPdf.quality.default') },
 ];
-export const COMPRESS_PDF_COMMAND = 'latex-graphics-helper.compressPdf';
+export const COMPRESS_PDF_COMMAND = 'graphics-workbench.compressPdf';
 
 export async function compressPdfCommand(
   uri?: vscode.Uri,
@@ -38,7 +38,7 @@ export async function compressPdfCommand(
       throw new Error('No PDF files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const outputTemplate = configuration.get<string>('outputPath.compressPdf', DEFAULT_OUTPUT_PATH);
     const quality = await selectQuality();
 

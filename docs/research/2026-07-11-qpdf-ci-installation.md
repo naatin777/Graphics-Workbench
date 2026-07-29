@@ -33,7 +33,7 @@
 - macOSはHomebrew formulaを使う
 - Windowsはqpdf公式の12.3.2 msvc64 ZIPを固定URLから取得し、展開前にSHA-256を検証する
 - 導入確認では、3 OSすべてで実体の`qpdf --version`を実行する
-- extensionはまだqpdfを使わないため、`latex-graphics-helper.execPath.qpdf`は追加しない
+- extensionはまだqpdfを使わないため、`graphics-workbench.execPath.qpdf`は追加しない
 
 ## 未確認事項
 

@@ -207,6 +207,6 @@ export function rasterInputPixelLimitMessage(
     );
   }
 
-  lines.push('', 'Reduce the image dimensions or increase', 'latex-graphics-helper.raster.maxInputPixels.');
+  lines.push('', 'Reduce the image dimensions or increase', 'graphics-workbench.raster.maxInputPixels.');
   return lines.join('\n');
 }

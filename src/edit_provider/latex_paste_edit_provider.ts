@@ -98,7 +98,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
           return undefined;
         }
 
-        const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+        const configuration = vscode.workspace.getConfiguration('graphics-workbench');
         const outputPathClipboardImage = configuration.get<string>(
           'outputPath.clipboardImage',
           '${fileDirname}/${dateNow}',
@@ -134,7 +134,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
             kind: pickedItem.pasteKind,
             outputBasePath: outputPath,
             workspacePath,
-            maxInputPixels: getMaxInputPixels(vscode.workspace.getConfiguration('latex-graphics-helper')),
+            maxInputPixels: getMaxInputPixels(vscode.workspace.getConfiguration('graphics-workbench')),
           },
           {
             signal,
@@ -183,7 +183,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
   }
 
   createSingleFileSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const templates = getImageTemplates(configuration);
     const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {

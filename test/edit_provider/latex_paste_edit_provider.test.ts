@@ -22,7 +22,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-latex-paste-'));
+    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-'));
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
@@ -72,7 +72,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-latex-paste-undo-'));
+    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-undo-'));
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
@@ -110,7 +110,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         assert.ok(normalizeSnippetValue(edit.insertText.value).includes('pasted.png'));
         assert.ok(showWarningMessage.calledOnce);
-        await assert.rejects(access(path.join(directory, '.latex-graphics-helper', 'clipboard-paste')));
+        await assert.rejects(access(path.join(directory, '.graphics-workbench', 'clipboard-paste')));
       } finally {
         tokenSource.dispose();
       }
@@ -125,7 +125,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-latex-paste-pdf-'));
+    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-pdf-'));
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
@@ -226,7 +226,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-latex-paste-conflict-'));
+    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-conflict-'));
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
@@ -276,7 +276,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-latex-paste-cancel-'));
+    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-cancel-'));
     const tokenSource = new vscode.CancellationTokenSource();
 
     try {
@@ -311,7 +311,9 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-latex-paste-conflict-cancel-'));
+    const directory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-conflict-cancel-'),
+    );
     const tokenSource = new vscode.CancellationTokenSource();
     const lines: string[] = [];
 
@@ -346,7 +348,7 @@ suite('LaTeXクリップボード画像挿入', () => {
 
       assert.strictEqual(edits, undefined);
       assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing clipboard image');
-      await assert.rejects(access(path.join(directory, '.latex-graphics-helper')));
+      await assert.rejects(access(path.join(directory, '.graphics-workbench')));
       assert.ok(lines.some((line) => line.includes('cancellation requested')));
     } finally {
       tokenSource.dispose();

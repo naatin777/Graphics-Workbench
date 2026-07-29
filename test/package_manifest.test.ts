@@ -8,71 +8,75 @@ import { requireValue } from './helpers/required.js';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-const CONVERT_TO_PDF_COMMAND = 'latex-graphics-helper.convertToPdf';
-const CONVERT_TO_PNG_COMMAND = 'latex-graphics-helper.convertToPng';
-const CONVERT_TO_JPEG_COMMAND = 'latex-graphics-helper.convertToJpeg';
-const CONVERT_TO_WEBP_COMMAND = 'latex-graphics-helper.convertToWebp';
-const CONVERT_TO_WEBP_PRESERVE_COMMAND = 'latex-graphics-helper.convertToWebpPreserveAnimation';
-const CONVERT_TO_WEBP_SEPARATELY_COMMAND = 'latex-graphics-helper.convertToWebpSeparately';
-const CONVERT_TO_AVIF_COMMAND = 'latex-graphics-helper.convertToAvif';
-const CONVERT_TO_SVG_COMMAND = 'latex-graphics-helper.convertToSvg';
-const CONVERT_TO_GIF_COMMAND = 'latex-graphics-helper.convertToGif';
-const CONVERT_TO_GIF_PRESERVE_COMMAND = 'latex-graphics-helper.convertToGifPreserveAnimation';
-const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'latex-graphics-helper.convertToGifSeparately';
-const CONVERT_DRAWIO_TO_PDF_COMMAND = 'latex-graphics-helper.convertDrawioToPdf';
-const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'latex-graphics-helper.convertDrawioToPdfDirectly';
-const COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND = 'latex-graphics-helper.convertImagesToSinglePdf';
-const CONVERT_SUBMENU = 'latex-graphics-helper.convert';
-const CONTEXT_MENU_ENABLED = 'config.latex-graphics-helper.contextMenu.enabled';
+const CONVERT_TO_PDF_COMMAND = 'graphics-workbench.convertToPdf';
+const CONVERT_TO_PNG_COMMAND = 'graphics-workbench.convertToPng';
+const CONVERT_TO_JPEG_COMMAND = 'graphics-workbench.convertToJpeg';
+const CONVERT_TO_WEBP_COMMAND = 'graphics-workbench.convertToWebp';
+const CONVERT_TO_WEBP_PRESERVE_COMMAND = 'graphics-workbench.convertToWebpPreserveAnimation';
+const CONVERT_TO_WEBP_SEPARATELY_COMMAND = 'graphics-workbench.convertToWebpSeparately';
+const CONVERT_TO_AVIF_COMMAND = 'graphics-workbench.convertToAvif';
+const CONVERT_TO_SVG_COMMAND = 'graphics-workbench.convertToSvg';
+const CONVERT_TO_GIF_COMMAND = 'graphics-workbench.convertToGif';
+const CONVERT_TO_GIF_PRESERVE_COMMAND = 'graphics-workbench.convertToGifPreserveAnimation';
+const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'graphics-workbench.convertToGifSeparately';
+const CONVERT_DRAWIO_TO_PDF_COMMAND = 'graphics-workbench.convertDrawioToPdf';
+const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'graphics-workbench.convertDrawioToPdfDirectly';
+const COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND = 'graphics-workbench.convertImagesToSinglePdf';
+const CONVERT_SUBMENU = 'graphics-workbench.convert';
+const CONTEXT_MENU_ENABLED = 'config.graphics-workbench.contextMenu.enabled';
 const COMPOUND_DRAWIO_MATCH = 'resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i';
 const COMPOUND_DRAWIO_NOT_MATCH = `!(${COMPOUND_DRAWIO_MATCH})`;
 const CONVERSION_CONTEXT_MENU_SETTINGS = {
   drawio: {
-    property: 'latex-graphics-helper.contextMenu.convertDrawio.enabled',
+    property: 'graphics-workbench.contextMenu.convertDrawio.enabled',
     description: 'config.contextMenu.convertDrawio.enabled',
   },
   pdf: {
-    property: 'latex-graphics-helper.contextMenu.convertPdf.enabled',
+    property: 'graphics-workbench.contextMenu.convertPdf.enabled',
     description: 'config.contextMenu.convertPdf.enabled',
   },
   png: {
-    property: 'latex-graphics-helper.contextMenu.convertPng.enabled',
+    property: 'graphics-workbench.contextMenu.convertPng.enabled',
     description: 'config.contextMenu.convertPng.enabled',
   },
   jpeg: {
-    property: 'latex-graphics-helper.contextMenu.convertJpeg.enabled',
+    property: 'graphics-workbench.contextMenu.convertJpeg.enabled',
     description: 'config.contextMenu.convertJpeg.enabled',
   },
   webp: {
-    property: 'latex-graphics-helper.contextMenu.convertWebp.enabled',
+    property: 'graphics-workbench.contextMenu.convertWebp.enabled',
     description: 'config.contextMenu.convertWebp.enabled',
   },
   avif: {
-    property: 'latex-graphics-helper.contextMenu.convertAvif.enabled',
+    property: 'graphics-workbench.contextMenu.convertAvif.enabled',
     description: 'config.contextMenu.convertAvif.enabled',
   },
   svg: {
-    property: 'latex-graphics-helper.contextMenu.convertSvg.enabled',
+    property: 'graphics-workbench.contextMenu.convertSvg.enabled',
     description: 'config.contextMenu.convertSvg.enabled',
   },
   mermaid: {
-    property: 'latex-graphics-helper.contextMenu.convertMermaid.enabled',
+    property: 'graphics-workbench.contextMenu.convertMermaid.enabled',
     description: 'config.contextMenu.convertMermaid.enabled',
   },
 } as const;
 const UNIMPLEMENTED_MANUAL_COMMANDS = [
-  'latex-graphics-helper.splitPdf.manual',
-  'latex-graphics-helper.mergePdf.manual',
+  'graphics-workbench.splitPdf.manual',
+  'graphics-workbench.mergePdf.manual',
 ] as const;
 const LEGACY_TO_PDF_COMMANDS = [
-  'latex-graphics-helper.convertPngToPdf',
-  'latex-graphics-helper.convertJpegToPdf',
-  'latex-graphics-helper.convertWebpToPdf',
-  'latex-graphics-helper.convertAvifToPdf',
-  'latex-graphics-helper.convertSvgToPdf',
+  'graphics-workbench.convertPngToPdf',
+  'graphics-workbench.convertJpegToPdf',
+  'graphics-workbench.convertWebpToPdf',
+  'graphics-workbench.convertAvifToPdf',
+  'graphics-workbench.convertSvgToPdf',
 ] as const;
 
 interface PackageJson {
+  name: string;
+  displayName: string;
+  homepage: string;
+  repository: { type: string; url: string };
   activationEvents?: string[];
   devEngines: {
     packageManager: { name: string; version: string; onFail: string };
@@ -110,6 +114,20 @@ suite('package.jsonのruntime制約', () => {
       name: 'node',
       version: '>=22.22.2',
       onFail: 'error',
+    });
+  });
+});
+
+suite('package.jsonのrepository identity', () => {
+  test('Graphics Workbenchのextension identityとrepository URLを使う', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+
+    assert.strictEqual(packageJson.name, 'graphics-workbench');
+    assert.strictEqual(packageJson.displayName, 'Graphics Workbench');
+    assert.strictEqual(packageJson.homepage, 'https://github.com/naatin777/Graphics-Workbench');
+    assert.deepStrictEqual(packageJson.repository, {
+      type: 'git',
+      url: 'https://github.com/naatin777/Graphics-Workbench',
     });
   });
 });
@@ -168,7 +186,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(explorerContext.some((entry) => entry.command === CONVERT_DRAWIO_TO_PDF_COMMAND));
     assert.ok(explorerContext.some((entry) => entry.command === CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND));
     assert.strictEqual(
-      properties['latex-graphics-helper.outputPath.convertDrawioToPdfDirectly']?.default,
+      properties['graphics-workbench.outputPath.convertDrawioToPdfDirectly']?.default,
       '${fileDirname}/${fileBasenameNoExtension}.pdf',
     );
   });
@@ -580,14 +598,14 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const properties = packageJson.contributes.configuration.properties;
 
-    assert.deepStrictEqual(properties['latex-graphics-helper.convertToWebp.effort'], {
+    assert.deepStrictEqual(properties['graphics-workbench.convertToWebp.effort'], {
       type: 'integer',
       default: 4,
       minimum: 0,
       maximum: 6,
       description: '%config.convertToWebp.effort%',
     });
-    assert.deepStrictEqual(properties['latex-graphics-helper.convertToAvif.effort'], {
+    assert.deepStrictEqual(properties['graphics-workbench.convertToAvif.effort'], {
       type: 'integer',
       default: 4,
       minimum: 0,
@@ -599,7 +617,7 @@ suite('package.jsonの変換メニュー定義', () => {
   test('outputPathsのスキーマはadditionalPropertiesを禁止する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const outputPaths = requireValue(
-      packageJson.contributes.configuration.properties['latex-graphics-helper.outputPaths'],
+      packageJson.contributes.configuration.properties['graphics-workbench.outputPaths'],
     );
 
     assert.deepStrictEqual(outputPaths.additionalProperties, false);
@@ -616,7 +634,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const properties = packageJson.contributes.configuration.properties;
 
-    assert.deepStrictEqual(properties['latex-graphics-helper.outputPath.clipboardImage'], {
+    assert.deepStrictEqual(properties['graphics-workbench.outputPath.clipboardImage'], {
       type: 'string',
       default: '${fileDirname}/${dateNow}',
       description: '%config.outputPath.clipboardImage%',
@@ -644,7 +662,18 @@ async function readJson(relativePath: string): Promise<PackageJson | Record<stri
 }
 
 function isPackageJson(value: unknown): value is PackageJson {
-  if (!isRecord(value) || !isRecord(value.devEngines) || !isRecord(value.engines) || !isRecord(value.contributes)) {
+  if (
+    !isRecord(value) ||
+    typeof value.name !== 'string' ||
+    typeof value.displayName !== 'string' ||
+    typeof value.homepage !== 'string' ||
+    !isRecord(value.repository) ||
+    typeof value.repository.type !== 'string' ||
+    typeof value.repository.url !== 'string' ||
+    !isRecord(value.devEngines) ||
+    !isRecord(value.engines) ||
+    !isRecord(value.contributes)
+  ) {
     return false;
   }
 

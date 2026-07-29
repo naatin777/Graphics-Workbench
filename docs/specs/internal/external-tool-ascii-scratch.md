@@ -56,7 +56,7 @@ scratch baseをsettings.jsonから指定させない。任意のworkspace外path
 command実行ごとに、次のような専用rootを`mkdtemp`で作る。
 
 ```text
-<ascii-temp-base>/latex-graphics-helper-<random>/
+<ascii-temp-base>/graphics-workbench-<random>/
 ├ input.pdf
 ├ input.svg
 ├ output.pdf

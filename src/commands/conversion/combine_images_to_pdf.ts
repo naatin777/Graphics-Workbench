@@ -16,7 +16,7 @@ import { userMessage } from '../shared/user_messages.js';
 import { selectedUris } from '../shared/command_utils.js';
 import { localeMap } from '../../locale_map.js';
 
-export const COMBINE_IMAGES_TO_PDF_COMMAND = 'latex-graphics-helper.convertImagesToSinglePdf';
+export const COMBINE_IMAGES_TO_PDF_COMMAND = 'graphics-workbench.convertImagesToSinglePdf';
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.pdf';
 const OUTPUT_PATH_SETTING = 'outputPath.convertImagesToSinglePdf';
 
@@ -41,7 +41,7 @@ export async function combineImagesToPdfCommand(
 
     const workspaceFolder = requireSingleWorkspace(previewedUris);
     const workspacePath = workspaceFolder.uri.fsPath;
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const configuredTemplate = readOutputPathTemplate(configuration, OUTPUT_PATH_SETTING, '').trim();
     const outputTemplate = configuredTemplate || undefined;
     const outputPath = await resolveCombineOutputPath(previewedUris, workspaceFolder, outputTemplate);

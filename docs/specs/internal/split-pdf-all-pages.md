@@ -11,7 +11,7 @@ command adapterは`uri`と`uris`を受け取り、`uris`に1件以上ある場�
 元PDFとpage artifactは、operationごとの次のstaging rootで管理する。
 
 ```text
-<workspace>/.latex-graphics-helper/split-pdf/<一意ID>/<入力ごとのディレクトリ>/
+<workspace>/.graphics-workbench/split-pdf/<一意ID>/<入力ごとのディレクトリ>/
 ```
 
 pageごとの完成artifactをstagingで作成し、final pathへのcommitとは分離する。stagingの寿命とactivation時のcleanupは、[Safe Mode internal contract](safe-mode.md)と[file operation security contract](file-operation-security.md)を正本とする。

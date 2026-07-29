@@ -1,4 +1,4 @@
 export {
   parseSplitPdfPages as parsePages,
   type SplitPdfPageParseFailure as PageParseFailure,
-} from '@lgh-split-pdf-protocol';
+} from '@graphics-workbench-split-pdf-protocol';

@@ -48,8 +48,8 @@ Done
 - Webviewがconfigure用の `init` payloadを受け取ってPDFの最初のページを表示すること
 - WebviewがApply時に `apply` messageを送ること
 - `apply` messageが `cropBox` と `target: { type: "all" }` を含むこと
-- Host側の入口として `latex-graphics-helper.cropPdf.configure` commandが登録されること
-- 旧 `latex-graphics-helper.cropPdf.manual` commandを登録しないこと
+- Host側の入口として `graphics-workbench.cropPdf.configure` commandが登録されること
+- 旧 `graphics-workbench.cropPdf.manual` commandを登録しないこと
 
 ## この段階で固定しない範囲
 

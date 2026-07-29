@@ -11,7 +11,7 @@ PDFのページ数・MediaBox・CropBox・ファイルサイズだけでは検�
 ## テスト方針
 
 - 固定fixtureを一時workspaceへコピーし、実ファイルの読み込み経路を通す
-- `latex-graphics-helper.execPath.pdftocairo`で入力PDFと出力PDFを同じ解像度（初期値144 DPI）でPNGへ描画する
+- `graphics-workbench.execPath.pdftocairo`で入力PDFと出力PDFを同じ解像度（初期値144 DPI）でPNGへ描画する
 - PDFバイナリの完全一致ではなく、次を組み合わせて比較する
   - PNGの幅・高さ
   - 許容値を設けたpixel差分率

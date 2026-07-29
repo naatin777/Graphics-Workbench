@@ -83,7 +83,7 @@ async function stageSourceToEps(
   options: ConvertToEpsFilesOptions,
 ): Promise<PreparedConversionOutput> {
   runtime.signal?.throwIfAborted();
-  const stagingRootPath = path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-eps', runId);
+  const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-eps', runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const pdfPath = path.join(stageDirectory, 'source.pdf');
   const stagedOutputPath = path.join(stageDirectory, 'result.eps');

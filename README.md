@@ -1,7 +1,7 @@
 <div align="center">
-  <h1>LaTeX Graphics Helper</h1>
-  <img alt="GitHub License" src="https://img.shields.io/github/license/naatin777/LaTeX-Graphics-Helper">
-  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/naatin777/LaTeX-Graphics-Helper">
+  <h1>Graphics Workbench</h1>
+  <img alt="GitHub License" src="https://img.shields.io/github/license/naatin777/Graphics-Workbench">
+  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/naatin777/Graphics-Workbench">
 </div>
 
 English | [日本語](README.ja.md)
@@ -35,12 +35,12 @@ It provides PDF splitting and cropping, conversion between PDF, image, SVG, Merm
 You can install this extension in one of the following ways:
 
 - **Visual Studio Code Marketplace**:
-  Search for "LaTeX Graphics Helper" in the Extensions Marketplace within VS Code and install it.
-  [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=naatin777.latex-graphics-helper)
+  Search for "Graphics Workbench" in the Extensions Marketplace within VS Code and install it.
+  [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=naatin777.graphics-workbench)
 
 - **Open VSX Registry**:
   It can also be installed from Open VSX, an alternative marketplace for VS Code.
-  [Open VSX](https://open-vsx.org/extension/naatin777/latex-graphics-helper)
+  [Open VSX](https://open-vsx.org/extension/naatin777/graphics-workbench)
 
 ## Commands
 
@@ -71,29 +71,29 @@ GIF/TIFF input uses only the first page/frame. Use the explicit animation preser
 - **Draw.io**: The Draw.io desktop application is required to convert native Draw.io files (`.drawio`, `.dio`) and editable Draw.io images (`.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg`). Download it from [Draw.io](https://github.com/jgraph/drawio-desktop/releases).
 - **Ghostscript**: Required for PDF margin detection during PDF cropping.
 - **Poppler / `pdftocairo`**: Required for rendering PDF pages to PNG, JPEG, WebP, AVIF, or SVG. On macOS: `brew install poppler`. On Debian/Ubuntu: `apt install poppler-utils`.
-- **rsvg-convert**: Required only when `latex-graphics-helper.convertToPdf.svg.engine` is set to `rsvg-convert`. It is provided by [librsvg](https://wiki.gnome.org/Projects/LibRsvg). On macOS: `brew install librsvg`. On Debian/Ubuntu: `apt install librsvg2-bin`.
+- **rsvg-convert**: Required only when `graphics-workbench.convertToPdf.svg.engine` is set to `rsvg-convert`. It is provided by [librsvg](https://wiki.gnome.org/Projects/LibRsvg). On macOS: `brew install librsvg`. On Debian/Ubuntu: `apt install librsvg2-bin`.
 - **Google Chrome / Chromium**: Required for Mermaid conversion and optional for SVG conversion when the Puppeteer browser is set to `chrome`.
-- **Firefox**: Can be selected for SVG conversion with `latex-graphics-helper.puppeteer.browser` set to `firefox`.
+- **Firefox**: Can be selected for SVG conversion with `graphics-workbench.puppeteer.browser` set to `firefox`.
 
 ## Configuration
 
 Main settings:
 
-| Setting                                                       | Default                                         | Description                                                                                                                       |
-| ------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `latex-graphics-helper.outputPath.clipboardImage`             | `${fileDirname}/${dateNow}`                     | Default output path shown when pasting a clipboard image. It can be edited during paste, and the extension is added automatically |
-| `latex-graphics-helper.insertLatex.pdfTemplate`               | `\begin{figure}[H]...`                          | LaTeX template for PDF drop. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices                  |
-| `latex-graphics-helper.insertLatex.imageTemplate`             | `\begin{figure}[H]...`                          | LaTeX template for image paste. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices               |
-| `latex-graphics-helper.execPath.drawio`                       | empty string                                    | Path to Draw.io Desktop. If empty, the OS default command is used                                                                 |
-| `latex-graphics-helper.execPath.ghostscript`                  | empty string                                    | Path to Ghostscript. If empty, the OS default command is used                                                                     |
-| `latex-graphics-helper.execPath.pdftocairo`                   | `pdftocairo`                                    | Path to the `pdftocairo` executable                                                                                               |
-| `latex-graphics-helper.execPath.rsvgConvert`                  | `rsvg-convert`                                  | Path to the `rsvg-convert` executable                                                                                             |
-| `latex-graphics-helper.convertToPdf.svg.engine`               | `puppeteer`                                     | SVG to PDF backend. Choose `puppeteer` or `rsvg-convert`                                                                          |
-| `latex-graphics-helper.puppeteer.browser`                     | `chrome`                                        | Browser used by Puppeteer for SVG conversion. Choose `chrome` or `firefox`                                                        |
-| `latex-graphics-helper.puppeteer.executablePath`              | empty string                                    | Browser executable shared by SVG and Mermaid conversions; takes precedence over the channel                                       |
-| `latex-graphics-helper.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Output path for the one-PDF Draw.io command                                                                                       |
-| `latex-graphics-helper.convertToWebp.effort`                  | `4`                                             | Encoding effort for WebP output                                                                                                   |
-| `latex-graphics-helper.convertToAvif.effort`                  | `4`                                             | Encoding effort for AVIF output                                                                                                   |
+| Setting                                                    | Default                                         | Description                                                                                                                       |
+| ---------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.outputPath.clipboardImage`             | `${fileDirname}/${dateNow}`                     | Default output path shown when pasting a clipboard image. It can be edited during paste, and the extension is added automatically |
+| `graphics-workbench.insertLatex.pdfTemplate`               | `\begin{figure}[H]...`                          | LaTeX template for PDF drop. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices                  |
+| `graphics-workbench.insertLatex.imageTemplate`             | `\begin{figure}[H]...`                          | LaTeX template for image paste. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices               |
+| `graphics-workbench.execPath.drawio`                       | empty string                                    | Path to Draw.io Desktop. If empty, the OS default command is used                                                                 |
+| `graphics-workbench.execPath.ghostscript`                  | empty string                                    | Path to Ghostscript. If empty, the OS default command is used                                                                     |
+| `graphics-workbench.execPath.pdftocairo`                   | `pdftocairo`                                    | Path to the `pdftocairo` executable                                                                                               |
+| `graphics-workbench.execPath.rsvgConvert`                  | `rsvg-convert`                                  | Path to the `rsvg-convert` executable                                                                                             |
+| `graphics-workbench.convertToPdf.svg.engine`               | `puppeteer`                                     | SVG to PDF backend. Choose `puppeteer` or `rsvg-convert`                                                                          |
+| `graphics-workbench.puppeteer.browser`                     | `chrome`                                        | Browser used by Puppeteer for SVG conversion. Choose `chrome` or `firefox`                                                        |
+| `graphics-workbench.puppeteer.executablePath`              | empty string                                    | Browser executable shared by SVG and Mermaid conversions; takes precedence over the channel                                       |
+| `graphics-workbench.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Output path for the one-PDF Draw.io command                                                                                       |
+| `graphics-workbench.convertToWebp.effort`                  | `4`                                             | Encoding effort for WebP output                                                                                                   |
+| `graphics-workbench.convertToAvif.effort`                  | `4`                                             | Encoding effort for AVIF output                                                                                                   |
 
 Output paths and LaTeX snippet candidates can also be changed from VS Code settings.
 
@@ -101,7 +101,7 @@ Command IDs use output-format names such as `convertToPdf`, but output paths use
 
 ## Output Panel
 
-Open **View → Output → LaTeX Graphics Helper** to see relevant command inputs, external tool failures, conflict decisions, committed outputs, and cleanup failures. Progress is shown in the VS Code notification.
+Open **View → Output → Graphics Workbench** to see relevant command inputs, external tool failures, conflict decisions, committed outputs, and cleanup failures. Progress is shown in the VS Code notification.
 
 ## Safe Mode and Undo
 

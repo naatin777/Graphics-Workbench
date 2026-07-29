@@ -8,11 +8,11 @@ import { saveClipboardImage } from '../../src/operations/input/save_clipboard_im
 
 suite('Clipboard画像保存のartifact ownership', () => {
   test('rollback失敗時は復旧backupを保持し、Clipboard外をcleanupしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-clipboard-save-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-clipboard-save-'));
     const runId = 'rollback-failure';
     const outputPath = path.join(workspacePath, 'pasted.png');
-    const clipboardRoot = path.join(workspacePath, '.latex-graphics-helper', 'clipboard-paste', runId);
-    const unrelatedRoot = path.join(workspacePath, '.latex-graphics-helper', 'other', 'active');
+    const clipboardRoot = path.join(workspacePath, '.graphics-workbench', 'clipboard-paste', runId);
+    const unrelatedRoot = path.join(workspacePath, '.graphics-workbench', 'other', 'active');
     const lines: string[] = [];
     let copyCount = 0;
 

@@ -54,7 +54,7 @@ export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions)
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${randomUUID()}`;
-  const stagingRootPath = path.join(options.job.workspacePath, '.latex-graphics-helper', 'crop-pdf-configure', runId);
+  const stagingRootPath = path.join(options.job.workspacePath, '.graphics-workbench', 'crop-pdf-configure', runId);
   const artifacts: ConversionArtifactRoot[] = [{ rootPath: stagingRootPath, workspacePath: options.job.workspacePath }];
 
   try {
@@ -86,7 +86,7 @@ async function createConfiguredCropOutput(
   const signal = runtime?.signal;
   const workDirectory = path.join(
     job.workspacePath,
-    '.latex-graphics-helper',
+    '.graphics-workbench',
     'crop-pdf-configure',
     runId,
     safeName(path.basename(job.sourcePath, path.extname(job.sourcePath))),
@@ -120,7 +120,7 @@ async function createConfiguredCropOutput(
     stagedOutputPath,
     outputPath: job.outputPath,
     workspacePath: job.workspacePath,
-    stagingRootPath: path.join(job.workspacePath, '.latex-graphics-helper', 'crop-pdf-configure', runId),
+    stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'crop-pdf-configure', runId),
   };
 }
 
@@ -129,7 +129,7 @@ async function validateJobPaths(job: CropPdfConfigureJob): Promise<void> {
     assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
     assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
     assertWritablePathInWorkspace(
-      path.join(job.workspacePath, '.latex-graphics-helper', 'crop-pdf-configure'),
+      path.join(job.workspacePath, '.graphics-workbench', 'crop-pdf-configure'),
       job.workspacePath,
     ),
   ]);

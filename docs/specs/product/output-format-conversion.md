@@ -6,18 +6,18 @@
 
 ## 公開command
 
-| Command ID                            | 表示名 | 出力形式           |
-| ------------------------------------- | ------ | ------------------ |
-| `latex-graphics-helper.convertToPdf`  | PDF    | PDF                |
-| `latex-graphics-helper.convertToPng`  | PNG    | PNG                |
-| `latex-graphics-helper.convertToJpeg` | JPEG   | JPEG               |
-| `latex-graphics-helper.convertToWebp` | WebP   | WebP               |
-| `latex-graphics-helper.convertToAvif` | AVIF   | AVIF               |
-| `latex-graphics-helper.convertToGif`  | GIF    | GIF                |
-| `latex-graphics-helper.convertToTiff` | TIFF   | TIFF               |
-| `latex-graphics-helper.convertToEps`  | EPS    | EPS                |
-| `latex-graphics-helper.convertToRaw`  | Raw    | Raw + JSON sidecar |
-| `latex-graphics-helper.convertToSvg`  | SVG    | SVG                |
+| Command ID                         | 表示名 | 出力形式           |
+| ---------------------------------- | ------ | ------------------ |
+| `graphics-workbench.convertToPdf`  | PDF    | PDF                |
+| `graphics-workbench.convertToPng`  | PNG    | PNG                |
+| `graphics-workbench.convertToJpeg` | JPEG   | JPEG               |
+| `graphics-workbench.convertToWebp` | WebP   | WebP               |
+| `graphics-workbench.convertToAvif` | AVIF   | AVIF               |
+| `graphics-workbench.convertToGif`  | GIF    | GIF                |
+| `graphics-workbench.convertToTiff` | TIFF   | TIFF               |
+| `graphics-workbench.convertToEps`  | EPS    | EPS                |
+| `graphics-workbench.convertToRaw`  | Raw    | Raw + JSON sidecar |
+| `graphics-workbench.convertToSvg`  | SVG    | SVG                |
 
 Command PaletteとExplorerの`変換`サブメニューでは、出力形式基準commandを表示する。
 
@@ -62,8 +62,8 @@ SVG変換とMermaid CLIで共有する`puppeteer.executablePath`設定を優先�
 
 ネイティブDraw.io（`.drawio`、`.dio`）は、出力形式基準commandとは別に次のPDF commandを提供する。
 
-- `latex-graphics-helper.convertDrawioToPdf`: Draw.ioの各ページをページ名ごとの単一ページPDFへ分割する。
-- `latex-graphics-helper.convertDrawioToPdfDirectly`: Draw.ioの全ページを1つのPDFへ出力する。
+- `graphics-workbench.convertDrawioToPdf`: Draw.ioの各ページをページ名ごとの単一ページPDFへ分割する。
+- `graphics-workbench.convertDrawioToPdfDirectly`: Draw.ioの全ページを1つのPDFへ出力する。
 
 分割commandは`outputPath.convertDrawioToPdf`の`${page}`へDraw.ioのページ名を設定する。Windowsで使用できない文字や端の空白は出力ファイル名用に正規化する。直接commandは`outputPath.convertDrawioToPdfDirectly`を使う。いずれもDraw.io Desktop CLIを使い、出力は通常のstaging、Safe Mode、Undo、cancellationの対象とする。
 

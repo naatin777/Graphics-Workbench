@@ -44,7 +44,7 @@ const pdfFixturePath = path.resolve(
 
 suite('Draw.ioの複雑なpath変換', () => {
   test('ページ名・フォルダ名・ファイル名に空白とUnicodeがあっても3ページPDFへ変換する', async () => {
-    const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'lgh-drawio-complex-path-'));
+    const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-complex-path-'));
     const workspacePath = path.join(
       testRootPath,
       'workspace 日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹　ＡＢＣ',
@@ -97,12 +97,7 @@ suite('Draw.ioの複雑なpath変換', () => {
         {
           outputPath,
           workspacePath,
-          stagingRootPath: path.join(
-            workspacePath,
-            '.latex-graphics-helper',
-            'convert-png-to-pdf',
-            'drawio-complex-path',
-          ),
+          stagingRootPath: path.join(workspacePath, '.graphics-workbench', 'convert-png-to-pdf', 'drawio-complex-path'),
         },
       ]);
       assert.strictEqual(drawioCalls.length, 1);

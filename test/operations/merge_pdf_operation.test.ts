@@ -18,7 +18,7 @@ const secondFixturePath = path.join(fixtureDirectory, ' 薔薇🌹.pdf');
 
 suite('PDF結合operation', () => {
   test('結合結果をstagingへ作成してSafe Modeの両方残すを適用する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-merge-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
 
     try {
       const firstPath = path.join(workspacePath, 'first.pdf');
@@ -39,14 +39,14 @@ suite('PDF結合operation', () => {
 
       assert.strictEqual(outputs[0]?.outputPath, path.join(workspacePath, 'merged-1.pdf'));
       assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing output');
-      await assert.rejects(access(path.join(workspacePath, '.latex-graphics-helper', 'merge-pdf', 'safe-mode')));
+      await assert.rejects(access(path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'safe-mode')));
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   test('上書き後のUndoで既存PDFを復元する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-merge-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
 
     try {
       const firstPath = path.join(workspacePath, 'first.pdf');
@@ -75,7 +75,7 @@ suite('PDF結合operation', () => {
   });
 
   test('変換開始前にキャンセルされた場合は出力を作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-merge-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
 
     try {
       const firstPath = path.join(workspacePath, 'first.pdf');
@@ -105,14 +105,14 @@ suite('PDF結合operation', () => {
   });
 
   test('preflightより先にworkspace境界を検証し、外部symlink入力を読み込まない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-merge-operation-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-merge-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-outside-'));
 
     try {
       const linkedSourcePath = path.join(workspacePath, 'linked.pdf');
       const secondPath = path.join(workspacePath, 'second.pdf');
       const outputPath = path.join(workspacePath, 'merged.pdf');
-      const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'merge-pdf', 'boundary');
+      const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'boundary');
       const outsideSourcePath = path.join(outsidePath, 'malformed.pdf');
 
       await writeFile(outsideSourcePath, 'not a PDF');
@@ -138,13 +138,13 @@ suite('PDF結合operation', () => {
   });
 
   test('競合解決でキャンセルされた場合はstagingを削除し既存出力を維持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-merge-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
 
     try {
       const firstPath = path.join(workspacePath, 'first.pdf');
       const secondPath = path.join(workspacePath, 'second.pdf');
       const outputPath = path.join(workspacePath, 'merged.pdf');
-      const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'merge-pdf', 'cancelled');
+      const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'cancelled');
       await copyFile(firstFixturePath, firstPath);
       await copyFile(secondFixturePath, secondPath);
       await writeFile(outputPath, 'existing output');

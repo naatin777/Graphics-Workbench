@@ -42,11 +42,11 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('複数のUndo recordを保持し、直近recordのbackupを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
-    const firstRoot = path.join(workspacePath, '.latex-graphics-helper', 'first');
-    const secondRoot = path.join(workspacePath, '.latex-graphics-helper', 'second');
+    const firstRoot = path.join(workspacePath, '.graphics-workbench', 'first');
+    const secondRoot = path.join(workspacePath, '.graphics-workbench', 'second');
     const firstBackupPath = path.join(firstRoot, 'first.previous');
     const secondBackupPath = path.join(secondRoot, 'second.previous');
 
@@ -82,10 +82,10 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('複数回のUndoを新しい変換から順に適用できる', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
-    const firstRoot = path.join(workspacePath, '.latex-graphics-helper', 'first');
-    const secondRoot = path.join(workspacePath, '.latex-graphics-helper', 'second');
+    const firstRoot = path.join(workspacePath, '.graphics-workbench', 'first');
+    const secondRoot = path.join(workspacePath, '.graphics-workbench', 'second');
 
     try {
       await writeFixture(outputPath, 'first');
@@ -108,9 +108,9 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('Undo成功後に対象recordのbackupとstagingを削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
-    const rootPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const previousFilePath = path.join(rootPath, 'output.previous');
 
     try {
@@ -130,10 +130,10 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('変更されていない出力を削除し、workspace内の作業ファイルは残す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'output', 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'output', 'second.pdf');
-    const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', 'crop-pdf', 'run', 'result.pdf');
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'crop-pdf', 'run', 'result.pdf');
     await writeFixture(firstOutputPath, 'first');
     await writeFixture(secondOutputPath, 'second');
     await writeFixture(stagedOutputPath, 'staged');
@@ -151,7 +151,7 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('出力の1つが変更されている場合はどの出力も削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
     await writeFixture(firstOutputPath, 'first');
@@ -169,7 +169,7 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('出力の1つが存在しない場合はどの出力も削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
     await writeFixture(firstOutputPath, 'first');
@@ -186,8 +186,11 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('出力の1つがworkspace外へのsymlinkになった場合はどの出力も削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
-    const outsidePath = path.join(await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-outside-')), 'outside.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
+    const outsidePath = path.join(
+      await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-outside-')),
+      'outside.pdf',
+    );
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
     await writeFixture(outsidePath, 'outside');
@@ -207,9 +210,9 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('上書きされた出力を取り消すと以前のファイルを復元する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
-    const previousFilePath = path.join(workspacePath, '.latex-graphics-helper', 'output.previous');
+    const previousFilePath = path.join(workspacePath, '.graphics-workbench', 'output.previous');
     await writeFixture(outputPath, 'generated');
     await writeFixture(previousFilePath, 'original');
 
@@ -222,9 +225,9 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('変換後に出力が変更されている場合は上書き前のファイルを復元しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
-    const previousFilePath = path.join(workspacePath, '.latex-graphics-helper', 'output.previous');
+    const previousFilePath = path.join(workspacePath, '.graphics-workbench', 'output.previous');
     await writeFixture(outputPath, 'generated');
     await writeFixture(previousFilePath, 'original');
 

@@ -2,14 +2,14 @@
 
 ## 対象
 
-- command: `latex-graphics-helper.cropPdf.auto`
+- command: `graphics-workbench.cropPdf.auto`
 - 入力: Explorerから選択された1件以上のローカルPDF
 
 ## 操作
 
 処理開始前にmargin pickerを1回だけ表示し、選択されたmarginをすべての入力PDFへ適用する。単位はPDFポイントとする。
 
-選択肢は`latex-graphics-helper.cropPdf.marginOptions`で設定し、既定値は次のとおりとする。
+選択肢は`graphics-workbench.cropPdf.marginOptions`で設定し、既定値は次のとおりとする。
 
 ```json
 [0, 5, 10, 20]
@@ -18,7 +18,7 @@
 ## 出力
 
 - 入力PDFごとに1つのクロップ済みPDFを作成する。
-- 出力先は`latex-graphics-helper.outputPath.cropPdf`を元PDFのパス情報で展開する。
+- 出力先は`graphics-workbench.outputPath.cropPdf`を元PDFのパス情報で展開する。
 - 相対パスは入力PDFが属するworkspaceを基準に解決する。
 - すべての入力が成功するまで、指定出力先へ反映しない。
 - 出力先の競合時は[Safe Mode仕様](safe-mode.md)に従う。

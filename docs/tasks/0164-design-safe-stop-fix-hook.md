@@ -21,7 +21,7 @@ AI停止時に`pnpm run check:fix`を実行する既存Stop hookが、ユーザ�
 
 Stop hook単体では、dirtyなfileが現在taskの変更か、ユーザーや別作業の変更かを確実に判定できない。そのため、task対象fileだけがdirtyな場合も含め、worktreeがdirtyなら`pnpm run check:fix`を実行しない。
 
-dirty判定には、staged、unstaged、未追跡fileを含む`git status --porcelain=v1 --untracked-files=all`を使う。Git管理外の`.latex-graphics-helper/`にあるhook logは判定対象に含めない。
+dirty判定には、staged、unstaged、未追跡fileを含む`git status --porcelain=v1 --untracked-files=all`を使う。Git管理外の`.graphics-workbench/`にあるhook logは判定対象に含めない。
 
 | worktreeの状態                           | Stop hookの動作                      | 終了時の扱い                                            |
 | ---------------------------------------- | ------------------------------------ | ------------------------------------------------------- |

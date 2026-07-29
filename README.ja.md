@@ -1,7 +1,7 @@
 <div align="center">
-  <h1>LaTeX Graphics Helper</h1>
-  <img alt="GitHub License" src="https://img.shields.io/github/license/naatin777/LaTeX-Graphics-Helper">
-  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/naatin777/LaTeX-Graphics-Helper">
+  <h1>Graphics Workbench</h1>
+  <img alt="GitHub License" src="https://img.shields.io/github/license/naatin777/Graphics-Workbench">
+  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/naatin777/Graphics-Workbench">
 </div>
 
 [English](README.md) | 日本語
@@ -60,15 +60,15 @@ GIF/TIFF入力は先頭page/frameだけを使用します。複数frameが必要
 
 ### Visual Studio Code Marketplace
 
-VS Code 内の拡張機能マーケットプレイスから **LaTeX Graphics Helper** を検索し、インストールしてください。
+VS Code 内の拡張機能マーケットプレイスから **Graphics Workbench** を検索し、インストールしてください。
 
-[Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=naatin777.latex-graphics-helper)
+[Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=naatin777.graphics-workbench)
 
 ### Open VSX Registry
 
 Open VSX Registry からもインストールできます。
 
-[Open VSX](https://open-vsx.org/extension/naatin777/latex-graphics-helper)
+[Open VSX](https://open-vsx.org/extension/naatin777/graphics-workbench)
 
 ## 外部依存関係
 
@@ -140,21 +140,21 @@ Draw.io Desktop は以下からインストールしてください。
 
 主な設定項目は以下の通りです。
 
-| 設定                                                          | 既定値                                          | 説明                                                                                                                    |
-| ------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `latex-graphics-helper.outputPath.clipboardImage`             | `${fileDirname}/${dateNow}`                     | クリップボード画像を貼り付けるときに表示する既定の保存先です。貼り付け時に編集でき、拡張子は自動で追加されます          |
-| `latex-graphics-helper.insertLatex.pdfTemplate`               | `\begin{figure}[H]...`                          | PDF drag&drop時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます |
-| `latex-graphics-helper.insertLatex.imageTemplate`             | `\begin{figure}[H]...`                          | 画像ペースト時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます  |
-| `latex-graphics-helper.execPath.drawio`                       | 空文字                                          | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                      |
-| `latex-graphics-helper.execPath.ghostscript`                  | 空文字                                          | Ghostscript 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                  |
-| `latex-graphics-helper.execPath.pdftocairo`                   | `pdftocairo`                                    | `pdftocairo` 実行ファイルへのパスです                                                                                   |
-| `latex-graphics-helper.execPath.rsvgConvert`                  | `rsvg-convert`                                  | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
-| `latex-graphics-helper.convertToPdf.svg.engine`               | `puppeteer`                                     | SVGをPDFへ変換するときのバックエンドです。`puppeteer` または `rsvg-convert` を選択できます                              |
-| `latex-graphics-helper.puppeteer.browser`                     | `chrome`                                        | SVG変換でPuppeteerが使用するブラウザです。`chrome` または `firefox` を選択できます                                      |
-| `latex-graphics-helper.puppeteer.executablePath`              | 空文字                                          | SVG変換とMermaid変換で共有するブラウザ実行ファイルです。チャンネルより優先されます                                      |
-| `latex-graphics-helper.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Draw.ioの全ページを1つのPDFへ出力するパスです                                                                           |
-| `latex-graphics-helper.convertToWebp.effort`                  | `4`                                             | WebP出力のエンコードeffortです                                                                                          |
-| `latex-graphics-helper.convertToAvif.effort`                  | `4`                                             | AVIF出力のエンコードeffortです                                                                                          |
+| 設定                                                       | 既定値                                          | 説明                                                                                                                    |
+| ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.outputPath.clipboardImage`             | `${fileDirname}/${dateNow}`                     | クリップボード画像を貼り付けるときに表示する既定の保存先です。貼り付け時に編集でき、拡張子は自動で追加されます          |
+| `graphics-workbench.insertLatex.pdfTemplate`               | `\begin{figure}[H]...`                          | PDF drag&drop時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます |
+| `graphics-workbench.insertLatex.imageTemplate`             | `\begin{figure}[H]...`                          | 画像ペースト時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます  |
+| `graphics-workbench.execPath.drawio`                       | 空文字                                          | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                      |
+| `graphics-workbench.execPath.ghostscript`                  | 空文字                                          | Ghostscript 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                  |
+| `graphics-workbench.execPath.pdftocairo`                   | `pdftocairo`                                    | `pdftocairo` 実行ファイルへのパスです                                                                                   |
+| `graphics-workbench.execPath.rsvgConvert`                  | `rsvg-convert`                                  | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
+| `graphics-workbench.convertToPdf.svg.engine`               | `puppeteer`                                     | SVGをPDFへ変換するときのバックエンドです。`puppeteer` または `rsvg-convert` を選択できます                              |
+| `graphics-workbench.puppeteer.browser`                     | `chrome`                                        | SVG変換でPuppeteerが使用するブラウザです。`chrome` または `firefox` を選択できます                                      |
+| `graphics-workbench.puppeteer.executablePath`              | 空文字                                          | SVG変換とMermaid変換で共有するブラウザ実行ファイルです。チャンネルより優先されます                                      |
+| `graphics-workbench.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Draw.ioの全ページを1つのPDFへ出力するパスです                                                                           |
+| `graphics-workbench.convertToWebp.effort`                  | `4`                                             | WebP出力のエンコードeffortです                                                                                          |
+| `graphics-workbench.convertToAvif.effort`                  | `4`                                             | AVIF出力のエンコードeffortです                                                                                          |
 
 出力ファイル名や LaTeX snippet の候補も VS Code の設定から変更できます。
 
@@ -165,7 +165,7 @@ command IDは`convertToPdf`などの出力形式基準ですが、出力先設�
 必要なコマンド入力、外部ツールのエラー、競合解決、確定した出力、cleanup失敗は VS Code の Output パネルで確認できます。バッチの進行状況は通知に表示されます。
 
 ```text
-表示 → 出力 → LaTeX Graphics Helper
+表示 → 出力 → Graphics Workbench
 ```
 
 ## Safe Mode と Undo
@@ -201,7 +201,7 @@ Google Chrome / Chromium が利用可能か確認してください。必要に�
 
 ### editable Draw.io 画像の変換に失敗する
 
-Draw.io Desktop がインストールされているか確認してください。必要に応じて `latex-graphics-helper.execPath.drawio` に実行ファイルのパスを指定してください。
+Draw.io Desktop がインストールされているか確認してください。必要に応じて `graphics-workbench.execPath.drawio` に実行ファイルのパスを指定してください。
 
 ## ライセンス
 

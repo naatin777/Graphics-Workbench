@@ -6,20 +6,20 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 
 ## 設定
 
-| 設定キー | 型 | 既定値 |
-|---------|-----|--------|
-| `latex-graphics-helper.insertLatex.pdfTemplate` | `string` | `\begin{figure}[H]\centering\includegraphics[width=\linewidth]{${path}}\caption{${name}}\label{fig:${name}}\end{figure}` |
-| `latex-graphics-helper.insertLatex.imageTemplate` | `string` | `\begin{figure}[H]\centering\resizebox{\linewidth}{!}{\includegraphics{${path}}}\caption{${name}}\label{fig:${name}}\end{figure}` |
+| 設定キー                                       | 型       | 既定値                                                                                                                            |
+| ---------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.insertLatex.pdfTemplate`   | `string` | `\begin{figure}[H]\centering\includegraphics[width=\linewidth]{${path}}\caption{${name}}\label{fig:${name}}\end{figure}`          |
+| `graphics-workbench.insertLatex.imageTemplate` | `string` | `\begin{figure}[H]\centering\resizebox{\linewidth}{!}{\includegraphics{${path}}}\caption{${name}}\label{fig:${name}}\end{figure}` |
 
 ## テンプレート変数
 
-| 変数 | 展開内容 | 例 |
-|------|---------|-----|
-| `${path}` | ドキュメントからの相対パス | `figures/graph.pdf` |
-| `${name}` | 拡張子を除いたファイル名 | `graph` |
-| `${ext}` | 拡張子（ドットなし） | `pdf` |
-| `${page}` | PDFのページ番号（drag & dropでページ選択時） | `1` |
-| `${dir}` | ファイルのあるディレクトリ（相対） | `figures` |
+| 変数      | 展開内容                                     | 例                  |
+| --------- | -------------------------------------------- | ------------------- |
+| `${path}` | ドキュメントからの相対パス                   | `figures/graph.pdf` |
+| `${name}` | 拡張子を除いたファイル名                     | `graph`             |
+| `${ext}`  | 拡張子（ドットなし）                         | `pdf`               |
+| `${page}` | PDFのページ番号（drag & dropでページ選択時） | `1`                 |
+| `${dir}`  | ファイルのあるディレクトリ（相対）           | `figures`           |
 
 ## 動作
 
@@ -58,12 +58,12 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 
 ```json
 {
-  "latex-graphics-helper.insertLatex.pdfTemplate": {
+  "graphics-workbench.insertLatex.pdfTemplate": {
     "type": "string",
     "default": "\\begin{figure}[H]\n  \\centering\n  \\includegraphics[width=\\linewidth]{${path}}\n  \\caption{${name}}\n  \\label{fig:${name}}\n\\end{figure}",
     "description": "%config.insertLatex.pdfTemplate%"
   },
-  "latex-graphics-helper.insertLatex.imageTemplate": {
+  "graphics-workbench.insertLatex.imageTemplate": {
     "type": "string",
     "default": "\\begin{figure}[H]\n  \\centering\n  \\resizebox{\\linewidth}{!}{\\includegraphics{${path}}}\n  \\caption{${name}}\n  \\label{fig:${name}}\n\\end{figure}",
     "description": "%config.insertLatex.imageTemplate%"

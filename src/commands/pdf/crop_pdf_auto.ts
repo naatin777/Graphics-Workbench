@@ -17,7 +17,7 @@ import { isAbortError, selectedUris } from '../shared/command_utils.js';
 
 const DEFAULT_MARGIN_OPTIONS = [0, 5, 10, 20];
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-crop.pdf';
-export const CROP_PDF_AUTO_COMMAND = 'latex-graphics-helper.cropPdf.auto';
+export const CROP_PDF_AUTO_COMMAND = 'graphics-workbench.cropPdf.auto';
 
 export async function cropPdfAutoCommand(
   uri?: vscode.Uri,
@@ -32,7 +32,7 @@ export async function cropPdfAutoCommand(
       throw new Error('No PDF files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const marginOptions = readMarginOptions(configuration.get<unknown>('cropPdf.marginOptions'));
     const selectedMargin = await selectMargin(marginOptions);
 

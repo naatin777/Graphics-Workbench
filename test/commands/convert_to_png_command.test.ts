@@ -1,5 +1,5 @@
 // Test target:
-// - latex-graphics-helper.convertToPng commandが登録されること
+// - graphics-workbench.convertToPng commandが登録されること
 // - MermaidをPNGに直接変換できること
 // - JPEG、WebP、AVIFをPNGに変換できること
 // - GIF、TIFFの先頭frame/pageをPNGへ変換できること
@@ -122,7 +122,7 @@ suite('PNGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPaths': {
+          'graphics-workbench.outputPaths': {
             convertGifToPng: '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
             convertTiffToPng: '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
           },
@@ -174,7 +174,7 @@ suite('PNGに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'transparent-background.mmd');
       await writeMermaidFixture(sourcePath);
 
-      await withWorkspaceSettings({ 'latex-graphics-helper.mermaid.backgroundColor': 'transparent' }, async () => {
+      await withWorkspaceSettings({ 'graphics-workbench.mermaid.backgroundColor': 'transparent' }, async () => {
         const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PNG_COMMAND, vscode.Uri.file(sourcePath));
         await runCommandAndClearNotificationsUntilDone(commandExecution);
       });
@@ -199,7 +199,7 @@ suite('PNGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPaths': {
+          'graphics-workbench.outputPaths': {
             convertPdfToPng: '${fileDirname}/to-png-${fileBasenameNoExtension}-${page}.png',
           },
         },
@@ -282,7 +282,7 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-convert-to-png-'));
+  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-convert-to-png-'));
   await mkdir(temporaryDirectory, { recursive: true });
   return temporaryDirectory;
 }

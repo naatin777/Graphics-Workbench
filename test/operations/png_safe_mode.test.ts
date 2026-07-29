@@ -50,7 +50,7 @@ suite('PNG変換のSafe Mode', () => {
       assert.strictEqual(pdf.getPageCount(), 1);
     }
 
-    const stagedRoot = path.join(workspacePath, '.latex-graphics-helper', 'convert-png-to-pdf', 'batch-success');
+    const stagedRoot = path.join(workspacePath, '.graphics-workbench', 'convert-png-to-pdf', 'batch-success');
     assert.deepStrictEqual(new Set(await readdir(stagedRoot)), new Set(['1', '2']));
     await assert.doesNotReject(access(path.join(stagedRoot, '1', 'result.pdf')));
     await assert.doesNotReject(access(path.join(stagedRoot, '2', 'result.pdf')));
@@ -231,7 +231,7 @@ async function createJobs(names: string[]): Promise<{
   workspacePath: string;
   jobs: ConvertToPdfJob[];
 }> {
-  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-png-safe-test-'));
+  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-png-safe-test-'));
   const jobs = await Promise.all(
     names.map(async (name) => {
       const sourcePath = path.join(workspacePath, `${name}.png`);
@@ -252,7 +252,7 @@ async function createEditableDrawioJobs(entries: [sourceName: string, outputName
   workspacePath: string;
   jobs: ConvertToPdfJob[];
 }> {
-  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-drawio-safe-test-'));
+  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-safe-test-'));
   const jobs = await Promise.all(
     entries.map(async ([sourceName, outputName]) => {
       const sourcePath = path.join(workspacePath, sourceName);

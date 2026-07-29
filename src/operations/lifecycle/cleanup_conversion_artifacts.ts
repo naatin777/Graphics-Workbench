@@ -23,7 +23,7 @@ export function stagingArtifactsForJobs(
   return [
     ...new Map(
       jobs.map((job) => {
-        const rootPath = path.join(job.workspacePath, '.latex-graphics-helper', operation, runId);
+        const rootPath = path.join(job.workspacePath, '.graphics-workbench', operation, runId);
         return [rootPath, { rootPath, workspacePath: job.workspacePath }];
       }),
     ).values(),

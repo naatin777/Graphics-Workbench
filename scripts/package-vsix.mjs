@@ -55,7 +55,7 @@ function parsePackageArguments(args) {
   }
 
   return {
-    outputPath: path.resolve(rootDirectory, values.out ?? 'latex-graphics-helper.vsix'),
+    outputPath: path.resolve(rootDirectory, values.out ?? 'graphics-workbench.vsix'),
     target,
   };
 }

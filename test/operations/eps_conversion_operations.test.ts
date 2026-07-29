@@ -21,13 +21,13 @@ import { executeWebpConversion } from '../../src/operations/conversion/convert_t
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const EPS_FIXTURE = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'eps', 'minimal.eps');
-const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+const configuration = vscode.workspace.getConfiguration('graphics-workbench');
 const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(configuration);
 const PDFTOCAIRO_PATH = readPdftocairoExecutablePath(configuration);
 
 suite('EPSの出力経路', () => {
   test('EPSをPDFへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-pdf-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-eps-pdf-'));
     try {
       const sourcePath = path.join(workspacePath, 'input.eps');
       const outputPath = path.join(workspacePath, 'output.pdf');
@@ -49,7 +49,7 @@ suite('EPSの出力経路', () => {
   });
 
   test('EPSをPNGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-png-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-eps-png-'));
     try {
       const sourcePath = path.join(workspacePath, 'input.eps');
       const outputPath = path.join(workspacePath, 'output.png');
@@ -75,7 +75,7 @@ suite('EPSの出力経路', () => {
   });
 
   test('EPSをJPEGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-jpeg-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-eps-jpeg-'));
     try {
       const sourcePath = path.join(workspacePath, 'input.eps');
       const outputPath = path.join(workspacePath, 'output.jpeg');
@@ -100,7 +100,7 @@ suite('EPSの出力経路', () => {
   });
 
   test('EPSをWebPへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-webp-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-eps-webp-'));
     try {
       const sourcePath = path.join(workspacePath, 'input.eps');
       const outputPath = path.join(workspacePath, 'output.webp');
@@ -126,7 +126,7 @@ suite('EPSの出力経路', () => {
   });
 
   test('EPSをAVIFへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-avif-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-eps-avif-'));
     try {
       const sourcePath = path.join(workspacePath, 'input.eps');
       const outputPath = path.join(workspacePath, 'output.avif');
@@ -152,7 +152,7 @@ suite('EPSの出力経路', () => {
   });
 
   test('EPSをSVGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-svg-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-eps-svg-'));
     try {
       const sourcePath = path.join(workspacePath, 'input.eps');
       const outputPath = path.join(workspacePath, 'output.svg');
@@ -176,7 +176,7 @@ suite('EPSの出力経路', () => {
   });
 
   test('不正なEPSはpreflightで変換前に停止する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-bad-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-eps-bad-'));
     try {
       const sourcePath = path.join(workspacePath, 'bad.eps');
       const outputPath = path.join(workspacePath, 'output.pdf');

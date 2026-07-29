@@ -20,7 +20,7 @@ GitHub Actionsを次の4 workflowへ整理し、Electron Playwrightの対象を�
 - `check.yml`はlint、format、4種のtypecheckだけを実行し、NLS、build、package、runtime test、releaseを実行しない。
 - `test.yml`はOSごとに1つのjobで、最初に`npm run build`を実行し、その後`npm test`と`npm run test:webview`を実行する。Extension Host failure時もbuild成功ならWebview testを実行し、既存の外部画像toolのinstall・verificationを維持する。Playwright、VSIX package/install、releaseは実行しない。
 - `playwright.yml`はPRと`main`への直接pushで、lockfile固定install、build、runner一致VSIXのpackage、隔離extensions directoryへのinstall、隔離user-dataでのVS Code起動、installed VSIXのElectron Playwright、全一時directory cleanupを3 OSで順に実行する。
-- Electron Playwrightは`LGH_VSIX_PATH`を必須とし、absolute path、存在する通常file、`.vsix`をcollection時に検証する。source directoryをExtension Development Hostとして読み込む経路は残さない。
+- Electron Playwrightは`GRAPHICS_WORKBENCH_VSIX_PATH`を必須とし、absolute path、存在する通常file、`.vsix`をcollection時に検証する。source directoryをExtension Development Hostとして読み込む経路は残さない。
 - package済みVSIXのE2Eは、VSIX install、extension activation、Crop PDF Configure Webview、Hostとのmessage通信、VSIX由来のWebview assets/runtime dependency、packageされたSharpのloadと画像変換成功を確認する。全機能をE2Eへ重複させない。
 - 失敗時にPlaywright report、trace、screenshot、test-results、VS Code/Extension Host logをartifactとして保存する。Extension Host用user-dataはupload後にcleanupする。
 - `release.yml`はversion tagだけで起動し、publish jobが各OSでE2E済みのVSIX artifactをdownloadしてそのまま公開する。publish jobでbuild/package、静的検査、Extension Host test、Browser Playwrightを再実行しない。
@@ -34,7 +34,7 @@ GitHub Actionsを次の4 workflowへ整理し、Electron Playwrightの対象を�
 - workflowからは既存の`package:vsix`と、package済みVSIX専用の小さなPlaywright入口を呼ぶ。
 - VSIX E2Eは拡張機能の実commandを通してSharpをloadする。Playwright workerがinstalled extensionのnative moduleを直接importしてWindows cleanupを妨げないようにする。
 - Browser suiteで確認していたprotocol serialization/validationはExtension Host test、実Webviewのcanvas・theme・Apply messageはinstalled VSIX Electron E2Eを正本とする。Browser DOMのみのzoom/layout/mocked-host細部はJSDOM component testで必要な操作契約だけを確認する。
-- Extension Host testのCI logは`LGH_VSCODE_TEST_USER_DATA_DIR`で固定し、失敗時artifact upload、成功・失敗後のcleanupを明示する。
+- Extension Host testのCI logは`GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR`で固定し、失敗時artifact upload、成功・失敗後のcleanupを明示する。
 - pre-package Extension Hostとpackaged Electronは固定VS Code 1.128.0を使う。これは異なるtest contractとして維持する。
 
 ## 変更可能なファイル
@@ -83,7 +83,7 @@ GitHub Actionsを次の4 workflowへ整理し、Electron Playwrightの対象を�
 - `npm test`
 - `npm run test:webview`
 - `npm run package:vsix`
-- 生成した現在OS向けVSIXを隔離環境へinstallして`LGH_VSIX_PATH=... npm run test:playwright:vsix`を実行する。
+- 生成した現在OS向けVSIXを隔離環境へinstallして`GRAPHICS_WORKBENCH_VSIX_PATH=... npm run test:playwright:vsix`を実行する。
 - `git diff --check`
 
 Linux、macOS、Windowsの最終的なpackage/install/Electron E2EはGitHub Actionsで確認する。ローカル未実行のOSを成功扱いにしない。
@@ -94,10 +94,10 @@ Linux、macOS、Windowsの最終的なpackage/install/Electron E2EはGitHub Acti
 - 4 workflowを`npm ci`とnpm scriptsへ統一した。
 - `test`、`test:playwright`、`test:webview`からbuildを外し、各workflowで最初に`npm run build`を実行する構成にした。
 - `test.yml`は3 OSでbuild、外部画像toolのinstall・verification、Extension Host test、JSDOM Webview component testを実行する。Extension Host failure時もbuild成功ならWebview testを実行する。
-- Extension Host testのuser-data directoryを`LGH_VSCODE_TEST_USER_DATA_DIR`で固定し、failure artifact upload後に常にcleanupする。
-- `playwright.yml`と`release.yml`は3 OSでbuild、runner-matched VSIX package、`LGH_VSIX_PATH`を指定した`test:playwright:vsix`を実行する。release publish jobは成功したVSIX artifactだけを再利用し、再build・再package・再testしない。
+- Extension Host testのuser-data directoryを`GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR`で固定し、failure artifact upload後に常にcleanupする。
+- `playwright.yml`と`release.yml`は3 OSでbuild、runner-matched VSIX package、`GRAPHICS_WORKBENCH_VSIX_PATH`を指定した`test:playwright:vsix`を実行する。release publish jobは成功したVSIX artifactだけを再利用し、再build・再package・再testしない。
 - Windows packagingを含め、Node scriptから`npx.cmd`または`npx`を`shell:false`で起動する方式に統一した。
-- `LGH_VSIX_PATH`はcollection時にabsolute path、通常file、`.vsix`を検証する。
+- `GRAPHICS_WORKBENCH_VSIX_PATH`はcollection時にabsolute path、通常file、`.vsix`を検証する。
 - Browser-only runner、docs-only classifier、source directory fallbackは現行構成に残さず、過去のBrowser Playwright資料は履歴として保持した。
 - 現行foundation docsのworkflow、script、runtime、test inventoryを更新した。
 
@@ -109,7 +109,7 @@ Linux、macOS、Windowsの最終的なpackage/install/Electron E2EはGitHub Acti
 - `npm run check:all`、`node --check scripts/package-vsix.mjs`、package/test/Webview typecheck 成功
 - `npm run test:webview` 成功（crop 1、merge 1、split 2 cases）
 - `npm test` 成功（VS Code 1.128.0、219 passing）
-- packaged Electron E2Eは`LGH_VSIX_PATH`を指定して成功（macOS、VS Code 1.128.0）。absolute path validationの相対path拒否も確認済み
+- packaged Electron E2Eは`GRAPHICS_WORKBENCH_VSIX_PATH`を指定して成功（macOS、VS Code 1.128.0）。absolute path validationの相対path拒否も確認済み
 
 ### Remote CI Evidence
 

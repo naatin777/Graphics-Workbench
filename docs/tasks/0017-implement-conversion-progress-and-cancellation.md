@@ -16,7 +16,7 @@ Done
 - 実行中のGhostscriptをキャンセルする
 - 未開始の複数変換を開始しない
 - キャンセル後に指定出力先へ反映しない
-- `.latex-graphics-helper/` 内の途中ファイルを残す
+- `.graphics-workbench/` 内の途中ファイルを残す
 - Webview処理にはwithProgressを追加しない
 
 ## 変更可能なファイル
@@ -55,7 +55,7 @@ Done
 - 変換開始前、各主要処理の前後、各ページ処理、出力反映の前後でキャンセルを確認する
 - `p-limit` で待機中の変換は、キャンセル後にGhostscriptを開始しない
 - 出力反映中にキャンセルされた場合は、その実行で作成済みの出力をロールバックする
-- `.latex-graphics-helper/` 内の途中ファイルは残す
+- `.graphics-workbench/` 内の途中ファイルは残す
 - キャンセル時はエラーではなくキャンセル通知を表示する
 - Webview処理は変更していない
 - `pnpm run check:all` 成功（既存を含むlint warningあり）

@@ -1,5 +1,5 @@
 // Test target:
-// - latex-graphics-helper.convertToPdf commandが登録されること
+// - graphics-workbench.convertToPdf commandが登録されること
 // - PNGをPDFに変換できること
 // - JPEG、WebPをPDFに変換できること
 // - AVIFをPDFに変換できること
@@ -163,7 +163,7 @@ suite('PDFに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertPngToPdf': '${fileDirname}/to-pdf-${fileBasenameNoExtension}.pdf',
+          'graphics-workbench.outputPath.convertPngToPdf': '${fileDirname}/to-pdf-${fileBasenameNoExtension}.pdf',
         },
         async () => {
           await vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
@@ -186,7 +186,7 @@ suite('PDFに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertPngToPdf': '',
+          'graphics-workbench.outputPath.convertPngToPdf': '',
         },
         async () => {
           await vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
@@ -329,7 +329,7 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-convert-to-pdf-'));
+  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-convert-to-pdf-'));
   await mkdir(temporaryDirectory, { recursive: true });
   return temporaryDirectory;
 }

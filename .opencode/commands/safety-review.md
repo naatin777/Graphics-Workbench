@@ -3,7 +3,7 @@ description: 現在の差分をLHG固有のファイル安全性の観点から�
 agent: plan
 ---
 
-`lgh-safety` Skillを読み込む。
+`graphics-workbench-safety` Skillを読み込む。
 
 現在の作業ツリーの差分と、変更された処理の直接の呼び出し経路を確認する。
 

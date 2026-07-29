@@ -13,7 +13,7 @@ CodexのStop hookで`check:fix`を実行したときに、通常ログがstdout�
 - Stop hookのstdoutにはCodex向けのJSONだけを出す
 - `check:fix`の通常ログはファイルへ保存する
 - hookがgit root基準で動作する
-- hookログ用の`.latex-graphics-helper/`をGit管理対象外にする
+- hookログ用の`.graphics-workbench/`をGit管理対象外にする
 
 ## 変更可能なファイル
 

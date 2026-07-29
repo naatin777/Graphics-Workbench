@@ -43,7 +43,7 @@ export interface ElectronTestOptions {
 }
 
 export async function prepareElectronTest(packagedVsixPath: string): Promise<PreparedElectronTest> {
-  const installationRoot = await mkdtemp(join(temporaryBase, 'lgh-electron-package-'));
+  const installationRoot = await mkdtemp(join(temporaryBase, 'graphics-workbench-electron-package-'));
   const extensionsDir = join(installationRoot, 'extensions');
   const userDataDir = join(installationRoot, 'user-data');
 
@@ -70,7 +70,7 @@ export async function disposePreparedElectronTest(prepared: PreparedElectronTest
 }
 
 export function resolvePackagedVsixPath(): string {
-  const value = resolve(process.cwd(), 'latex-graphics-helper.vsix');
+  const value = resolve(process.cwd(), 'graphics-workbench.vsix');
 
   let fileStats;
 
@@ -99,7 +99,7 @@ export async function setupElectronTest(
   const copyFixtures = options.copyFixtures ?? true;
   const prepared = options.prepared;
 
-  const temporaryRoot = await mkdtemp(join(temporaryBase, 'lgh-electron-'));
+  const temporaryRoot = await mkdtemp(join(temporaryBase, 'graphics-workbench-electron-'));
   const workspacePath = join(temporaryRoot, 'workspace');
   const userDataDir = join(temporaryRoot, 'user-data');
   const userSettingsDir = join(userDataDir, 'User');
@@ -136,8 +136,10 @@ export async function setupElectronTest(
   const sourceFixtureBytes = copyFixtures ? await readFile(sourceFixture) : new Uint8Array();
 
   await writeVscodeUserSettings(userSettingsPath, colorTheme, {
-    'latex-graphics-helper.execPath.pdftocairo':
-      process.platform === 'win32' ? 'C:\\lgh-missing\\pdftocairo.exe' : '/lgh-missing/pdftocairo',
+    'graphics-workbench.execPath.pdftocairo':
+      process.platform === 'win32'
+        ? 'C:\\graphics-workbench-missing\\pdftocairo.exe'
+        : '/graphics-workbench-missing/pdftocairo',
     ...extraSettings,
   });
 

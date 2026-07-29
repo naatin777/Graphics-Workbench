@@ -114,7 +114,7 @@ async function createRollbackCopies(
   try {
     const rollbackId = crypto.randomUUID();
     for (const [index, output] of record.outputs.entries()) {
-      const rollbackRootPath = path.join(output.workspacePath, '.latex-graphics-helper', 'undo-rollback', rollbackId);
+      const rollbackRootPath = path.join(output.workspacePath, '.graphics-workbench', 'undo-rollback', rollbackId);
       const rollbackPath = path.join(rollbackRootPath, `${index}.backup`);
       await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
       await assertWritablePathInWorkspace(rollbackRootPath, output.workspacePath);

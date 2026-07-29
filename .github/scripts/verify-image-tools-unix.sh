@@ -10,10 +10,10 @@ read_setting() {
 	node -e "const fs = require('node:fs'); const settings = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); const value = settings[process.argv[2]]; if (!value) process.exit(1); process.stdout.write(value);" "${settings_path}" "${key}"
 }
 
-gs_path="$(read_setting "latex-graphics-helper.execPath.ghostscript")"
-pdftocairo_path="$(read_setting "latex-graphics-helper.execPath.pdftocairo")"
-rsvg_convert_path="$(read_setting "latex-graphics-helper.execPath.rsvgConvert")"
-chrome_path="$(read_setting "latex-graphics-helper.puppeteer.executablePath")"
+gs_path="$(read_setting "graphics-workbench.execPath.ghostscript")"
+pdftocairo_path="$(read_setting "graphics-workbench.execPath.pdftocairo")"
+rsvg_convert_path="$(read_setting "graphics-workbench.execPath.rsvgConvert")"
+chrome_path="$(read_setting "graphics-workbench.puppeteer.executablePath")"
 test -x "${gs_path}"
 test -x "${pdftocairo_path}"
 test -x "${rsvg_convert_path}"

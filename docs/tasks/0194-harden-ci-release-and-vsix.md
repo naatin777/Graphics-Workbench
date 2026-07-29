@@ -83,31 +83,31 @@ tagからVSIXまでの検証・依存・target・native moduleの経路を、loc
 
 以下は実装済み部分の履歴である。RuleSync、task preflight、harness checkの結果は当時の実測値として保持するが、現行の正式checkには含めない。
 
-| Command                                                                                                                                                 | Result  | Notes                                                                               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------- |
-| `npm ci`                                                                                                                                                | Pass    | Historical verification; lockfile resolution skipped.                               |
-| `npm run check:all`                                                                                                                                     | Pass    | lint warnings only; RuleSync, task preflight, and NLS consistency passed.           |
-| `npm run build`                                                                                                                                         | Pass    | Runtime TypeScript and Crop Webview production build passed.                        |
-| `npm run package:vsix -- --target darwin-arm64 --out /tmp/lgh-package-darwin-arm64.vsix`                                                                | Pass    | 94 MB VSIX produced; production dependency and Sharp install completed.             |
-| `LGH_VSIX_PATH=/tmp/lgh-package-darwin-arm64.vsix npm exec playwright -- --project=vscode-electron test/playwright/electron/crop_pdf_configure.spec.ts` | Pass    | 1 test passed; installed VSIX exercised PDF operations and packaged Sharp PNG→JPEG. |
-| `npm run package:vsix -- --target linux-x64 ...` on `darwin-arm64`                                                                                      | Pass    | Rejected with exit 1 because target did not match runner.                           |
-| `npm run test:vscode`                                                                                                                                   | Pass    | 214 tests passed after aligning the Safe Mode tooltip expectation with NLS.         |
-| `npm run test:playwright`                                                                                                                               | Pass    | 18 browser tests passed.                                                            |
-| `npm run test:playwright:electron`                                                                                                                      | Pass    | 1 Electron test passed on VS Code 1.128.0.                                          |
-| `npm run rulesync:generate` and `npm run rulesync:check`                                                                                                | Pass    | Generated outputs were up to date.                                                  |
-| `npm run harness:check`                                                                                                                                 | Pass    | Current Task, RuleSync, and 220-key NLS consistency passed.                         |
-| `git diff --check`                                                                                                                                      | Pass    | No whitespace errors.                                                               |
-| PR #363 `Test` workflow on Linux/macOS/Windows                                                                                                          | Pass    | Build、Extension Host、JSDOM Webview component tests passed.                        |
-| PR #363 `Playwright` workflow on Linux/macOS/Windows                                                                                                    | Pass    | Current runner target VSIX package、install、packaged Electron Playwright passed.   |
-| `release.yml` publish job                                                                                                                               | Not run | Tag、GitHub Release、Marketplace、Open VSXへの公開を伴うためrelease時に実行する。   |
+| Command                                                                                                                                                                               | Result  | Notes                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `npm ci`                                                                                                                                                                              | Pass    | Historical verification; lockfile resolution skipped.                               |
+| `npm run check:all`                                                                                                                                                                   | Pass    | lint warnings only; RuleSync, task preflight, and NLS consistency passed.           |
+| `npm run build`                                                                                                                                                                       | Pass    | Runtime TypeScript and Crop Webview production build passed.                        |
+| `npm run package:vsix -- --target darwin-arm64 --out /tmp/graphics-workbench-package-darwin-arm64.vsix`                                                                               | Pass    | 94 MB VSIX produced; production dependency and Sharp install completed.             |
+| `GRAPHICS_WORKBENCH_VSIX_PATH=/tmp/graphics-workbench-package-darwin-arm64.vsix npm exec playwright -- --project=vscode-electron test/playwright/electron/crop_pdf_configure.spec.ts` | Pass    | 1 test passed; installed VSIX exercised PDF operations and packaged Sharp PNG→JPEG. |
+| `npm run package:vsix -- --target linux-x64 ...` on `darwin-arm64`                                                                                                                    | Pass    | Rejected with exit 1 because target did not match runner.                           |
+| `npm run test:vscode`                                                                                                                                                                 | Pass    | 214 tests passed after aligning the Safe Mode tooltip expectation with NLS.         |
+| `npm run test:playwright`                                                                                                                                                             | Pass    | 18 browser tests passed.                                                            |
+| `npm run test:playwright:electron`                                                                                                                                                    | Pass    | 1 Electron test passed on VS Code 1.128.0.                                          |
+| `npm run rulesync:generate` and `npm run rulesync:check`                                                                                                                              | Pass    | Generated outputs were up to date.                                                  |
+| `npm run harness:check`                                                                                                                                                               | Pass    | Current Task, RuleSync, and 220-key NLS consistency passed.                         |
+| `git diff --check`                                                                                                                                                                    | Pass    | No whitespace errors.                                                               |
+| PR #363 `Test` workflow on Linux/macOS/Windows                                                                                                                                        | Pass    | Build、Extension Host、JSDOM Webview component tests passed.                        |
+| PR #363 `Playwright` workflow on Linux/macOS/Windows                                                                                                                                  | Pass    | Current runner target VSIX package、install、packaged Electron Playwright passed.   |
+| `release.yml` publish job                                                                                                                                                             | Not run | Tag、GitHub Release、Marketplace、Open VSXへの公開を伴うためrelease時に実行する。   |
 
 ### Remote Evidence
 
 PR #363のcommit `bdd2727`で次のworkflowがsuccessした。
 
-- [Check run](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29667417298)
-- [Test workflow](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29667417255): Linux、macOS、Windows
-- [Playwright workflow](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29667417260): Linux、macOS、Windows
+- [Check run](https://github.com/naatin777/Graphics-Workbench/actions/runs/29667417298)
+- [Test workflow](https://github.com/naatin777/Graphics-Workbench/actions/runs/29667417255): Linux、macOS、Windows
+- [Playwright workflow](https://github.com/naatin777/Graphics-Workbench/actions/runs/29667417260): Linux、macOS、Windows
 
 各runnerで`package-vsix.mjs`が`process.platform`と`process.arch`からtargetを決定し、`vsce package --target`で同じrunner targetのVSIXを作成した。作成したVSIXを隔離環境へinstallし、packaged Electron PlaywrightとSharp経由の画像変換を通過した。
 

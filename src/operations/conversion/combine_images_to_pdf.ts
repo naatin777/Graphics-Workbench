@@ -52,7 +52,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
     ...options.jobs.map(async (job) => assertExistingPathInWorkspace(job.sourcePath, options.workspacePath)),
     assertWritablePathInWorkspace(options.outputPath, options.workspacePath),
     assertWritablePathInWorkspace(
-      path.join(options.workspacePath, '.latex-graphics-helper', 'combine-images'),
+      path.join(options.workspacePath, '.graphics-workbench', 'combine-images'),
       options.workspacePath,
     ),
   ]);
@@ -65,7 +65,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
-  const stagingRootPath = path.join(options.workspacePath, '.latex-graphics-helper', 'combine-images', runId);
+  const stagingRootPath = path.join(options.workspacePath, '.graphics-workbench', 'combine-images', runId);
   const artifacts: ConversionArtifactRoot[] = [{ rootPath: stagingRootPath, workspacePath: options.workspacePath }];
 
   try {

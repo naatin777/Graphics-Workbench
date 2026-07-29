@@ -6,18 +6,18 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToAvif` を追加し、複数の入力形式をAVIFへ変換できるようにする。
+`graphics-workbench.convertToAvif` を追加し、複数の入力形式をAVIFへ変換できるようにする。
 
 ## 完了条件
 
-- `latex-graphics-helper.convertToAvif` を公開コマンドとして登録する
+- `graphics-workbench.convertToAvif` を公開コマンドとして登録する
 - Explorerの `変換 > AVIF` へ統合する
 - PDF / PNG / JPEG / WebP / SVG / Mermaid / Draw.io 入力をAVIFへ変換できる
 - AVIF入力はAVIF変換対象外として拒否する
 - Draw.io → AVIF は Draw.io CLIで直接AVIF/JPEGへ出さず、PDF → PNG → AVIF を経由する
-- AVIF出力の `effort` は `latex-graphics-helper.convertToAvif.effort` で設定できる
-- WebP出力の `effort` も `latex-graphics-helper.convertToWebp.effort` で設定できる
-- 変換結果は `.latex-graphics-helper/` 作業領域で作成してからSafe Mode / Undo対応の反映処理に乗せる
+- AVIF出力の `effort` は `graphics-workbench.convertToAvif.effort` で設定できる
+- WebP出力の `effort` も `graphics-workbench.convertToWebp.effort` で設定できる
+- 変換結果は `.graphics-workbench/` 作業領域で作成してからSafe Mode / Undo対応の反映処理に乗せる
 - 変換テストでは実ファイル読み込み経路を通す
 
 ## 変更可能なファイル

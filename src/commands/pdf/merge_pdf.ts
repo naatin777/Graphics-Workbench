@@ -21,8 +21,8 @@ import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecy
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../shared/command_utils.js';
 
-export const MERGE_PDF_SELECTED_FILES_COMMAND = 'latex-graphics-helper.mergePdf.selectedFiles';
-export const MERGE_PDF_CONFIGURE_COMMAND = 'latex-graphics-helper.mergePdf.configure';
+export const MERGE_PDF_SELECTED_FILES_COMMAND = 'graphics-workbench.mergePdf.selectedFiles';
+export const MERGE_PDF_CONFIGURE_COMMAND = 'graphics-workbench.mergePdf.configure';
 
 export async function mergePdfSelectedFilesCommand(
   uri?: vscode.Uri,

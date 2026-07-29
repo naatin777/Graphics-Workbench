@@ -15,18 +15,18 @@
 
 ## command IDの移行
 
-| v0.5.1 command ID                          | v1.0.0で使うcommand ID                         | 備考                                                                                                                             |
-| ------------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `latex-graphics-helper.cropPdf`            | `latex-graphics-helper.cropPdf.auto`           | quick系の自動crop。Webview GUIで細かく指定するcropは `latex-graphics-helper.cropPdf.configure` として別入口にする。              |
-| `latex-graphics-helper.splitPdf`           | `latex-graphics-helper.splitPdf.allPages`      | quick系の全ページsplit。Webview GUIでページを選択するsplitは `latex-graphics-helper.splitPdf.configure` として別入口にする。     |
-| `latex-graphics-helper.mergePdf`           | `latex-graphics-helper.mergePdf.selectedFiles` | quick系の選択PDF結合。Webview GUIで順序やページを指定するmergeは `latex-graphics-helper.mergePdf.configure` として別入口にする。 |
-| `latex-graphics-helper.convertDrawioToPdf` | `latex-graphics-helper.convertDrawioToPdf`     | v1でもnative Draw.ioのページ分割command IDを維持する。editable Draw.io画像だけが`convertToPdf`へ統合される。                     |
-| `latex-graphics-helper.convertPdfToPng`    | `latex-graphics-helper.convertToPng`           | PDF入力をPNG出力形式コマンドへ統合する。                                                                                         |
-| `latex-graphics-helper.convertPdfToJpeg`   | `latex-graphics-helper.convertToJpeg`          | PDF入力をJPEG出力形式コマンドへ統合する。                                                                                        |
-| `latex-graphics-helper.convertPdfToSvg`    | `latex-graphics-helper.convertToSvg`           | PDF入力をSVG出力形式コマンドへ統合する。                                                                                         |
-| `latex-graphics-helper.convertPngToPdf`    | `latex-graphics-helper.convertToPdf`           | PNG入力をPDF出力形式コマンドへ統合する。                                                                                         |
-| `latex-graphics-helper.convertJpegToPdf`   | `latex-graphics-helper.convertToPdf`           | JPEG入力をPDF出力形式コマンドへ統合する。                                                                                        |
-| `latex-graphics-helper.convertSvgToPdf`    | `latex-graphics-helper.convertToPdf`           | SVG入力をPDF出力形式コマンドへ統合する。                                                                                         |
+| v0.5.1 command ID                       | v1.0.0で使うcommand ID                      | 備考                                                                                                                          |
+| --------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.cropPdf`            | `graphics-workbench.cropPdf.auto`           | quick系の自動crop。Webview GUIで細かく指定するcropは `graphics-workbench.cropPdf.configure` として別入口にする。              |
+| `graphics-workbench.splitPdf`           | `graphics-workbench.splitPdf.allPages`      | quick系の全ページsplit。Webview GUIでページを選択するsplitは `graphics-workbench.splitPdf.configure` として別入口にする。     |
+| `graphics-workbench.mergePdf`           | `graphics-workbench.mergePdf.selectedFiles` | quick系の選択PDF結合。Webview GUIで順序やページを指定するmergeは `graphics-workbench.mergePdf.configure` として別入口にする。 |
+| `graphics-workbench.convertDrawioToPdf` | `graphics-workbench.convertDrawioToPdf`     | v1でもnative Draw.ioのページ分割command IDを維持する。editable Draw.io画像だけが`convertToPdf`へ統合される。                  |
+| `graphics-workbench.convertPdfToPng`    | `graphics-workbench.convertToPng`           | PDF入力をPNG出力形式コマンドへ統合する。                                                                                      |
+| `graphics-workbench.convertPdfToJpeg`   | `graphics-workbench.convertToJpeg`          | PDF入力をJPEG出力形式コマンドへ統合する。                                                                                     |
+| `graphics-workbench.convertPdfToSvg`    | `graphics-workbench.convertToSvg`           | PDF入力をSVG出力形式コマンドへ統合する。                                                                                      |
+| `graphics-workbench.convertPngToPdf`    | `graphics-workbench.convertToPdf`           | PNG入力をPDF出力形式コマンドへ統合する。                                                                                      |
+| `graphics-workbench.convertJpegToPdf`   | `graphics-workbench.convertToPdf`           | JPEG入力をPDF出力形式コマンドへ統合する。                                                                                     |
+| `graphics-workbench.convertSvgToPdf`    | `graphics-workbench.convertToPdf`           | SVG入力をPDF出力形式コマンドへ統合する。                                                                                      |
 
 ## 旧command IDの互換alias
 
@@ -40,13 +40,13 @@
 
 ## settingsの移行
 
-### `latex-graphics-helper.execPath.pdfcrop`
+### `graphics-workbench.execPath.pdfcrop`
 
 `v1.0.0`では復元しない。
 
 移行先:
 
-- `latex-graphics-helper.execPath.ghostscript`
+- `graphics-workbench.execPath.ghostscript`
 
 理由:
 
@@ -56,13 +56,13 @@
 
 README / CHANGELOG / migration noteには、`execPath.pdfcrop`が廃止され、cropには`execPath.ghostscript`を使うことを書く。
 
-### `latex-graphics-helper.execPath.puppeteer`
+### `graphics-workbench.execPath.puppeteer`
 
 `v1.0.0`では復元しない。
 
 移行先:
 
-- SVG / Mermaid: `latex-graphics-helper.puppeteer.executablePath`
+- SVG / Mermaid: `graphics-workbench.puppeteer.executablePath`
 
 理由:
 
@@ -70,7 +70,7 @@ README / CHANGELOG / migration noteには、`execPath.pdfcrop`が廃止され、
 - Chromeを使う変換だけを共有対象とし、Draw.ioなどの外部tool pathとは分ける
 - v1ではChrome系設定と非Chromeの外部tool設定を分ける
 
-### `latex-graphics-helper.puppeteer.browser`
+### `graphics-workbench.puppeteer.browser`
 
 `v1.0.0`でも設定を維持する。
 
@@ -81,13 +81,13 @@ SVG変換で`chrome`または`firefox`を選択できる。Firefoxを選択す�
 - 現行のPuppeteer利用はChrome系channel / executable pathで制御する
 - Firefox対応を公開設定として維持し、実行ファイル指定を必須にする
 
-### `latex-graphics-helper.puppeteer.channel`
+### `graphics-workbench.puppeteer.channel`
 
 `v1.0.0`では復元しない。
 
 移行先:
 
-- SVG / Mermaid: `latex-graphics-helper.puppeteer.browser`
+- SVG / Mermaid: `graphics-workbench.puppeteer.browser`
 
 理由:
 

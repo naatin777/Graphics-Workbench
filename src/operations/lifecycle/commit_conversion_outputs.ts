@@ -416,7 +416,7 @@ async function copyPreparedOutput(
 
   const temporaryPath = path.join(
     path.dirname(output.outputPath),
-    `.${path.basename(output.outputPath)}.lgh-${crypto.randomUUID()}.tmp`,
+    `.${path.basename(output.outputPath)}.graphics-workbench-${crypto.randomUUID()}.tmp`,
   );
   const renameImpl = options.rename ?? rename;
 

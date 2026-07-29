@@ -1,5 +1,5 @@
 // Test target:
-// - latex-graphics-helper.convertToAvif commandが登録されること
+// - graphics-workbench.convertToAvif commandが登録されること
 // - PNGをAVIFへ変換できること
 // - JPEG、WebPをAVIFへ変換できること
 // - SVGをAVIFへ変換できること
@@ -49,13 +49,13 @@ suite('AVIFに変換コマンド', () => {
     sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
     sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
     await vscode.workspace
-      .getConfiguration('latex-graphics-helper')
+      .getConfiguration('graphics-workbench')
       .update('convertToAvif.effort', 0, vscode.ConfigurationTarget.Workspace);
   });
 
   teardown(async () => {
     await vscode.workspace
-      .getConfiguration('latex-graphics-helper')
+      .getConfiguration('graphics-workbench')
       .update('convertToAvif.effort', undefined, vscode.ConfigurationTarget.Workspace);
     sandbox.restore();
   });
@@ -148,7 +148,7 @@ suite('AVIFに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertPngToAvif': '${fileDirname}/custom-${fileBasenameNoExtension}.avif',
+          'graphics-workbench.outputPath.convertPngToAvif': '${fileDirname}/custom-${fileBasenameNoExtension}.avif',
         },
         async () => {
           await vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
@@ -171,7 +171,7 @@ suite('AVIFに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPath.convertPngToAvif': '',
+          'graphics-workbench.outputPath.convertPngToAvif': '',
         },
         async () => {
           await vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
@@ -205,7 +205,9 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-convert-to-avif-'));
+  const temporaryDirectory = await mkdtemp(
+    path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-convert-to-avif-'),
+  );
   await mkdir(temporaryDirectory, { recursive: true });
   return temporaryDirectory;
 }

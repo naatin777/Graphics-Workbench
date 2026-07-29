@@ -10,7 +10,7 @@ const execFileAsync = promisify(execFile);
 
 suite('NLS整合性チェック', () => {
   test('英日NLSのkeyとplaceholderを検証できる', async () => {
-    const extension = vscode.extensions.getExtension('naatin777.latex-graphics-helper');
+    const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
     assert.ok(extension);
 
     const scriptPath = path.join(extension.extensionPath, 'scripts', 'check-nls.mjs');
@@ -22,7 +22,7 @@ suite('NLS整合性チェック', () => {
   });
 
   test('userMessageの置換引数をTypeScript scannerで正確に数える', async () => {
-    const extension = vscode.extensions.getExtension('naatin777.latex-graphics-helper');
+    const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
     assert.ok(extension);
 
     const scriptPath = path.join(extension.extensionPath, 'scripts', 'check-nls.mjs');

@@ -104,13 +104,7 @@ async function stageSvgConversion(
   signal?: AbortSignal,
 ): Promise<PreparedConversionOutput> {
   signal?.throwIfAborted();
-  const stageDirectory = path.join(
-    job.workspacePath,
-    '.latex-graphics-helper',
-    'convert-to-svg',
-    runId,
-    `${index + 1}`,
-  );
+  const stageDirectory = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-svg', runId, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, 'result.svg');
 
   await writeSourceAsSvg(
@@ -133,7 +127,7 @@ async function stageSvgConversion(
     stagedOutputPath,
     outputPath: job.outputPath,
     workspacePath: job.workspacePath,
-    stagingRootPath: path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-svg', runId),
+    stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'convert-to-svg', runId),
   };
 }
 

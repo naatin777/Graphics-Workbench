@@ -53,7 +53,7 @@ Mermaidも`.mmd`専用の独立メニューにするのではなく、可能な�
 
 ## 既存実装との依存関係
 
-現時点では、出力形式基準コマンドのうち実装済みなのは`latex-graphics-helper.convertToPdf`だけである。
+現時点では、出力形式基準コマンドのうち実装済みなのは`graphics-workbench.convertToPdf`だけである。
 
 そのため、Mermaid変換は以下の依存関係を持つ。
 
@@ -94,9 +94,9 @@ Mermaidも`.mmd`専用の独立メニューにするのではなく、可能な�
 
 候補:
 
-- `latex-graphics-helper.convertMermaid.theme`
-- `latex-graphics-helper.convertMermaid.look`
-- `latex-graphics-helper.convertMermaid.backgroundColor`
+- `graphics-workbench.convertMermaid.theme`
+- `graphics-workbench.convertMermaid.look`
+- `graphics-workbench.convertMermaid.backgroundColor`
 
 ただし、初期実装で設定化するかは別途決める。まずはデフォルト設定で変換できる状態を優先する。
 

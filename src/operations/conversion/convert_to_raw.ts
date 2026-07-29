@@ -63,7 +63,7 @@ export async function convertToRawFiles(options: ConvertToRawFilesOptions): Prom
     stage: async (job, index, runId, runtime) => {
       runtime.signal?.throwIfAborted();
       const sidecar = sidecars[index];
-      const stagingRootPath = path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-raw', runId);
+      const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-raw', runId);
       const stageDirectory = path.join(stagingRootPath, String(index + 1));
       const stagedOutputPath = path.join(stageDirectory, 'result.raw');
       const stagedSidecarPath = `${stagedOutputPath}.json`;

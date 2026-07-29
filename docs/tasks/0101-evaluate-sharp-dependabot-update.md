@@ -13,7 +13,7 @@ Done — Superseded
 - current `next/v1` head `12af6da`（PR #371）について、Linux / macOS / WindowsのExtension Host checksとpackaged Electron checksがsuccessしたEvidenceがある。
 - local `npm test`は320 passing。過去のlocal EPS failureは、test executable pathの不具合であり、修正済みである。
 
-したがって、更新後のOS別CI観点とlocal Extension Host testはEvidenceで確認済みであり、条件付きの再評価taskを継続する理由はない。packaged Electronの検証入口は、VSIXを指定した`LGH_VSIX_PATH=/absolute/path/to/file.vsix npm run test:playwright:vsix`である。このbranchではlocal packaged Electron testを実行していない。
+したがって、更新後のOS別CI観点とlocal Extension Host testはEvidenceで確認済みであり、条件付きの再評価taskを継続する理由はない。packaged Electronの検証入口は、VSIXを指定した`GRAPHICS_WORKBENCH_VSIX_PATH=/absolute/path/to/file.vsix npm run test:playwright:vsix`である。このbranchではlocal packaged Electron testを実行していない。
 
 ## 目的
 

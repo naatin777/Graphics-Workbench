@@ -83,6 +83,6 @@ OS一時scratchはworkspace境界とは別の専用境界として扱う。
 
 ## 起動時cleanup
 
-v1ではsession ownershipを証明できないため、拡張機能起動時に`.latex-graphics-helper`全体を削除しない。別windowのactive staging、Undo backup、未知のdirectory、harness log、symlink先を残す。
+v1ではsession ownershipを証明できないため、拡張機能起動時に`.graphics-workbench`全体を削除しない。別windowのactive staging、Undo backup、未知のdirectory、harness log、symlink先を残す。
 
 通常のsuccess/failure/cancellation/Undoに伴うcleanupは、artifact lifecycleで明示された今回のoperation rootに限って実行する。crash後の残骸は次回起動時に自動削除しない。

@@ -6,14 +6,14 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToSvg`を追加し、`.mmd`と`.mermaid`をSVGへ変換できるようにする。
+`graphics-workbench.convertToSvg`を追加し、`.mmd`と`.mermaid`をSVGへ変換できるようにする。
 
 初期実装ではMermaid CLIのデフォルト設定を使い、テーマや見た目の設定項目は追加しない。
 
 ## 完了条件
 
 - `@mermaid-js/mermaid-cli`をdependencyとして追加する
-- `latex-graphics-helper.convertToSvg`を登録する
+- `graphics-workbench.convertToSvg`を登録する
 - Explorer context menuの`変換 > SVG`から`.mmd`と`.mermaid`を変換できる
 - Mermaid CLIの`run` APIを使ってSVGを直接出力する
 - Puppeteer管理Chromeのinstallは前提にせず、既定では`browserChannel: "chrome"`でユーザー環境のChromeを使う

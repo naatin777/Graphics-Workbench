@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPdf`で`.mmd`と`.mermaid`をPDFへ変換できるようにする。
+`graphics-workbench.convertToPdf`で`.mmd`と`.mermaid`をPDFへ変換できるようにする。
 
 `0051`で追加した失敗テストを通すための最小実装に限定する。
 

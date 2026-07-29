@@ -6,10 +6,10 @@ Mermaid 変換で theme と背景色を settings.json から変更可能にす�
 
 ## 設定項目
 
-| 設定キー | 型 | 既定値 | 説明 |
-|---------|-----|--------|------|
-| `latex-graphics-helper.mermaid.theme` | `string` | `"default"` | Mermaid の theme |
-| `latex-graphics-helper.mermaid.backgroundColor` | `string` | `"white"` | 背景色（CSS color値または `transparent`） |
+| 設定キー                                     | 型       | 既定値      | 説明                                      |
+| -------------------------------------------- | -------- | ----------- | ----------------------------------------- |
+| `graphics-workbench.mermaid.theme`           | `string` | `"default"` | Mermaid の theme                          |
+| `graphics-workbench.mermaid.backgroundColor` | `string` | `"white"`   | 背景色（CSS color値または `transparent`） |
 
 ## theme の有効値
 
@@ -77,11 +77,11 @@ export function readMermaidPuppeteerOptions(
 
 ## 影響範囲
 
-| 操作 | 影響 |
-|------|------|
+| 操作                          | 影響                                                      |
+| ----------------------------- | --------------------------------------------------------- |
 | `convertToPdf`（Mermaid入力） | Mermaid → PDF 変換時に theme/backgroundColor が反映される |
-| `convertToPng`（Mermaid入力） | 同上 |
-| `convertToSvg`（Mermaid入力） | 同上 |
+| `convertToPng`（Mermaid入力） | 同上                                                      |
+| `convertToSvg`（Mermaid入力） | 同上                                                      |
 
 すべての出力形式で同じ theme/backgroundColor 設定が使われる。
 
@@ -91,13 +91,13 @@ export function readMermaidPuppeteerOptions(
 
 ```json
 {
-  "latex-graphics-helper.mermaid.theme": {
+  "graphics-workbench.mermaid.theme": {
     "type": "string",
     "default": "default",
     "enum": ["default", "forest", "dark", "neutral", "base"],
     "description": "%config.mermaid.theme%"
   },
-  "latex-graphics-helper.mermaid.backgroundColor": {
+  "graphics-workbench.mermaid.backgroundColor": {
     "type": "string",
     "default": "white",
     "description": "%config.mermaid.backgroundColor%"

@@ -15,7 +15,7 @@ const pdfFixturePath = path.join(repositoryRoot, 'test', 'fixtures', 'pdf-operat
 
 suite('Draw.io PDF変換', () => {
   test('ネイティブDraw.ioをページ名ごとのPDFへ分割する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-drawio-pdf-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-pdf-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'q a.drawio');
@@ -51,7 +51,7 @@ suite('Draw.io PDF変換', () => {
       assert.deepStrictEqual(calls[0], [
         path.join(
           workspacePath,
-          '.latex-graphics-helper',
+          '.graphics-workbench',
           'convert-drawio-to-pdf',
           'split-test',
           '1-q_a',
@@ -60,7 +60,7 @@ suite('Draw.io PDF変換', () => {
         '-o',
         path.join(
           workspacePath,
-          '.latex-graphics-helper',
+          '.graphics-workbench',
           'convert-drawio-to-pdf',
           'split-test',
           '1-q_a',
@@ -88,7 +88,7 @@ suite('Draw.io PDF変換', () => {
   });
 
   test('ネイティブDraw.ioの全ページを1つのPDFへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-drawio-pdf-direct-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-pdf-direct-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'q a.drawio');
@@ -124,7 +124,7 @@ suite('Draw.io PDF変換', () => {
   });
 
   test('ページ名をWindowsで安全かつ一意な出力名へ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-drawio-pdf-names-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-pdf-names-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'names.drawio');
