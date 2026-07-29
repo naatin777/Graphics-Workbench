@@ -262,6 +262,7 @@ export default defineConfig({
      */
     'promise/always-return': 'off',
     'promise/catch-or-return': 'off',
+    'promise/prefer-await-to-then': 'error',
 
     /*
      * Project-specific rules
@@ -338,6 +339,7 @@ export default defineConfig({
         'no-console': 'off',
         'typescript/no-explicit-any': 'off',
         'typescript/explicit-function-return-type': 'off',
+        'promise/prefer-await-to-then': 'off',
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unnecessary-condition': 'off',
         'typescript/no-unsafe-return': 'off',

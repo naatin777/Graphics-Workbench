@@ -552,7 +552,13 @@ async function writeSvgAsPdfWithPuppeteer(
     page.on('request', (request) => {
       // The SVG is injected as inline content. No network or subframe navigation
       // is required, including requests created from foreignObject content.
-      request.abort().catch(() => {});
+      void (async (): Promise<void> => {
+        try {
+          await request.abort();
+        } catch {
+          // The request may already be aborted by Puppeteer during page teardown.
+        }
+      })();
     });
     await page.setContent(svgPageHtml(svg, size), { waitUntil: 'load' });
     signal?.throwIfAborted();

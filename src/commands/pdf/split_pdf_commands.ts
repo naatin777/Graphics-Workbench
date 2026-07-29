@@ -232,17 +232,21 @@ async function runSplitPdfConfigureCommand(
     }
 
     isApplying = true;
-    void applyConfiguredSplit({
-      inputUri,
-      workspaceFolder,
-      outputTemplate,
-      pageCount,
-      rows: message.payload.rows,
-      panel,
-      ...(outputChannel !== undefined && { outputChannel }),
-    }).finally(() => {
-      isApplying = false;
-    });
+    void (async (): Promise<void> => {
+      try {
+        await applyConfiguredSplit({
+          inputUri,
+          workspaceFolder,
+          outputTemplate,
+          pageCount,
+          rows: message.payload.rows,
+          panel,
+          ...(outputChannel !== undefined && { outputChannel }),
+        });
+      } finally {
+        isApplying = false;
+      }
+    })();
   });
 }
 

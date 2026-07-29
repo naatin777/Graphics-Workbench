@@ -175,15 +175,19 @@ export async function mergePdfConfigureCommand(
       }
 
       isApplying = true;
-      void applyConfiguredMerge({
-        sourceById,
-        sourceIds: message.payload.sourceIds,
-        workspace,
-        panel,
-        ...(outputChannel !== undefined && { outputChannel }),
-      }).finally(() => {
-        isApplying = false;
-      });
+      void (async (): Promise<void> => {
+        try {
+          await applyConfiguredMerge({
+            sourceById,
+            sourceIds: message.payload.sourceIds,
+            workspace,
+            panel,
+            ...(outputChannel !== undefined && { outputChannel }),
+          });
+        } finally {
+          isApplying = false;
+        }
+      })();
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

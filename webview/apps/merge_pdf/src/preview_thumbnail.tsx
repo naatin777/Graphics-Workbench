@@ -26,7 +26,7 @@ export function PreviewThumbnail(props: {
   onMount(() => {
     let started = false;
 
-    const renderPreview = (): void => {
+    const renderPreview = async (): Promise<void> => {
       if (started || !canvas) {
         return;
       }
@@ -34,18 +34,19 @@ export function PreviewThumbnail(props: {
       started = true;
       setStatus('loading');
 
-      void renderFirstPdfPage(props.source.pdfSrc, canvas, props.options)
-        .then(() => setStatus('ready'))
-        .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : String(error);
-          setStatus('error');
-          props.onError();
-          vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
-        });
+      try {
+        await renderFirstPdfPage(props.source.pdfSrc, canvas, props.options);
+        setStatus('ready');
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        setStatus('error');
+        props.onError();
+        vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
+      }
     };
 
     if (typeof IntersectionObserver === 'undefined' || !frame) {
-      renderPreview();
+      void renderPreview();
       return;
     }
 
@@ -53,7 +54,7 @@ export function PreviewThumbnail(props: {
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
           observer.disconnect();
-          renderPreview();
+          void renderPreview();
         }
       },
       { rootMargin: '120px' },

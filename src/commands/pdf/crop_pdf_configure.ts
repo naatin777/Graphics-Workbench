@@ -146,17 +146,21 @@ async function runCropPdfConfigureCommand(
     }
 
     isApplying = true;
-    void applyConfiguredCrop({
-      inputUri,
-      workspaceFolder,
-      outputTemplate,
-      cropBox: message.payload.cropBox,
-      target: message.payload.target,
-      panel,
-      ...(outputChannel !== undefined && { outputChannel }),
-    }).finally(() => {
-      isApplying = false;
-    });
+    void (async (): Promise<void> => {
+      try {
+        await applyConfiguredCrop({
+          inputUri,
+          workspaceFolder,
+          outputTemplate,
+          cropBox: message.payload.cropBox,
+          target: message.payload.target,
+          panel,
+          ...(outputChannel !== undefined && { outputChannel }),
+        });
+      } finally {
+        isApplying = false;
+      }
+    })();
   });
 }
 

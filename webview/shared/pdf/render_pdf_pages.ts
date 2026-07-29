@@ -97,33 +97,35 @@ export async function renderPdfPages(
     }
 
     const renderPromise = (async (): Promise<void> => {
-      if (renderState.disposed) {
-        return;
-      }
-
-      const page = await document.getPage(pageNumber);
-      pages.set(pageNumber, page);
-
-      // The returned controller can dispose this state while getPage is pending.
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- preserve async disposal cleanup
-      if (renderState.disposed) {
-        page.cleanup();
-        return;
-      }
-
-      const renderTask = renderPageToCanvasWithTask(page, canvas);
-      renderTasks.add(renderTask);
-
       try {
-        await renderTask.promise;
-      } finally {
-        renderTasks.delete(renderTask);
-        page.cleanup();
+        if (renderState.disposed) {
+          return;
+        }
+
+        const page = await document.getPage(pageNumber);
+        pages.set(pageNumber, page);
+
+        // The returned controller can dispose this state while getPage is pending.
+        // oxlint-disable-next-line typescript/no-unnecessary-condition -- preserve async disposal cleanup
+        if (renderState.disposed) {
+          page.cleanup();
+          return;
+        }
+
+        const renderTask = renderPageToCanvasWithTask(page, canvas);
+        renderTasks.add(renderTask);
+
+        try {
+          await renderTask.promise;
+        } finally {
+          renderTasks.delete(renderTask);
+          page.cleanup();
+        }
+      } catch (error: unknown) {
+        options.onRenderError?.(error);
+        throw error instanceof Error ? error : new Error(String(error));
       }
-    })().catch((error: unknown) => {
-      options.onRenderError?.(error);
-      throw error instanceof Error ? error : new Error(String(error));
-    });
+    })();
 
     renderPromises.set(pageNumber, renderPromise);
     return renderPromise;
@@ -140,7 +142,13 @@ export async function renderPdfPages(
               }
 
               const pageNumber = Number(entry.target instanceof HTMLElement ? entry.target.dataset.pdfPage : undefined);
-              void renderPage(pageNumber).catch(() => {});
+              void (async (): Promise<void> => {
+                try {
+                  await renderPage(pageNumber);
+                } catch {
+                  // The render error was already reported through onRenderError.
+                }
+              })();
             }
           },
           {
@@ -186,14 +194,15 @@ async function loadPdfJs(): Promise<PdfJs> {
 }
 
 async function loadPdfJsWorker(): Promise<Worker> {
-  pdfJsWorkerPromise ??= fetch(pdfJsWorkerUrl).then(async (response) => {
+  pdfJsWorkerPromise ??= (async (): Promise<Worker> => {
+    const response = await fetch(pdfJsWorkerUrl);
     if (!response.ok) {
       throw new Error(`Could not load the PDF.js worker: ${response.status}.`);
     }
 
     const workerBlobUrl = URL.createObjectURL(await response.blob());
     return new Worker(workerBlobUrl, { type: 'module' });
-  });
+  })();
 
   return pdfJsWorkerPromise;
 }

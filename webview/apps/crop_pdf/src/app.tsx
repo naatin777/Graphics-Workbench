@@ -100,36 +100,27 @@ export function App(): JSX.Element {
       setSelectedPages(initialPage.toString());
       setInputError('');
       setRenderError('');
-      renderPromise = renderPdfPages(event.data.payload.pdfSrc, pdfPages, {
-        ...(pdfPreview !== undefined && { root: pdfPreview }),
-        ...(event.data.payload.workerSrc !== undefined && event.data.payload.workerSrc !== ''
-          ? { workerSrc: event.data.payload.workerSrc }
-          : {}),
-        ...(event.data.payload.cMapUrl !== undefined && event.data.payload.cMapUrl !== ''
-          ? { cMapUrl: event.data.payload.cMapUrl }
-          : {}),
-        ...(event.data.payload.standardFontDataUrl !== undefined && event.data.payload.standardFontDataUrl !== ''
-          ? { standardFontDataUrl: event.data.payload.standardFontDataUrl }
-          : {}),
-        ...(event.data.payload.wasmUrl !== undefined && event.data.payload.wasmUrl !== ''
-          ? { wasmUrl: event.data.payload.wasmUrl }
-          : {}),
-        pageLabel: labels().pageLabel,
-        onRenderError: (error: unknown) => {
-          const message = error instanceof Error ? error.message : String(error);
-          setRenderError(message);
-          vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
-        },
-      })
-        .then(async (controller) => {
+      const { payload } = event.data;
+      renderPromise = (async (): Promise<void> => {
+        try {
+          const controller = await renderPdfPages(payload.pdfSrc, pdfPages, {
+            ...(pdfPreview !== undefined && { root: pdfPreview }),
+            ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
+            ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
+            ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''
+              ? { standardFontDataUrl: payload.standardFontDataUrl }
+              : {}),
+            ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
+            pageLabel: payload.labels.pageLabel,
+            onRenderError: (error: unknown) => {
+              const message = error instanceof Error ? error.message : String(error);
+              setRenderError(message);
+              vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
+            },
+          });
           renderController = controller;
-          return controller.firstPageReady;
-        })
-        .catch((error: unknown) => {
-          setRenderError(error instanceof Error ? error.message : String(error));
-          throw error instanceof Error ? error : new Error(String(error));
-        })
-        .then(() => {
+          await controller.firstPageReady;
+
           applyPreviewZoom(pdfPages, previewZoom());
 
           const size = getPreviewPageSize(pdfPages);
@@ -152,9 +143,11 @@ export function App(): JSX.Element {
               });
             }
           }
-
-          return;
-        });
+        } catch (error: unknown) {
+          setRenderError(error instanceof Error ? error.message : String(error));
+          throw error instanceof Error ? error : new Error(String(error));
+        }
+      })();
     };
 
     window.addEventListener('message', handleMessage);
