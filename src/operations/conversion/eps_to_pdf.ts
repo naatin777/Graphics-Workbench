@@ -5,11 +5,11 @@ import { promisify } from 'node:util';
 
 import { PDFDocument } from 'pdf-lib';
 
-import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import {
   createAsciiInputOutputScratch,
   defaultWindowsScratchBaseCandidates,
   removeSuccessfulScratch,
+  type LineOutputChannel,
   validateAsciiScratchInput,
   validateAsciiScratchOutput,
 } from '../external_tools/external_tool_ascii_scratch.js';

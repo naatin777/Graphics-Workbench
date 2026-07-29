@@ -100,7 +100,7 @@ suite('画像→1PDF結合', () => {
         copyFixtureTo(workspacePath, 'c.png'),
       ]);
       const outputPath = path.join(workspacePath, 'result.pdf');
-      const progress: Array<[number, number]> = [];
+      const progress: [number, number][] = [];
 
       await combineImagesToPdf({
         jobs: sourcePaths.map((sourcePath) => ({ sourcePath })),

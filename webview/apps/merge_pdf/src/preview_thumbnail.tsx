@@ -1,5 +1,4 @@
-import { Show, createSignal, onCleanup, onMount } from 'solid-js';
-import type { JSX } from 'solid-js';
+import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderFirstPdfPage } from '@webview-shared/pdf/render_pdf_pages';
 

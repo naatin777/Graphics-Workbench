@@ -98,7 +98,7 @@ export async function previewCombineInputs(
     iconPath: new vscode.ThemeIcon('arrow-down'),
     tooltip: localeMap('quickPick.combine.moveDown'),
   };
-  let items = sourceUris.map((sourceUri) => ({
+  const items = sourceUris.map((sourceUri) => ({
     label: pathLabel(sourceUri),
     sourceUri,
     removeButton,

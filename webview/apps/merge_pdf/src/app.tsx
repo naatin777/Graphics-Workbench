@@ -1,5 +1,4 @@
-import { For, Show, createSignal, onCleanup, onMount } from 'solid-js';
-import type { JSX } from 'solid-js';
+import { For, Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import type { ExtensionToWebviewMessage, MergePdfSource } from './messages';
 import { defaultLabels } from './labels';
