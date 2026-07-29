@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import type { JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 
@@ -16,11 +17,11 @@ import { vscode } from './vscode';
 type RowRefs = Partial<Record<InputKind, HTMLInputElement>>;
 type InitPayload = Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'];
 
-function cancel() {
+function cancel(): void {
   vscode.sendMessage({ type: 'cancel' });
 }
 
-export function App() {
+export function App(): JSX.Element {
   let nextRowId = 1;
   const createRow = (): Row => ({
     id: nextRowId++,
@@ -48,13 +49,13 @@ export function App() {
   let draggedRowId: number | undefined;
   let previewGeneration = 0;
 
-  const setInputRef = (rowId: number, kind: InputKind, element: HTMLInputElement) => {
+  const setInputRef = (rowId: number, kind: InputKind, element: HTMLInputElement): void => {
     const refs = rowRefs.get(rowId) ?? {};
     refs[kind] = element;
     rowRefs.set(rowId, refs);
   };
 
-  const focusInput = (rowId: number, kind: InputKind) => {
+  const focusInput = (rowId: number, kind: InputKind): void => {
     setFocusedRowId(rowId);
     queueMicrotask(() => rowRefs.get(rowId)?.[kind]?.focus());
   };
@@ -67,7 +68,7 @@ export function App() {
     return row.id;
   };
 
-  const updatePages = (rowId: number, pages: string) => {
+  const updatePages = (rowId: number, pages: string): void => {
     setRows((current) =>
       current.map((row) =>
         row.id === rowId
@@ -82,14 +83,14 @@ export function App() {
     setApplyError('');
   };
 
-  const updateOutputName = (rowId: number, outputName: string) => {
+  const updateOutputName = (rowId: number, outputName: string): void => {
     setRows((current) =>
       current.map((row) => (row.id === rowId ? { ...row, outputName, outputNameEdited: true } : row)),
     );
     setApplyError('');
   };
 
-  const removeRow = (rowId: number) => {
+  const removeRow = (rowId: number): void => {
     const current = rows();
     const index = current.findIndex((row) => row.id === rowId);
 
@@ -120,7 +121,7 @@ export function App() {
     setApplyError('');
   };
 
-  const moveRow = (rowId: number, direction: -1 | 1) => {
+  const moveRow = (rowId: number, direction: -1 | 1): void => {
     const current = rows();
     const index = current.findIndex((row) => row.id === rowId);
     const nextIndex = index + direction;
@@ -142,7 +143,7 @@ export function App() {
     setRows(nextRows);
   };
 
-  const handleRowKeyDown = (event: KeyboardEvent, rowIndex: number, kind: InputKind) => {
+  const handleRowKeyDown = (event: KeyboardEvent, rowIndex: number, kind: InputKind): void => {
     if (event.key !== 'Enter') {
       return;
     }
@@ -178,7 +179,7 @@ export function App() {
     focusInput(nextRow.id, kind);
   };
 
-  const dropRow = (event: DragEvent, targetRowId: number) => {
+  const dropRow = (event: DragEvent, targetRowId: number): void => {
     event.preventDefault();
     const sourceRowId = draggedRowId ?? Number(event.dataTransfer?.getData('text/plain'));
 
@@ -249,7 +250,7 @@ export function App() {
     return { rows: configuredRows };
   };
 
-  const apply = () => {
+  const apply = (): void => {
     if (!previewReady() || renderError()) {
       setApplyError(labels().previewApplyError);
       return;
@@ -271,7 +272,7 @@ export function App() {
     vscode.sendMessage(message);
   };
 
-  const updatePreviewVisibility = () => {
+  const updatePreviewVisibility = (): void => {
     if (!pdfPages) {
       return;
     }
@@ -296,7 +297,7 @@ export function App() {
     return Math.min(400, Math.max(25, Math.round(value / 5) * 5));
   };
 
-  const updateZoom = (value: number, target?: EventTarget | null, clientX?: number, clientY?: number) => {
+  const updateZoom = (value: number, target?: EventTarget | null, clientX?: number, clientY?: number): void => {
     const nextZoom = normalizeZoom(value);
 
     if (nextZoom === zoomPercent()) {
@@ -309,7 +310,7 @@ export function App() {
     restorePreviewZoomAnchor(pdfPreview, anchor);
   };
 
-  const zoomWithWheel = (event: WheelEvent) => {
+  const zoomWithWheel = (event: WheelEvent): void => {
     if (!event.ctrlKey && !event.metaKey) {
       return;
     }
@@ -318,7 +319,7 @@ export function App() {
     updateZoom(zoomPercent() + (event.deltaY < 0 ? 5 : -5), event.target, event.clientX, event.clientY);
   };
 
-  const startPreview = async (payload: InitPayload, generation: number) => {
+  const startPreview = async (payload: InitPayload, generation: number): Promise<void> => {
     if (!pdfPages) {
       return;
     }
@@ -368,7 +369,7 @@ export function App() {
   });
 
   onMount(() => {
-    const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>) => {
+    const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>): void => {
       if (event.data.type === 'error') {
         setApplyError(event.data.payload.message);
         return;
@@ -521,7 +522,7 @@ export function App() {
             <button
               class='button button--primary'
               type='button'
-              disabled={(() => {
+              disabled={((): boolean => {
                 const result = validateRows();
                 return 'message' in result;
               })()}

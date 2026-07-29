@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 22
+Status: In progress — Phase 23
 
 ## Objective
 
@@ -119,6 +119,10 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 `typescript/promise-function-async`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。Promiseを返す関数へ`async`を明示し、非同期処理であることを関数宣言から読み取れるようにする。テストコードは対象外とする。
 
+## Phase 23
+
+`typescript/explicit-function-return-type`をproductionコード、Webview本体、Webview build config、Node.js/GitHub Actionsスクリプトでerrorへ強化する。公開関数、変換処理、非同期callbackの戻り値型を明示し、処理の境界で返す値とPromise契約を読み取りやすくする。テストコードは対象外とする。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -143,12 +147,13 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `unicorn/no-object-as-default-parameter` の既存違反は3件で、MermaidのPuppeteer/CLIオプションとDraw.io backendの既定値に限定されていた。Phase 20では既定値を関数本体のローカル値へ移す
 - `unicorn/no-array-for-each` の既存違反は3件で、LaTeX複数PDFのsnippet生成とNLS checkerのJSON走査に限定されていた。Phase 21ではインデックス付きの処理と再帰的なJSON走査を`for...of`へ置き換える
 - `typescript/promise-function-async` の既存違反は82件で、productionコード、Webview本体、Node.js/GitHub Actionsスクリプトの35ファイルに分散していた。Phase 22ではPromiseを返す関数の宣言へ`async`を追加する。テストコードの107件は対象外とする
+- `typescript/explicit-function-return-type` の既存違反は55件で、productionコード、Webview本体、Webview build config、Node.js/GitHub Actionsスクリプトの18ファイルに分散していた。Phase 23では関数・callbackの戻り値型を明示する。テストコードの35件は対象外とする
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
 ## Completion criteria
 
-- Phase 1からPhase 22までの制限をCIの通常lintで強制できる
+- Phase 1からPhase 23までの制限をCIの通常lintで強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

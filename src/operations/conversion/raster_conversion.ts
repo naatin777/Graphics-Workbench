@@ -62,7 +62,13 @@ export interface SimpleRasterConversionOptions {
   encoder: RasterEncoder;
 }
 
-export function createSimpleRasterExecutor(options: SimpleRasterConversionOptions) {
+type SimpleRasterExecutor = (
+  batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
+    maxInputPixels?: number;
+  },
+) => Promise<CommittedConversionOutput[]>;
+
+export function createSimpleRasterExecutor(options: SimpleRasterConversionOptions): SimpleRasterExecutor {
   const definition: RasterConversionDefinition = {
     operationName: options.operationName,
     stagingDirectoryName: options.operationName,
@@ -76,7 +82,7 @@ export function createSimpleRasterExecutor(options: SimpleRasterConversionOption
     batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
       maxInputPixels?: number;
     },
-  ) =>
+  ): Promise<CommittedConversionOutput[]> =>
     executeRasterConversionBatch({
       ...batchOptions,
       maxInputPixels: batchOptions.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,

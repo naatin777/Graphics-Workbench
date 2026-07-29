@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import {
   isSplitPdfWebviewToHostMessage,
   type SplitPdfHostToWebview,
+  type SplitPdfLabels,
   type SplitPdfPageGroupRow,
 } from '../../application/protocols/split_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
@@ -314,7 +315,7 @@ async function applyConfiguredSplit(params: {
                 sourcePath,
                 workspacePath,
                 pageGroups: rows.map((row) => row.pages),
-                outputPathForGroup: (groupIndex) => {
+                outputPathForGroup: (groupIndex): string => {
                   const row = rows[groupIndex];
 
                   if (!row) {
@@ -451,7 +452,7 @@ function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, dir
   return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }
 
-function splitPdfLabels() {
+function splitPdfLabels(): SplitPdfLabels {
   return {
     title: localeMap('webview.splitPdf.title'),
     description: localeMap('webview.splitPdf.description'),

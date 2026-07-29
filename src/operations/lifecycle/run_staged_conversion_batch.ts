@@ -37,7 +37,7 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
     options.runId,
   );
   const abortController = new AbortController();
-  const abortFromCaller = () => {
+  const abortFromCaller = (): void => {
     abortController.abort(options.runtime?.signal?.reason);
   };
 

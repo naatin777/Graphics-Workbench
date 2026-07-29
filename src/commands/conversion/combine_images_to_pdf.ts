@@ -109,7 +109,7 @@ export async function previewCombineInputs(
 
   return new Promise((resolve) => {
     let settled = false;
-    const finish = (result?: vscode.Uri[]) => {
+    const finish = (result?: vscode.Uri[]): void => {
       if (settled) {
         return;
       }
@@ -119,7 +119,7 @@ export async function previewCombineInputs(
       resolve(result);
     };
 
-    const refresh = () => {
+    const refresh = (): void => {
       quickPick.items = items.map((item, index) => ({
         ...item,
         label: `${index + 1}. ${pathLabel(item.sourceUri)}`,

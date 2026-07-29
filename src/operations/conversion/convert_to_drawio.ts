@@ -118,7 +118,7 @@ async function stageDrawio(
         const svgPath = path.join(stageDirectory, `${inputIndex}-${page}.svg`);
         await (
           options.runPdfToSvg ??
-          (async (source, output, currentPage, signal) =>
+          (async (source, output, currentPage, signal): Promise<void> =>
             executePdfToSvg(options.pdftocairoPath ?? 'pdftocairo', source, output, currentPage, signal))
         )(input.sourcePath, svgPath, page, runtime.signal);
         pages.push(await svgPage(svgPath, input, page));
@@ -146,7 +146,7 @@ async function stageDrawio(
       const svgPath = path.join(stageDirectory, `${inputIndex}.svg`);
       await (
         options.runMermaid ??
-        (async (source, output, signal) => executeMermaid(source, output, signal, options.mermaidTools))
+        (async (source, output, signal): Promise<void> => executeMermaid(source, output, signal, options.mermaidTools))
       )(input.sourcePath, svgPath, runtime.signal);
       pages.push(await svgPage(svgPath, input));
     } else {

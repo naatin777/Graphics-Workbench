@@ -1,4 +1,5 @@
 import { For, Show, createSignal, onCleanup, onMount } from 'solid-js';
+import type { JSX } from 'solid-js';
 
 import type { ExtensionToWebviewMessage, MergePdfSource } from './messages';
 import { defaultLabels } from './labels';
@@ -6,7 +7,7 @@ import { SourceCard } from './source_card';
 import type { PdfOptions } from './preview_thumbnail';
 import { vscode } from './vscode';
 
-export function App() {
+export function App(): JSX.Element {
   const [sources, setSources] = createSignal<MergePdfSource[]>([]);
   const [pdfOptions, setPdfOptions] = createSignal<PdfOptions>({});
   const [labels, setLabels] = createSignal(defaultLabels);
@@ -16,7 +17,7 @@ export function App() {
   const [dropTargetId, setDropTargetId] = createSignal('');
 
   onMount(() => {
-    const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>) => {
+    const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>): void => {
       if (event.data.type === 'error') {
         setHostError(event.data.payload.message);
         return;
@@ -47,7 +48,7 @@ export function App() {
     });
   });
 
-  const moveSource = (sourceId: string, offset: number) => {
+  const moveSource = (sourceId: string, offset: number): void => {
     const current = sources();
     const fromIndex = current.findIndex((source) => source.sourceId === sourceId);
     const toIndex = fromIndex + offset;
@@ -67,7 +68,7 @@ export function App() {
     setSources(next);
   };
 
-  const moveSourceTo = (sourceId: string, targetId: string) => {
+  const moveSourceTo = (sourceId: string, targetId: string): void => {
     const current = sources();
     const fromIndex = current.findIndex((source) => source.sourceId === sourceId);
     const targetIndex = current.findIndex((source) => source.sourceId === targetId);
@@ -87,7 +88,7 @@ export function App() {
     setSources(next);
   };
 
-  const startDragging = (event: DragEvent, sourceId: string) => {
+  const startDragging = (event: DragEvent, sourceId: string): void => {
     setDraggedSourceId(sourceId);
     event.dataTransfer?.setData('text/plain', sourceId);
     if (event.dataTransfer) {
@@ -95,7 +96,7 @@ export function App() {
     }
   };
 
-  const handleDragOver = (event: DragEvent, sourceId: string) => {
+  const handleDragOver = (event: DragEvent, sourceId: string): void => {
     event.preventDefault();
     setDropTargetId(sourceId);
     if (event.dataTransfer) {
@@ -103,7 +104,7 @@ export function App() {
     }
   };
 
-  const handleDrop = (event: DragEvent, targetId: string) => {
+  const handleDrop = (event: DragEvent, targetId: string): void => {
     event.preventDefault();
     const draggedId = draggedSourceId();
     const transferId = event.dataTransfer?.getData('text/plain');
@@ -118,12 +119,12 @@ export function App() {
     setDropTargetId('');
   };
 
-  const clearDragState = () => {
+  const clearDragState = (): void => {
     setDraggedSourceId('');
     setDropTargetId('');
   };
 
-  const removeSource = (sourceId: string) => {
+  const removeSource = (sourceId: string): void => {
     setSources((current) => current.filter((source) => source.sourceId !== sourceId));
     setPreviewErrors((current) => {
       const next = new Set(current);
@@ -132,7 +133,7 @@ export function App() {
     });
   };
 
-  const apply = () => {
+  const apply = (): void => {
     if (sources().length < 2) {
       return;
     }
@@ -234,6 +235,6 @@ export function App() {
   );
 }
 
-function cancel() {
+function cancel(): void {
   vscode.sendMessage({ type: 'cancel' });
 }

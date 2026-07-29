@@ -159,7 +159,7 @@ async function runPdfToEps(options: {
   await assertWritablePathInWorkspace(options.epsPath, path.dirname(options.epsPath));
   await mkdir(path.dirname(options.epsPath), { recursive: true });
   const runGhostscript = options.runGhostscript ?? executeGhostscript;
-  const argsFor = (inputPath: string, outputPath: string) => [
+  const argsFor = (inputPath: string, outputPath: string): string[] => [
     '-dSAFER',
     '-dNOPAUSE',
     '-dBATCH',

@@ -1,4 +1,5 @@
 import type { SplitPdfLabels } from '@lgh-split-pdf-protocol';
+import type { JSX } from 'solid-js';
 
 import type { PreviewMode } from './types';
 
@@ -8,7 +9,7 @@ export function PreviewToolbar(props: {
   zoomPercent: number;
   onPreviewModeChange: (mode: PreviewMode) => void;
   onZoomChange: (value: number) => void;
-}) {
+}): JSX.Element {
   return (
     <div class='pdf-preview__toolbar'>
       <div>

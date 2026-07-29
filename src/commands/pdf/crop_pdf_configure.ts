@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import {
   type CropBox,
   type CropConfigureHostToWebview,
+  type CropPdfLabels,
   type CropTarget,
   isCropConfigureMessage,
 } from '../../application/protocols/crop_pdf_protocol.js';
@@ -270,7 +271,7 @@ function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri 
   return inputUri;
 }
 
-function cropPdfLabels() {
+function cropPdfLabels(): CropPdfLabels {
   return {
     title: localeMap('webview.cropPdf.title'),
     description: localeMap('webview.cropPdf.description'),

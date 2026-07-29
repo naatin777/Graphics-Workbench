@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import {
   isMergePdfWebviewToHostMessage,
   type MergePdfHostToWebview,
+  type MergePdfLabels,
 } from '../../application/protocols/merge_pdf_protocol.js';
 import { localeMap } from '../../locale_map.js';
 import { mergePdf } from '../../operations/pdf/merge_pdf.js';
@@ -315,7 +316,7 @@ function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, dir
   return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }
 
-function mergePdfLabels() {
+function mergePdfLabels(): MergePdfLabels {
   return {
     title: localeMap('webview.mergePdf.title'),
     description: localeMap('webview.mergePdf.description'),

@@ -96,7 +96,7 @@ export async function renderPdfPages(
       return Promise.reject(new Error(`Could not create PDF page ${pageNumber}.`));
     }
 
-    const renderPromise = (async () => {
+    const renderPromise = (async (): Promise<void> => {
       if (renderState.disposed) {
         return;
       }

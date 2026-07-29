@@ -1,4 +1,5 @@
 import { Show, createSignal, onCleanup, onMount } from 'solid-js';
+import type { JSX } from 'solid-js';
 
 import { renderFirstPdfPage } from '@webview-shared/pdf/render_pdf_pages';
 
@@ -17,7 +18,7 @@ export function PreviewThumbnail(props: {
   options: PdfOptions;
   labels: MergePdfLabels;
   onError: () => void;
-}) {
+}): JSX.Element {
   const [status, setStatus] = createSignal<'waiting' | 'loading' | 'ready' | 'error'>('waiting');
   let canvas: HTMLCanvasElement | undefined;
   let frame: HTMLDivElement | undefined;
@@ -25,7 +26,7 @@ export function PreviewThumbnail(props: {
   onMount(() => {
     let started = false;
 
-    const renderPreview = () => {
+    const renderPreview = (): void => {
       if (started || !canvas) {
         return;
       }

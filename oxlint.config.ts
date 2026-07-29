@@ -188,6 +188,7 @@ export default defineConfig({
     'typescript/consistent-type-imports': 'error',
     'typescript/no-explicit-any': 'error',
     'typescript/no-require-imports': 'error',
+    'typescript/explicit-function-return-type': 'error',
     'typescript/no-unnecessary-type-assertion': 'error',
     'typescript/prefer-nullish-coalescing': 'error',
     'eslint/no-underscore-dangle': ['error', { allow: ['_electron'] }],
@@ -336,6 +337,7 @@ export default defineConfig({
       rules: {
         'no-console': 'off',
         'typescript/no-explicit-any': 'off',
+        'typescript/explicit-function-return-type': 'off',
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unnecessary-condition': 'off',
         'typescript/no-unsafe-return': 'off',
