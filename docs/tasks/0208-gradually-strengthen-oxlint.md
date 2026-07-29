@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 27 (experiment)
+Status: In progress — Phase 28 (experiment)
 
 ## Objective
 
@@ -143,6 +143,12 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 既存のproduction違反10件は、入力形式の判定、PDFの結合・crop、EPS/Draw.io変換、Webview previewの処理などを小さな責務の関数へ分割して解消する。テストコードの`package.json`検証関数はテスト専用の構造検証として対象外にする。
 
+## Phase 28
+
+ブロックのネスト深度を4以下に制限する`max-depth`をerrorへ強化する。ESLintとOxlintのルール既定値に合わせ、production code、Webview本体、Node.js/GitHub Actionsスクリプトへ適用する。テストコードは対象外とする。
+
+既存の違反1件は、NLS検証処理のuserMessage call判定を専用helperへ分割して解消する。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -172,6 +178,7 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `typescript/no-floating-promises` の既存違反は0件だった。Phase 25では未処理Promiseをerrorとして監視し、意図的に待たない処理は`void`で明示する
 - `project/max-flat-type-members` は初回に10項目以上の平坦な型を15件検出した。共通語から候補グループを出せる一方、意味的な判断は自動化せず、Options型・props・プロトコルpayload・ラベル型・テスト環境型を責務単位へネストして解消した。Phase 26でerrorへ昇格する
 - `complexity` は既定上限20で12件を検出した。production codeとWebview本体の10件は責務別のhelperへ分割して解消し、テスト専用のpackage.json検証関数と未型付けESTree visitor APIを扱う独自プラグインはoverrideで対象外にする
+- `max-depth` は既定上限4でproduction codeとスクリプトに1件を検出した。NLS検証処理のuserMessage call判定をhelperへ分割して解消する
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
@@ -180,6 +187,7 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - Phase 1からPhase 25までの制限をCIの通常lintで強制できる
 - Phase 26の構造改善ルールを通常lintでerrorとして強制できる
 - Phase 27の複雑度ルールを通常lintでerrorとして強制できる
+- Phase 28のネスト深度ルールを通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 
