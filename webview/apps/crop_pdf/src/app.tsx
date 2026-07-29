@@ -55,9 +55,107 @@ const defaultLabels: CropPdfLabels = {
   },
 };
 
+type CropInitPayload = Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'];
+type PageSize = { width: number; height: number };
+type CropBoxState = { left: string; bottom: string; right: string; top: string };
+type RenderPreviewOptions = {
+  payload: CropInitPayload;
+  pdf: {
+    pages: HTMLDivElement;
+    preview: HTMLElement | undefined;
+    zoom: () => number;
+  };
+  state: {
+    pageSize: () => PageSize;
+    cropBox: () => CropBoxState;
+    setPageSize: (value: PageSize) => void;
+    setCropBox: (value: CropBoxState) => void;
+    setRenderError: (value: string) => void;
+    setRenderController: (value: PdfRenderController) => void;
+  };
+};
+
 function cancel(): void {
   const message: WebviewToExtensionMessage = { type: 'cancel' };
   vscode.sendMessage(message);
+}
+
+async function renderPreview(options: RenderPreviewOptions): Promise<void> {
+  try {
+    const controller = await renderPdfPages(
+      options.payload.pdfSrc,
+      options.pdf.pages,
+      renderOptions(options.payload, options.pdf.preview, options.state.setRenderError),
+    );
+    options.state.setRenderController(controller);
+    await controller.firstPageReady;
+    applyPreviewZoom(options.pdf.pages, options.pdf.zoom());
+    updatePreviewPageSize(options);
+  } catch (error: unknown) {
+    options.state.setRenderError(error instanceof Error ? error.message : String(error));
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+}
+
+function renderOptions(
+  payload: CropInitPayload,
+  pdfPreview: HTMLElement | undefined,
+  setRenderError: (value: string) => void,
+): Parameters<typeof renderPdfPages>[2] {
+  return {
+    ...(pdfPreview !== undefined && { root: pdfPreview }),
+    ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
+      ? { workerSrc: payload.resources.workerSrc }
+      : {}),
+    ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
+      ? { cMapUrl: payload.resources.cMapUrl }
+      : {}),
+    ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
+      ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
+      : {}),
+    ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
+      ? { wasmUrl: payload.resources.wasmUrl }
+      : {}),
+    pageLabel: payload.labels.header.pageLabel,
+    onRenderError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      setRenderError(message);
+      vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
+    },
+  };
+}
+
+function updatePreviewPageSize(options: {
+  pdf: Pick<RenderPreviewOptions['pdf'], 'pages'>;
+  state: Pick<RenderPreviewOptions['state'], 'pageSize' | 'cropBox' | 'setPageSize' | 'setCropBox'>;
+}): void {
+  const size = getPreviewPageSize(options.pdf.pages);
+  if (
+    !(
+      size.width > 0 &&
+      size.height > 0 &&
+      options.state.pageSize().width === 0 &&
+      options.state.pageSize().height === 0
+    )
+  ) {
+    return;
+  }
+
+  options.state.setPageSize(size);
+  if (!isDefaultCropBox(options.state.cropBox())) {
+    return;
+  }
+
+  options.state.setCropBox({
+    left: '0',
+    bottom: '0',
+    right: size.width.toString(),
+    top: size.height.toString(),
+  });
+}
+
+function isDefaultCropBox(cropBox: CropBoxState): boolean {
+  return cropBox.left === '0' && cropBox.bottom === '0' && cropBox.right === '0' && cropBox.top === '0';
 }
 
 export function App(): JSX.Element {
@@ -113,59 +211,30 @@ export function App(): JSX.Element {
       setInputError('');
       setRenderError('');
       const { payload } = event.data;
-      renderPromise = (async (): Promise<void> => {
-        try {
-          const controller = await renderPdfPages(payload.pdfSrc, pdfPages, {
-            ...(pdfPreview !== undefined && { root: pdfPreview }),
-            ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
-              ? { workerSrc: payload.resources.workerSrc }
-              : {}),
-            ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
-              ? { cMapUrl: payload.resources.cMapUrl }
-              : {}),
-            ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
-              ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
-              : {}),
-            ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
-              ? { wasmUrl: payload.resources.wasmUrl }
-              : {}),
-            pageLabel: payload.labels.header.pageLabel,
-            onRenderError: (error: unknown) => {
-              const message = error instanceof Error ? error.message : String(error);
-              setRenderError(message);
-              vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
-            },
-          });
-          renderController = controller;
-          await controller.firstPageReady;
-
-          applyPreviewZoom(pdfPages, previewZoom());
-
-          const size = getPreviewPageSize(pdfPages);
-
-          if (size.width > 0 && size.height > 0 && pageSize().width === 0 && pageSize().height === 0) {
-            setPageSize(size);
-            const currentCropBox = cropBox();
-
-            if (
-              currentCropBox.left === '0' &&
-              currentCropBox.bottom === '0' &&
-              currentCropBox.right === '0' &&
-              currentCropBox.top === '0'
-            ) {
-              setCropBox({
-                left: '0',
-                bottom: '0',
-                right: size.width.toString(),
-                top: size.height.toString(),
-              });
-            }
-          }
-        } catch (error: unknown) {
-          setRenderError(error instanceof Error ? error.message : String(error));
-          throw error instanceof Error ? error : new Error(String(error));
-        }
-      })();
+      renderPromise = renderPreview({
+        payload,
+        pdf: {
+          pages: pdfPages,
+          preview: pdfPreview,
+          zoom: previewZoom,
+        },
+        state: {
+          pageSize,
+          cropBox,
+          setPageSize: (value) => {
+            setPageSize(value);
+          },
+          setCropBox: (value) => {
+            setCropBox(value);
+          },
+          setRenderError: (value) => {
+            setRenderError(value);
+          },
+          setRenderController: (controller) => {
+            renderController = controller;
+          },
+        },
+      });
     };
 
     window.addEventListener('message', handleMessage);

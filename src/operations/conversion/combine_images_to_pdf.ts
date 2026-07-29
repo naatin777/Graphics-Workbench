@@ -72,64 +72,15 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
 
   try {
     await mkdir(stagingRootPath, { recursive: true });
-    const pdfPaths: string[] = [];
-
-    for (const [index, job] of options.jobs.entries()) {
-      runtime?.signal?.throwIfAborted();
-      const pageCount = await sourcePageCount(job.sourcePath, configuredMaxInputPixels);
-      for (let page = 1; page <= pageCount; page += 1) {
-        runtime?.signal?.throwIfAborted();
-        const pdfPath = path.join(stagingRootPath, `page-${index + 1}-${page}.pdf`);
-        const writeOptions: WriteSourceAsPdfOptions = {
-          sourcePath: job.sourcePath,
-          outputPath: pdfPath,
-          workspacePath: options.workspacePath,
-          maxInputPixels: configuredMaxInputPixels,
-          tools: { svgToPdfTools: svgToPdfOptions(options) },
-          scratchOptions: scratchOptions(options),
-          ...(pageCount > 1 ? { page } : {}),
-        };
-        if (runtime?.signal !== undefined) {
-          writeOptions.signal = runtime.signal;
-        }
-        if (options.tools?.ghostscriptPath !== undefined) {
-          writeOptions.tools = { ...writeOptions.tools, ghostscriptPath: options.tools.ghostscriptPath };
-        }
-        await writeSourceAsPdf(writeOptions);
-        pdfPaths.push(pdfPath);
-      }
-      runtime?.reportProgress?.(index + 1, options.jobs.length);
-    }
-
-    const mergedDocument = await PDFDocument.create();
-
-    for (const pdfPath of pdfPaths) {
-      runtime?.signal?.throwIfAborted();
-      const sourceDocument = await PDFDocument.load(await readFile(pdfPath));
-      const pages = await mergedDocument.copyPages(sourceDocument, sourceDocument.getPageIndices());
-
-      for (const page of pages) {
-        mergedDocument.addPage(page);
-      }
-    }
+    const pdfPaths = await createPdfPaths(options, configuredMaxInputPixels, stagingRootPath);
+    const mergedDocument = await mergePdfPaths(pdfPaths, runtime);
 
     runtime?.signal?.throwIfAborted();
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
     await writeFile(stagedOutputPath, await mergedDocument.save());
     runtime?.signal?.throwIfAborted();
 
-    const commitOptions: CommitConversionOutputsOptions = {
-      operationName: 'combine-images-to-pdf',
-    };
-    if (runtime?.signal !== undefined) {
-      commitOptions.signal = runtime.signal;
-    }
-    if (runtime?.resolveConflicts !== undefined) {
-      commitOptions.resolveConflicts = runtime.resolveConflicts;
-    }
-    if (runtime?.outputChannel !== undefined) {
-      commitOptions.outputChannel = runtime.outputChannel;
-    }
+    const commitOptions = commitOptionsForRuntime(runtime);
     return commitStagedOutputs(
       [{ stagedOutputPath, outputPath: options.outputPath, workspacePath: options.workspacePath, stagingRootPath }],
       commitOptions,
@@ -138,6 +89,73 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
     await cleanupConversionArtifacts(artifacts, runtime?.outputChannel, error);
     throw error instanceof Error ? error : new Error(String(error));
   }
+}
+
+async function createPdfPaths(
+  options: CombineImagesToPdfOptions,
+  maxInputPixels: number,
+  stagingRootPath: string,
+): Promise<string[]> {
+  const pdfPaths: string[] = [];
+  for (const [index, job] of options.jobs.entries()) {
+    options.runtime?.signal?.throwIfAborted();
+    const pageCount = await sourcePageCount(job.sourcePath, maxInputPixels);
+    for (let page = 1; page <= pageCount; page += 1) {
+      options.runtime?.signal?.throwIfAborted();
+      const pdfPath = path.join(stagingRootPath, `page-${index + 1}-${page}.pdf`);
+      const writeOptions: WriteSourceAsPdfOptions = {
+        sourcePath: job.sourcePath,
+        outputPath: pdfPath,
+        workspacePath: options.workspacePath,
+        maxInputPixels,
+        tools: { svgToPdfTools: svgToPdfOptions(options) },
+        scratchOptions: scratchOptions(options),
+        ...(pageCount > 1 ? { page } : {}),
+      };
+      if (options.runtime?.signal !== undefined) {
+        writeOptions.signal = options.runtime.signal;
+      }
+      if (options.tools?.ghostscriptPath !== undefined) {
+        writeOptions.tools = { ...writeOptions.tools, ghostscriptPath: options.tools.ghostscriptPath };
+      }
+      await writeSourceAsPdf(writeOptions);
+      pdfPaths.push(pdfPath);
+    }
+    options.runtime?.reportProgress?.(index + 1, options.jobs.length);
+  }
+  return pdfPaths;
+}
+
+async function mergePdfPaths(
+  pdfPaths: string[],
+  runtime: ConversionExecutionContext | undefined,
+): Promise<PDFDocument> {
+  const mergedDocument = await PDFDocument.create();
+  for (const pdfPath of pdfPaths) {
+    runtime?.signal?.throwIfAborted();
+    const sourceDocument = await PDFDocument.load(await readFile(pdfPath));
+    const pages = await mergedDocument.copyPages(sourceDocument, sourceDocument.getPageIndices());
+    for (const page of pages) {
+      mergedDocument.addPage(page);
+    }
+  }
+  return mergedDocument;
+}
+
+function commitOptionsForRuntime(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
+  const commitOptions: CommitConversionOutputsOptions = {
+    operationName: 'combine-images-to-pdf',
+  };
+  if (runtime?.signal !== undefined) {
+    commitOptions.signal = runtime.signal;
+  }
+  if (runtime?.resolveConflicts !== undefined) {
+    commitOptions.resolveConflicts = runtime.resolveConflicts;
+  }
+  if (runtime?.outputChannel !== undefined) {
+    commitOptions.outputChannel = runtime.outputChannel;
+  }
+  return commitOptions;
 }
 
 async function sourcePageCount(sourcePath: string, maxInputPixels: number): Promise<number> {

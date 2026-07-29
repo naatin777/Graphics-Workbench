@@ -109,54 +109,7 @@ async function stageDrawio(
   const pages: DrawioPage[] = [];
 
   for (const [inputIndex, input] of job.inputs.entries()) {
-    runtime.signal?.throwIfAborted();
-    const extension = path.extname(input.sourcePath).toLowerCase();
-    if (extension === '.pdf') {
-      const pdf = await PDFDocument.load(await readFile(input.sourcePath));
-      if (pdf.getPageCount() === 0) {
-        throw new Error(`PDF has no pages: ${input.sourcePath}`);
-      }
-      for (let page = 1; page <= pdf.getPageCount(); page += 1) {
-        const svgPath = path.join(stageDirectory, `${inputIndex}-${page}.svg`);
-        await (
-          options.tools.runPdfToSvg ??
-          (async (source, output, currentPage, signal): Promise<void> =>
-            executePdfToSvg(options.tools.pdftocairoPath ?? 'pdftocairo', source, output, currentPage, signal))
-        )(input.sourcePath, svgPath, page, runtime.signal);
-        pages.push(await svgPage(svgPath, input, page));
-      }
-    } else if (extension === '.eps') {
-      const pngPath = path.join(stageDirectory, `${inputIndex}.png`);
-      await (options.tools.runGhostscript ?? executeGhostscript)(
-        options.tools.ghostscriptPath,
-        [
-          '-dSAFER',
-          '-dNOPAUSE',
-          '-dBATCH',
-          '-dEPSCrop',
-          '-sDEVICE=pngalpha',
-          '-r144',
-          `-sOutputFile=${pngPath}`,
-          input.sourcePath,
-        ],
-        runtime.signal,
-      );
-      pages.push(await rasterPage(pngPath, input, options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS));
-    } else if (extension === '.svg') {
-      pages.push(await svgPage(input.sourcePath, input));
-    } else if (isMermaidPath(input.sourcePath)) {
-      const svgPath = path.join(stageDirectory, `${inputIndex}.svg`);
-      await (
-        options.tools.runMermaid ??
-        (async (source, output, signal): Promise<void> =>
-          executeMermaid(source, output, signal, options.tools.mermaidTools))
-      )(input.sourcePath, svgPath, runtime.signal);
-      pages.push(await svgPage(svgPath, input));
-    } else {
-      const maxInputPixels = options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS;
-      runtime.signal?.throwIfAborted();
-      pages.push(await rasterPage(input.sourcePath, input, maxInputPixels));
-    }
+    pages.push(...(await stageDrawioInput(input, inputIndex, stageDirectory, runtime, options)));
   }
 
   const xml = createDrawioXml(pages);
@@ -185,6 +138,78 @@ async function stageDrawio(
   }
   await assertExistingPathInWorkspace(stagedOutputPath, job.workspacePath);
   return { stagedOutputPath, outputPath: job.outputPath, workspacePath: job.workspacePath, stagingRootPath };
+}
+
+async function stageDrawioInput(
+  input: DrawioInput,
+  inputIndex: number,
+  stageDirectory: string,
+  runtime: ConversionExecutionContext,
+  options: ConvertToDrawioOptions,
+): Promise<DrawioPage[]> {
+  runtime.signal?.throwIfAborted();
+  const extension = path.extname(input.sourcePath).toLowerCase();
+  if (extension === '.pdf') {
+    return stagePdfDrawioInput(input, inputIndex, stageDirectory, runtime, options);
+  }
+  if (extension === '.eps') {
+    const pngPath = path.join(stageDirectory, `${inputIndex}.png`);
+    await (options.tools.runGhostscript ?? executeGhostscript)(
+      options.tools.ghostscriptPath,
+      [
+        '-dSAFER',
+        '-dNOPAUSE',
+        '-dBATCH',
+        '-dEPSCrop',
+        '-sDEVICE=pngalpha',
+        '-r144',
+        `-sOutputFile=${pngPath}`,
+        input.sourcePath,
+      ],
+      runtime.signal,
+    );
+    return [await rasterPage(pngPath, input, options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS)];
+  }
+  if (extension === '.svg') {
+    return [await svgPage(input.sourcePath, input)];
+  }
+  if (isMermaidPath(input.sourcePath)) {
+    const svgPath = path.join(stageDirectory, `${inputIndex}.svg`);
+    await (
+      options.tools.runMermaid ??
+      (async (source, output, signal): Promise<void> =>
+        executeMermaid(source, output, signal, options.tools.mermaidTools))
+    )(input.sourcePath, svgPath, runtime.signal);
+    return [await svgPage(svgPath, input)];
+  }
+
+  return [await rasterPage(input.sourcePath, input, options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS)];
+}
+
+async function stagePdfDrawioInput(
+  input: DrawioInput,
+  inputIndex: number,
+  stageDirectory: string,
+  runtime: ConversionExecutionContext,
+  options: ConvertToDrawioOptions,
+): Promise<DrawioPage[]> {
+  const pdf = await PDFDocument.load(await readFile(input.sourcePath));
+  if (pdf.getPageCount() === 0) {
+    throw new Error(`PDF has no pages: ${input.sourcePath}`);
+  }
+
+  const pages: DrawioPage[] = [];
+  for (let page = 1; page <= pdf.getPageCount(); page += 1) {
+    runtime.signal?.throwIfAborted();
+    const svgPath = path.join(stageDirectory, `${inputIndex}-${page}.svg`);
+    await (
+      options.tools.runPdfToSvg ??
+      (async (source, output, currentPage, signal): Promise<void> =>
+        executePdfToSvg(options.tools.pdftocairoPath ?? 'pdftocairo', source, output, currentPage, signal))
+    )(input.sourcePath, svgPath, page, runtime.signal);
+    pages.push(await svgPage(svgPath, input, page));
+  }
+  return pages;
 }
 
 function drawioExtension(outputPath: string): string {
@@ -314,30 +339,63 @@ async function svgPage(sourcePath: string, input: DrawioInput, page?: number): P
 
 export function parseSvgSize(source: string): { width: number; height: number } {
   const tag = source.match(/<svg\b[^>]*>/iu)?.[0] ?? '';
+  const dimensions = parseSvgDimensions(tag);
+  const sized = resolveSvgDimensions(dimensions);
+  if (!isUsableSvgDimensions(sized)) {
+    throw new Error('SVG has no usable dimensions.');
+  }
+  return sized;
+}
+
+function parseSvgDimensions(tag: string): {
+  width: number | undefined;
+  height: number | undefined;
+  viewBoxWidth: number | undefined;
+  viewBoxHeight: number | undefined;
+} {
   const width = cssNumber(tag.match(/\bwidth\s*=\s*["']([^"']+)/iu)?.[1]);
   const height = cssNumber(tag.match(/\bheight\s*=\s*["']([^"']+)/iu)?.[1]);
   const viewBox = tag.match(/\bviewBox\s*=\s*["']\s*([-+\d.e]+)\s+[-+\d.e]+\s+([-+\d.e]+)\s+([-+\d.e]+)\s*["']/iu);
-  const viewBoxWidth = cssNumber(viewBox?.[2]);
-  const viewBoxHeight = cssNumber(viewBox?.[3]);
-  const resolvedWidth = width ?? viewBoxWidth;
-  const resolvedHeight = height ?? viewBoxHeight;
+  return {
+    width,
+    height,
+    viewBoxWidth: cssNumber(viewBox?.[2]),
+    viewBoxHeight: cssNumber(viewBox?.[3]),
+  };
+}
+
+function resolveSvgDimensions(dimensions: ReturnType<typeof parseSvgDimensions>): {
+  width: number | undefined;
+  height: number | undefined;
+} {
+  const { width, height, viewBoxWidth, viewBoxHeight } = dimensions;
   const aspectWidth =
     viewBoxWidth !== undefined && viewBoxHeight !== undefined ? viewBoxWidth / viewBoxHeight : undefined;
-  const sizedWidth =
-    width ?? (height !== undefined && aspectWidth !== undefined ? height * aspectWidth : resolvedWidth);
-  const sizedHeight =
-    height ?? (width !== undefined && aspectWidth !== undefined ? width / aspectWidth : resolvedHeight);
-  if (
-    sizedWidth === undefined ||
-    sizedWidth === 0 ||
-    sizedHeight === undefined ||
-    sizedHeight === 0 ||
-    !Number.isFinite(sizedWidth) ||
-    !Number.isFinite(sizedHeight)
-  ) {
-    throw new Error('SVG has no usable dimensions.');
-  }
-  return { width: sizedWidth, height: sizedHeight };
+  return {
+    width: width ?? widthFromHeight(height, aspectWidth) ?? viewBoxWidth,
+    height: height ?? heightFromWidth(width, aspectWidth) ?? viewBoxHeight,
+  };
+}
+
+function widthFromHeight(height: number | undefined, aspectWidth: number | undefined): number | undefined {
+  return height !== undefined && aspectWidth !== undefined ? height * aspectWidth : undefined;
+}
+
+function heightFromWidth(width: number | undefined, aspectWidth: number | undefined): number | undefined {
+  return width !== undefined && aspectWidth !== undefined ? width / aspectWidth : undefined;
+}
+
+function isUsableSvgDimensions(
+  dimensions: ReturnType<typeof resolveSvgDimensions>,
+): dimensions is { width: number; height: number } {
+  return (
+    dimensions.width !== undefined &&
+    dimensions.width !== 0 &&
+    dimensions.height !== undefined &&
+    dimensions.height !== 0 &&
+    Number.isFinite(dimensions.width) &&
+    Number.isFinite(dimensions.height)
+  );
 }
 
 function cssNumber(value: string | undefined): number | undefined {

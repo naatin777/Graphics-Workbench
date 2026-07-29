@@ -18,17 +18,30 @@ export type SourceFormat =
 
 export function sourceFormatForPath(sourcePath: string): SourceFormat | undefined {
   const lowerSourcePath = sourcePath.toLowerCase();
-  if (lowerSourcePath.endsWith('.drawio.png') || lowerSourcePath.endsWith('.dio.png')) {
+  const drawioFormat = drawioFormatForPath(lowerSourcePath);
+  if (drawioFormat !== undefined) {
+    return drawioFormat;
+  }
+
+  return sourceFormatForExtension(path.extname(lowerSourcePath));
+}
+
+function drawioFormatForPath(sourcePath: string): SourceFormat | undefined {
+  if (sourcePath.endsWith('.drawio.png') || sourcePath.endsWith('.dio.png')) {
     return 'editable-drawio-png';
   }
-  if (lowerSourcePath.endsWith('.drawio.svg') || lowerSourcePath.endsWith('.dio.svg')) {
+  if (sourcePath.endsWith('.drawio.svg') || sourcePath.endsWith('.dio.svg')) {
     return 'editable-drawio-svg';
   }
-  if (lowerSourcePath.endsWith('.drawio') || lowerSourcePath.endsWith('.dio')) {
+  if (sourcePath.endsWith('.drawio') || sourcePath.endsWith('.dio')) {
     return 'drawio';
   }
 
-  switch (path.extname(lowerSourcePath)) {
+  return undefined;
+}
+
+function sourceFormatForExtension(extension: string): SourceFormat | undefined {
+  switch (extension) {
     case '.pdf':
       return 'pdf';
     case '.png':
