@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 28 (experiment)
+Status: In progress — Phase 30 (experiment)
 
 ## Objective
 
@@ -149,6 +149,24 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 既存の違反1件は、NLS検証処理のuserMessage call判定を専用helperへ分割して解消する。
 
+## Phase 29
+
+関数の引数を5個以下に制限する`max-params`をerrorへ強化する。ESLintの既定値は3だが、現行コードには変換処理のruntime/tool依存を4〜5個の引数で受ける既存設計が多いため、まず6個以上の明らかに過剰な関数を対象にする。対象はproduction codeとWebview本体とし、テストコードと未型付けのESTree visitor APIを扱う独自Oxlintプラグインは対象外とする。
+
+既存の違反8件は、PDF/SVG変換のtool群・実行コンテキスト・出力設定を引数オブジェクト内へまとめて解消する。
+
+## Phase 30
+
+複雑度・ネスト・引数数とは異なる方向から、次の制限をerrorへ強化する。
+
+- `import/no-duplicates`で同じモジュールの重複importを禁止し、importの責務を1箇所にまとめる
+- `eslint/no-implicit-coercion`で`!!value`のような暗黙の型変換を禁止し、`Boolean(value)`など意図が明確な表現を使う
+- `eslint/max-classes-per-file`でproduction codeの1ファイル1クラスを強制し、例外クラスを別モジュールへ分離する。テストの複数クラスのdoubleは対象外とする
+- `no-warning-comments`でTODO/FIXME/XXXをerrorとして検出し、未完了の実装が通常lintを通過し続けることを防ぐ
+- `typescript/no-empty-object-type`で意味が曖昧な`{}`型を禁止し、空オブジェクトを表す場合は`object`などの意図が分かる型を使う
+
+既存違反は重複import 4件、暗黙の型変換1件、productionの複数クラス1件だった。対象外のテストdoubleを除き、すべて修正してerror化する。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -179,6 +197,9 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `project/max-flat-type-members` は初回に10項目以上の平坦な型を15件検出した。共通語から候補グループを出せる一方、意味的な判断は自動化せず、Options型・props・プロトコルpayload・ラベル型・テスト環境型を責務単位へネストして解消した。Phase 26でerrorへ昇格する
 - `complexity` は既定上限20で12件を検出した。production codeとWebview本体の10件は責務別のhelperへ分割して解消し、テスト専用のpackage.json検証関数と未型付けESTree visitor APIを扱う独自プラグインはoverrideで対象外にする
 - `max-depth` は既定上限4でproduction codeとスクリプトに1件を検出した。NLS検証処理のuserMessage call判定をhelperへ分割して解消する
+- `max-params` は既定上限3ではproduction codeとWebview本体に76件、上限5では6個以上の関数を8件検出した。Phase 29では上限5をerror化し、PDF/SVG変換の8件を引数オブジェクトへまとめて解消する。テストコードと独自Oxlintプラグインは対象外にする
+- `import/no-duplicates` は4件、`eslint/no-implicit-coercion` は1件、`eslint/max-classes-per-file` はproduction codeに1件、テストdoubleに3件を検出した。Phase 30ではproduction codeのクラスを分離し、重複importと暗黙変換を修正する。テストdoubleは対象外とする
+- `no-warning-comments` と `typescript/no-empty-object-type` は既存違反0件だったため、将来の未完了コメントと曖昧な空オブジェクト型の混入をerrorとして監視する
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
@@ -188,6 +209,8 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - Phase 26の構造改善ルールを通常lintでerrorとして強制できる
 - Phase 27の複雑度ルールを通常lintでerrorとして強制できる
 - Phase 28のネスト深度ルールを通常lintでerrorとして強制できる
+- Phase 29の引数数ルールを通常lintでerrorとして強制できる
+- Phase 30のimport、型変換、クラス構成、未完了コメント、空オブジェクト型の制限を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 
