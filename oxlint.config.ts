@@ -242,8 +242,10 @@ export default defineConfig({
     /*
      * Promise correctness
      */
+    'eslint/no-promise-executor-return': 'error',
     'typescript/no-floating-promises': 'error',
     'typescript/no-misused-promises': 'error',
+    'unicorn/no-useless-promise-resolve-reject': 'error',
 
     /*
      * Exhaustiveness
@@ -374,6 +376,7 @@ export default defineConfig({
         complexity: 'off',
         'max-params': 'off',
         'eslint/max-classes-per-file': 'off',
+        'eslint/no-promise-executor-return': 'off',
         'eslint/no-unreachable-loop': 'off',
         'typescript/no-explicit-any': 'off',
         'typescript/explicit-function-return-type': 'off',
