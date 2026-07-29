@@ -1,5 +1,6 @@
 import pLimit from 'p-limit';
 
+import { isAbortError } from '../../application/error_utils.js';
 import { stagingArtifactsForJobs, withStagingCleanup } from './cleanup_conversion_artifacts.js';
 import {
   commitStagedOutputs,
@@ -8,7 +9,6 @@ import {
   type PreparedConversionOutput,
 } from './commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from './conversion_runtime.js';
-import { isAbortError } from '../../commands/shared/command_utils.js';
 
 const CONVERSION_CONCURRENCY = 2;
 

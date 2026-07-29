@@ -18,7 +18,7 @@ import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/inp
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { validateJobPaths } from '../pdf/pdf_utils.js';
 import { errorMessage } from './raster_conversion.js';
-import { isAbortError } from '../../commands/shared/command_utils.js';
+import { isAbortError } from '../../application/error_utils.js';
 
 import {
   type CommittedConversionOutput,

@@ -7,7 +7,7 @@ import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 import { launch, type Browser, type LaunchOptions } from 'puppeteer-core';
 import sharp from 'sharp';
-import { errorMessage, isAbortError } from '../../commands/shared/command_utils.js';
+import { errorMessage, isAbortError } from '../../application/error_utils.js';
 
 import {
   isEditableDrawioImagePath,
