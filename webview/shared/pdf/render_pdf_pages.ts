@@ -93,7 +93,7 @@ export async function renderPdfPages(
     const canvas = pageFrame?.querySelector<HTMLCanvasElement>('canvas[data-pdf-page]');
 
     if (!canvas) {
-      return Promise.reject(new Error(`Could not create PDF page ${pageNumber}.`));
+      throw new Error(`Could not create PDF page ${pageNumber}.`);
     }
 
     const renderPromise = (async (): Promise<void> => {
