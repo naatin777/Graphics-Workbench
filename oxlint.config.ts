@@ -180,6 +180,7 @@ export default defineConfig({
     'no-await-in-loop': 'off',
     'eslint/no-constant-condition': 'error',
     'eslint/no-duplicate-case': 'error',
+    'eslint/no-prototype-builtins': 'error',
     'eslint/no-unsafe-optional-chaining': 'error',
     complexity: ['error', { max: 20 }],
     'max-depth': ['error', { max: 4 }],
@@ -203,7 +204,11 @@ export default defineConfig({
     'typescript/no-empty-object-type': 'error',
     'typescript/no-redundant-type-constituents': 'error',
     'typescript/no-duplicate-enum-values': 'error',
+    'typescript/no-empty-function': 'error',
+    'typescript/no-extraneous-class': 'error',
+    'typescript/no-unnecessary-parameter-property-assignment': 'error',
     'typescript/no-unsafe-function-type': 'error',
+    'typescript/no-useless-constructor': 'error',
     'typescript/no-require-imports': 'error',
     'typescript/explicit-function-return-type': 'error',
     'typescript/no-unnecessary-type-assertion': 'error',
@@ -220,6 +225,10 @@ export default defineConfig({
     'unicorn/no-object-as-default-parameter': 'error',
     'unicorn/no-array-for-each': 'error',
     'unicorn/no-array-reduce': 'error',
+    'unicorn/no-useless-switch-case': 'error',
+    'unicorn/prefer-set-has': 'error',
+    'typescript/prefer-find': 'error',
+    'typescript/prefer-includes': 'error',
 
     /*
      * Error handling
@@ -283,6 +292,7 @@ export default defineConfig({
      */
     'promise/always-return': 'off',
     'promise/catch-or-return': 'off',
+    'promise/no-new-statics': 'error',
     'promise/no-return-wrap': 'error',
     'promise/prefer-await-to-then': 'error',
 
@@ -385,6 +395,7 @@ export default defineConfig({
         'eslint/no-promise-executor-return': 'off',
         'eslint/no-unreachable-loop': 'off',
         'typescript/no-explicit-any': 'off',
+        'typescript/no-empty-function': 'off',
         'typescript/explicit-function-return-type': 'off',
         'typescript/no-floating-promises': 'off',
         'promise/prefer-await-to-then': 'off',
