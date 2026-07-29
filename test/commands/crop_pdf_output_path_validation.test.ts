@@ -27,8 +27,10 @@ suite('PDF crop outputPath検証', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-output-path-validation-'));
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-output-path-validation-'),
+    );
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
 
     try {
       const sourcePath = path.join(temporaryDirectory, 'source.pdf');
@@ -58,7 +60,7 @@ suite('PDF crop outputPath検証', () => {
       assert.ok(createOutputChannel.notCalled);
       assert.ok(showErrorMessage.calledOnce);
       assert.match(showErrorMessage.firstCall.args[0], /invalid output path.*NUL/i);
-      await assert.rejects(access(path.join(temporaryDirectory, '.latex-graphics-helper')));
+      await assert.rejects(access(path.join(temporaryDirectory, '.graphics-workbench')));
     } finally {
       sandbox.restore();
       await configuration.update('outputPath.cropPdf', undefined, vscode.ConfigurationTarget.Workspace);

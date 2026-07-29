@@ -12,7 +12,7 @@ const fixturePath = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures
 
 suite('ラスター分割jobの出力path検証', () => {
   test('コマンドの許容拡張子と一致しないtemplateを変換前に拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-frame-jobs-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-frame-jobs-'));
     const sourcePath = path.join(workspacePath, 'source.png');
 
     try {
@@ -35,7 +35,7 @@ suite('ラスター分割jobの出力path検証', () => {
   });
 
   test('許容拡張子と一致するtemplateからjobを生成する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-frame-jobs-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-frame-jobs-'));
     const sourcePath = path.join(workspacePath, 'source.png');
 
     try {

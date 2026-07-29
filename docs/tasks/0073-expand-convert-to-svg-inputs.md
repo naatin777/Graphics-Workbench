@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToSvg` を Mermaid 専用ではなく、仕様どおり PDF と Draw.io 入力にも対応させる。
+`graphics-workbench.convertToSvg` を Mermaid 専用ではなく、仕様どおり PDF と Draw.io 入力にも対応させる。
 
 ## 完了条件
 

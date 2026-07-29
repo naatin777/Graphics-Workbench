@@ -13,7 +13,7 @@
 次のcommandで、build済みのruntimeをstagingしてVSIXを生成できた。
 
 ```text
-pnpm run package:vsix -- --target darwin-arm64 --out /tmp/lgh-darwin-arm64-script.vsix
+pnpm run package:vsix -- --target darwin-arm64 --out /tmp/graphics-workbench-darwin-arm64-script.vsix
 ```
 
 生成物の確認結果:

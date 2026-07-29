@@ -201,7 +201,7 @@ Codex-managed worktree:
 - まだ標準運用にしない
 - 使う場合は別taskで設計する
 - branch名は `task/<task-id>-<short-topic>` を基本にする
-- 配置候補はrepository外の固定領域、例: `../.worktrees/LaTeX-Graphics-Helper/<task-id>/<worker-name>`
+- 配置候補はrepository外の固定領域、例: `../.worktrees/Graphics-Workbench/<task-id>/<worker-name>`
 - `next/v1`へ直接pushしない
 
 同じbranchをLocalとworktreeで同時checkoutしない。Localで確認したい場合はHandoffを使うか、worktree側を別branch / detached HEADへ戻す。

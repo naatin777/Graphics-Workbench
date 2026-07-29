@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPng`を実装し、複数の入力形式をPNGへ変換できるようにする。
+`graphics-workbench.convertToPng`を実装し、複数の入力形式をPNGへ変換できるようにする。
 
 ## 背景
 
@@ -16,7 +16,7 @@ Done
 
 ## 完了条件
 
-- `latex-graphics-helper.convertToPng`を公開コマンドとして登録する
+- `graphics-workbench.convertToPng`を公開コマンドとして登録する
 - Explorerの`変換 > PNG`へ統合する
 - PDF / SVG / Mermaid / Draw.io / JPEG / WebP / AVIF入力を受け付ける
 - PNG入力は拒否する
@@ -50,7 +50,7 @@ Done
 
 ## 実施内容
 
-- `latex-graphics-helper.convertToPng`を登録した
+- `graphics-workbench.convertToPng`を登録した
 - Explorerの`変換 > PNG`へ追加した
 - PDF / SVG / Mermaid / Draw.io / JPEG / WebP / AVIF入力をPNGへ変換する処理を追加した
 - PNG入力はPNG変換対象外として拒否するようにした

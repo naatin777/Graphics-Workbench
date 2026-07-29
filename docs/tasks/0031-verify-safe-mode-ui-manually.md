@@ -16,7 +16,7 @@ Safe Modeのstatus barとダイアログに関するUI挙動を、実際の目�
 
 - 初期化時にstatus bar itemを作成する
 - status barのtextが初期状態で`$(shield) Safe Mode: ON`になる
-- status bar itemのcommandが`latex-graphics-helper.toggleSafeMode`になる
+- status bar itemのcommandが`graphics-workbench.toggleSafeMode`になる
 - status bar itemのtooltipが設定される
 - status bar itemの`show()`が呼ばれる
 - toggle commandを実行するとON/OFFが切り替わり、status bar textが更新される

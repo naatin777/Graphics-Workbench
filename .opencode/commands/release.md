@@ -3,7 +3,7 @@ description: LHGのリリース準備、検証、VSIX作成を行う
 agent: build
 ---
 
-`lgh-release` Skillを読み込む。
+`graphics-workbench-release` Skillを読み込む。
 
 対象バージョンは `$1` とする。
 

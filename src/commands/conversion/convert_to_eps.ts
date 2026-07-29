@@ -29,7 +29,7 @@ import { assertFileScheme, isAbortError, selectedUris } from '../shared/command_
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
 
-export const CONVERT_TO_EPS_COMMAND = 'latex-graphics-helper.convertToEps';
+export const CONVERT_TO_EPS_COMMAND = 'graphics-workbench.convertToEps';
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.eps';
 const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.eps';
 
@@ -43,7 +43,7 @@ export async function convertToEpsCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const plannedJobs = await Promise.all(sourceUris.map(async (sourceUri) => createEpsJobs(sourceUri, configuration)));
     const jobs = plannedJobs.flat();
     const svgToPdfTools = readSvgToPdfOptions(configuration);

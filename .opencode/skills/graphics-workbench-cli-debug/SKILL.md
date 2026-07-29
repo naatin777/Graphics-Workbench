@@ -1,6 +1,6 @@
 ---
-name: lgh-cli-debug
-description: LaTeX Graphics Helperで使用するDraw.io、pdfcrop、Mermaid、画像変換、PDF変換などの外部CLIに関する失敗やOS差異を調査する。CLIが失敗する、出力が不正、Windowsだけ動かないなどの問題で使用する。
+name: graphics-workbench-cli-debug
+description: Graphics Workbenchで使用するDraw.io、pdfcrop、Mermaid、画像変換、PDF変換などの外部CLIに関する失敗やOS差異を調査する。CLIが失敗する、出力が不正、Windowsだけ動かないなどの問題で使用する。
 ---
 
 # LHG外部CLIデバッグ

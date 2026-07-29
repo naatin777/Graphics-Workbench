@@ -197,7 +197,7 @@ function registerCommands(context: vscode.ExtensionContext, dependencies: Comman
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initializeSafeMode(context);
-  const outputChannel = vscode.window.createOutputChannel('LaTeX Graphics Helper');
+  const outputChannel = vscode.window.createOutputChannel('Graphics Workbench');
   const dependencies = { outputChannel } satisfies CommandDependencies;
   context.subscriptions.push(outputChannel);
 

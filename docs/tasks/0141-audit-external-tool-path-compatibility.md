@@ -46,7 +46,7 @@ extensionが利用する外部コマンドについて、多言語文字、絵�
 
 ## 確認結果
 
-- [External Tool Path Probe run #2](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29142706622)のLinux、macOS、Windows jobが成功した
+- [External Tool Path Probe run #2](https://github.com/naatin777/Graphics-Workbench/actions/runs/29142706622)のLinux、macOS、Windows jobが成功した
 - LinuxとmacOSではGhostscript、pdftocairo、rsvg-convert、Draw.io、qpdfの全caseが成功した
 - WindowsではGhostscript、pdftocairo、rsvg-convertに文字種別の失敗を確認した
 - WindowsのDraw.ioとqpdfは全caseが成功した

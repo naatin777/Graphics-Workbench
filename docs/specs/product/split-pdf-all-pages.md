@@ -2,14 +2,14 @@
 
 ## 対象
 
-- command: `latex-graphics-helper.splitPdf.allPages`
+- command: `graphics-workbench.splitPdf.allPages`
 - 入力: Explorerから選択された1件以上のローカルPDF
 
 ## 出力
 
 - 入力PDFをページごとのPDFへ分割する。
 - ページ番号は1始まりの10進数とする。
-- 出力先は`latex-graphics-helper.outputPath.splitPdf`を元PDFのパス情報とページ番号で展開する。
+- 出力先は`graphics-workbench.outputPath.splitPdf`を元PDFのパス情報とページ番号で展開する。
 - 相対パスは入力PDFが属するworkspaceを基準に解決する。
 - すべての入力とページの処理が成功するまで指定出力先へ反映しない。
 - 同じ変換内で出力先が重複する場合は全体停止する。

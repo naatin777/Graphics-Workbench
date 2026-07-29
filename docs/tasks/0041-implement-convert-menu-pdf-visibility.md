@@ -14,16 +14,16 @@ Explorer context menuで、PDF出力変換を入力形式別サブメニュー�
 
 ADR-0009と`docs/specs/internal/output-format-conversion.md`では、変換コマンドを出力形式基準で公開することを決めている。
 
-まずは実装済みの`latex-graphics-helper.convertToPdf`だけを公開UIへ反映する。
+まずは実装済みの`graphics-workbench.convertToPdf`だけを公開UIへ反映する。
 
 旧PDF変換command IDは、移行直後の互換用aliasとしてextension内部に残してよい。
 
 ## 完了条件
 
-- `package.json`の`contributes.commands`に`latex-graphics-helper.convertToPdf`が残る
+- `package.json`の`contributes.commands`に`graphics-workbench.convertToPdf`が残る
 - 旧PDF変換command IDを`contributes.commands`から外す
 - Explorer context menuに共有`変換`サブメニューを追加する
-- 共有`変換`サブメニュー配下に`latex-graphics-helper.convertToPdf`を表示する
+- 共有`変換`サブメニュー配下に`graphics-workbench.convertToPdf`を表示する
 - Explorer context menuから旧PDF変換command IDを外す
 - 日本語表示で`変換` > `PDF`になる
 - 既存の内部command登録や変換処理は変更しない

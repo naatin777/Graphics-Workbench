@@ -12,16 +12,16 @@ mainブランチの `v0.5.1` で公開されていたコマンド・設定を基
 
 `v0.5.1` では以下のコマンドが公開されていた。
 
-- `latex-graphics-helper.cropPdf`
-- `latex-graphics-helper.splitPdf`
-- `latex-graphics-helper.mergePdf`
-- `latex-graphics-helper.convertDrawioToPdf`
-- `latex-graphics-helper.convertPdfToPng`
-- `latex-graphics-helper.convertPdfToJpeg`
-- `latex-graphics-helper.convertPdfToSvg`
-- `latex-graphics-helper.convertPngToPdf`
-- `latex-graphics-helper.convertJpegToPdf`
-- `latex-graphics-helper.convertSvgToPdf`
+- `graphics-workbench.cropPdf`
+- `graphics-workbench.splitPdf`
+- `graphics-workbench.mergePdf`
+- `graphics-workbench.convertDrawioToPdf`
+- `graphics-workbench.convertPdfToPng`
+- `graphics-workbench.convertPdfToJpeg`
+- `graphics-workbench.convertPdfToSvg`
+- `graphics-workbench.convertPngToPdf`
+- `graphics-workbench.convertJpegToPdf`
+- `graphics-workbench.convertSvgToPdf`
 
 現行 `next/v1` では、変換系は出力形式基準コマンドへ統合している。
 
@@ -60,13 +60,13 @@ PDF操作については以下の状態。
 
 また、`v0.5.1` では以下のLaTeX挿入関連settingsが公開されていた。
 
-- `latex-graphics-helper.outputPath.clipboardImage`
-- `latex-graphics-helper.figure.placementOptions`
-- `latex-graphics-helper.figure.alignmentOptions`
-- `latex-graphics-helper.figure.graphicsOptions`
-- `latex-graphics-helper.subfigure.verticalAlignmentOptions`
-- `latex-graphics-helper.subfigure.widthOptions`
-- `latex-graphics-helper.subfigure.spacingOptions`
+- `graphics-workbench.outputPath.clipboardImage`
+- `graphics-workbench.figure.placementOptions`
+- `graphics-workbench.figure.alignmentOptions`
+- `graphics-workbench.figure.graphicsOptions`
+- `graphics-workbench.subfigure.verticalAlignmentOptions`
+- `graphics-workbench.subfigure.widthOptions`
+- `graphics-workbench.subfigure.spacingOptions`
 
 現行 `package.json` のconfigurationでは、これらのsettingsが見当たらない。PDF / clipboard画像のLaTeX挿入機能を維持するなら、provider実装とsettingsの復元が必要。
 

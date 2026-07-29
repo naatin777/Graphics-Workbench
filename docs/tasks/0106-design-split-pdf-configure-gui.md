@@ -6,7 +6,7 @@ Todo
 
 ## 目的
 
-`latex-graphics-helper.splitPdf.configure` で、PDFのページをユーザーが選択して分割出力するGUI仕様を決める。
+`graphics-workbench.splitPdf.configure` で、PDFのページをユーザーが選択して分割出力するGUI仕様を決める。
 
 `manual` という名前は使わない。
 

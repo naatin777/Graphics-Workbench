@@ -55,7 +55,7 @@ const initMessage: ExtensionToWebviewMessage = {
     fileName: 'source.pdf',
     pageCount: 4,
     pdfSrc: 'vscode-resource://source.pdf',
-    outputPathTemplate: 'output/__LGH_OUTPUT_NAME__.pdf',
+    outputPathTemplate: 'output/__GRAPHICS_WORKBENCH_OUTPUT_NAME__.pdf',
     labels,
   },
 };

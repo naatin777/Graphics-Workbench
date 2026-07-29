@@ -19,8 +19,8 @@ export default defineConfig({
         '--disable-extensions',
         '--skip-welcome',
         '--disable-workspace-trust',
-        ...(process.env.LGH_VSCODE_TEST_USER_DATA_DIR
-          ? [`--user-data-dir=${process.env.LGH_VSCODE_TEST_USER_DATA_DIR}`]
+        ...(process.env.GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR
+          ? [`--user-data-dir=${process.env.GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR}`]
           : []),
       ],
     },

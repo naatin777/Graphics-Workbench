@@ -15,7 +15,7 @@ Done
 - 全出力を検証してから削除を開始する
 - 変更、欠損、workspace境界違反があれば何も削除しない
 - 変換完了通知に「取り消す」がある
-- `latex-graphics-helper.undoLastConversion` commandを登録する
+- `graphics-workbench.undoLastConversion` commandを登録する
 - 通常Undoのkeybindingを追加しない
 - 作業領域を削除しない
 
@@ -60,10 +60,10 @@ Done
 - 全検証成功後、削除直前にも境界とSHA-256を再検証する
 - 変更、欠損、workspace外symlinkが1件でもあれば削除を開始しない
 - 変換完了通知に「Undo」を追加した
-- `latex-graphics-helper.undoLastConversion` commandを登録した
+- `graphics-workbench.undoLastConversion` commandを登録した
 - 古い通知から新しい変換を誤って取り消さないよう、変換IDを照合する
 - 通常Undoのkeybindingは追加していない
-- `.latex-graphics-helper/` 内の作業ファイルは削除しない
+- `.graphics-workbench/` 内の作業ファイルは削除しない
 - `pnpm run check:all` 成功（既存を含むlint warningあり）
 - `pnpm run test` 成功（26 tests）
 

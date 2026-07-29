@@ -26,8 +26,8 @@ import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, selectedUris } from '../shared/command_utils.js';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
-export const SPLIT_PDF_ALL_PAGES_COMMAND = 'latex-graphics-helper.splitPdf.allPages';
-export const SPLIT_PDF_CONFIGURE_COMMAND = 'latex-graphics-helper.splitPdf.configure';
+export const SPLIT_PDF_ALL_PAGES_COMMAND = 'graphics-workbench.splitPdf.allPages';
+export const SPLIT_PDF_CONFIGURE_COMMAND = 'graphics-workbench.splitPdf.configure';
 
 export async function splitPdfAllPagesCommand(
   uri?: vscode.Uri,
@@ -42,7 +42,7 @@ export async function splitPdfAllPagesCommand(
       throw new Error('No PDF files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const outputTemplate = configuration.get<string>('outputPath.splitPdf', DEFAULT_OUTPUT_PATH);
     const jobs = sourceUris.map((sourceUri) => planSplitPdfJob(sourceUri, outputTemplate));
     const outputs = await vscode.window.withProgress(
@@ -165,7 +165,7 @@ async function runSplitPdfConfigureCommand(
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
   }
 
-  const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+  const configuration = vscode.workspace.getConfiguration('graphics-workbench');
   const outputTemplate = configuration.get<string>('outputPath.splitPdf', DEFAULT_OUTPUT_PATH);
 
   if (!outputTemplate.includes('${page}')) {
@@ -440,7 +440,7 @@ function createOutputPathPreviewTemplate(
   inputUri: vscode.Uri,
   workspaceFolder: vscode.WorkspaceFolder,
 ): string {
-  const marker = '__LGH_OUTPUT_NAME__';
+  const marker = '__GRAPHICS_WORKBENCH_OUTPUT_NAME__';
   const outputPath = resolveOutputPath(outputTemplate, {
     workspacePath: workspaceFolder.uri.fsPath,
     workspaceName: workspaceFolder.name,

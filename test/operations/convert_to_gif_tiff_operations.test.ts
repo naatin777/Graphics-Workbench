@@ -10,7 +10,7 @@ import { executeTiffConversion } from '../../src/operations/conversion/convert_t
 
 suite('GIF/TIFFに変換する処理', () => {
   test('各フレームを独立した静止GIF/TIFFとしてstaging lifecycleで出力する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-gif-tiff-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-gif-tiff-operation-'));
 
     try {
       const gifSourcePath = path.join(workspacePath, 'source.gif');

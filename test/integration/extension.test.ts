@@ -20,13 +20,13 @@ const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 suite('拡張機能の基本動作', () => {
   test('拡張機能が登録されている', () => {
-    const extension = vscode.extensions.getExtension('naatin777.latex-graphics-helper');
+    const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
 
     assert.ok(extension);
   });
 
   test('拡張機能をactivateできる', async () => {
-    const extension = vscode.extensions.getExtension('naatin777.latex-graphics-helper');
+    const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
 
     assert.ok(extension);
 
@@ -45,7 +45,7 @@ suite('拡張機能の基本動作', () => {
     const commands = await vscode.commands.getCommands(true);
 
     assert.ok(commands.includes(CROP_PDF_CONFIGURE_COMMAND));
-    assert.ok(!commands.includes('latex-graphics-helper.cropPdf.manual'));
+    assert.ok(!commands.includes('graphics-workbench.cropPdf.manual'));
   });
 
   test('全ページ分割コマンドが登録されている', async () => {
@@ -79,7 +79,9 @@ suite('拡張機能の基本動作', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-extension-test-'));
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-extension-test-'),
+    );
 
     try {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
@@ -104,7 +106,7 @@ suite('拡張機能の基本動作', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-crop-auto-'));
+    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-crop-auto-'));
 
     try {
       const selectedMargin = { label: '0 pt', description: '', margin: 0 };
@@ -135,7 +137,7 @@ suite('拡張機能の基本動作', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-split-all-'));
+    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-split-all-'));
 
     try {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);

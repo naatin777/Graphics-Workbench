@@ -71,7 +71,7 @@ rulesはsandbox外実行の許可制御に向く。開発workflowや委譲判断
 
 ## 設計への反映
 
-- 共有skillとして `.agents/skills/lgh-task-runner` を候補にする
+- 共有skillとして `.agents/skills/graphics-workbench-task-runner` を候補にする
 - skill実装は別タスクで行う
 - skillはinstruction-onlyから開始し、scriptは追加しない
 - skillに含めるのは以下に限定する

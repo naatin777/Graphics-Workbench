@@ -10,7 +10,7 @@ import { requireValue } from '../helpers/required.js';
 
 suite('EPS変換操作', () => {
   test('PDFページごとにEPSをステージングしてコミットする', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-eps-'));
+    const root = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-eps-'));
     const sourcePath = path.join(root, 'source.pdf');
     const outputPaths = [path.join(root, 'source-1.eps'), path.join(root, 'source-2.eps')];
 
@@ -51,14 +51,14 @@ suite('EPS変換操作', () => {
         ['-dFirstPage=1', '-dFirstPage=2'],
       );
       await Promise.all(outputPaths.map((outputPath) => access(outputPath)));
-      await access(path.join(root, '.latex-graphics-helper', 'convert-to-eps'));
+      await access(path.join(root, '.graphics-workbench', 'convert-to-eps'));
     } finally {
       await rm(root, { recursive: true, force: true });
     }
   });
 
   test('Ghostscriptが失敗した場合はコミットしない', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-eps-failure-'));
+    const root = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-eps-failure-'));
     const sourcePath = path.join(root, 'source.pdf');
     const outputPath = path.join(root, 'source.eps');
 

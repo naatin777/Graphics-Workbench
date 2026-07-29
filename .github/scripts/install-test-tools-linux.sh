@@ -18,10 +18,10 @@ settings_dir="test/fixtures/workspace/.vscode"
 mkdir -p "$settings_dir"
 cat > "$settings_dir/settings.json" <<EOF
 {
-    "latex-graphics-helper.execPath.ghostscript": "${gs_path}",
-    "latex-graphics-helper.execPath.pdftocairo": "${pdftocairo_path}",
-    "latex-graphics-helper.execPath.rsvgConvert": "${rsvg_convert_path}",
-    "latex-graphics-helper.puppeteer.executablePath": "${chrome_path}"
+    "graphics-workbench.execPath.ghostscript": "${gs_path}",
+    "graphics-workbench.execPath.pdftocairo": "${pdftocairo_path}",
+    "graphics-workbench.execPath.rsvgConvert": "${rsvg_convert_path}",
+    "graphics-workbench.puppeteer.executablePath": "${chrome_path}"
 }
 EOF
 

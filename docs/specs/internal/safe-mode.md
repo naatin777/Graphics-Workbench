@@ -24,7 +24,7 @@ Safe Modeの利用者向け状態、選択肢、出力結果は、[product speci
 - success時は、Undo recordが必要とするbackupだけを保持し、生成結果や入力copyなどのstagingは削除する。
 - 新しいUndo recordを記録したとき、古いrecordだけが参照するartifactを削除する。新しいrecordの作成に失敗した場合は古いrecordを保持する。
 - Undo成功後は、そのrecordのbackupを含むartifactを削除する。cleanup failureはconversionやUndoの成功を取り消さない。
-- extension activationでは`.latex-graphics-helper/`全体を削除せず、別windowのactive staging、Undo backup、未知directory、harness logを保護する。
+- extension activationでは`.graphics-workbench/`全体を削除せず、別windowのactive staging、Undo backup、未知directory、harness logを保護する。
 - Windows外部toolの診断用ASCII scratchは通常のoperation artifactと別管理する。
 
 ## Undo integration

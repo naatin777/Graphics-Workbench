@@ -19,7 +19,7 @@ import { requireValue } from '../helpers/required.js';
 
 suite('WebPに変換する処理', () => {
   test('アニメーションメタデータを保持して1つのWebPへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-webp-animation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-webp-animation-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.gif');
@@ -55,7 +55,9 @@ suite('WebPに変換する処理', () => {
   });
 
   test('アニメーション維持の失敗時にフレーム分割へfallbackせずstagingを掃除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-webp-animation-failure-'));
+    const workspacePath = await mkdtemp(
+      path.join(os.tmpdir(), 'graphics-workbench-convert-to-webp-animation-failure-'),
+    );
 
     try {
       const sourcePath = path.join(workspacePath, 'broken.gif');
@@ -75,14 +77,14 @@ suite('WebPに変換する処理', () => {
         }),
       );
       await assert.rejects(readFile(outputPath));
-      await assert.rejects(readFile(path.join(workspacePath, '.latex-graphics-helper', 'convert-to-webp')));
+      await assert.rejects(readFile(path.join(workspacePath, '.graphics-workbench', 'convert-to-webp')));
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   test('編集可能なDraw.io画像はPDFとPNGを経由してWebPへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-webp-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-webp-operation-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.drawio.png');
@@ -135,7 +137,7 @@ suite('WebPに変換する処理', () => {
       const drawioArgs = requireValue(drawioCalls[0]);
       const expectedPdfPath = path.join(
         workspacePath,
-        '.latex-graphics-helper',
+        '.graphics-workbench',
         'convert-to-webp',
         'test-run',
         '1',
@@ -147,14 +149,7 @@ suite('WebPに変換する処理', () => {
       assert.deepStrictEqual(pdfToPngCalls, [
         {
           sourcePath: expectedPdfPath,
-          outputPath: path.join(
-            workspacePath,
-            '.latex-graphics-helper',
-            'convert-to-webp',
-            'test-run',
-            '1',
-            'source.png',
-          ),
+          outputPath: path.join(workspacePath, '.graphics-workbench', 'convert-to-webp', 'test-run', '1', 'source.png'),
           page: 1,
         },
       ]);

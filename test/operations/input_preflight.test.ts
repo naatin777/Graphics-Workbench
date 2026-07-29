@@ -54,7 +54,7 @@ suite('Preflight — 共通検査', () => {
   });
 
   test('対応拡張子を持つdirectoryを入力fileとして扱わない', async () => {
-    const testRoot = await mkdtemp(path.join(os.tmpdir(), 'lgh-preflight-directory-'));
+    const testRoot = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-preflight-directory-'));
     const disguisedDirectory = path.join(testRoot, 'diagram.drawio.png');
 
     try {
@@ -133,7 +133,7 @@ suite('Preflight — バッチライフサイクル', () => {
 
 suite('Preflight — Raw sidecar検査', () => {
   test('Rawは必須sidecarと一致するbyte長があればokになる', async () => {
-    const testRoot = await mkdtemp(path.join(os.tmpdir(), 'lgh-preflight-raw-'));
+    const testRoot = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-preflight-raw-'));
     const sourcePath = path.join(testRoot, 'pixels.raw');
     try {
       await writeFile(sourcePath, Buffer.from([255, 0, 0, 0, 255, 0]));
@@ -158,7 +158,7 @@ suite('Preflight — Raw sidecar検査', () => {
   });
 
   test('Rawのsidecar不足・無効・byte長不一致を変換前errorにする', async () => {
-    const testRoot = await mkdtemp(path.join(os.tmpdir(), 'lgh-preflight-raw-invalid-'));
+    const testRoot = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-preflight-raw-invalid-'));
     try {
       const missingPath = path.join(testRoot, 'missing.raw');
       await writeFile(missingPath, Buffer.from([0]));

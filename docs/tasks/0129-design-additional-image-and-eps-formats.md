@@ -38,14 +38,13 @@
 
 ### Remote Evidence
 
-- [Check workflow run 29719192043](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29719192043)
-- [Test workflow run 29719192017](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29719192017): GIF/TIFFの実変換をLinux、macOS、Windowsでpass
-- [Packaged Electron Playwright workflow run 29719192024](https://github.com/naatin777/LaTeX-Graphics-Helper/actions/runs/29719192024): 既存packaged VSIXの回帰確認としてLinux、macOS、Windowsでpass
+- [Check workflow run 29719192043](https://github.com/naatin777/Graphics-Workbench/actions/runs/29719192043)
+- [Test workflow run 29719192017](https://github.com/naatin777/Graphics-Workbench/actions/runs/29719192017): GIF/TIFFの実変換をLinux、macOS、Windowsでpass
+- [Packaged Electron Playwright workflow run 29719192024](https://github.com/naatin777/Graphics-Workbench/actions/runs/29719192024): 既存packaged VSIXの回帰確認としてLinux、macOS、Windowsでpass
 
 ## 目的
 
 現在対応しているPNG、JPEG、WebP、AVIF、SVGに加え、sharpが安定して扱えるGIF/TIFFを、既存の出力形式基準commandへ安全に追加する仕様を決める。EPSは別PRで安全性を確認する。
-
 
 ## 完了条件（進捗）
 
@@ -158,6 +157,7 @@ EPSはPostScript programであるため、BoundingBox、生成PDFのparse、単�
 - [変換入力preflightタスク](0128-design-input-preflight-validation.md)
 - [ファイル操作security仕様](../specs/internal/file-operation-security.md)
 - [外部コマンド用ASCII scratch仕様](../specs/internal/external-tool-ascii-scratch.md)
+
 ## 確認方法
 
 - 採用sharp versionの`sharp.format`を3 OSで記録する

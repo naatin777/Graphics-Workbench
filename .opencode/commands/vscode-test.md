@@ -3,7 +3,7 @@ description: VS Code拡張またはWebview変更に適切なテストを選択�
 agent: build
 ---
 
-`lgh-vscode-testing` Skillを読み込む。
+`graphics-workbench-vscode-testing` Skillを読み込む。
 
 現在の差分を確認し、Unit Test、Integration Test、VS Code Electron、Playwrightのうち必要なテスト境界を選択する。
 

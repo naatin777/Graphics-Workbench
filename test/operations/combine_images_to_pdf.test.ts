@@ -15,7 +15,7 @@ import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/inde
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const VALID_PNG = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
 const EPS_FIXTURE = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'eps', 'minimal.eps');
-const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(vscode.workspace.getConfiguration('latex-graphics-helper'));
+const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(vscode.workspace.getConfiguration('graphics-workbench'));
 
 const supportedInputFixtures = [
   { format: 'png', width: 370, height: 370 },
@@ -38,7 +38,7 @@ interface InputFixture {
 }
 
 async function setupWorkspace(): Promise<string> {
-  return mkdtemp(path.join(os.tmpdir(), 'lgh-combine-'));
+  return mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-combine-'));
 }
 
 async function copyFixtureTo(workspacePath: string, name: string): Promise<string> {
@@ -140,7 +140,7 @@ suite('画像→1PDF結合', () => {
         /aborted|cancelled/i,
       );
       await assert.rejects(access(outputPath));
-      await assert.rejects(access(path.join(workspacePath, '.latex-graphics-helper', 'combine-images')));
+      await assert.rejects(access(path.join(workspacePath, '.graphics-workbench', 'combine-images')));
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }

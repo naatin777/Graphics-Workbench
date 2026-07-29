@@ -3,7 +3,7 @@ description: 現在の変更に必要十分な検証を選択して実行する
 agent: build
 ---
 
-`lgh-verify` Skillを読み込む。
+`graphics-workbench-verify` Skillを読み込む。
 
 現在の作業ツリーの差分を確認し、変更を検証できる最小限のチェックを選択して実行する。
 

@@ -7,8 +7,8 @@ import { commitStagedOutputs, CommitRollbackError } from '../../src/operations/l
 
 suite('変換結果rollbackの外部変更保護', () => {
   test('commit後に外部編集された新規出力を削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-new-output-race-'));
-    const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-new-output-race-'));
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const firstStagedPath = path.join(stagingRootPath, 'first.pdf');
     const secondStagedPath = path.join(stagingRootPath, 'second.pdf');
     const firstOutputPath = path.join(workspacePath, 'first.pdf');

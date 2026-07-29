@@ -64,7 +64,7 @@ status barで切り替えられるSafe Modeを実装し、cropとsplitの既存�
 
 - Safe Modeの初期値をONとし、`ExtensionContext.globalState`へ保存するようにした
 - `onStartupFinished`で拡張機能を有効化し、status barへON/OFFを表示する
-- status barと`latex-graphics-helper.toggleSafeMode` commandから状態を切り替えられる
+- status barと`graphics-workbench.toggleSafeMode` commandから状態を切り替えられる
 - ON時は競合件数を示す確認を1回だけ表示する
 - 「両方残す」は拡張子前へ最小の連番を付ける
 - 「上書きしない」と確認を閉じた場合は出力を反映しない

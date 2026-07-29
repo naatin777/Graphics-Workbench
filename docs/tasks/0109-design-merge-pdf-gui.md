@@ -6,7 +6,7 @@ Todo
 
 ## 目的
 
-`latex-graphics-helper.mergePdf.selectedFiles` と `latex-graphics-helper.mergePdf.configure` の役割を整理し、PDF結合GUIの仕様を決める。
+`graphics-workbench.mergePdf.selectedFiles` と `graphics-workbench.mergePdf.configure` の役割を整理し、PDF結合GUIの仕様を決める。
 
 `manual` という名前は使わない。
 

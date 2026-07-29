@@ -31,7 +31,7 @@ suite('Draw.ioへの集約変換', () => {
   });
 
   test('複数入力を1つへまとめ、PDFはページごとにSVG runnerを通す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-to-drawio-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-to-drawio-'));
     try {
       const imagePath = path.join(workspacePath, 'image.png');
       const pdfPath = path.join(workspacePath, 'input.pdf');
@@ -66,7 +66,7 @@ suite('Draw.ioへの集約変換', () => {
   });
 
   test('ラスターの先頭frame/pageをPNGデータURIへ正規化し、ページ寸法を設定する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-to-drawio-raster-frames-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-to-drawio-raster-frames-'));
     try {
       const red = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
         .png()
@@ -110,7 +110,7 @@ suite('Draw.ioへの集約変換', () => {
   });
 
   test('editable PNG/SVGは一時Draw.io XMLをDesktop CLIへexportする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-to-drawio-editable-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-to-drawio-editable-'));
     try {
       const imagePath = path.join(workspacePath, 'image.png');
       await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
@@ -148,7 +148,7 @@ suite('Draw.ioへの集約変換', () => {
           '--output',
           path.join(
             workspacePath,
-            '.latex-graphics-helper',
+            '.graphics-workbench',
             'convert-to-drawio',
             extension.slice(1),
             `result${extension.endsWith('.png') ? '.png' : '.svg'}`,
@@ -164,7 +164,7 @@ suite('Draw.ioへの集約変換', () => {
   });
 
   test('editable画像のCLI失敗時は別形式へfallbackしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-to-drawio-failure-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-to-drawio-failure-'));
     try {
       const imagePath = path.join(workspacePath, 'image.png');
       const outputPath = path.join(workspacePath, 'result.dio.png');

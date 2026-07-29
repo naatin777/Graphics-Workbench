@@ -6,7 +6,7 @@ Todo
 
 ## 目的
 
-追加済みの失敗テストを通す最小範囲で、`latex-graphics-helper.splitPdf.configure` を実装する。
+追加済みの失敗テストを通す最小範囲で、`graphics-workbench.splitPdf.configure` を実装する。
 
 ## 完了条件
 

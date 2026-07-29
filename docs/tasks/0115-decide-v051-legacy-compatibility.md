@@ -13,21 +13,21 @@ Done
 ## 完了条件
 
 - 旧command IDの移行先を記録する
-  - `latex-graphics-helper.cropPdf`
-  - `latex-graphics-helper.splitPdf`
-  - `latex-graphics-helper.mergePdf`
-  - `latex-graphics-helper.convertDrawioToPdf`
-  - `latex-graphics-helper.convertPdfToPng`
-  - `latex-graphics-helper.convertPdfToJpeg`
-  - `latex-graphics-helper.convertPdfToSvg`
-  - `latex-graphics-helper.convertPngToPdf`
-  - `latex-graphics-helper.convertJpegToPdf`
-  - `latex-graphics-helper.convertSvgToPdf`
+  - `graphics-workbench.cropPdf`
+  - `graphics-workbench.splitPdf`
+  - `graphics-workbench.mergePdf`
+  - `graphics-workbench.convertDrawioToPdf`
+  - `graphics-workbench.convertPdfToPng`
+  - `graphics-workbench.convertPdfToJpeg`
+  - `graphics-workbench.convertPdfToSvg`
+  - `graphics-workbench.convertPngToPdf`
+  - `graphics-workbench.convertJpegToPdf`
+  - `graphics-workbench.convertSvgToPdf`
 - 旧settingsの移行先または廃止理由を記録する
-  - `latex-graphics-helper.execPath.pdfcrop`
-  - `latex-graphics-helper.execPath.puppeteer`
-  - `latex-graphics-helper.puppeteer.browser`
-  - `latex-graphics-helper.puppeteer.channel`
+  - `graphics-workbench.execPath.pdfcrop`
+  - `graphics-workbench.execPath.puppeteer`
+  - `graphics-workbench.puppeteer.browser`
+  - `graphics-workbench.puppeteer.channel`
 - README / CHANGELOG / migration note に書く内容を決める
 - legacy command aliasを実装しないことを明記する
 

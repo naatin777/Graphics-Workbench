@@ -1,6 +1,6 @@
 ---
-name: lgh-verify
-description: LaTeX Graphics Helperの変更内容に応じて、必要十分な型チェック、lint、format、ローカライズ確認、Unit Test、Integration Test、Playwright Testを選択して実行する。実装や修正の完了前に使用する。
+name: graphics-workbench-verify
+description: Graphics Workbenchの変更内容に応じて、必要十分な型チェック、lint、format、ローカライズ確認、Unit Test、Integration Test、Playwright Testを選択して実行する。実装や修正の完了前に使用する。
 ---
 
 # LHG変更検証

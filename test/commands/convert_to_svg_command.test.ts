@@ -1,5 +1,5 @@
 // Test target:
-// - latex-graphics-helper.convertToSvg commandが登録されること
+// - graphics-workbench.convertToSvg commandが登録されること
 // - .mmdをSVGに変換できること
 // - .mermaidをSVGに変換できること
 // - PDFをページごとのSVGへ変換できること
@@ -83,7 +83,7 @@ suite('SVGに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'dark-theme.mmd');
       await writeMermaidFixture(sourcePath);
 
-      await withWorkspaceSettings({ 'latex-graphics-helper.mermaid.theme': 'dark' }, async () => {
+      await withWorkspaceSettings({ 'graphics-workbench.mermaid.theme': 'dark' }, async () => {
         const commandExecution = vscode.commands.executeCommand(CONVERT_TO_SVG_COMMAND, vscode.Uri.file(sourcePath));
         await runCommandAndClearNotificationsUntilDone(commandExecution);
       });
@@ -106,7 +106,7 @@ suite('SVGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'latex-graphics-helper.outputPaths': {
+          'graphics-workbench.outputPaths': {
             convertPdfToSvg: '${fileDirname}/to-svg-${fileBasenameNoExtension}-${page}.svg',
           },
         },
@@ -148,7 +148,7 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'lgh-convert-to-svg-'));
+  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-convert-to-svg-'));
   await mkdir(temporaryDirectory, { recursive: true });
   return temporaryDirectory;
 }

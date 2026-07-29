@@ -1,4 +1,4 @@
-import type { SplitPdfLabels } from '@lgh-split-pdf-protocol';
+import type { SplitPdfLabels } from '@graphics-workbench-split-pdf-protocol';
 
 export const defaultLabels: SplitPdfLabels = {
   title: 'Split PDF',

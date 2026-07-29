@@ -7,9 +7,9 @@ import { runStagedConversionBatch } from '../../src/operations/lifecycle/run_sta
 
 suite('ステージング済み変換バッチ', () => {
   test('成功時はcommit後もUndo登録前のoperation artifactを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-staged-batch-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
     const outputPath = path.join(workspacePath, 'result.png');
-    const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'fixture-raster', 'run');
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.png');
 
     try {
@@ -33,10 +33,10 @@ suite('ステージング済み変換バッチ', () => {
   });
 
   test('stage失敗時は正しいoperation rootだけをcleanupし、最終出力を作らない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-staged-batch-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-staged-batch-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-outside-'));
     const outputPath = path.join(workspacePath, 'result.png');
-    const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'fixture-raster', 'failed-run');
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'failed-run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.png');
     const outsideFilePath = path.join(outsidePath, 'keep.txt');
 
@@ -67,8 +67,8 @@ suite('ステージング済み変換バッチ', () => {
   });
 
   test('1件のstage失敗後も実行中のstageを待ってからcleanupする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-staged-batch-'));
-    const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'fixture-raster', 'abort-run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'abort-run');
     let resolveSecondStarted!: () => void;
     const secondStarted = new Promise<void>((resolve) => {
       resolveSecondStarted = resolve;
@@ -125,8 +125,8 @@ suite('ステージング済み変換バッチ', () => {
   });
 
   test('caller cancellationでも実行中のstageがsettleするまでcleanupせず、queueを開始しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-staged-batch-'));
-    const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'fixture-raster', 'caller-abort-run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'caller-abort-run');
     const abortController = new AbortController();
     let startedStages = 0;
     let queuedStageStarted = false;

@@ -83,7 +83,7 @@ async function stageDrawioJob(options: {
   runtime: ConversionExecutionContext;
 }): Promise<PreparedConversionOutput[]> {
   const { job, index: jobIndex, runId, operationName, outputMode, drawioPath, runDrawio, runtime } = options;
-  const stageRootPath = path.join(job.workspacePath, '.latex-graphics-helper', operationName, runId);
+  const stageRootPath = path.join(job.workspacePath, '.graphics-workbench', operationName, runId);
   const logicalSourcePath = logicalSourcePathForOutputTemplate(job.sourcePath);
   const stageDirectory = path.join(
     stageRootPath,
@@ -259,7 +259,7 @@ async function validateJobPaths(
     jobs.flatMap((job) => [
       assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
       assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.latex-graphics-helper', operationName),
+        path.join(job.workspacePath, '.graphics-workbench', operationName),
         job.workspacePath,
       ),
       assertWritablePathInWorkspace(

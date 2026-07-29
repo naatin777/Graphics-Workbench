@@ -12,8 +12,8 @@ import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_DRAWIO_TO_PDF_COMMAND = 'latex-graphics-helper.convertDrawioToPdf';
-export const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'latex-graphics-helper.convertDrawioToPdfDirectly';
+export const CONVERT_DRAWIO_TO_PDF_COMMAND = 'graphics-workbench.convertDrawioToPdf';
+export const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'graphics-workbench.convertDrawioToPdfDirectly';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
 const DEFAULT_DIRECT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.pdf';
@@ -76,7 +76,7 @@ async function runDrawioPdfCommand(options: {
       throw new Error('No Draw.io files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const readTemplate = options.outputMode === 'page-pdfs' ? readOutputPathsTemplate : readOutputPathTemplate;
     const outputTemplate = readTemplate(
       configuration,

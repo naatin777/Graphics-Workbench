@@ -37,8 +37,8 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_PNG_TO_PDF_COMMAND = 'latex-graphics-helper.convertPngToPdf';
-export const CONVERT_TO_PDF_COMMAND = 'latex-graphics-helper.convertToPdf';
+export const CONVERT_PNG_TO_PDF_COMMAND = 'graphics-workbench.convertPngToPdf';
+export const CONVERT_TO_PDF_COMMAND = 'graphics-workbench.convertToPdf';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.pdf';
 const DEFAULT_DRAWIO_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.pdf';
@@ -117,7 +117,7 @@ async function convertSelectedSourcesToPdf(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const maxInputPixels = getMaxInputPixels(configuration);
     const outputTemplate = readOutputPathTemplate(configuration, 'outputPath.convertPngToPdf', DEFAULT_OUTPUT_PATH);
     const svgToPdfTools = readSvgToPdfOptions(configuration);

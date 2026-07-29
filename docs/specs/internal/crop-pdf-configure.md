@@ -18,7 +18,7 @@ PDF metadataと最初のpageを先に読み込み、残りはplaceholderと`Inte
 configure operationの作業fileはworkspace内の次のstaging rootで管理する。
 
 ```text
-<workspace>/.latex-graphics-helper/crop-pdf-configure/<一意ID>/
+<workspace>/.graphics-workbench/crop-pdf-configure/<一意ID>/
 ```
 
 入力コピーと完成artifactはoperation単位で管理する。final pathへのcommitはstaging処理と分離し、commit失敗時のrollback、stagingの寿命、activation時のcleanupは、[Safe Mode internal contract](safe-mode.md)と[file operation security contract](file-operation-security.md)を正本とする。

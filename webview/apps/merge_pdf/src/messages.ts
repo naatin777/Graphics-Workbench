@@ -3,4 +3,4 @@ export type {
   MergePdfLabels,
   MergePdfSource,
   MergePdfWebviewToHost as WebviewToExtensionMessage,
-} from '@lgh-merge-pdf-protocol';
+} from '@graphics-workbench-merge-pdf-protocol';

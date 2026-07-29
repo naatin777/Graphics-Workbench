@@ -9,7 +9,7 @@ import { convertToRawFiles } from '../../src/operations/conversion/convert_to_ra
 
 suite('Rawピクセル変換', () => {
   test('rawとsidecarはkeep-bothでも同じsuffixでcommitする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-raw-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-raw-'));
     try {
       const sourcePath = path.join(workspacePath, 'source.png');
       const outputPath = path.join(workspacePath, 'output.raw');
@@ -50,7 +50,7 @@ suite('Rawピクセル変換', () => {
   });
 
   test('sidecarがなければ最終出力を作らない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-raw-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-raw-'));
     try {
       const sourcePath = path.join(workspacePath, 'source.raw');
       const outputPath = path.join(workspacePath, 'output.raw');
@@ -71,7 +71,7 @@ suite('Rawピクセル変換', () => {
   });
 
   test('通常の画像入力からsidecar付きrawを生成する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-raw-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-raw-'));
     try {
       const sourcePath = path.join(workspacePath, 'source.png');
       const outputPath = path.join(workspacePath, 'output.raw');

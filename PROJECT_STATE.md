@@ -4,7 +4,7 @@
 
 ## Goal
 
-LaTeX Graphics Helper は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿入作業を扱いやすくする拡張機能です。
+Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿入作業を扱いやすくする拡張機能です。
 
 ## Current priority
 

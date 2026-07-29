@@ -23,8 +23,8 @@ import { requireValue } from '../helpers/required.js';
 
 suite('変換結果の反映処理', () => {
   test('両方残す場合は最小の連番suffixで保存する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', 'result.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
     await writeFixture(outputPath, 'old');
@@ -40,10 +40,10 @@ suite('変換結果の反映処理', () => {
   });
 
   test('複数の競合があっても判断は1回だけ求める', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
     const outputs = await Promise.all(
       ['first', 'second'].map(async (name) => {
-        const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', `${name}.pdf`);
+        const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
         const outputPath = path.join(workspacePath, `${name}.pdf`);
         await writeFixture(stagedOutputPath, `new-${name}`);
         await writeFixture(outputPath, `old-${name}`);
@@ -64,8 +64,8 @@ suite('変換結果の反映処理', () => {
   });
 
   test('上書きしない判断の場合はどの出力も反映しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', 'result.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
     await writeFixture(outputPath, 'old');
@@ -81,8 +81,8 @@ suite('変換結果の反映処理', () => {
   });
 
   test('上書き前に既存ファイルをバックアップする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', 'result.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
     await writeFixture(outputPath, 'old');
@@ -98,10 +98,10 @@ suite('変換結果の反映処理', () => {
   });
 
   test('1件目の成功後に2件目のcopyが失敗すると両方を元へ戻す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
     const outputs = await Promise.all(
       ['first', 'second'].map(async (name) => {
-        const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', `${name}.pdf`);
+        const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
         const outputPath = path.join(workspacePath, `${name}.pdf`);
         await writeFixture(stagedOutputPath, `new-${name}`);
         await writeFixture(outputPath, `old-${name}`);
@@ -129,8 +129,8 @@ suite('変換結果の反映処理', () => {
   });
 
   test('overwrite中の現在出力のcopy失敗でもbackupから復元する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', 'result.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
     await writeFixture(outputPath, 'old');
@@ -152,8 +152,8 @@ suite('変換結果の反映処理', () => {
   });
 
   test('新規出力のcopy失敗では不完全ファイルを残さない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
     const outputPath = path.join(workspacePath, 'new.pdf');
     await writeFixture(stagedOutputPath, 'new');
@@ -174,10 +174,10 @@ suite('変換結果の反映処理', () => {
   });
 
   test('rollback失敗は元エラーと対象pathを保持しOutput Channelへ記録する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
     const outputs = await Promise.all(
       ['first', 'second'].map(async (name) => {
-        const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', `${name}.pdf`);
+        const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
         const outputPath = path.join(workspacePath, `${name}.pdf`);
         await writeFixture(stagedOutputPath, `new-${name}`);
         await writeFixture(outputPath, `old-${name}`);
@@ -215,8 +215,8 @@ suite('変換結果の反映処理', () => {
   });
 
   test('commit済み出力へのcancelでもrollbackする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', 'result.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     const controller = new AbortController();
     await writeFixture(stagedOutputPath, 'new');
@@ -242,8 +242,8 @@ suite('変換結果の反映処理', () => {
   });
 
   test('commit後に外部変更された出力はrollbackで上書きせずbackupを残す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagingRootPath = path.join(workspacePath, '.latex-graphics-helper', 'run');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const outputs = await Promise.all(
       ['first', 'second'].map(async (name) => {
         const stagedOutputPath = path.join(stagingRootPath, `${name}.pdf`);
@@ -290,8 +290,8 @@ suite('変換結果の反映処理', () => {
   });
 
   test('conflict判断後に変更された出力は上書きしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', 'result.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
     await writeFixture(outputPath, 'old');
@@ -310,8 +310,8 @@ suite('変換結果の反映処理', () => {
   });
 
   test('rollbackは対象外のファイルを削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath, '.latex-graphics-helper', 'result.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     const unrelatedPath = path.join(workspacePath, 'unrelated.txt');
     await writeFixture(stagedOutputPath, 'new');

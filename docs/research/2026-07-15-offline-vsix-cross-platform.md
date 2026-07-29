@@ -25,7 +25,7 @@
 
 1. `pnpm run package`で通常のVSIX生成を実行した
 2. `pnpm install --frozen-lockfile`後に1を再実行した
-3. `pnpm exec vsce package --no-dependencies --out /tmp/lgh-offline-audit.vsix`で、依存検出を無効にした配布物を作成した
+3. `pnpm exec vsce package --no-dependencies --out /tmp/graphics-workbench-offline-audit.vsix`で、依存検出を無効にした配布物を作成した
 4. VSIXのfile一覧と`unzip -l`の内容を確認した
 5. `src`、`webview`、生成済み`out`からruntimeのremote network accessを検索した
 6. lockfileと現在の`node_modules`から`sharp`のplatform packageを確認した

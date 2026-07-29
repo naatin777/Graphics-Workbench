@@ -19,7 +19,7 @@ import { requireValue } from '../helpers/required.js';
 
 suite('AVIFに変換する処理', () => {
   test('編集可能なDraw.io画像はPDFとPNGを経由してAVIFへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-convert-to-avif-operation-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-avif-operation-'));
 
     try {
       const sourcePath = path.join(workspacePath, 'source.drawio.png');
@@ -79,7 +79,7 @@ suite('AVIFに変換する処理', () => {
       const drawioArgs = requireValue(drawioCalls[0]);
       const expectedPdfPath = path.join(
         workspacePath,
-        '.latex-graphics-helper',
+        '.graphics-workbench',
         'convert-to-avif',
         'test-run',
         '1',
@@ -91,14 +91,7 @@ suite('AVIFに変換する処理', () => {
       assert.deepStrictEqual(pdfToPngCalls, [
         {
           sourcePath: expectedPdfPath,
-          outputPath: path.join(
-            workspacePath,
-            '.latex-graphics-helper',
-            'convert-to-avif',
-            'test-run',
-            '1',
-            'source.png',
-          ),
+          outputPath: path.join(workspacePath, '.graphics-workbench', 'convert-to-avif', 'test-run', '1', 'source.png'),
           page: 1,
         },
       ]);

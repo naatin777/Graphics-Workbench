@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToSvg`で`.mmd`と`.mermaid`をSVGへ変換できることを、実装前にテストとして固定する。
+`graphics-workbench.convertToSvg`で`.mmd`と`.mermaid`をSVGへ変換できることを、実装前にテストとして固定する。
 
 このタスクではテストだけを追加し、実装は行わない。
 

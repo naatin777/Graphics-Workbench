@@ -41,7 +41,7 @@ export async function assertRenderedPdfPagesSimilar(comparison: PdfPageVisualCom
 
 async function renderPdfPage(pdfPath: string, pageNumber: number, outputPrefix: string, dpi: number): Promise<string> {
   const pdftocairoPath = vscode.workspace
-    .getConfiguration('latex-graphics-helper')
+    .getConfiguration('graphics-workbench')
     .get<string>('execPath.pdftocairo', 'pdftocairo');
 
   await execFileAsync(pdftocairoPath, [

@@ -141,7 +141,7 @@ interface TestPaths {
 }
 
 async function prepareWorkspace(): Promise<TestPaths> {
-  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'lgh-eps-contract-'));
+  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-eps-contract-'));
   const workspacePath = path.join(testRootPath, 'workspace 日本語 हिन्दी 🌹');
   const sourcePath = path.join(workspacePath, '入力 日本語.eps');
   const stagingDirectory = path.join(workspacePath, 'staging output');

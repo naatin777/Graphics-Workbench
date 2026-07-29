@@ -5,7 +5,7 @@ import type { OutputConflictDecision } from '../../operations/lifecycle/commit_c
 
 import { userMessage } from '../shared/user_messages.js';
 
-export const TOGGLE_SAFE_MODE_COMMAND = 'latex-graphics-helper.toggleSafeMode';
+export const TOGGLE_SAFE_MODE_COMMAND = 'graphics-workbench.toggleSafeMode';
 
 let safeModeState: SafeModeState | undefined;
 let statusBarItem: vscode.StatusBarItem | undefined;
@@ -18,7 +18,7 @@ type SafeModeContext = {
 export function initializeSafeMode(context: SafeModeContext): void {
   safeModeState = new SafeModeState(context.globalState);
   statusBarItem = vscode.window.createStatusBarItem(
-    'latex-graphics-helper.safeMode',
+    'graphics-workbench.safeMode',
     vscode.StatusBarAlignment.Right,
     100,
   );

@@ -168,13 +168,13 @@ async function stageSourceToPdf(
   signal?.throwIfAborted();
   const stagedOutputPath = path.join(
     job.workspacePath,
-    '.latex-graphics-helper',
+    '.graphics-workbench',
     'convert-png-to-pdf',
     runId,
     `${index + 1}`,
     'result.pdf',
   );
-  const stagingRootPath = path.join(job.workspacePath, '.latex-graphics-helper', 'convert-png-to-pdf', runId);
+  const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', 'convert-png-to-pdf', runId);
 
   const writeOptions: WriteSourceAsPdfOptions = {
     sourcePath: job.sourcePath,

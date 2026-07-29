@@ -23,7 +23,7 @@ Explorer context menuの変換項目を、入力形式別サブメニューで�
 ## 完了条件
 
 - Explorer context menuから入力形式別変換サブメニューを外す
-- 共有`変換`サブメニュー配下には`latex-graphics-helper.convertToPdf`だけを配置する
+- 共有`変換`サブメニュー配下には`graphics-workbench.convertToPdf`だけを配置する
 - 変換context menu上に未登録の変換commandを表示しない
 - `convertToPdf`は`PDF`として表示する
 - `src/`の変換実装は変更しない

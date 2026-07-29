@@ -127,7 +127,7 @@ async function convertPdf(params: {
   } = params;
   signal?.throwIfAborted();
   const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const workDirectory = path.join(job.workspacePath, '.latex-graphics-helper', 'crop-pdf', runId, itemName);
+  const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'crop-pdf', runId, itemName);
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
@@ -207,7 +207,7 @@ async function convertPdf(params: {
       stagedOutputPath,
       outputPath: job.outputPath,
       workspacePath: job.workspacePath,
-      stagingRootPath: path.join(job.workspacePath, '.latex-graphics-helper', 'crop-pdf', runId),
+      stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'crop-pdf', runId),
     };
   } catch (error) {
     if (scratch) {

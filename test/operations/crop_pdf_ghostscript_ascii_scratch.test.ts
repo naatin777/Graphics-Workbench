@@ -186,7 +186,7 @@ interface FixedFixtureWorkspace {
 }
 
 async function prepareFixedFixtureWorkspace(): Promise<FixedFixtureWorkspace> {
-  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'lgh-gs-scratch-test-'));
+  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-gs-scratch-test-'));
   const workspacePath = path.join(testRootPath, 'workspace 日本語 हिन्दी 🌹');
   const scratchBasePath = path.join(testRootPath, 'scratch');
   const sourcePath = path.join(workspacePath, complexSourceFileName);

@@ -26,9 +26,9 @@ async function assertAnimatedInputIsSplit(
   command: (uri?: vscode.Uri, uris?: vscode.Uri[]) => Promise<void>,
 ): Promise<void> {
   const workspacePath = await mkdtemp(
-    path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, `lgh-${format}-command-`),
+    path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, `graphics-workbench-${format}-command-`),
   );
-  const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+  const configuration = vscode.workspace.getConfiguration('graphics-workbench');
   const sandbox = createSandbox();
   const key = outputFormat === 'gif' ? 'convertTiffToGif' : 'convertGifToTiff';
   const template = `\${fileDirname}/\${fileBasenameNoExtension}-\${page}.${outputFormat}`;

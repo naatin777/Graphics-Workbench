@@ -75,7 +75,7 @@ suite('PDF configure crop処理', () => {
       {
         outputPath,
         workspacePath,
-        stagingRootPath: path.join(workspacePath, '.latex-graphics-helper', 'crop-pdf-configure', 'all-pages'),
+        stagingRootPath: path.join(workspacePath, '.graphics-workbench', 'crop-pdf-configure', 'all-pages'),
       },
     ]);
 
@@ -253,13 +253,13 @@ function fixturePath(fileName: string): string {
 }
 
 async function createTemporaryWorkspace(temporaryDirectories: string[]): Promise<string> {
-  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh crop 作業🌹-'));
+  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench crop 作業🌹-'));
   temporaryDirectories.push(workspacePath);
   return workspacePath;
 }
 
 async function createTemporaryRenderDirectory(temporaryDirectories: string[]): Promise<string> {
-  const renderDirectory = await mkdtemp(path.join(os.tmpdir(), 'lgh-crop-render-'));
+  const renderDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-render-'));
   temporaryDirectories.push(renderDirectory);
   return renderDirectory;
 }
@@ -352,7 +352,7 @@ async function assertRenderedPagesSimilar(params: {
 
 async function renderPdfPage(pdfPath: string, pageNumber: number, outputPrefix: string): Promise<string> {
   const pdftocairoPath = vscode.workspace
-    .getConfiguration('latex-graphics-helper')
+    .getConfiguration('graphics-workbench')
     .get<string>('execPath.pdftocairo', 'pdftocairo');
 
   await execFileAsync(pdftocairoPath, [

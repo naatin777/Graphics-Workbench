@@ -89,7 +89,7 @@ async function splitPdf(params: {
   signal?.throwIfAborted();
 
   const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const workDirectory = path.join(job.workspacePath, '.latex-graphics-helper', 'split-pdf', runId, itemName);
+  const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'split-pdf', runId, itemName);
   const pagesDirectory = path.join(workDirectory, 'pages');
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
 
@@ -133,7 +133,7 @@ async function splitPdf(params: {
       stagedOutputPath,
       outputPath: job.outputPathForPage(page),
       workspacePath: job.workspacePath,
-      stagingRootPath: path.join(job.workspacePath, '.latex-graphics-helper', 'split-pdf', runId),
+      stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'split-pdf', runId),
     });
   }
 
@@ -157,7 +157,7 @@ async function splitPdfPageGroups(params: {
   signal?.throwIfAborted();
 
   const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const workDirectory = path.join(job.workspacePath, '.latex-graphics-helper', 'split-pdf', runId, itemName);
+  const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'split-pdf', runId, itemName);
   const groupsDirectory = path.join(workDirectory, 'groups');
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
 
@@ -209,7 +209,7 @@ async function splitPdfPageGroups(params: {
       stagedOutputPath,
       outputPath: outputPathForGroup(groupIndex, pages),
       workspacePath: job.workspacePath,
-      stagingRootPath: path.join(job.workspacePath, '.latex-graphics-helper', 'split-pdf', runId),
+      stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'split-pdf', runId),
     });
   }
 

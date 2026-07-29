@@ -84,7 +84,7 @@ suite('外部tool runner — ログredaction', () => {
   });
 
   test('processへは元のargumentが渡る', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-ext-tool-redaction-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-redaction-'));
     const receivedPath = path.join(workspacePath, 'received.txt');
 
     try {
@@ -157,7 +157,7 @@ suite('外部tool runner — 実行失敗', () => {
 
 suite('外部tool runner — Cancellation', () => {
   test('AbortSignalがrunExternalToolへ渡り、child processを停止する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'lgh-ext-tool-cancel-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-cancel-'));
     const sentinelPath = path.join(workspacePath, 'sentinel.txt');
     const startedPath = path.join(workspacePath, 'started.txt');
 

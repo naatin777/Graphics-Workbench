@@ -28,9 +28,9 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_TO_GIF_COMMAND = 'latex-graphics-helper.convertToGif';
-export const CONVERT_TO_GIF_PRESERVE_COMMAND = 'latex-graphics-helper.convertToGifPreserveAnimation';
-export const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'latex-graphics-helper.convertToGifSeparately';
+export const CONVERT_TO_GIF_COMMAND = 'graphics-workbench.convertToGif';
+export const CONVERT_TO_GIF_PRESERVE_COMMAND = 'graphics-workbench.convertToGifPreserveAnimation';
+export const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'graphics-workbench.convertToGifSeparately';
 
 const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.gif';
 const DEFAULT_SPLIT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.gif';
@@ -53,7 +53,7 @@ export async function convertToGifCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
+    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) =>

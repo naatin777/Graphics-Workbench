@@ -6,7 +6,7 @@ Done
 
 ## 目的
 
-固定PDF fixtureの画像比較テストで、実行ファイル名を直接指定せず、`settings.json`の`latex-graphics-helper.execPath.pdftocairo`を使う。
+固定PDF fixtureの画像比較テストで、実行ファイル名を直接指定せず、`settings.json`の`graphics-workbench.execPath.pdftocairo`を使う。
 
 ## 背景
 
@@ -14,7 +14,7 @@ Windows CIはPopplerを一時ディレクトリへ展開し、`pdftocairo.exe`�
 
 ## 完了条件
 
-- crop画像比較テストが`latex-graphics-helper.execPath.pdftocairo`を読む
+- crop画像比較テストが`graphics-workbench.execPath.pdftocairo`を読む
 - 設定がない場合だけ`pdftocairo`へfallbackする
 - Windows CIで設定された絶対パスを使える
 - PATH変更、環境変数、テストskip、mockへ置き換えない

@@ -12,7 +12,7 @@ Done
 
 - 複数出力が1回の操作で作成されるテストがある
 - 1回のUndoで複数出力が削除されるテストがある
-- Undo後も`.latex-graphics-helper/`内の完成ファイルが残ることを確認する
+- Undo後も`.graphics-workbench/`内の完成ファイルが残ることを確認する
 - VS CodeのWorkspaceEditとapplyEditをmockしない
 - 未実装を理由としてテストが失敗することを確認する
 

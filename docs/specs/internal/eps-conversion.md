@@ -94,7 +94,7 @@ GhostscriptのSAFER modeが将来のversionで変更された場合、対応す�
 
 ### execPath
 
-Ghostscriptの実行file pathは既存の `latex-graphics-helper.execPath.ghostscript` 設定から読み取る。既存の `readGhostscriptExecutablePath` を再利用する。
+Ghostscriptの実行file pathは既存の `graphics-workbench.execPath.ghostscript` 設定から読み取る。既存の `readGhostscriptExecutablePath` を再利用する。
 
 Workspace境界の `execPath` 例外（`docs/specs/internal/file-operation-security.md` 参照）をEPS変換でも適用する。
 

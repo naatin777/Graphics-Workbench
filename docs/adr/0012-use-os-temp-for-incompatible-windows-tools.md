@@ -12,7 +12,7 @@
 
 Windows実体によるpath probeで、Ghostscript、pdftocairo、rsvg-convertの一部配布物がUnicodeを含む入出力pathを正しく扱えないことを確認した。
 
-workspace内の`.latex-graphics-helper`でfile名をASCIIへ変えても、workspace自体のabsolute pathに日本語・絵文字などが含まれる場合は外部コマンドへ渡すpath全体をASCIIにできない。
+workspace内の`.graphics-workbench`でfile名をASCIIへ変えても、workspace自体のabsolute pathに日本語・絵文字などが含まれる場合は外部コマンドへ渡すpath全体をASCIIにできない。
 
 一方、Safe Mode、Undo、失敗時復元をOS一時directoryへ依存させると、OS cleanupや第三者processによる削除の影響を受ける。
 

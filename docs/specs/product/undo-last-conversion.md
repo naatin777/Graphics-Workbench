@@ -2,7 +2,7 @@
 
 ## ユーザー操作
 
-変換成功後の通知に「取り消す」を表示する。選択すると専用command `latex-graphics-helper.undoLastConversion`を実行する。通常の`Ctrl+Z` / `Cmd+Z`は変更しない。
+変換成功後の通知に「取り消す」を表示する。選択すると専用command `graphics-workbench.undoLastConversion`を実行する。通常の`Ctrl+Z` / `Cmd+Z`は変更しない。
 
 古い通知から取り消しを選んだ時点で、より新しい変換が成功している場合は何も削除しない。
 

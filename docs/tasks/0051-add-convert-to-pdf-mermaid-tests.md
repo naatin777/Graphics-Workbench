@@ -6,13 +6,13 @@ Done
 
 ## 目的
 
-`latex-graphics-helper.convertToPdf`で`.mmd`と`.mermaid`をPDFへ変換できるようにするための失敗テストを追加する。
+`graphics-workbench.convertToPdf`で`.mmd`と`.mermaid`をPDFへ変換できるようにするための失敗テストを追加する。
 
 このタスクではテストだけを追加し、実装は行わない。
 
 ## 背景
 
-Mermaid → SVGは`latex-graphics-helper.convertToSvg`で実装済み。
+Mermaid → SVGは`graphics-workbench.convertToSvg`で実装済み。
 
 次は既存の出力形式基準コマンドである`convertToPdf`へ、Mermaid入力を追加する。
 

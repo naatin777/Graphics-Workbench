@@ -242,8 +242,10 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 
     const userSettingsPath = join(env.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme, {
-      'latex-graphics-helper.execPath.pdftocairo':
-        process.platform === 'win32' ? 'C:\\lgh-missing\\pdftocairo.exe' : '/lgh-missing/pdftocairo',
+      'graphics-workbench.execPath.pdftocairo':
+        process.platform === 'win32'
+          ? 'C:\\graphics-workbench-missing\\pdftocairo.exe'
+          : '/graphics-workbench-missing/pdftocairo',
     });
 
     const lightTheme = await waitForWebviewTheme(body, 'vscode-light');
