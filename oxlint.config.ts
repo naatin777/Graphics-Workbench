@@ -269,6 +269,7 @@ export default defineConfig({
      * Project-specific rules
      */
     'project/max-conditional-spreads-per-object': 'error',
+    'project/max-flat-type-members': 'error',
     'project/forbid-raster-input-limit-bypass': 'error',
   },
 
@@ -300,9 +301,20 @@ export default defineConfig({
       files: ['scripts/oxlint-project-plugin.mjs'],
       rules: {
         // The custom plugin consumes Oxlint's untyped ESTree visitor API.
+        'typescript/no-unsafe-argument': 'off',
         'typescript/no-unsafe-assignment': 'off',
+        'typescript/no-unsafe-return': 'off',
         'typescript/strict-boolean-expressions': 'off',
+        'unicorn/no-useless-undefined': 'off',
         'unicorn/no-nested-ternary': 'off',
+        'unicorn/prefer-string-replace-all': 'off',
+      },
+    },
+    {
+      files: ['scripts/oxlint-project-plugin.test.mjs'],
+      rules: {
+        // The test exercises the untyped AST helper exported by the custom plugin.
+        'typescript/no-unsafe-assignment': 'off',
       },
     },
     {

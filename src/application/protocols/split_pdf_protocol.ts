@@ -9,40 +9,54 @@ import {
 } from './protocol_utils.js';
 
 export interface SplitPdfLabels {
-  title: string;
-  description: string;
-  preview: string;
-  previewDescription: string;
-  previewAriaLabel: string;
-  groups: string;
-  groupLabel: string;
-  pages: string;
-  pageLabel: string;
-  pagesPlaceholder: string;
-  outputName: string;
-  outputNamePlaceholder: string;
-  outputPath: string;
-  addGroup: string;
-  removeGroup: string;
-  apply: string;
-  cancel: string;
-  previewRenderError: string;
-  previewApplyError: string;
-  pagesRequiredError: string;
-  pageWholeNumberError: string;
-  pageOutOfRangeError: string;
-  allPages: string;
-  focusedPages: string;
-  zoom: string;
-  dragGroup: string;
-  moveUp: string;
-  moveDown: string;
-  outputOrder: string;
-  invalidPages: string;
-  descendingPages: string;
-  outputNameEmpty: string;
-  outputNamePath: string;
-  outputNameDuplicate: string;
+  header: {
+    title: string;
+    description: string;
+  };
+  preview: {
+    title: string;
+    description: string;
+    ariaLabel: string;
+    renderError: string;
+    applyError: string;
+    allPages: string;
+    focusedPages: string;
+    zoom: string;
+  };
+  groups: {
+    title: string;
+    label: string;
+    add: string;
+    remove: string;
+    drag: string;
+    outputOrder: string;
+  };
+  pages: {
+    title: string;
+    label: string;
+    placeholder: string;
+  };
+  output: {
+    name: string;
+    namePlaceholder: string;
+    path: string;
+  };
+  validation: {
+    pagesRequired: string;
+    pageWholeNumber: string;
+    pageOutOfRange: string;
+    invalidPages: string;
+    descendingPages: string;
+    outputNameEmpty: string;
+    outputNamePath: string;
+    outputNameDuplicate: string;
+  };
+  actions: {
+    apply: string;
+    cancel: string;
+    moveUp: string;
+    moveDown: string;
+  };
 }
 
 export type SplitPdfHostToWebview =
@@ -54,10 +68,12 @@ export type SplitPdfHostToWebview =
         pageCount: number;
         pdfSrc: string;
         outputPathTemplate: string;
-        workerSrc?: string;
-        cMapUrl?: string;
-        standardFontDataUrl?: string;
-        wasmUrl?: string;
+        resources: {
+          workerSrc?: string;
+          cMapUrl?: string;
+          standardFontDataUrl?: string;
+          wasmUrl?: string;
+        };
         labels: SplitPdfLabels;
       };
     }
@@ -172,20 +188,26 @@ export function isSplitPdfHostToWebviewMessage(value: unknown): value is SplitPd
 
   return (
     hasExactKeys(value, ['type', 'payload']) &&
-    hasExactKeys(
-      value.payload,
-      ['sourceId', 'fileName', 'pageCount', 'pdfSrc', 'outputPathTemplate', 'labels'],
-      ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl'],
-    ) &&
+    hasExactKeys(value.payload, [
+      'sourceId',
+      'fileName',
+      'pageCount',
+      'pdfSrc',
+      'outputPathTemplate',
+      'resources',
+      'labels',
+    ]) &&
     isNonEmptyString(value.payload.sourceId) &&
     isNonEmptyString(value.payload.fileName) &&
     isPositiveInteger(value.payload.pageCount) &&
     isWebviewUri(value.payload.pdfSrc) &&
     isNonEmptyString(value.payload.outputPathTemplate) &&
-    isOptionalWebviewUri(value.payload.workerSrc) &&
-    isOptionalWebviewUri(value.payload.cMapUrl) &&
-    isOptionalWebviewUri(value.payload.standardFontDataUrl) &&
-    isOptionalWebviewUri(value.payload.wasmUrl) &&
+    isRecord(value.payload.resources) &&
+    hasExactKeys(value.payload.resources, [], ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl']) &&
+    isOptionalWebviewUri(value.payload.resources.workerSrc) &&
+    isOptionalWebviewUri(value.payload.resources.cMapUrl) &&
+    isOptionalWebviewUri(value.payload.resources.standardFontDataUrl) &&
+    isOptionalWebviewUri(value.payload.resources.wasmUrl) &&
     isSplitPdfLabels(value.payload.labels)
   );
 }
@@ -225,44 +247,41 @@ function isSplitPdfLabels(value: unknown): value is SplitPdfLabels {
     return false;
   }
 
-  const labelKeys: readonly string[] = [
-    'title',
-    'description',
-    'preview',
-    'previewDescription',
-    'previewAriaLabel',
-    'groups',
-    'groupLabel',
-    'pages',
-    'pageLabel',
-    'pagesPlaceholder',
-    'outputName',
-    'outputNamePlaceholder',
-    'outputPath',
-    'addGroup',
-    'removeGroup',
-    'apply',
-    'cancel',
-    'previewRenderError',
-    'previewApplyError',
-    'pagesRequiredError',
-    'pageWholeNumberError',
-    'pageOutOfRangeError',
-    'allPages',
-    'focusedPages',
-    'zoom',
-    'dragGroup',
-    'moveUp',
-    'moveDown',
-    'outputOrder',
-    'invalidPages',
-    'descendingPages',
-    'outputNameEmpty',
-    'outputNamePath',
-    'outputNameDuplicate',
-  ];
+  const groups = [
+    ['header', ['title', 'description']],
+    ['preview', ['title', 'description', 'ariaLabel', 'renderError', 'applyError', 'allPages', 'focusedPages', 'zoom']],
+    ['groups', ['title', 'label', 'add', 'remove', 'drag', 'outputOrder']],
+    ['pages', ['title', 'label', 'placeholder']],
+    ['output', ['name', 'namePlaceholder', 'path']],
+    [
+      'validation',
+      [
+        'pagesRequired',
+        'pageWholeNumber',
+        'pageOutOfRange',
+        'invalidPages',
+        'descendingPages',
+        'outputNameEmpty',
+        'outputNamePath',
+        'outputNameDuplicate',
+      ],
+    ],
+    ['actions', ['apply', 'cancel', 'moveUp', 'moveDown']],
+  ] as const;
 
-  return hasExactKeys(value, labelKeys) && labelKeys.every((key) => isString(value[key]));
+  if (
+    !hasExactKeys(
+      value,
+      groups.map(([group]) => group),
+    )
+  ) {
+    return false;
+  }
+
+  return groups.every(([groupName, keys]) => {
+    const group = value[groupName];
+    return isRecord(group) && hasExactKeys(group, keys) && keys.every((key) => isString(group[key]));
+  });
 }
 
 function isSplitPdfPageGroupRow(value: unknown): value is SplitPdfPageGroupRow {

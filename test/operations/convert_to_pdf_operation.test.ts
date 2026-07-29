@@ -133,10 +133,12 @@ suite('PDF変換operation（PNG入力）', () => {
           jobs: [{ sourcePath, outputPath, workspacePath }],
           supportedExtensions: ['.drawio.png'],
           operationName: 'convert-to-pdf',
-          drawioTools: {
-            drawioPath: 'drawio',
-            runDrawio: async (_executable, args) => {
-              await writeFile(requireValue(args[args.indexOf('-o') + 1]), 'not a PDF');
+          tools: {
+            drawioTools: {
+              drawioPath: 'drawio',
+              runDrawio: async (_executable, args) => {
+                await writeFile(requireValue(args[args.indexOf('-o') + 1]), 'not a PDF');
+              },
             },
           },
         }),

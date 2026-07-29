@@ -159,12 +159,12 @@ export function App(): JSX.Element {
     const parsedPages = parsePages(row.pages, pageCount());
 
     if (!parsedPages.ok) {
-      setApplyError(`${labels().groupLabel} ${rowIndex + 1}: ${pageFailureMessage(parsedPages, labels())}`);
+      setApplyError(`${labels().groups.label} ${rowIndex + 1}: ${pageFailureMessage(parsedPages, labels())}`);
       return;
     }
 
     if (row.outputName.trim().length === 0) {
-      setApplyError(`${labels().groupLabel} ${rowIndex + 1}: ${labels().outputNameEmpty}`);
+      setApplyError(`${labels().groups.label} ${rowIndex + 1}: ${labels().validation.outputNameEmpty}`);
       return;
     }
 
@@ -218,28 +218,28 @@ export function App(): JSX.Element {
       if (!parsedPages.ok) {
         return {
           rowId: row.id,
-          message: `${labels().groupLabel} ${index + 1}: ${pageFailureMessage(parsedPages, labels())}`,
+          message: `${labels().groups.label} ${index + 1}: ${pageFailureMessage(parsedPages, labels())}`,
         };
       }
 
       if (row.outputName.trim().length === 0) {
         return {
           rowId: row.id,
-          message: `${labels().groupLabel} ${index + 1}: ${labels().outputNameEmpty}`,
+          message: `${labels().groups.label} ${index + 1}: ${labels().validation.outputNameEmpty}`,
         };
       }
 
       if (row.outputName.includes('\u0000') || /[\\/]/.test(row.outputName) || row.outputName.includes('..')) {
         return {
           rowId: row.id,
-          message: `${labels().groupLabel} ${index + 1}: ${labels().outputNamePath}`,
+          message: `${labels().groups.label} ${index + 1}: ${labels().validation.outputNamePath}`,
         };
       }
 
       if (outputNames.has(row.outputName)) {
         return {
           rowId: row.id,
-          message: formatLabel(labels().outputNameDuplicate, row.outputName),
+          message: formatLabel(labels().validation.outputNameDuplicate, row.outputName),
         };
       }
 
@@ -252,7 +252,7 @@ export function App(): JSX.Element {
 
   const apply = (): void => {
     if (!previewReady() || renderError()) {
-      setApplyError(labels().previewApplyError);
+      setApplyError(labels().preview.applyError);
       return;
     }
 
@@ -326,14 +326,20 @@ export function App(): JSX.Element {
 
     try {
       const controller = await renderPdfPages(payload.pdfSrc, pdfPages, {
-        ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
-        ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
-        ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''
-          ? { standardFontDataUrl: payload.standardFontDataUrl }
+        ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
+          ? { workerSrc: payload.resources.workerSrc }
           : {}),
-        ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
+        ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
+          ? { cMapUrl: payload.resources.cMapUrl }
+          : {}),
+        ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
+          ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
+          : {}),
+        ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
+          ? { wasmUrl: payload.resources.wasmUrl }
+          : {}),
         ...(pdfPreview === undefined ? {} : { root: pdfPreview }),
-        pageLabel: labels().pageLabel,
+        pageLabel: labels().pages.label,
         onRenderError: (error: unknown) => {
           const message = error instanceof Error ? error.message : String(error);
           setRenderError(message);
@@ -408,11 +414,11 @@ export function App(): JSX.Element {
     <main class='app'>
       <header class='app__header'>
         <div>
-          <h1>{labels().title}</h1>
-          <p>{labels().description}</p>
+          <h1>{labels().header.title}</h1>
+          <p>{labels().header.description}</p>
         </div>
         <p class='app__meta'>
-          {fileName()} | {pageCount()} {labels().pages}
+          {fileName()} | {pageCount()} {labels().pages.title}
         </p>
       </header>
 
@@ -421,7 +427,7 @@ export function App(): JSX.Element {
           ref={(element) => {
             pdfPreview = element;
           }}
-          aria-label={labels().previewAriaLabel}
+          aria-label={labels().preview.ariaLabel}
           class='pdf-preview'
           onWheel={zoomWithWheel}
         >
@@ -447,19 +453,19 @@ export function App(): JSX.Element {
               class='pdf-preview__error'
               role='status'
             >
-              {labels().previewRenderError}: {renderError()}
+              {labels().preview.renderError}: {renderError()}
             </p>
           </Show>
         </section>
 
         <section
-          aria-label={labels().groups}
+          aria-label={labels().groups.title}
           class='panel'
         >
           <div class='panel__heading'>
             <div>
-              <h2>{labels().groups}</h2>
-              <p>{labels().outputOrder}</p>
+              <h2>{labels().groups.title}</h2>
+              <p>{labels().groups.outputOrder}</p>
             </div>
             <button
               class='button'
@@ -469,7 +475,7 @@ export function App(): JSX.Element {
                 focusInput(rowId, 'pages');
               }}
             >
-              {labels().addGroup}
+              {labels().groups.add}
             </button>
           </div>
 
@@ -483,27 +489,35 @@ export function App(): JSX.Element {
                   labels={labels()}
                   outputPathTemplate={outputPathTemplate()}
                   focused={focusedRowId() === row.id}
-                  setInputRef={setInputRef}
-                  onFocus={(rowId) => {
-                    setFocusedRowId(rowId);
+                  handlers={{
+                    fields: {
+                      setInputRef,
+                      onFocus: (rowId) => {
+                        setFocusedRowId(rowId);
+                      },
+                      onPagesChange: updatePages,
+                      onOutputNameChange: updateOutputName,
+                      onKeyDown: handleRowKeyDown,
+                    },
+                    row: {
+                      onMove: moveRow,
+                      onRemove: removeRow,
+                    },
+                    drag: {
+                      onDragStart: (event, rowId) => {
+                        draggedRowId = rowId;
+                        if (event.dataTransfer) {
+                          event.dataTransfer.effectAllowed = 'move';
+                          event.dataTransfer.setData('text/plain', rowId.toString());
+                        }
+                      },
+                      onDragEnd: () => (draggedRowId = undefined),
+                      onDragOver: (event) => {
+                        event.preventDefault();
+                      },
+                      onDrop: dropRow,
+                    },
                   }}
-                  onPagesChange={updatePages}
-                  onOutputNameChange={updateOutputName}
-                  onKeyDown={handleRowKeyDown}
-                  onMove={moveRow}
-                  onRemove={removeRow}
-                  onDragStart={(event, rowId) => {
-                    draggedRowId = rowId;
-                    if (event.dataTransfer) {
-                      event.dataTransfer.effectAllowed = 'move';
-                      event.dataTransfer.setData('text/plain', rowId.toString());
-                    }
-                  }}
-                  onDragEnd={() => (draggedRowId = undefined)}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                  }}
-                  onDrop={dropRow}
                 />
               )}
             </For>
@@ -528,14 +542,14 @@ export function App(): JSX.Element {
               })()}
               onClick={apply}
             >
-              {labels().apply}
+              {labels().actions.apply}
             </button>
             <button
               class='button'
               type='button'
               onClick={cancel}
             >
-              {labels().cancel}
+              {labels().actions.cancel}
             </button>
           </div>
         </section>

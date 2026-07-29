@@ -35,6 +35,114 @@ const maxConditionalSpreadsPerObject = {
   },
 };
 
+const MAX_FLAT_TYPE_MEMBERS = 10;
+const IGNORED_GROUP_TOKENS = new Set([
+  'data',
+  'error',
+  'id',
+  'input',
+  'name',
+  'on',
+  'output',
+  'path',
+  'run',
+  'src',
+  'type',
+  'url',
+  'value',
+]);
+
+function splitIdentifierIntoTokens(name) {
+  return name
+    .replaceAll(/([a-z\d])([A-Z])/gu, '$1 $2')
+    .replaceAll(/([A-Z]+)([A-Z][a-z])/gu, '$1 $2')
+    .split(/[^A-Za-z\d]+/u)
+    .filter((token) => token.length > 0)
+    .map((token) => token.toLowerCase());
+}
+
+function normalizeGroupToken(token) {
+  return token.endsWith('s') && token.length > 3 ? token.slice(0, -1) : token;
+}
+
+function getTypeMemberName(member) {
+  if (!('key' in member) || member.computed) {
+    return undefined;
+  }
+
+  if (member.key.type === 'Identifier') {
+    return member.key.name;
+  }
+
+  return member.key.type === 'Literal' && typeof member.key.value === 'string' ? member.key.value : undefined;
+}
+
+function findCandidateGroups(members) {
+  const groups = new Map();
+
+  for (const member of members) {
+    const name = getTypeMemberName(member);
+    if (name === undefined) {
+      continue;
+    }
+
+    for (const rawToken of splitIdentifierIntoTokens(name)) {
+      const token = normalizeGroupToken(rawToken);
+      if (IGNORED_GROUP_TOKENS.has(token)) {
+        continue;
+      }
+
+      const group = groups.get(token) ?? new Set();
+      group.add(name);
+      groups.set(token, group);
+    }
+  }
+
+  return [...groups.entries()]
+    .filter(([, names]) => names.size >= 2)
+    .toSorted((left, right) => right[1].size - left[1].size)
+    .slice(0, 3)
+    .map(([token, names]) => `${token} (${names.size})`);
+}
+
+const maxFlatTypeMembers = {
+  meta: {
+    type: 'suggestion',
+    schema: [],
+  },
+
+  create(context) {
+    function reportIfTooFlat(node, members, name) {
+      if (members.length < MAX_FLAT_TYPE_MEMBERS) {
+        return;
+      }
+
+      const candidateGroups = findCandidateGroups(members);
+      const groupHint = candidateGroups.length > 0 ? ` Candidate groups: ${candidateGroups.join(', ')}.` : '';
+      context.report({
+        node,
+        message:
+          `Type ${name} has ${members.length} direct members. ` +
+          'Consider grouping related members into nested objects instead of extending this flat shape.' +
+          groupHint,
+      });
+    }
+
+    return {
+      TSInterfaceDeclaration(node) {
+        reportIfTooFlat(node, node.body.body, node.id.name);
+      },
+      TSTypeLiteral(node) {
+        const parentName =
+          node.parent?.type === 'TSTypeAliasDeclaration' && node.parent.id?.type === 'Identifier'
+            ? node.parent.id.name
+            : 'object type';
+        reportIfTooFlat(node, node.members, parentName);
+      },
+    };
+  },
+};
+
 const forbidRasterInputLimitBypass = {
   meta: {
     type: 'problem',
@@ -108,6 +216,9 @@ export default {
 
   rules: {
     'max-conditional-spreads-per-object': maxConditionalSpreadsPerObject,
+    'max-flat-type-members': maxFlatTypeMembers,
     'forbid-raster-input-limit-bypass': forbidRasterInputLimitBypass,
   },
 };
+
+export { findCandidateGroups, splitIdentifierIntoTokens };

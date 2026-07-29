@@ -90,13 +90,17 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
         job,
         index,
         margin: options.margin,
-        ghostscriptPath: options.ghostscriptPath,
         runId: currentRunId,
-        runGhostscript,
-        platform,
-        scratchBaseCandidates,
-        signal: batchRuntime.signal,
-        ...(batchRuntime.outputChannel !== undefined && { outputChannel: batchRuntime.outputChannel }),
+        tools: {
+          ghostscriptPath: options.ghostscriptPath,
+          runGhostscript,
+          platform,
+          scratchBaseCandidates,
+        },
+        runtime: {
+          signal: batchRuntime.signal,
+          ...(batchRuntime.outputChannel !== undefined && { outputChannel: batchRuntime.outputChannel }),
+        },
       }),
   });
 }
@@ -105,26 +109,21 @@ async function convertPdf(params: {
   job: CropPdfJob;
   index: number;
   margin: number;
-  ghostscriptPath: string;
   runId: string;
-  runGhostscript: RunGhostscript;
-  platform: NodeJS.Platform;
-  scratchBaseCandidates: readonly string[];
-  signal: AbortSignal | undefined;
-  outputChannel?: LineOutputChannel;
+  tools: {
+    ghostscriptPath: string;
+    runGhostscript: RunGhostscript;
+    platform: NodeJS.Platform;
+    scratchBaseCandidates: readonly string[];
+  };
+  runtime: {
+    signal: AbortSignal | undefined;
+    outputChannel?: LineOutputChannel;
+  };
 }): Promise<PreparedConversionOutput> {
-  const {
-    job,
-    index,
-    margin,
-    ghostscriptPath,
-    runId,
-    runGhostscript,
-    platform,
-    scratchBaseCandidates,
-    signal,
-    outputChannel,
-  } = params;
+  const { job, index, margin, runId, tools, runtime } = params;
+  const { ghostscriptPath, runGhostscript, platform, scratchBaseCandidates } = tools;
+  const { signal, outputChannel } = runtime;
   signal?.throwIfAborted();
   const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
   const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'crop-pdf', runId, itemName);

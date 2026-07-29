@@ -15,17 +15,23 @@ const vscodeVersion = '1.128.0';
 const temporaryBase = process.platform === 'win32' ? tmpdir() : '/tmp';
 
 export interface ElectronTestEnv {
-  electronApp: ElectronApplication;
-  window: Page;
-  workspacePath: string;
-  userDataDir: string;
-  sharedDataDir: string;
-  extensionsDir: string;
-  extensionPath: string;
-  temporaryRoot: string;
-  inputPath: string;
-  outputPath: string;
-  sourceFixtureBytes: Uint8Array;
+  app: {
+    electronApp: ElectronApplication;
+    window: Page;
+    extensionPath: string;
+  };
+  directories: {
+    workspacePath: string;
+    userDataDir: string;
+    sharedDataDir: string;
+    extensionsDir: string;
+    temporaryRoot: string;
+  };
+  files: {
+    inputPath: string;
+    outputPath: string;
+    sourceFixtureBytes: Uint8Array;
+  };
 }
 
 export interface PreparedElectronTest {
@@ -180,17 +186,9 @@ export async function setupElectronTest(
   await window.setViewportSize({ width: 1280, height: 900 });
 
   return {
-    electronApp,
-    window,
-    workspacePath,
-    userDataDir,
-    sharedDataDir,
-    extensionsDir,
-    extensionPath,
-    temporaryRoot,
-    inputPath,
-    outputPath,
-    sourceFixtureBytes,
+    app: { electronApp, window, extensionPath },
+    directories: { workspacePath, userDataDir, sharedDataDir, extensionsDir, temporaryRoot },
+    files: { inputPath, outputPath, sourceFixtureBytes },
   };
 }
 

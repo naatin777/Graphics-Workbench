@@ -47,13 +47,15 @@ suite('Draw.ioへの集約変換', () => {
       const calls: number[] = [];
       await convertToDrawioFiles({
         jobs: [{ inputs: [{ sourcePath: imagePath }, { sourcePath: pdfPath }], outputPath, workspacePath }],
-        drawioPath: 'drawio',
-        ghostscriptPath: 'gs',
-        runId: 'test',
-        runPdfToSvg: async (_source, output, page) => {
-          calls.push(page);
-          await writeFile(output, '<svg width="100" height="50"/>');
+        tools: {
+          drawioPath: 'drawio',
+          ghostscriptPath: 'gs',
+          runPdfToSvg: async (_source, output, page) => {
+            calls.push(page);
+            await writeFile(output, '<svg width="100" height="50"/>');
+          },
         },
+        runId: 'test',
         runtime: { resolveConflicts: async () => 'overwrite' },
       });
       const xml = await readFile(outputPath, 'utf8');
@@ -93,8 +95,7 @@ suite('Draw.ioへの集約変換', () => {
             workspacePath,
           },
         ],
-        drawioPath: 'drawio',
-        ghostscriptPath: 'gs',
+        tools: { drawioPath: 'drawio', ghostscriptPath: 'gs' },
         runId: 'raster-frames',
         runtime: { resolveConflicts: async () => 'overwrite' },
       });
@@ -122,21 +123,23 @@ suite('Draw.ioへの集約変換', () => {
         let call: { executable: string; args: string[] } | undefined;
         await convertToDrawioFiles({
           jobs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath }],
-          drawioPath: '/custom/drawio',
-          ghostscriptPath: 'gs',
-          runId: extension.slice(1),
-          runDrawio: async (executable, args) => {
-            call = { executable, args };
-            const generatedOutputPath = requireValue(args[args.indexOf('--output') + 1]);
-            if (generatedOutputPath.endsWith('.png')) {
-              const png = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
-                .png()
-                .toBuffer();
-              await writeFile(generatedOutputPath, Buffer.concat([png, Buffer.from('mxfile')]));
-            } else {
-              await writeFile(generatedOutputPath, '<svg width="20" height="10"><metadata>mxfile</metadata></svg>');
-            }
+          tools: {
+            drawioPath: '/custom/drawio',
+            ghostscriptPath: 'gs',
+            runDrawio: async (executable, args) => {
+              call = { executable, args };
+              const generatedOutputPath = requireValue(args[args.indexOf('--output') + 1]);
+              if (generatedOutputPath.endsWith('.png')) {
+                const png = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
+                  .png()
+                  .toBuffer();
+                await writeFile(generatedOutputPath, Buffer.concat([png, Buffer.from('mxfile')]));
+              } else {
+                await writeFile(generatedOutputPath, '<svg width="20" height="10"><metadata>mxfile</metadata></svg>');
+              }
+            },
           },
+          runId: extension.slice(1),
           runtime: { resolveConflicts: async () => 'overwrite' },
         });
 
@@ -175,12 +178,14 @@ suite('Draw.ioへの集約変換', () => {
       await assert.rejects(
         convertToDrawioFiles({
           jobs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath }],
-          drawioPath: 'drawio',
-          ghostscriptPath: 'gs',
-          runId: 'failure',
-          runDrawio: async () => {
-            throw new Error('Draw.io export failed');
+          tools: {
+            drawioPath: 'drawio',
+            ghostscriptPath: 'gs',
+            runDrawio: async () => {
+              throw new Error('Draw.io export failed');
+            },
           },
+          runId: 'failure',
           runtime: { resolveConflicts: async () => 'overwrite' },
         }),
         /Draw\.io export failed/,

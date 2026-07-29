@@ -25,14 +25,16 @@ export interface EpsToPdfResult {
 export interface EpsToPdfOptions {
   epsPath: string;
   workspacePath: string;
-  ghostscriptPath: string;
   stagingDirectory: string;
+  tools: {
+    ghostscriptPath: string;
+    runGhostscript?: RunGhostscript;
+  };
   signal?: AbortSignal;
   outputChannel?: LineOutputChannel;
   platform?: NodeJS.Platform;
   scratchBaseCandidates?: readonly string[];
   timeout?: number;
-  runGhostscript?: RunGhostscript;
 }
 
 type RunGhostscript = (executable: string, args: string[], timeout: number, signal?: AbortSignal) => Promise<void>;
@@ -46,7 +48,7 @@ export async function convertEpsToPdf(options: EpsToPdfOptions): Promise<EpsToPd
 
   const platform = options.platform ?? process.platform;
   const pixbuf = options.timeout ?? 30_000;
-  const runGhostscript = options.runGhostscript ?? executeGhostscript;
+  const runGhostscript = options.tools.runGhostscript ?? executeGhostscript;
 
   await mkdir(options.stagingDirectory, { recursive: true });
 
@@ -85,7 +87,7 @@ export async function convertEpsToPdf(options: EpsToPdfOptions): Promise<EpsToPd
       options.signal?.throwIfAborted();
 
       await runGhostscript(
-        options.ghostscriptPath,
+        options.tools.ghostscriptPath,
         [
           '-dSAFER',
           '-dNOPAUSE',
@@ -121,7 +123,7 @@ export async function convertEpsToPdf(options: EpsToPdfOptions): Promise<EpsToPd
   }
 
   await runGhostscript(
-    options.ghostscriptPath,
+    options.tools.ghostscriptPath,
     [
       '-dSAFER',
       '-dNOPAUSE',

@@ -206,8 +206,8 @@ async function writeEpsAsSvg(
   const epsOptions: Parameters<typeof convertEpsToPdf>[0] = {
     epsPath: sourcePath,
     workspacePath,
-    ghostscriptPath: ghostscriptTools.ghostscriptPath,
     stagingDirectory: epsStaging,
+    tools: { ghostscriptPath: ghostscriptTools.ghostscriptPath },
   };
   if (signal !== undefined) {
     epsOptions.signal = signal;

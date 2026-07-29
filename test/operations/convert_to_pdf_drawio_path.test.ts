@@ -88,7 +88,7 @@ suite('Draw.ioの複雑なpath変換', () => {
             workspacePath,
           },
         ],
-        drawioTools: drawio,
+        tools: { drawioTools: drawio },
         runtime: { resolveConflicts: async () => 'overwrite' },
         runId: 'drawio-complex-path',
       });

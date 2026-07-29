@@ -11,30 +11,32 @@ export function SourceCard(props: {
   labels: MergePdfLabels;
   options: PdfOptions;
   dropTargetId: string;
-  onMove: (sourceId: string, offset: number) => void;
-  onDragStart: (event: DragEvent, sourceId: string) => void;
-  onDragOver: (event: DragEvent, sourceId: string) => void;
-  onDrop: (event: DragEvent, sourceId: string) => void;
-  onDragEnd: () => void;
-  onRemove: (sourceId: string) => void;
-  onPreviewError: () => void;
+  handlers: {
+    onMove: (sourceId: string, offset: number) => void;
+    onDragStart: (event: DragEvent, sourceId: string) => void;
+    onDragOver: (event: DragEvent, sourceId: string) => void;
+    onDrop: (event: DragEvent, sourceId: string) => void;
+    onDragEnd: () => void;
+    onRemove: (sourceId: string) => void;
+    onPreviewError: () => void;
+  };
 }): JSX.Element {
   return (
     <article
       class='source-card'
       classList={{ 'source-card--drop-target': props.dropTargetId === props.source.sourceId }}
       onDragOver={(event) => {
-        props.onDragOver(event, props.source.sourceId);
+        props.handlers.onDragOver(event, props.source.sourceId);
       }}
       onDrop={(event) => {
-        props.onDrop(event, props.source.sourceId);
+        props.handlers.onDrop(event, props.source.sourceId);
       }}
     >
       <PreviewThumbnail
         source={props.source}
         options={props.options}
         labels={props.labels}
-        onError={props.onPreviewError}
+        onError={props.handlers.onPreviewError}
       />
       <div class='source-card__content'>
         <div class='source-card__header'>
@@ -47,11 +49,11 @@ export function SourceCard(props: {
             class='button button--handle'
             type='button'
             draggable={true}
-            aria-label={props.labels.dragHandle}
+            aria-label={props.labels.controls.dragHandle}
             onDragStart={(event) => {
-              props.onDragStart(event, props.source.sourceId);
+              props.handlers.onDragStart(event, props.source.sourceId);
             }}
-            onDragEnd={props.onDragEnd}
+            onDragEnd={props.handlers.onDragEnd}
           >
             ::
           </button>
@@ -59,33 +61,33 @@ export function SourceCard(props: {
             class='button'
             type='button'
             disabled={props.index() === 0}
-            aria-label={props.labels.moveUp}
+            aria-label={props.labels.controls.moveUp}
             onClick={() => {
-              props.onMove(props.source.sourceId, -1);
+              props.handlers.onMove(props.source.sourceId, -1);
             }}
           >
-            {props.labels.moveUp}
+            {props.labels.controls.moveUp}
           </button>
           <button
             class='button'
             type='button'
             disabled={props.index() === props.sourceCount - 1}
-            aria-label={props.labels.moveDown}
+            aria-label={props.labels.controls.moveDown}
             onClick={() => {
-              props.onMove(props.source.sourceId, 1);
+              props.handlers.onMove(props.source.sourceId, 1);
             }}
           >
-            {props.labels.moveDown}
+            {props.labels.controls.moveDown}
           </button>
           <button
             class='button button--danger'
             type='button'
-            aria-label={`${props.labels.removeSource}: ${props.source.fileName}`}
+            aria-label={`${props.labels.controls.removeSource}: ${props.source.fileName}`}
             onClick={() => {
-              props.onRemove(props.source.sourceId);
+              props.handlers.onRemove(props.source.sourceId);
             }}
           >
-            {props.labels.removeSource}
+            {props.labels.controls.removeSource}
           </button>
         </div>
       </div>
