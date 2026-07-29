@@ -29,7 +29,7 @@ function createVsCodeApi(): VsCodeApi {
       void message;
     },
     getState() {
-      return;
+      // No persisted state is available outside VS Code.
     },
     setState() {
       // noop
