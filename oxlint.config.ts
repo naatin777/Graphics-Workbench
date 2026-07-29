@@ -178,6 +178,9 @@ export default defineConfig({
     eqeqeq: 'error',
     'no-console': 'error',
     'no-await-in-loop': 'off',
+    'eslint/no-constant-condition': 'error',
+    'eslint/no-duplicate-case': 'error',
+    'eslint/no-unsafe-optional-chaining': 'error',
     complexity: ['error', { max: 20 }],
     'max-depth': ['error', { max: 4 }],
     'max-params': ['error', { max: 5 }],
@@ -199,6 +202,8 @@ export default defineConfig({
     'typescript/no-explicit-any': 'error',
     'typescript/no-empty-object-type': 'error',
     'typescript/no-redundant-type-constituents': 'error',
+    'typescript/no-duplicate-enum-values': 'error',
+    'typescript/no-unsafe-function-type': 'error',
     'typescript/no-require-imports': 'error',
     'typescript/explicit-function-return-type': 'error',
     'typescript/no-unnecessary-type-assertion': 'error',
@@ -278,6 +283,7 @@ export default defineConfig({
      */
     'promise/always-return': 'off',
     'promise/catch-or-return': 'off',
+    'promise/no-return-wrap': 'error',
     'promise/prefer-await-to-then': 'error',
 
     /*
