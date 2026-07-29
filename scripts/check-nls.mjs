@@ -56,6 +56,34 @@ function placeholders(value) {
  * @param {string} sourcePath
  * @param {string} source
  * @param {NlsMessages} english
+ * @param {CallArguments | undefined} call
+ * @param {number} callStart
+ * @returns {string[]}
+ */
+function validateUserMessageCall(sourcePath, source, english, call, callStart) {
+  if (call?.key === undefined) {
+    return [];
+  }
+
+  const line = source.slice(0, callStart).split('\n').length;
+  if (call.key in english) {
+    const requiredArguments = placeholders(english[call.key]).reduce(
+      (max, index) => Math.max(max, Number(index) + 1),
+      0,
+    );
+    if (call.argumentCount - 1 >= requiredArguments) {
+      return [];
+    }
+    return [`userMessage call has too few arguments for ${call.key}: ${sourcePath}:${line}`];
+  }
+
+  return [`userMessage call references missing NLS key ${call.key}: ${sourcePath}:${line}`];
+}
+
+/**
+ * @param {string} sourcePath
+ * @param {string} source
+ * @param {NlsMessages} english
  * @returns {string[]}
  */
 export function validateUserMessageSource(sourcePath, source, english) {
@@ -77,19 +105,7 @@ export function validateUserMessageSource(sourcePath, source, english) {
       const callStart = scanner.getTokenStart();
       if (scanner.scan() === SyntaxKind.OpenParenToken) {
         const call = scanCallArguments(scanner);
-        if (call?.key !== undefined && call.key in english) {
-          const requiredArguments = placeholders(english[call.key]).reduce(
-            (max, index) => Math.max(max, Number(index) + 1),
-            0,
-          );
-          if (call.argumentCount - 1 < requiredArguments) {
-            const line = source.slice(0, callStart).split('\n').length;
-            errors.push(`userMessage call has too few arguments for ${call.key}: ${sourcePath}:${line}`);
-          }
-        } else if (call?.key !== undefined) {
-          const line = source.slice(0, callStart).split('\n').length;
-          errors.push(`userMessage call references missing NLS key ${call.key}: ${sourcePath}:${line}`);
-        }
+        errors.push(...validateUserMessageCall(sourcePath, source, english, call, callStart));
       }
     }
     token = scanner.scan();

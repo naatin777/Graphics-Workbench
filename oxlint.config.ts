@@ -179,6 +179,7 @@ export default defineConfig({
     'no-console': 'error',
     'no-await-in-loop': 'off',
     complexity: ['error', { max: 20 }],
+    'max-depth': ['error', { max: 4 }],
     'unicorn/no-negated-condition': 'error',
 
     /*
