@@ -91,7 +91,7 @@ describe('Crop PDF Webview', () => {
     }
 
     dispose = render(() => <App />, root);
-    window.dispatchEvent(new MessageEvent('message', { data: initMessage }));
+    globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
   });
 
   afterEach(() => {

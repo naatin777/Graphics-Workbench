@@ -218,24 +218,32 @@ function outputTemplateForExtension(
   };
 
   switch (extension) {
-    case '.png':
+    case '.png': {
       return readPairTemplate('convertPngToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+    }
     case '.jpg':
-    case '.jpeg':
+    case '.jpeg': {
       return readPairTemplate('convertJpegToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
-    case '.webp':
+    }
+    case '.webp': {
       return readPairTemplate('convertWebpToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
-    case '.avif':
+    }
+    case '.avif': {
       return readPairTemplate('convertAvifToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+    }
     case '.tif':
-    case '.tiff':
+    case '.tiff': {
       return readPairTemplate('convertTiffToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
-    case '.svg':
+    }
+    case '.svg': {
       return readPairTemplate('convertSvgToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
+    }
     case '.mmd':
-    case '.mermaid':
+    case '.mermaid': {
       return readPairTemplate('convertMermaidToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
-    default:
+    }
+    default: {
       return splitDefault ?? DEFAULT_OUTPUT_PATH;
+    }
   }
 }
