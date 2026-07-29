@@ -224,7 +224,7 @@ async function validateGeneratedEps(epsPath: string): Promise<void> {
   if (values.length !== 4 || left === undefined || bottom === undefined || right === undefined || top === undefined) {
     throw new Error(`EPS conversion produced an invalid BoundingBox: ${epsPath}`);
   }
-  if (!values.every(Number.isFinite) || left >= right || bottom >= top) {
+  if (!values.every((value) => Number.isFinite(value)) || left >= right || bottom >= top) {
     throw new Error(`EPS conversion produced an invalid BoundingBox: ${epsPath}`);
   }
 }

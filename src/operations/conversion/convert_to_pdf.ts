@@ -652,7 +652,7 @@ export async function validateGeneratedPdf(outputPath: string): Promise<void> {
       ['TrimBox', page.getTrimBox()],
     ] as const) {
       const values = [box.x, box.y, box.width, box.height];
-      if (!values.every(Number.isFinite) || box.width <= 0 || box.height <= 0) {
+      if (!values.every((value) => Number.isFinite(value)) || box.width <= 0 || box.height <= 0) {
         throw new Error(`PDF conversion produced invalid ${boxName} dimensions: ${outputPath}`);
       }
     }
