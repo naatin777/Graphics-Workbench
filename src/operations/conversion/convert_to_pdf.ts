@@ -601,7 +601,9 @@ async function writeSvgAsPdfWithPuppeteer(
       preferCSSPageSize: false,
     });
   } finally {
-    await browser?.close().catch(() => {});
+    await browser?.close().catch(() => {
+      // Browser cleanup is best effort after PDF generation.
+    });
   }
 }
 
