@@ -169,23 +169,31 @@ function outputTemplateForSource(sourcePath: string, configuration: vscode.Works
     return readOutputPathsTemplate(configuration, 'convertDrawioToTiff', DEFAULT_DRAWIO_OUTPUT_PATH);
   }
   switch (path.extname(sourcePath).toLowerCase()) {
-    case '.png':
+    case '.png': {
       return readOutputPathOrPathsTemplate(configuration, 'convertPngToTiff', DEFAULT_OUTPUT_PATH);
+    }
     case '.jpg':
-    case '.jpeg':
+    case '.jpeg': {
       return readOutputPathOrPathsTemplate(configuration, 'convertJpegToTiff', DEFAULT_OUTPUT_PATH);
-    case '.webp':
+    }
+    case '.webp': {
       return readOutputPathOrPathsTemplate(configuration, 'convertWebpToTiff', DEFAULT_OUTPUT_PATH);
-    case '.avif':
+    }
+    case '.avif': {
       return readOutputPathOrPathsTemplate(configuration, 'convertAvifToTiff', DEFAULT_OUTPUT_PATH);
-    case '.gif':
+    }
+    case '.gif': {
       return readOutputPathOrPathsTemplate(configuration, 'convertGifToTiff', DEFAULT_OUTPUT_PATH);
-    case '.svg':
+    }
+    case '.svg': {
       return readOutputPathOrPathsTemplate(configuration, 'convertSvgToTiff', DEFAULT_OUTPUT_PATH);
+    }
     case '.mmd':
-    case '.mermaid':
+    case '.mermaid': {
       return readOutputPathOrPathsTemplate(configuration, 'convertMermaidToTiff', DEFAULT_OUTPUT_PATH);
-    default:
+    }
+    default: {
       return DEFAULT_OUTPUT_PATH;
+    }
   }
 }

@@ -42,33 +42,45 @@ function drawioFormatForPath(sourcePath: string): SourceFormat | undefined {
 
 function sourceFormatForExtension(extension: string): SourceFormat | undefined {
   switch (extension) {
-    case '.pdf':
+    case '.pdf': {
       return 'pdf';
-    case '.png':
+    }
+    case '.png': {
       return 'png';
+    }
     case '.jpg':
-    case '.jpeg':
+    case '.jpeg': {
       return 'jpeg';
-    case '.webp':
+    }
+    case '.webp': {
       return 'webp';
-    case '.avif':
+    }
+    case '.avif': {
       return 'avif';
-    case '.gif':
+    }
+    case '.gif': {
       return 'gif';
+    }
     case '.tif':
-    case '.tiff':
+    case '.tiff': {
       return 'tiff';
-    case '.eps':
+    }
+    case '.eps': {
       return 'eps';
-    case '.raw':
+    }
+    case '.raw': {
       return 'raw';
-    case '.svg':
+    }
+    case '.svg': {
       return 'svg';
+    }
     case '.mmd':
-    case '.mermaid':
+    case '.mermaid': {
       return 'mermaid';
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 

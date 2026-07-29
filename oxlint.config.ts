@@ -196,6 +196,8 @@ export default defineConfig({
     'import/newline-after-import': 'error',
     'no-warning-comments': 'error',
     'unicorn/no-negated-condition': 'error',
+    'unicorn/prefer-ternary': 'error',
+    'unicorn/switch-case-braces': 'error',
 
     /*
      * TypeScript
@@ -235,6 +237,8 @@ export default defineConfig({
     'unicorn/prefer-set-has': 'error',
     'typescript/prefer-find': 'error',
     'typescript/prefer-includes': 'error',
+    'unicorn/prefer-dom-node-text-content': 'error',
+    'unicorn/prefer-global-this': 'error',
 
     /*
      * Error handling
@@ -420,6 +424,7 @@ export default defineConfig({
         'unicorn/no-negated-condition': 'off',
         'unicorn/no-object-as-default-parameter': 'off',
         'unicorn/no-array-for-each': 'off',
+        'unicorn/prefer-dom-node-text-content': 'off',
         'unicorn/consistent-function-scoping': 'off',
       },
     },
