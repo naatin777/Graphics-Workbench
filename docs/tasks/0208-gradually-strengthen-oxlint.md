@@ -221,6 +221,18 @@ callbackの引数契約と不要な戻り値を明確にする。
 
 既存違反はproductionの`no-useless-return`が3件、productionの`no-array-callback-reference`が3件、テストのcallback referenceが1件だった。productionの6件を修正し、テストの1件はoverrideで対象外とする。
 
+## Phase 36
+
+importと型宣言の重複・曖昧さを別方向から制限する。
+
+- `eslint/no-duplicate-imports`で同じモジュールから分割されたimportを禁止する
+- `eslint/prefer-const`で再代入されない変数のmutable宣言を禁止する
+- `import/newline-after-import`でimport群と実装の境界を空行で明確にする
+- `typescript/array-type`で配列型の表記を`T[]`へ統一する
+- `typescript/unified-signatures`で統合できるoverloadの重複を禁止する
+
+既存違反は重複import 5件、`prefer-const` 1件、import後の空行不足2件、配列型4件、統合可能なoverload 1件だった。型importを同一importへ統合し、配列型・変数宣言・空行を機械的に修正した。テストhelperのoverloadはunionを受ける1つのgeneric signatureへまとめ、戻り値型の指定を維持する。挙動変更はない。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -275,6 +287,7 @@ callbackの引数契約と不要な戻り値を明確にする。
 - Phase 33の危険な式、重複構成、汎用Function型、不要なPromise wrapperの制限を通常lintでerrorとして強制できる
 - Phase 34のAPI利用、構造の重複、collection検索、Promise/Node callback契約の制限を通常lintでerrorとして強制できる
 - Phase 35の不要な戻り値とiterator callback参照の制限を通常lintでerrorとして強制できる
+- Phase 36のimportと型宣言の重複・表記の制限を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

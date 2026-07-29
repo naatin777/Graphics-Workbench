@@ -1,5 +1,4 @@
-import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
-import type { JSX } from 'solid-js';
+import { For, Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 
@@ -14,6 +13,7 @@ import { applyPreviewZoom, capturePreviewZoomAnchor, restorePreviewZoomAnchor } 
 import { PreviewToolbar } from './preview_toolbar';
 import type { InputKind, PreviewMode, Row } from './types';
 import { vscode } from './vscode';
+
 type RowRefs = Partial<Record<InputKind, HTMLInputElement>>;
 type InitPayload = Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'];
 

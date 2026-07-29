@@ -642,9 +642,8 @@ suite('package.jsonの変換メニュー定義', () => {
   });
 });
 
-async function readJson<T extends PackageJson>(relativePath: 'package.json'): Promise<T>;
-async function readJson<T extends Record<string, string>>(
-  relativePath: 'package.nls.json' | 'package.nls.ja.json',
+async function readJson<T extends PackageJson | Record<string, string>>(
+  relativePath: 'package.json' | 'package.nls.json' | 'package.nls.ja.json',
 ): Promise<T>;
 async function readJson(relativePath: string): Promise<PackageJson | Record<string, string>> {
   const content = await readFile(path.join(repositoryRoot, relativePath), 'utf8');

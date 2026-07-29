@@ -108,8 +108,8 @@ export async function undoConversionOutputs(
 
 async function createRollbackCopies(
   record: ConversionUndoRecord,
-): Promise<Array<{ output: ConversionUndoOutput; rollbackPath: string; rollbackRootPath: string }>> {
-  const rollbackCopies: Array<{ output: ConversionUndoOutput; rollbackPath: string; rollbackRootPath: string }> = [];
+): Promise<{ output: ConversionUndoOutput; rollbackPath: string; rollbackRootPath: string }[]> {
+  const rollbackCopies: { output: ConversionUndoOutput; rollbackPath: string; rollbackRootPath: string }[] = [];
 
   try {
     const rollbackId = crypto.randomUUID();

@@ -1,5 +1,4 @@
-import { createSignal, onCleanup, onMount } from 'solid-js';
-import type { JSX } from 'solid-js';
+import { createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '../../../shared/pdf/render_pdf_pages';
 
