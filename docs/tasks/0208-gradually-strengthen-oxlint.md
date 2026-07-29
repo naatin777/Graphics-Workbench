@@ -212,6 +212,15 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 
 `typescript/no-empty-function`は本番コードに2件、テストdoubleに9件あった。本番のbest-effort cleanup callbackには意図を示すコメントを追加し、テストdoubleは既存のテストoverrideで対象外とする。その他の9ルールは既存違反0件で、挙動変更なしで通常lintへ追加する。
 
+## Phase 35
+
+callbackの引数契約と不要な戻り値を明確にする。
+
+- `eslint/no-useless-return`で意味のない`return;`を禁止する。WebviewのVS Code API fallbackは「状態なし」をコメント付きの空callbackで表現する
+- `unicorn/no-array-callback-reference`で配列iteratorへ関数参照を直接渡すことを禁止し、callbackへ渡す引数を明示する。productionの`Number.isFinite`参照をarrow callbackへ置き換え、テストdoubleは対象外とする
+
+既存違反はproductionの`no-useless-return`が3件、productionの`no-array-callback-reference`が3件、テストのcallback referenceが1件だった。productionの6件を修正し、テストの1件はoverrideで対象外とする。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -249,6 +258,7 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 - `eslint/no-promise-executor-return` はproduction code、Webview本体、Node.js/GitHub Actionsスクリプトに既存違反がなく、テストコードに8件あった。Phase 32ではproduction系をerrorにし、テスト用Promise executorはoverrideで対象外とする。`unicorn/no-useless-promise-resolve-reject` はWebviewのPDFページ描画に1件あり、直接throwへ置き換えてerror化する
 - `eslint/no-constant-condition`、`eslint/no-duplicate-case`、`eslint/no-unsafe-optional-chaining`、`typescript/no-duplicate-enum-values`、`typescript/no-unsafe-function-type`、`promise/no-return-wrap` は既存違反0件だったため、Phase 33で将来の危険な式・重複構成・汎用型・不要なPromise wrapperをerrorとして監視する
 - `eslint/no-prototype-builtins`、`typescript/no-extraneous-class`、`typescript/no-unnecessary-parameter-property-assignment`、`typescript/no-useless-constructor`、`typescript/prefer-find`、`typescript/prefer-includes`、`unicorn/no-useless-switch-case`、`unicorn/prefer-set-has`、`promise/no-new-statics` は既存違反0件だった。`typescript/no-empty-function`は本番2件とテスト9件を検出し、本番は意図コメント、テストはoverrideで解消した。Phase 34でAPI利用・構造・collection検索・Promise契約の違反をerrorとして監視する
+- `eslint/no-useless-return`はWebview fallbackに3件、`unicorn/no-array-callback-reference`はproductionに3件とテストに1件あった。Phase 35でproductionの6件を修正し、テストのcallback referenceはoverrideで対象外にしてerror化する。`eslint/no-use-before-define`はproduction・testに多数あるため、関数配置の設計判断を含む別phaseへ保留する
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
@@ -264,6 +274,7 @@ Promise executorから値を返すことを禁止する`eslint/no-promise-execut
 - Phase 32のPromise executorと不要なPromise rejection wrapperの制限を通常lintでerrorとして強制できる
 - Phase 33の危険な式、重複構成、汎用Function型、不要なPromise wrapperの制限を通常lintでerrorとして強制できる
 - Phase 34のAPI利用、構造の重複、collection検索、Promise/Node callback契約の制限を通常lintでerrorとして強制できる
+- Phase 35の不要な戻り値とiterator callback参照の制限を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

@@ -188,7 +188,7 @@ async function validateGeneratedPdf(pdfPath: string): Promise<void> {
   for (const [boxName, box] of pageBoxes) {
     const values = [box.x, box.y, box.width, box.height];
 
-    if (!values.every(Number.isFinite) || box.width <= 0 || box.height <= 0) {
+    if (!values.every((value) => Number.isFinite(value)) || box.width <= 0 || box.height <= 0) {
       throw new Error(`EPS conversion produced invalid ${boxName} dimensions: ${pdfPath}`);
     }
   }
