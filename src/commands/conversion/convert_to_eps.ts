@@ -56,9 +56,11 @@ export async function convertToEpsCommand(
         convertToEpsFiles({
           jobs,
           runtime,
-          ghostscriptPath: readGhostscriptExecutablePath(configuration),
-          svgToPdfTools,
-          mermaidTools: readMermaidPuppeteerOptions(configuration),
+          tools: {
+            ghostscriptPath: readGhostscriptExecutablePath(configuration),
+            svgToPdfTools,
+            mermaidTools: readMermaidPuppeteerOptions(configuration),
+          },
           maxInputPixels: getMaxInputPixels(configuration),
           platform: process.platform,
         }),

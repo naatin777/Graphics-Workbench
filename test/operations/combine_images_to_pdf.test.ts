@@ -207,7 +207,7 @@ suite('画像→1PDF結合', () => {
         jobs: [{ sourcePath }],
         outputPath,
         workspacePath,
-        svgToPdfTools,
+        tools: { svgToPdfTools },
         platform: 'linux',
       });
 
@@ -232,8 +232,10 @@ suite('画像→1PDF結合', () => {
           jobs: [{ sourcePath: fixture.sourcePath }],
           outputPath,
           workspacePath,
-          ghostscriptPath: GHOSTSCRIPT_PATH,
-          svgToPdfTools: createStubSvgToPdfOptions(),
+          tools: {
+            ghostscriptPath: GHOSTSCRIPT_PATH,
+            svgToPdfTools: createStubSvgToPdfOptions(),
+          },
           platform: process.platform,
         });
 
@@ -255,8 +257,10 @@ suite('画像→1PDF結合', () => {
         jobs: fixtures.map((fixture) => ({ sourcePath: fixture.sourcePath })),
         outputPath,
         workspacePath,
-        ghostscriptPath: GHOSTSCRIPT_PATH,
-        svgToPdfTools: createStubSvgToPdfOptions(),
+        tools: {
+          ghostscriptPath: GHOSTSCRIPT_PATH,
+          svgToPdfTools: createStubSvgToPdfOptions(),
+        },
         platform: process.platform,
       });
 

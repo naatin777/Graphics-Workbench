@@ -63,7 +63,7 @@ interface RsvgToPdfOptions extends SvgToPdfBackend {
 type ConvertToPdfFilesWithScratch = (
   options: ConvertToPdfFilesOptions &
     WindowsScratchOptions & {
-      svgToPdfTools: RsvgToPdfOptions;
+      tools: { svgToPdfTools: RsvgToPdfOptions };
     },
 ) => ReturnType<typeof convertToPdfFiles>;
 
@@ -91,12 +91,14 @@ suite('Windows rsvg-convert ASCIIスクラッチ', () => {
       await convertToPdfFilesWithScratch({
         jobs: [createJob(paths)],
         supportedExtensions: ['.svg'],
-        svgToPdfTools: createSvgToPdfOptions(async (executable, args) => {
-          toolInputPath = assertRsvgToolPaths(executable, args, paths);
-          toolOutputPath = outputPathFromArgs(args);
-          assert.deepStrictEqual(await readFile(toolInputPath), sourceBytes);
-          await writeFile(toolOutputPath, pdfBytes);
-        }),
+        tools: {
+          svgToPdfTools: createSvgToPdfOptions(async (executable, args) => {
+            toolInputPath = assertRsvgToolPaths(executable, args, paths);
+            toolOutputPath = outputPathFromArgs(args);
+            assert.deepStrictEqual(await readFile(toolInputPath), sourceBytes);
+            await writeFile(toolOutputPath, pdfBytes);
+          }),
+        },
         platform: 'win32',
         scratchBaseCandidates: [paths.scratchBasePath],
         runId: 'windows-rsvg-pdf',
@@ -122,11 +124,13 @@ suite('Windows rsvg-convert ASCIIスクラッチ', () => {
         convertToPdfFilesWithScratch({
           jobs: [createJob(paths)],
           supportedExtensions: ['.svg'],
-          svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
-            const outputPath = outputPathFromArgs(args);
-            unexpectedOutputPath = path.join(path.dirname(outputPath), 'output-garbled.pdf');
-            await copyFile(pdfFixturePath, unexpectedOutputPath);
-          }),
+          tools: {
+            svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
+              const outputPath = outputPathFromArgs(args);
+              unexpectedOutputPath = path.join(path.dirname(outputPath), 'output-garbled.pdf');
+              await copyFile(pdfFixturePath, unexpectedOutputPath);
+            }),
+          },
           platform: 'win32',
           scratchBaseCandidates: [paths.scratchBasePath],
           runId: 'windows-rsvg-alias',
@@ -151,10 +155,12 @@ suite('Windows rsvg-convert ASCIIスクラッチ', () => {
         convertToPdfFilesWithScratch({
           jobs: [createJob(paths)],
           supportedExtensions: ['.svg'],
-          svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
-            toolOutputPath = outputPathFromArgs(args);
-            await writeFile(toolOutputPath, Buffer.alloc(0));
-          }),
+          tools: {
+            svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
+              toolOutputPath = outputPathFromArgs(args);
+              await writeFile(toolOutputPath, Buffer.alloc(0));
+            }),
+          },
           platform: 'win32',
           scratchBaseCandidates: [paths.scratchBasePath],
           runId: 'windows-rsvg-empty',

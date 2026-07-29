@@ -46,17 +46,19 @@ type RunDrawio = (
 
 export interface ConvertToDrawioOptions {
   jobs: ConvertToDrawioJob[];
-  pdftocairoPath?: string;
-  ghostscriptPath: string;
-  mermaidTools?: MermaidBackend;
+  tools: {
+    pdftocairoPath?: string;
+    ghostscriptPath: string;
+    mermaidTools?: MermaidBackend;
+    drawioPath: string;
+    runPdfToSvg?: RunPdfToSvg;
+    runGhostscript?: RunGhostscript;
+    runMermaid?: RunMermaid;
+    runDrawio?: RunDrawio;
+  };
   runtime?: ConversionExecutionContext;
   runId?: string;
   maxInputPixels?: number;
-  runPdfToSvg?: RunPdfToSvg;
-  runGhostscript?: RunGhostscript;
-  runMermaid?: RunMermaid;
-  drawioPath: string;
-  runDrawio?: RunDrawio;
 }
 
 export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Promise<CommittedConversionOutput[]> {
@@ -117,16 +119,16 @@ async function stageDrawio(
       for (let page = 1; page <= pdf.getPageCount(); page += 1) {
         const svgPath = path.join(stageDirectory, `${inputIndex}-${page}.svg`);
         await (
-          options.runPdfToSvg ??
+          options.tools.runPdfToSvg ??
           (async (source, output, currentPage, signal): Promise<void> =>
-            executePdfToSvg(options.pdftocairoPath ?? 'pdftocairo', source, output, currentPage, signal))
+            executePdfToSvg(options.tools.pdftocairoPath ?? 'pdftocairo', source, output, currentPage, signal))
         )(input.sourcePath, svgPath, page, runtime.signal);
         pages.push(await svgPage(svgPath, input, page));
       }
     } else if (extension === '.eps') {
       const pngPath = path.join(stageDirectory, `${inputIndex}.png`);
-      await (options.runGhostscript ?? executeGhostscript)(
-        options.ghostscriptPath,
+      await (options.tools.runGhostscript ?? executeGhostscript)(
+        options.tools.ghostscriptPath,
         [
           '-dSAFER',
           '-dNOPAUSE',
@@ -145,8 +147,9 @@ async function stageDrawio(
     } else if (isMermaidPath(input.sourcePath)) {
       const svgPath = path.join(stageDirectory, `${inputIndex}.svg`);
       await (
-        options.runMermaid ??
-        (async (source, output, signal): Promise<void> => executeMermaid(source, output, signal, options.mermaidTools))
+        options.tools.runMermaid ??
+        (async (source, output, signal): Promise<void> =>
+          executeMermaid(source, output, signal, options.tools.mermaidTools))
       )(input.sourcePath, svgPath, runtime.signal);
       pages.push(await svgPage(svgPath, input));
     } else {
@@ -168,8 +171,8 @@ async function stageDrawio(
       outputPath: stagedOutputPath,
       workspacePath: job.workspacePath,
       format: drawioExtension(job.outputPath).slice(1),
-      drawioPath: options.drawioPath,
-      ...(options.runDrawio !== undefined && { runDrawio: options.runDrawio }),
+      drawioPath: options.tools.drawioPath,
+      ...(options.tools.runDrawio !== undefined && { runDrawio: options.tools.runDrawio }),
       runtime,
     });
   }

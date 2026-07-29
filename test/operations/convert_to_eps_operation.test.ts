@@ -28,15 +28,17 @@ suite('EPS変換操作', () => {
           page: index + 1,
         })),
         runtime: { signal: new AbortController().signal },
-        ghostscriptPath: 'gs',
-        runGhostscript: async (_executable, args) => {
-          calls.push(args);
-          const outputArg = args.find((arg) => arg.startsWith('-sOutputFile='));
-          assert.ok(outputArg);
-          await writeFile(
-            outputArg.slice('-sOutputFile='.length),
-            '%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 100 80\n',
-          );
+        tools: {
+          ghostscriptPath: 'gs',
+          runGhostscript: async (_executable, args) => {
+            calls.push(args);
+            const outputArg = args.find((arg) => arg.startsWith('-sOutputFile='));
+            assert.ok(outputArg);
+            await writeFile(
+              outputArg.slice('-sOutputFile='.length),
+              '%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 100 80\n',
+            );
+          },
         },
       });
 
@@ -70,9 +72,11 @@ suite('EPS変換操作', () => {
         convertToEpsFiles({
           jobs: [{ sourcePath, outputPath, workspacePath: root }],
           runtime: { signal: new AbortController().signal },
-          ghostscriptPath: 'gs',
-          runGhostscript: async () => {
-            throw new Error('Ghostscript failed');
+          tools: {
+            ghostscriptPath: 'gs',
+            runGhostscript: async () => {
+              throw new Error('Ghostscript failed');
+            },
           },
         }),
         /Ghostscript failed/u,

@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 25
+Status: In progress — Phase 26 (experiment)
 
 ## Objective
 
@@ -131,6 +131,12 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 `typescript/no-floating-promises`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。処理結果を待たずに破棄するPromiseを禁止し、変換・dispose・ファイル操作などの失敗を呼び出し側で扱う契約を維持する。意図的なfire-and-forgetは`void`で明示し、テストコードは対象外とする。
 
+## Phase 26
+
+平坦なTypeScript interface/type literalが10項目以上になった場合に、関連項目をネストできないか検討させる独自ルール`project/max-flat-type-members`を追加する。識別子に共通する語を候補グループとして表示するが、意味的なグルーピングを自動確定したり、固定語彙を前提にしたりしない。
+
+既存コードではOptions型、Webview props、プロトコルpayload、ラベル型、テスト環境型など15件が該当した。各型を実際の責務単位へネストし、候補をすべて解消したため、`project/max-flat-type-members`はerrorとして運用する。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -158,12 +164,14 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `typescript/explicit-function-return-type` の既存違反は55件で、productionコード、Webview本体、Webview build config、Node.js/GitHub Actionsスクリプトの18ファイルに分散していた。Phase 23では関数・callbackの戻り値型を明示する。テストコードの35件は対象外とする
 - `promise/prefer-await-to-then` の既存違反は12件で、PDF変換command、PDF preview、Webviewのエラー処理に分散していた。Phase 24ではPromise chainを`await`と`try/catch`へ置き換える
 - `typescript/no-floating-promises` の既存違反は0件だった。Phase 25では未処理Promiseをerrorとして監視し、意図的に待たない処理は`void`で明示する
+- `project/max-flat-type-members` は初回に10項目以上の平坦な型を15件検出した。共通語から候補グループを出せる一方、意味的な判断は自動化せず、Options型・props・プロトコルpayload・ラベル型・テスト環境型を責務単位へネストして解消した。Phase 26でerrorへ昇格する
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
 ## Completion criteria
 
 - Phase 1からPhase 25までの制限をCIの通常lintで強制できる
+- Phase 26の構造改善ルールを通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

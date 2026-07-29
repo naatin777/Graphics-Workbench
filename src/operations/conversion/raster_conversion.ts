@@ -372,8 +372,8 @@ async function writeEpsAsRaster(job: RasterJob, paths: RasterStagePaths, context
   const epsOptions: EpsToPdfOptions = {
     epsPath: job.sourcePath,
     workspacePath: job.workspacePath,
-    ghostscriptPath: context.ghostscriptTools.ghostscriptPath,
     stagingDirectory: epsStaging,
+    tools: { ghostscriptPath: context.ghostscriptTools.ghostscriptPath },
   };
   if (context.runtime.signal !== undefined) {
     epsOptions.signal = context.runtime.signal;

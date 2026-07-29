@@ -9,38 +9,50 @@ import { applyPreviewZoom, capturePreviewZoomAnchor, clampPreviewZoom, restorePr
 import { vscode } from './vscode';
 
 const defaultLabels: CropPdfLabels = {
-  title: 'Custom Crop',
-  description: 'Adjust the PDF crop area.',
-  pageLabel: 'Page',
-  pages: 'pages',
-  preview: 'Preview',
-  previewDescription: 'Zoom does not change crop values in PDF points.',
-  previewAriaLabel: 'PDF preview',
-  cropSettings: 'Crop settings',
-  cropBox: 'Crop box',
-  cropBoxDescription: 'Set the area to keep in PDF points.',
-  left: 'Left',
-  bottom: 'Bottom',
-  right: 'Right',
-  top: 'Top',
-  currentPageSize: 'Current page size',
-  targetPages: 'Target pages',
-  allPages: 'All pages',
-  selectedPages: 'Selected pages',
-  pagesInput: 'Pages',
-  pagesPlaceholder: 'Example: 1, 3, 5',
-  zoomOut: 'Zoom out',
-  zoomIn: 'Zoom in',
-  previewZoom: 'Preview zoom',
-  apply: 'Apply',
-  cancel: 'Cancel',
-  previewRenderError: 'Could not display the PDF',
-  previewApplyError: 'PDF preview must render before applying.',
-  cropBoxNumberError: '{0} must be a number.',
-  cropBoxSizeError: 'Crop box must have positive width and height.',
-  pagesRequiredError: 'At least one page must be selected.',
-  pageWholeNumberError: 'Page must be a whole number: {0}',
-  pageOutOfRangeError: 'Selected page is out of range: {0}',
+  header: {
+    title: 'Custom Crop',
+    description: 'Adjust the PDF crop area.',
+    pageLabel: 'Page',
+    pages: 'pages',
+  },
+  preview: {
+    title: 'Preview',
+    description: 'Zoom does not change crop values in PDF points.',
+    ariaLabel: 'PDF preview',
+    zoomLabel: 'Preview zoom',
+    zoomOut: 'Zoom out',
+    zoomIn: 'Zoom in',
+    renderError: 'Could not display the PDF',
+    applyError: 'PDF preview must render before applying.',
+  },
+  cropBox: {
+    settingsLabel: 'Crop settings',
+    title: 'Crop box',
+    description: 'Set the area to keep in PDF points.',
+    left: 'Left',
+    bottom: 'Bottom',
+    right: 'Right',
+    top: 'Top',
+    currentPageSize: 'Current page size',
+  },
+  targetPages: {
+    title: 'Target pages',
+    all: 'All pages',
+    selected: 'Selected pages',
+    inputLabel: 'Pages',
+    placeholder: 'Example: 1, 3, 5',
+  },
+  validation: {
+    cropBoxNumber: '{0} must be a number.',
+    cropBoxSize: 'Crop box must have positive width and height.',
+    pagesRequired: 'At least one page must be selected.',
+    pageWholeNumber: 'Page must be a whole number: {0}',
+    pageOutOfRange: 'Selected page is out of range: {0}',
+  },
+  actions: {
+    apply: 'Apply',
+    cancel: 'Cancel',
+  },
 };
 
 function cancel(): void {
@@ -105,13 +117,19 @@ export function App(): JSX.Element {
         try {
           const controller = await renderPdfPages(payload.pdfSrc, pdfPages, {
             ...(pdfPreview !== undefined && { root: pdfPreview }),
-            ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
-            ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
-            ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''
-              ? { standardFontDataUrl: payload.standardFontDataUrl }
+            ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
+              ? { workerSrc: payload.resources.workerSrc }
               : {}),
-            ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
-            pageLabel: payload.labels.pageLabel,
+            ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
+              ? { cMapUrl: payload.resources.cMapUrl }
+              : {}),
+            ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
+              ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
+              : {}),
+            ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
+              ? { wasmUrl: payload.resources.wasmUrl }
+              : {}),
+            pageLabel: payload.labels.header.pageLabel,
             onRenderError: (error: unknown) => {
               const message = error instanceof Error ? error.message : String(error);
               setRenderError(message);
@@ -160,14 +178,14 @@ export function App(): JSX.Element {
 
   const applyCrop = async (): Promise<void> => {
     if (!renderPromise) {
-      setInputError(labels().previewApplyError);
+      setInputError(labels().preview.applyError);
       return;
     }
 
     try {
       await renderPromise;
     } catch {
-      setInputError(labels().previewApplyError);
+      setInputError(labels().preview.applyError);
       return;
     }
 
@@ -237,11 +255,11 @@ export function App(): JSX.Element {
     <main class='app'>
       <header class='app__header'>
         <div>
-          <h1>{labels().title}</h1>
-          <p>{labels().description}</p>
+          <h1>{labels().header.title}</h1>
+          <p>{labels().header.description}</p>
         </div>
         <p class='app__meta'>
-          {fileName()} · {pageCount()} {labels().pages}
+          {fileName()} · {pageCount()} {labels().header.pages}
         </p>
       </header>
 
@@ -250,23 +268,23 @@ export function App(): JSX.Element {
           ref={(element) => {
             pdfPreview = element;
           }}
-          aria-label={labels().previewAriaLabel}
+          aria-label={labels().preview.ariaLabel}
           class='pdf-preview'
           onWheel={zoomWithWheel}
         >
           <div class='pdf-preview__toolbar'>
             <div>
-              <h2>{labels().preview}</h2>
-              <p>{labels().previewDescription}</p>
+              <h2>{labels().preview.title}</h2>
+              <p>{labels().preview.description}</p>
             </div>
             <div
               class='zoom'
-              aria-label={labels().previewZoom}
+              aria-label={labels().preview.zoomLabel}
             >
               <button
                 class='button'
                 type='button'
-                aria-label={labels().zoomOut}
+                aria-label={labels().preview.zoomOut}
                 onClick={zoomOut}
               >
                 −
@@ -275,7 +293,7 @@ export function App(): JSX.Element {
               <button
                 class='button'
                 type='button'
-                aria-label={labels().zoomIn}
+                aria-label={labels().preview.zoomIn}
                 onClick={zoomIn}
               >
                 +
@@ -293,22 +311,22 @@ export function App(): JSX.Element {
               class='pdf-preview__error'
               role='alert'
             >
-              {labels().previewRenderError}: {renderError()}
+              {labels().preview.renderError}: {renderError()}
             </p>
           ) : undefined}
         </section>
 
         <section
-          aria-label={labels().cropSettings}
+          aria-label={labels().cropBox.settingsLabel}
           class='panel'
         >
           <div class='panel__group'>
-            <h2>{labels().cropBox}</h2>
-            <p>{labels().cropBoxDescription}</p>
+            <h2>{labels().cropBox.title}</h2>
+            <p>{labels().cropBox.description}</p>
 
             <div class='crop-grid'>
               <label class='field'>
-                <span class='field__label'>{labels().left}</span>
+                <span class='field__label'>{labels().cropBox.left}</span>
                 <input
                   class='input'
                   inputmode='decimal'
@@ -321,7 +339,7 @@ export function App(): JSX.Element {
               </label>
 
               <label class='field'>
-                <span class='field__label'>{labels().bottom}</span>
+                <span class='field__label'>{labels().cropBox.bottom}</span>
                 <input
                   class='input'
                   inputmode='decimal'
@@ -334,7 +352,7 @@ export function App(): JSX.Element {
               </label>
 
               <label class='field'>
-                <span class='field__label'>{labels().right}</span>
+                <span class='field__label'>{labels().cropBox.right}</span>
                 <input
                   class='input'
                   inputmode='decimal'
@@ -347,7 +365,7 @@ export function App(): JSX.Element {
               </label>
 
               <label class='field'>
-                <span class='field__label'>{labels().top}</span>
+                <span class='field__label'>{labels().cropBox.top}</span>
                 <input
                   class='input'
                   inputmode='decimal'
@@ -361,12 +379,12 @@ export function App(): JSX.Element {
             </div>
 
             <p class='panel__hint'>
-              {labels().currentPageSize}: {pageSize().width} × {pageSize().height} pt
+              {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt
             </p>
           </div>
 
           <fieldset class='target'>
-            <legend>{labels().targetPages}</legend>
+            <legend>{labels().targetPages.title}</legend>
 
             <label class='target__option'>
               <input
@@ -377,7 +395,7 @@ export function App(): JSX.Element {
                   setTargetType('all');
                 }}
               />
-              {labels().allPages}
+              {labels().targetPages.all}
             </label>
 
             <label class='target__option'>
@@ -389,15 +407,15 @@ export function App(): JSX.Element {
                   setTargetType('selected');
                 }}
               />
-              {labels().selectedPages}
+              {labels().targetPages.selected}
             </label>
 
             <label class='field'>
-              <span class='field__label'>{labels().pagesInput}</span>
+              <span class='field__label'>{labels().targetPages.inputLabel}</span>
               <input
                 class='input'
                 disabled={targetType() !== 'selected'}
-                placeholder={labels().pagesPlaceholder}
+                placeholder={labels().targetPages.placeholder}
                 type='text'
                 value={selectedPages()}
                 onInput={(event) => {
@@ -424,14 +442,14 @@ export function App(): JSX.Element {
                 void applyCrop();
               }}
             >
-              {labels().apply}
+              {labels().actions.apply}
             </button>
             <button
               class='button'
               type='button'
               onClick={cancel}
             >
-              {labels().cancel}
+              {labels().actions.cancel}
             </button>
           </div>
         </section>

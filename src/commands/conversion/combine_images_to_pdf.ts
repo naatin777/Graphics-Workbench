@@ -68,8 +68,7 @@ export async function combineImagesToPdfCommand(
           workspacePath,
           runtime,
           maxInputPixels: getMaxInputPixels(configuration),
-          svgToPdfTools,
-          ghostscriptPath,
+          tools: { svgToPdfTools, ghostscriptPath },
           platform: process.platform,
         }),
     });

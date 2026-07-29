@@ -34,10 +34,12 @@ export interface CombineImagesToPdfOptions {
   runtime?: ConversionExecutionContext;
   maxInputPixels?: number;
   runId?: string;
-  svgToPdfTools?: SvgToPdfBackend;
-  rsvgConvertPath?: string;
-  runRsvgConvert?: RunRsvgConvert;
-  ghostscriptPath?: string;
+  tools?: {
+    svgToPdfTools?: SvgToPdfBackend;
+    rsvgConvertPath?: string;
+    runRsvgConvert?: RunRsvgConvert;
+    ghostscriptPath?: string;
+  };
   platform?: NodeJS.Platform;
   scratchBaseCandidates?: readonly string[];
 }
@@ -83,15 +85,15 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
           outputPath: pdfPath,
           workspacePath: options.workspacePath,
           maxInputPixels: configuredMaxInputPixels,
-          svgToPdfTools: svgToPdfOptions(options),
+          tools: { svgToPdfTools: svgToPdfOptions(options) },
           scratchOptions: scratchOptions(options),
           ...(pageCount > 1 ? { page } : {}),
         };
         if (runtime?.signal !== undefined) {
           writeOptions.signal = runtime.signal;
         }
-        if (options.ghostscriptPath !== undefined) {
-          writeOptions.ghostscriptPath = options.ghostscriptPath;
+        if (options.tools?.ghostscriptPath !== undefined) {
+          writeOptions.tools = { ...writeOptions.tools, ghostscriptPath: options.tools.ghostscriptPath };
         }
         await writeSourceAsPdf(writeOptions);
         pdfPaths.push(pdfPath);
@@ -166,20 +168,20 @@ function validateJobs(jobs: CombineImagesJob[]): void {
 }
 
 function svgToPdfOptions(options: CombineImagesToPdfOptions): SvgToPdfBackend {
-  if (options.svgToPdfTools !== undefined) {
-    if (options.runRsvgConvert === undefined) {
-      return options.svgToPdfTools;
+  if (options.tools?.svgToPdfTools !== undefined) {
+    if (options.tools.runRsvgConvert === undefined) {
+      return options.tools.svgToPdfTools;
     }
 
-    return { ...options.svgToPdfTools, runRsvgConvert: options.runRsvgConvert };
+    return { ...options.tools.svgToPdfTools, runRsvgConvert: options.tools.runRsvgConvert };
   }
 
   return {
     engine: 'rsvg-convert',
-    rsvgConvertPath: options.rsvgConvertPath ?? 'rsvg-convert',
+    rsvgConvertPath: options.tools?.rsvgConvertPath ?? 'rsvg-convert',
     puppeteerBrowser: 'chrome',
     puppeteerBrowserChannel: 'chrome',
-    ...(options.runRsvgConvert !== undefined && { runRsvgConvert: options.runRsvgConvert }),
+    ...(options.tools?.runRsvgConvert !== undefined && { runRsvgConvert: options.tools.runRsvgConvert }),
   };
 }
 

@@ -14,22 +14,32 @@ export interface MergePdfSource {
 }
 
 export interface MergePdfLabels {
-  title: string;
-  description: string;
-  sourceList: string;
-  sourceListDescription: string;
-  sourceCount: string;
-  actions: string;
-  dragHandle: string;
-  moveUp: string;
-  moveDown: string;
-  removeSource: string;
-  preview: string;
-  previewAriaLabel: string;
-  previewLoading: string;
-  previewRenderError: string;
-  apply: string;
-  cancel: string;
+  header: {
+    title: string;
+    description: string;
+  };
+  sources: {
+    list: string;
+    listDescription: string;
+    count: string;
+  };
+  controls: {
+    actions: string;
+    dragHandle: string;
+    moveUp: string;
+    moveDown: string;
+    removeSource: string;
+  };
+  preview: {
+    title: string;
+    ariaLabel: string;
+    loading: string;
+    renderError: string;
+  };
+  actions: {
+    apply: string;
+    cancel: string;
+  };
 }
 
 export type MergePdfHostToWebview =
@@ -98,26 +108,27 @@ function isMergePdfLabels(value: unknown): value is MergePdfLabels {
     return false;
   }
 
-  const labelKeys: readonly string[] = [
-    'title',
-    'description',
-    'sourceList',
-    'sourceListDescription',
-    'sourceCount',
-    'actions',
-    'dragHandle',
-    'moveUp',
-    'moveDown',
-    'removeSource',
-    'preview',
-    'previewAriaLabel',
-    'previewLoading',
-    'previewRenderError',
-    'apply',
-    'cancel',
-  ];
+  const groups = [
+    ['header', ['title', 'description']],
+    ['sources', ['list', 'listDescription', 'count']],
+    ['controls', ['actions', 'dragHandle', 'moveUp', 'moveDown', 'removeSource']],
+    ['preview', ['title', 'ariaLabel', 'loading', 'renderError']],
+    ['actions', ['apply', 'cancel']],
+  ] as const;
 
-  return hasExactKeys(value, labelKeys) && labelKeys.every((key) => isString(value[key]));
+  if (
+    !hasExactKeys(
+      value,
+      groups.map(([group]) => group),
+    )
+  ) {
+    return false;
+  }
+
+  return groups.every(([groupName, keys]) => {
+    const group = value[groupName];
+    return isRecord(group) && hasExactKeys(group, keys) && keys.every((key) => isString(group[key]));
+  });
 }
 
 export function isMergePdfWebviewToHostMessage(value: unknown): value is MergePdfWebviewToHost {
