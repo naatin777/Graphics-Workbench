@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict';
 
-import {
-  readMermaidPuppeteerOptions,
-  type MermaidConfiguration,
-} from '../../src/config/rendering/mermaid_puppeteer_options.js';
+import { readMermaidPuppeteerOptions } from '../../src/config/rendering/mermaid_puppeteer_options.js';
+import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('MermaidテーマおよびbackgroundColor設定', () => {
   test('デフォルトはtheme=default、backgroundColor=white', () => {
-    const options = readMermaidPuppeteerOptions(fakeConfiguration({}));
+    const options = readMermaidPuppeteerOptions(fakeConfiguration());
     assert.strictEqual(options.theme, 'default');
     assert.strictEqual(options.backgroundColor, 'white');
   });
@@ -34,11 +32,3 @@ suite('MermaidテーマおよびbackgroundColor設定', () => {
     assert.strictEqual(options.executablePath, '/usr/bin/chrome');
   });
 });
-
-function fakeConfiguration(values: Record<string, string>): MermaidConfiguration {
-  return {
-    get(key: string, defaultValue: string): string {
-      return values[key] ?? defaultValue;
-    },
-  };
-}

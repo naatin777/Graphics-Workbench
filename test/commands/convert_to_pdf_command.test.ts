@@ -230,24 +230,27 @@ suite('PDFに変換コマンド', () => {
     );
   });
 
-  test('editable Draw.io画像をConvert to PDFで変換するときは直接PDF設定を使う', () => {
-    const settings: Record<string, string> = {};
-    const configuration = {
-      get(key: string, defaultValue: string): string {
-        return settings[key] ?? defaultValue;
-      },
-    };
+  test('editable Draw.io画像をConvert to PDFで変換するときは直接PDF設定を使う', async () => {
     const sourceUri = vscode.Uri.file(path.join('workspace', 'source.drawio.png'));
 
-    assert.strictEqual(
-      outputTemplateForSource(sourceUri, configuration, 'unused.pdf'),
-      '${fileDirname}/${fileBasenameNoExtension}.pdf',
-    );
+    await withWorkspaceSettings({ 'graphics-workbench.outputPath.convertDrawioToPdfDirectly': undefined }, async () => {
+      assert.strictEqual(
+        outputTemplateForSource(sourceUri, 'unused.pdf'),
+        '${fileDirname}/${fileBasenameNoExtension}.pdf',
+      );
+    });
 
-    settings['outputPath.convertDrawioToPdfDirectly'] = '${fileDirname}/direct-${fileBasenameNoExtension}.pdf';
-    assert.strictEqual(
-      outputTemplateForSource(sourceUri, configuration, 'unused.pdf'),
-      '${fileDirname}/direct-${fileBasenameNoExtension}.pdf',
+    await withWorkspaceSettings(
+      {
+        'graphics-workbench.outputPath.convertDrawioToPdfDirectly':
+          '${fileDirname}/direct-${fileBasenameNoExtension}.pdf',
+      },
+      async () => {
+        assert.strictEqual(
+          outputTemplateForSource(sourceUri, 'unused.pdf'),
+          '${fileDirname}/direct-${fileBasenameNoExtension}.pdf',
+        );
+      },
     );
   });
 

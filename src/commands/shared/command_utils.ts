@@ -1,10 +1,12 @@
 import type * as vscode from 'vscode';
 
 import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
+import { getExtensionConfiguration } from '../../generated-extension-config.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 
-export function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError';
-}
+import type { CommandDependencies } from './command_dependencies.js';
+
+export { errorMessage, isAbortError } from '../../application/error_utils.js';
 
 export function selectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
   let candidates: vscode.Uri[] = [];
@@ -16,12 +18,13 @@ export function selectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[
   return [...new Map(candidates.map((candidate) => [candidate.toString(), candidate])).values()];
 }
 
-export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+export function readDrawioOptions(configuration: Configuration): { drawioPath: string } {
+  return { drawioPath: readDrawioExecutablePath(configuration) };
 }
 
-export function readDrawioOptions(configuration: vscode.WorkspaceConfiguration): { drawioPath: string } {
-  return { drawioPath: readDrawioExecutablePath(configuration) };
+export function getCommandConfiguration(dependencies?: CommandDependencies): Configuration {
+  const getConfiguration = dependencies?.getConfiguration ?? getExtensionConfiguration;
+  return getConfiguration();
 }
 
 export function assertFileScheme(sourceUri: vscode.Uri): void {

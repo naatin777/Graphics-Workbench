@@ -71,8 +71,7 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
   }
 
   createSinglePdfSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-    const templates = getPdfTemplates(configuration);
+    const templates = getPdfTemplates();
     const latexRelativeFilePath = normalizeLatexPath(relativeFilePath);
     const ext = path.extname(latexRelativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {

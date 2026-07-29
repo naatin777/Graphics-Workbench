@@ -6,6 +6,7 @@ import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
 import { createEpsJobs } from '../../src/commands/conversion/convert_to_eps.js';
+import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('EPS変換コマンドジョブ', () => {
   test('PDFページごとに${page}ジョブを個別に作成する', async () => {
@@ -20,11 +21,7 @@ suite('EPS変換コマンドジョブ', () => {
       document.addPage([100, 80]);
       document.addPage([100, 80]);
       await writeFile(sourcePath, await document.save());
-      const configuration = {
-        get(_key: string, defaultValue: unknown): unknown {
-          return defaultValue;
-        },
-      };
+      const configuration = fakeConfiguration();
       const jobs = await createEpsJobs(vscode.Uri.file(sourcePath), configuration);
 
       assert.deepStrictEqual(
@@ -51,14 +48,9 @@ suite('EPS変換コマンドジョブ', () => {
       const document = await PDFDocument.create();
       document.addPage([100, 80]);
       await writeFile(sourcePath, await document.save());
-      const configuration = {
-        get(key: string, defaultValue: unknown): unknown {
-          if (key === 'outputPaths') {
-            return { convertPdfToEps: '${fileDirname}/custom-${fileBasenameNoExtension}-${page}.eps' };
-          }
-          return defaultValue;
-        },
-      };
+      const configuration = fakeConfiguration({
+        outputPaths: { convertPdfToEps: '${fileDirname}/custom-${fileBasenameNoExtension}-${page}.eps' },
+      });
       const jobs = await createEpsJobs(vscode.Uri.file(sourcePath), configuration);
 
       assert.strictEqual(jobs.length, 1);

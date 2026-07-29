@@ -1,27 +1,29 @@
-export type ConfigurationReader = {
-  get(key: string, defaultValue: unknown): unknown;
-};
+import type { Configuration, OutputPaths } from '../../generated-extension-meta.js';
 
-function readProperty(object: object, key: string): unknown {
-  return Reflect.get(object, key) as unknown;
+export type OutputPathKey = keyof OutputPaths;
+
+function isOutputPaths(value: unknown): value is OutputPaths {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export function readOutputPathTemplate(configuration: ConfigurationReader, key: string, defaultValue: string): string {
-  const template = configuration.get(key, defaultValue);
-  return typeof template === 'string' && template.trim() !== '' ? template : defaultValue;
-}
-
-export function readOutputPathsTemplate(configuration: ConfigurationReader, key: string, defaultValue: string): string {
-  const outputPaths = configuration.get('outputPaths', {});
-  if (outputPaths === null || typeof outputPaths !== 'object' || Array.isArray(outputPaths)) {
+export function resolveOutputPathsTemplate(
+  configuration: Configuration,
+  key: OutputPathKey,
+  defaultValue: string,
+): string {
+  const outputPaths = configuration.outputPaths();
+  if (!isOutputPaths(outputPaths)) {
     return defaultValue;
   }
-
-  const template = readProperty(outputPaths, key);
+  const template = outputPaths[key];
   return typeof template === 'string' && template.trim() !== '' ? template : defaultValue;
 }
 
-const EXTENSION_TO_FORMAT: Record<string, string> = {
+export function resolveOutputPathTemplate(template: string, defaultValue: string): string {
+  return template.trim() === '' ? defaultValue : template;
+}
+
+const extensionToFormat: Record<string, 'Png' | 'Jpeg' | 'Webp' | 'Avif' | 'Gif' | 'Tiff'> = {
   '.png': 'Png',
   '.jpg': 'Jpeg',
   '.jpeg': 'Jpeg',
@@ -32,14 +34,31 @@ const EXTENSION_TO_FORMAT: Record<string, string> = {
   '.tif': 'Tiff',
 };
 
+const rawOutputPathKeys: Record<
+  'Png' | 'Jpeg' | 'Webp' | 'Avif' | 'Gif' | 'Tiff',
+  | 'convertPngToRaw'
+  | 'convertJpegToRaw'
+  | 'convertWebpToRaw'
+  | 'convertAvifToRaw'
+  | 'convertGifToRaw'
+  | 'convertTiffToRaw'
+> = {
+  Png: 'convertPngToRaw',
+  Jpeg: 'convertJpegToRaw',
+  Webp: 'convertWebpToRaw',
+  Avif: 'convertAvifToRaw',
+  Gif: 'convertGifToRaw',
+  Tiff: 'convertTiffToRaw',
+};
+
 export function readConvertToRawOutputPath(
-  configuration: ConfigurationReader,
+  configuration: Configuration,
   sourceExtension: string,
   defaultValue: string,
 ): string {
-  const format = EXTENSION_TO_FORMAT[sourceExtension.toLowerCase()];
+  const format = extensionToFormat[sourceExtension.toLowerCase()];
   if (format !== undefined) {
-    return readOutputPathsTemplate(configuration, `convert${format}ToRaw`, defaultValue);
+    return resolveOutputPathsTemplate(configuration, rawOutputPathKeys[format], defaultValue);
   }
-  return readOutputPathsTemplate(configuration, 'convertToRaw', defaultValue);
+  return defaultValue;
 }

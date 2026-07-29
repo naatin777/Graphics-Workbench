@@ -9,12 +9,12 @@ import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { assertFileScheme, isAbortError, selectedUris } from '../shared/command_utils.js';
+import { assertFileScheme, getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 import { userMessage } from '../shared/user_messages.js';
 
 export const CONVERT_TO_RAW_COMMAND = 'graphics-workbench.convertToRaw';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.raw';
+const defaultOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.raw';
 
 export async function convertToRawCommand(
   uri?: vscode.Uri,
@@ -28,9 +28,9 @@ export async function convertToRawCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getCommandConfiguration(dependencies);
     const sourceExt = path.extname(sourceUris[0]?.fsPath ?? '');
-    const outputTemplate = readConvertToRawOutputPath(configuration, sourceExt, DEFAULT_OUTPUT_PATH);
+    const outputTemplate = readConvertToRawOutputPath(configuration, sourceExt, defaultOutputPath);
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planRawConversionJobs(sourceUri, outputTemplate, maxInputPixels)),

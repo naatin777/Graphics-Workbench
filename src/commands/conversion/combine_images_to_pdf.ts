@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
 import { logicalSourcePathForOutputTemplate } from '../../application/policy/source_format.js';
+import { getDefaultConfiguration } from '../../generated-extension-meta.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
-import { readOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -13,12 +13,10 @@ import { readSvgToPdfOptions } from './convert_to_pdf.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { selectedUris } from '../shared/command_utils.js';
+import { getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
 import { localeMap } from '../../locale_map.js';
 
 export const COMBINE_IMAGES_TO_PDF_COMMAND = 'graphics-workbench.convertImagesToSinglePdf';
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.pdf';
-const OUTPUT_PATH_SETTING = 'outputPath.convertImagesToSinglePdf';
 
 export async function combineImagesToPdfCommand(
   uri?: vscode.Uri,
@@ -41,10 +39,15 @@ export async function combineImagesToPdfCommand(
 
     const workspaceFolder = requireSingleWorkspace(previewedUris);
     const workspacePath = workspaceFolder.uri.fsPath;
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-    const configuredTemplate = readOutputPathTemplate(configuration, OUTPUT_PATH_SETTING, '').trim();
-    const outputTemplate = configuredTemplate || undefined;
-    const outputPath = await resolveCombineOutputPath(previewedUris, workspaceFolder, outputTemplate);
+    const configuration = getCommandConfiguration(dependencies);
+    const outputTemplate = configuration.outputPath.convertImagesToSinglePdf();
+    const defaultOutputTemplate = getDefaultConfiguration().outputPath.convertPngToPdf();
+    const outputPath = await resolveCombineOutputPath(
+      previewedUris,
+      workspaceFolder,
+      outputTemplate,
+      defaultOutputTemplate,
+    );
 
     if (outputPath === undefined) {
       return;
@@ -171,16 +174,24 @@ function pathLabel(uri: vscode.Uri): string {
 async function resolveCombineOutputPath(
   sourceUris: vscode.Uri[],
   workspaceFolder: vscode.WorkspaceFolder,
-  configuredTemplate: string | undefined,
+  configuredTemplate: string,
+  defaultOutputTemplate: string,
 ): Promise<string | undefined> {
   const sourceUri = sourceUris[0];
   if (sourceUri === undefined) {
     throw new Error('combineImagesToPdf requires at least one source file.');
   }
 
-  if (configuredTemplate !== undefined || sourceUris.length === 1) {
-    const template = configuredTemplate ?? DEFAULT_OUTPUT_PATH;
-    return resolveOutputPath(template, {
+  if (configuredTemplate !== '') {
+    return resolveOutputPath(configuredTemplate, {
+      sourcePath: logicalSourcePathForOutputTemplate(sourceUri.fsPath),
+      workspacePath: workspaceFolder.uri.fsPath,
+      workspaceName: workspaceFolder.name,
+    });
+  }
+
+  if (sourceUris.length === 1) {
+    return resolveOutputPath(defaultOutputTemplate, {
       sourcePath: logicalSourcePathForOutputTemplate(sourceUri.fsPath),
       workspacePath: workspaceFolder.uri.fsPath,
       workspaceName: workspaceFolder.name,

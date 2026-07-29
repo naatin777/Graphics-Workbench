@@ -4,6 +4,8 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
+import { getDefaultConfiguration, type Configuration } from '../../generated-extension-meta.js';
+
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
@@ -16,7 +18,7 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import {
@@ -31,14 +33,18 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import {
+  assertFileScheme,
+  getCommandConfiguration,
+  isAbortError,
+  readDrawioOptions,
+  selectedUris,
+} from '../shared/command_utils.js';
 
 export const CONVERT_TO_AVIF_COMMAND = 'graphics-workbench.convertToAvif';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.avif';
-const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.avif';
-const DEFAULT_DRAWIO_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.avif';
-const DEFAULT_AVIF_EFFORT = 4;
+const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.avif';
+const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.avif';
 
 export async function convertToAvifCommand(
   uri?: vscode.Uri,
@@ -53,10 +59,13 @@ export async function convertToAvifCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getCommandConfiguration(dependencies);
+    const defaultConfiguration = getDefaultConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) => planAvifConversionJobs(sourceUri, configuration, maxInputPixels)),
+      sourceUris.map(async (sourceUri) =>
+        planAvifConversionJobs(sourceUri, configuration, defaultConfiguration, maxInputPixels),
+      ),
     );
     const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
@@ -97,7 +106,8 @@ export async function convertToAvifCommand(
 
 async function planAvifConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
+  defaultConfiguration: Configuration,
   maxInputPixels: number,
 ): Promise<ConvertToAvifJob[]> {
   assertFileScheme(sourceUri);
@@ -119,7 +129,7 @@ async function planAvifConversionJobs(
   }
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
-  const outputTemplate = outputTemplateForSource(sourcePath, configuration);
+  const outputTemplate = outputTemplateForSource(sourcePath, configuration, defaultConfiguration);
   if (isRasterImagePath(sourcePath)) {
     return createRasterFrameJobs({
       sourcePath,
@@ -155,7 +165,7 @@ async function planAvifConversionJobs(
 async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
 ): Promise<ConvertToAvifJob[]> {
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
@@ -164,7 +174,7 @@ async function createPdfJobs(
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }
 
-  const outputTemplate = readOutputPathsTemplate(configuration, 'convertPdfToAvif', DEFAULT_PDF_OUTPUT_PATH);
+  const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToAvif', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
   return Array.from({ length: pageCount }, (_value, index) => {
@@ -187,39 +197,58 @@ async function createPdfJobs(
   });
 }
 
-function outputTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
+function outputTemplateForSource(
+  sourcePath: string,
+  configuration: Configuration,
+  defaultConfiguration: Configuration,
+): string {
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return readOutputPathsTemplate(configuration, 'convertDrawioToAvif', DEFAULT_DRAWIO_OUTPUT_PATH);
+    return resolveOutputPathsTemplate(configuration, 'convertDrawioToAvif', defaultDrawioOutputPath);
   }
 
   switch (extension) {
     case '.png': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertPngToAvif', DEFAULT_OUTPUT_PATH);
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertPngToAvif(),
+        defaultConfiguration.outputPath.convertPngToAvif(),
+      );
     }
     case '.jpg':
     case '.jpeg': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertJpegToAvif', DEFAULT_OUTPUT_PATH);
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertJpegToAvif(),
+        defaultConfiguration.outputPath.convertJpegToAvif(),
+      );
     }
     case '.webp': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertWebpToAvif', DEFAULT_OUTPUT_PATH);
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertWebpToAvif(),
+        defaultConfiguration.outputPath.convertWebpToAvif(),
+      );
     }
     case '.svg': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertSvgToAvif', DEFAULT_OUTPUT_PATH);
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertSvgToAvif(),
+        defaultConfiguration.outputPath.convertSvgToAvif(),
+      );
     }
     case '.mmd':
     case '.mermaid': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertMermaidToAvif', DEFAULT_OUTPUT_PATH);
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertMermaidToAvif(),
+        defaultConfiguration.outputPath.convertMermaidToAvif(),
+      );
     }
     default: {
-      return DEFAULT_OUTPUT_PATH;
+      throw new Error(`Unsupported AVIF input format: ${sourcePath}`);
     }
   }
 }
 
-function readAvifOutputOptions(configuration: vscode.WorkspaceConfiguration): AvifOutputOptions {
-  const effort = configuration.get<number>('convertToAvif.effort', DEFAULT_AVIF_EFFORT);
+function readAvifOutputOptions(configuration: Configuration): AvifOutputOptions {
+  const effort = configuration.convertToAvif.effort();
 
   if (!Number.isInteger(effort) || effort < 0 || effort > 9) {
     throw new Error(`convertToAvif.effort must be an integer between 0 and 9: ${effort}`);

@@ -2,6 +2,8 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
+import { getExtensionConfiguration } from '../generated-extension-config.js';
+import type { GetConfiguration } from '../generated-extension-meta.js';
 import { withCancellationSignal } from '../commands/lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../commands/lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../commands/lifecycle/undo_last_conversion.js';
@@ -24,7 +26,7 @@ import {
 
 import { getImageTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
 
-const CLIPBOARD_IMAGE_TYPES = [
+const clipboardImageTypes = [
   { mime: 'image/png', ext: 'png' },
   { mime: 'image/jpeg', ext: 'jpeg' },
 ] as const;
@@ -36,6 +38,7 @@ interface PasteQuickPickItem extends vscode.QuickPickItem {
 }
 
 export interface LatexPasteEditProviderOptions {
+  getConfiguration?: GetConfiguration;
   resolveOutputConflicts?: (conflicts: string[]) => Promise<OutputConflictDecision>;
   recordConversionForUndo?: (outputs: CommittedConversionOutput[]) => Promise<string>;
   outputChannel?: LineOutputChannel;
@@ -43,10 +46,12 @@ export interface LatexPasteEditProviderOptions {
 
 export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider {
   private readonly resolveConflicts: (conflicts: string[]) => Promise<OutputConflictDecision>;
+  private readonly getConfiguration: GetConfiguration;
   private readonly rememberConversion: (outputs: CommittedConversionOutput[]) => Promise<string>;
   private readonly outputChannel: LineOutputChannel | undefined;
 
   constructor(options: LatexPasteEditProviderOptions = {}) {
+    this.getConfiguration = options.getConfiguration ?? getExtensionConfiguration;
     this.resolveConflicts = options.resolveOutputConflicts ?? resolveOutputConflicts;
     this.outputChannel = options.outputChannel;
     this.rememberConversion =
@@ -100,11 +105,8 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
           return undefined;
         }
 
-        const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-        const outputPathClipboardImage = configuration.get<string>(
-          'outputPath.clipboardImage',
-          '${fileDirname}/${dateNow}',
-        );
+        const configuration = this.getConfiguration();
+        const outputPathClipboardImage = configuration.outputPath.clipboardImage();
         const defaultOutputPath = resolveOutputPath(outputPathClipboardImage, {
           workspacePath: workspaceFolder.uri.fsPath,
           workspaceName: workspaceFolder.name,
@@ -136,7 +138,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
             kind: pickedItem.pasteKind,
             outputBasePath: outputPath,
             workspacePath,
-            maxInputPixels: getMaxInputPixels(vscode.workspace.getConfiguration('graphics-workbench')),
+            maxInputPixels: getMaxInputPixels(configuration),
           },
           {
             signal,
@@ -185,8 +187,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
   }
 
   createSingleFileSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-    const templates = getImageTemplates(configuration);
+    const templates = getImageTemplates();
     const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {
       path: relativeFilePath,
@@ -210,7 +211,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
 }
 
 async function readClipboardImageData(dataTransfer: vscode.DataTransfer): Promise<ClipboardImageData | undefined> {
-  for (const type of CLIPBOARD_IMAGE_TYPES) {
+  for (const type of clipboardImageTypes) {
     const file = dataTransfer.get(type.mime)?.asFile();
     const data = await file?.data();
 
