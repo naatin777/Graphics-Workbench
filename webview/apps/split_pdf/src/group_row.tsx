@@ -1,4 +1,5 @@
 import type { Accessor } from 'solid-js';
+import type { JSX } from 'solid-js';
 
 import type { SplitPdfLabels } from '@lgh-split-pdf-protocol';
 
@@ -22,7 +23,7 @@ export function GroupRow(props: {
   onDragEnd: () => void;
   onDragOver: (event: DragEvent) => void;
   onDrop: (event: DragEvent, rowId: number) => void;
-}) {
+}): JSX.Element {
   return (
     <article
       class='group-row'

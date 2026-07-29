@@ -85,7 +85,7 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
     stagingOperationName: 'crop-pdf',
     runId,
     runtime: runtime ?? {},
-    stage: (job, index, currentRunId, batchRuntime) =>
+    stage: async (job, index, currentRunId, batchRuntime) =>
       convertPdf({
         job,
         index,

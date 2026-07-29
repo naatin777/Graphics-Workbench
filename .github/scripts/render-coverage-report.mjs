@@ -305,6 +305,7 @@ function actionsRunUrl() {
     runId === undefined ||
     runId === ''
   ) {
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- preserve the optional URL contract.
     return undefined;
   }
   return `${server}/${repository}/actions/runs/${runId}`;

@@ -48,7 +48,8 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
     this.resolveConflicts = options.resolveOutputConflicts ?? resolveOutputConflicts;
     this.outputChannel = options.outputChannel;
     this.rememberConversion =
-      options.recordConversionForUndo ?? ((outputs) => recordConversionForUndo(outputs, this.outputChannel));
+      options.recordConversionForUndo ??
+      (async (outputs): Promise<string> => recordConversionForUndo(outputs, this.outputChannel));
   }
 
   async provideDocumentPasteEdits(
@@ -86,12 +87,14 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
         signal.throwIfAborted();
 
         if (!pickedItem) {
+          // oxlint-disable-next-line unicorn/no-useless-undefined -- VS Code paste provider uses undefined for no edit.
           return undefined;
         }
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
 
         if (!workspaceFolder) {
+          // oxlint-disable-next-line unicorn/no-useless-undefined -- VS Code paste provider uses undefined for no edit.
           return undefined;
         }
 
@@ -118,6 +121,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
         signal.throwIfAborted();
 
         if (inputOutputPath === undefined || inputOutputPath === '') {
+          // oxlint-disable-next-line unicorn/no-useless-undefined -- VS Code paste provider uses undefined for no edit.
           return undefined;
         }
 

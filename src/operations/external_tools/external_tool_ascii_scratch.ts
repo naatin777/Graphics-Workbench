@@ -57,7 +57,7 @@ export async function createAsciiInputScratch(options: {
       }
 
       if (scratchRootPath !== undefined) {
-        await rm(scratchRootPath, { recursive: true, force: true }).catch(() => undefined);
+        await rm(scratchRootPath, { recursive: true, force: true }).catch(() => {});
       }
 
       options.outputChannel?.appendLine(`[scratch] rejected base: ${candidate} (${errorMessage(error)})`);

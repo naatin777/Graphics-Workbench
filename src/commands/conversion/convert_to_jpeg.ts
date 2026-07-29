@@ -51,7 +51,7 @@ export async function convertToJpegCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) => planJpegConversionJobs(sourceUri, configuration, maxInputPixels)),
+      sourceUris.map(async (sourceUri) => planJpegConversionJobs(sourceUri, configuration, maxInputPixels)),
     );
     const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
@@ -66,7 +66,7 @@ export async function convertToJpegCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('JPEG', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         executeJpegConversion({
           jobs,
           maxInputPixels,

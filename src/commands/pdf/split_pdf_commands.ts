@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import {
   isSplitPdfWebviewToHostMessage,
   type SplitPdfHostToWebview,
+  type SplitPdfLabels,
   type SplitPdfPageGroupRow,
 } from '../../application/protocols/split_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
@@ -231,17 +232,21 @@ async function runSplitPdfConfigureCommand(
     }
 
     isApplying = true;
-    void applyConfiguredSplit({
-      inputUri,
-      workspaceFolder,
-      outputTemplate,
-      pageCount,
-      rows: message.payload.rows,
-      panel,
-      ...(outputChannel !== undefined && { outputChannel }),
-    }).finally(() => {
-      isApplying = false;
-    });
+    void (async (): Promise<void> => {
+      try {
+        await applyConfiguredSplit({
+          inputUri,
+          workspaceFolder,
+          outputTemplate,
+          pageCount,
+          rows: message.payload.rows,
+          panel,
+          ...(outputChannel !== undefined && { outputChannel }),
+        });
+      } finally {
+        isApplying = false;
+      }
+    })();
   });
 }
 
@@ -314,7 +319,7 @@ async function applyConfiguredSplit(params: {
                 sourcePath,
                 workspacePath,
                 pageGroups: rows.map((row) => row.pages),
-                outputPathForGroup: (groupIndex) => {
+                outputPathForGroup: (groupIndex): string => {
                   const row = rows[groupIndex];
 
                   if (!row) {
@@ -368,7 +373,12 @@ async function applyConfiguredSplit(params: {
 }
 
 function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri {
-  const candidates = uris && uris.length > 0 ? uris : uri ? [uri] : [];
+  let candidates: vscode.Uri[] = [];
+  if (uris !== undefined && uris.length > 0) {
+    candidates = uris;
+  } else if (uri !== undefined) {
+    candidates = [uri];
+  }
 
   if (candidates.length !== 1) {
     throw new Error('splitPdf.configure requires exactly one PDF file.');
@@ -446,7 +456,7 @@ function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, dir
   return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }
 
-function splitPdfLabels() {
+function splitPdfLabels(): SplitPdfLabels {
   return {
     title: localeMap('webview.splitPdf.title'),
     description: localeMap('webview.splitPdf.description'),

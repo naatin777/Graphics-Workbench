@@ -1,4 +1,5 @@
 import { createSignal, onCleanup, onMount } from 'solid-js';
+import type { JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '../../../shared/pdf/render_pdf_pages';
 
@@ -42,12 +43,12 @@ const defaultLabels: CropPdfLabels = {
   pageOutOfRangeError: 'Selected page is out of range: {0}',
 };
 
-function cancel() {
+function cancel(): void {
   const message: WebviewToExtensionMessage = { type: 'cancel' };
   vscode.sendMessage(message);
 }
 
-export function App() {
+export function App(): JSX.Element {
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
   const [pageSize, setPageSize] = createSignal({ width: 0, height: 0 });
@@ -69,7 +70,7 @@ export function App() {
   let renderController: PdfRenderController | undefined;
 
   onMount(() => {
-    const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>) => {
+    const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>): void => {
       if (event.data.type !== 'init' || !pdfPages) {
         return;
       }
@@ -99,36 +100,27 @@ export function App() {
       setSelectedPages(initialPage.toString());
       setInputError('');
       setRenderError('');
-      renderPromise = renderPdfPages(event.data.payload.pdfSrc, pdfPages, {
-        ...(pdfPreview !== undefined && { root: pdfPreview }),
-        ...(event.data.payload.workerSrc !== undefined && event.data.payload.workerSrc !== ''
-          ? { workerSrc: event.data.payload.workerSrc }
-          : {}),
-        ...(event.data.payload.cMapUrl !== undefined && event.data.payload.cMapUrl !== ''
-          ? { cMapUrl: event.data.payload.cMapUrl }
-          : {}),
-        ...(event.data.payload.standardFontDataUrl !== undefined && event.data.payload.standardFontDataUrl !== ''
-          ? { standardFontDataUrl: event.data.payload.standardFontDataUrl }
-          : {}),
-        ...(event.data.payload.wasmUrl !== undefined && event.data.payload.wasmUrl !== ''
-          ? { wasmUrl: event.data.payload.wasmUrl }
-          : {}),
-        pageLabel: labels().pageLabel,
-        onRenderError: (error: unknown) => {
-          const message = error instanceof Error ? error.message : String(error);
-          setRenderError(message);
-          vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
-        },
-      })
-        .then((controller) => {
+      const { payload } = event.data;
+      renderPromise = (async (): Promise<void> => {
+        try {
+          const controller = await renderPdfPages(payload.pdfSrc, pdfPages, {
+            ...(pdfPreview !== undefined && { root: pdfPreview }),
+            ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
+            ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
+            ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''
+              ? { standardFontDataUrl: payload.standardFontDataUrl }
+              : {}),
+            ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
+            pageLabel: payload.labels.pageLabel,
+            onRenderError: (error: unknown) => {
+              const message = error instanceof Error ? error.message : String(error);
+              setRenderError(message);
+              vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
+            },
+          });
           renderController = controller;
-          return controller.firstPageReady;
-        })
-        .catch((error: unknown) => {
-          setRenderError(error instanceof Error ? error.message : String(error));
-          throw error instanceof Error ? error : new Error(String(error));
-        })
-        .then(() => {
+          await controller.firstPageReady;
+
           applyPreviewZoom(pdfPages, previewZoom());
 
           const size = getPreviewPageSize(pdfPages);
@@ -151,9 +143,11 @@ export function App() {
               });
             }
           }
-
-          return undefined;
-        });
+        } catch (error: unknown) {
+          setRenderError(error instanceof Error ? error.message : String(error));
+          throw error instanceof Error ? error : new Error(String(error));
+        }
+      })();
     };
 
     window.addEventListener('message', handleMessage);
@@ -164,7 +158,7 @@ export function App() {
     });
   });
 
-  const applyCrop = async () => {
+  const applyCrop = async (): Promise<void> => {
     if (!renderPromise) {
       setInputError(labels().previewApplyError);
       return;
@@ -203,7 +197,12 @@ export function App() {
     vscode.sendMessage(message);
   };
 
-  const updatePreviewZoom = (value: number, anchorTarget?: EventTarget | null, clientX?: number, clientY?: number) => {
+  const updatePreviewZoom = (
+    value: number,
+    anchorTarget?: EventTarget | null,
+    clientX?: number,
+    clientY?: number,
+  ): void => {
     const nextZoom = clampPreviewZoom(value);
 
     if (nextZoom === previewZoom()) {
@@ -217,15 +216,15 @@ export function App() {
     restorePreviewZoomAnchor(pdfPreview, anchor);
   };
 
-  const zoomOut = () => {
+  const zoomOut = (): void => {
     updatePreviewZoom(previewZoom() - 0.25);
   };
 
-  const zoomIn = () => {
+  const zoomIn = (): void => {
     updatePreviewZoom(previewZoom() + 0.25);
   };
 
-  const zoomWithWheel = (event: WheelEvent) => {
+  const zoomWithWheel = (event: WheelEvent): void => {
     if (!event.ctrlKey && !event.metaKey) {
       return;
     }

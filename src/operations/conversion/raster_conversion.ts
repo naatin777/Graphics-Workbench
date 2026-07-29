@@ -62,7 +62,13 @@ export interface SimpleRasterConversionOptions {
   encoder: RasterEncoder;
 }
 
-export function createSimpleRasterExecutor(options: SimpleRasterConversionOptions) {
+type SimpleRasterExecutor = (
+  batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
+    maxInputPixels?: number;
+  },
+) => Promise<CommittedConversionOutput[]>;
+
+export function createSimpleRasterExecutor(options: SimpleRasterConversionOptions): SimpleRasterExecutor {
   const definition: RasterConversionDefinition = {
     operationName: options.operationName,
     stagingDirectoryName: options.operationName,
@@ -72,11 +78,11 @@ export function createSimpleRasterExecutor(options: SimpleRasterConversionOption
       `Unsupported input for ${options.resultExtension.toUpperCase()} conversion: ${sourcePath}`,
   };
 
-  return (
+  return async (
     batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
       maxInputPixels?: number;
     },
-  ) =>
+  ): Promise<CommittedConversionOutput[]> =>
     executeRasterConversionBatch({
       ...batchOptions,
       maxInputPixels: batchOptions.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
@@ -147,7 +153,7 @@ export async function executeRasterConversionBatch(
     operationName: options.definition.operationName,
     runId,
     runtime: options.runtime,
-    stage: (job, index, stageRunId, stageRuntime) =>
+    stage: async (job, index, stageRunId, stageRuntime) =>
       stageRasterConversion(job, index, {
         runId: stageRunId,
         runtime: stageRuntime,
@@ -457,7 +463,7 @@ function validateJobs(jobs: RasterJob[], definition: RasterConversionDefinition)
 
 async function validateGeneratedRaster(outputPath: string, outputExtension: string): Promise<void> {
   const metadata = await sharp(outputPath).metadata();
-  const expectedFormat = outputExtension === 'jpeg' ? 'jpeg' : outputExtension === 'avif' ? 'heif' : outputExtension;
+  const expectedFormat = outputExtension === 'avif' ? 'heif' : outputExtension;
 
   if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
     throw new Error(`Raster conversion produced invalid ${outputExtension.toUpperCase()} output: ${outputPath}`);

@@ -68,7 +68,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
       throw new Error('No Draw.io inputs were selected.');
     }
     await Promise.all([
-      ...job.inputs.map((input) => assertExistingPathInWorkspace(input.sourcePath, job.workspacePath)),
+      ...job.inputs.map(async (input) => assertExistingPathInWorkspace(input.sourcePath, job.workspacePath)),
       assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
       assertWritablePathInWorkspace(
         path.join(job.workspacePath, '.latex-graphics-helper', 'convert-to-drawio'),
@@ -88,7 +88,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
     operationName: 'convert-to-drawio',
     runId,
     runtime: options.runtime ?? {},
-    stage: (job, _index, currentRunId, runtime) => stageDrawio(job, currentRunId, runtime, options),
+    stage: async (job, _index, currentRunId, runtime) => stageDrawio(job, currentRunId, runtime, options),
   });
 }
 
@@ -118,7 +118,7 @@ async function stageDrawio(
         const svgPath = path.join(stageDirectory, `${inputIndex}-${page}.svg`);
         await (
           options.runPdfToSvg ??
-          ((source, output, currentPage, signal) =>
+          (async (source, output, currentPage, signal): Promise<void> =>
             executePdfToSvg(options.pdftocairoPath ?? 'pdftocairo', source, output, currentPage, signal))
         )(input.sourcePath, svgPath, page, runtime.signal);
         pages.push(await svgPage(svgPath, input, page));
@@ -145,7 +145,8 @@ async function stageDrawio(
     } else if (isMermaidPath(input.sourcePath)) {
       const svgPath = path.join(stageDirectory, `${inputIndex}.svg`);
       await (
-        options.runMermaid ?? ((source, output, signal) => executeMermaid(source, output, signal, options.mermaidTools))
+        options.runMermaid ??
+        (async (source, output, signal): Promise<void> => executeMermaid(source, output, signal, options.mermaidTools))
       )(input.sourcePath, svgPath, runtime.signal);
       pages.push(await svgPage(svgPath, input));
     } else {

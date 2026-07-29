@@ -29,7 +29,7 @@ function createVsCodeApi(): VsCodeApi {
       void message;
     },
     getState() {
-      return undefined;
+      return;
     },
     setState() {
       // noop

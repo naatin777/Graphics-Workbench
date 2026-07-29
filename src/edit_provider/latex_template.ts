@@ -31,7 +31,7 @@ export function renderTemplate(template: string, context: TemplateContext): stri
     .replaceAll('${path}', context.path)
     .replaceAll('${name}', context.name)
     .replaceAll('${ext}', context.ext)
-    .replaceAll('${page}', context.page !== undefined ? String(context.page) : '1')
+    .replaceAll('${page}', context.page === undefined ? '1' : String(context.page))
     .replaceAll('${dir}', context.dir);
 }
 

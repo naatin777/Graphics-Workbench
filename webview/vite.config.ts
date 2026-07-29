@@ -17,13 +17,12 @@ export interface WebviewBuildConfig {
 export function defineWebviewConfig(config: WebviewBuildConfig): UserConfig {
   const appRoot = resolve(webviewRoot, 'apps', config.appName);
   const outDir = resolve(projectRoot, 'media', 'webview', config.appName);
+  const plugins = [solid(), ...(config.copyPdfWorker === false ? [] : [copyPdfJsAssetsPlugin(outDir)])];
 
   return defineConfig({
     root: appRoot,
     base: '',
-    plugins: [solid(), config.copyPdfWorker !== false ? copyPdfJsAssetsPlugin(outDir) : undefined].filter(
-      (plugin): plugin is Plugin => plugin !== undefined,
-    ),
+    plugins,
 
     resolve: {
       alias: {

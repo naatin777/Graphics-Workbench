@@ -1,4 +1,5 @@
 import { Show, createSignal, onCleanup, onMount } from 'solid-js';
+import type { JSX } from 'solid-js';
 
 import { renderFirstPdfPage } from '@webview-shared/pdf/render_pdf_pages';
 
@@ -17,7 +18,7 @@ export function PreviewThumbnail(props: {
   options: PdfOptions;
   labels: MergePdfLabels;
   onError: () => void;
-}) {
+}): JSX.Element {
   const [status, setStatus] = createSignal<'waiting' | 'loading' | 'ready' | 'error'>('waiting');
   let canvas: HTMLCanvasElement | undefined;
   let frame: HTMLDivElement | undefined;
@@ -25,7 +26,7 @@ export function PreviewThumbnail(props: {
   onMount(() => {
     let started = false;
 
-    const renderPreview = () => {
+    const renderPreview = async (): Promise<void> => {
       if (started || !canvas) {
         return;
       }
@@ -33,18 +34,19 @@ export function PreviewThumbnail(props: {
       started = true;
       setStatus('loading');
 
-      void renderFirstPdfPage(props.source.pdfSrc, canvas, props.options)
-        .then(() => setStatus('ready'))
-        .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : String(error);
-          setStatus('error');
-          props.onError();
-          vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
-        });
+      try {
+        await renderFirstPdfPage(props.source.pdfSrc, canvas, props.options);
+        setStatus('ready');
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        setStatus('error');
+        props.onError();
+        vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
+      }
     };
 
     if (typeof IntersectionObserver === 'undefined' || !frame) {
-      renderPreview();
+      void renderPreview();
       return;
     }
 
@@ -52,7 +54,7 @@ export function PreviewThumbnail(props: {
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
           observer.disconnect();
-          renderPreview();
+          void renderPreview();
         }
       },
       { rootMargin: '120px' },

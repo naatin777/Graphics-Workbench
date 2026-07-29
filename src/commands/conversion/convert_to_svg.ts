@@ -49,7 +49,7 @@ export async function convertToSvgCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) => planSvgConversionJobs(sourceUri, configuration)),
+      sourceUris.map(async (sourceUri) => planSvgConversionJobs(sourceUri, configuration)),
     );
     const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
@@ -64,7 +64,7 @@ export async function convertToSvgCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('SVG', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         convertToSvgFiles({
           jobs,
           maxInputPixels,

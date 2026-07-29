@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import {
   type CropBox,
   type CropConfigureHostToWebview,
+  type CropPdfLabels,
   type CropTarget,
   isCropConfigureMessage,
 } from '../../application/protocols/crop_pdf_protocol.js';
@@ -145,17 +146,21 @@ async function runCropPdfConfigureCommand(
     }
 
     isApplying = true;
-    void applyConfiguredCrop({
-      inputUri,
-      workspaceFolder,
-      outputTemplate,
-      cropBox: message.payload.cropBox,
-      target: message.payload.target,
-      panel,
-      ...(outputChannel !== undefined && { outputChannel }),
-    }).finally(() => {
-      isApplying = false;
-    });
+    void (async (): Promise<void> => {
+      try {
+        await applyConfiguredCrop({
+          inputUri,
+          workspaceFolder,
+          outputTemplate,
+          cropBox: message.payload.cropBox,
+          target: message.payload.target,
+          panel,
+          ...(outputChannel !== undefined && { outputChannel }),
+        });
+      } finally {
+        isApplying = false;
+      }
+    })();
   });
 }
 
@@ -242,7 +247,12 @@ async function applyConfiguredCrop(params: {
 }
 
 function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri {
-  const candidates = uris && uris.length > 0 ? uris : uri ? [uri] : [];
+  let candidates: vscode.Uri[] = [];
+  if (uris !== undefined && uris.length > 0) {
+    candidates = uris;
+  } else if (uri !== undefined) {
+    candidates = [uri];
+  }
 
   if (candidates.length !== 1) {
     throw new Error('cropPdf.configure requires exactly one PDF file.');
@@ -265,7 +275,7 @@ function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri 
   return inputUri;
 }
 
-function cropPdfLabels() {
+function cropPdfLabels(): CropPdfLabels {
   return {
     title: localeMap('webview.cropPdf.title'),
     description: localeMap('webview.cropPdf.description'),

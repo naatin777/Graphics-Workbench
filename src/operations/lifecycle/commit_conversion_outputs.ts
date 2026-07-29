@@ -177,7 +177,7 @@ async function resolveOutputPaths(
       ...output,
       outputPath,
       existedBeforeCommit,
-      ...(contentHashBeforeConflict !== undefined ? { contentHashBeforeConflict } : {}),
+      ...(contentHashBeforeConflict === undefined ? {} : { contentHashBeforeConflict }),
     });
   }
 
@@ -206,7 +206,7 @@ async function resolveKeepBothGroups(
 
   const resolved = new Map<string, string>();
   for (const [key, group] of groups) {
-    const existingPaths = await Promise.all(group.map((output) => pathExists(output.outputPath)));
+    const existingPaths = await Promise.all(group.map(async (output) => pathExists(output.outputPath)));
     if (!existingPaths.some(Boolean)) {
       continue;
     }
@@ -219,7 +219,7 @@ async function resolveKeepBothGroups(
     for (let suffix = 1; ; suffix += 1) {
       const candidateBase = appendNumericSuffix(basePath, suffix);
       const candidatePaths = group.map((output) => `${candidateBase}${output.keepBothGroup?.suffix ?? ''}`);
-      const candidatePathsExist = await Promise.all(candidatePaths.map((candidate) => pathExists(candidate)));
+      const candidatePathsExist = await Promise.all(candidatePaths.map(async (candidate) => pathExists(candidate)));
       if (
         candidatePaths.every((candidate) => !reservedPaths.has(normalizePath(candidate))) &&
         candidatePathsExist.every((exists) => !exists)
@@ -454,7 +454,7 @@ async function validatePreparedOutputs(outputs: PreparedConversionOutput[]): Pro
 }
 
 async function findExistingOutputs(outputs: PreparedConversionOutput[]): Promise<ExistingOutputSnapshot[]> {
-  const existence = await Promise.all(outputs.map((output) => pathExists(output.outputPath)));
+  const existence = await Promise.all(outputs.map(async (output) => pathExists(output.outputPath)));
   return Promise.all(
     outputs.flatMap((output, index) => (existence[index] === true ? [createExistingOutputSnapshot(output)] : [])),
   );

@@ -56,7 +56,7 @@ export async function convertToAvifCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) => planAvifConversionJobs(sourceUri, configuration, maxInputPixels)),
+      sourceUris.map(async (sourceUri) => planAvifConversionJobs(sourceUri, configuration, maxInputPixels)),
     );
     const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
@@ -72,7 +72,7 @@ export async function convertToAvifCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('AVIF', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         executeAvifConversion({
           jobs,
           maxInputPixels,

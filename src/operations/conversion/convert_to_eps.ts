@@ -71,7 +71,7 @@ export async function convertToEpsFiles(options: ConvertToEpsFilesOptions): Prom
     operationName: 'convert-to-eps',
     runId,
     runtime: options.runtime,
-    stage: (job, index, stageRunId, runtime) => stageSourceToEps(job, index, stageRunId, runtime, options),
+    stage: async (job, index, stageRunId, runtime) => stageSourceToEps(job, index, stageRunId, runtime, options),
   });
 }
 
@@ -159,7 +159,7 @@ async function runPdfToEps(options: {
   await assertWritablePathInWorkspace(options.epsPath, path.dirname(options.epsPath));
   await mkdir(path.dirname(options.epsPath), { recursive: true });
   const runGhostscript = options.runGhostscript ?? executeGhostscript;
-  const argsFor = (inputPath: string, outputPath: string) => [
+  const argsFor = (inputPath: string, outputPath: string): string[] => [
     '-dSAFER',
     '-dNOPAUSE',
     '-dBATCH',
@@ -218,7 +218,11 @@ async function validateGeneratedEps(epsPath: string): Promise<void> {
     throw new Error(`EPS conversion produced no usable BoundingBox: ${epsPath}`);
   }
   const values = boundingBox.trim().split(/\s+/u).map(Number);
-  if (values.length !== 4 || !values.every(Number.isFinite) || values[0]! >= values[2]! || values[1]! >= values[3]!) {
+  const [left, bottom, right, top] = values;
+  if (values.length !== 4 || left === undefined || bottom === undefined || right === undefined || top === undefined) {
+    throw new Error(`EPS conversion produced an invalid BoundingBox: ${epsPath}`);
+  }
+  if (!values.every(Number.isFinite) || left >= right || bottom >= top) {
     throw new Error(`EPS conversion produced an invalid BoundingBox: ${epsPath}`);
   }
 }
