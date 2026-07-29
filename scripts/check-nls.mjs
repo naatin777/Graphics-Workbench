@@ -112,6 +112,7 @@ function scanCallArguments(scanner) {
   for (;;) {
     const token = scanner.scan();
     if (token === SyntaxKind.EndOfFile) {
+      // oxlint-disable-next-line unicorn/no-useless-undefined -- distinguish an incomplete call from a closed call.
       return undefined;
     }
 

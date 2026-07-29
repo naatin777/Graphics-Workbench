@@ -27,8 +27,10 @@ export interface RawSidecar {
   layout: 'interleaved';
 }
 
+type RawChannels = RawSidecar['channels'];
+
 // ponytail: v1 restricts to uchar with fixed colourspace/alpha per channel count
-const RAW_SIDECAR_CONSTRAINTS: Record<number, { colourspace: string; alpha: boolean }> = {
+const RAW_SIDECAR_CONSTRAINTS: Record<RawChannels, { colourspace: string; alpha: boolean }> = {
   1: { colourspace: 'b-w', alpha: false },
   2: { colourspace: 'b-w', alpha: true },
   3: { colourspace: 'srgb', alpha: false },
@@ -140,7 +142,7 @@ export function readRawSidecar(sourcePath: string): RawSidecar {
     );
   }
 
-  const expected = RAW_SIDECAR_CONSTRAINTS[channels]!;
+  const expected = RAW_SIDECAR_CONSTRAINTS[channels];
   if (colourspace !== expected.colourspace || alpha !== expected.alpha) {
     throw new Error(
       `Invalid Raw sidecar: ${sidecarPath}; channels ${channels} requires colourspace '${expected.colourspace}' and alpha ${expected.alpha}, got colourspace '${colourspace}' and alpha ${alpha}.`,

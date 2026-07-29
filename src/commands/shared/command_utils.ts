@@ -7,7 +7,12 @@ export function isAbortError(error: unknown): boolean {
 }
 
 export function selectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
-  const candidates = uris && uris.length > 0 ? uris : uri ? [uri] : [];
+  let candidates: vscode.Uri[] = [];
+  if (uris !== undefined && uris.length > 0) {
+    candidates = uris;
+  } else if (uri !== undefined) {
+    candidates = [uri];
+  }
   return [...new Map(candidates.map((candidate) => [candidate.toString(), candidate])).values()];
 }
 

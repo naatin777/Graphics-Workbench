@@ -337,7 +337,12 @@ function mergePdfLabels() {
 }
 
 function selectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
-  const candidates = uris && uris.length > 0 ? uris : uri ? [uri] : [];
+  let candidates: vscode.Uri[] = [];
+  if (uris !== undefined && uris.length > 0) {
+    candidates = uris;
+  } else if (uri !== undefined) {
+    candidates = [uri];
+  }
   const uniqueUris = new Map(candidates.map((candidate) => [candidate.toString(), candidate]));
   const selected = [...uniqueUris.values()];
 

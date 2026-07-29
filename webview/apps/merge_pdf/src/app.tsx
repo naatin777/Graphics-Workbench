@@ -107,7 +107,12 @@ export function App() {
     event.preventDefault();
     const draggedId = draggedSourceId();
     const transferId = event.dataTransfer?.getData('text/plain');
-    const sourceId = draggedId !== '' ? draggedId : transferId !== undefined && transferId !== '' ? transferId : '';
+    let sourceId = '';
+    if (draggedId !== '') {
+      sourceId = draggedId;
+    } else if (transferId !== undefined && transferId !== '') {
+      sourceId = transferId;
+    }
     moveSourceTo(sourceId, targetId);
     setDraggedSourceId('');
     setDropTargetId('');

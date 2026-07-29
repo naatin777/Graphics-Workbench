@@ -79,12 +79,12 @@ export function isSupportedImageInputPath(sourcePath: string): boolean {
 export function isSameSourceFormat(sourcePath: string, outputExtension: string): boolean {
   const sourceFormat = sourceFormatForPath(sourcePath);
   const normalizedExtension = outputExtension.toLowerCase().replace(/^\./u, '');
-  const outputFormat =
-    normalizedExtension === 'jpg' || normalizedExtension === 'jpeg'
-      ? 'jpeg'
-      : normalizedExtension === 'tif' || normalizedExtension === 'tiff'
-        ? 'tiff'
-        : normalizedExtension;
+  let outputFormat = normalizedExtension;
+  if (normalizedExtension === 'jpg' || normalizedExtension === 'jpeg') {
+    outputFormat = 'jpeg';
+  } else if (normalizedExtension === 'tif' || normalizedExtension === 'tiff') {
+    outputFormat = 'tiff';
+  }
 
   return sourceFormat === outputFormat;
 }

@@ -152,7 +152,7 @@ export function App() {
             }
           }
 
-          return undefined;
+          return;
         });
     };
 

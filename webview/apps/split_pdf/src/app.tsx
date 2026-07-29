@@ -331,7 +331,7 @@ export function App() {
           ? { standardFontDataUrl: payload.standardFontDataUrl }
           : {}),
         ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
-        ...(pdfPreview !== undefined ? { root: pdfPreview } : {}),
+        ...(pdfPreview === undefined ? {} : { root: pdfPreview }),
         pageLabel: labels().pageLabel,
         onRenderError: (error: unknown) => {
           const message = error instanceof Error ? error.message : String(error);

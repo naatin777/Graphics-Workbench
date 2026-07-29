@@ -177,7 +177,7 @@ async function resolveOutputPaths(
       ...output,
       outputPath,
       existedBeforeCommit,
-      ...(contentHashBeforeConflict !== undefined ? { contentHashBeforeConflict } : {}),
+      ...(contentHashBeforeConflict === undefined ? {} : { contentHashBeforeConflict }),
     });
   }
 

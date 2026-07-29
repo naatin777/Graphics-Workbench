@@ -457,7 +457,7 @@ function validateJobs(jobs: RasterJob[], definition: RasterConversionDefinition)
 
 async function validateGeneratedRaster(outputPath: string, outputExtension: string): Promise<void> {
   const metadata = await sharp(outputPath).metadata();
-  const expectedFormat = outputExtension === 'jpeg' ? 'jpeg' : outputExtension === 'avif' ? 'heif' : outputExtension;
+  const expectedFormat = outputExtension === 'avif' ? 'heif' : outputExtension;
 
   if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
     throw new Error(`Raster conversion produced invalid ${outputExtension.toUpperCase()} output: ${outputPath}`);

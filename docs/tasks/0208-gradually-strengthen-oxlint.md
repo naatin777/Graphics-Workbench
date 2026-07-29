@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 15
+Status: In progress — Phase 20
 
 ## Objective
 
@@ -91,6 +91,26 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 
 `unicorn/no-await-expression-member`をproductionコードでerrorへ強化する。`await`式の直後にmember accessやメソッド呼び出しを連結せず、非同期結果を一度ローカル変数へ受けてから利用する。画像・PDF変換jobの計画結果、PDFページ数、生成物の内容検証を対象とし、テストコードは対象外とする。
 
+## Phase 16
+
+`unicorn/no-useless-undefined`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。省略可能な引数やvoid相当の戻り値へ明示的な`undefined`を渡す箇所を、引数省略または値を返さないブロックへ置き換える。テストコードは対象外とする。
+
+## Phase 17
+
+`unicorn/no-nested-ternary`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。入力候補の選択、形式の正規化、生成物の形式判定、ドラッグ状態の選択を明示的な分岐へ置き換え、条件の優先順位を読み取りやすくする。未型付けのESTree visitor APIを扱う独自Oxlintプラグインは対象外、テストコードも対象外とする。
+
+## Phase 18
+
+`typescript/no-non-null-assertion`をproductionコードとWebview本体でerrorへ強化する。配列要素、Raw sidecarのchannel制約、EPS BoundingBoxの座標を、ループ構造・キー型・明示的な要素検証で保証する。テストコードとNode.js/GitHub Actionsスクリプトは対象外とする。
+
+## Phase 19
+
+`unicorn/no-negated-condition`をproductionコード、Webview本体、Webview build configでerrorへ強化する。`undefined`・`false`との否定比較を、欠落時のfallbackや明示的な分岐の肯定条件へ書き換え、条件の意図を読み取りやすくする。テストコードは対象外とする。
+
+## Phase 20
+
+`unicorn/no-object-as-default-parameter`をproductionコード、Webview本体、Node.js/GitHub Actionsスクリプトでerrorへ強化する。オプションオブジェクトの既定値を関数シグネチャから関数本体のローカル値へ移し、呼び出し時の引数契約と既定値の適用箇所を分離する。テストコードは対象外とする。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -108,12 +128,17 @@ Phase 9の動的境界は小さな`unknown`型ガードで十分なため、今�
 - `typescript/strict-void-return` の既存違反は25件で、Node.jsの`execFile`とWebviewのref・イベントハンドラ・setter callbackに分散していた。Phase 13では16件のWebview callbackを明示的なブロックへ置き換え、`execFile`の9件はNodeのoverloadと`promisify`の型定義の不一致を理由に局所抑制する
 - `typescript/no-confusing-void-expression` の既存違反は31件で、Webviewのイベント・ref・入力callbackと、extension側のイベント登録・キャンセル処理に分散していた。Phase 14ではvoid式を返すarrow shorthandをすべて明示的なブロックへ置き換える
 - `unicorn/no-await-expression-member` の既存違反は18件で、画像・PDF変換jobの計画結果、PDFのページ数、画像buffer、出力内容の検証に分散していた。Phase 15ではawait結果をローカル変数へ受けてからmember accessする形へ置き換える
+- `unicorn/no-useless-undefined` の既存違反は12件で、void相当のPromise callback、optionalなQuick Pick結果、Webview API fallback、編集providerの「編集なし」結果、環境変数由来のoptionalなURL、scannerの終了戻り値に分散していた。Phase 16では7件を引数省略または値を返さない戻り方へ置き換え、VS Code provider契約とconsistent-returnのため5件は理由付きの局所抑制を残す
+- `unicorn/no-nested-ternary` の既存違反は8件で、入力URI候補の選択、拡張子の正規化、ラスター出力形式の検証、Webviewのdrag and drop、独自OxlintプラグインのAST property判定に分散していた。Phase 17ではproduction・Webviewの7件を明示的な分岐へ置き換え、独自プラグインは未型付けvisitor APIを理由に対象外とする
+- `typescript/no-non-null-assertion` の既存違反は12件で、画像結合job・Quick Pick item・Raw sidecar制約・EPS BoundingBoxに分散していた。Phase 18では非null assertionをすべて削除し、配列境界・キー型・座標要素の保証をコード上へ移す
+- `unicorn/no-negated-condition` の既存違反は5件で、optionalなcontent hash・PDF job outputPath・LaTeX page fallback・Webview build plugin・PDF preview rootに分散していた。Phase 19では否定比較を肯定条件へ置き換える
+- `unicorn/no-object-as-default-parameter` の既存違反は3件で、MermaidのPuppeteer/CLIオプションとDraw.io backendの既定値に限定されていた。Phase 20では既定値を関数本体のローカル値へ移す
 - `suspicious`カテゴリの既存違反は38件で、postMessageのtarget origin、side-effect import、shadowing、error cause、テンプレート式などに分散していた
 - `suspicious`カテゴリ全体をerrorにすると、型アサーション、配列sort、importなどの既存違反が多数あるため、Phase 1では有効化しない
 
 ## Completion criteria
 
-- Phase 1からPhase 15までの制限をCIの通常lintで強制できる
+- Phase 1からPhase 20までの制限をCIの通常lintで強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

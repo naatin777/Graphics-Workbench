@@ -178,6 +178,7 @@ export default defineConfig({
     eqeqeq: 'error',
     'no-console': 'error',
     'no-await-in-loop': 'off',
+    'unicorn/no-negated-condition': 'error',
 
     /*
      * TypeScript
@@ -198,6 +199,7 @@ export default defineConfig({
     ],
     'unicorn/prefer-string-replace-all': 'error',
     'unicorn/no-array-sort': 'error',
+    'unicorn/no-object-as-default-parameter': 'error',
 
     /*
      * Error handling
@@ -283,7 +285,10 @@ export default defineConfig({
         'typescript/no-confusing-void-expression': 'error',
         'typescript/strict-boolean-expressions': 'error',
         'typescript/strict-void-return': 'error',
+        'typescript/no-non-null-assertion': 'error',
         'unicorn/no-await-expression-member': 'error',
+        'unicorn/no-useless-undefined': 'error',
+        'unicorn/no-nested-ternary': 'error',
       },
     },
     {
@@ -292,6 +297,7 @@ export default defineConfig({
         // The custom plugin consumes Oxlint's untyped ESTree visitor API.
         'typescript/no-unsafe-assignment': 'off',
         'typescript/strict-boolean-expressions': 'off',
+        'unicorn/no-nested-ternary': 'off',
       },
     },
     {
@@ -331,10 +337,15 @@ export default defineConfig({
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unnecessary-condition': 'off',
         'typescript/no-unsafe-return': 'off',
+        'typescript/no-non-null-assertion': 'off',
         'typescript/no-confusing-void-expression': 'off',
         'typescript/strict-boolean-expressions': 'off',
         'typescript/strict-void-return': 'off',
         'unicorn/no-await-expression-member': 'off',
+        'unicorn/no-useless-undefined': 'off',
+        'unicorn/no-nested-ternary': 'off',
+        'unicorn/no-negated-condition': 'off',
+        'unicorn/no-object-as-default-parameter': 'off',
         'unicorn/consistent-function-scoping': 'off',
       },
     },

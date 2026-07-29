@@ -86,12 +86,14 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
         signal.throwIfAborted();
 
         if (!pickedItem) {
+          // oxlint-disable-next-line unicorn/no-useless-undefined -- VS Code paste provider uses undefined for no edit.
           return undefined;
         }
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
 
         if (!workspaceFolder) {
+          // oxlint-disable-next-line unicorn/no-useless-undefined -- VS Code paste provider uses undefined for no edit.
           return undefined;
         }
 
@@ -118,6 +120,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
         signal.throwIfAborted();
 
         if (inputOutputPath === undefined || inputOutputPath === '') {
+          // oxlint-disable-next-line unicorn/no-useless-undefined -- VS Code paste provider uses undefined for no edit.
           return undefined;
         }
 

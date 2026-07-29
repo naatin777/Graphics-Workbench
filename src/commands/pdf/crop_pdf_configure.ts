@@ -242,7 +242,12 @@ async function applyConfiguredCrop(params: {
 }
 
 function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri {
-  const candidates = uris && uris.length > 0 ? uris : uri ? [uri] : [];
+  let candidates: vscode.Uri[] = [];
+  if (uris !== undefined && uris.length > 0) {
+    candidates = uris;
+  } else if (uri !== undefined) {
+    candidates = [uri];
+  }
 
   if (candidates.length !== 1) {
     throw new Error('cropPdf.configure requires exactly one PDF file.');

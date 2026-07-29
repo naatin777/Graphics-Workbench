@@ -140,7 +140,7 @@ export async function renderPdfPages(
               }
 
               const pageNumber = Number(entry.target instanceof HTMLElement ? entry.target.dataset.pdfPage : undefined);
-              void renderPage(pageNumber).catch(() => undefined);
+              void renderPage(pageNumber).catch(() => {});
             }
           },
           {

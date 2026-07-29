@@ -218,7 +218,11 @@ async function validateGeneratedEps(epsPath: string): Promise<void> {
     throw new Error(`EPS conversion produced no usable BoundingBox: ${epsPath}`);
   }
   const values = boundingBox.trim().split(/\s+/u).map(Number);
-  if (values.length !== 4 || !values.every(Number.isFinite) || values[0]! >= values[2]! || values[1]! >= values[3]!) {
+  const [left, bottom, right, top] = values;
+  if (values.length !== 4 || left === undefined || bottom === undefined || right === undefined || top === undefined) {
+    throw new Error(`EPS conversion produced an invalid BoundingBox: ${epsPath}`);
+  }
+  if (!values.every(Number.isFinite) || left >= right || bottom >= top) {
     throw new Error(`EPS conversion produced an invalid BoundingBox: ${epsPath}`);
   }
 }
