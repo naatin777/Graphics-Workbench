@@ -1,5 +1,4 @@
-import type { Accessor } from 'solid-js';
-import type { JSX } from 'solid-js';
+import type { Accessor, JSX } from 'solid-js';
 
 import type { SplitPdfLabels } from '@graphics-workbench-split-pdf-protocol';
 

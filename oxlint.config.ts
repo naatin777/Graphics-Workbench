@@ -180,6 +180,11 @@ export default defineConfig({
     'no-await-in-loop': 'off',
     complexity: ['error', { max: 20 }],
     'max-depth': ['error', { max: 4 }],
+    'max-params': ['error', { max: 5 }],
+    'eslint/max-classes-per-file': ['error', 1],
+    'eslint/no-implicit-coercion': 'error',
+    'import/no-duplicates': 'error',
+    'no-warning-comments': 'error',
     'unicorn/no-negated-condition': 'error',
 
     /*
@@ -189,6 +194,7 @@ export default defineConfig({
     'typescript/no-unused-vars': 'error',
     'typescript/consistent-type-imports': 'error',
     'typescript/no-explicit-any': 'error',
+    'typescript/no-empty-object-type': 'error',
     'typescript/no-require-imports': 'error',
     'typescript/explicit-function-return-type': 'error',
     'typescript/no-unnecessary-type-assertion': 'error',
@@ -307,6 +313,8 @@ export default defineConfig({
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unsafe-return': 'off',
         complexity: 'off',
+        'max-params': 'off',
+        'eslint/max-classes-per-file': 'off',
         'typescript/strict-boolean-expressions': 'off',
         'unicorn/no-useless-undefined': 'off',
         'unicorn/no-nested-ternary': 'off',
@@ -319,6 +327,8 @@ export default defineConfig({
         // The test exercises the untyped AST helper exported by the custom plugin.
         'typescript/no-unsafe-assignment': 'off',
         complexity: 'off',
+        'max-params': 'off',
+        'eslint/max-classes-per-file': 'off',
       },
     },
     {
@@ -355,6 +365,8 @@ export default defineConfig({
       rules: {
         'no-console': 'off',
         complexity: 'off',
+        'max-params': 'off',
+        'eslint/max-classes-per-file': 'off',
         'typescript/no-explicit-any': 'off',
         'typescript/explicit-function-return-type': 'off',
         'typescript/no-floating-promises': 'off',

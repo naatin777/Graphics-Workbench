@@ -1,5 +1,4 @@
-import type { Accessor } from 'solid-js';
-import type { JSX } from 'solid-js';
+import type { Accessor, JSX } from 'solid-js';
 
 import type { MergePdfLabels, MergePdfSource } from './messages';
 import { PreviewThumbnail, type PdfOptions } from './preview_thumbnail';
