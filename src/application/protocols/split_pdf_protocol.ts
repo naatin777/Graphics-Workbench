@@ -186,9 +186,12 @@ export function isSplitPdfHostToWebviewMessage(value: unknown): value is SplitPd
     return false;
   }
 
+  return isSplitPdfInitPayload(value.payload);
+}
+
+function isSplitPdfInitPayload(payload: Record<string, unknown>): boolean {
   return (
-    hasExactKeys(value, ['type', 'payload']) &&
-    hasExactKeys(value.payload, [
+    hasExactKeys(payload, [
       'sourceId',
       'fileName',
       'pageCount',
@@ -197,18 +200,24 @@ export function isSplitPdfHostToWebviewMessage(value: unknown): value is SplitPd
       'resources',
       'labels',
     ]) &&
-    isNonEmptyString(value.payload.sourceId) &&
-    isNonEmptyString(value.payload.fileName) &&
-    isPositiveInteger(value.payload.pageCount) &&
-    isWebviewUri(value.payload.pdfSrc) &&
-    isNonEmptyString(value.payload.outputPathTemplate) &&
-    isRecord(value.payload.resources) &&
-    hasExactKeys(value.payload.resources, [], ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl']) &&
-    isOptionalWebviewUri(value.payload.resources.workerSrc) &&
-    isOptionalWebviewUri(value.payload.resources.cMapUrl) &&
-    isOptionalWebviewUri(value.payload.resources.standardFontDataUrl) &&
-    isOptionalWebviewUri(value.payload.resources.wasmUrl) &&
-    isSplitPdfLabels(value.payload.labels)
+    isNonEmptyString(payload.sourceId) &&
+    isNonEmptyString(payload.fileName) &&
+    isPositiveInteger(payload.pageCount) &&
+    isWebviewUri(payload.pdfSrc) &&
+    isNonEmptyString(payload.outputPathTemplate) &&
+    isSplitPdfResources(payload.resources) &&
+    isSplitPdfLabels(payload.labels)
+  );
+}
+
+function isSplitPdfResources(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, [], ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl']) &&
+    isOptionalWebviewUri(value.workerSrc) &&
+    isOptionalWebviewUri(value.cMapUrl) &&
+    isOptionalWebviewUri(value.standardFontDataUrl) &&
+    isOptionalWebviewUri(value.wasmUrl)
   );
 }
 

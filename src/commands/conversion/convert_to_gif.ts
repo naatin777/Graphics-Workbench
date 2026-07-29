@@ -200,14 +200,24 @@ function outputTemplateForSource(
   outputMode?: 'auto' | 'preserve' | 'split',
 ): string {
   const splitDefault = outputMode === 'split' ? DEFAULT_SPLIT_OUTPUT_PATH : undefined;
+  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
+    return readOutputPathsTemplate(configuration, 'convertDrawioToGif', DEFAULT_DRAWIO_OUTPUT_PATH);
+  }
+
+  return outputTemplateForExtension(path.extname(sourcePath).toLowerCase(), configuration, splitDefault);
+}
+
+function outputTemplateForExtension(
+  extension: string,
+  configuration: vscode.WorkspaceConfiguration,
+  splitDefault: string | undefined,
+): string {
   const readPairTemplate = (key: string, defaultValue: string): string => {
     const pageTemplate = readOutputPathsTemplate(configuration, key, '');
     return pageTemplate || readOutputPathTemplate(configuration, `outputPath.${key}`, splitDefault ?? defaultValue);
   };
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return readOutputPathsTemplate(configuration, 'convertDrawioToGif', DEFAULT_DRAWIO_OUTPUT_PATH);
-  }
-  switch (path.extname(sourcePath).toLowerCase()) {
+
+  switch (extension) {
     case '.png':
       return readPairTemplate('convertPngToGif', splitDefault ?? DEFAULT_OUTPUT_PATH);
     case '.jpg':

@@ -143,55 +143,25 @@ async function convertPdf(params: {
   try {
     await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
     signal?.throwIfAborted();
-    let ghostscriptInputPath = copiedSourcePath;
-
-    if (platform === 'win32') {
-      const scratchArgs: Parameters<typeof createAsciiInputScratch>[0] = {
-        baseCandidates: scratchBaseCandidates,
-        inputFileName: 'input.pdf',
-      };
-      if (signal !== undefined) {
-        scratchArgs.signal = signal;
-      }
-      if (outputChannel !== undefined) {
-        scratchArgs.outputChannel = outputChannel;
-      }
-      scratch = await createAsciiInputScratch(scratchArgs);
-      signal?.throwIfAborted();
-      await copyFile(copiedSourcePath, scratch.inputPath);
-      signal?.throwIfAborted();
-      await validateAsciiScratchInput(scratch);
-      ghostscriptInputPath = scratch.inputPath;
-      outputChannel?.appendLine(`[scratch] logical input: ${job.sourcePath}`);
-      outputChannel?.appendLine(`[scratch] tool input: ${scratch.inputPath}`);
-    }
-
-    const boundingBoxes = await readBoundingBoxes(
+    const preparedInput = await prepareGhostscriptInput({
+      sourcePath: job.sourcePath,
+      copiedSourcePath,
+      platform,
+      scratchBaseCandidates,
+      signal,
+      outputChannel,
+    });
+    scratch = preparedInput.scratch;
+    const document = await cropDocument({
+      sourcePath: job.sourcePath,
+      copiedSourcePath,
+      ghostscriptInputPath: preparedInput.ghostscriptInputPath,
       ghostscriptPath,
-      ghostscriptInputPath,
       runGhostscript,
       signal,
       outputChannel,
-    );
-    signal?.throwIfAborted();
-    const document = await PDFDocument.load(await readFile(copiedSourcePath));
-    signal?.throwIfAborted();
-    const pages = document.getPages();
-
-    if (boundingBoxes.length !== pages.length || pages.length === 0) {
-      throw new Error(`Could not determine all PDF page bounds: ${job.sourcePath}`);
-    }
-
-    for (const [pageIndex, page] of pages.entries()) {
-      signal?.throwIfAborted();
-      const boundingBox = boundingBoxes[pageIndex];
-
-      if (!boundingBox) {
-        throw new Error(`Missing page bounds for page ${pageIndex + 1}: ${job.sourcePath}`);
-      }
-
-      setPageBounds(page, boundingBox, margin);
-    }
+      margin,
+    });
 
     await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
     signal?.throwIfAborted();
@@ -214,6 +184,81 @@ async function convertPdf(params: {
     }
     throw error instanceof Error ? error : new Error(String(error));
   }
+}
+
+async function prepareGhostscriptInput(options: {
+  sourcePath: string;
+  copiedSourcePath: string;
+  platform: NodeJS.Platform;
+  scratchBaseCandidates: readonly string[];
+  signal: AbortSignal | undefined;
+  outputChannel: LineOutputChannel | undefined;
+}): Promise<{ ghostscriptInputPath: string; scratch?: AsciiScratch }> {
+  if (options.platform !== 'win32') {
+    return { ghostscriptInputPath: options.copiedSourcePath };
+  }
+
+  const scratchArgs: Parameters<typeof createAsciiInputScratch>[0] = {
+    baseCandidates: options.scratchBaseCandidates,
+    inputFileName: 'input.pdf',
+  };
+  if (options.signal !== undefined) {
+    scratchArgs.signal = options.signal;
+  }
+  if (options.outputChannel !== undefined) {
+    scratchArgs.outputChannel = options.outputChannel;
+  }
+  const scratch = await createAsciiInputScratch(scratchArgs);
+  try {
+    options.signal?.throwIfAborted();
+    await copyFile(options.copiedSourcePath, scratch.inputPath);
+    options.signal?.throwIfAborted();
+    await validateAsciiScratchInput(scratch);
+    options.outputChannel?.appendLine(`[scratch] logical input: ${options.sourcePath}`);
+    options.outputChannel?.appendLine(`[scratch] tool input: ${scratch.inputPath}`);
+    return { ghostscriptInputPath: scratch.inputPath, scratch };
+  } catch (error) {
+    options.outputChannel?.appendLine(`[scratch] retained after failure: ${scratch.rootPath}`);
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+}
+
+async function cropDocument(options: {
+  sourcePath: string;
+  copiedSourcePath: string;
+  ghostscriptInputPath: string;
+  ghostscriptPath: string;
+  runGhostscript: RunGhostscript;
+  signal: AbortSignal | undefined;
+  outputChannel: LineOutputChannel | undefined;
+  margin: number;
+}): Promise<PDFDocument> {
+  const boundingBoxes = await readBoundingBoxes(
+    options.ghostscriptPath,
+    options.ghostscriptInputPath,
+    options.runGhostscript,
+    options.signal,
+    options.outputChannel,
+  );
+  options.signal?.throwIfAborted();
+  const document = await PDFDocument.load(await readFile(options.copiedSourcePath));
+  options.signal?.throwIfAborted();
+  const pages = document.getPages();
+
+  if (boundingBoxes.length !== pages.length || pages.length === 0) {
+    throw new Error(`Could not determine all PDF page bounds: ${options.sourcePath}`);
+  }
+
+  for (const [pageIndex, page] of pages.entries()) {
+    options.signal?.throwIfAborted();
+    const boundingBox = boundingBoxes[pageIndex];
+    if (!boundingBox) {
+      throw new Error(`Missing page bounds for page ${pageIndex + 1}: ${options.sourcePath}`);
+    }
+    setPageBounds(page, boundingBox, options.margin);
+  }
+
+  return document;
 }
 
 async function readBoundingBoxes(

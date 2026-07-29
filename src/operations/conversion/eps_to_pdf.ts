@@ -47,8 +47,7 @@ export async function convertEpsToPdf(options: EpsToPdfOptions): Promise<EpsToPd
   options.signal?.throwIfAborted();
 
   const platform = options.platform ?? process.platform;
-  const pixbuf = options.timeout ?? 30_000;
-  const runGhostscript = options.tools.runGhostscript ?? executeGhostscript;
+  const timeout = options.timeout ?? 30_000;
 
   await mkdir(options.stagingDirectory, { recursive: true });
 
@@ -57,90 +56,79 @@ export async function convertEpsToPdf(options: EpsToPdfOptions): Promise<EpsToPd
   options.signal?.throwIfAborted();
 
   const pdfPath = path.join(options.stagingDirectory, 'eps-result.pdf');
-  let ghostscriptInputPath = stagingEpsPath;
-  let ghostscriptOutputPath = pdfPath;
-
   if (platform === 'win32') {
-    const scratchOptions: Parameters<typeof createAsciiInputOutputScratch>[0] = {
-      baseCandidates: options.scratchBaseCandidates ?? defaultWindowsScratchBaseCandidates(),
-      inputFileName: 'source.eps',
-      outputFileName: 'output.pdf',
-      toolName: 'Ghostscript',
-    };
-    if (options.signal !== undefined) {
-      scratchOptions.signal = options.signal;
-    }
-    if (options.outputChannel !== undefined) {
-      scratchOptions.outputChannel = options.outputChannel;
-    }
-    const scratch = await createAsciiInputOutputScratch(scratchOptions);
-    let scratchSucceeded = false;
-
-    try {
-      await copyFile(stagingEpsPath, scratch.inputPath);
-      await validateAsciiScratchInput(scratch);
-      ghostscriptInputPath = scratch.inputPath;
-      ghostscriptOutputPath = scratch.outputPath;
-      options.outputChannel?.appendLine(`[scratch] logical input: ${options.epsPath}`);
-      options.outputChannel?.appendLine(`[scratch] tool input: ${scratch.inputPath}`);
-      options.outputChannel?.appendLine(`[scratch] tool output: ${scratch.outputPath}`);
-      options.signal?.throwIfAborted();
-
-      await runGhostscript(
-        options.tools.ghostscriptPath,
-        [
-          '-dSAFER',
-          '-dNOPAUSE',
-          '-dBATCH',
-          '-dEPSCrop',
-          '-sDEVICE=pdfwrite',
-          `-sOutputFile=${ghostscriptOutputPath}`,
-          ghostscriptInputPath,
-        ],
-        pixbuf,
-        options.signal,
-      );
-
-      options.signal?.throwIfAborted();
-      await validateAsciiScratchOutput(scratch);
-      await validateGeneratedPdf(ghostscriptOutputPath);
-      options.signal?.throwIfAborted();
-      await copyFile(ghostscriptOutputPath, pdfPath);
-      options.signal?.throwIfAborted();
-      await validateGeneratedPdf(pdfPath);
-      options.signal?.throwIfAborted();
-      options.outputChannel?.appendLine(`[scratch] staged output: ${pdfPath}`);
-      scratchSucceeded = true;
-
-      return { pdfPath, stagingDirectory: options.stagingDirectory };
-    } finally {
-      if (scratchSucceeded) {
-        await removeSuccessfulScratch(scratch, options.outputChannel);
-      } else {
-        options.outputChannel?.appendLine(`[scratch] retained after failure or cancellation: ${scratch.rootPath}`);
-      }
-    }
+    return convertEpsToPdfOnWindows(options, stagingEpsPath, pdfPath, timeout);
   }
 
-  await runGhostscript(
-    options.tools.ghostscriptPath,
-    [
-      '-dSAFER',
-      '-dNOPAUSE',
-      '-dBATCH',
-      '-dEPSCrop',
-      '-sDEVICE=pdfwrite',
-      `-sOutputFile=${pdfPath}`,
-      ghostscriptInputPath,
-    ],
-    pixbuf,
-    options.signal,
-  );
-
-  options.signal?.throwIfAborted();
+  await runGhostscriptCommand(options, stagingEpsPath, pdfPath, timeout);
   await validateGeneratedPdf(pdfPath);
 
   return { pdfPath, stagingDirectory: options.stagingDirectory };
+}
+
+async function convertEpsToPdfOnWindows(
+  options: EpsToPdfOptions,
+  stagingEpsPath: string,
+  pdfPath: string,
+  timeout: number,
+): Promise<EpsToPdfResult> {
+  const scratchOptions: Parameters<typeof createAsciiInputOutputScratch>[0] = {
+    baseCandidates: options.scratchBaseCandidates ?? defaultWindowsScratchBaseCandidates(),
+    inputFileName: 'source.eps',
+    outputFileName: 'output.pdf',
+    toolName: 'Ghostscript',
+  };
+  if (options.signal !== undefined) {
+    scratchOptions.signal = options.signal;
+  }
+  if (options.outputChannel !== undefined) {
+    scratchOptions.outputChannel = options.outputChannel;
+  }
+  const scratch = await createAsciiInputOutputScratch(scratchOptions);
+  let scratchSucceeded = false;
+
+  try {
+    await copyFile(stagingEpsPath, scratch.inputPath);
+    await validateAsciiScratchInput(scratch);
+    options.outputChannel?.appendLine(`[scratch] logical input: ${options.epsPath}`);
+    options.outputChannel?.appendLine(`[scratch] tool input: ${scratch.inputPath}`);
+    options.outputChannel?.appendLine(`[scratch] tool output: ${scratch.outputPath}`);
+    options.signal?.throwIfAborted();
+
+    await runGhostscriptCommand(options, scratch.inputPath, scratch.outputPath, timeout);
+    await validateAsciiScratchOutput(scratch);
+    await validateGeneratedPdf(scratch.outputPath);
+    await copyFile(scratch.outputPath, pdfPath);
+    options.signal?.throwIfAborted();
+    await validateGeneratedPdf(pdfPath);
+    options.signal?.throwIfAborted();
+    options.outputChannel?.appendLine(`[scratch] staged output: ${pdfPath}`);
+    scratchSucceeded = true;
+
+    return { pdfPath, stagingDirectory: options.stagingDirectory };
+  } finally {
+    if (scratchSucceeded) {
+      await removeSuccessfulScratch(scratch, options.outputChannel);
+    } else {
+      options.outputChannel?.appendLine(`[scratch] retained after failure or cancellation: ${scratch.rootPath}`);
+    }
+  }
+}
+
+async function runGhostscriptCommand(
+  options: EpsToPdfOptions,
+  inputPath: string,
+  outputPath: string,
+  timeout: number,
+): Promise<void> {
+  const runGhostscript = options.tools.runGhostscript ?? executeGhostscript;
+  await runGhostscript(
+    options.tools.ghostscriptPath,
+    ['-dSAFER', '-dNOPAUSE', '-dBATCH', '-dEPSCrop', '-sDEVICE=pdfwrite', `-sOutputFile=${outputPath}`, inputPath],
+    timeout,
+    options.signal,
+  );
+  options.signal?.throwIfAborted();
 }
 
 async function validateGeneratedPdf(pdfPath: string): Promise<void> {
