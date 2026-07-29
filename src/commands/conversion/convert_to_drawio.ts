@@ -100,7 +100,7 @@ async function convertToDrawioWithDefaults(
       ...(dependencies?.outputChannel !== undefined && { outputChannel: dependencies.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('Draw.io', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         convertToDrawioFiles({
           jobs,
           drawioPath,

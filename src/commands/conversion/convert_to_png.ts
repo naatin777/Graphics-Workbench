@@ -52,7 +52,7 @@ export async function convertToPngCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) => planPngConversionJobs(sourceUri, configuration, maxInputPixels)),
+      sourceUris.map(async (sourceUri) => planPngConversionJobs(sourceUri, configuration, maxInputPixels)),
     );
     const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
@@ -67,7 +67,7 @@ export async function convertToPngCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('PNG', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         executePngConversion({
           jobs,
           maxInputPixels,

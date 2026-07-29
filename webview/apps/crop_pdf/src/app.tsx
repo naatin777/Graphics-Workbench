@@ -120,7 +120,7 @@ export function App() {
           vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
         },
       })
-        .then((controller) => {
+        .then(async (controller) => {
           renderController = controller;
           return controller.firstPageReady;
         })

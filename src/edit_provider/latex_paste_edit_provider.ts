@@ -48,7 +48,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
     this.resolveConflicts = options.resolveOutputConflicts ?? resolveOutputConflicts;
     this.outputChannel = options.outputChannel;
     this.rememberConversion =
-      options.recordConversionForUndo ?? ((outputs) => recordConversionForUndo(outputs, this.outputChannel));
+      options.recordConversionForUndo ?? (async (outputs) => recordConversionForUndo(outputs, this.outputChannel));
   }
 
   async provideDocumentPasteEdits(

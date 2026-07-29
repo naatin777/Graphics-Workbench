@@ -59,7 +59,7 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
       async () => {
         const limit = pLimit(CONVERSION_CONCURRENCY);
         const settled = await Promise.allSettled(
-          options.jobs.map((job, index) =>
+          options.jobs.map(async (job, index) =>
             limit(async () => {
               batchRuntime.signal?.throwIfAborted();
               try {

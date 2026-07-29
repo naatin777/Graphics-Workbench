@@ -49,7 +49,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   validateJobs(options.jobs);
 
   await Promise.all([
-    ...options.jobs.map((job) => assertExistingPathInWorkspace(job.sourcePath, options.workspacePath)),
+    ...options.jobs.map(async (job) => assertExistingPathInWorkspace(job.sourcePath, options.workspacePath)),
     assertWritablePathInWorkspace(options.outputPath, options.workspacePath),
     assertWritablePathInWorkspace(
       path.join(options.workspacePath, '.latex-graphics-helper', 'combine-images'),

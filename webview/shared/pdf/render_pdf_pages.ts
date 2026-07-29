@@ -82,7 +82,7 @@ export async function renderPdfPages(
     pageFrames.push(pageFrame);
   }
 
-  const renderPage = (pageNumber: number): Promise<void> => {
+  const renderPage = async (pageNumber: number): Promise<void> => {
     const existing = renderPromises.get(pageNumber);
 
     if (existing) {

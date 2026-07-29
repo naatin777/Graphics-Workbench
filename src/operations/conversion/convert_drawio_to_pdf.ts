@@ -58,7 +58,7 @@ export async function convertDrawioToPdfFiles(
     operationName,
     runId,
     ...(options.runtime !== undefined && { runtime: options.runtime }),
-    stage: (job, index, currentRunId, runtime) =>
+    stage: async (job, index, currentRunId, runtime) =>
       stageDrawioJob({
         job,
         index,

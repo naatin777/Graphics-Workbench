@@ -44,7 +44,7 @@ export async function convertToEpsCommand(
       throw new Error('No files were selected.');
     }
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
-    const plannedJobs = await Promise.all(sourceUris.map((sourceUri) => createEpsJobs(sourceUri, configuration)));
+    const plannedJobs = await Promise.all(sourceUris.map(async (sourceUri) => createEpsJobs(sourceUri, configuration)));
     const jobs = plannedJobs.flat();
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     await runConversionLifecycle({
@@ -52,7 +52,7 @@ export async function convertToEpsCommand(
       ...(dependencies?.outputChannel === undefined ? {} : { outputChannel: dependencies.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('EPS', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         convertToEpsFiles({
           jobs,
           runtime,

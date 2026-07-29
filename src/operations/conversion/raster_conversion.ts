@@ -72,7 +72,7 @@ export function createSimpleRasterExecutor(options: SimpleRasterConversionOption
       `Unsupported input for ${options.resultExtension.toUpperCase()} conversion: ${sourcePath}`,
   };
 
-  return (
+  return async (
     batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
       maxInputPixels?: number;
     },
@@ -147,7 +147,7 @@ export async function executeRasterConversionBatch(
     operationName: options.definition.operationName,
     runId,
     runtime: options.runtime,
-    stage: (job, index, stageRunId, stageRuntime) =>
+    stage: async (job, index, stageRunId, stageRuntime) =>
       stageRasterConversion(job, index, {
         runId: stageRunId,
         runtime: stageRuntime,

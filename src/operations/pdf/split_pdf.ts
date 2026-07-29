@@ -54,7 +54,7 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<Commit
     operationName: 'split-pdf',
     runId,
     runtime: runtime ?? {},
-    stage: (job, index, currentRunId, batchRuntime) =>
+    stage: async (job, index, currentRunId, batchRuntime) =>
       splitPdf({ job, index, runId: currentRunId, signal: batchRuntime.signal }),
   });
 }
@@ -74,7 +74,7 @@ export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions)
     operationName: 'split-pdf',
     runId,
     runtime: runtime ?? {},
-    stage: (job, index, currentRunId, batchRuntime) =>
+    stage: async (job, index, currentRunId, batchRuntime) =>
       splitPdfPageGroups({ job, index, runId: currentRunId, signal: batchRuntime.signal }),
   });
 }

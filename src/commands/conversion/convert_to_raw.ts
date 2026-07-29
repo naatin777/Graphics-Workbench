@@ -33,7 +33,7 @@ export async function convertToRawCommand(
     const outputTemplate = readConvertToRawOutputPath(configuration, sourceExt, DEFAULT_OUTPUT_PATH);
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) => planRawConversionJobs(sourceUri, outputTemplate, maxInputPixels)),
+      sourceUris.map(async (sourceUri) => planRawConversionJobs(sourceUri, outputTemplate, maxInputPixels)),
     );
     const jobs = plannedJobs.flat();
     await runConversionLifecycle({
@@ -41,7 +41,7 @@ export async function convertToRawCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('RAW', sourceUris.length),
-      run: (runtime) => convertToRawFiles({ jobs, maxInputPixels, runtime }),
+      run: async (runtime) => convertToRawFiles({ jobs, maxInputPixels, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {

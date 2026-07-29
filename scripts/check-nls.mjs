@@ -204,9 +204,13 @@ export function checkNls(root) {
         }
       }
     } else if (Array.isArray(value)) {
-      value.forEach(walk);
+      for (const entry of value) {
+        walk(entry);
+      }
     } else if (value !== null && typeof value === 'object') {
-      Object.values(value).forEach(walk);
+      for (const entry of Object.values(value)) {
+        walk(entry);
+      }
     }
   }
   walk(packageJson);

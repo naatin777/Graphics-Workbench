@@ -137,7 +137,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
     stagingOperationName: 'convert-png-to-pdf',
     runId,
     runtime: runtime ?? {},
-    stage: (job, index, currentRunId, batchRuntime) =>
+    stage: async (job, index, currentRunId, batchRuntime) =>
       stageSourceToPdf(
         job,
         index,

@@ -90,7 +90,7 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
 
     snippet.appendText('\\begin{figure}[H]\n\t\\centering\n');
 
-    relativeFilePaths.forEach((relativeFilePath, index) => {
+    for (const [index, relativeFilePath] of relativeFilePaths.entries()) {
       const name = fileNames[index] ?? '';
       const label = escapeLatexLabel(name);
       const latexRelativeFilePath = normalizeLatexPath(relativeFilePath);
@@ -117,7 +117,7 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
         snippet.appendChoice(['\\hspace{0.01\\linewidth}', '\\hfill'], tabstop++);
         snippet.appendText('\n');
       }
-    });
+    }
 
     snippet.appendText('\\end{figure}');
     return snippet;

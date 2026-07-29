@@ -385,7 +385,7 @@ async function workspaceForSources(sourceUris: vscode.Uri[]): Promise<vscode.Wor
   }
 
   await Promise.all(
-    sourceUris.map((sourceUri) => assertExistingPathInWorkspace(sourceUri.fsPath, workspace.uri.fsPath)),
+    sourceUris.map(async (sourceUri) => assertExistingPathInWorkspace(sourceUri.fsPath, workspace.uri.fsPath)),
   );
 
   return workspace;

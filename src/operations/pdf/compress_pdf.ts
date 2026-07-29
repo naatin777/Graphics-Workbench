@@ -56,7 +56,7 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
     stagingOperationName: 'compress-pdf',
     runId,
     runtime: runtime ?? {},
-    stage: (job, index, currentRunId, batchRuntime) =>
+    stage: async (job, index, currentRunId, batchRuntime) =>
       compressPdf({
         job,
         index,

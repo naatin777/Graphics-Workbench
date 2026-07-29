@@ -200,6 +200,7 @@ export default defineConfig({
     'unicorn/prefer-string-replace-all': 'error',
     'unicorn/no-array-sort': 'error',
     'unicorn/no-object-as-default-parameter': 'error',
+    'unicorn/no-array-for-each': 'error',
 
     /*
      * Error handling
@@ -282,6 +283,7 @@ export default defineConfig({
         'typescript/no-unsafe-assignment': 'error',
         'typescript/no-unnecessary-condition': 'error',
         'typescript/no-unsafe-return': 'error',
+        'typescript/promise-function-async': 'error',
         'typescript/no-confusing-void-expression': 'error',
         'typescript/strict-boolean-expressions': 'error',
         'typescript/strict-void-return': 'error',
@@ -337,6 +339,7 @@ export default defineConfig({
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unnecessary-condition': 'off',
         'typescript/no-unsafe-return': 'off',
+        'typescript/promise-function-async': 'off',
         'typescript/no-non-null-assertion': 'off',
         'typescript/no-confusing-void-expression': 'off',
         'typescript/strict-boolean-expressions': 'off',
@@ -346,6 +349,7 @@ export default defineConfig({
         'unicorn/no-nested-ternary': 'off',
         'unicorn/no-negated-condition': 'off',
         'unicorn/no-object-as-default-parameter': 'off',
+        'unicorn/no-array-for-each': 'off',
         'unicorn/consistent-function-scoping': 'off',
       },
     },

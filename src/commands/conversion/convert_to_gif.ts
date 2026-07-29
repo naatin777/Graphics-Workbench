@@ -56,7 +56,7 @@ export async function convertToGifCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) =>
+      sourceUris.map(async (sourceUri) =>
         planGifConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
       ),
     );
@@ -66,7 +66,7 @@ export async function convertToGifCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('GIF', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         executeGifConversion({
           jobs,
           maxInputPixels,

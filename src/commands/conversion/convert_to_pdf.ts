@@ -126,7 +126,7 @@ async function convertSelectedSourcesToPdf(
     const drawioTools = readDrawioOptions(configuration);
     const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) =>
+      sourceUris.map(async (sourceUri) =>
         planToPdfConversionJobs(
           sourceUri,
           outputTemplateForSource(sourceUri, configuration, outputTemplate),
@@ -148,7 +148,7 @@ async function convertSelectedSourcesToPdf(
         cancelledMessage: userMessage(messages.cancelledKey),
         failedMessage: (reason) => userMessage(messages.failedKey, reason),
       },
-      run: (runtime) =>
+      run: async (runtime) =>
         convertToPdfFiles({
           jobs,
           maxInputPixels,

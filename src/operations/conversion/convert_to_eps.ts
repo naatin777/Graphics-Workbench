@@ -71,7 +71,7 @@ export async function convertToEpsFiles(options: ConvertToEpsFilesOptions): Prom
     operationName: 'convert-to-eps',
     runId,
     runtime: options.runtime,
-    stage: (job, index, stageRunId, runtime) => stageSourceToEps(job, index, stageRunId, runtime, options),
+    stage: async (job, index, stageRunId, runtime) => stageSourceToEps(job, index, stageRunId, runtime, options),
   });
 }
 

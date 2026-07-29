@@ -61,7 +61,7 @@ export async function combineImagesToPdfCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('PDF', jobs.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         combineImagesToPdf({
           jobs,
           outputPath,
@@ -88,7 +88,7 @@ export interface CombinePreviewItem extends vscode.QuickPickItem {
 
 export type CombineQuickPickFactory = () => vscode.QuickPick<CombinePreviewItem>;
 
-export function previewCombineInputs(
+export async function previewCombineInputs(
   sourceUris: vscode.Uri[],
   createQuickPick: CombineQuickPickFactory = () => vscode.window.createQuickPick<CombinePreviewItem>(),
 ): Promise<vscode.Uri[] | undefined> {

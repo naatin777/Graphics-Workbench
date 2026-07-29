@@ -64,7 +64,7 @@ export async function convertToWebpCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) =>
+      sourceUris.map(async (sourceUri) =>
         planWebpConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
       ),
     );
@@ -82,7 +82,7 @@ export async function convertToWebpCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('WebP', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         executeWebpConversion({
           jobs,
           maxInputPixels,
