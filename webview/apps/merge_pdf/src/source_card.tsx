@@ -1,4 +1,5 @@
 import type { Accessor } from 'solid-js';
+import type { JSX } from 'solid-js';
 
 import type { MergePdfLabels, MergePdfSource } from './messages';
 import { PreviewThumbnail, type PdfOptions } from './preview_thumbnail';
@@ -17,7 +18,7 @@ export function SourceCard(props: {
   onDragEnd: () => void;
   onRemove: (sourceId: string) => void;
   onPreviewError: () => void;
-}) {
+}): JSX.Element {
   return (
     <article
       class='source-card'

@@ -10,7 +10,7 @@ export interface WebviewTestConfig {
   appName: string;
 }
 
-export function defineWebviewTestConfig(config: WebviewTestConfig) {
+export function defineWebviewTestConfig(config: WebviewTestConfig): ReturnType<typeof defineConfig> {
   return defineConfig({
     root: resolve(webviewRoot, 'apps', config.appName),
     plugins: [solid({ hot: false })],

@@ -61,7 +61,7 @@ export async function combineImagesToPdfCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('PDF', jobs.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         combineImagesToPdf({
           jobs,
           outputPath,
@@ -88,7 +88,7 @@ export interface CombinePreviewItem extends vscode.QuickPickItem {
 
 export type CombineQuickPickFactory = () => vscode.QuickPick<CombinePreviewItem>;
 
-export function previewCombineInputs(
+export async function previewCombineInputs(
   sourceUris: vscode.Uri[],
   createQuickPick: CombineQuickPickFactory = () => vscode.window.createQuickPick<CombinePreviewItem>(),
 ): Promise<vscode.Uri[] | undefined> {
@@ -109,7 +109,7 @@ export function previewCombineInputs(
 
   return new Promise((resolve) => {
     let settled = false;
-    const finish = (result: vscode.Uri[] | undefined) => {
+    const finish = (result?: vscode.Uri[]): void => {
       if (settled) {
         return;
       }
@@ -119,7 +119,7 @@ export function previewCombineInputs(
       resolve(result);
     };
 
-    const refresh = () => {
+    const refresh = (): void => {
       quickPick.items = items.map((item, index) => ({
         ...item,
         label: `${index + 1}. ${pathLabel(item.sourceUri)}`,
@@ -138,9 +138,19 @@ export function previewCombineInputs(
       if (button === item.removeButton) {
         items.splice(index, 1);
       } else if (button === item.moveUpButton && index > 0) {
-        [items[index - 1], items[index]] = [items[index]!, items[index - 1]!];
+        const currentItem = items[index];
+        const previousItem = items[index - 1];
+        if (currentItem === undefined || previousItem === undefined) {
+          return;
+        }
+        [items[index - 1], items[index]] = [currentItem, previousItem];
       } else if (button === item.moveDownButton && index < items.length - 1) {
-        [items[index], items[index + 1]] = [items[index + 1]!, items[index]!];
+        const currentItem = items[index];
+        const nextItem = items[index + 1];
+        if (currentItem === undefined || nextItem === undefined) {
+          return;
+        }
+        [items[index], items[index + 1]] = [nextItem, currentItem];
       }
       refresh();
     });
@@ -148,7 +158,7 @@ export function previewCombineInputs(
       finish(items.length > 0 ? items.map((item) => item.sourceUri) : undefined);
     });
     quickPick.onDidHide(() => {
-      finish(undefined);
+      finish();
     });
     refresh();
     quickPick.show();
@@ -164,7 +174,10 @@ async function resolveCombineOutputPath(
   workspaceFolder: vscode.WorkspaceFolder,
   configuredTemplate: string | undefined,
 ): Promise<string | undefined> {
-  const sourceUri = sourceUris[0]!;
+  const sourceUri = sourceUris[0];
+  if (sourceUri === undefined) {
+    throw new Error('combineImagesToPdf requires at least one source file.');
+  }
 
   if (configuredTemplate !== undefined || sourceUris.length === 1) {
     const template = configuredTemplate ?? DEFAULT_OUTPUT_PATH;
@@ -195,7 +208,10 @@ function requireSingleWorkspace(sourceUris: vscode.Uri[]): vscode.WorkspaceFolde
     }
   }
 
-  const firstSource = sourceUris[0]!;
+  const firstSource = sourceUris[0];
+  if (firstSource === undefined) {
+    throw new Error('combineImagesToPdf requires at least one source file.');
+  }
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(firstSource);
 
   if (!workspaceFolder) {

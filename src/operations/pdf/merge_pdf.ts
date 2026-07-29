@@ -39,7 +39,7 @@ export async function mergePdf(options: MergePdfOptions): Promise<CommittedConve
   const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
 
   await Promise.all([
-    ...sourcePaths.map((sourcePath) => assertExistingPathInWorkspace(sourcePath, workspacePath)),
+    ...sourcePaths.map(async (sourcePath) => assertExistingPathInWorkspace(sourcePath, workspacePath)),
     assertWritablePathInWorkspace(outputPath, workspacePath),
     assertWritablePathInWorkspace(path.join(workspacePath, '.latex-graphics-helper', 'merge-pdf'), workspacePath),
     assertWritablePathInWorkspace(stagingRootPath, workspacePath),

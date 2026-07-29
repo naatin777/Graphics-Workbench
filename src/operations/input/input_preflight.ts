@@ -50,7 +50,7 @@ export async function runPreflightBatch(
   const limit = pLimit(PREFLIGHT_CONCURRENCY);
 
   await Promise.all(
-    sourcePaths.map((sourcePath, index) =>
+    sourcePaths.map(async (sourcePath, index) =>
       limit(async () => {
         options.signal?.throwIfAborted();
 

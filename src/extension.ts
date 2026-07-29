@@ -108,72 +108,88 @@ function registerFileCommand(context: vscode.ExtensionContext, id: string, handl
 }
 
 function registerCommands(context: vscode.ExtensionContext, dependencies: CommandDependencies): void {
-  registerFileCommand(context, COMPRESS_PDF_COMMAND, (uri, uris) => compressPdfCommand(uri, uris, dependencies));
-  registerFileCommand(context, CROP_PDF_AUTO_COMMAND, (uri, uris) => cropPdfAutoCommand(uri, uris, dependencies));
-  registerFileCommand(context, CROP_PDF_CONFIGURE_COMMAND, (uri, uris) =>
+  registerFileCommand(context, COMPRESS_PDF_COMMAND, async (uri, uris) => compressPdfCommand(uri, uris, dependencies));
+  registerFileCommand(context, CROP_PDF_AUTO_COMMAND, async (uri, uris) => cropPdfAutoCommand(uri, uris, dependencies));
+  registerFileCommand(context, CROP_PDF_CONFIGURE_COMMAND, async (uri, uris) =>
     cropPdfConfigureCommand(context, uri, uris, dependencies),
   );
-  registerFileCommand(context, SPLIT_PDF_ALL_PAGES_COMMAND, (uri, uris) =>
+  registerFileCommand(context, SPLIT_PDF_ALL_PAGES_COMMAND, async (uri, uris) =>
     splitPdfAllPagesCommand(uri, uris, dependencies),
   );
-  registerFileCommand(context, SPLIT_PDF_CONFIGURE_COMMAND, (uri, uris) =>
+  registerFileCommand(context, SPLIT_PDF_CONFIGURE_COMMAND, async (uri, uris) =>
     splitPdfConfigureCommand(context, uri, uris, dependencies),
   );
-  registerFileCommand(context, MERGE_PDF_SELECTED_FILES_COMMAND, (uri, uris) =>
+  registerFileCommand(context, MERGE_PDF_SELECTED_FILES_COMMAND, async (uri, uris) =>
     mergePdfSelectedFilesCommand(uri, uris, dependencies),
   );
-  registerFileCommand(context, MERGE_PDF_CONFIGURE_COMMAND, (uri, uris) =>
+  registerFileCommand(context, MERGE_PDF_CONFIGURE_COMMAND, async (uri, uris) =>
     mergePdfConfigureCommand(context, uri, uris, dependencies),
   );
-  registerFileCommand(context, CONVERT_TO_PDF_COMMAND, (uri, uris) => convertToPdfCommand(uri, uris, dependencies));
-  registerFileCommand(context, CONVERT_DRAWIO_TO_PDF_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_PDF_COMMAND, async (uri, uris) =>
+    convertToPdfCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_DRAWIO_TO_PDF_COMMAND, async (uri, uris) =>
     convertDrawioToPagePdfsCommand(uri, uris, dependencies),
   );
-  registerFileCommand(context, CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND, async (uri, uris) =>
     convertDrawioToSinglePdfCommand(uri, uris, dependencies),
   );
-  registerFileCommand(context, CONVERT_TO_PNG_COMMAND, (uri, uris) => convertToPngCommand(uri, uris, dependencies));
-  registerFileCommand(context, CONVERT_TO_JPEG_COMMAND, (uri, uris) => convertToJpegCommand(uri, uris, dependencies));
-  registerFileCommand(context, CONVERT_TO_WEBP_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_PNG_COMMAND, async (uri, uris) =>
+    convertToPngCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_JPEG_COMMAND, async (uri, uris) =>
+    convertToJpegCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_WEBP_COMMAND, async (uri, uris) =>
     convertToWebpCommand(uri, uris, dependencies, { outputMode: 'auto' }),
   );
-  registerFileCommand(context, CONVERT_TO_WEBP_PRESERVE_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_WEBP_PRESERVE_COMMAND, async (uri, uris) =>
     convertToWebpCommand(uri, uris, dependencies, { outputMode: 'preserve' }),
   );
-  registerFileCommand(context, CONVERT_TO_WEBP_SEPARATELY_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_WEBP_SEPARATELY_COMMAND, async (uri, uris) =>
     convertToWebpCommand(uri, uris, dependencies, { outputMode: 'split' }),
   );
-  registerFileCommand(context, CONVERT_TO_AVIF_COMMAND, (uri, uris) => convertToAvifCommand(uri, uris, dependencies));
-  registerFileCommand(context, CONVERT_TO_SVG_COMMAND, (uri, uris) => convertToSvgCommand(uri, uris, dependencies));
-  registerFileCommand(context, CONVERT_TO_GIF_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_AVIF_COMMAND, async (uri, uris) =>
+    convertToAvifCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_SVG_COMMAND, async (uri, uris) =>
+    convertToSvgCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_GIF_COMMAND, async (uri, uris) =>
     convertToGifCommand(uri, uris, dependencies, { outputMode: 'auto' }),
   );
-  registerFileCommand(context, CONVERT_TO_GIF_PRESERVE_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_GIF_PRESERVE_COMMAND, async (uri, uris) =>
     convertToGifCommand(uri, uris, dependencies, { outputMode: 'preserve' }),
   );
-  registerFileCommand(context, CONVERT_TO_GIF_SEPARATELY_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_GIF_SEPARATELY_COMMAND, async (uri, uris) =>
     convertToGifCommand(uri, uris, dependencies, { outputMode: 'split' }),
   );
-  registerFileCommand(context, CONVERT_TO_TIFF_COMMAND, (uri, uris) => convertToTiffCommand(uri, uris, dependencies));
-  registerFileCommand(context, CONVERT_TO_EPS_COMMAND, (uri, uris) => convertToEpsCommand(uri, uris, dependencies));
-  registerFileCommand(context, CONVERT_TO_RAW_COMMAND, (uri, uris) => convertToRawCommand(uri, uris, dependencies));
-  registerFileCommand(context, CONVERT_TO_DRAWIO_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_TIFF_COMMAND, async (uri, uris) =>
+    convertToTiffCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_EPS_COMMAND, async (uri, uris) =>
+    convertToEpsCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_RAW_COMMAND, async (uri, uris) =>
+    convertToRawCommand(uri, uris, dependencies),
+  );
+  registerFileCommand(context, CONVERT_TO_DRAWIO_COMMAND, async (uri, uris) =>
     convertToDrawioCommand(uri, uris, dependencies),
   );
-  registerFileCommand(context, CONVERT_TO_DRAWIO_PNG_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_DRAWIO_PNG_COMMAND, async (uri, uris) =>
     convertToDrawioPngCommand(uri, uris, dependencies),
   );
-  registerFileCommand(context, CONVERT_TO_DRAWIO_SVG_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_TO_DRAWIO_SVG_COMMAND, async (uri, uris) =>
     convertToDrawioSvgCommand(uri, uris, dependencies),
   );
-  registerFileCommand(context, COMBINE_IMAGES_TO_PDF_COMMAND, (uri, uris) =>
+  registerFileCommand(context, COMBINE_IMAGES_TO_PDF_COMMAND, async (uri, uris) =>
     combineImagesToPdfCommand(uri, uris, dependencies),
   );
-  registerFileCommand(context, CONVERT_PNG_TO_PDF_COMMAND, (uri, uris) =>
+  registerFileCommand(context, CONVERT_PNG_TO_PDF_COMMAND, async (uri, uris) =>
     convertPngToPdfInternalCommand(uri, uris, dependencies),
   );
   context.subscriptions.push(
-    vscode.commands.registerCommand(UNDO_LAST_CONVERSION_COMMAND, (expectedId?: string) =>
+    vscode.commands.registerCommand(UNDO_LAST_CONVERSION_COMMAND, async (expectedId?: string) =>
       undoLastConversionCommand(expectedId, dependencies),
     ),
   );

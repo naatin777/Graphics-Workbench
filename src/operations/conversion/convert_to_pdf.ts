@@ -137,7 +137,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
     stagingOperationName: 'convert-png-to-pdf',
     runId,
     runtime: runtime ?? {},
-    stage: (job, index, currentRunId, batchRuntime) =>
+    stage: async (job, index, currentRunId, batchRuntime) =>
       stageSourceToPdf(
         job,
         index,
@@ -281,15 +281,16 @@ async function writeDrawioAsPdf(
   outputPath: string,
   workspacePath: string,
   signal?: AbortSignal,
-  drawio: DrawioBackend = { drawioPath: 'drawio' },
+  drawio?: DrawioBackend,
 ): Promise<void> {
+  const resolvedDrawio = drawio ?? { drawioPath: 'drawio' };
   signal?.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
   signal?.throwIfAborted();
 
-  await (drawio.runDrawio ?? executeDrawio)(
-    drawio.drawioPath,
+  await (resolvedDrawio.runDrawio ?? executeDrawio)(
+    resolvedDrawio.drawioPath,
     ['-x', '-f', 'pdf', '-o', outputPath, sourcePath],
     signal,
   );
@@ -551,7 +552,13 @@ async function writeSvgAsPdfWithPuppeteer(
     page.on('request', (request) => {
       // The SVG is injected as inline content. No network or subframe navigation
       // is required, including requests created from foreignObject content.
-      request.abort().catch(() => {});
+      void (async (): Promise<void> => {
+        try {
+          await request.abort();
+        } catch {
+          // The request may already be aborted by Puppeteer during page teardown.
+        }
+      })();
     });
     await page.setContent(svgPageHtml(svg, size), { waitUntil: 'load' });
     signal?.throwIfAborted();

@@ -49,7 +49,7 @@ export async function convertToTiffCommand(
     const configuration = vscode.workspace.getConfiguration('latex-graphics-helper');
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map((sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)),
+      sourceUris.map(async (sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)),
     );
     const jobs = plannedJobs.flat();
     await runConversionLifecycle({
@@ -57,7 +57,7 @@ export async function convertToTiffCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('TIFF', sourceUris.length),
-      run: (runtime) =>
+      run: async (runtime) =>
         executeTiffConversion({
           jobs,
           maxInputPixels,

@@ -73,7 +73,7 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
     operationName: 'convert-to-svg',
     runId,
     runtime: runtime ?? {},
-    stage: (job, index, currentRunId, batchRuntime) =>
+    stage: async (job, index, currentRunId, batchRuntime) =>
       stageSvgConversion(
         job,
         index,

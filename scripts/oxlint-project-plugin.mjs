@@ -65,12 +65,12 @@ const forbidRasterInputLimitBypass = {
             continue;
           }
 
-          const key =
-            property.key.type === 'Identifier'
-              ? property.key.name
-              : property.key.type === 'Literal' && typeof property.key.value === 'string'
-                ? property.key.value
-                : undefined;
+          let key;
+          if (property.key.type === 'Identifier') {
+            key = property.key.name;
+          } else if (property.key.type === 'Literal' && typeof property.key.value === 'string') {
+            key = property.key.value;
+          }
           if (key === 'limitInputPixels') {
             hasLimitInputPixels = true;
             if (property.value.type === 'Literal' && property.value.value === false) {

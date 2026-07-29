@@ -112,6 +112,7 @@ function scanCallArguments(scanner) {
   for (;;) {
     const token = scanner.scan();
     if (token === SyntaxKind.EndOfFile) {
+      // oxlint-disable-next-line unicorn/no-useless-undefined -- distinguish an incomplete call from a closed call.
       return undefined;
     }
 
@@ -203,9 +204,13 @@ export function checkNls(root) {
         }
       }
     } else if (Array.isArray(value)) {
-      value.forEach(walk);
+      for (const entry of value) {
+        walk(entry);
+      }
     } else if (value !== null && typeof value === 'object') {
-      Object.values(value).forEach(walk);
+      for (const entry of Object.values(value)) {
+        walk(entry);
+      }
     }
   }
   walk(packageJson);

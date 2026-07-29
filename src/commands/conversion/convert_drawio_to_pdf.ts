@@ -122,7 +122,7 @@ async function runDrawioPdfCommand(options: {
             reason,
           ),
       },
-      run: (runtime) =>
+      run: async (runtime) =>
         convertDrawioToPdfFiles({
           jobs,
           drawioPath,

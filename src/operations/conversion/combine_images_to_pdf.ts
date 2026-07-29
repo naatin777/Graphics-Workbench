@@ -49,7 +49,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   validateJobs(options.jobs);
 
   await Promise.all([
-    ...options.jobs.map((job) => assertExistingPathInWorkspace(job.sourcePath, options.workspacePath)),
+    ...options.jobs.map(async (job) => assertExistingPathInWorkspace(job.sourcePath, options.workspacePath)),
     assertWritablePathInWorkspace(options.outputPath, options.workspacePath),
     assertWritablePathInWorkspace(
       path.join(options.workspacePath, '.latex-graphics-helper', 'combine-images'),
@@ -72,9 +72,8 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
     await mkdir(stagingRootPath, { recursive: true });
     const pdfPaths: string[] = [];
 
-    for (let index = 0; index < options.jobs.length; index += 1) {
+    for (const [index, job] of options.jobs.entries()) {
       runtime?.signal?.throwIfAborted();
-      const job = options.jobs[index]!;
       const pageCount = await sourcePageCount(job.sourcePath, configuredMaxInputPixels);
       for (let page = 1; page <= pageCount; page += 1) {
         runtime?.signal?.throwIfAborted();

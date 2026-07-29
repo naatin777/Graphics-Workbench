@@ -49,7 +49,9 @@ export async function convertToRawFiles(options: ConvertToRawFilesOptions): Prom
       assertWritablePathInWorkspace(`${job.outputPath}.json`, job.workspacePath),
     ]),
   );
-  const sidecars = await Promise.all(options.jobs.map((job) => readRawSidecar(job.sourcePath, job.workspacePath)));
+  const sidecars = await Promise.all(
+    options.jobs.map(async (job) => readRawSidecar(job.sourcePath, job.workspacePath)),
+  );
   options.runtime.signal?.throwIfAborted();
   await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(options.runtime));
 

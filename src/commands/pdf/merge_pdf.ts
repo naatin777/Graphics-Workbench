@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import {
   isMergePdfWebviewToHostMessage,
   type MergePdfHostToWebview,
+  type MergePdfLabels,
 } from '../../application/protocols/merge_pdf_protocol.js';
 import { localeMap } from '../../locale_map.js';
 import { mergePdf } from '../../operations/pdf/merge_pdf.js';
@@ -174,15 +175,19 @@ export async function mergePdfConfigureCommand(
       }
 
       isApplying = true;
-      void applyConfiguredMerge({
-        sourceById,
-        sourceIds: message.payload.sourceIds,
-        workspace,
-        panel,
-        ...(outputChannel !== undefined && { outputChannel }),
-      }).finally(() => {
-        isApplying = false;
-      });
+      void (async (): Promise<void> => {
+        try {
+          await applyConfiguredMerge({
+            sourceById,
+            sourceIds: message.payload.sourceIds,
+            workspace,
+            panel,
+            ...(outputChannel !== undefined && { outputChannel }),
+          });
+        } finally {
+          isApplying = false;
+        }
+      })();
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -315,7 +320,7 @@ function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, dir
   return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }
 
-function mergePdfLabels() {
+function mergePdfLabels(): MergePdfLabels {
   return {
     title: localeMap('webview.mergePdf.title'),
     description: localeMap('webview.mergePdf.description'),
@@ -337,7 +342,12 @@ function mergePdfLabels() {
 }
 
 function selectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
-  const candidates = uris && uris.length > 0 ? uris : uri ? [uri] : [];
+  let candidates: vscode.Uri[] = [];
+  if (uris !== undefined && uris.length > 0) {
+    candidates = uris;
+  } else if (uri !== undefined) {
+    candidates = [uri];
+  }
   const uniqueUris = new Map(candidates.map((candidate) => [candidate.toString(), candidate]));
   const selected = [...uniqueUris.values()];
 
@@ -380,7 +390,7 @@ async function workspaceForSources(sourceUris: vscode.Uri[]): Promise<vscode.Wor
   }
 
   await Promise.all(
-    sourceUris.map((sourceUri) => assertExistingPathInWorkspace(sourceUri.fsPath, workspace.uri.fsPath)),
+    sourceUris.map(async (sourceUri) => assertExistingPathInWorkspace(sourceUri.fsPath, workspace.uri.fsPath)),
   );
 
   return workspace;
