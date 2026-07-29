@@ -12,125 +12,133 @@ export function GroupRow(props: {
   labels: SplitPdfLabels;
   outputPathTemplate: string;
   focused: boolean;
-  setInputRef: (rowId: number, kind: InputKind, element: HTMLInputElement) => void;
-  onFocus: (rowId: number) => void;
-  onPagesChange: (rowId: number, pages: string) => void;
-  onOutputNameChange: (rowId: number, outputName: string) => void;
-  onKeyDown: (event: KeyboardEvent, rowIndex: number, kind: InputKind) => void;
-  onMove: (rowId: number, direction: -1 | 1) => void;
-  onRemove: (rowId: number) => void;
-  onDragStart: (event: DragEvent, rowId: number) => void;
-  onDragEnd: () => void;
-  onDragOver: (event: DragEvent) => void;
-  onDrop: (event: DragEvent, rowId: number) => void;
+  handlers: {
+    fields: {
+      setInputRef: (rowId: number, kind: InputKind, element: HTMLInputElement) => void;
+      onFocus: (rowId: number) => void;
+      onPagesChange: (rowId: number, pages: string) => void;
+      onOutputNameChange: (rowId: number, outputName: string) => void;
+      onKeyDown: (event: KeyboardEvent, rowIndex: number, kind: InputKind) => void;
+    };
+    row: {
+      onMove: (rowId: number, direction: -1 | 1) => void;
+      onRemove: (rowId: number) => void;
+    };
+    drag: {
+      onDragStart: (event: DragEvent, rowId: number) => void;
+      onDragEnd: () => void;
+      onDragOver: (event: DragEvent) => void;
+      onDrop: (event: DragEvent, rowId: number) => void;
+    };
+  };
 }): JSX.Element {
   return (
     <article
       class='group-row'
       class:group-row--focused={props.focused}
-      onDragOver={props.onDragOver}
+      onDragOver={props.handlers.drag.onDragOver}
       onDrop={(event) => {
-        props.onDrop(event, props.row.id);
+        props.handlers.drag.onDrop(event, props.row.id);
       }}
     >
       <div class='group-row__header'>
         <span class='group-row__number'>{props.index() + 1}</span>
         <button
-          aria-label={`${props.labels.dragGroup} ${props.index() + 1}`}
+          aria-label={`${props.labels.groups.drag} ${props.index() + 1}`}
           class='drag-handle'
           draggable='true'
           type='button'
-          onDragEnd={props.onDragEnd}
+          onDragEnd={props.handlers.drag.onDragEnd}
           onDragStart={(event) => {
-            props.onDragStart(event, props.row.id);
+            props.handlers.drag.onDragStart(event, props.row.id);
           }}
         >
           ::
         </button>
         <div class='group-row__actions'>
           <button
-            aria-label={`${props.labels.moveUp} ${props.index() + 1}`}
+            aria-label={`${props.labels.actions.moveUp} ${props.index() + 1}`}
             class='button button--small'
             disabled={props.index() === 0}
             type='button'
             onClick={() => {
-              props.onMove(props.row.id, -1);
+              props.handlers.row.onMove(props.row.id, -1);
             }}
           >
-            {props.labels.moveUp}
+            {props.labels.actions.moveUp}
           </button>
           <button
-            aria-label={`${props.labels.moveDown} ${props.index() + 1}`}
+            aria-label={`${props.labels.actions.moveDown} ${props.index() + 1}`}
             class='button button--small'
             disabled={props.index() === props.rowCount - 1}
             type='button'
             onClick={() => {
-              props.onMove(props.row.id, 1);
+              props.handlers.row.onMove(props.row.id, 1);
             }}
           >
-            {props.labels.moveDown}
+            {props.labels.actions.moveDown}
           </button>
           <button
-            aria-label={`${props.labels.removeGroup} ${props.index() + 1}`}
+            aria-label={`${props.labels.groups.remove} ${props.index() + 1}`}
             class='button button--small'
             type='button'
             onClick={() => {
-              props.onRemove(props.row.id);
+              props.handlers.row.onRemove(props.row.id);
             }}
           >
-            {props.labels.removeGroup}
+            {props.labels.groups.remove}
           </button>
         </div>
       </div>
 
       <div class='group-row__fields'>
         <label class='field'>
-          <span class='field__label'>{props.labels.pages}</span>
+          <span class='field__label'>{props.labels.pages.title}</span>
           <input
             ref={(element) => {
-              props.setInputRef(props.row.id, 'pages', element);
+              props.handlers.fields.setInputRef(props.row.id, 'pages', element);
             }}
-            aria-label={`${props.labels.pages} ${props.index() + 1}`}
+            aria-label={`${props.labels.pages.title} ${props.index() + 1}`}
             class='input'
-            placeholder={props.labels.pagesPlaceholder}
+            placeholder={props.labels.pages.placeholder}
             type='text'
             value={props.row.pages}
             onFocus={() => {
-              props.onFocus(props.row.id);
+              props.handlers.fields.onFocus(props.row.id);
             }}
             onInput={(event) => {
-              props.onPagesChange(props.row.id, event.currentTarget.value);
+              props.handlers.fields.onPagesChange(props.row.id, event.currentTarget.value);
             }}
             onKeyDown={(event) => {
-              props.onKeyDown(event, props.index(), 'pages');
+              props.handlers.fields.onKeyDown(event, props.index(), 'pages');
             }}
           />
         </label>
         <label class='field'>
-          <span class='field__label'>{props.labels.outputName}</span>
+          <span class='field__label'>{props.labels.output.name}</span>
           <input
             ref={(element) => {
-              props.setInputRef(props.row.id, 'outputName', element);
+              props.handlers.fields.setInputRef(props.row.id, 'outputName', element);
             }}
-            aria-label={`${props.labels.outputName} ${props.index() + 1}`}
+            aria-label={`${props.labels.output.name} ${props.index() + 1}`}
             class='input'
-            placeholder={props.labels.outputNamePlaceholder}
+            placeholder={props.labels.output.namePlaceholder}
             type='text'
             value={props.row.outputName}
             onFocus={() => {
-              props.onFocus(props.row.id);
+              props.handlers.fields.onFocus(props.row.id);
             }}
             onInput={(event) => {
-              props.onOutputNameChange(props.row.id, event.currentTarget.value);
+              props.handlers.fields.onOutputNameChange(props.row.id, event.currentTarget.value);
             }}
             onKeyDown={(event) => {
-              props.onKeyDown(event, props.index(), 'outputName');
+              props.handlers.fields.onKeyDown(event, props.index(), 'outputName');
             }}
           />
         </label>
       </div>
       <p class='group-row__output-path'>
-        <span>{props.labels.outputPath}:</span>{' '}
+        <span>{props.labels.output.path}:</span>{' '}
         {props.outputPathTemplate.split('__GRAPHICS_WORKBENCH_OUTPUT_NAME__').join(props.row.outputName)}
       </p>
     </article>

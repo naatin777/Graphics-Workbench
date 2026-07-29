@@ -73,10 +73,12 @@ async function runCropPdfConfigureCommand(
     type: 'init',
     payload: {
       pdfSrc: '',
-      workerSrc: '',
-      cMapUrl: '',
-      standardFontDataUrl: '',
-      wasmUrl: '',
+      resources: {
+        workerSrc: '',
+        cMapUrl: '',
+        standardFontDataUrl: '',
+        wasmUrl: '',
+      },
       fileName: path.basename(inputUri.fsPath),
       pageCount: pdf.getPageCount(),
       initialPage: 1,
@@ -107,16 +109,16 @@ async function runCropPdfConfigureCommand(
     locale: vscode.env.language,
   });
   initMessage.payload.pdfSrc = panel.webview.asWebviewUri(inputUri).toString();
-  initMessage.payload.workerSrc = panel.webview
+  initMessage.payload.resources.workerSrc = panel.webview
     .asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'crop_pdf', 'pdf.worker.mjs'))
     .toString();
-  initMessage.payload.cMapUrl = toWebviewDirectoryUri(panel.webview, context.extensionUri, 'cmaps');
-  initMessage.payload.standardFontDataUrl = toWebviewDirectoryUri(
+  initMessage.payload.resources.cMapUrl = toWebviewDirectoryUri(panel.webview, context.extensionUri, 'cmaps');
+  initMessage.payload.resources.standardFontDataUrl = toWebviewDirectoryUri(
     panel.webview,
     context.extensionUri,
     'standard_fonts',
   );
-  initMessage.payload.wasmUrl = toWebviewDirectoryUri(panel.webview, context.extensionUri, 'wasm');
+  initMessage.payload.resources.wasmUrl = toWebviewDirectoryUri(panel.webview, context.extensionUri, 'wasm');
 
   panel.webview.onDidReceiveMessage((message: unknown) => {
     if (!isCropConfigureMessage(message)) {
@@ -277,37 +279,49 @@ function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri 
 
 function cropPdfLabels(): CropPdfLabels {
   return {
-    title: localeMap('webview.cropPdf.title'),
-    description: localeMap('webview.cropPdf.description'),
-    pageLabel: localeMap('webview.cropPdf.pageLabel'),
-    pages: localeMap('webview.cropPdf.pages'),
-    preview: localeMap('webview.cropPdf.preview'),
-    previewDescription: localeMap('webview.cropPdf.previewDescription'),
-    previewAriaLabel: localeMap('webview.cropPdf.previewAriaLabel'),
-    cropSettings: localeMap('webview.cropPdf.cropSettings'),
-    cropBox: localeMap('webview.cropPdf.cropBox'),
-    cropBoxDescription: localeMap('webview.cropPdf.cropBoxDescription'),
-    left: localeMap('webview.cropPdf.left'),
-    bottom: localeMap('webview.cropPdf.bottom'),
-    right: localeMap('webview.cropPdf.right'),
-    top: localeMap('webview.cropPdf.top'),
-    currentPageSize: localeMap('webview.cropPdf.currentPageSize'),
-    targetPages: localeMap('webview.cropPdf.targetPages'),
-    allPages: localeMap('webview.cropPdf.allPages'),
-    selectedPages: localeMap('webview.cropPdf.selectedPages'),
-    pagesInput: localeMap('webview.cropPdf.pagesInput'),
-    pagesPlaceholder: localeMap('webview.cropPdf.pagesPlaceholder'),
-    zoomOut: localeMap('webview.cropPdf.zoomOut'),
-    zoomIn: localeMap('webview.cropPdf.zoomIn'),
-    previewZoom: localeMap('webview.cropPdf.previewZoom'),
-    apply: localeMap('webview.cropPdf.apply'),
-    cancel: localeMap('webview.cropPdf.cancel'),
-    previewRenderError: localeMap('webview.cropPdf.previewRenderError'),
-    previewApplyError: localeMap('webview.cropPdf.previewApplyError'),
-    cropBoxNumberError: localeMap('webview.cropPdf.cropBoxNumberError'),
-    cropBoxSizeError: localeMap('webview.cropPdf.cropBoxSizeError'),
-    pagesRequiredError: localeMap('webview.cropPdf.pagesRequiredError'),
-    pageWholeNumberError: localeMap('webview.cropPdf.pageWholeNumberError'),
-    pageOutOfRangeError: localeMap('webview.cropPdf.pageOutOfRangeError'),
+    header: {
+      title: localeMap('webview.cropPdf.title'),
+      description: localeMap('webview.cropPdf.description'),
+      pageLabel: localeMap('webview.cropPdf.pageLabel'),
+      pages: localeMap('webview.cropPdf.pages'),
+    },
+    preview: {
+      title: localeMap('webview.cropPdf.preview'),
+      description: localeMap('webview.cropPdf.previewDescription'),
+      ariaLabel: localeMap('webview.cropPdf.previewAriaLabel'),
+      zoomLabel: localeMap('webview.cropPdf.previewZoom'),
+      zoomOut: localeMap('webview.cropPdf.zoomOut'),
+      zoomIn: localeMap('webview.cropPdf.zoomIn'),
+      renderError: localeMap('webview.cropPdf.previewRenderError'),
+      applyError: localeMap('webview.cropPdf.previewApplyError'),
+    },
+    cropBox: {
+      settingsLabel: localeMap('webview.cropPdf.cropSettings'),
+      title: localeMap('webview.cropPdf.cropBox'),
+      description: localeMap('webview.cropPdf.cropBoxDescription'),
+      left: localeMap('webview.cropPdf.left'),
+      bottom: localeMap('webview.cropPdf.bottom'),
+      right: localeMap('webview.cropPdf.right'),
+      top: localeMap('webview.cropPdf.top'),
+      currentPageSize: localeMap('webview.cropPdf.currentPageSize'),
+    },
+    targetPages: {
+      title: localeMap('webview.cropPdf.targetPages'),
+      all: localeMap('webview.cropPdf.allPages'),
+      selected: localeMap('webview.cropPdf.selectedPages'),
+      inputLabel: localeMap('webview.cropPdf.pagesInput'),
+      placeholder: localeMap('webview.cropPdf.pagesPlaceholder'),
+    },
+    validation: {
+      cropBoxNumber: localeMap('webview.cropPdf.cropBoxNumberError'),
+      cropBoxSize: localeMap('webview.cropPdf.cropBoxSizeError'),
+      pagesRequired: localeMap('webview.cropPdf.pagesRequiredError'),
+      pageWholeNumber: localeMap('webview.cropPdf.pageWholeNumberError'),
+      pageOutOfRange: localeMap('webview.cropPdf.pageOutOfRangeError'),
+    },
+    actions: {
+      apply: localeMap('webview.cropPdf.apply'),
+      cancel: localeMap('webview.cropPdf.cancel'),
+    },
   };
 }

@@ -13,12 +13,12 @@ export function PreviewToolbar(props: {
   return (
     <div class='pdf-preview__toolbar'>
       <div>
-        <h2>{props.labels.preview}</h2>
-        <p>{props.labels.previewDescription}</p>
+        <h2>{props.labels.preview.title}</h2>
+        <p>{props.labels.preview.description}</p>
       </div>
       <div class='preview-tools'>
         <div
-          aria-label={props.labels.preview}
+          aria-label={props.labels.preview.title}
           class='segmented'
           role='group'
         >
@@ -31,7 +31,7 @@ export function PreviewToolbar(props: {
               props.onPreviewModeChange('focused');
             }}
           >
-            {props.labels.focusedPages}
+            {props.labels.preview.focusedPages}
           </button>
           <button
             aria-pressed={props.previewMode === 'all'}
@@ -42,13 +42,13 @@ export function PreviewToolbar(props: {
               props.onPreviewModeChange('all');
             }}
           >
-            {props.labels.allPages}
+            {props.labels.preview.allPages}
           </button>
         </div>
         <label class='zoom'>
-          <span class='sr-only'>{props.labels.zoom}</span>
+          <span class='sr-only'>{props.labels.preview.zoom}</span>
           <input
-            aria-label={props.labels.zoom}
+            aria-label={props.labels.preview.zoom}
             max='400'
             min='25'
             step='5'
@@ -60,7 +60,7 @@ export function PreviewToolbar(props: {
           />
           <span class='zoom__number'>
             <input
-              aria-label={props.labels.zoom}
+              aria-label={props.labels.preview.zoom}
               max='400'
               min='25'
               step='5'

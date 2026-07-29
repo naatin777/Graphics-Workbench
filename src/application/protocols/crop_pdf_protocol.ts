@@ -8,38 +8,50 @@ export interface CropBox {
 export type CropTarget = { type: 'all' } | { type: 'selected'; pages: number[] };
 
 export interface CropPdfLabels {
-  title: string;
-  description: string;
-  pageLabel: string;
-  pages: string;
-  preview: string;
-  previewDescription: string;
-  previewAriaLabel: string;
-  cropSettings: string;
-  cropBox: string;
-  cropBoxDescription: string;
-  left: string;
-  bottom: string;
-  right: string;
-  top: string;
-  currentPageSize: string;
-  targetPages: string;
-  allPages: string;
-  selectedPages: string;
-  pagesInput: string;
-  pagesPlaceholder: string;
-  zoomOut: string;
-  zoomIn: string;
-  previewZoom: string;
-  apply: string;
-  cancel: string;
-  previewRenderError: string;
-  previewApplyError: string;
-  cropBoxNumberError: string;
-  cropBoxSizeError: string;
-  pagesRequiredError: string;
-  pageWholeNumberError: string;
-  pageOutOfRangeError: string;
+  header: {
+    title: string;
+    description: string;
+    pageLabel: string;
+    pages: string;
+  };
+  preview: {
+    title: string;
+    description: string;
+    ariaLabel: string;
+    zoomLabel: string;
+    zoomOut: string;
+    zoomIn: string;
+    renderError: string;
+    applyError: string;
+  };
+  cropBox: {
+    settingsLabel: string;
+    title: string;
+    description: string;
+    left: string;
+    bottom: string;
+    right: string;
+    top: string;
+    currentPageSize: string;
+  };
+  targetPages: {
+    title: string;
+    all: string;
+    selected: string;
+    inputLabel: string;
+    placeholder: string;
+  };
+  validation: {
+    cropBoxNumber: string;
+    cropBoxSize: string;
+    pagesRequired: string;
+    pageWholeNumber: string;
+    pageOutOfRange: string;
+  };
+  actions: {
+    apply: string;
+    cancel: string;
+  };
 }
 
 export type CropConfigureHostToWebview =
@@ -47,10 +59,12 @@ export type CropConfigureHostToWebview =
       type: 'init';
       payload: {
         pdfSrc: string;
-        workerSrc?: string;
-        cMapUrl?: string;
-        standardFontDataUrl?: string;
-        wasmUrl?: string;
+        resources: {
+          workerSrc?: string;
+          cMapUrl?: string;
+          standardFontDataUrl?: string;
+          wasmUrl?: string;
+        };
         fileName: string;
         pageCount: number;
         initialPage: number;

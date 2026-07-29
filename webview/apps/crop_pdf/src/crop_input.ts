@@ -8,7 +8,7 @@ export function parseCropBox(
 ): Parsed<CropBox> {
   for (const [key, stringValue] of Object.entries(value)) {
     if (stringValue.trim().length === 0) {
-      return { ok: false, message: labels.cropBoxNumberError.replace('{0}', key) };
+      return { ok: false, message: labels.validation.cropBoxNumber.replace('{0}', key) };
     }
   }
 
@@ -21,12 +21,12 @@ export function parseCropBox(
 
   for (const [key, numberValue] of Object.entries(cropBox)) {
     if (!Number.isFinite(numberValue)) {
-      return { ok: false, message: labels.cropBoxNumberError.replace('{0}', key) };
+      return { ok: false, message: labels.validation.cropBoxNumber.replace('{0}', key) };
     }
   }
 
   if (cropBox.left >= cropBox.right || cropBox.bottom >= cropBox.top) {
-    return { ok: false, message: labels.cropBoxSizeError };
+    return { ok: false, message: labels.validation.cropBoxSize };
   }
 
   return { ok: true, value: cropBox };
@@ -48,7 +48,7 @@ export function parseTarget(
     .filter((value) => value.length > 0);
 
   if (pageValues.length === 0) {
-    return { ok: false, message: labels.pagesRequiredError };
+    return { ok: false, message: labels.validation.pagesRequired };
   }
 
   const pages = pageValues.map(Number);
@@ -57,14 +57,14 @@ export function parseTarget(
     if (!Number.isInteger(pages[index])) {
       return {
         ok: false,
-        message: labels.pageWholeNumberError.replace('{0}', pageValues[index] ?? ''),
+        message: labels.validation.pageWholeNumber.replace('{0}', pageValues[index] ?? ''),
       };
     }
   }
 
   for (const page of pages) {
     if (page < 1 || page > pageCount) {
-      return { ok: false, message: labels.pageOutOfRangeError.replace('{0}', page.toString()) };
+      return { ok: false, message: labels.validation.pageOutOfRange.replace('{0}', page.toString()) };
     }
   }
 

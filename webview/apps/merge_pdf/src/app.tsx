@@ -139,7 +139,7 @@ export function App(): JSX.Element {
     }
 
     if (previewErrors().size > 0) {
-      setHostError(labels().previewRenderError);
+      setHostError(labels().preview.renderError);
       return;
     }
 
@@ -152,8 +152,8 @@ export function App(): JSX.Element {
   return (
     <main class='app'>
       <header class='app__header'>
-        <h1>{labels().title}</h1>
-        <p>{labels().description}</p>
+        <h1>{labels().header.title}</h1>
+        <p>{labels().header.description}</p>
       </header>
 
       <div class='workspace'>
@@ -163,8 +163,8 @@ export function App(): JSX.Element {
         >
           <div class='panel__header'>
             <div>
-              <h2 id='source-list-title'>{labels().sourceList}</h2>
-              <p>{labels().sourceListDescription}</p>
+              <h2 id='source-list-title'>{labels().sources.list}</h2>
+              <p>{labels().sources.listDescription}</p>
             </div>
             <span class='source-count'>{sources().length}</span>
           </div>
@@ -188,14 +188,16 @@ export function App(): JSX.Element {
                   labels={labels()}
                   options={pdfOptions()}
                   dropTargetId={dropTargetId()}
-                  onMove={moveSource}
-                  onDragStart={startDragging}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onDragEnd={clearDragState}
-                  onRemove={removeSource}
-                  onPreviewError={() => {
-                    setPreviewErrors((current) => new Set(current).add(source.sourceId));
+                  handlers={{
+                    onMove: moveSource,
+                    onDragStart: startDragging,
+                    onDragOver: handleDragOver,
+                    onDrop: handleDrop,
+                    onDragEnd: clearDragState,
+                    onRemove: removeSource,
+                    onPreviewError: () => {
+                      setPreviewErrors((current) => new Set(current).add(source.sourceId));
+                    },
                   }}
                 />
               )}
@@ -207,11 +209,11 @@ export function App(): JSX.Element {
           class='panel action-panel'
           aria-labelledby='actions-title'
         >
-          <h2 id='actions-title'>{labels().actions}</h2>
+          <h2 id='actions-title'>{labels().controls.actions}</h2>
           <p class='action-panel__count'>
-            {sources().length} {labels().sourceCount}
+            {sources().length} {labels().sources.count}
           </p>
-          <p class='action-panel__hint'>{labels().preview}</p>
+          <p class='action-panel__hint'>{labels().preview.title}</p>
           <div class='actions'>
             <button
               class='button button--primary'
@@ -219,14 +221,14 @@ export function App(): JSX.Element {
               disabled={sources().length < 2}
               onClick={apply}
             >
-              {labels().apply}
+              {labels().actions.apply}
             </button>
             <button
               class='button'
               type='button'
               onClick={cancel}
             >
-              {labels().cancel}
+              {labels().actions.cancel}
             </button>
           </div>
         </aside>

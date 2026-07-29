@@ -322,22 +322,32 @@ function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, dir
 
 function mergePdfLabels(): MergePdfLabels {
   return {
-    title: localeMap('webview.mergePdf.title'),
-    description: localeMap('webview.mergePdf.description'),
-    sourceList: localeMap('webview.mergePdf.sourceList'),
-    sourceListDescription: localeMap('webview.mergePdf.sourceListDescription'),
-    sourceCount: localeMap('webview.mergePdf.sourceCount'),
-    actions: localeMap('webview.mergePdf.actions'),
-    dragHandle: localeMap('webview.mergePdf.dragHandle'),
-    moveUp: localeMap('webview.mergePdf.moveUp'),
-    moveDown: localeMap('webview.mergePdf.moveDown'),
-    removeSource: localeMap('webview.mergePdf.removeSource'),
-    preview: localeMap('webview.mergePdf.preview'),
-    previewAriaLabel: localeMap('webview.mergePdf.previewAriaLabel'),
-    previewLoading: localeMap('webview.mergePdf.previewLoading'),
-    previewRenderError: localeMap('webview.mergePdf.previewRenderError'),
-    apply: localeMap('webview.mergePdf.apply'),
-    cancel: localeMap('webview.mergePdf.cancel'),
+    header: {
+      title: localeMap('webview.mergePdf.title'),
+      description: localeMap('webview.mergePdf.description'),
+    },
+    sources: {
+      list: localeMap('webview.mergePdf.sourceList'),
+      listDescription: localeMap('webview.mergePdf.sourceListDescription'),
+      count: localeMap('webview.mergePdf.sourceCount'),
+    },
+    controls: {
+      actions: localeMap('webview.mergePdf.actions'),
+      dragHandle: localeMap('webview.mergePdf.dragHandle'),
+      moveUp: localeMap('webview.mergePdf.moveUp'),
+      moveDown: localeMap('webview.mergePdf.moveDown'),
+      removeSource: localeMap('webview.mergePdf.removeSource'),
+    },
+    preview: {
+      title: localeMap('webview.mergePdf.preview'),
+      ariaLabel: localeMap('webview.mergePdf.previewAriaLabel'),
+      loading: localeMap('webview.mergePdf.previewLoading'),
+      renderError: localeMap('webview.mergePdf.previewRenderError'),
+    },
+    actions: {
+      apply: localeMap('webview.mergePdf.apply'),
+      cancel: localeMap('webview.mergePdf.cancel'),
+    },
   };
 }
 

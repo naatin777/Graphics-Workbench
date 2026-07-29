@@ -12,22 +12,32 @@ vi.mock('./vscode', () => ({
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderFirstPdfPage }));
 
 const labels: MergePdfLabels = {
-  title: 'Merge PDFs',
-  description: 'Arrange the PDF files, then merge them in the displayed order.',
-  sourceList: 'PDF files',
-  sourceListDescription: 'Drag files to change their order.',
-  sourceCount: 'files selected',
-  actions: 'Actions',
-  dragHandle: 'Drag to reorder',
-  moveUp: 'Move up',
-  moveDown: 'Move down',
-  removeSource: 'Remove from list',
-  preview: 'Preview',
-  previewAriaLabel: 'First page preview',
-  previewLoading: 'Loading preview...',
-  previewRenderError: 'Preview unavailable',
-  apply: 'Merge',
-  cancel: 'Cancel',
+  header: {
+    title: 'Merge PDFs',
+    description: 'Arrange the PDF files, then merge them in the displayed order.',
+  },
+  sources: {
+    list: 'PDF files',
+    listDescription: 'Drag files to change their order.',
+    count: 'files selected',
+  },
+  controls: {
+    actions: 'Actions',
+    dragHandle: 'Drag to reorder',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    removeSource: 'Remove from list',
+  },
+  preview: {
+    title: 'Preview',
+    ariaLabel: 'First page preview',
+    loading: 'Loading preview...',
+    renderError: 'Preview unavailable',
+  },
+  actions: {
+    apply: 'Merge',
+    cancel: 'Cancel',
+  },
 };
 
 const initMessage: ExtensionToWebviewMessage = {

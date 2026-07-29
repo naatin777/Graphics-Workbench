@@ -103,10 +103,12 @@ async function convertToDrawioWithDefaults(
       run: async (runtime) =>
         convertToDrawioFiles({
           jobs,
-          drawioPath,
-          ghostscriptPath: readGhostscriptExecutablePath(configuration),
-          pdftocairoPath: readPdftocairoExecutablePath(configuration),
-          mermaidTools: readMermaidPuppeteerOptions(configuration),
+          tools: {
+            drawioPath,
+            ghostscriptPath: readGhostscriptExecutablePath(configuration),
+            pdftocairoPath: readPdftocairoExecutablePath(configuration),
+            mermaidTools: readMermaidPuppeteerOptions(configuration),
+          },
           maxInputPixels: getMaxInputPixels(configuration),
           runtime,
         }),

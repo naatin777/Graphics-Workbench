@@ -36,7 +36,7 @@ suite('EPSの出力経路', () => {
       await convertToPdfFiles({
         jobs: [{ sourcePath, outputPath, workspacePath }],
         supportedExtensions: ['.eps'],
-        ghostscriptPath: GHOSTSCRIPT_PATH,
+        tools: { ghostscriptPath: GHOSTSCRIPT_PATH },
         operationName: 'test-eps',
       });
 
@@ -186,7 +186,7 @@ suite('EPSの出力経路', () => {
         convertToPdfFiles({
           jobs: [{ sourcePath, outputPath, workspacePath }],
           supportedExtensions: ['.eps'],
-          ghostscriptPath: GHOSTSCRIPT_PATH,
+          tools: { ghostscriptPath: GHOSTSCRIPT_PATH },
           operationName: 'test-eps',
         }),
         /Preflight validation failed|Ghostscript failed|Unrecoverable error|gs.*failed/,

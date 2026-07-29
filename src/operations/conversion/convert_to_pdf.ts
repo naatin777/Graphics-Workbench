@@ -87,11 +87,13 @@ export interface WriteSourceAsPdfOptions {
   signal?: AbortSignal;
   maxInputPixels?: number;
   page?: number;
-  svgToPdfTools?: SvgToPdfBackend;
-  mermaidTools?: MermaidBackend;
-  drawioTools?: DrawioBackend;
+  tools?: {
+    svgToPdfTools?: SvgToPdfBackend;
+    mermaidTools?: MermaidBackend;
+    drawioTools?: DrawioBackend;
+    ghostscriptPath?: string;
+  };
   scratchOptions?: RsvgToolScratchOptions;
-  ghostscriptPath?: string;
 }
 
 export interface ConvertToPdfFilesOptions {
@@ -99,10 +101,12 @@ export interface ConvertToPdfFilesOptions {
   runtime?: ConversionExecutionContext;
   runId?: string;
   supportedExtensions?: readonly string[];
-  svgToPdfTools?: SvgToPdfBackend;
-  mermaidTools?: MermaidBackend;
-  drawioTools?: DrawioBackend;
-  ghostscriptPath?: string;
+  tools?: {
+    svgToPdfTools?: SvgToPdfBackend;
+    mermaidTools?: MermaidBackend;
+    drawioTools?: DrawioBackend;
+    ghostscriptPath?: string;
+  };
   platform?: NodeJS.Platform;
   maxInputPixels?: number;
   scratchBaseCandidates?: readonly string[];
@@ -143,11 +147,11 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
         index,
         currentRunId,
         batchRuntime.signal,
-        options.svgToPdfTools,
-        options.mermaidTools,
-        options.drawioTools,
+        options.tools?.svgToPdfTools,
+        options.tools?.mermaidTools,
+        options.tools?.drawioTools,
         scratchOptions,
-        options.ghostscriptPath,
+        options.tools?.ghostscriptPath,
         maxInputPixels,
       ),
   });
@@ -192,16 +196,16 @@ async function stageSourceToPdf(
     writeOptions.signal = signal;
   }
   if (svgToPdfTools !== undefined) {
-    writeOptions.svgToPdfTools = svgToPdfTools;
+    writeOptions.tools = { ...writeOptions.tools, svgToPdfTools };
   }
   if (mermaidTools !== undefined) {
-    writeOptions.mermaidTools = mermaidTools;
+    writeOptions.tools = { ...writeOptions.tools, mermaidTools };
   }
   if (drawioTools !== undefined) {
-    writeOptions.drawioTools = drawioTools;
+    writeOptions.tools = { ...writeOptions.tools, drawioTools };
   }
   if (ghostscriptPath !== undefined) {
-    writeOptions.ghostscriptPath = ghostscriptPath;
+    writeOptions.tools = { ...writeOptions.tools, ghostscriptPath };
   }
   await writeSourceAsPdf(writeOptions);
   signal?.throwIfAborted();
@@ -217,18 +221,8 @@ async function stageSourceToPdf(
 }
 
 export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promise<void> {
-  const {
-    sourcePath,
-    outputPath,
-    workspacePath,
-    signal,
-    maxInputPixels,
-    svgToPdfTools,
-    mermaidTools,
-    drawioTools,
-    scratchOptions = {},
-    ghostscriptPath,
-  } = options;
+  const { sourcePath, outputPath, workspacePath, signal, maxInputPixels, tools, scratchOptions = {} } = options;
+  const { svgToPdfTools, mermaidTools, drawioTools, ghostscriptPath } = tools ?? {};
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
@@ -365,8 +359,8 @@ async function writeEpsAsPdf(
   const epsOptions: Parameters<typeof convertEpsToPdf>[0] = {
     epsPath: sourcePath,
     workspacePath,
-    ghostscriptPath,
     stagingDirectory: epsStaging,
+    tools: { ghostscriptPath },
   };
   if (signal !== undefined) {
     epsOptions.signal = signal;

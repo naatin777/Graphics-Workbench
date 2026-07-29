@@ -72,7 +72,7 @@ export function PreviewThumbnail(props: {
         frame = element;
       }}
       class='thumbnail'
-      aria-label={`${props.labels.previewAriaLabel}: ${props.source.fileName}`}
+      aria-label={`${props.labels.preview.ariaLabel}: ${props.source.fileName}`}
       aria-busy={status() === 'loading'}
     >
       <canvas
@@ -80,18 +80,18 @@ export function PreviewThumbnail(props: {
           canvas = element;
         }}
         class='thumbnail__canvas'
-        aria-label={`${props.labels.preview}: ${props.source.fileName}`}
+        aria-label={`${props.labels.preview.title}: ${props.source.fileName}`}
       />
       <Show when={status() === 'waiting' || status() === 'loading'}>
-        <span class='thumbnail__status'>{props.labels.previewLoading}</span>
+        <span class='thumbnail__status'>{props.labels.preview.loading}</span>
       </Show>
       <Show when={status() === 'error'}>
         <span
           class='thumbnail__status thumbnail__status--error'
           role='img'
-          aria-label={props.labels.previewRenderError}
+          aria-label={props.labels.preview.renderError}
         >
-          {props.labels.previewRenderError}
+          {props.labels.preview.renderError}
         </span>
       </Show>
     </div>

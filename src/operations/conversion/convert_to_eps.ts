@@ -42,12 +42,14 @@ export interface ConvertToEpsJob {
 export interface ConvertToEpsFilesOptions {
   jobs: ConvertToEpsJob[];
   runtime: ConversionExecutionContext;
-  ghostscriptPath: string;
-  svgToPdfTools?: SvgToPdfBackend;
-  mermaidTools?: MermaidBackend;
-  drawioTools?: DrawioBackend;
+  tools: {
+    ghostscriptPath: string;
+    svgToPdfTools?: SvgToPdfBackend;
+    mermaidTools?: MermaidBackend;
+    drawioTools?: DrawioBackend;
+    runGhostscript?: RunGhostscript;
+  };
   maxInputPixels?: number;
-  runGhostscript?: RunGhostscript;
   runId?: string;
   platform?: NodeJS.Platform;
   scratchBaseCandidates?: readonly string[];
@@ -93,7 +95,7 @@ async function stageSourceToEps(
     sourcePath: job.sourcePath,
     outputPath: pdfPath,
     workspacePath: job.workspacePath,
-    ghostscriptPath: options.ghostscriptPath,
+    tools: { ghostscriptPath: options.tools.ghostscriptPath },
   };
   if (runtime.signal !== undefined) {
     writeOptions.signal = runtime.signal;
@@ -104,27 +106,27 @@ async function stageSourceToEps(
   if (job.page !== undefined) {
     writeOptions.page = job.page;
   }
-  if (options.svgToPdfTools !== undefined) {
-    writeOptions.svgToPdfTools = options.svgToPdfTools;
+  if (options.tools.svgToPdfTools !== undefined) {
+    writeOptions.tools = { ...writeOptions.tools, svgToPdfTools: options.tools.svgToPdfTools };
   }
-  if (options.mermaidTools !== undefined) {
-    writeOptions.mermaidTools = options.mermaidTools;
+  if (options.tools.mermaidTools !== undefined) {
+    writeOptions.tools = { ...writeOptions.tools, mermaidTools: options.tools.mermaidTools };
   }
-  if (options.drawioTools !== undefined) {
-    writeOptions.drawioTools = options.drawioTools;
+  if (options.tools.drawioTools !== undefined) {
+    writeOptions.tools = { ...writeOptions.tools, drawioTools: options.tools.drawioTools };
   }
   await writeSourceAsPdf(writeOptions);
   runtime.signal?.throwIfAborted();
   const runOptions: Parameters<typeof runPdfToEps>[0] = {
     pdfPath,
     epsPath: stagedOutputPath,
-    ghostscriptPath: options.ghostscriptPath,
+    ghostscriptPath: options.tools.ghostscriptPath,
   };
   if (runtime.signal !== undefined) {
     runOptions.signal = runtime.signal;
   }
-  if (options.runGhostscript !== undefined) {
-    runOptions.runGhostscript = options.runGhostscript;
+  if (options.tools.runGhostscript !== undefined) {
+    runOptions.runGhostscript = options.tools.runGhostscript;
   }
   if (options.platform !== undefined) {
     runOptions.platform = options.platform;

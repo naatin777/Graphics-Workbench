@@ -48,19 +48,21 @@ suite('EPS変換契約', () => {
       const result = await convertEpsToPdf({
         epsPath: paths.sourcePath,
         workspacePath: paths.workspacePath,
-        ghostscriptPath: 'gs',
+        tools: {
+          ghostscriptPath: 'gs',
+          runGhostscript: async (_executable, args) => {
+            toolInputPath = args.at(-1);
+            toolOutputPath = outputPathFromArgs(args);
+            assertScratchToolPath(toolInputPath, paths, 'source.eps');
+            assertScratchToolPath(toolOutputPath, paths, 'output.pdf');
+            assert.deepStrictEqual(await readFile(toolInputPath), sourceBytes);
+            await writeFile(toolOutputPath, await createPdfBytes(1));
+          },
+        },
         stagingDirectory: paths.stagingDirectory,
         platform: 'win32',
         scratchBaseCandidates: [paths.scratchBasePath],
         outputChannel: { appendLine: (message) => logs.push(message) },
-        runGhostscript: async (_executable, args) => {
-          toolInputPath = args.at(-1);
-          toolOutputPath = outputPathFromArgs(args);
-          assertScratchToolPath(toolInputPath, paths, 'source.eps');
-          assertScratchToolPath(toolOutputPath, paths, 'output.pdf');
-          assert.deepStrictEqual(await readFile(toolInputPath), sourceBytes);
-          await writeFile(toolOutputPath, await createPdfBytes(1));
-        },
       });
 
       assert.strictEqual(result.pdfPath, path.join(paths.stagingDirectory, 'eps-result.pdf'));
@@ -84,9 +86,12 @@ suite('EPS変換契約', () => {
           platform: 'win32',
           scratchBaseCandidates: [failedPaths.scratchBasePath],
           outputChannel: { appendLine: (message) => failedLogs.push(message) },
-          runGhostscript: async (_executable, args) => {
-            failedToolInputPath = args.at(-1);
-            throw new Error('Ghostscript failed');
+          tools: {
+            ghostscriptPath: 'gs',
+            runGhostscript: async (_executable, args) => {
+              failedToolInputPath = args.at(-1);
+              throw new Error('Ghostscript failed');
+            },
           },
         }),
         /Ghostscript failed/u,
@@ -113,10 +118,13 @@ suite('EPS変換契約', () => {
           scratchBaseCandidates: [cancelledPaths.scratchBasePath],
           signal: abortController.signal,
           outputChannel: { appendLine: (message) => cancelledLogs.push(message) },
-          runGhostscript: async (_executable, args, _timeout, signal) => {
-            cancelledToolInputPath = args.at(-1);
-            abortController.abort();
-            signal?.throwIfAborted();
+          tools: {
+            ghostscriptPath: 'gs',
+            runGhostscript: async (_executable, args, _timeout, signal) => {
+              cancelledToolInputPath = args.at(-1);
+              abortController.abort();
+              signal?.throwIfAborted();
+            },
           },
         }),
         { name: 'AbortError' },
@@ -167,8 +175,8 @@ function conversionOptions(paths: TestPaths) {
   return {
     epsPath: paths.sourcePath,
     workspacePath: paths.workspacePath,
-    ghostscriptPath: 'gs',
     stagingDirectory: paths.stagingDirectory,
+    tools: { ghostscriptPath: 'gs' },
   };
 }
 
@@ -176,8 +184,11 @@ async function convertWithPdf(paths: TestPaths, createPdf: () => Promise<Uint8Ar
   return convertEpsToPdf({
     ...conversionOptions(paths),
     platform: 'linux',
-    runGhostscript: async (_executable, args) => {
-      await writeFile(outputPathFromArgs(args), await createPdf());
+    tools: {
+      ghostscriptPath: 'gs',
+      runGhostscript: async (_executable, args) => {
+        await writeFile(outputPathFromArgs(args), await createPdf());
+      },
     },
   });
 }

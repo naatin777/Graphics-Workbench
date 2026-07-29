@@ -165,9 +165,11 @@ suite('PNG変換のSafe Mode', () => {
     const outputs = await convertToPdfFiles({
       jobs,
       supportedExtensions: editableDrawioImageExtensions,
-      drawioTools: {
-        drawioPath: 'drawio',
-        runDrawio: createPdfWritingDrawioRunner(calls),
+      tools: {
+        drawioTools: {
+          drawioPath: 'drawio',
+          runDrawio: createPdfWritingDrawioRunner(calls),
+        },
       },
       runtime: { resolveConflicts: async () => 'overwrite' },
     });
@@ -190,9 +192,11 @@ suite('PNG変換のSafe Mode', () => {
     const outputs = await convertToPdfFiles({
       jobs,
       supportedExtensions: editableDrawioImageExtensions,
-      drawioTools: {
-        drawioPath: 'drawio',
-        runDrawio: createPdfWritingDrawioRunner(),
+      tools: {
+        drawioTools: {
+          drawioPath: 'drawio',
+          runDrawio: createPdfWritingDrawioRunner(),
+        },
       },
       runtime: { resolveConflicts: async () => 'keep-both' },
     });
@@ -213,9 +217,11 @@ suite('PNG変換のSafe Mode', () => {
     const outputs = await convertToPdfFiles({
       jobs,
       supportedExtensions: editableDrawioImageExtensions,
-      drawioTools: {
-        drawioPath: 'drawio',
-        runDrawio: createPdfWritingDrawioRunner(),
+      tools: {
+        drawioTools: {
+          drawioPath: 'drawio',
+          runDrawio: createPdfWritingDrawioRunner(),
+        },
       },
       runtime: { resolveConflicts: async () => 'overwrite' },
     });

@@ -8,18 +8,18 @@ export function formatLabel(template: string, value: string): string {
 
 export function pageFailureMessage(failure: PageParseFailure, labels: SplitPdfLabels): string {
   if (failure.kind === 'required') {
-    return labels.pagesRequiredError;
+    return labels.validation.pagesRequired;
   }
 
   if (failure.kind === 'wholeNumber' || failure.kind === 'malformed') {
     return failure.kind === 'wholeNumber'
-      ? formatLabel(labels.pageWholeNumberError, failure.token)
-      : formatLabel(labels.invalidPages, failure.token);
+      ? formatLabel(labels.validation.pageWholeNumber, failure.token)
+      : formatLabel(labels.validation.invalidPages, failure.token);
   }
 
   if (failure.kind === 'descending') {
-    return formatLabel(labels.descendingPages, failure.token);
+    return formatLabel(labels.validation.descendingPages, failure.token);
   }
 
-  return formatLabel(labels.pageOutOfRangeError, failure.token);
+  return formatLabel(labels.validation.pageOutOfRange, failure.token);
 }
