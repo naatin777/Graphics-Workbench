@@ -6,8 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
-import * as vscode from 'vscode';
-
+import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
 import { readGhostscriptExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { combineImagesToPdf } from '../../src/operations/conversion/combine_images_to_pdf.js';
 import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';
@@ -15,7 +14,7 @@ import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/inde
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const VALID_PNG = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
 const EPS_FIXTURE = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'eps', 'minimal.eps');
-const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(vscode.workspace.getConfiguration('graphics-workbench'));
+const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(getExtensionConfiguration());
 
 const supportedInputFixtures = [
   { format: 'png', width: 370, height: 370 },

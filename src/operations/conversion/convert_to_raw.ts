@@ -9,7 +9,7 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { isSameSourceFormat } from '../../application/policy/source_format.js';
-import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
+import { configs } from '../../generated-extension-meta.js';
 import {
   destroyRasterInput,
   openRasterInput,
@@ -73,7 +73,11 @@ export async function convertToRawFiles(options: ConvertToRawFilesOptions): Prom
       await mkdir(stageDirectory, { recursive: true });
       runtime.signal?.throwIfAborted();
 
-      const image = openRasterInput(job.sourcePath, options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS, job.page);
+      const image = openRasterInput(
+        job.sourcePath,
+        options.maxInputPixels ?? configs.raster.maxInputPixels(),
+        job.page,
+      );
       let data: Buffer;
       let info: OutputInfo;
       let colourspace: RawSidecar['colourspace'];

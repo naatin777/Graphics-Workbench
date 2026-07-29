@@ -4,6 +4,8 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
+import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
@@ -15,7 +17,7 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { convertToSvgFiles, type ConvertToSvgJob } from '../../operations/conversion/convert_to_svg.js';
@@ -29,9 +31,8 @@ import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from 
 
 export const CONVERT_TO_SVG_COMMAND = 'graphics-workbench.convertToSvg';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.svg';
-const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.svg';
-const DEFAULT_DRAWIO_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.svg';
+const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.svg';
+const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.svg';
 
 export async function convertToSvgCommand(
   uri?: vscode.Uri,
@@ -46,7 +47,7 @@ export async function convertToSvgCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getExtensionConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planSvgConversionJobs(sourceUri, configuration)),
@@ -109,7 +110,7 @@ async function planSvgConversionJobs(
   }
 
   if (isNativeDrawioPath(sourcePath)) {
-    const outputTemplate = readOutputPathsTemplate(configuration, 'convertDrawioToSvg', DEFAULT_DRAWIO_OUTPUT_PATH);
+    const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertDrawioToSvg', defaultDrawioOutputPath);
     const outputPath = resolveOutputPath(
       outputTemplate,
       {
@@ -157,7 +158,7 @@ async function createPdfJobs(
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }
 
-  const outputTemplate = readOutputPathsTemplate(configuration, 'convertPdfToSvg', DEFAULT_PDF_OUTPUT_PATH);
+  const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToSvg', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
   return Array.from({ length: pageCount }, (_value, index) => {
@@ -184,16 +185,16 @@ function outputTemplateForSource(sourcePath: string, configuration: vscode.Works
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return readOutputPathsTemplate(configuration, 'convertDrawioToSvg', DEFAULT_DRAWIO_OUTPUT_PATH);
+    return resolveOutputPathsTemplate(configuration, 'convertDrawioToSvg', defaultDrawioOutputPath);
   }
 
   switch (extension) {
     case '.mmd':
     case '.mermaid': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertMermaidToSvg', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertMermaidToSvg();
     }
     default: {
-      return DEFAULT_OUTPUT_PATH;
+      throw new Error(`Unsupported SVG input format: ${sourcePath}`);
     }
   }
 }

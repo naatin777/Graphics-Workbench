@@ -4,6 +4,8 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
+import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
@@ -16,8 +18,8 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
-import { readOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { executePngConversion, type ConvertToPngJob } from '../../operations/conversion/convert_to_png.js';
@@ -32,9 +34,8 @@ import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from 
 
 export const CONVERT_TO_PNG_COMMAND = 'graphics-workbench.convertToPng';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.png';
-const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.png';
-const DEFAULT_DRAWIO_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.png';
+const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.png';
+const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.png';
 
 export async function convertToPngCommand(
   uri?: vscode.Uri,
@@ -49,7 +50,7 @@ export async function convertToPngCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getExtensionConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planPngConversionJobs(sourceUri, configuration, maxInputPixels)),
@@ -113,7 +114,7 @@ async function planPngConversionJobs(
   }
 
   if (isNativeDrawioPath(sourcePath)) {
-    const outputTemplate = readOutputPathsTemplate(configuration, 'convertDrawioToPng', DEFAULT_DRAWIO_OUTPUT_PATH);
+    const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertDrawioToPng', defaultDrawioOutputPath);
     const outputPath = resolveOutputPath(
       outputTemplate,
       {
@@ -172,7 +173,7 @@ async function planPdfToPngJobs(
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }
 
-  const outputTemplate = readOutputPathsTemplate(configuration, 'convertPdfToPng', DEFAULT_PDF_OUTPUT_PATH);
+  const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToPng', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
   return Array.from({ length: pageCount }, (_value, index) => {
@@ -199,36 +200,36 @@ function outputTemplateForSource(sourcePath: string, configuration: vscode.Works
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return readOutputPathsTemplate(configuration, 'convertDrawioToPng', DEFAULT_DRAWIO_OUTPUT_PATH);
+    return resolveOutputPathsTemplate(configuration, 'convertDrawioToPng', defaultDrawioOutputPath);
   }
 
   switch (extension) {
     case '.jpg':
     case '.jpeg': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertJpegToPng', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertJpegToPng();
     }
     case '.webp': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertWebpToPng', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertWebpToPng();
     }
     case '.avif': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertAvifToPng', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertAvifToPng();
     }
     case '.gif': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertGifToPng', DEFAULT_OUTPUT_PATH);
+      return resolveOutputPathOrPathsTemplate(configuration, 'convertGifToPng', configs.outputPath.convertGifToPng);
     }
     case '.tif':
     case '.tiff': {
-      return readOutputPathOrPathsTemplate(configuration, 'convertTiffToPng', DEFAULT_OUTPUT_PATH);
+      return resolveOutputPathOrPathsTemplate(configuration, 'convertTiffToPng', configs.outputPath.convertTiffToPng);
     }
     case '.svg': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertSvgToPng', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertSvgToPng();
     }
     case '.mmd':
     case '.mermaid': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertMermaidToPng', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertMermaidToPng();
     }
     default: {
-      return DEFAULT_OUTPUT_PATH;
+      throw new Error(`Unsupported PNG input format: ${sourcePath}`);
     }
   }
 }

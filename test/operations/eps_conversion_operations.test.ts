@@ -6,8 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
-import * as vscode from 'vscode';
-
+import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
 import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
@@ -21,7 +20,7 @@ import { executeWebpConversion } from '../../src/operations/conversion/convert_t
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const EPS_FIXTURE = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'eps', 'minimal.eps');
-const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+const configuration = getExtensionConfiguration();
 const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(configuration);
 const PDFTOCAIRO_PATH = readPdftocairoExecutablePath(configuration);
 

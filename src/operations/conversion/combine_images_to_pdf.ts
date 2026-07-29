@@ -13,7 +13,7 @@ import {
   type CommittedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import { writeSourceAsPdf, type WriteSourceAsPdfOptions } from './convert_to_pdf.js';
-import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
+import { configs } from '../../generated-extension-meta.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
@@ -46,7 +46,7 @@ export interface CombineImagesToPdfOptions {
 
 export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  const configuredMaxInputPixels = options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS;
+  const configuredMaxInputPixels = options.maxInputPixels ?? configs.raster.maxInputPixels();
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
 

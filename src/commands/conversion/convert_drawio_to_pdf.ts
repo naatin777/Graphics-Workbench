@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 
+import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
 import { isDrawioPath } from '../../application/policy/source_format.js';
 import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
-import { readOutputPathTemplate, readOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { assertPageTemplateForSplitOutput } from '../../config/output/page_template.js';
 import { convertDrawioToPdfFiles, type DrawioPdfJob } from '../../operations/conversion/convert_drawio_to_pdf.js';
 
@@ -15,8 +16,8 @@ import { selectedUris } from '../shared/command_utils.js';
 export const CONVERT_DRAWIO_TO_PDF_COMMAND = 'graphics-workbench.convertDrawioToPdf';
 export const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'graphics-workbench.convertDrawioToPdfDirectly';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
-const DEFAULT_DIRECT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.pdf';
+const defaultOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
+const defaultDirectOutputPath = '${fileDirname}/${fileBasenameNoExtension}.pdf';
 
 export async function convertDrawioToPagePdfsCommand(
   uri?: vscode.Uri,
@@ -25,7 +26,7 @@ export async function convertDrawioToPagePdfsCommand(
 ): Promise<void> {
   const commandOptions: Parameters<typeof runDrawioPdfCommand>[0] = {
     outputMode: 'page-pdfs' as const,
-    defaultOutputPath: DEFAULT_OUTPUT_PATH,
+    defaultOutputPath,
     operationName: 'convert-drawio-to-pdf',
   };
   if (uri !== undefined) {
@@ -47,7 +48,7 @@ export async function convertDrawioToSinglePdfCommand(
 ): Promise<void> {
   const commandOptions: Parameters<typeof runDrawioPdfCommand>[0] = {
     outputMode: 'single-pdf' as const,
-    defaultOutputPath: DEFAULT_DIRECT_OUTPUT_PATH,
+    defaultOutputPath: defaultDirectOutputPath,
     operationName: 'convert-drawio-to-pdf-directly',
   };
   if (uri !== undefined) {
@@ -76,13 +77,11 @@ async function runDrawioPdfCommand(options: {
       throw new Error('No Draw.io files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-    const readTemplate = options.outputMode === 'page-pdfs' ? readOutputPathsTemplate : readOutputPathTemplate;
-    const outputTemplate = readTemplate(
-      configuration,
-      options.outputMode === 'page-pdfs' ? 'convertDrawioToPdf' : 'outputPath.convertDrawioToPdfDirectly',
-      options.defaultOutputPath,
-    );
+    const configuration = getExtensionConfiguration();
+    const outputTemplate =
+      options.outputMode === 'page-pdfs'
+        ? resolveOutputPathsTemplate(configuration, 'convertDrawioToPdf', options.defaultOutputPath)
+        : configs.outputPath.convertDrawioToPdfDirectly();
     if (options.outputMode === 'page-pdfs') {
       assertPageTemplateForSplitOutput(outputTemplate, 2);
     }

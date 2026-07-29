@@ -2,6 +2,8 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
+import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+
 import {
   isEditableDrawioImagePath,
   isRasterImagePath,
@@ -16,20 +18,14 @@ import {
   readMermaidPuppeteerOptions,
   readPuppeteerExecutablePath,
 } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { readOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   convertToPdfFiles,
   validateSvgToPdfOptions,
   type ConvertToPdfJob,
-  type SvgToPdfEngine,
 } from '../../operations/conversion/convert_to_pdf.js';
 import type { SvgToPdfBackend } from '../../operations/conversion/tools/index.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
-
-type StringConfigurationReader = {
-  get(key: string, defaultValue: string): string;
-};
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
@@ -40,10 +36,8 @@ import { isAbortError, readDrawioOptions, selectedUris } from '../shared/command
 export const CONVERT_PNG_TO_PDF_COMMAND = 'graphics-workbench.convertPngToPdf';
 export const CONVERT_TO_PDF_COMMAND = 'graphics-workbench.convertToPdf';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.pdf';
-const DEFAULT_DRAWIO_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.pdf';
-const PNG_EXTENSIONS = ['.png'] as const;
-const PDF_IMAGE_EXTENSIONS = [
+const pngExtensions = ['.png'] as const;
+const pdfImageExtensions = [
   '.png',
   '.jpg',
   '.jpeg',
@@ -70,7 +64,7 @@ export async function convertPngToPdfInternalCommand(
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
   await convertSelectedSourcesToPdf(uri, uris, {
-    supportedExtensions: PNG_EXTENSIONS,
+    supportedExtensions: pngExtensions,
     titleKey: 'message.progress.convertPngToPdf.title',
     successKey: 'message.convertPngToPdf.success',
     failedKey: 'message.convertPngToPdf.failed',
@@ -87,7 +81,7 @@ export async function convertToPdfCommand(
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
   await convertSelectedSourcesToPdf(uri, uris, {
-    supportedExtensions: PDF_IMAGE_EXTENSIONS,
+    supportedExtensions: pdfImageExtensions,
     titleKey: 'message.progress.convertToPdf.title',
     successKey: 'message.convertToPdf.success',
     failedKey: 'message.convertToPdf.failed',
@@ -117,9 +111,9 @@ async function convertSelectedSourcesToPdf(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getExtensionConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
-    const outputTemplate = readOutputPathTemplate(configuration, 'outputPath.convertPngToPdf', DEFAULT_OUTPUT_PATH);
+    const outputTemplate = configs.outputPath.convertPngToPdf();
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
@@ -129,7 +123,7 @@ async function convertSelectedSourcesToPdf(
       sourceUris.map(async (sourceUri) =>
         planToPdfConversionJobs(
           sourceUri,
-          outputTemplateForSource(sourceUri, configuration, outputTemplate),
+          outputTemplateForSource(sourceUri, outputTemplate),
           logicalSourcePathForOutputTemplate(sourceUri.fsPath),
           messages.supportedExtensions,
         ),
@@ -174,17 +168,12 @@ async function convertSelectedSourcesToPdf(
   }
 }
 
-export function outputTemplateForSource(
-  sourceUri: vscode.Uri,
-  configuration: StringConfigurationReader,
-  pngOutputTemplate: string,
-): string {
+export function outputTemplateForSource(sourceUri: vscode.Uri, pngOutputTemplate: string): string {
   const sourcePath = sourceUri.fsPath;
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath)) {
-    const configuredPath = configuration.get('outputPath.convertDrawioToPdfDirectly', DEFAULT_DRAWIO_OUTPUT_PATH);
-    return configuredPath.trim() ? configuredPath : DEFAULT_DRAWIO_OUTPUT_PATH;
+    return configs.outputPath.convertDrawioToPdfDirectly();
   }
 
   switch (extension) {
@@ -193,23 +182,23 @@ export function outputTemplateForSource(
     }
     case '.jpg':
     case '.jpeg': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertJpegToPdf', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertJpegToPdf();
     }
     case '.webp': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertWebpToPdf', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertWebpToPdf();
     }
     case '.avif': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertAvifToPdf', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertAvifToPdf();
     }
     case '.svg': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertSvgToPdf', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertSvgToPdf();
     }
     case '.mmd':
     case '.mermaid': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertMermaidToPdf', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertMermaidToPdf();
     }
     default: {
-      return DEFAULT_OUTPUT_PATH;
+      throw new Error(`Unsupported PDF input format: ${sourcePath}`);
     }
   }
 }
@@ -218,10 +207,10 @@ export function readSvgToPdfOptions(configuration: vscode.WorkspaceConfiguration
   const executablePath = readPuppeteerExecutablePath(configuration);
 
   return {
-    engine: configuration.get<SvgToPdfEngine>('convertToPdf.svg.engine', 'puppeteer'),
+    engine: configs.convertToPdf.svg.engine(),
     rsvgConvertPath: readRsvgConvertExecutablePath(configuration),
-    puppeteerBrowser: configuration.get<'chrome' | 'firefox'>('puppeteer.browser', 'chrome'),
-    puppeteerBrowserChannel: configuration.get('puppeteer.browser', 'chrome'),
+    puppeteerBrowser: configs.puppeteer.browser(),
+    puppeteerBrowserChannel: 'chrome',
     ...(executablePath ? { puppeteerExecutablePath: executablePath } : {}),
   };
 }

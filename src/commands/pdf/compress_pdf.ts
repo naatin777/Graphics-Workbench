@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
+import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { localeMap } from '../../locale_map.js';
@@ -15,8 +16,7 @@ import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecy
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, selectedUris } from '../shared/command_utils.js';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}_compressed.pdf';
-const QUALITY_OPTIONS: { quality: GhostscriptQuality; label: string; description: string }[] = [
+const qualityOptions: { quality: GhostscriptQuality; label: string; description: string }[] = [
   { quality: 'screen', label: 'Screen', description: localeMap('quickPick.compressPdf.quality.screen') },
   { quality: 'ebook', label: 'eBook', description: localeMap('quickPick.compressPdf.quality.ebook') },
   { quality: 'printer', label: 'Printer', description: localeMap('quickPick.compressPdf.quality.printer') },
@@ -38,8 +38,8 @@ export async function compressPdfCommand(
       throw new Error('No PDF files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-    const outputTemplate = configuration.get<string>('outputPath.compressPdf', DEFAULT_OUTPUT_PATH);
+    const configuration = getExtensionConfiguration();
+    const outputTemplate = configs.outputPath.compressPdf();
     const quality = await selectQuality();
 
     if (quality === undefined) {
@@ -129,7 +129,7 @@ function planCompressPdfJob(sourceUri: vscode.Uri, outputTemplate: string): Comp
 }
 
 async function selectQuality(): Promise<GhostscriptQuality | undefined> {
-  const selected = await vscode.window.showQuickPick(QUALITY_OPTIONS, {
+  const selected = await vscode.window.showQuickPick(qualityOptions, {
     title: localeMap('quickPick.compressPdf.quality.title'),
     placeHolder: localeMap('quickPick.compressPdf.quality.placeholder'),
   });

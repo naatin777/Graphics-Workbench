@@ -12,6 +12,7 @@ import {
   isCropConfigureMessage,
 } from '../../application/protocols/crop_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { configs } from '../../generated-extension-config.js';
 import { localeMap } from '../../locale_map.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
@@ -27,7 +28,6 @@ import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../shared/command_utils.js';
 
 export const CROP_PDF_CONFIGURE_COMMAND = 'graphics-workbench.cropPdf.configure';
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-crop.pdf';
 
 export async function cropPdfConfigureCommand(
   context: vscode.ExtensionContext,
@@ -67,8 +67,7 @@ async function runCropPdfConfigureCommand(
   const pdf = await PDFDocument.load(await readFile(inputUri.fsPath));
   const firstPage = pdf.getPages()[0];
   const firstPageMediaBox = firstPage?.getMediaBox();
-  const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-  const outputTemplate = configuration.get<string>('outputPath.cropPdf', DEFAULT_OUTPUT_PATH);
+  const outputTemplate = configs.outputPath.cropPdf();
   const initMessage: CropConfigureHostToWebview = {
     type: 'init',
     payload: {

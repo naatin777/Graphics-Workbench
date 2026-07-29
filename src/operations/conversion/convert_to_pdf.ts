@@ -15,7 +15,7 @@ import {
   isRasterImagePath,
   isSameSourceFormat,
 } from '../../application/policy/source_format.js';
-import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
+import { configs } from '../../generated-extension-meta.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import {
   destroyRasterInput,
@@ -40,14 +40,12 @@ import {
   type RsvgToolScratchOptions,
 } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import type { DrawioBackend, MermaidBackend, SvgToPdfEngine, SvgToPdfBackend } from './tools/index.js';
+import type { DrawioBackend, MermaidBackend, SvgToPdfBackend } from './tools/index.js';
 
-const DEFAULT_SUPPORTED_IMAGE_EXTENSIONS = ['.png'] as const;
-const SVG_EXTENSION = '.svg';
+const defaultSupportedImageExtensions = ['.png'] as const;
+const svgExtension = '.svg';
 // oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
-
-export type { SvgToPdfEngine };
 
 export function validateSvgToPdfOptions(options: SvgToPdfBackend): void {
   if (
@@ -152,9 +150,9 @@ export interface ConvertToPdfFilesOptions {
 
 export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  const maxInputPixels = options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS;
+  const maxInputPixels = options.maxInputPixels ?? configs.raster.maxInputPixels();
   runtime?.signal?.throwIfAborted();
-  validateJobs(options.jobs, options.supportedExtensions ?? DEFAULT_SUPPORTED_IMAGE_EXTENSIONS);
+  validateJobs(options.jobs, options.supportedExtensions ?? defaultSupportedImageExtensions);
   await validateJobPaths(options.jobs, 'convert-png-to-pdf');
   runtime?.signal?.throwIfAborted();
 
@@ -255,7 +253,7 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
-    const animation = await readRasterAnimationMetadata(sourcePath, maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS);
+    const animation = await readRasterAnimationMetadata(sourcePath, maxInputPixels ?? configs.raster.maxInputPixels());
     if (animation !== undefined) {
       await writeSourceAsPdf({ ...options, page: 1 });
       return;
@@ -279,7 +277,7 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
     return;
   }
 
-  if (extension === SVG_EXTENSION) {
+  if (extension === svgExtension) {
     await writeSvgAsPdf({
       sourcePath,
       outputPath,
@@ -301,7 +299,7 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
     outputPath,
     workspacePath,
     signal,
-    maxInputPixels: maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS,
+    maxInputPixels: maxInputPixels ?? configs.raster.maxInputPixels(),
     framePage: options.page,
   });
 }

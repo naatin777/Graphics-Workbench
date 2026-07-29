@@ -11,6 +11,7 @@ import {
   type SplitPdfPageGroupRow,
 } from '../../application/protocols/split_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { configs } from '../../generated-extension-config.js';
 import { localeMap } from '../../locale_map.js';
 import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfJob } from '../../operations/pdf/split_pdf.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
@@ -25,7 +26,6 @@ import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecy
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, selectedUris } from '../shared/command_utils.js';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
 export const SPLIT_PDF_ALL_PAGES_COMMAND = 'graphics-workbench.splitPdf.allPages';
 export const SPLIT_PDF_CONFIGURE_COMMAND = 'graphics-workbench.splitPdf.configure';
 
@@ -42,8 +42,7 @@ export async function splitPdfAllPagesCommand(
       throw new Error('No PDF files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-    const outputTemplate = configuration.get<string>('outputPath.splitPdf', DEFAULT_OUTPUT_PATH);
+    const outputTemplate = configs.outputPath.splitPdf();
     const jobs = sourceUris.map((sourceUri) => planSplitPdfJob(sourceUri, outputTemplate));
     const outputs = await vscode.window.withProgress(
       {
@@ -165,8 +164,7 @@ async function runSplitPdfConfigureCommand(
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
   }
 
-  const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-  const outputTemplate = configuration.get<string>('outputPath.splitPdf', DEFAULT_OUTPUT_PATH);
+  const outputTemplate = configs.outputPath.splitPdf();
 
   if (!outputTemplate.includes('${page}')) {
     throw new Error('outputPath.splitPdf must contain ${page} for splitPdf.configure.');

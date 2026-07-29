@@ -19,6 +19,7 @@ import { PDFDocument } from 'pdf-lib';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
+import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
 import { cropPdfAutoCommand } from '../../src/commands/pdf/crop_pdf_auto.js';
 
 suite('PDF crop outputPath検証', () => {
@@ -30,7 +31,7 @@ suite('PDF crop outputPath検証', () => {
     const temporaryDirectory = await mkdtemp(
       path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-output-path-validation-'),
     );
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getExtensionConfiguration();
 
     try {
       const sourcePath = path.join(temporaryDirectory, 'source.pdf');

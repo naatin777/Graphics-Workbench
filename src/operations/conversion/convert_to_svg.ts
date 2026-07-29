@@ -12,7 +12,7 @@ import {
   isSameSourceFormat,
   sourceFormatForPath,
 } from '../../application/policy/source_format.js';
-import { DEFAULT_MAX_INPUT_PIXELS } from '../../config/raster_input.js';
+import { configs } from '../../generated-extension-meta.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -111,7 +111,7 @@ interface WritePdfPageAsSvgOptions {
 export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
-  const maxInputPixels = options.maxInputPixels ?? DEFAULT_MAX_INPUT_PIXELS;
+  const maxInputPixels = options.maxInputPixels ?? configs.raster.maxInputPixels();
   validateJobs(options.jobs);
   await validateJobPaths(options.jobs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
@@ -462,7 +462,7 @@ async function writeRawAsSvg(
   outputPath: string,
   workspacePath: string,
   signal?: AbortSignal,
-  maxInputPixels = DEFAULT_MAX_INPUT_PIXELS,
+  maxInputPixels = configs.raster.maxInputPixels(),
 ): Promise<void> {
   signal?.throwIfAborted();
   const image = openRasterInput(sourcePath, maxInputPixels);

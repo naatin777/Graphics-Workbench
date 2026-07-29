@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {
   readMermaidPuppeteerOptions,
   readPuppeteerExecutablePath,
-  type MermaidConfiguration,
 } from '../../src/config/rendering/mermaid_puppeteer_options.js';
+import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('Mermaid Puppeteer設定', () => {
   test('puppeteer.browserからbrowserChannelを読み取る', () => {
@@ -62,16 +62,8 @@ suite('Mermaid Puppeteer設定', () => {
   });
 
   test('readPuppeteerExecutablePathは空文字のとき空文字を返す', () => {
-    const executablePath = readPuppeteerExecutablePath(fakeConfiguration({}));
+    const executablePath = readPuppeteerExecutablePath(fakeConfiguration());
 
     assert.strictEqual(executablePath, '');
   });
 });
-
-function fakeConfiguration(values: Record<string, string>): MermaidConfiguration {
-  return {
-    get(key: string, defaultValue: string): string {
-      return values[key] ?? defaultValue;
-    },
-  };
-}

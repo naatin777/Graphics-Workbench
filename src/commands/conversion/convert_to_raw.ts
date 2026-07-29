@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 
+import { getExtensionConfiguration } from '../../generated-extension-config.js';
 import { readConvertToRawOutputPath } from '../../config/output/output_path_settings.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { isRasterImagePath } from '../../application/policy/source_format.js';
@@ -14,7 +15,7 @@ import { userMessage } from '../shared/user_messages.js';
 
 export const CONVERT_TO_RAW_COMMAND = 'graphics-workbench.convertToRaw';
 
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.raw';
+const defaultOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.raw';
 
 export async function convertToRawCommand(
   uri?: vscode.Uri,
@@ -28,9 +29,9 @@ export async function convertToRawCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getExtensionConfiguration();
     const sourceExt = path.extname(sourceUris[0]?.fsPath ?? '');
-    const outputTemplate = readConvertToRawOutputPath(configuration, sourceExt, DEFAULT_OUTPUT_PATH);
+    const outputTemplate = readConvertToRawOutputPath(configuration, sourceExt, defaultOutputPath);
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planRawConversionJobs(sourceUri, outputTemplate, maxInputPixels)),

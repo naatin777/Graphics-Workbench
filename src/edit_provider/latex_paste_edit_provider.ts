@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
+import { configs, getExtensionConfiguration } from '../generated-extension-config.js';
 import { withCancellationSignal } from '../commands/lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../commands/lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../commands/lifecycle/undo_last_conversion.js';
@@ -24,7 +25,7 @@ import {
 
 import { getImageTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
 
-const CLIPBOARD_IMAGE_TYPES = [
+const clipboardImageTypes = [
   { mime: 'image/png', ext: 'png' },
   { mime: 'image/jpeg', ext: 'jpeg' },
 ] as const;
@@ -100,11 +101,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
           return undefined;
         }
 
-        const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-        const outputPathClipboardImage = configuration.get<string>(
-          'outputPath.clipboardImage',
-          '${fileDirname}/${dateNow}',
-        );
+        const outputPathClipboardImage = configs.outputPath.clipboardImage();
         const defaultOutputPath = resolveOutputPath(outputPathClipboardImage, {
           workspacePath: workspaceFolder.uri.fsPath,
           workspaceName: workspaceFolder.name,
@@ -136,7 +133,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
             kind: pickedItem.pasteKind,
             outputBasePath: outputPath,
             workspacePath,
-            maxInputPixels: getMaxInputPixels(vscode.workspace.getConfiguration('graphics-workbench')),
+            maxInputPixels: getMaxInputPixels(getExtensionConfiguration()),
           },
           {
             signal,
@@ -185,8 +182,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
   }
 
   createSingleFileSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
-    const templates = getImageTemplates(configuration);
+    const templates = getImageTemplates();
     const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {
       path: relativeFilePath,
@@ -210,7 +206,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
 }
 
 async function readClipboardImageData(dataTransfer: vscode.DataTransfer): Promise<ClipboardImageData | undefined> {
-  for (const type of CLIPBOARD_IMAGE_TYPES) {
+  for (const type of clipboardImageTypes) {
     const file = dataTransfer.get(type.mime)?.asFile();
     const data = await file?.data();
 

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createRasterFrameJobs } from '../../src/commands/conversion/create_raster_frame_jobs.js';
-import { DEFAULT_MAX_INPUT_PIXELS } from '../../src/config/raster_input.js';
+import { configs } from '../../src/generated-extension-meta.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const fixturePath = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
@@ -24,7 +24,7 @@ suite('ラスター分割jobの出力path検証', () => {
           workspaceName: path.basename(workspacePath),
           outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
           allowedExtensions: ['.png'],
-          maxInputPixels: DEFAULT_MAX_INPUT_PIXELS,
+          maxInputPixels: configs.raster.maxInputPixels(),
           createJob: (job) => job,
         }),
         /Invalid output extension/,
@@ -46,7 +46,7 @@ suite('ラスター分割jobの出力path検証', () => {
         workspaceName: path.basename(workspacePath),
         outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.png',
         allowedExtensions: ['.png'],
-        maxInputPixels: DEFAULT_MAX_INPUT_PIXELS,
+        maxInputPixels: configs.raster.maxInputPixels(),
         createJob: (job) => job,
       });
 

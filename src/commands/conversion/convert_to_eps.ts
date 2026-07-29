@@ -4,6 +4,9 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
+import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+import type { ConfigurationReader } from '../../generated-extension-meta.js';
+
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
@@ -13,11 +16,7 @@ import {
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import {
-  readOutputPathTemplate,
-  readOutputPathsTemplate,
-  type ConfigurationReader,
-} from '../../config/output/output_path_settings.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { convertToEpsFiles, type ConvertToEpsJob } from '../../operations/conversion/convert_to_eps.js';
@@ -30,8 +29,7 @@ import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
 
 export const CONVERT_TO_EPS_COMMAND = 'graphics-workbench.convertToEps';
-const DEFAULT_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}.eps';
-const DEFAULT_PDF_OUTPUT_PATH = '${fileDirname}/${fileBasenameNoExtension}-${page}.eps';
+const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.eps';
 
 export async function convertToEpsCommand(
   uri?: vscode.Uri,
@@ -43,7 +41,7 @@ export async function convertToEpsCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = vscode.workspace.getConfiguration('graphics-workbench');
+    const configuration = getExtensionConfiguration();
     const plannedJobs = await Promise.all(sourceUris.map(async (sourceUri) => createEpsJobs(sourceUri, configuration)));
     const jobs = plannedJobs.flat();
     const svgToPdfTools = readSvgToPdfOptions(configuration);
@@ -91,7 +89,7 @@ export async function createEpsJobs(
     if (pageCount === 0) {
       throw new Error(`PDF has no pages: ${sourcePath}`);
     }
-    const template = readOutputPathsTemplate(configuration, 'convertPdfToEps', DEFAULT_PDF_OUTPUT_PATH);
+    const template = resolveOutputPathsTemplate(configuration, 'convertPdfToEps', defaultPdfOutputPath);
     assertPageTemplateForSplitOutput(template, pageCount);
     return Array.from({ length: pageCount }, (_value, index) =>
       planEpsConversionJob(sourcePath, workspace, template, index + 1, pageCount),
@@ -99,7 +97,7 @@ export async function createEpsJobs(
   }
 
   if (isNativeDrawioPath(sourcePath)) {
-    const outputTemplate = outputPathTemplateForSource(sourcePath, configuration);
+    const outputTemplate = outputPathTemplateForSource(sourcePath);
     return [
       {
         sourcePath,
@@ -117,7 +115,7 @@ export async function createEpsJobs(
     ];
   }
 
-  const outputTemplate = outputPathTemplateForSource(sourcePath, configuration);
+  const outputTemplate = outputPathTemplateForSource(sourcePath);
 
   if (isRasterImagePath(sourcePath)) {
     return createRasterFrameJobs({
@@ -147,33 +145,33 @@ export async function createEpsJobs(
   ];
 }
 
-function outputPathTemplateForSource(sourcePath: string, configuration: ConfigurationReader): string {
+function outputPathTemplateForSource(sourcePath: string): string {
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return readOutputPathsTemplate(configuration, 'convertDrawioToEps', DEFAULT_OUTPUT_PATH);
+    return configs.outputPath.convertPngToEps();
   }
   switch (path.extname(sourcePath).toLowerCase()) {
     case '.png': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertPngToEps', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertPngToEps();
     }
     case '.jpg':
     case '.jpeg': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertJpegToEps', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertJpegToEps();
     }
     case '.webp': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertWebpToEps', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertWebpToEps();
     }
     case '.avif': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertAvifToEps', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertAvifToEps();
     }
     case '.svg': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertSvgToEps', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertSvgToEps();
     }
     case '.mmd':
     case '.mermaid': {
-      return readOutputPathTemplate(configuration, 'outputPath.convertMermaidToEps', DEFAULT_OUTPUT_PATH);
+      return configs.outputPath.convertMermaidToEps();
     }
     default: {
-      return DEFAULT_OUTPUT_PATH;
+      throw new Error(`Unsupported EPS input format: ${sourcePath}`);
     }
   }
 }
