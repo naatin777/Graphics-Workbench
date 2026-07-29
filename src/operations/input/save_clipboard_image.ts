@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { configs } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated-extension-meta.js';
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
@@ -140,7 +140,7 @@ async function saveClipboardImageAsPdf(
     runId,
     runtime,
     supportedExtensions: [`.${request.data.type.ext}`] as const,
-    maxInputPixels: request.maxInputPixels ?? configs.raster.maxInputPixels(),
+    maxInputPixels: request.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
   };
   return convertToPdfFiles(convertOptions);
 }

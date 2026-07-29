@@ -13,7 +13,7 @@ import {
   isSupportedImageInputPath,
 } from '../../application/policy/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { configs } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated-extension-meta.js';
 import { isAbortError } from '../../commands/shared/command_utils.js';
 
 import {
@@ -85,7 +85,7 @@ export function createSimpleRasterExecutor(options: SimpleRasterConversionOption
   ): Promise<CommittedConversionOutput[]> =>
     executeRasterConversionBatch({
       ...batchOptions,
-      maxInputPixels: batchOptions.maxInputPixels ?? configs.raster.maxInputPixels(),
+      maxInputPixels: batchOptions.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
       definition,
     });
 }

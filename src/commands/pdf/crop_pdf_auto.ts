@@ -2,7 +2,6 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { localeMap } from '../../locale_map.js';
@@ -14,7 +13,7 @@ import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError, selectedUris } from '../shared/command_utils.js';
+import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 
 export const CROP_PDF_AUTO_COMMAND = 'graphics-workbench.cropPdf.auto';
 
@@ -31,15 +30,15 @@ export async function cropPdfAutoCommand(
       throw new Error('No PDF files were selected.');
     }
 
-    const configuration = getExtensionConfiguration();
-    const marginOptions = readMarginOptions(configs.cropPdf.marginOptions());
+    const configuration = getCommandConfiguration(dependencies);
+    const marginOptions = readMarginOptions(configuration.cropPdf.marginOptions(), configuration);
     const selectedMargin = await selectMargin(marginOptions);
 
     if (selectedMargin === undefined) {
       return;
     }
 
-    const outputTemplate = configs.outputPath.cropPdf();
+    const outputTemplate = configuration.outputPath.cropPdf();
     const jobs = sourceUris.map((sourceUri) => planCropPdfJob(sourceUri, outputTemplate));
     const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     const outputs = await vscode.window.withProgress(
@@ -122,9 +121,9 @@ function planCropPdfJob(sourceUri: vscode.Uri, outputTemplate: string): CropPdfJ
   };
 }
 
-function readMarginOptions(value: unknown): number[] {
+function readMarginOptions(value: unknown, configuration: ReturnType<typeof getCommandConfiguration>): number[] {
   if (!Array.isArray(value)) {
-    return configs.cropPdf.marginOptions();
+    return configuration.cropPdf.marginOptions();
   }
 
   const options = value.filter(
@@ -132,7 +131,7 @@ function readMarginOptions(value: unknown): number[] {
   );
   const uniqueOptions = [...new Set(options)];
 
-  return uniqueOptions.length > 0 ? uniqueOptions : configs.cropPdf.marginOptions();
+  return uniqueOptions.length > 0 ? uniqueOptions : configuration.cropPdf.marginOptions();
 }
 
 async function selectMargin(options: number[]): Promise<number | undefined> {

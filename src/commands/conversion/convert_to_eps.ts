@@ -4,8 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
-import type { ConfigurationReader } from '../../generated-extension-meta.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
@@ -24,7 +23,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { assertFileScheme, isAbortError, selectedUris } from '../shared/command_utils.js';
+import { assertFileScheme, getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
 
@@ -41,7 +40,7 @@ export async function convertToEpsCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = getExtensionConfiguration();
+    const configuration = getCommandConfiguration(dependencies);
     const plannedJobs = await Promise.all(sourceUris.map(async (sourceUri) => createEpsJobs(sourceUri, configuration)));
     const jobs = plannedJobs.flat();
     const svgToPdfTools = readSvgToPdfOptions(configuration);
@@ -72,10 +71,7 @@ export async function convertToEpsCommand(
   }
 }
 
-export async function createEpsJobs(
-  sourceUri: vscode.Uri,
-  configuration: ConfigurationReader,
-): Promise<ConvertToEpsJob[]> {
+export async function createEpsJobs(sourceUri: vscode.Uri, configuration: Configuration): Promise<ConvertToEpsJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
@@ -97,7 +93,7 @@ export async function createEpsJobs(
   }
 
   if (isNativeDrawioPath(sourcePath)) {
-    const outputTemplate = outputPathTemplateForSource(sourcePath);
+    const outputTemplate = outputPathTemplateForSource(sourcePath, configuration);
     return [
       {
         sourcePath,
@@ -115,7 +111,7 @@ export async function createEpsJobs(
     ];
   }
 
-  const outputTemplate = outputPathTemplateForSource(sourcePath);
+  const outputTemplate = outputPathTemplateForSource(sourcePath, configuration);
 
   if (isRasterImagePath(sourcePath)) {
     return createRasterFrameJobs({
@@ -145,30 +141,30 @@ export async function createEpsJobs(
   ];
 }
 
-function outputPathTemplateForSource(sourcePath: string): string {
+function outputPathTemplateForSource(sourcePath: string, configuration: Configuration): string {
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return configs.outputPath.convertPngToEps();
+    return configuration.outputPath.convertPngToEps();
   }
   switch (path.extname(sourcePath).toLowerCase()) {
     case '.png': {
-      return configs.outputPath.convertPngToEps();
+      return configuration.outputPath.convertPngToEps();
     }
     case '.jpg':
     case '.jpeg': {
-      return configs.outputPath.convertJpegToEps();
+      return configuration.outputPath.convertJpegToEps();
     }
     case '.webp': {
-      return configs.outputPath.convertWebpToEps();
+      return configuration.outputPath.convertWebpToEps();
     }
     case '.avif': {
-      return configs.outputPath.convertAvifToEps();
+      return configuration.outputPath.convertAvifToEps();
     }
     case '.svg': {
-      return configs.outputPath.convertSvgToEps();
+      return configuration.outputPath.convertSvgToEps();
     }
     case '.mmd':
     case '.mermaid': {
-      return configs.outputPath.convertMermaidToEps();
+      return configuration.outputPath.convertMermaidToEps();
     }
     default: {
       throw new Error(`Unsupported EPS input format: ${sourcePath}`);

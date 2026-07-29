@@ -2,7 +2,8 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../generated-extension-config.js';
+import { getExtensionConfiguration } from '../generated-extension-config.js';
+import type { GetConfiguration } from '../generated-extension-meta.js';
 import { withCancellationSignal } from '../commands/lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../commands/lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../commands/lifecycle/undo_last_conversion.js';
@@ -37,6 +38,7 @@ interface PasteQuickPickItem extends vscode.QuickPickItem {
 }
 
 export interface LatexPasteEditProviderOptions {
+  getConfiguration?: GetConfiguration;
   resolveOutputConflicts?: (conflicts: string[]) => Promise<OutputConflictDecision>;
   recordConversionForUndo?: (outputs: CommittedConversionOutput[]) => Promise<string>;
   outputChannel?: LineOutputChannel;
@@ -44,10 +46,12 @@ export interface LatexPasteEditProviderOptions {
 
 export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider {
   private readonly resolveConflicts: (conflicts: string[]) => Promise<OutputConflictDecision>;
+  private readonly getConfiguration: GetConfiguration;
   private readonly rememberConversion: (outputs: CommittedConversionOutput[]) => Promise<string>;
   private readonly outputChannel: LineOutputChannel | undefined;
 
   constructor(options: LatexPasteEditProviderOptions = {}) {
+    this.getConfiguration = options.getConfiguration ?? getExtensionConfiguration;
     this.resolveConflicts = options.resolveOutputConflicts ?? resolveOutputConflicts;
     this.outputChannel = options.outputChannel;
     this.rememberConversion =
@@ -101,7 +105,8 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
           return undefined;
         }
 
-        const outputPathClipboardImage = configs.outputPath.clipboardImage();
+        const configuration = this.getConfiguration();
+        const outputPathClipboardImage = configuration.outputPath.clipboardImage();
         const defaultOutputPath = resolveOutputPath(outputPathClipboardImage, {
           workspacePath: workspaceFolder.uri.fsPath,
           workspaceName: workspaceFolder.name,
@@ -133,7 +138,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
             kind: pickedItem.pasteKind,
             outputBasePath: outputPath,
             workspacePath,
-            maxInputPixels: getMaxInputPixels(getExtensionConfiguration()),
+            maxInputPixels: getMaxInputPixels(configuration),
           },
           {
             signal,

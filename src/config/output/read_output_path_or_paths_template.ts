@@ -1,11 +1,12 @@
-import type { ConfigurationReader } from '../../generated-extension-meta.js';
-import { resolveOutputPathsTemplate, type OutputPathKey } from './output_path_settings.js';
+import type { Configuration } from '../../generated-extension-meta.js';
+import { resolveOutputPathTemplate, resolveOutputPathsTemplate, type OutputPathKey } from './output_path_settings.js';
 
 export function resolveOutputPathOrPathsTemplate(
-  configuration: ConfigurationReader,
+  configuration: Configuration,
   key: OutputPathKey,
   setting: () => string,
   fallback?: string,
+  defaultSetting: () => string = setting,
 ): string {
   const pageTemplate = resolveOutputPathsTemplate(configuration, key, '');
   if (pageTemplate !== '') {
@@ -14,5 +15,5 @@ export function resolveOutputPathOrPathsTemplate(
   if (fallback !== undefined) {
     return fallback;
   }
-  return setting();
+  return resolveOutputPathTemplate(setting(), defaultSetting());
 }

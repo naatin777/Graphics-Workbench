@@ -1,7 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 
-import { getExtensionConfiguration } from '../../generated-extension-config.js';
 import { readConvertToRawOutputPath } from '../../config/output/output_path_settings.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { isRasterImagePath } from '../../application/policy/source_format.js';
@@ -10,7 +9,7 @@ import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { assertFileScheme, isAbortError, selectedUris } from '../shared/command_utils.js';
+import { assertFileScheme, getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 import { userMessage } from '../shared/user_messages.js';
 
 export const CONVERT_TO_RAW_COMMAND = 'graphics-workbench.convertToRaw';
@@ -29,7 +28,7 @@ export async function convertToRawCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = getExtensionConfiguration();
+    const configuration = getCommandConfiguration(dependencies);
     const sourceExt = path.extname(sourceUris[0]?.fsPath ?? '');
     const outputTemplate = readConvertToRawOutputPath(configuration, sourceExt, defaultOutputPath);
     const maxInputPixels = getMaxInputPixels(configuration);

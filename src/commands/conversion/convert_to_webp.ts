@@ -4,8 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
-import type { OutputPaths } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration, type Configuration, type OutputPaths } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
@@ -35,7 +34,13 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import {
+  assertFileScheme,
+  getCommandConfiguration,
+  isAbortError,
+  readDrawioOptions,
+  selectedUris,
+} from '../shared/command_utils.js';
 
 export const CONVERT_TO_WEBP_COMMAND = 'graphics-workbench.convertToWebp';
 export const CONVERT_TO_WEBP_PRESERVE_COMMAND = 'graphics-workbench.convertToWebpPreserveAnimation';
@@ -63,17 +68,18 @@ export async function convertToWebpCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = getExtensionConfiguration();
+    const configuration = getCommandConfiguration(dependencies);
+    const defaultConfiguration = getDefaultConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) =>
-        planWebpConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
+        planWebpConversionJobs(sourceUri, configuration, defaultConfiguration, maxInputPixels, options?.outputMode),
       ),
     );
     const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
-    const webp = readWebpOutputOptions();
+    const webp = readWebpOutputOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
     const ghostscriptTools = {
       ghostscriptPath: readGhostscriptExecutablePath(configuration),
@@ -109,7 +115,8 @@ export async function convertToWebpCommand(
 
 async function planWebpConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
+  defaultConfiguration: Configuration,
   maxInputPixels: number,
   outputMode?: 'auto' | 'preserve' | 'split',
 ): Promise<ConvertToWebpJob[]> {
@@ -132,7 +139,7 @@ async function planWebpConversionJobs(
   }
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
-  const outputTemplate = outputTemplateForSource(sourcePath, configuration, outputMode);
+  const outputTemplate = outputTemplateForSource(sourcePath, configuration, defaultConfiguration, outputMode);
   if (isRasterImagePath(sourcePath)) {
     const animation = extension === '.gif' ? await readRasterAnimationMetadata(sourcePath, maxInputPixels) : undefined;
     if (animation !== undefined && outputMode !== 'split') {
@@ -189,7 +196,7 @@ async function planWebpConversionJobs(
 async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
 ): Promise<ConvertToWebpJob[]> {
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
@@ -223,13 +230,14 @@ async function createPdfJobs(
 
 function outputTemplateForSource(
   sourcePath: string,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
+  defaultConfiguration: Configuration,
   outputMode?: 'auto' | 'preserve' | 'split',
 ): string {
   const splitDefault = outputMode === 'split' ? defaultSplitOutputPath : undefined;
   const extension = path.extname(sourcePath).toLowerCase();
-  const readPairTemplate = (key: keyof OutputPaths, setting: () => string): string =>
-    resolveOutputPathOrPathsTemplate(configuration, key, setting, splitDefault);
+  const readPairTemplate = (key: keyof OutputPaths, setting: () => string, defaultSetting: () => string): string =>
+    resolveOutputPathOrPathsTemplate(configuration, key, setting, splitDefault, defaultSetting);
 
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return resolveOutputPathsTemplate(configuration, 'convertDrawioToWebp', defaultDrawioOutputPath);
@@ -237,21 +245,41 @@ function outputTemplateForSource(
 
   switch (extension) {
     case '.png': {
-      return readPairTemplate('convertPngToWebp', configs.outputPath.convertPngToWebp);
+      return readPairTemplate(
+        'convertPngToWebp',
+        configuration.outputPath.convertPngToWebp,
+        defaultConfiguration.outputPath.convertPngToWebp,
+      );
     }
     case '.jpg':
     case '.jpeg': {
-      return readPairTemplate('convertJpegToWebp', configs.outputPath.convertJpegToWebp);
+      return readPairTemplate(
+        'convertJpegToWebp',
+        configuration.outputPath.convertJpegToWebp,
+        defaultConfiguration.outputPath.convertJpegToWebp,
+      );
     }
     case '.avif': {
-      return readPairTemplate('convertAvifToWebp', configs.outputPath.convertAvifToWebp);
+      return readPairTemplate(
+        'convertAvifToWebp',
+        configuration.outputPath.convertAvifToWebp,
+        defaultConfiguration.outputPath.convertAvifToWebp,
+      );
     }
     case '.svg': {
-      return readPairTemplate('convertSvgToWebp', configs.outputPath.convertSvgToWebp);
+      return readPairTemplate(
+        'convertSvgToWebp',
+        configuration.outputPath.convertSvgToWebp,
+        defaultConfiguration.outputPath.convertSvgToWebp,
+      );
     }
     case '.mmd':
     case '.mermaid': {
-      return readPairTemplate('convertMermaidToWebp', configs.outputPath.convertMermaidToWebp);
+      return readPairTemplate(
+        'convertMermaidToWebp',
+        configuration.outputPath.convertMermaidToWebp,
+        defaultConfiguration.outputPath.convertMermaidToWebp,
+      );
     }
     default: {
       throw new Error(`Unsupported WebP input format: ${sourcePath}`);
@@ -259,8 +287,8 @@ function outputTemplateForSource(
   }
 }
 
-function readWebpOutputOptions(): WebpOutputOptions {
-  const effort = configs.convertToWebp.effort();
+function readWebpOutputOptions(configuration: Configuration): WebpOutputOptions {
+  const effort = configuration.convertToWebp.effort();
 
   if (!Number.isInteger(effort) || effort < 0 || effort > 6) {
     throw new Error(`convertToWebp.effort must be an integer between 0 and 6: ${effort}`);

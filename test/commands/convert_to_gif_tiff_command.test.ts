@@ -9,7 +9,6 @@ import * as vscode from 'vscode';
 import { convertToGifCommand } from '../../src/commands/conversion/convert_to_gif.js';
 import { convertToTiffCommand } from '../../src/commands/conversion/convert_to_tiff.js';
 import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
-import { configs } from '../../src/generated-extension-meta.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('GIF/TIFFに変換コマンド', () => {
@@ -31,6 +30,7 @@ async function assertAnimatedInputIsSplit(
     path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, `graphics-workbench-${format}-command-`),
   );
   const configuration = getExtensionConfiguration();
+  const workspaceConfiguration = vscode.workspace.getConfiguration('graphics-workbench');
   const sandbox = createSandbox();
   const key = outputFormat === 'gif' ? 'convertTiffToGif' : 'convertGifToTiff';
   const template = `\${fileDirname}/\${fileBasenameNoExtension}-\${page}.${outputFormat}`;
@@ -40,8 +40,8 @@ async function assertAnimatedInputIsSplit(
     sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
     const sourcePath = path.join(workspacePath, `source.${format}`);
     await writeAnimatedImage(sourcePath, format);
-    const outputPaths = configs.outputPaths(configuration);
-    await configuration.update(
+    const outputPaths = configuration.outputPaths();
+    await workspaceConfiguration.update(
       'outputPaths',
       { ...outputPaths, [key]: template },
       vscode.ConfigurationTarget.Workspace,
@@ -54,7 +54,7 @@ async function assertAnimatedInputIsSplit(
     assert.strictEqual(metadata.pages ?? 1, 1);
   } finally {
     sandbox.restore();
-    await configuration.update('outputPaths', undefined, vscode.ConfigurationTarget.Workspace);
+    await workspaceConfiguration.update('outputPaths', undefined, vscode.ConfigurationTarget.Workspace);
     await rm(workspacePath, { recursive: true, force: true });
   }
 }

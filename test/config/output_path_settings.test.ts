@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 
-import { configs } from '../../src/generated-extension-meta.js';
 import { resolveOutputPathsTemplate } from '../../src/config/output/output_path_settings.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
@@ -10,7 +9,7 @@ suite('outputPath設定', () => {
       'outputPath.convertPngToJpeg': 'flat/${file}.jpeg',
     });
 
-    assert.strictEqual(configs.outputPath.convertPngToJpeg(config), 'flat/${file}.jpeg');
+    assert.strictEqual(config.outputPath.convertPngToJpeg(), 'flat/${file}.jpeg');
   });
 
   test('空のoutputPath設定をフォールバックせず読み取る', () => {
@@ -18,7 +17,7 @@ suite('outputPath設定', () => {
       'outputPath.convertPngToJpeg': '  ',
     });
 
-    assert.strictEqual(configs.outputPath.convertPngToJpeg(config), '  ');
+    assert.strictEqual(config.outputPath.convertPngToJpeg(), '  ');
   });
 
   test('pageを含むoutputPathsの設定を読み取る', () => {
@@ -27,12 +26,15 @@ suite('outputPath設定', () => {
     assert.strictEqual(resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'), 'pdf/${page}.png');
   });
 
-  test('outputPathsが配列・null・非文字列の場合は既定値を使う', () => {
+  test('outputPathsがスキーマに合わない場合は例外にする', () => {
     const invalidValues = [['invalid'], null, { convertPdfToPng: 1 }];
 
     for (const outputPaths of invalidValues) {
       const config = fakeConfiguration({ outputPaths });
-      assert.strictEqual(resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'), 'default.png');
+      assert.throws(
+        () => resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'),
+        /Invalid configuration value for graphics-workbench\.outputPaths: expected object, received/,
+      );
     }
   });
 });

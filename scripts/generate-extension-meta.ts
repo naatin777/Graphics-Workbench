@@ -10,6 +10,9 @@ type JsonSchema = {
   default?: JsonValue;
   items?: JsonSchema;
   properties?: Record<string, JsonSchema>;
+  additionalProperties?: boolean;
+  minimum?: number;
+  maximum?: number;
 };
 type ManifestCommand = { command: string };
 type PackageManifest = {
@@ -170,14 +173,14 @@ function renderConfigs(tree: Map<string, ConfigNode>, indentation: string): stri
       throw new Error(`Configuration key is missing a default: ${node.key}`);
     }
     const property = propertyName(name);
-    const getter = `defineConfiguration<${valueType}>(${quote(node.key)}, ${literal(defaultValue)})`;
+    const getter = `defineConfiguration<${valueType}>(configurationReader, ${quote(node.key)}, ${literal(defaultValue)})`;
     const propertyLine = `${indentation}${property}: ${getter},`;
     if (propertyLine.length <= 120) {
       lines.push(propertyLine);
       continue;
     }
     lines.push(
-      `${indentation}${property}: defineConfiguration<${valueType}>(\n${indentation}  ${quote(node.key)},\n${indentation}  ${literal(defaultValue)},\n${indentation}),`,
+      `${indentation}${property}: defineConfiguration<${valueType}>(\n${indentation}  configurationReader,\n${indentation}  ${quote(node.key)},\n${indentation}  ${literal(defaultValue)},\n${indentation}),`,
     );
   }
   return `{
@@ -185,20 +188,91 @@ ${lines.join('\n')}
 ${indentation.slice(0, -2)}}`;
 }
 
-function renderBoundConfigs(tree: Map<string, ConfigNode>, indentation: string, accessPath: string): string {
-  const lines: string[] = [];
-  for (const [name, node] of tree) {
-    const property = propertyName(name);
-    const getterPath = `${accessPath}.${property}`;
-    if (node.kind === 'branch') {
-      lines.push(`${indentation}${property}: ${renderBoundConfigs(node.children, `${indentation}  `, getterPath)},`);
-      continue;
-    }
-    lines.push(`${indentation}${property}: () => ${getterPath}(configuration),`);
+function schemaTypes(schema: JsonSchema): string[] {
+  if (schema.type === undefined) {
+    throw new Error('Configuration type is missing');
   }
-  return `{
-${lines.join('\n')}
-${indentation.slice(0, -2)}}`;
+  return Array.isArray(schema.type) ? schema.type : [schema.type];
+}
+
+function describeConfigurationEnumValue(value: JsonValue): string {
+  if (value === null) {
+    return 'null';
+  }
+  if (typeof value === 'object') {
+    throw new Error('Configuration enums must contain primitive values');
+  }
+  return String(value);
+}
+
+function describeConfigurationSchema(schema: JsonSchema): string {
+  if (schema.enum !== undefined) {
+    return `one of ${schema.enum.map((value) => describeConfigurationEnumValue(value)).join(', ')}`;
+  }
+  return schemaTypes(schema)
+    .map((type) => {
+      if (type !== 'array') {
+        return type;
+      }
+      return schema.items === undefined ? 'array' : `array of ${describeConfigurationSchema(schema.items)}`;
+    })
+    .join(' or ');
+}
+
+function renderConfigurationSchema(schema: JsonSchema, indentation: string): string {
+  if (schema.enum?.some((value) => typeof value === 'object' && value !== null)) {
+    throw new Error('Configuration enums must contain primitive values');
+  }
+
+  const childIndentation = `${indentation}  `;
+  const lines = [
+    `${childIndentation}types: [${schemaTypes(schema)
+      .map((type) => quote(type))
+      .join(', ')}],`,
+  ];
+  if (schema.enum !== undefined) {
+    lines.push(`${childIndentation}enumValues: [${schema.enum.map((value) => literal(value)).join(', ')}],`);
+  }
+  if (schema.minimum !== undefined) {
+    lines.push(`${childIndentation}minimum: ${literal(schema.minimum)},`);
+  }
+  if (schema.maximum !== undefined) {
+    lines.push(`${childIndentation}maximum: ${literal(schema.maximum)},`);
+  }
+  if (schema.items !== undefined) {
+    lines.push(`${childIndentation}items: ${renderConfigurationSchema(schema.items, childIndentation)},`);
+  }
+  if (schema.properties !== undefined) {
+    const properties = Object.entries(schema.properties).map(
+      ([key, property]) =>
+        `${childIndentation}  ${propertyName(key)}: ${renderConfigurationSchema(property, `${childIndentation}  `)},`,
+    );
+    lines.push(`${childIndentation}properties: {\n${properties.join('\n')}\n${childIndentation}},`);
+  }
+  if (schema.additionalProperties !== undefined) {
+    lines.push(`${childIndentation}additionalProperties: ${schema.additionalProperties},`);
+  }
+
+  return `{\n${lines.join('\n')}\n${indentation}}`;
+}
+
+function renderConfigurationSchemas(configurationEntries: [string, JsonSchema][], extensionPrefix: string): string {
+  const schemas = configurationEntries.map(
+    ([fullKey, schema]) =>
+      `  ${propertyName(fullKey.slice(extensionPrefix.length))}: ${renderConfigurationSchema(schema, '  ')},`,
+  );
+  return `const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {\n${schemas.join('\n')}\n};\n`;
+}
+
+function renderConfigurationExpectations(
+  configurationEntries: [string, JsonSchema][],
+  extensionPrefix: string,
+): string {
+  const expectations = configurationEntries.map(
+    ([fullKey, schema]) =>
+      `  ${propertyName(fullKey.slice(extensionPrefix.length))}: ${quote(describeConfigurationSchema(schema))},`,
+  );
+  return `const configurationExpectations: Record<ConfigurationKey, string> = {\n${expectations.join('\n')}\n};\n`;
 }
 
 function renderObjectType(name: string, schema: JsonSchema): string {
@@ -237,18 +311,18 @@ ${members.join('\n')}
 `;
 }
 
-function renderConfigurationModule(extensionName: string, configurationTree: Map<string, ConfigNode>): string {
+function renderConfigurationModule(extensionName: string): string {
   return `import * as vscode from 'vscode';
 
-import { configs as configGetters } from './generated-extension-meta.js';
+import { createConfiguration, type Configuration } from './generated-extension-meta.js';
 
-export function getExtensionConfiguration(): vscode.WorkspaceConfiguration {
-  return vscode.workspace.getConfiguration(${quote(extensionName)});
+export function getExtensionConfiguration(): Configuration {
+  return createConfiguration({
+    get(key: string): unknown {
+      return vscode.workspace.getConfiguration(${quote(extensionName)}).get<unknown>(key);
+    },
+  });
 }
-
-const configuration = getExtensionConfiguration();
-
-export const configs = ${renderBoundConfigs(configurationTree, '  ', 'configGetters')} as const;
 `;
 }
 
@@ -287,16 +361,38 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
   const metadata =
     `// This file is generated by scripts/generate-extension-meta.ts.\n// Do not edit it directly; change package.json and regenerate it.\n\n` +
     `type ConfigurationKey =\n${configurationKeys.join('\n')};\n\n` +
-    `export type ConfigurationReader = {\n  get<T>(key: string, defaultValue?: T): T | undefined;\n};\n\n` +
-    `type ConfigurationGetter<Value> = (configuration?: ConfigurationReader) => Value;\n\n` +
-    `function defineConfiguration<Value>(key: ConfigurationKey, defaultValue: Value): ConfigurationGetter<Value> {\n` +
-    `  return (configuration?: ConfigurationReader): Value => configuration?.get<Value>(key) ?? defaultValue;\n` +
+    `export type ConfigurationReader = {\n  get(key: string): unknown;\n};\n\n` +
+    `type ConfigurationGetter<Value> = () => Value;\n\n` +
+    `type ConfigurationSchemaType = 'array' | 'boolean' | 'integer' | 'number' | 'object' | 'string';\n\n` +
+    `type ConfigurationSchema = {\n  types: readonly ConfigurationSchemaType[];\n  enumValues?: readonly (string | number | boolean | null)[];\n  minimum?: number;\n  maximum?: number;\n  items?: ConfigurationSchema;\n  properties?: Readonly<Record<string, ConfigurationSchema>>;\n  additionalProperties?: boolean;\n};\n\n` +
+    `function isConfigurationObject(value: unknown): value is Record<string, unknown> {\n  return typeof value === 'object' && value !== null && !Array.isArray(value);\n}\n\n` +
+    `function isNumberWithinBounds(value: number, schema: ConfigurationSchema): boolean {\n  return (\n    (schema.minimum === undefined || value >= schema.minimum) &&\n    (schema.maximum === undefined || value <= schema.maximum)\n  );\n}\n\n` +
+    `function matchesConfigurationObject(value: unknown, schema: ConfigurationSchema): boolean {\n  if (!isConfigurationObject(value)) {\n    return false;\n  }\n\n  for (const [key, propertyValue] of Object.entries(value)) {\n    const propertySchema = schema.properties?.[key];\n    if (propertySchema === undefined) {\n      if (schema.additionalProperties === false) {\n        return false;\n      }\n      continue;\n    }\n    if (!matchesConfigurationSchema(propertyValue, propertySchema)) {\n      return false;\n    }\n  }\n\n  return true;\n}\n\n` +
+    `function matchesConfigurationType(value: unknown, type: ConfigurationSchemaType, schema: ConfigurationSchema): boolean {\n  switch (type) {\n    case 'array': {\n      if (!Array.isArray(value)) {\n        return false;\n      }\n      const { items } = schema;\n      return items === undefined || value.every((item) => matchesConfigurationSchema(item, items));\n    }\n    case 'boolean': {\n      return typeof value === 'boolean';\n    }\n    case 'integer': {\n      return typeof value === 'number' && Number.isInteger(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'number': {\n      return typeof value === 'number' && Number.isFinite(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'object': {\n      return matchesConfigurationObject(value, schema);\n    }\n    case 'string': {\n      return typeof value === 'string';\n    }\n  }\n  return false;\n}\n\n` +
+    `function matchesConfigurationSchema(value: unknown, schema: ConfigurationSchema): boolean {\n  if (!schema.types.some((type) => matchesConfigurationType(value, type, schema))) {\n    return false;\n  }\n  return schema.enumValues === undefined || schema.enumValues.some((candidate) => candidate === value);\n}\n\n` +
+    renderConfigurationSchemas(configurationEntries, extensionPrefix) +
+    renderConfigurationExpectations(configurationEntries, extensionPrefix) +
+    `function configurationValueType(value: unknown): string {\n  if (Array.isArray(value)) {\n    return 'array';\n  }\n  if (value === null) {\n    return 'null';\n  }\n  return typeof value;\n}\n\n` +
+    `function assertConfigurationValue<Value>(\n  key: ConfigurationKey,\n  value: unknown,\n  _defaultValue: Value,\n): asserts value is Value {\n  if (!matchesConfigurationSchema(value, configurationSchemas[key])) {\n    throw new TypeError(\n      \`Invalid configuration value for graphics-workbench.\${key}: expected \${configurationExpectations[key]}, received \${configurationValueType(value)}.\`,\n    );\n  }\n}\n\n` +
+    `function defineConfiguration<Value>(\n  configurationReader: ConfigurationReader,\n  key: ConfigurationKey,\n  defaultValue: Value,\n): ConfigurationGetter<Value> {\n` +
+    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    assertConfigurationValue(key, value, defaultValue);\n    return value;\n  };\n` +
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     `export const publicCommandIds = [\n${commandIdList.join('\n')}\n] as const;\n\n` +
-    `export const configs = ${renderConfigs(configurationTree, '  ')} as const;\n`;
+    `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +
+    `export function createConfiguration(configurationReader: ConfigurationReader) {\n` +
+    `  return ${renderConfigs(configurationTree, '    ')} as const;\n` +
+    `}\n\n` +
+    `export type Configuration = ReturnType<typeof createConfiguration>;\n` +
+    `export type GetConfiguration = () => Configuration;\n\n` +
+    `const defaultConfigurationReader: ConfigurationReader = {\n` +
+    `  get(_key: string): undefined {\n` +
+    `    return undefined;\n` +
+    `  },\n` +
+    `};\n\n` +
+    `export const getDefaultConfiguration: GetConfiguration = () => createConfiguration(defaultConfigurationReader);\n`;
 
-  return { metadata, configuration: renderConfigurationModule(packageJson.name, configurationTree) };
+  return { metadata, configuration: renderConfigurationModule(packageJson.name) };
 }
 
 function readPackageManifest(): PackageManifest {

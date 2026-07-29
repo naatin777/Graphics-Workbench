@@ -1,19 +1,19 @@
 import type { MermaidBackend } from '../../operations/conversion/tools/index.js';
-import { configs, type ConfigurationReader } from '../../generated-extension-meta.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 
-export type MermaidConfiguration = ConfigurationReader;
+export type MermaidConfiguration = Configuration;
 
 export function readPuppeteerExecutablePath(configuration: MermaidConfiguration): string {
-  return configs.puppeteer.executablePath(configuration).trim();
+  return configuration.puppeteer.executablePath().trim();
 }
 
 export function readMermaidPuppeteerOptions(configuration: MermaidConfiguration): MermaidBackend {
   const executablePath = readPuppeteerExecutablePath(configuration);
 
   return {
-    browserChannel: configs.puppeteer.browser(configuration),
-    theme: configs.mermaid.theme(configuration),
-    backgroundColor: configs.mermaid.backgroundColor(configuration),
+    browserChannel: configuration.puppeteer.browser(),
+    theme: configuration.mermaid.theme(),
+    backgroundColor: configuration.mermaid.backgroundColor(),
     ...(executablePath ? { executablePath } : {}),
   };
 }

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
@@ -27,7 +27,13 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import {
+  assertFileScheme,
+  getCommandConfiguration,
+  isAbortError,
+  readDrawioOptions,
+  selectedUris,
+} from '../shared/command_utils.js';
 
 export const CONVERT_TO_SVG_COMMAND = 'graphics-workbench.convertToSvg';
 
@@ -47,7 +53,7 @@ export async function convertToSvgCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = getExtensionConfiguration();
+    const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planSvgConversionJobs(sourceUri, configuration)),
@@ -87,10 +93,7 @@ export async function convertToSvgCommand(
   }
 }
 
-async function planSvgConversionJobs(
-  sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
-): Promise<ConvertToSvgJob[]> {
+async function planSvgConversionJobs(sourceUri: vscode.Uri, configuration: Configuration): Promise<ConvertToSvgJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
@@ -149,7 +152,7 @@ async function planSvgConversionJobs(
 async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
 ): Promise<ConvertToSvgJob[]> {
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
@@ -181,7 +184,7 @@ async function createPdfJobs(
   });
 }
 
-function outputTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
+function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
@@ -191,7 +194,7 @@ function outputTemplateForSource(sourcePath: string, configuration: vscode.Works
   switch (extension) {
     case '.mmd':
     case '.mermaid': {
-      return configs.outputPath.convertMermaidToSvg();
+      return configuration.outputPath.convertMermaidToSvg();
     }
     default: {
       throw new Error(`Unsupported SVG input format: ${sourcePath}`);

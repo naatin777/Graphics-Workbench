@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   readDrawioExecutablePath,
@@ -13,7 +13,7 @@ import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { assertFileScheme, selectedUris } from '../shared/command_utils.js';
+import { assertFileScheme, getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
 
 export const CONVERT_TO_DRAWIO_COMMAND = 'graphics-workbench.convertToDrawio';
 export const CONVERT_TO_DRAWIO_PNG_COMMAND = 'graphics-workbench.convertToDrawioPng';
@@ -26,7 +26,9 @@ export async function convertToDrawioCommand(
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,
 ): Promise<void> {
-  await convertToDrawioWithDefaults(uri, uris, dependencies, configs.outputPath.convertToDrawio);
+  await convertToDrawioWithDefaults(uri, uris, dependencies, (configuration) =>
+    configuration.outputPath.convertToDrawio(),
+  );
 }
 
 export async function convertToDrawioPngCommand(
@@ -34,7 +36,9 @@ export async function convertToDrawioPngCommand(
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,
 ): Promise<void> {
-  await convertToDrawioWithDefaults(uri, uris, dependencies, configs.outputPath.convertToDrawioPng);
+  await convertToDrawioWithDefaults(uri, uris, dependencies, (configuration) =>
+    configuration.outputPath.convertToDrawioPng(),
+  );
 }
 
 export async function convertToDrawioSvgCommand(
@@ -42,21 +46,23 @@ export async function convertToDrawioSvgCommand(
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,
 ): Promise<void> {
-  await convertToDrawioWithDefaults(uri, uris, dependencies, configs.outputPath.convertToDrawioSvg);
+  await convertToDrawioWithDefaults(uri, uris, dependencies, (configuration) =>
+    configuration.outputPath.convertToDrawioSvg(),
+  );
 }
 
 async function convertToDrawioWithDefaults(
   uri: vscode.Uri | undefined,
   uris: vscode.Uri[] | undefined,
   dependencies: CommandDependencies | undefined,
-  setting: () => string,
+  setting: (configuration: Configuration) => string,
 ): Promise<void> {
   try {
     const sourceUris = selectedUris(uri, uris);
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = getExtensionConfiguration();
+    const configuration = getCommandConfiguration(dependencies);
     const first = sourceUris[0];
     if (first === undefined) {
       throw new Error('No files were selected.');
@@ -66,7 +72,7 @@ async function convertToDrawioWithDefaults(
     if (!workspace) {
       throw new Error(`The file must be inside an open workspace: ${first.fsPath}`);
     }
-    const template = setting();
+    const template = setting(configuration);
     const outputPath = resolveOutputPath(
       template,
       {

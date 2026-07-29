@@ -1,17 +1,17 @@
-import { configs, type ConfigurationReader } from '../../generated-extension-meta.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 
-export function readDrawioExecutablePath(configuration: ConfigurationReader): string {
-  return configs.execPath.drawio(configuration);
+export function readDrawioExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.drawio();
 }
 
-export function readGhostscriptExecutablePath(configuration: ConfigurationReader): string {
-  return configs.execPath.ghostscript(configuration);
+export function readGhostscriptExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.ghostscript();
 }
 
-export function readPdftocairoExecutablePath(configuration: ConfigurationReader): string {
-  return configs.execPath.pdftocairo(configuration);
+export function readPdftocairoExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.pdftocairo();
 }
 
-export function readRsvgConvertExecutablePath(configuration: ConfigurationReader): string {
-  return configs.execPath.rsvgConvert(configuration);
+export function readRsvgConvertExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.rsvgConvert();
 }

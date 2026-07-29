@@ -1,4 +1,4 @@
-import { configs } from '../generated-extension-config.js';
+import { getExtensionConfiguration } from '../generated-extension-config.js';
 
 export interface TemplateContext {
   path: string;
@@ -18,11 +18,11 @@ export function renderTemplate(template: string, context: TemplateContext): stri
 }
 
 export function getPdfTemplates(): string[] {
-  const raw = configs.insertLatex.pdfTemplate();
+  const raw = getExtensionConfiguration().insertLatex.pdfTemplate();
   return typeof raw === 'string' ? [raw] : raw;
 }
 
 export function getImageTemplates(): string[] {
-  const raw = configs.insertLatex.imageTemplate();
+  const raw = getExtensionConfiguration().insertLatex.imageTemplate();
   return typeof raw === 'string' ? [raw] : raw;
 }

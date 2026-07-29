@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+import { getDefaultConfiguration, type Configuration } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
@@ -18,7 +18,7 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import {
@@ -33,7 +33,13 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import {
+  assertFileScheme,
+  getCommandConfiguration,
+  isAbortError,
+  readDrawioOptions,
+  selectedUris,
+} from '../shared/command_utils.js';
 
 export const CONVERT_TO_AVIF_COMMAND = 'graphics-workbench.convertToAvif';
 
@@ -53,15 +59,18 @@ export async function convertToAvifCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = getExtensionConfiguration();
+    const configuration = getCommandConfiguration(dependencies);
+    const defaultConfiguration = getDefaultConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) => planAvifConversionJobs(sourceUri, configuration, maxInputPixels)),
+      sourceUris.map(async (sourceUri) =>
+        planAvifConversionJobs(sourceUri, configuration, defaultConfiguration, maxInputPixels),
+      ),
     );
     const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
-    const avif = readAvifOutputOptions();
+    const avif = readAvifOutputOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
     const ghostscriptTools = {
       ghostscriptPath: readGhostscriptExecutablePath(configuration),
@@ -97,7 +106,8 @@ export async function convertToAvifCommand(
 
 async function planAvifConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
+  defaultConfiguration: Configuration,
   maxInputPixels: number,
 ): Promise<ConvertToAvifJob[]> {
   assertFileScheme(sourceUri);
@@ -119,7 +129,7 @@ async function planAvifConversionJobs(
   }
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
-  const outputTemplate = outputTemplateForSource(sourcePath, configuration);
+  const outputTemplate = outputTemplateForSource(sourcePath, configuration, defaultConfiguration);
   if (isRasterImagePath(sourcePath)) {
     return createRasterFrameJobs({
       sourcePath,
@@ -155,7 +165,7 @@ async function planAvifConversionJobs(
 async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
 ): Promise<ConvertToAvifJob[]> {
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
@@ -187,7 +197,11 @@ async function createPdfJobs(
   });
 }
 
-function outputTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
+function outputTemplateForSource(
+  sourcePath: string,
+  configuration: Configuration,
+  defaultConfiguration: Configuration,
+): string {
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
@@ -196,21 +210,36 @@ function outputTemplateForSource(sourcePath: string, configuration: vscode.Works
 
   switch (extension) {
     case '.png': {
-      return configs.outputPath.convertPngToAvif();
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertPngToAvif(),
+        defaultConfiguration.outputPath.convertPngToAvif(),
+      );
     }
     case '.jpg':
     case '.jpeg': {
-      return configs.outputPath.convertJpegToAvif();
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertJpegToAvif(),
+        defaultConfiguration.outputPath.convertJpegToAvif(),
+      );
     }
     case '.webp': {
-      return configs.outputPath.convertWebpToAvif();
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertWebpToAvif(),
+        defaultConfiguration.outputPath.convertWebpToAvif(),
+      );
     }
     case '.svg': {
-      return configs.outputPath.convertSvgToAvif();
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertSvgToAvif(),
+        defaultConfiguration.outputPath.convertSvgToAvif(),
+      );
     }
     case '.mmd':
     case '.mermaid': {
-      return configs.outputPath.convertMermaidToAvif();
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertMermaidToAvif(),
+        defaultConfiguration.outputPath.convertMermaidToAvif(),
+      );
     }
     default: {
       throw new Error(`Unsupported AVIF input format: ${sourcePath}`);
@@ -218,8 +247,8 @@ function outputTemplateForSource(sourcePath: string, configuration: vscode.Works
   }
 }
 
-function readAvifOutputOptions(): AvifOutputOptions {
-  const effort = configs.convertToAvif.effort();
+function readAvifOutputOptions(configuration: Configuration): AvifOutputOptions {
+  const effort = configuration.convertToAvif.effort();
 
   if (!Number.isInteger(effort) || effort < 0 || effort > 9) {
     throw new Error(`convertToAvif.effort must be an integer between 0 and 9: ${effort}`);

@@ -1,4 +1,4 @@
-import { configs, type ConfigurationReader, type OutputPaths } from '../../generated-extension-meta.js';
+import type { Configuration, OutputPaths } from '../../generated-extension-meta.js';
 
 export type OutputPathKey = keyof OutputPaths;
 
@@ -7,16 +7,20 @@ function isOutputPaths(value: unknown): value is OutputPaths {
 }
 
 export function resolveOutputPathsTemplate(
-  configuration: ConfigurationReader,
+  configuration: Configuration,
   key: OutputPathKey,
   defaultValue: string,
 ): string {
-  const outputPaths = configs.outputPaths(configuration);
+  const outputPaths = configuration.outputPaths();
   if (!isOutputPaths(outputPaths)) {
     return defaultValue;
   }
   const template = outputPaths[key];
   return typeof template === 'string' && template.trim() !== '' ? template : defaultValue;
+}
+
+export function resolveOutputPathTemplate(template: string, defaultValue: string): string {
+  return template.trim() === '' ? defaultValue : template;
 }
 
 const extensionToFormat: Record<string, 'Png' | 'Jpeg' | 'Webp' | 'Avif' | 'Gif' | 'Tiff'> = {
@@ -48,7 +52,7 @@ const rawOutputPathKeys: Record<
 };
 
 export function readConvertToRawOutputPath(
-  configuration: ConfigurationReader,
+  configuration: Configuration,
   sourceExtension: string,
   defaultValue: string,
 ): string {

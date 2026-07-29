@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
@@ -30,7 +30,13 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import {
+  assertFileScheme,
+  getCommandConfiguration,
+  isAbortError,
+  readDrawioOptions,
+  selectedUris,
+} from '../shared/command_utils.js';
 
 export const CONVERT_TO_PNG_COMMAND = 'graphics-workbench.convertToPng';
 
@@ -50,7 +56,7 @@ export async function convertToPngCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = getExtensionConfiguration();
+    const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planPngConversionJobs(sourceUri, configuration, maxInputPixels)),
@@ -92,7 +98,7 @@ export async function convertToPngCommand(
 
 async function planPngConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
   maxInputPixels: number,
 ): Promise<ConvertToPngJob[]> {
   assertFileScheme(sourceUri);
@@ -164,7 +170,7 @@ async function planPngConversionJobs(
 async function planPdfToPngJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
 ): Promise<ConvertToPngJob[]> {
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
@@ -196,7 +202,7 @@ async function planPdfToPngJobs(
   });
 }
 
-function outputTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
+function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
@@ -206,27 +212,35 @@ function outputTemplateForSource(sourcePath: string, configuration: vscode.Works
   switch (extension) {
     case '.jpg':
     case '.jpeg': {
-      return configs.outputPath.convertJpegToPng();
+      return configuration.outputPath.convertJpegToPng();
     }
     case '.webp': {
-      return configs.outputPath.convertWebpToPng();
+      return configuration.outputPath.convertWebpToPng();
     }
     case '.avif': {
-      return configs.outputPath.convertAvifToPng();
+      return configuration.outputPath.convertAvifToPng();
     }
     case '.gif': {
-      return resolveOutputPathOrPathsTemplate(configuration, 'convertGifToPng', configs.outputPath.convertGifToPng);
+      return resolveOutputPathOrPathsTemplate(
+        configuration,
+        'convertGifToPng',
+        configuration.outputPath.convertGifToPng,
+      );
     }
     case '.tif':
     case '.tiff': {
-      return resolveOutputPathOrPathsTemplate(configuration, 'convertTiffToPng', configs.outputPath.convertTiffToPng);
+      return resolveOutputPathOrPathsTemplate(
+        configuration,
+        'convertTiffToPng',
+        configuration.outputPath.convertTiffToPng,
+      );
     }
     case '.svg': {
-      return configs.outputPath.convertSvgToPng();
+      return configuration.outputPath.convertSvgToPng();
     }
     case '.mmd':
     case '.mermaid': {
-      return configs.outputPath.convertMermaidToPng();
+      return configuration.outputPath.convertMermaidToPng();
     }
     default: {
       throw new Error(`Unsupported PNG input format: ${sourcePath}`);

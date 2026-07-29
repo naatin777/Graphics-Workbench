@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { configs, getExtensionConfiguration } from '../../generated-extension-config.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
@@ -29,7 +29,13 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertFileScheme, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import {
+  assertFileScheme,
+  getCommandConfiguration,
+  isAbortError,
+  readDrawioOptions,
+  selectedUris,
+} from '../shared/command_utils.js';
 
 export const CONVERT_TO_TIFF_COMMAND = 'graphics-workbench.convertToTiff';
 
@@ -47,7 +53,7 @@ export async function convertToTiffCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = getExtensionConfiguration();
+    const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
     const plannedJobs = await Promise.all(
       sourceUris.map(async (sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)),
@@ -84,7 +90,7 @@ export async function convertToTiffCommand(
 
 async function planTiffConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
   maxInputPixels: number,
 ): Promise<ConvertToTiffJob[]> {
   assertFileScheme(sourceUri);
@@ -136,7 +142,7 @@ async function planTiffConversionJobs(
 async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
-  configuration: vscode.WorkspaceConfiguration,
+  configuration: Configuration,
 ): Promise<ConvertToTiffJob[]> {
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
@@ -165,33 +171,37 @@ async function createPdfJobs(
   });
 }
 
-function outputTemplateForSource(sourcePath: string, configuration: vscode.WorkspaceConfiguration): string {
+function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return resolveOutputPathsTemplate(configuration, 'convertDrawioToTiff', defaultDrawioOutputPath);
   }
   switch (path.extname(sourcePath).toLowerCase()) {
     case '.png': {
-      return configs.outputPath.convertPngToTiff();
+      return configuration.outputPath.convertPngToTiff();
     }
     case '.jpg':
     case '.jpeg': {
-      return configs.outputPath.convertJpegToTiff();
+      return configuration.outputPath.convertJpegToTiff();
     }
     case '.webp': {
-      return configs.outputPath.convertWebpToTiff();
+      return configuration.outputPath.convertWebpToTiff();
     }
     case '.avif': {
-      return configs.outputPath.convertAvifToTiff();
+      return configuration.outputPath.convertAvifToTiff();
     }
     case '.gif': {
-      return resolveOutputPathOrPathsTemplate(configuration, 'convertGifToTiff', configs.outputPath.convertGifToTiff);
+      return resolveOutputPathOrPathsTemplate(
+        configuration,
+        'convertGifToTiff',
+        configuration.outputPath.convertGifToTiff,
+      );
     }
     case '.svg': {
-      return configs.outputPath.convertSvgToTiff();
+      return configuration.outputPath.convertSvgToTiff();
     }
     case '.mmd':
     case '.mermaid': {
-      return configs.outputPath.convertMermaidToTiff();
+      return configuration.outputPath.convertMermaidToTiff();
     }
     default: {
       throw new Error(`Unsupported TIFF input format: ${sourcePath}`);

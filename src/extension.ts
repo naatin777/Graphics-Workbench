@@ -63,6 +63,7 @@ import {
 import { undoLastConversionCommand, UNDO_LAST_CONVERSION_COMMAND } from './commands/lifecycle/undo_last_conversion.js';
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
+import { getExtensionConfiguration } from './generated-extension-config.js';
 import { publicCommandIds } from './generated-extension-meta.js';
 
 const latexDocumentSelector: vscode.DocumentSelector = [{ language: 'latex' }, { language: 'tex' }];
@@ -169,7 +170,7 @@ function registerCommands(context: vscode.ExtensionContext, dependencies: Comman
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   initializeSafeMode(context);
   const outputChannel = vscode.window.createOutputChannel('Graphics Workbench');
-  const dependencies = { outputChannel } satisfies CommandDependencies;
+  const dependencies = { getConfiguration: getExtensionConfiguration, outputChannel } satisfies CommandDependencies;
   context.subscriptions.push(outputChannel);
 
   registerCommands(context, dependencies);
@@ -179,7 +180,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.languages.registerDocumentPasteEditProvider(
       latexDocumentSelector,
-      new LatexPasteEditProvider({ outputChannel }),
+      new LatexPasteEditProvider({ getConfiguration: getExtensionConfiguration, outputChannel }),
       {
         providedPasteEditKinds: [vscode.DocumentDropOrPasteEditKind.Empty],
         pasteMimeTypes: ['image/png', 'image/jpeg'],

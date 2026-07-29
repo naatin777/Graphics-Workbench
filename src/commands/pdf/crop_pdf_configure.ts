@@ -12,7 +12,6 @@ import {
   isCropConfigureMessage,
 } from '../../application/protocols/crop_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import { configs } from '../../generated-extension-config.js';
 import { localeMap } from '../../locale_map.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
@@ -25,7 +24,7 @@ import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '../shared/command_utils.js';
+import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
 
 export const CROP_PDF_CONFIGURE_COMMAND = 'graphics-workbench.cropPdf.configure';
 
@@ -37,7 +36,7 @@ export async function cropPdfConfigureCommand(
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
   try {
-    await runCropPdfConfigureCommand(context, uri, uris, outputChannel);
+    await runCropPdfConfigureCommand(context, uri, uris, dependencies);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel?.appendLine(`[crop-pdf-configure] failure: ${message}`);
@@ -53,8 +52,9 @@ async function runCropPdfConfigureCommand(
   context: vscode.ExtensionContext,
   uri?: vscode.Uri,
   uris?: vscode.Uri[],
-  outputChannel?: LineOutputChannel,
+  dependencies?: CommandDependencies,
 ): Promise<void> {
+  const outputChannel = dependencies?.outputChannel;
   const inputUri = resolveSinglePdfUri(uri, uris);
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
@@ -67,7 +67,7 @@ async function runCropPdfConfigureCommand(
   const pdf = await PDFDocument.load(await readFile(inputUri.fsPath));
   const firstPage = pdf.getPages()[0];
   const firstPageMediaBox = firstPage?.getMediaBox();
-  const outputTemplate = configs.outputPath.cropPdf();
+  const outputTemplate = getCommandConfiguration(dependencies).outputPath.cropPdf();
   const initMessage: CropConfigureHostToWebview = {
     type: 'init',
     payload: {

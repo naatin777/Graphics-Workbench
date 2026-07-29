@@ -15,7 +15,7 @@ import {
   isRasterImagePath,
   isSameSourceFormat,
 } from '../../application/policy/source_format.js';
-import { configs } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated-extension-meta.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import {
   destroyRasterInput,
@@ -150,7 +150,7 @@ export interface ConvertToPdfFilesOptions {
 
 export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  const maxInputPixels = options.maxInputPixels ?? configs.raster.maxInputPixels();
+  const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs, options.supportedExtensions ?? defaultSupportedImageExtensions);
   await validateJobPaths(options.jobs, 'convert-png-to-pdf');
@@ -253,7 +253,10 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
-    const animation = await readRasterAnimationMetadata(sourcePath, maxInputPixels ?? configs.raster.maxInputPixels());
+    const animation = await readRasterAnimationMetadata(
+      sourcePath,
+      maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
+    );
     if (animation !== undefined) {
       await writeSourceAsPdf({ ...options, page: 1 });
       return;
@@ -299,7 +302,7 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
     outputPath,
     workspacePath,
     signal,
-    maxInputPixels: maxInputPixels ?? configs.raster.maxInputPixels(),
+    maxInputPixels: maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
     framePage: options.page,
   });
 }
