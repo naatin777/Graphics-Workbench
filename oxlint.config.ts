@@ -183,6 +183,9 @@ export default defineConfig({
     'max-params': ['error', { max: 5 }],
     'eslint/max-classes-per-file': ['error', 1],
     'eslint/no-implicit-coercion': 'error',
+    'eslint/no-unsafe-finally': 'error',
+    'eslint/no-unreachable-loop': 'error',
+    'import/no-cycle': 'error',
     'import/no-duplicates': 'error',
     'no-warning-comments': 'error',
     'unicorn/no-negated-condition': 'error',
@@ -195,6 +198,7 @@ export default defineConfig({
     'typescript/consistent-type-imports': 'error',
     'typescript/no-explicit-any': 'error',
     'typescript/no-empty-object-type': 'error',
+    'typescript/no-redundant-type-constituents': 'error',
     'typescript/no-require-imports': 'error',
     'typescript/explicit-function-return-type': 'error',
     'typescript/no-unnecessary-type-assertion': 'error',
@@ -210,6 +214,7 @@ export default defineConfig({
     'unicorn/no-array-sort': 'error',
     'unicorn/no-object-as-default-parameter': 'error',
     'unicorn/no-array-for-each': 'error',
+    'unicorn/no-array-reduce': 'error',
 
     /*
      * Error handling
@@ -315,6 +320,7 @@ export default defineConfig({
         complexity: 'off',
         'max-params': 'off',
         'eslint/max-classes-per-file': 'off',
+        'eslint/no-unreachable-loop': 'off',
         'typescript/strict-boolean-expressions': 'off',
         'unicorn/no-useless-undefined': 'off',
         'unicorn/no-nested-ternary': 'off',
@@ -329,6 +335,7 @@ export default defineConfig({
         complexity: 'off',
         'max-params': 'off',
         'eslint/max-classes-per-file': 'off',
+        'eslint/no-unreachable-loop': 'off',
       },
     },
     {
@@ -367,6 +374,7 @@ export default defineConfig({
         complexity: 'off',
         'max-params': 'off',
         'eslint/max-classes-per-file': 'off',
+        'eslint/no-unreachable-loop': 'off',
         'typescript/no-explicit-any': 'off',
         'typescript/explicit-function-return-type': 'off',
         'typescript/no-floating-promises': 'off',

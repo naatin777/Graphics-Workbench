@@ -67,10 +67,10 @@ function validateUserMessageCall(sourcePath, source, english, call, callStart) {
 
   const line = source.slice(0, callStart).split('\n').length;
   if (call.key in english) {
-    const requiredArguments = placeholders(english[call.key]).reduce(
-      (max, index) => Math.max(max, Number(index) + 1),
-      0,
-    );
+    let requiredArguments = 0;
+    for (const index of placeholders(english[call.key])) {
+      requiredArguments = Math.max(requiredArguments, Number(index) + 1);
+    }
     if (call.argumentCount - 1 >= requiredArguments) {
       return [];
     }
