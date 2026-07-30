@@ -50,7 +50,7 @@ export interface ElectronTestOptions {
 }
 
 export async function prepareElectronTest(packagedVsixPath: string): Promise<PreparedElectronTest> {
-  const installationRoot = await mkdtemp(join(temporaryBase, 'graphics-workbench-electron-package-'));
+  const installationRoot = await mkdtemp(join(temporaryBase, 'gw-package-'));
   const extensionsDir = join(installationRoot, 'extensions');
   const userDataDir = join(installationRoot, 'user-data');
 
@@ -106,7 +106,7 @@ export async function setupElectronTest(
   const copyFixtures = options.copyFixtures ?? true;
   const prepared = options.prepared;
 
-  const temporaryRoot = await mkdtemp(join(temporaryBase, 'graphics-workbench-electron-'));
+  const temporaryRoot = await mkdtemp(join(temporaryBase, 'gw-'));
   const workspacePath = join(temporaryRoot, 'workspace');
   const userDataDir = join(temporaryRoot, 'user-data');
   const userSettingsDir = join(userDataDir, 'User');
