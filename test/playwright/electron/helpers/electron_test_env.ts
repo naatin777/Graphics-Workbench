@@ -165,7 +165,6 @@ export async function setupElectronTest(
       '--skip-release-notes',
       '--disable-workspace-trust',
       '--no-sandbox',
-      '--disable-gpu',
       '--disable-gpu-sandbox',
       '--no-cached-data',
       '--locale=en',
