@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { defineConfig } from '@vscode/test-cli';
@@ -8,6 +8,12 @@ const configuredUserDataDirectory = process.env.GRAPHICS_WORKBENCH_VSCODE_TEST_U
 const userDataDirectory = path.resolve(repositoryDirectory, configuredUserDataDirectory ?? 'test/.vscode-test-data');
 const settingsSourcePath = path.join(repositoryDirectory, 'test', 'vscode-settings', 'settings.json');
 const settingsTargetPath = path.join(userDataDirectory, 'User', 'settings.json');
+const testWorkspaceDirectory = path.join(repositoryDirectory, 'test', 'workspace');
+
+mkdirSync(testWorkspaceDirectory, { recursive: true });
+for (const entry of readdirSync(testWorkspaceDirectory)) {
+  rmSync(path.join(testWorkspaceDirectory, entry), { recursive: true, force: true });
+}
 
 if (existsSync(settingsSourcePath)) {
   mkdirSync(path.dirname(settingsTargetPath), { recursive: true });

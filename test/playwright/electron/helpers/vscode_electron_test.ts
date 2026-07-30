@@ -5,6 +5,8 @@ import { promisify } from 'node:util';
 
 import { type ElectronApplication, type Page, type TestInfo } from '@playwright/test';
 
+import { testVscodeSettingsPath } from '../../../helpers/fixture_paths.js';
+
 const execFileAsync = promisify(execFile);
 const WINDOWS_REMOVE_TIMEOUT_MS = 10_000;
 
@@ -28,10 +30,18 @@ export async function writeVscodeUserSettings(
   colorTheme: string,
   settings: Record<string, unknown> = {},
 ): Promise<void> {
+  const configuredSettings = JSON.parse(
+    (await readFile(testVscodeSettingsPath, 'utf8')).replace(/^\uFEFF/u, ''),
+  ) as unknown;
+  if (typeof configuredSettings !== 'object' || configuredSettings === null || Array.isArray(configuredSettings)) {
+    throw new Error(`VS Code test settings must be a JSON object: ${testVscodeSettingsPath}`);
+  }
+
   await writeFile(
     settingsPath,
     JSON.stringify(
       {
+        ...configuredSettings,
         'window.menuStyle': 'custom',
         'window.zoomLevel': 0,
         'workbench.colorTheme': colorTheme,

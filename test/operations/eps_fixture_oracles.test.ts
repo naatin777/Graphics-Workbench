@@ -5,6 +5,7 @@ import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pd
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertPdfMatches, assertRasterMatches } from '../helpers/content_assertions.js';
+import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
 suite('EPS fixtureの内容比較', () => {
@@ -13,6 +14,7 @@ suite('EPS fixtureの内容比較', () => {
     .entries()) {
     test(`eps/${path.basename(fixturePath)}をPDF/PNGへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
+        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const outputDirectory = path.join(workspacePath, 'converted EPS', String(index));
         const actualPdfPath = path.join(outputDirectory, 'actual.pdf');
@@ -21,7 +23,7 @@ suite('EPS fixtureの内容比較', () => {
 
         await convertToPdfFiles({
           jobs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
-          tools: { ghostscriptPath: 'gs' },
+          tools: { ghostscriptPath: ghostscriptTools.ghostscriptPath },
           supportedExtensions: ['.eps'],
           runtime: { resolveConflicts: async () => 'overwrite' },
           operationName: `eps-${index}-to-pdf`,
@@ -29,10 +31,10 @@ suite('EPS fixtureの内容比較', () => {
         });
         await executePngConversion({
           jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-          drawioTools: { drawioPath: 'drawio' },
+          pdftocairoTools,
+          ghostscriptTools,
+          mermaidTools,
+          drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `eps-${index}-png`,
         });

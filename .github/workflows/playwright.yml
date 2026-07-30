@@ -64,6 +64,26 @@ jobs:
         run: npm run build
         shell: bash
 
+      - if: matrix.os == 'ubuntu-latest'
+        run: bash .github/scripts/install-test-tools-linux.sh
+        shell: bash
+
+      - if: matrix.os == 'macos-latest'
+        run: bash .github/scripts/install-image-tools-macos.sh
+        shell: bash
+
+      - if: matrix.os == 'windows-latest'
+        run: .github/scripts/install-image-tools-windows.ps1
+        shell: pwsh
+
+      - if: matrix.os != 'windows-latest'
+        run: bash .github/scripts/verify-image-tools-unix.sh
+        shell: bash
+
+      - if: matrix.os == 'windows-latest'
+        run: .github/scripts/verify-image-tools-windows.ps1
+        shell: pwsh
+
       - name: Package current runner VSIX
         run: npm run package:vsix -- --out "graphics-workbench-${{ matrix.label }}.vsix"
         shell: bash

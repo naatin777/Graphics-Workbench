@@ -6,6 +6,7 @@ import { PDFDocument } from 'pdf-lib';
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
+import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
 suite('PDF fixtureの内容比較', () => {
@@ -14,6 +15,7 @@ suite('PDF fixtureの内容比較', () => {
   ).entries()) {
     test(`pdf/${path.basename(fixturePath)}を全ページPNGへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
+        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const document = await PDFDocument.load(await readFile(sourcePath));
         const outputDirectory = path.join(workspacePath, 'converted PDF pages', String(index));
@@ -25,10 +27,10 @@ suite('PDF fixtureの内容比較', () => {
 
         await executePngConversion({
           jobs: cases.map(({ outputPath, page }) => ({ sourcePath, outputPath, workspacePath, page })),
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-          drawioTools: { drawioPath: 'drawio' },
+          pdftocairoTools,
+          ghostscriptTools,
+          mermaidTools,
+          drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `pdf-${index}`,
         });

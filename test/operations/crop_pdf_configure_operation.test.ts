@@ -18,8 +18,9 @@ import { promisify } from 'node:util';
 
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 import sharp from 'sharp';
-import * as vscode from 'vscode';
 
+import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
+import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
 import { resolveOutputPath } from '../../src/config/output/resolve_output_path.js';
 import { cropPdfWithConfiguredBox, type CropBox } from '../../src/operations/pdf/crop_pdf_configure.js';
 
@@ -343,9 +344,8 @@ async function assertRenderedPagesSimilar(params: {
 }
 
 async function renderPdfPage(pdfPath: string, pageNumber: number, outputPrefix: string): Promise<string> {
-  const pdftocairoPath = vscode.workspace
-    .getConfiguration('graphics-workbench')
-    .get<string>('execPath.pdftocairo', 'pdftocairo');
+  const pdftocairoPath = readPdftocairoExecutablePath(getExtensionConfiguration());
+  assert.notStrictEqual(pdftocairoPath, '', 'pdftocairo must be configured in test/vscode-settings/settings.json');
 
   await execFileAsync(pdftocairoPath, [
     '-png',

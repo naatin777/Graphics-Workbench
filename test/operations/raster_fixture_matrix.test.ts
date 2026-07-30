@@ -9,6 +9,7 @@ import { convertToRawFiles } from '../../src/operations/conversion/convert_to_ra
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
+import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
 const unsupportedRasterFixtureRelativePaths = ['avif/animated-swirl.avif'];
@@ -19,7 +20,10 @@ const supportedRasterFixturePaths = rasterFixtureFormats
   .filter(isRasterImagePath)
   .filter((fixturePath) => path.extname(fixturePath).toLowerCase() !== '.png')
   .filter(
-    (fixturePath) => !unsupportedRasterFixtureRelativePaths.includes(path.relative(rasterInputDirectory, fixturePath)),
+    (fixturePath) =>
+      !unsupportedRasterFixtureRelativePaths.includes(
+        path.relative(rasterInputDirectory, fixturePath).split(path.sep).join('/'),
+      ),
   );
 const pngFixturePaths = listInputFixturePathsSync(path.join(testInputDirectory, 'valid', 'png')).filter((fixturePath) =>
   fixturePath.endsWith('.png'),
@@ -29,6 +33,7 @@ suite('ラスターfixtureの内容比較', () => {
   for (const [index, fixturePath] of supportedRasterFixturePaths.entries()) {
     test(`${path.relative(rasterInputDirectory, fixturePath)}をPNGへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
+        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index);
         const outputPath = path.join(workspacePath, 'converted outputs', `${index}.png`);
         const sourceFormat = sourceFormatForPath(fixturePath);
@@ -43,10 +48,10 @@ suite('ラスターfixtureの内容比較', () => {
 
         await executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-          drawioTools: { drawioPath: 'drawio' },
+          pdftocairoTools,
+          ghostscriptTools,
+          mermaidTools,
+          drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `raster-${index}`,
         });
@@ -86,16 +91,17 @@ suite('ラスターfixtureの内容比較', () => {
     const fixturePath = path.join(testInputDirectory, 'valid', unsupportedRasterFixtureRelativePaths[0] ?? '');
 
     await withTestWorkspace(async (workspacePath) => {
+      const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
       const sourcePath = await copyInputToWorkspace(fixturePath, 'unsupported sequence.avif');
       const outputPath = path.join(workspacePath, 'unsupported-output.png');
 
       await assert.rejects(
         executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-          drawioTools: { drawioPath: 'drawio' },
+          pdftocairoTools,
+          ghostscriptTools,
+          mermaidTools,
+          drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: 'unsupported-avif',
         }),

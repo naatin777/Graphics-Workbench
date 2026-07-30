@@ -13,6 +13,7 @@ import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_sv
 import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
 import { testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertPdfMatches, assertRasterMatches } from '../helpers/content_assertions.js';
+import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
 const execFileAsync = promisify(execFile);
@@ -53,6 +54,12 @@ suite('Draw.io fixtureの実変換比較', () => {
         return;
       }
 
+      const configuredTools = readConfiguredConversionTools();
+      if (configuredTools.rsvgConvertPath === '') {
+        this.skip();
+        return;
+      }
+
       const runtime = { resolveConflicts: async () => 'overwrite' as const };
 
       await withTestWorkspace(async (workspacePath) => {
@@ -72,17 +79,17 @@ suite('Draw.io fixtureの実変換比較', () => {
         await executePngConversion({
           jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           runtime,
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
+          pdftocairoTools: configuredTools.pdftocairoTools,
+          ghostscriptTools: configuredTools.ghostscriptTools,
+          mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           runId: `drawio-${fixtureCase.id}-png`,
         });
         await convertToSvgFiles({
           jobs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
+          pdftocairoTools: configuredTools.pdftocairoTools,
+          ghostscriptTools: configuredTools.ghostscriptTools,
+          mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           runId: `drawio-${fixtureCase.id}-svg`,
         });
@@ -113,8 +120,12 @@ suite('Draw.io fixtureの実変換比較', () => {
 
         await assertRasterMatches(actualPngPath, path.join(expectedDirectory, 'expected.png'), `PNG: ${sourcePath}`);
 
-        await renderSvg(actualSvgPath, renderedActualSvgPath);
-        await renderSvg(path.join(expectedDirectory, 'expected.svg'), renderedExpectedSvgPath);
+        await renderSvg(actualSvgPath, renderedActualSvgPath, configuredTools.rsvgConvertPath);
+        await renderSvg(
+          path.join(expectedDirectory, 'expected.svg'),
+          renderedExpectedSvgPath,
+          configuredTools.rsvgConvertPath,
+        );
         await assertRasterMatches(renderedActualSvgPath, renderedExpectedSvgPath, `SVG: ${sourcePath}`);
 
         await assertPdfMatches(
@@ -159,6 +170,6 @@ suite('Draw.io fixtureの実変換比較', () => {
   }
 });
 
-async function renderSvg(sourcePath: string, outputPath: string): Promise<void> {
-  await execFileAsync('rsvg-convert', ['-o', outputPath, sourcePath]);
+async function renderSvg(sourcePath: string, outputPath: string, rsvgConvertPath: string): Promise<void> {
+  await execFileAsync(rsvgConvertPath, ['-o', outputPath, sourcePath]);
 }

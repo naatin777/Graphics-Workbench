@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
+import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
 const invalidCases = [
@@ -30,6 +31,7 @@ suite('invalid fixtureの実変換エラー', () => {
   for (const [index, invalidCase] of invalidCases.entries()) {
     test(`${invalidCase.directory}/${invalidCase.fileName}を${invalidCase.outputFormat.toUpperCase()}へ実変換すると失敗し、出力を残さない`, async () => {
       await withTestWorkspace(async (workspacePath) => {
+        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const inputPath = path.join(testInputDirectory, 'invalid', invalidCase.directory, invalidCase.fileName);
         const destinationPath = workspaceDestinationPath(invalidCase.fileName, index);
         const sourcePath = await copyInputToWorkspace(inputPath, destinationPath);
@@ -44,10 +46,10 @@ suite('invalid fixtureの実変換エラー', () => {
         );
         const conversion = executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-          drawioTools: { drawioPath: 'drawio' },
+          pdftocairoTools,
+          ghostscriptTools,
+          mermaidTools,
+          drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `invalid-${index}`,
         });

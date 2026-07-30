@@ -6,6 +6,8 @@ import { promisify } from 'node:util';
 
 import { PDFDocument } from 'pdf-lib';
 
+import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
+import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
 import { calculateRgbaDifference, readRgbaPixels } from './raster_content.js';
 
 const execFileAsync = promisify(execFile);
@@ -32,6 +34,8 @@ export async function assertPdfMatches(
     PDFDocument.load(await readFile(expectedPath)),
   ]);
   assert.strictEqual(actual.getPageCount(), expected.getPageCount(), label);
+  const pdftocairoPath = readPdftocairoExecutablePath(getExtensionConfiguration());
+  assert.notStrictEqual(pdftocairoPath, '', 'pdftocairo must be configured in test/vscode-settings/settings.json');
 
   await mkdir(renderDirectory, { recursive: true });
   for (let page = 1; page <= actual.getPageCount(); page += 1) {
@@ -42,15 +46,20 @@ export async function assertPdfMatches(
       expected.getPage(page - 1)?.getSize(),
       `${label} page ${page}`,
     );
-    await renderPdfPage(actualPath, actualPagePath, page);
-    await renderPdfPage(expectedPath, expectedPagePath, page);
+    await renderPdfPage(actualPath, actualPagePath, page, pdftocairoPath);
+    await renderPdfPage(expectedPath, expectedPagePath, page, pdftocairoPath);
     await assertRasterMatches(actualPagePath, expectedPagePath, `${label} page ${page}`);
   }
 }
 
-async function renderPdfPage(sourcePath: string, outputPath: string, page: number): Promise<void> {
+async function renderPdfPage(
+  sourcePath: string,
+  outputPath: string,
+  page: number,
+  pdftocairoPath: string,
+): Promise<void> {
   const outputPrefix = outputPath.slice(0, -path.extname(outputPath).length);
-  await execFileAsync('pdftocairo', [
+  await execFileAsync(pdftocairoPath, [
     '-png',
     '-singlefile',
     '-f',

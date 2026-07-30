@@ -4,6 +4,7 @@ import { sourceFormatForPath } from '../../src/application/policy/source_format.
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
+import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
 suite('SVG fixtureの内容比較', () => {
@@ -12,16 +13,17 @@ suite('SVG fixtureの内容比較', () => {
     .entries()) {
     test(`svg/${path.basename(fixturePath)}をPNGへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
+        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const outputPath = path.join(workspacePath, 'converted', `svg-${index}.png`);
         const expectedPath = path.join(testOutputDirectory, 'svg', sourceName(fixturePath), 'expected.png');
 
         await executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-          drawioTools: { drawioPath: 'drawio' },
+          pdftocairoTools,
+          ghostscriptTools,
+          mermaidTools,
+          drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `svg-${index}`,
         });

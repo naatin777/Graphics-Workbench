@@ -13,7 +13,7 @@ import { disposeElectronTest, writeVscodeUserSettings } from './vscode_electron_
 import { installPackagedVsix } from './packaged_vsix.js';
 
 const vscodeVersion = '1.128.0';
-const temporaryBase = process.platform === 'win32' ? tmpdir() : '/tmp';
+const temporaryBase = tmpdir();
 
 export interface ElectronTestEnv {
   app: {
@@ -136,10 +136,6 @@ export async function setupElectronTest(
   const sourceFixtureBytes = copyFixtures ? await readFile(sourceFixture) : new Uint8Array();
 
   await writeVscodeUserSettings(userSettingsPath, colorTheme, {
-    'graphics-workbench.execPath.pdftocairo':
-      process.platform === 'win32'
-        ? 'C:\\graphics-workbench-missing\\pdftocairo.exe'
-        : '/graphics-workbench-missing/pdftocairo',
     ...extraSettings,
   });
 

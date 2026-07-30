@@ -1,4 +1,5 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
@@ -241,12 +242,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
     }
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
-    await writeVscodeUserSettings(userSettingsPath, alternateTheme, {
-      'graphics-workbench.execPath.pdftocairo':
-        process.platform === 'win32'
-          ? 'C:\\graphics-workbench-missing\\pdftocairo.exe'
-          : '/graphics-workbench-missing/pdftocairo',
-    });
+    await writeVscodeUserSettings(userSettingsPath, alternateTheme);
 
     const lightTheme = await waitForWebviewTheme(body, 'vscode-light');
     expect(lightTheme.bodyBackground).not.toBe(darkTheme.bodyBackground);
@@ -476,9 +472,16 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
   testInfo.setTimeout(240_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
+  const missingToolDirectory = await mkdtemp(join(tmpdir(), 'graphics-workbench-missing-pdftocairo-'));
+  const missingToolPath = join(missingToolDirectory, 'pdftocairo');
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(),
+      extraSettings: {
+        'graphics-workbench.execPath.pdftocairo': missingToolPath,
+      },
+    });
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -517,5 +520,6 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
     if (env) {
       await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
     }
+    await rm(missingToolDirectory, { recursive: true, force: true });
   }
 });
