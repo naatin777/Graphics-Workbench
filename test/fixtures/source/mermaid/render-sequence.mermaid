@@ -1,0 +1,9 @@
+sequenceDiagram
+  actor User
+  participant Extension
+  participant Renderer
+
+  User->>Extension: Convert diagram
+  Extension->>Renderer: Render Mermaid
+  Renderer-->>Extension: Return SVG
+  Extension-->>User: Write output file
