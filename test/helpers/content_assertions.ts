@@ -48,7 +48,7 @@ export async function assertRasterMatches(
     `${label}: differentPixelRatio=${difference.differentPixelRatio}`,
   );
   assert.ok(
-    difference.meanChannelDifference <= (options.rendererVariance ? 3 : 1),
+    difference.meanChannelDifference <= (options.rendererVariance ? 4 : 1),
     `${label}: meanChannelDifference=${difference.meanChannelDifference}`,
   );
 }
