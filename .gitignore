@@ -10,5 +10,6 @@ media/
 .graphics-workbench/
 .codex/rules/
 .serena/
+.DS_Store
 *.vsix
 coverage/

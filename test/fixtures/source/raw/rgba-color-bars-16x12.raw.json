@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "width": 16,
+  "height": 12,
+  "channels": 4,
+  "depth": "uchar",
+  "colourspace": "srgb",
+  "alpha": true,
+  "layout": "interleaved"
+}

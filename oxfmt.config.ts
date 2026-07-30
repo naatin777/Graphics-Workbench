@@ -11,6 +11,7 @@ export default {
     'coverage/**',
     'media/webview/**',
     'node_modules/**',
+    'test/fixtures/invalid/**',
     '.vscode-test/**',
     '.playwright/**',
   ],
