@@ -23,7 +23,7 @@ jobs:
             label: Linux
             test_command: xvfb-run npm run test:playwright:vsix
             artifact_suffix: linux
-          - os: macos-15
+          - os: macos-latest
             label: macOS
             test_command: npm run test:playwright:vsix
             artifact_suffix: macos
@@ -68,7 +68,7 @@ jobs:
         run: bash .github/scripts/install-test-tools-linux.sh
         shell: bash
 
-      - if: matrix.os == 'macos-15'
+      - if: matrix.os == 'macos-latest'
         run: bash .github/scripts/install-image-tools-macos.sh
         shell: bash
 
