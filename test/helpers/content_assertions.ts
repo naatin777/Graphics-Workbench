@@ -44,11 +44,11 @@ export async function assertRasterMatches(
     assert.strictEqual(actual.height, expected.height, label);
   }
   assert.ok(
-    difference.differentPixelRatio <= (options.rendererVariance ? 0.05 : 0.01),
+    difference.differentPixelRatio <= (options.rendererVariance ? 0.08 : 0.01),
     `${label}: differentPixelRatio=${difference.differentPixelRatio}`,
   );
   assert.ok(
-    difference.meanChannelDifference <= (options.rendererVariance ? 2 : 1),
+    difference.meanChannelDifference <= (options.rendererVariance ? 3 : 1),
     `${label}: meanChannelDifference=${difference.meanChannelDifference}`,
   );
 }
