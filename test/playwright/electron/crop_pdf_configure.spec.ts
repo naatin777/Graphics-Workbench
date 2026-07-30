@@ -10,6 +10,7 @@ import type { MergePdfOptions } from '../../../src/operations/pdf/merge_pdf.js';
 import type { SplitPdfOptions } from '../../../src/operations/pdf/split_pdf.js';
 import type { CommittedConversionOutput } from '../../../src/operations/lifecycle/commit_conversion_outputs.js';
 
+import { resetTestWorkspace } from '../../helpers/test_workspace.js';
 import { captureCropPdfScreenshot } from './helpers/crop_pdf_screenshot.js';
 import {
   expectPdfCanvasesReadable,
@@ -65,14 +66,27 @@ function isPackagedSplitPdfModule(value: unknown): value is PackagedSplitPdfModu
 let preparedElectronTest: PreparedElectronTest | undefined;
 
 test.beforeAll(async () => {
+  await resetTestWorkspace();
   preparedElectronTest = await prepareElectronTest(packagedVsixPath);
 });
 
 test.afterAll(async () => {
-  if (preparedElectronTest) {
-    await disposePreparedElectronTest(preparedElectronTest);
-    preparedElectronTest = undefined;
+  try {
+    if (preparedElectronTest) {
+      await disposePreparedElectronTest(preparedElectronTest);
+      preparedElectronTest = undefined;
+    }
+  } finally {
+    await resetTestWorkspace();
   }
+});
+
+test.beforeEach(async () => {
+  await resetTestWorkspace();
+});
+
+test.afterEach(async () => {
+  await resetTestWorkspace();
 });
 
 function preparedOptions(): { prepared: PreparedElectronTest } {

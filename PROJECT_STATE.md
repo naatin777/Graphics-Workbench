@@ -61,6 +61,8 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - AIにはコードを書かせるが、価値判断と最終承認は渡さない。
 - 変換fixtureテストは、固定入力を`test/input/valid`・`test/input/invalid`に元のファイル名で保存し、固定正解データを入力形式ごとの`test/output`に保存する。各テストは必要な入力だけを`test/workspace`直下のworkspace rootへ名前や配置を変えてコピーし、テスト前後にworkspaceを空にする。`test/output`はworkspaceへコピーしない。
 - 変換fixtureテストの実行時workspaceは`test/workspace`をVS Code workspace rootとして開く。外部ツールのテスト設定は`test/vscode-settings/settings.json`からtest runnerのuser dataへコピーし、実行用workspaceとは分離する。
+- Playwright Electronテストも`test/workspace`を開き、テスト前後に空であることを検証する。VS Code内部用の`user-data`・`shared-data`・`extensions`だけはOS一時領域へ分離する。
+- 検証結果は「コマンドを実行した」と「テストが成功した」を分けて報告し、成功確認前にcommit・pushしない。Node/npmが使えない場合は代替runtimeの結果をnpmテスト成功と扱わない。
 
 ## Tasks
 

@@ -4,16 +4,21 @@ import path from 'node:path';
 
 import { testWorkspaceDirectory } from './fixture_paths.js';
 
+const workspacePlaceholderName = '.gitkeep';
+
 export async function withTestWorkspace<T>(callback: (workspacePath: string) => Promise<T>): Promise<T> {
-  await clearTestWorkspace();
-  await assertTestWorkspaceIsEmpty();
+  await resetTestWorkspace();
 
   try {
     return await callback(testWorkspaceDirectory);
   } finally {
-    await clearTestWorkspace();
-    await assertTestWorkspaceIsEmpty();
+    await resetTestWorkspace();
   }
+}
+
+export async function resetTestWorkspace(): Promise<void> {
+  await clearTestWorkspace();
+  await assertTestWorkspaceIsEmpty();
 }
 
 export async function copyInputToWorkspace(inputPath: string, relativeDestinationPath: string): Promise<string> {
@@ -27,14 +32,16 @@ async function clearTestWorkspace(): Promise<void> {
   await mkdir(testWorkspaceDirectory, { recursive: true });
   const entries = await readdir(testWorkspaceDirectory, { withFileTypes: true });
   await Promise.all(
-    entries.map((entry) =>
-      rm(path.join(testWorkspaceDirectory, entry.name), { recursive: entry.isDirectory(), force: true }),
-    ),
+    entries
+      .filter((entry) => entry.name !== workspacePlaceholderName)
+      .map((entry) =>
+        rm(path.join(testWorkspaceDirectory, entry.name), { recursive: entry.isDirectory(), force: true }),
+      ),
   );
 }
 
 async function assertTestWorkspaceIsEmpty(): Promise<void> {
-  const entries = await readdir(testWorkspaceDirectory);
+  const entries = (await readdir(testWorkspaceDirectory)).filter((entry) => entry !== workspacePlaceholderName);
   assert.deepStrictEqual(entries, [], 'test/workspace must be empty at the test boundary');
 }
 

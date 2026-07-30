@@ -8,7 +8,11 @@ import { type ElectronApplication, type Page } from '@playwright/test';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 
 import { cropConfigureFixture } from '../../../helpers/crop_configure_fixture.js';
-import { operationPdfInputDirectory, operationPngInputPath } from '../../../helpers/fixture_paths.js';
+import {
+  operationPdfInputDirectory,
+  operationPngInputPath,
+  testWorkspaceDirectory,
+} from '../../../helpers/fixture_paths.js';
 import { disposeElectronTest, writeVscodeUserSettings } from './vscode_electron_test.js';
 import { installPackagedVsix } from './packaged_vsix.js';
 
@@ -107,7 +111,7 @@ export async function setupElectronTest(
   const prepared = options.prepared;
 
   const temporaryRoot = await mkdtemp(join(temporaryBase, 'gw-'));
-  const workspacePath = join(temporaryRoot, 'workspace');
+  const workspacePath = testWorkspaceDirectory;
   const userDataDir = join(temporaryRoot, 'user-data');
   const userSettingsDir = join(userDataDir, 'User');
   const userSettingsPath = join(userSettingsDir, 'settings.json');
@@ -120,7 +124,11 @@ export async function setupElectronTest(
   const inputPath = join(workspacePath, cropConfigureFixture.fileName);
   const outputPath = join(workspacePath, 'q a-crop.pdf');
 
-  const directories = [mkdir(workspacePath), mkdir(userSettingsDir, { recursive: true }), mkdir(sharedDataDir)];
+  const directories = [
+    mkdir(workspacePath, { recursive: true }),
+    mkdir(userSettingsDir, { recursive: true }),
+    mkdir(sharedDataDir),
+  ];
   if (!prepared) {
     directories.push(mkdir(extensionsDir));
   }
