@@ -1,18 +1,13 @@
-import { execFile } from 'node:child_process';
-import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { sourceFormatForPath } from '../../src/application/policy/source_format.js';
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
-import { assertPdfMatches, assertRasterMatches } from '../helpers/content_assertions.js';
+import { assertPdfMatches, assertRasterMatches, assertSvgStructureMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
-
-const execFileAsync = promisify(execFile);
 
 suite('Mermaid fixtureの内容比較', () => {
   for (const [index, fixturePath] of listInputFixturePathsSync(path.join(testInputDirectory, 'valid', 'mermaid'))
@@ -20,16 +15,13 @@ suite('Mermaid fixtureの内容比較', () => {
     .entries()) {
     test(`mermaid/${path.basename(fixturePath)}をPNG/SVG/PDFへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdftocairoTools, ghostscriptTools, rsvgConvertPath, mermaidTools, drawioTools } =
-          readConfiguredConversionTools();
+        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const outputDirectory = path.join(workspacePath, 'converted Mermaid', String(index));
-        const renderedDirectory = path.join(outputDirectory, 'rendered');
         const actualPngPath = path.join(outputDirectory, 'actual.png');
         const actualSvgPath = path.join(outputDirectory, 'actual.svg');
         const actualPdfPath = path.join(outputDirectory, 'actual.pdf');
         const expectedDirectory = path.join(testOutputDirectory, 'mermaid', sourceName(fixturePath));
-        await mkdir(renderedDirectory, { recursive: true });
         await executePngConversion({
           jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           pdftocairoTools,
@@ -64,23 +56,16 @@ suite('Mermaid fixtureの内容比較', () => {
           rendererComparison,
         );
 
-        await renderSvg(actualSvgPath, path.join(renderedDirectory, 'actual-svg.png'), rsvgConvertPath);
-        await renderSvg(
+        await assertSvgStructureMatches(
+          actualSvgPath,
           path.join(expectedDirectory, 'expected.svg'),
-          path.join(renderedDirectory, 'expected-svg.png'),
-          rsvgConvertPath,
-        );
-        await assertRasterMatches(
-          path.join(renderedDirectory, 'actual-svg.png'),
-          path.join(renderedDirectory, 'expected-svg.png'),
           `${fixturePath} SVG`,
-          rendererComparison,
         );
 
         await assertPdfMatches(
           actualPdfPath,
           path.join(expectedDirectory, 'expected.pdf'),
-          renderedDirectory,
+          path.join(outputDirectory, 'rendered'),
           fixturePath,
           rendererComparison,
         );
@@ -88,10 +73,6 @@ suite('Mermaid fixtureの内容比較', () => {
     });
   }
 });
-
-async function renderSvg(sourcePath: string, outputPath: string, rsvgConvertPath: string): Promise<void> {
-  await execFileAsync(rsvgConvertPath, ['-o', outputPath, sourcePath]);
-}
 
 function workspaceSourcePath(fixturePath: string, index: number): string {
   const extension = path.extname(fixturePath);
