@@ -1,110 +1,99 @@
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
-import os from 'node:os';
+import { access } from 'node:fs/promises';
 import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { isRasterImagePath } from '../../src/application/policy/source_format.js';
+import { isRasterImagePath, sourceFormatForPath } from '../../src/application/policy/source_format.js';
 import { convertToRawFiles } from '../../src/operations/conversion/convert_to_raw.js';
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
-import { listInputFixturePaths, sourceFixtureDirectory } from '../helpers/fixture_paths.js';
-import { readRgbaPixels } from '../helpers/raster_content.js';
+import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
+import { assertRasterMatches } from '../helpers/content_assertions.js';
+import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
 const unsupportedRasterFixtureRelativePaths = ['avif/animated-swirl.avif'];
+const rasterInputDirectory = path.join(testInputDirectory, 'valid');
+const rasterFixtureFormats = ['avif', 'gif', 'jpeg', 'raw', 'tiff', 'webp'];
+const supportedRasterFixturePaths = rasterFixtureFormats
+  .flatMap((format) => listInputFixturePathsSync(path.join(rasterInputDirectory, format)))
+  .filter(isRasterImagePath)
+  .filter((fixturePath) => path.extname(fixturePath).toLowerCase() !== '.png')
+  .filter(
+    (fixturePath) => !unsupportedRasterFixtureRelativePaths.includes(path.relative(rasterInputDirectory, fixturePath)),
+  );
+const pngFixturePaths = listInputFixturePathsSync(path.join(testInputDirectory, 'valid', 'png')).filter((fixturePath) =>
+  fixturePath.endsWith('.png'),
+);
 
 suite('ラスターfixtureの内容比較', () => {
-  test('Sharpで処理可能なsourceラスターfixtureをPNGへ変換し、RGBA画素を保持する', async () => {
-    const fixturePaths = (await supportedRasterFixturePaths()).filter(
-      (fixturePath) => path.extname(fixturePath).toLowerCase() !== '.png',
-    );
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-raster-fixtures-'));
-    const outputDirectory = path.join(workspacePath, 'outputs');
-
-    try {
-      await mkdir(outputDirectory, { recursive: true });
-      const cases = await Promise.all(
-        fixturePaths.map(async (fixturePath, index) => {
-          const sourcePath = path.join(workspacePath, path.basename(fixturePath));
-          const outputPath = path.join(outputDirectory, `${index}.png`);
-          await copyFixture(fixturePath, sourcePath);
-          const page = await secondPageIfAnimated(sourcePath);
-          return { sourcePath, outputPath, page };
-        }),
-      );
-
-      await executePngConversion({
-        jobs: cases.map(({ sourcePath, outputPath, page }) => ({
-          sourcePath,
-          outputPath,
-          workspacePath,
-          ...(page === undefined ? {} : { page }),
-        })),
-        pdftocairoTools: { pdftocairoPath: '/opt/homebrew/bin/pdftocairo' },
-        ghostscriptTools: { ghostscriptPath: '/opt/homebrew/bin/gs' },
-        mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-        drawioTools: { drawioPath: 'drawio' },
-        runtime: { resolveConflicts: async () => 'overwrite' },
-        runId: 'raster-fixtures',
-      });
-
-      for (const testCase of cases) {
-        const expected = await readRgbaPixels(testCase.sourcePath, testCase.page);
-        const actual = await readRgbaPixels(testCase.outputPath);
-        assert.deepStrictEqual(
-          actual,
-          expected,
-          `Decoded pixels changed for ${path.basename(testCase.sourcePath)}${testCase.page === undefined ? '' : ` page ${testCase.page}`}`,
+  for (const [index, fixturePath] of supportedRasterFixturePaths.entries()) {
+    test(`${path.relative(rasterInputDirectory, fixturePath)}をPNGへ変換すると固定正解データと一致する`, async () => {
+      await withTestWorkspace(async (workspacePath) => {
+        const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index);
+        const outputPath = path.join(workspacePath, 'converted outputs', `${index}.png`);
+        const sourceFormat = sourceFormatForPath(fixturePath);
+        assert.notStrictEqual(sourceFormat, undefined, fixturePath);
+        const expectedPath = path.join(
+          testOutputDirectory,
+          sourceFormat ?? 'unknown',
+          sourceName(fixturePath),
+          'expected.png',
         );
-      }
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
-  });
+        const page = await secondPageIfAnimated(sourcePath);
 
-  test('PNG source fixtureをRawへ変換し、RGBA画素を保持する', async () => {
-    const fixturePaths = (await listInputFixturePaths(sourceFixtureDirectory)).filter(
-      (fixturePath) => path.extname(fixturePath).toLowerCase() === '.png',
-    );
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-png-to-raw-fixtures-'));
+        await executePngConversion({
+          jobs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
+          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
+          ghostscriptTools: { ghostscriptPath: 'gs' },
+          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
+          drawioTools: { drawioPath: 'drawio' },
+          runtime: { resolveConflicts: async () => 'overwrite' },
+          runId: `raster-${index}`,
+        });
 
-    try {
-      const cases = await Promise.all(
-        fixturePaths.map(async (fixturePath, index) => {
-          const sourcePath = path.join(workspacePath, path.basename(fixturePath));
-          const outputPath = path.join(workspacePath, `output-${index}.raw`);
-          await copyFixture(fixturePath, sourcePath);
-          return { sourcePath, outputPath };
-        }),
-      );
-
-      await convertToRawFiles({
-        jobs: cases.map(({ sourcePath, outputPath }) => ({ sourcePath, outputPath, workspacePath })),
-        runtime: { resolveConflicts: async () => 'overwrite' },
-        runId: 'png-to-raw-fixtures',
+        await assertRasterMatches(
+          outputPath,
+          expectedPath,
+          `${fixturePath}${page === undefined ? '' : ` page ${page}`}`,
+        );
       });
+    });
+  }
 
-      for (const testCase of cases) {
-        assert.deepStrictEqual(await readRgbaPixels(testCase.outputPath), await readRgbaPixels(testCase.sourcePath));
-      }
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
-  });
+  for (const [index, fixturePath] of pngFixturePaths.entries()) {
+    test(`png/${path.basename(fixturePath)}をRawへ変換すると固定正解データと一致する`, async () => {
+      await withTestWorkspace(async (workspacePath) => {
+        const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index);
+        const outputPath = path.join(workspacePath, 'raw outputs', `${index}.raw`);
+        const expectedDirectory = path.join(testOutputDirectory, 'png', sourceName(fixturePath));
 
-  test('Sharpが対応しないAVIF sequenceは出力を残さず失敗する', async () => {
-    const fixturePath = path.join(sourceFixtureDirectory, unsupportedRasterFixtureRelativePaths[0] ?? '');
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-unsupported-avif-'));
-    const sourcePath = path.join(workspacePath, path.basename(fixturePath));
-    const outputPath = path.join(workspacePath, 'output.png');
+        await convertToRawFiles({
+          jobs: [{ sourcePath, outputPath, workspacePath }],
+          runtime: { resolveConflicts: async () => 'overwrite' },
+          runId: `png-to-raw-${index}`,
+        });
 
-    try {
-      await copyFile(fixturePath, sourcePath);
+        await assertRasterMatches(
+          outputPath,
+          path.join(expectedDirectory, 'expected.raw'),
+          `${fixturePath} raw output`,
+        );
+      });
+    });
+  }
+
+  test('avif/animated-swirl.avifをPNGへ変換すると未対応sequenceとして出力を残さず失敗する', async () => {
+    const fixturePath = path.join(testInputDirectory, 'valid', unsupportedRasterFixtureRelativePaths[0] ?? '');
+
+    await withTestWorkspace(async (workspacePath) => {
+      const sourcePath = await copyInputToWorkspace(fixturePath, 'unsupported sequence.avif');
+      const outputPath = path.join(workspacePath, 'unsupported-output.png');
+
       await assert.rejects(
         executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath }],
-          pdftocairoTools: { pdftocairoPath: '/opt/homebrew/bin/pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: '/opt/homebrew/bin/gs' },
+          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
+          ghostscriptTools: { ghostscriptPath: 'gs' },
           mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           runtime: { resolveConflicts: async () => 'overwrite' },
@@ -112,32 +101,23 @@ suite('ラスターfixtureの内容比較', () => {
         }),
         /unsupported image format/u,
       );
-      await assert.rejects(readFile(outputPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+      await assert.rejects(access(outputPath));
+    });
   });
 });
 
-async function supportedRasterFixturePaths(): Promise<string[]> {
-  const fixturePaths = (await listInputFixturePaths(sourceFixtureDirectory)).filter(isRasterImagePath);
-  const unsupportedPaths = fixturePaths
-    .filter((fixturePath) =>
-      unsupportedRasterFixtureRelativePaths.includes(path.relative(sourceFixtureDirectory, fixturePath)),
-    )
-    .map((fixturePath) => path.relative(sourceFixtureDirectory, fixturePath));
-  assert.deepStrictEqual(unsupportedPaths, unsupportedRasterFixtureRelativePaths);
-  return fixturePaths.filter(
-    (fixturePath) =>
-      !unsupportedRasterFixtureRelativePaths.includes(path.relative(sourceFixtureDirectory, fixturePath)),
-  );
-}
-
-async function copyFixture(fixturePath: string, sourcePath: string): Promise<void> {
-  await copyFile(fixturePath, sourcePath);
+async function copyInputFixtureToWorkspace(fixturePath: string, index: number): Promise<string> {
+  const destinationPath =
+    index % 3 === 0
+      ? `raster root input ${index}${path.extname(fixturePath)}`
+      : index % 3 === 1
+        ? `nested directory/diagram français 🚀 ${index}${path.extname(fixturePath)}`
+        : `nested/δεδομένα/source.final ${index}${path.extname(fixturePath)}`;
+  const sourcePath = await copyInputToWorkspace(fixturePath, destinationPath);
   if (fixturePath.endsWith('.raw')) {
-    await copyFile(`${fixturePath}.json`, `${sourcePath}.json`);
+    await copyInputToWorkspace(`${fixturePath}.json`, `${destinationPath}.json`);
   }
+  return sourcePath;
 }
 
 async function secondPageIfAnimated(sourcePath: string): Promise<number | undefined> {
@@ -147,4 +127,8 @@ async function secondPageIfAnimated(sourcePath: string): Promise<number | undefi
 
   const metadata = await sharp(sourcePath).metadata();
   return metadata.pages !== undefined && metadata.pages > 1 ? 2 : undefined;
+}
+
+function sourceName(fixturePath: string): string {
+  return path.basename(fixturePath, path.extname(fixturePath));
 }

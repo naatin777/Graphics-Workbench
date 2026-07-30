@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
@@ -10,10 +9,10 @@ import { getExtensionConfiguration } from '../../src/generated-extension-config.
 import { readGhostscriptExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { combineImagesToPdf } from '../../src/operations/conversion/combine_images_to_pdf.js';
 import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';
+import { operationEpsInputPath, operationPngInputPath } from '../helpers/fixture_paths.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const VALID_PNG = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
-const EPS_FIXTURE = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'eps', 'minimal.eps');
+const VALID_PNG = operationPngInputPath;
+const EPS_FIXTURE = operationEpsInputPath;
 const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(getExtensionConfiguration());
 
 const supportedInputFixtures = [

@@ -6,21 +6,18 @@ import { Parser } from 'xml2js';
 import sharp from 'sharp';
 
 import { isDrawioPath, sourceFormatForPath } from '../../src/application/policy/source_format.js';
-import { listInputFixturePaths, sourceFixtureDirectory } from '../helpers/fixture_paths.js';
+import { listInputFixturePaths, testInputDirectory } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
 const xmlParser = new Parser();
 
 suite('Draw.io fixtureの契約', () => {
   test('source fixtureはネイティブXMLと埋め込みメタデータを保持する', async () => {
-    const fixturePaths = (await listInputFixturePaths(sourceFixtureDirectory)).filter(isDrawioPath);
+    const drawioDirectory = path.join(testInputDirectory, 'valid', 'drawio');
+    const fixturePaths = (await listInputFixturePaths(drawioDirectory)).filter(isDrawioPath);
     assert.deepStrictEqual(
-      fixturePaths.map((fixturePath) => path.relative(sourceFixtureDirectory, fixturePath)),
-      [
-        'drawio/embedded-diagram.drawio.svg',
-        'drawio/multi-object-diagram.drawio.png',
-        'drawio/unicode-page-names.drawio',
-      ],
+      fixturePaths.map((fixturePath) => path.relative(drawioDirectory, fixturePath)),
+      ['embedded-diagram.drawio.svg', 'multi-object-diagram.drawio.png', 'unicode-page-names.drawio'],
     );
 
     for (const fixturePath of fixturePaths) {

@@ -23,7 +23,7 @@ Done
 - `docs/tasks/0153-add-vscode-electron-harness.md`
 - `docs/tasks/README.md`
 - `test/playwright/electron/`
-- `test/playwright/fixtures/`
+- `test/playwright/electron/`
 - `playwright.config.mjs`
 - `package.json`
 - `.github/workflows/test.yml`

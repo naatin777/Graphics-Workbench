@@ -8,6 +8,7 @@ import { type ElectronApplication, type Page } from '@playwright/test';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 
 import { cropConfigureFixture } from '../../../helpers/crop_configure_fixture.js';
+import { operationPdfInputDirectory, operationPngInputPath } from '../../../helpers/fixture_paths.js';
 import { disposeElectronTest, writeVscodeUserSettings } from './vscode_electron_test.js';
 import { installPackagedVsix } from './packaged_vsix.js';
 
@@ -114,15 +115,8 @@ export async function setupElectronTest(
   const extensionsDir = prepared?.extensionsDir ?? join(temporaryRoot, 'extensions');
 
   const projectRoot = process.cwd();
-  const sourceFixture = join(
-    projectRoot,
-    'test',
-    'fixtures',
-    'pdf-operations',
-    'user-files',
-    cropConfigureFixture.fileName,
-  );
-  const rasterSourceFixture = join(projectRoot, 'test', 'fixtures', 'test.png');
+  const sourceFixture = join(operationPdfInputDirectory, cropConfigureFixture.fileName);
+  const rasterSourceFixture = operationPngInputPath;
   const inputPath = join(workspacePath, cropConfigureFixture.fileName);
   const outputPath = join(workspacePath, 'q a-crop.pdf');
 

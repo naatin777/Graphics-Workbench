@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 
@@ -13,6 +12,7 @@ import {
   type SplitPdfLabels,
 } from '../../src/application/protocols/split_pdf_protocol.js';
 import { splitPdfByPageGroups } from '../../src/operations/pdf/split_pdf.js';
+import { invalidPreflightInputDirectory } from '../helpers/fixture_paths.js';
 
 suite('PDFページグループ分割', () => {
   test('入力順でページ式を解析し、範囲と重複を処理する', () => {
@@ -70,16 +70,7 @@ suite('PDFページグループ分割', () => {
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'group.pdf');
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run');
-    const invalidPdfPath = path.resolve(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '..',
-      '..',
-      '..',
-      'test',
-      'fixtures',
-      'preflight',
-      'invalid-header.pdf',
-    );
+    const invalidPdfPath = path.join(invalidPreflightInputDirectory, 'invalid-header.pdf');
 
     try {
       await copyFile(invalidPdfPath, sourcePath);

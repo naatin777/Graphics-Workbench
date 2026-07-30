@@ -25,19 +25,18 @@ import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:
 import path from 'node:path';
 
 import { CONVERT_TO_AVIF_COMMAND } from '../../src/commands/conversion/convert_to_avif.js';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixturePngPath = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
+const fixturePngPath = operationPngInputPath;
 const generatedSvgWidth = 31;
 const generatedSvgHeight = 19;
 

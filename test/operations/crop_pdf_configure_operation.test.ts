@@ -14,7 +14,6 @@ import { execFile } from 'node:child_process';
 import { access, copyFile, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 import { PDFDocument, type PDFPage } from 'pdf-lib';
@@ -25,20 +24,9 @@ import { resolveOutputPath } from '../../src/config/output/resolve_output_path.j
 import { cropPdfWithConfiguredBox, type CropBox } from '../../src/operations/pdf/crop_pdf_configure.js';
 
 import { cropConfigureFixture } from '../helpers/crop_configure_fixture.js';
+import { operationPdfInputDirectory, operationPdfOutputDirectory } from '../helpers/fixture_paths.js';
 
 const execFileAsync = promisify(execFile);
-const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixtureDirectory = path.resolve(
-  compiledTestDirectory,
-  '..',
-  '..',
-  '..',
-  'test',
-  'fixtures',
-  'pdf-operations',
-  'user-files',
-);
-
 suite('PDF configure crop処理', () => {
   const temporaryDirectories: string[] = [];
 
@@ -128,7 +116,7 @@ suite('PDF configure crop処理', () => {
     assert.deepStrictEqual(outputDocument.getPage(1).getCropBox(), sourceDocument.getPage(1).getCropBox());
 
     const expectedCroppedDocument = await PDFDocument.load(
-      await readFile(fixturePath(cropConfigureFixture.expectedCroppedPageFileName)),
+      await readFile(outputFixturePath(cropConfigureFixture.expectedCroppedPageFileName)),
     );
     const expectedCroppedBox = expectedCroppedDocument.getPage(0).getMediaBox();
     const actualCroppedBox = outputDocument.getPage(0).getMediaBox();
@@ -151,7 +139,7 @@ suite('PDF configure crop処理', () => {
       prefix: 'unselected-page',
     });
 
-    assert.deepStrictEqual(await readFile(sourcePath), await readFile(fixturePath(cropConfigureFixture.fileName)));
+    assert.deepStrictEqual(await readFile(sourcePath), await readFile(inputFixturePath(cropConfigureFixture.fileName)));
   });
 
   test('多言語・複雑なUnicode・半角全角空白を保ち、複数のoutputPathへ出力する', async () => {
@@ -244,12 +232,16 @@ suite('PDF configure crop処理', () => {
       cases.map(({ expectedPath }) => expectedPath),
     );
     assert.strictEqual(path.basename(sourcePath), sourceFileName);
-    assert.deepStrictEqual(await readFile(sourcePath), await readFile(fixturePath(sourceFixtureFileName)));
+    assert.deepStrictEqual(await readFile(sourcePath), await readFile(inputFixturePath(sourceFixtureFileName)));
   });
 });
 
-function fixturePath(fileName: string): string {
-  return path.join(fixtureDirectory, fileName);
+function inputFixturePath(fileName: string): string {
+  return path.join(operationPdfInputDirectory, fileName);
+}
+
+function outputFixturePath(fileName: string): string {
+  return path.join(operationPdfOutputDirectory, fileName);
 }
 
 async function createTemporaryWorkspace(temporaryDirectories: string[]): Promise<string> {
@@ -273,7 +265,7 @@ async function copyFixtureToWorkspace(
   const directory = path.join(workspacePath, relativeDirectory);
   const destination = path.join(directory, destinationFileName);
   await mkdir(directory, { recursive: true });
-  await copyFile(fixturePath(fileName), destination);
+  await copyFile(inputFixturePath(fileName), destination);
   return destination;
 }
 

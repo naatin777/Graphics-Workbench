@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { access, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 import { createSandbox } from 'sinon';
@@ -12,9 +11,7 @@ import {
   undoLastConversionCommand,
 } from '../../src/commands/lifecycle/undo_last_conversion.js';
 import { LatexPasteEditProvider } from '../../src/edit_provider/latex_paste_edit_provider.js';
-
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixtureDirectory = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures');
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 suite('LaTeXクリップボード画像挿入', () => {
   test('clipboard画像を画像ファイルとして保存しfigure snippetを作る', async () => {
@@ -363,7 +360,7 @@ function pngDataTransfer(): vscode.DataTransfer {
   item.asFile = () => ({
     name: 'test.png',
     async data() {
-      return readFile(path.join(fixtureDirectory, 'test.png'));
+      return readFile(operationPngInputPath);
     },
   });
   const dataTransfer = new vscode.DataTransfer();

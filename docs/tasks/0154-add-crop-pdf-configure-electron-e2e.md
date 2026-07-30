@@ -14,7 +14,7 @@ Done
 
 ### テストする仕様
 
-- 固定fixture `test/fixtures/pdf-operations/user-files/q a.pdf`を一時workspaceへコピーして使う
+- 固定入力 `test/input/valid/operations/pdf-operations/q a.pdf`を一時workspaceへコピーして使う
 - 実Explorerのcontext menuからCrop PDF Configureを開く
 - 拡張機能固有のSafe Mode status barを待ってからExplorer menuを開く
 - Webviewにfixtureの全2ページ分のcanvasが生成され、各canvasの描画sizeが0より大きい

@@ -21,7 +21,7 @@ Done
 
 - `test/crop_pdf_configure_operation.test.ts`
 - `test/helpers/crop_configure_fixture.ts`
-- `test/fixtures/pdf-operations/user-files/README.md`
+- `docs/testing/pdf-operation-inputs.md`
 - `docs/test-matrix.md`
 - `docs/tasks/README.md`
 - `docs/tasks/0130-add-complex-unicode-output-path-tests.md`

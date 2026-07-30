@@ -14,7 +14,7 @@ pdftocairo_path="$(command -v pdftocairo)"
 rsvg_convert_path="$(command -v rsvg-convert)"
 chrome_path="$(command -v google-chrome)"
 
-settings_dir="test/fixtures/workspace/.vscode"
+settings_dir="test/vscode-settings"
 mkdir -p "$settings_dir"
 cat > "$settings_dir/settings.json" <<EOF
 {

@@ -48,6 +48,7 @@
     "check": "npm run lint && npm run format && npm run typecheck && npm run typecheck:test && npm run typecheck:webview && npm run typecheck:webview:test",
     "check:nls": "node scripts/check-nls.mjs",
     "check:unused": "knip",
+    "generate:test-output": "node --experimental-strip-types scripts/generate-test-output.ts",
     "check:all": "npm run check && npm run check:extension-meta && npm run check:nls && npm run check:unused",
     "check:fix": "npm run lint:fix && npm run format:fix",
     "test": "vscode-test",

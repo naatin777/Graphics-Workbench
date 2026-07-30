@@ -2,13 +2,12 @@ import assert from 'node:assert/strict';
 import { copyFile, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { createRasterFrameJobs } from '../../src/commands/conversion/create_raster_frame_jobs.js';
 import { getDefaultConfiguration } from '../../src/generated-extension-meta.js';
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixturePath = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
+const fixturePath = operationPngInputPath;
 
 suite('ラスター分割jobの出力path検証', () => {
   test('コマンドの許容拡張子と一致しないtemplateを変換前に拒否する', async () => {

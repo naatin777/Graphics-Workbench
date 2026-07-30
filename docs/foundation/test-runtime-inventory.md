@@ -184,7 +184,10 @@ runtimeの役割が採用された後に次を比較する。
 
 ```text
 test/
-  fixtures/
+  input/
+  output/
+  workspace/
+  vscode-settings/
   node/
   vscode/
   browser/
@@ -202,7 +205,9 @@ test/vscode/
 test/browser/
 test/electron/
 test/packaging/
-test/fixtures/
+  test/input/
+  test/output/
+  test/vscode-settings/
 ```
 
 ### Decision criteria

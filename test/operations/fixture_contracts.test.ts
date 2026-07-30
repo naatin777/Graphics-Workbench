@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { sourceFormatForPath, type SourceFormat } from '../../src/application/policy/source_format.js';
 import { runPreflightBatch } from '../../src/operations/input/input_preflight.js';
-import { invalidFixtureDirectory, listInputFixturePaths, sourceFixtureDirectory } from '../helpers/fixture_paths.js';
+import { listInputFixturePaths, testInputDirectory } from '../helpers/fixture_paths.js';
 
 const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
   avif: 2,
@@ -24,7 +24,13 @@ const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
 
 suite('変換fixtureの契約', () => {
   test('source fixtureは対応形式を網羅し、全件preflightを通過する', async () => {
-    const sourcePaths = await listInputFixturePaths(sourceFixtureDirectory);
+    const sourcePaths = (
+      await Promise.all(
+        [...new Set(Object.keys(expectedSourceFixtureCounts).map(inputDirectoryForFormat))].map((format) =>
+          listInputFixturePaths(path.join(testInputDirectory, 'valid', format)),
+        ),
+      )
+    ).flat();
     const formats = sourcePaths.map((sourcePath) => sourceFormatForPath(sourcePath));
     const actualCounts = countDefinedFormats(formats);
     const result = await runPreflightBatch(sourcePaths);
@@ -39,8 +45,8 @@ suite('変換fixtureの契約', () => {
   });
 
   test('invalid Raw fixtureは全件preflightで拒否される', async () => {
-    const rawPaths = (await listInputFixturePaths(path.join(invalidFixtureDirectory, 'raw'))).filter((sourcePath) =>
-      sourcePath.endsWith('.raw'),
+    const rawPaths = (await listInputFixturePaths(path.join(testInputDirectory, 'invalid', 'raw'))).filter(
+      (sourcePath) => sourcePath.endsWith('.raw'),
     );
     const result = await runPreflightBatch(rawPaths);
 
@@ -49,6 +55,10 @@ suite('変換fixtureの契約', () => {
     assert.ok(result.errors.every((error) => error.format === 'raw'));
   });
 });
+
+function inputDirectoryForFormat(format: string): string {
+  return format === 'editable-drawio-png' || format === 'editable-drawio-svg' ? 'drawio' : format;
+}
 
 function countDefinedFormats(formats: (SourceFormat | undefined)[]): Partial<Record<SourceFormat, number>> {
   const counts: Partial<Record<SourceFormat, number>> = {};

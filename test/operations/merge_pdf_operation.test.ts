@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { recordConversionForUndo } from '../../src/commands/lifecycle/undo_last_conversion.js';
 import { mergePdf } from '../../src/operations/pdf/merge_pdf.js';
@@ -10,11 +9,10 @@ import {
   createConversionUndoRecord,
   undoConversionOutputs,
 } from '../../src/operations/lifecycle/undo_last_conversion.js';
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixtureDirectory = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'pdf-operations', 'user-files');
-const firstFixturePath = path.join(fixtureDirectory, 'q a.pdf');
-const secondFixturePath = path.join(fixtureDirectory, ' 薔薇🌹.pdf');
+const firstFixturePath = path.join(operationPdfInputDirectory, 'q a.pdf');
+const secondFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
 
 suite('PDF結合operation', () => {
   test('結合結果をstagingへ作成してSafe Modeの両方残すを適用する', async () => {

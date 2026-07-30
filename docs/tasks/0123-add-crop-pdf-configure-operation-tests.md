@@ -30,7 +30,7 @@ WebviewとHostは別のrunnerで検証するが、crop boxとfixtureを共有し
 
 - `test/playwright/`
 - `test/`
-- `test/fixtures/`
+- `test/input/`、`test/output/`
 - `docs/tasks/README.md`
 - `docs/tasks/0123-add-crop-pdf-configure-operation-tests.md`
 - `docs/test-matrix.md` (必要に応じて更新)

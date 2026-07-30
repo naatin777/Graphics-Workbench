@@ -11,22 +11,13 @@ import * as vscode from 'vscode';
 import { localeMap } from '../../src/locale_map.js';
 import { mergePdfConfigureCommand, MERGE_PDF_SELECTED_FILES_COMMAND } from '../../src/commands/pdf/merge_pdf.js';
 
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixtureDirectory = path.resolve(
-  compiledTestDirectory,
-  '..',
-  '..',
-  '..',
-  'test',
-  'fixtures',
-  'pdf-operations',
-  'user-files',
-);
-const firstFixturePath = path.join(fixtureDirectory, 'q a.pdf');
-const secondFixturePath = path.join(fixtureDirectory, ' 薔薇🌹.pdf');
+const firstFixturePath = path.join(operationPdfInputDirectory, 'q a.pdf');
+const secondFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
 
 suite('PDF結合コマンド', () => {
   test('現行の選択PDF結合コマンドが登録されている', async () => {
