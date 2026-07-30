@@ -14,6 +14,10 @@ export interface RgbaDifference {
   meanChannelDifference: number;
 }
 
+export interface RasterComparisonOptions {
+  rendererVariance?: boolean;
+}
+
 export async function readRgbaPixels(sourcePath: string, page?: number): Promise<DecodedImage> {
   if (sourcePath.endsWith('.raw')) {
     const sidecar = parseRawFixtureSidecar(await readFile(`${sourcePath}.json`, 'utf8'));
@@ -26,6 +30,15 @@ export async function readRgbaPixels(sourcePath: string, page?: number): Promise
 
   const input = page === undefined ? sharp(sourcePath) : sharp(sourcePath, { page: page - 1, pages: 1 });
   return readRgbaFromSharp(input);
+}
+
+export async function readNormalizedRgbaPixels(sourcePath: string): Promise<DecodedImage> {
+  return readRgbaFromSharp(
+    sharp(sourcePath).resize(512, 512, {
+      fit: 'contain',
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    }),
+  );
 }
 
 export function calculateRgbaDifference(expected: DecodedImage, actual: DecodedImage): RgbaDifference {

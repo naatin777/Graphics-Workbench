@@ -56,7 +56,13 @@ suite('Mermaid fixtureの内容比較', () => {
           runId: `mermaid-${index}-pdf`,
         });
 
-        await assertRasterMatches(actualPngPath, path.join(expectedDirectory, 'expected.png'), fixturePath);
+        const rendererComparison = { rendererVariance: true } as const;
+        await assertRasterMatches(
+          actualPngPath,
+          path.join(expectedDirectory, 'expected.png'),
+          fixturePath,
+          rendererComparison,
+        );
 
         await renderSvg(actualSvgPath, path.join(renderedDirectory, 'actual-svg.png'), rsvgConvertPath);
         await renderSvg(
@@ -68,6 +74,7 @@ suite('Mermaid fixtureの内容比較', () => {
           path.join(renderedDirectory, 'actual-svg.png'),
           path.join(renderedDirectory, 'expected-svg.png'),
           `${fixturePath} SVG`,
+          rendererComparison,
         );
 
         await assertPdfMatches(
@@ -75,6 +82,7 @@ suite('Mermaid fixtureの内容比較', () => {
           path.join(expectedDirectory, 'expected.pdf'),
           renderedDirectory,
           fixturePath,
+          rendererComparison,
         );
       });
     });

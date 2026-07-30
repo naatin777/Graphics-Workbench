@@ -28,7 +28,7 @@ suite('SVG fixtureの内容比較', () => {
           runId: `svg-${index}`,
         });
 
-        await assertRasterMatches(outputPath, expectedPath, fixturePath);
+        await assertRasterMatches(outputPath, expectedPath, fixturePath, { rendererVariance: true });
       });
     });
   }

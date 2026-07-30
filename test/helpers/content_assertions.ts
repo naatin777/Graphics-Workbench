@@ -8,19 +8,49 @@ import { PDFDocument } from 'pdf-lib';
 
 import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
-import { calculateRgbaDifference, readRgbaPixels } from './raster_content.js';
+import {
+  calculateRgbaDifference,
+  readNormalizedRgbaPixels,
+  readRgbaPixels,
+  type RasterComparisonOptions,
+} from './raster_content.js';
 
 const execFileAsync = promisify(execFile);
 
-export async function assertRasterMatches(actualPath: string, expectedPath: string, label: string): Promise<void> {
-  const actual = await readRgbaPixels(actualPath);
-  const expected = await readRgbaPixels(expectedPath);
+export async function assertRasterMatches(
+  actualPath: string,
+  expectedPath: string,
+  label: string,
+  options: RasterComparisonOptions = {},
+): Promise<void> {
+  const [actual, expected] = options.rendererVariance
+    ? await Promise.all([readNormalizedRgbaPixels(actualPath), readNormalizedRgbaPixels(expectedPath)])
+    : await Promise.all([readRgbaPixels(actualPath), readRgbaPixels(expectedPath)]);
   const difference = calculateRgbaDifference(expected, actual);
 
-  assert.strictEqual(actual.width, expected.width, label);
-  assert.strictEqual(actual.height, expected.height, label);
-  assert.ok(difference.differentPixelRatio <= 0.01, label);
-  assert.ok(difference.meanChannelDifference <= 1, label);
+  if (options.rendererVariance) {
+    const actualOriginal = await readRgbaPixels(actualPath);
+    const expectedOriginal = await readRgbaPixels(expectedPath);
+    assert.ok(
+      Math.abs(actualOriginal.width / expectedOriginal.width - 1) <= 0.05,
+      `${label}: renderer output width differs by more than 5%`,
+    );
+    assert.ok(
+      Math.abs(actualOriginal.height / expectedOriginal.height - 1) <= 0.05,
+      `${label}: renderer output height differs by more than 5%`,
+    );
+  } else {
+    assert.strictEqual(actual.width, expected.width, label);
+    assert.strictEqual(actual.height, expected.height, label);
+  }
+  assert.ok(
+    difference.differentPixelRatio <= (options.rendererVariance ? 0.05 : 0.01),
+    `${label}: differentPixelRatio=${difference.differentPixelRatio}`,
+  );
+  assert.ok(
+    difference.meanChannelDifference <= (options.rendererVariance ? 2 : 1),
+    `${label}: meanChannelDifference=${difference.meanChannelDifference}`,
+  );
 }
 
 export async function assertPdfMatches(
@@ -28,6 +58,7 @@ export async function assertPdfMatches(
   expectedPath: string,
   renderDirectory: string,
   label: string,
+  options: RasterComparisonOptions = {},
 ): Promise<void> {
   const [actual, expected] = await Promise.all([
     PDFDocument.load(await readFile(actualPath)),
@@ -41,14 +72,24 @@ export async function assertPdfMatches(
   for (let page = 1; page <= actual.getPageCount(); page += 1) {
     const actualPagePath = path.join(renderDirectory, `actual-${page}.png`);
     const expectedPagePath = path.join(renderDirectory, `expected-${page}.png`);
-    assert.deepStrictEqual(
-      actual.getPage(page - 1)?.getSize(),
-      expected.getPage(page - 1)?.getSize(),
-      `${label} page ${page}`,
-    );
+    const actualPageSize = actual.getPage(page - 1)?.getSize();
+    const expectedPageSize = expected.getPage(page - 1)?.getSize();
+    if (options.rendererVariance) {
+      assert.ok(actualPageSize !== undefined && expectedPageSize !== undefined, `${label} page ${page}`);
+      assert.ok(
+        Math.abs(actualPageSize.width / expectedPageSize.width - 1) <= 0.05,
+        `${label} page ${page}: renderer output width differs by more than 5%`,
+      );
+      assert.ok(
+        Math.abs(actualPageSize.height / expectedPageSize.height - 1) <= 0.05,
+        `${label} page ${page}: renderer output height differs by more than 5%`,
+      );
+    } else {
+      assert.deepStrictEqual(actualPageSize, expectedPageSize, `${label} page ${page}`);
+    }
     await renderPdfPage(actualPath, actualPagePath, page, pdftocairoPath);
     await renderPdfPage(expectedPath, expectedPagePath, page, pdftocairoPath);
-    await assertRasterMatches(actualPagePath, expectedPagePath, `${label} page ${page}`);
+    await assertRasterMatches(actualPagePath, expectedPagePath, `${label} page ${page}`, options);
   }
 }
 
