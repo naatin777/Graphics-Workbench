@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
@@ -17,9 +16,9 @@ import { executeJpegConversion } from '../../src/operations/conversion/convert_t
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
 import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
+import { operationEpsInputPath } from '../helpers/fixture_paths.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const EPS_FIXTURE = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'eps', 'minimal.eps');
+const EPS_FIXTURE = operationEpsInputPath;
 const configuration = getExtensionConfiguration();
 const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(configuration);
 const PDFTOCAIRO_PATH = readPdftocairoExecutablePath(configuration);

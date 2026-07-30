@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host 'Verifying image conversion tools...'
 
-$settingsPath = Join-Path 'test/fixtures/workspace/.vscode' 'settings.json'
+$settingsPath = Join-Path 'test/vscode-settings' 'settings.json'
 $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
 
 $gs = $settings.'graphics-workbench.execPath.ghostscript'

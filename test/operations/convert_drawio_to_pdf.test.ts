@@ -2,16 +2,15 @@ import assert from 'node:assert/strict';
 import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
 import { requireValue } from '../helpers/required.js';
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
-const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const drawioFixturePath = path.join(repositoryRoot, 'test', 'fixtures', 'pdf-operations', 'user-files', 'q a.drawio');
-const pdfFixturePath = path.join(repositoryRoot, 'test', 'fixtures', 'pdf-operations', 'user-files', 'q a.pdf');
+const drawioFixturePath = path.join(operationPdfInputDirectory, 'q a.drawio');
+const pdfFixturePath = path.join(operationPdfInputDirectory, 'q a.pdf');
 
 suite('Draw.io PDF変換', () => {
   test('ネイティブDraw.ioをページ名ごとのPDFへ分割する', async () => {

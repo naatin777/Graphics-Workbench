@@ -13,7 +13,6 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 import { PDFDocument } from 'pdf-lib';
@@ -23,10 +22,8 @@ import {
   createSvgPuppeteerLaunchOptions,
   validateSvgToPdfOptions,
 } from '../../src/operations/conversion/convert_to_pdf.js';
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
-
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
 
 suite('PDF変換operation（PNG入力）', () => {
   test('複数フレームのGIF jobは1フレーム1ページPDFとして変換する', async () => {
@@ -65,7 +62,7 @@ suite('PDF変換operation（PNG入力）', () => {
     const outputPath = path.join(workspacePath, 'output.pdf');
 
     try {
-      await copyFile(path.join(dirname, '..', '..', '..', 'test', 'fixtures', 'test.png'), sourcePath);
+      await copyFile(operationPngInputPath, sourcePath);
 
       await convertToPdfFiles({
         jobs: [{ sourcePath, outputPath, workspacePath }],

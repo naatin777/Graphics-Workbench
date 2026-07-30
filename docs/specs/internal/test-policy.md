@@ -107,7 +107,7 @@ mock は使ってよい。
 
 優先順位:
 
-1. `test/fixtures/`などの固定fixtureをテスト中の一時workspaceへコピーし、そのコピーをcommandの入力にする
+1. `test/input/`の固定入力をテスト中の一時workspaceへコピーし、そのコピーをcommandの入力にする
 2. workspace操作を伴わない低レベルテストでは、固定fixtureを直接読み込む
 3. 適切な固定fixtureがない場合は、既存fixtureを読み込んで一時ディレクトリへ必要な形式を生成する
 4. どうしても必要な場合だけ、小さなbase64文字列などの埋め込みfixtureを使う
@@ -130,7 +130,7 @@ import sharp from 'sharp';
 import * as vscode from 'vscode';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const sourcePng = path.join(testDirectory, '..', '..', 'test', 'fixtures', 'test.png');
+const sourcePng = path.join(testDirectory, '..', '..', 'test', 'input', 'valid', 'png', 'checker-mosaic.png');
 const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-test-'));
 
 try {
@@ -156,7 +156,7 @@ base64埋め込みを使う場合は、コメントまたはタスクに理由�
 
 ### 複雑な実fixtureを正本にする
 
-主要な変換・PDF操作の正常系では、テスト内で単純なPDFや画像を毎回生成するだけでなく、`test/fixtures/`へ固定した実fixtureを正本として使う。
+主要な変換・PDF操作の正常系では、テスト内で単純なPDFや画像を毎回生成するだけでなく、`test/input/`の固定入力と`test/output/`の固定正解データを正本として使う。
 
 - fixtureはテスト中に直接変更しない
 - workspace操作を伴うテストでは、fixtureを一時workspaceへコピーしてからcommandを実行する

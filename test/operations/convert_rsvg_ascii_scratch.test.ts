@@ -16,35 +16,15 @@ import { constants } from 'node:fs';
 import { access, copyFile, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 
 import { convertToPdfFiles, type ConvertToPdfFilesOptions } from '../../src/operations/conversion/convert_to_pdf.js';
 import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';
+import { operationPathCompatibilitySvgInputPath, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
-const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
-const svgFixturePath = path.resolve(
-  compiledTestDirectory,
-  '..',
-  '..',
-  '..',
-  'test',
-  'fixtures',
-  'path-compatibility',
-  'source.svg',
-);
-const pdfFixturePath = path.resolve(
-  compiledTestDirectory,
-  '..',
-  '..',
-  '..',
-  'test',
-  'fixtures',
-  'pdf-operations',
-  'user-files',
-  ' 薔薇🌹.pdf',
-);
+const svgFixturePath = operationPathCompatibilitySvgInputPath;
+const pdfFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
 const complexSourceFileName =
   '　日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹 ＡＢＣ１２３①.svg';
 const complexOutputFileName = '結果 한국어 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹　ＡＢＣ①.pdf';

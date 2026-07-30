@@ -36,12 +36,12 @@ src/
 
 test/
   {application,commands,config,edit_provider,operations,presentation,security,integration}/
-  fixtures/
+  {input,output,workspace,vscode-settings}/
   helpers/
   playwright/electron/
 ```
 
-`security/`と`presentation/webview/`は現在1責務・1moduleのため、空の下位directoryを作らない。`fixtures/`、`helpers/`、`playwright/electron/`はsource責務ではなくtest runtime資産として分離する。
+`security/`と`presentation/webview/`は現在1責務・1moduleのため、空の下位directoryを作らない。`input/`、`output/`、`workspace/`、`vscode-settings/`、`helpers/`、`playwright/electron/`はsource責務ではなくtest runtime資産として分離する。
 
 ## Naming and compatibility
 

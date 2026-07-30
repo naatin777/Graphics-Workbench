@@ -13,7 +13,7 @@
 git ls-files
 git ls-files 'test/**'
 git ls-files '*test.ts' '*test.tsx' '*spec.ts' '*spec.tsx' '*test.js' '*spec.js' '*test.mjs' '*spec.mjs'
-git ls-files 'test/fixtures/**' 'test/helpers/**' 'test/playwright/**'
+git ls-files 'test/input/**' 'test/output/**' 'test/helpers/**' 'test/playwright/**'
 git ls-files 'scripts/**' '.github/scripts/**' '.github/workflows/**'
 ```
 
@@ -34,7 +34,7 @@ Current runnerは`.vscode-test.mjs`、`playwright.config.mjs`、`package.json`�
 | Configured Electron Playwright scope    |    1 / **1** | `vscode-electron` project                                                 |
 | Configured Vitest scope                 |    3 / **4** | crop、merge、splitのapp configとJSDOM component cases                     |
 | Tracked test helper files               |            8 | root 4、Electron 4。inline helper functionは含めない                      |
-| Tracked fixtures                        |           20 | `test/fixtures/**`                                                        |
+| Fixed test data                         |           20 | `test/input/**`, `test/output/**`                                         |
 | Electron snapshot files                 |            2 | Linux dark/light PNG                                                      |
 | Validation scripts                      |            1 | `scripts/check-nls.mjs`                                                   |
 | Build/package scripts                   |            1 | `scripts/package-vsix.mjs`                                                |

@@ -1,4 +1,24 @@
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { defineConfig } from '@vscode/test-cli';
+
+const repositoryDirectory = process.cwd();
+const configuredUserDataDirectory = process.env.GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR;
+const userDataDirectory = path.resolve(repositoryDirectory, configuredUserDataDirectory ?? 'test/.vscode-test-data');
+const settingsSourcePath = path.join(repositoryDirectory, 'test', 'vscode-settings', 'settings.json');
+const settingsTargetPath = path.join(userDataDirectory, 'User', 'settings.json');
+const testWorkspaceDirectory = path.join(repositoryDirectory, 'test', 'workspace');
+
+mkdirSync(testWorkspaceDirectory, { recursive: true });
+for (const entry of readdirSync(testWorkspaceDirectory)) {
+  rmSync(path.join(testWorkspaceDirectory, entry), { recursive: true, force: true });
+}
+
+if (existsSync(settingsSourcePath)) {
+  mkdirSync(path.dirname(settingsTargetPath), { recursive: true });
+  writeFileSync(settingsTargetPath, readFileSync(settingsSourcePath));
+}
 
 export default defineConfig({
   tests: [
@@ -7,7 +27,7 @@ export default defineConfig({
       version: '1.128.0',
       extensionDevelopmentPath: '.',
       srcDir: 'src',
-      workspaceFolder: './test/fixtures/workspace',
+      workspaceFolder: './test/workspace',
       mocha: {
         ui: 'tdd',
         timeout: 60000,
@@ -19,9 +39,7 @@ export default defineConfig({
         '--disable-extensions',
         '--skip-welcome',
         '--disable-workspace-trust',
-        ...(process.env.GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR
-          ? [`--user-data-dir=${process.env.GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR}`]
-          : []),
+        `--user-data-dir=${userDataDirectory}`,
       ],
     },
   ],

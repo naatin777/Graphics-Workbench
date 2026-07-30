@@ -45,7 +45,7 @@ VS Code Webviewが実際のVS Codeから提供されるCSS変数とtheme class�
 ## 対象外
 
 - 0153 / 0154のコード、test、fixtureの作成
-- `src/`、`test/`、`test/fixtures/`の変更
+- `src/`、`test/`、`test/input/`、`test/output/`の変更
 - `package.json`、lockfile、workflow、dependencyの変更
 - Playwright Electronの実装・CI導入
 - 既存ブラウザPlaywrightの削除

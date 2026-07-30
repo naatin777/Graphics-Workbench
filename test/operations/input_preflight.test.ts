@@ -2,17 +2,17 @@ import { deepStrictEqual, ok, rejects, strictEqual } from 'node:assert/strict';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import {
   assertPreflightPassed,
   runPreflightBatch,
   type PreflightReport,
 } from '../../src/operations/input/input_preflight.js';
+import { invalidPreflightInputDirectory, validPreflightInputDirectory } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURES = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'preflight');
+const VALID_FIXTURES = validPreflightInputDirectory;
+const INVALID_FIXTURES = invalidPreflightInputDirectory;
 
 function assertOk(report: PreflightReport): void {
   strictEqual(
@@ -34,21 +34,21 @@ function assertError(report: PreflightReport, messageContains?: string): void {
 
 suite('Preflight — 共通検査', () => {
   test('空ファイルをerrorとして検出する', async () => {
-    const result = await runPreflightBatch([path.join(FIXTURES, 'empty.pdf')]);
+    const result = await runPreflightBatch([path.join(INVALID_FIXTURES, 'empty.pdf')]);
     strictEqual(result.canProceed, false);
     strictEqual(result.errors.length, 1);
     assertError(requireValue(result.errors[0]), 'Empty file');
   });
 
   test('読み込めない入力をFile not readable errorとして検出する', async () => {
-    const result = await runPreflightBatch([path.join(FIXTURES, 'missing.pdf')]);
+    const result = await runPreflightBatch([path.join(VALID_FIXTURES, 'missing.pdf')]);
     strictEqual(result.canProceed, false);
     strictEqual(result.errors.length, 1);
     assertError(requireValue(result.errors[0]), 'File not readable');
   });
 
   test('未対応の拡張子をerrorとして検出する', async () => {
-    const result = await runPreflightBatch([path.join(FIXTURES, 'valid.pdf') + '.unknown']);
+    const result = await runPreflightBatch([path.join(VALID_FIXTURES, 'valid.pdf') + '.unknown']);
     strictEqual(result.canProceed, false);
     assertError(requireValue(result.errors[0]), 'Unsupported format');
   });
@@ -69,9 +69,9 @@ suite('Preflight — 共通検査', () => {
 
   test('複数ファイルを同時に検査する', async () => {
     const result = await runPreflightBatch([
-      path.join(FIXTURES, 'valid.pdf'),
-      path.join(FIXTURES, 'valid.png'),
-      path.join(FIXTURES, 'empty.pdf'),
+      path.join(VALID_FIXTURES, 'valid.pdf'),
+      path.join(VALID_FIXTURES, 'valid.png'),
+      path.join(INVALID_FIXTURES, 'empty.pdf'),
     ]);
     strictEqual(result.canProceed, false);
     strictEqual(result.errors.length, 1);
@@ -81,13 +81,16 @@ suite('Preflight — 共通検査', () => {
   });
 
   test('全件okの場合はcanProceedがtrue', async () => {
-    const result = await runPreflightBatch([path.join(FIXTURES, 'valid.pdf'), path.join(FIXTURES, 'valid.png')]);
+    const result = await runPreflightBatch([
+      path.join(VALID_FIXTURES, 'valid.pdf'),
+      path.join(VALID_FIXTURES, 'valid.png'),
+    ]);
     strictEqual(result.canProceed, true);
     strictEqual(result.errors.length, 0);
   });
 
   test('失敗理由に入力pathを含める', async () => {
-    const missingPath = path.join(FIXTURES, 'missing.pdf');
+    const missingPath = path.join(VALID_FIXTURES, 'missing.pdf');
     await rejects(assertPreflightPassed([{ sourcePath: missingPath }]), (error: unknown) => {
       return (
         error instanceof Error && error.message.includes(missingPath) && error.message.includes('File not readable')
@@ -105,7 +108,7 @@ suite('Preflight — バッチライフサイクル', () => {
     ok(reason instanceof Error);
     strictEqual(reason.name, 'AbortError');
     await rejects(
-      runPreflightBatch([path.join(FIXTURES, 'valid.pdf')], {
+      runPreflightBatch([path.join(VALID_FIXTURES, 'valid.pdf')], {
         signal: controller.signal,
       }),
       (error: unknown) => error === reason,
@@ -115,10 +118,10 @@ suite('Preflight — バッチライフサイクル', () => {
   test('キャンセル後はvalidatorを開始しない', async () => {
     const controller = new AbortController();
     const sourcePaths = [
-      path.join(FIXTURES, 'valid.pdf'),
-      path.join(FIXTURES, 'valid.png'),
-      path.join(FIXTURES, 'valid.svg'),
-      path.join(FIXTURES, 'valid.mmd'),
+      path.join(VALID_FIXTURES, 'valid.pdf'),
+      path.join(VALID_FIXTURES, 'valid.png'),
+      path.join(VALID_FIXTURES, 'valid.svg'),
+      path.join(VALID_FIXTURES, 'valid.mmd'),
     ];
 
     // Abort before the batch starts processing
@@ -195,7 +198,11 @@ suite('Preflight — 進捗報告', () => {
   test('onProgress callbackが各ファイル完了後に呼ばれる', async () => {
     const calls: { completed: number; total: number }[] = [];
     const result = await runPreflightBatch(
-      [path.join(FIXTURES, 'valid.pdf'), path.join(FIXTURES, 'valid.png'), path.join(FIXTURES, 'valid.svg')],
+      [
+        path.join(VALID_FIXTURES, 'valid.pdf'),
+        path.join(VALID_FIXTURES, 'valid.png'),
+        path.join(VALID_FIXTURES, 'valid.svg'),
+      ],
       {
         onProgress: (completed, total) => {
           calls.push({ completed, total });
@@ -213,10 +220,10 @@ suite('Preflight — 進捗報告', () => {
 suite('Preflight — レポート構造', () => {
   test('各レポートにformat、fileSize、resultが含まれる', async () => {
     const result = await runPreflightBatch([
-      path.join(FIXTURES, 'valid.pdf'),
-      path.join(FIXTURES, 'valid.png'),
-      path.join(FIXTURES, 'valid.svg'),
-      path.join(FIXTURES, 'valid.mmd'),
+      path.join(VALID_FIXTURES, 'valid.pdf'),
+      path.join(VALID_FIXTURES, 'valid.png'),
+      path.join(VALID_FIXTURES, 'valid.svg'),
+      path.join(VALID_FIXTURES, 'valid.mmd'),
     ]);
     for (const report of result.reports) {
       ok(report.format, `missing format for ${report.sourcePath}`);
