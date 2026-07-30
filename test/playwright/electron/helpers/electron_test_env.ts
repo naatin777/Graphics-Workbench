@@ -8,11 +8,16 @@ import { type ElectronApplication, type Page } from '@playwright/test';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 
 import { cropConfigureFixture } from '../../../helpers/crop_configure_fixture.js';
+import {
+  operationPdfInputDirectory,
+  operationPngInputPath,
+  testWorkspaceDirectory,
+} from '../../../helpers/fixture_paths.js';
 import { disposeElectronTest, writeVscodeUserSettings } from './vscode_electron_test.js';
 import { installPackagedVsix } from './packaged_vsix.js';
 
 const vscodeVersion = '1.128.0';
-const temporaryBase = process.platform === 'win32' ? tmpdir() : '/tmp';
+const temporaryBase = tmpdir();
 
 export interface ElectronTestEnv {
   app: {
@@ -49,7 +54,7 @@ export interface ElectronTestOptions {
 }
 
 export async function prepareElectronTest(packagedVsixPath: string): Promise<PreparedElectronTest> {
-  const installationRoot = await mkdtemp(join(temporaryBase, 'graphics-workbench-electron-package-'));
+  const installationRoot = await mkdtemp(join(temporaryBase, 'gw-package-'));
   const extensionsDir = join(installationRoot, 'extensions');
   const userDataDir = join(installationRoot, 'user-data');
 
@@ -105,8 +110,8 @@ export async function setupElectronTest(
   const copyFixtures = options.copyFixtures ?? true;
   const prepared = options.prepared;
 
-  const temporaryRoot = await mkdtemp(join(temporaryBase, 'graphics-workbench-electron-'));
-  const workspacePath = join(temporaryRoot, 'workspace');
+  const temporaryRoot = await mkdtemp(join(temporaryBase, 'gw-'));
+  const workspacePath = testWorkspaceDirectory;
   const userDataDir = join(temporaryRoot, 'user-data');
   const userSettingsDir = join(userDataDir, 'User');
   const userSettingsPath = join(userSettingsDir, 'settings.json');
@@ -114,19 +119,16 @@ export async function setupElectronTest(
   const extensionsDir = prepared?.extensionsDir ?? join(temporaryRoot, 'extensions');
 
   const projectRoot = process.cwd();
-  const sourceFixture = join(
-    projectRoot,
-    'test',
-    'fixtures',
-    'pdf-operations',
-    'user-files',
-    cropConfigureFixture.fileName,
-  );
-  const rasterSourceFixture = join(projectRoot, 'test', 'fixtures', 'test.png');
+  const sourceFixture = join(operationPdfInputDirectory, cropConfigureFixture.fileName);
+  const rasterSourceFixture = operationPngInputPath;
   const inputPath = join(workspacePath, cropConfigureFixture.fileName);
   const outputPath = join(workspacePath, 'q a-crop.pdf');
 
-  const directories = [mkdir(workspacePath), mkdir(userSettingsDir, { recursive: true }), mkdir(sharedDataDir)];
+  const directories = [
+    mkdir(workspacePath, { recursive: true }),
+    mkdir(userSettingsDir, { recursive: true }),
+    mkdir(sharedDataDir),
+  ];
   if (!prepared) {
     directories.push(mkdir(extensionsDir));
   }
@@ -142,10 +144,6 @@ export async function setupElectronTest(
   const sourceFixtureBytes = copyFixtures ? await readFile(sourceFixture) : new Uint8Array();
 
   await writeVscodeUserSettings(userSettingsPath, colorTheme, {
-    'graphics-workbench.execPath.pdftocairo':
-      process.platform === 'win32'
-        ? 'C:\\graphics-workbench-missing\\pdftocairo.exe'
-        : '/graphics-workbench-missing/pdftocairo',
     ...extraSettings,
   });
 
@@ -174,6 +172,7 @@ export async function setupElectronTest(
       '--skip-welcome',
       '--skip-release-notes',
       '--disable-workspace-trust',
+      '--disable-extension=vscode.git',
       '--no-sandbox',
       '--disable-gpu-sandbox',
       '--no-cached-data',

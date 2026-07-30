@@ -11,36 +11,15 @@ import assert from 'node:assert/strict';
 import { copyFile, mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
-const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
-const drawioFixturePath = path.resolve(
-  compiledTestDirectory,
-  '..',
-  '..',
-  '..',
-  'test',
-  'fixtures',
-  'pdf-operations',
-  'user-files',
-  ' 薔薇🌹.dio',
-);
-const pdfFixturePath = path.resolve(
-  compiledTestDirectory,
-  '..',
-  '..',
-  '..',
-  'test',
-  'fixtures',
-  'pdf-operations',
-  'user-files',
-  ' 薔薇🌹.pdf',
-);
+const drawioFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.dio');
+const pdfFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
 
 suite('Draw.ioの複雑なpath変換', () => {
   test('ページ名・フォルダ名・ファイル名に空白とUnicodeがあっても3ページPDFへ変換する', async () => {

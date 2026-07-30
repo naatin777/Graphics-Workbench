@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { copyFile, mkdtemp, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
@@ -15,8 +14,7 @@ import {
   CONVERT_DRAWIO_TO_PDF_COMMAND,
   CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND,
 } from '../../src/commands/conversion/convert_drawio_to_pdf.js';
-
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
+import { operationPdfInputDirectory, operationPngInputPath } from '../helpers/fixture_paths.js';
 
 suite('拡張機能の基本動作', () => {
   test('拡張機能が登録されている', () => {
@@ -88,7 +86,7 @@ suite('拡張機能の基本動作', () => {
 
       const sourcePath = path.join(temporaryDirectory, 'source.png');
       const outputPath = path.join(temporaryDirectory, 'source.pdf');
-      await copyFile(path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png'), sourcePath);
+      await copyFile(operationPngInputPath, sourcePath);
 
       await vscode.commands.executeCommand(CONVERT_PNG_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
 
@@ -115,10 +113,7 @@ suite('拡張機能の基本動作', () => {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
       const sourcePath = path.join(temporaryDirectory, 'document.pdf');
-      await copyFile(
-        path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'pdf-operations', 'user-files', 'q a.pdf'),
-        sourcePath,
-      );
+      await copyFile(path.join(operationPdfInputDirectory, 'q a.pdf'), sourcePath);
 
       await vscode.commands.executeCommand(CROP_PDF_AUTO_COMMAND, vscode.Uri.file(sourcePath));
 
@@ -144,10 +139,7 @@ suite('拡張機能の基本動作', () => {
       sandbox.stub(vscode.window, 'showWarningMessage').resolves(undefined);
 
       const sourcePath = path.join(temporaryDirectory, 'split-test.pdf');
-      await copyFile(
-        path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'pdf-operations', 'user-files', 'q a.pdf'),
-        sourcePath,
-      );
+      await copyFile(path.join(operationPdfInputDirectory, 'q a.pdf'), sourcePath);
 
       await vscode.commands.executeCommand(SPLIT_PDF_ALL_PAGES_COMMAND, vscode.Uri.file(sourcePath));
 

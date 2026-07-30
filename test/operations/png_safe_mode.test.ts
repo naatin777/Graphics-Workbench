@@ -17,7 +17,6 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 
@@ -27,10 +26,10 @@ import {
   createConversionUndoRecord,
   undoConversionOutputs,
 } from '../../src/operations/lifecycle/undo_last_conversion.js';
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixturePath = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
+const fixturePath = operationPngInputPath;
 const editableDrawioImageExtensions = ['.drawio.png', '.dio.png', '.drawio.svg', '.dio.svg'] as const;
 
 suite('PNG変換のSafe Mode', () => {

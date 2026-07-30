@@ -14,7 +14,7 @@ if [[ ! -x "${chrome_path}" ]]; then
 	exit 1
 fi
 
-settings_dir="test/fixtures/workspace/.vscode"
+settings_dir="test/vscode-settings"
 mkdir -p "$settings_dir"
 cat > "$settings_dir/settings.json" <<EOF
 {

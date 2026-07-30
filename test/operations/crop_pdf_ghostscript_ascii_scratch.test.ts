@@ -17,24 +17,13 @@ import { constants } from 'node:fs';
 import { access, copyFile, mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 
 import { cropPdfFiles, type RunGhostscript } from '../../src/operations/pdf/crop_pdf_auto.js';
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
-const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixturePath = path.resolve(
-  compiledTestDirectory,
-  '..',
-  '..',
-  '..',
-  'test',
-  'fixtures',
-  'pdf-operations',
-  'user-files',
-  ' 薔薇🌹.pdf',
-);
+const fixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
 const complexSourceFileName =
   '　日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹 ＡＢＣ１２３①.pdf';
 

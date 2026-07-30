@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
@@ -15,12 +14,12 @@ import {
 import { userMessage } from '../../src/commands/shared/user_messages.js';
 import { UNDO_LAST_CONVERSION_COMMAND } from '../../src/commands/lifecycle/undo_last_conversion.js';
 
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const VALID_PNG = path.join(testDirectory, '..', '..', '..', 'test', 'fixtures', 'test.png');
+const VALID_PNG = operationPngInputPath;
 
 suite('画像を1つのPDFへ結合するコマンド', () => {
   let sandbox: sinon.SinonSandbox;

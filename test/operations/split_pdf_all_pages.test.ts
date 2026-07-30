@@ -14,25 +14,13 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 
 import { splitPdfAllPages } from '../../src/operations/pdf/split_pdf.js';
 
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.js';
-
-const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
-const fixtureDirectory = path.resolve(
-  compiledTestDirectory,
-  '..',
-  '..',
-  '..',
-  'test',
-  'fixtures',
-  'pdf-operations',
-  'user-files',
-);
 
 suite('PDF全ページ分割', () => {
   test('すべてのページを1始まりのページ番号で分割し、作業ファイルを残す', async () => {
@@ -198,5 +186,5 @@ async function writePdf(filePath: string, pageCount: number): Promise<void> {
 }
 
 function fixturePath(fileName: string): string {
-  return path.join(fixtureDirectory, fileName);
+  return path.join(operationPdfInputDirectory, fileName);
 }

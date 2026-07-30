@@ -1,4 +1,5 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
@@ -9,6 +10,7 @@ import type { MergePdfOptions } from '../../../src/operations/pdf/merge_pdf.js';
 import type { SplitPdfOptions } from '../../../src/operations/pdf/split_pdf.js';
 import type { CommittedConversionOutput } from '../../../src/operations/lifecycle/commit_conversion_outputs.js';
 
+import { resetTestWorkspace } from '../../helpers/test_workspace.js';
 import { captureCropPdfScreenshot } from './helpers/crop_pdf_screenshot.js';
 import {
   expectPdfCanvasesReadable,
@@ -64,14 +66,27 @@ function isPackagedSplitPdfModule(value: unknown): value is PackagedSplitPdfModu
 let preparedElectronTest: PreparedElectronTest | undefined;
 
 test.beforeAll(async () => {
+  await resetTestWorkspace();
   preparedElectronTest = await prepareElectronTest(packagedVsixPath);
 });
 
 test.afterAll(async () => {
-  if (preparedElectronTest) {
-    await disposePreparedElectronTest(preparedElectronTest);
-    preparedElectronTest = undefined;
+  try {
+    if (preparedElectronTest) {
+      await disposePreparedElectronTest(preparedElectronTest);
+      preparedElectronTest = undefined;
+    }
+  } finally {
+    await resetTestWorkspace();
   }
+});
+
+test.beforeEach(async () => {
+  await resetTestWorkspace();
+});
+
+test.afterEach(async () => {
+  await resetTestWorkspace();
 });
 
 function preparedOptions(): { prepared: PreparedElectronTest } {
@@ -241,12 +256,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
     }
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
-    await writeVscodeUserSettings(userSettingsPath, alternateTheme, {
-      'graphics-workbench.execPath.pdftocairo':
-        process.platform === 'win32'
-          ? 'C:\\graphics-workbench-missing\\pdftocairo.exe'
-          : '/graphics-workbench-missing/pdftocairo',
-    });
+    await writeVscodeUserSettings(userSettingsPath, alternateTheme);
 
     const lightTheme = await waitForWebviewTheme(body, 'vscode-light');
     expect(lightTheme.bodyBackground).not.toBe(darkTheme.bodyBackground);
@@ -476,9 +486,16 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
   testInfo.setTimeout(240_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
+  const missingToolDirectory = await mkdtemp(join(tmpdir(), 'graphics-workbench-missing-pdftocairo-'));
+  const missingToolPath = join(missingToolDirectory, 'pdftocairo');
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(),
+      extraSettings: {
+        'graphics-workbench.execPath.pdftocairo': missingToolPath,
+      },
+    });
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -517,5 +534,6 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
     if (env) {
       await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
     }
+    await rm(missingToolDirectory, { recursive: true, force: true });
   }
 });

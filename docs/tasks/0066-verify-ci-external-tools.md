@@ -13,7 +13,7 @@ GitHub ActionsのLinux / macOS / Windowsで、変換機能に必要な外部ツ�
 - Linux CIで`ghostscript` / `pdftocairo` / `rsvg-convert` / Chrome系ブラウザの設定パスを確認する
 - macOS CIで`ghostscript` / `pdftocairo` / `rsvg-convert` / Chrome系ブラウザの設定パスを確認する
 - Windows CIで`ghostscript` / `pdftocairo` / `rsvg-convert` / Chrome系ブラウザの設定パスを確認する
-- 各ツールの実行パスは環境変数やPATH探索に依存せず、CIで生成する`test/fixtures/workspace/.vscode/settings.json`から読む
+- 各ツールの実行パスは環境変数やPATH探索に依存せず、CIで生成する`test/vscode-settings/settings.json`から読む
 - `rsvg-convert`と`pdftocairo`は実際に小さなSVG/PDF/PNG変換を行って確認する
 - 既存のVS Codeテストは引き続き全OSで実行する
 
@@ -45,7 +45,7 @@ GitHub ActionsのLinux / macOS / Windowsで、変換機能に必要な外部ツ�
 ## 実施内容
 
 - Linux / macOS / Windowsの`vscode-test` workflowに外部ツールsmoke checkを追加した
-- CIのインストールスクリプトで、外部ツールの実行パスを`test/fixtures/workspace/.vscode/settings.json`へ書き込むようにした
+- CIのインストールスクリプトで、外部ツールの実行パスを`test/vscode-settings/settings.json`へ書き込むようにした
 - 検証スクリプトはPATHや環境変数ではなく、`settings.json`の値だけを読んで実体確認するようにした
 - `rsvg-convert`と`pdftocairo`は小さなSVG→PDF→PNG変換で確認するようにした
 - 方針を`docs/adr/0010-verify-external-tools-through-vscode-settings.md`へ記録した

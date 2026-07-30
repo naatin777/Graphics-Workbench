@@ -5,7 +5,9 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import sharp from 'sharp';
-import * as vscode from 'vscode';
+
+import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
+import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -40,9 +42,8 @@ export async function assertRenderedPdfPagesSimilar(comparison: PdfPageVisualCom
 }
 
 async function renderPdfPage(pdfPath: string, pageNumber: number, outputPrefix: string, dpi: number): Promise<string> {
-  const pdftocairoPath = vscode.workspace
-    .getConfiguration('graphics-workbench')
-    .get<string>('execPath.pdftocairo', 'pdftocairo');
+  const pdftocairoPath = readPdftocairoExecutablePath(getExtensionConfiguration());
+  assert.notStrictEqual(pdftocairoPath, '', 'pdftocairo must be configured in test/vscode-settings/settings.json');
 
   await execFileAsync(pdftocairoPath, [
     '-png',
