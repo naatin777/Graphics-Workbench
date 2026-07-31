@@ -1,3 +1,5 @@
+import { pathToFileURL } from 'node:url';
+
 /**
  * Renders the Playwright screenshot PR comment body from screenshot file names.
  * File names are passed as CLI arguments; the markdown is written to stdout.
@@ -21,6 +23,8 @@ const PLATFORM_LABELS = new Map([
   ['win32', 'Windows'],
 ]);
 const PLATFORM_ORDER = ['darwin', 'linux', 'win32'];
+const SNAPSHOT_COLUMNS = ['Theme', ...PLATFORM_ORDER.map((platform) => PLATFORM_LABELS.get(platform) ?? platform)];
+const FAILURE_COLUMNS = ['Theme', 'Actual', 'Diff'];
 const THEME_ORDER = ['dark', 'light', 'default-high-contrast', 'default-high-contrast-light', 'red', 'abyss'];
 const KINDS = new Set(['actual', 'diff']);
 /** @type {Map<string, string>} */
@@ -103,6 +107,18 @@ function imageCell(fileName, label, repository) {
   return `<a href="${url}"><img src="${url}" width="${IMAGE_WIDTH}" alt="${label}"></a>`;
 }
 
+function renderTableRow(cells) {
+  return `| ${cells.join(' | ')} |`;
+}
+
+/**
+ * @param {number} columnCount
+ * @returns {string}
+ */
+function renderTableDelimiter(columnCount) {
+  return `|${Array.from({ length: columnCount }, () => '---').join('|')}|`;
+}
+
 /**
  * @param {Screenshot[]} files
  * @param {string} repository
@@ -119,10 +135,7 @@ function renderSnapshotSection(files, repository) {
     byTheme.set(file.theme, platforms);
   }
 
-  const output = [
-    `| Theme | ${PLATFORM_ORDER.map((platform) => PLATFORM_LABELS.get(platform) ?? platform).join(' | ')} |`,
-  ];
-  output.push(`|${PLATFORM_ORDER.map(() => '---').join('|')}|`);
+  const output = [renderTableRow(SNAPSHOT_COLUMNS), renderTableDelimiter(SNAPSHOT_COLUMNS.length)];
   const themes = sortCopy([...byTheme.keys()], (left, right) => themeSortKey(left).localeCompare(themeSortKey(right)));
   for (const theme of themes) {
     const platforms = byTheme.get(theme);
@@ -130,9 +143,9 @@ function renderSnapshotSection(files, repository) {
       const file = platforms?.get(platform);
       return file
         ? imageCell(file.name, `${titleCase(theme)} (${PLATFORM_LABELS.get(platform) ?? platform})`, repository)
-        : '—';
+        : '-';
     });
-    output.push(`| ${titleCase(theme)} | ${cells.join(' | ')} |`);
+    output.push(renderTableRow([titleCase(theme), ...cells]));
   }
   return output;
 }
@@ -154,8 +167,7 @@ function renderFailureSection(files, repository) {
     byTheme.set(key, kinds);
   }
 
-  const output = ['| Theme | Actual | Diff |'];
-  output.push('|---|---|---|');
+  const output = [renderTableRow(FAILURE_COLUMNS), renderTableDelimiter(FAILURE_COLUMNS.length)];
   const themes = sortCopy([...byTheme.keys()], (left, right) =>
     themeSortKey(left.split('|')[0] ?? '').localeCompare(themeSortKey(right.split('|')[0] ?? '')),
   );
@@ -166,7 +178,11 @@ function renderFailureSection(files, repository) {
     const [theme, platform] = key.split('|');
     const label = platform ? `${titleCase(theme)} (${PLATFORM_LABELS.get(platform) ?? platform})` : titleCase(theme);
     output.push(
-      `| ${label} | ${actual ? imageCell(actual.name, `${label} actual`, repository) : '—'} | ${diff ? imageCell(diff.name, `${label} diff`, repository) : '—'} |`,
+      renderTableRow([
+        label,
+        actual ? imageCell(actual.name, `${label} actual`, repository) : '-',
+        diff ? imageCell(diff.name, `${label} diff`, repository) : '-',
+      ]),
     );
   }
   return output;
@@ -224,18 +240,24 @@ function renderMarkdown(files, repository, runId) {
   return `${output.join('\n')}\n`;
 }
 
-const files = process.argv
-  .slice(2)
-  .map((argument) => classify(argument.split('/').pop() ?? argument))
-  .filter((file) => file !== undefined);
-if (files.length === 0) {
-  process.stdout.write('no screenshot files found\n');
-  process.exit(0);
+const mainScriptUrl = new URL(import.meta.url).href;
+const entryScriptUrl = pathToFileURL(process.argv[1]).href;
+if (mainScriptUrl === entryScriptUrl) {
+  const files = process.argv
+    .slice(2)
+    .map((argument) => classify(argument.split('/').pop() ?? argument))
+    .filter((file) => file !== undefined);
+  if (files.length === 0) {
+    process.stdout.write('no screenshot files found\n');
+    process.exit(0);
+  }
+
+  const repository = process.env.GITHUB_REPOSITORY;
+  if (repository === undefined || repository === '') {
+    throw new Error('GITHUB_REPOSITORY environment variable is required.');
+  }
+
+  process.stdout.write(renderMarkdown(files, repository, process.env.GITHUB_RUN_ID ?? ''));
 }
 
-const repository = process.env.GITHUB_REPOSITORY;
-if (repository === undefined || repository === '') {
-  throw new Error('GITHUB_REPOSITORY environment variable is required.');
-}
-
-process.stdout.write(renderMarkdown(files, repository, process.env.GITHUB_RUN_ID ?? ''));
+export { classify, renderFailureSection, renderMarkdown, renderSnapshotSection };
