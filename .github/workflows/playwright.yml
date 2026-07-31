@@ -93,6 +93,7 @@ jobs:
 
       - name: Check for snapshot update flag
         id: snapshot_flag
+        shell: bash
         run: echo "update_snapshots=${{ contains(github.event.head_commit.message, '[update-snapshots]') || contains(github.event.pull_request.title, '[update-snapshots]') }}" >> "$GITHUB_OUTPUT"
 
       - name: Install VSIX and run Electron Playwright
