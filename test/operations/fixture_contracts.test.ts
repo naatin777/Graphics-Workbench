@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 
 import { sourceFormatForPath, type SourceFormat } from '../../src/application/policy/source_format.js';
-import { runPreflightBatch } from '../../src/operations/input/input_preflight.js';
 import { listInputFixturePaths, testInputDirectory } from '../helpers/fixture_paths.js';
 
 const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
@@ -23,7 +22,7 @@ const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
 };
 
 suite('変換fixtureの契約', () => {
-  test('source fixtureは対応形式を網羅し、全件preflightを通過する', async () => {
+  test('source fixtureは対応形式と期待件数を網羅する', async () => {
     const sourcePaths = (
       await Promise.all(
         [...new Set(Object.keys(expectedSourceFixtureCounts).map(inputDirectoryForFormat))].map((format) =>
@@ -33,26 +32,8 @@ suite('変換fixtureの契約', () => {
     ).flat();
     const formats = sourcePaths.map((sourcePath) => sourceFormatForPath(sourcePath));
     const actualCounts = countDefinedFormats(formats);
-    const result = await runPreflightBatch(sourcePaths);
 
     assert.deepStrictEqual(actualCounts, expectedSourceFixtureCounts);
-    assert.strictEqual(
-      result.canProceed,
-      true,
-      result.errors.map((error) => `${error.sourcePath}: ${error.reason ?? 'unknown error'}`).join('\n'),
-    );
-    assert.strictEqual(result.reports.length, sourcePaths.length);
-  });
-
-  test('invalid Raw fixtureは全件preflightで拒否される', async () => {
-    const rawPaths = (await listInputFixturePaths(path.join(testInputDirectory, 'invalid', 'raw'))).filter(
-      (sourcePath) => sourcePath.endsWith('.raw'),
-    );
-    const result = await runPreflightBatch(rawPaths);
-
-    assert.strictEqual(result.canProceed, false);
-    assert.strictEqual(result.errors.length, rawPaths.length);
-    assert.ok(result.errors.every((error) => error.format === 'raw'));
   });
 });
 

@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: Generate OS-specific Playwright snapshot artifacts
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: playwright-${{ github.ref }}
@@ -97,6 +104,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "update_snapshots=${{ inputs.update_snapshots }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             HEAD_MESSAGE="$(gh api "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}" --jq '.commit.message')"
           else
@@ -108,6 +120,22 @@ jobs:
           else
             echo "update_snapshots=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Remove current runner snapshots before regeneration
+        if: steps.snapshot_flag.outputs.update_snapshots == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ runner.os }}" in
+            Linux) suffix='linux' ;;
+            macOS) suffix='darwin' ;;
+            Windows) suffix='win32' ;;
+            *) echo "Unsupported runner OS: ${{ runner.os }}" >&2; exit 1 ;;
+          esac
+          find test/playwright/electron -type f \
+            -path '*-snapshots/*' \
+            -name "*-vscode-electron-${suffix}.png" \
+            -delete
 
       - name: Install VSIX and run Electron Playwright
         if: steps.snapshot_flag.outputs.update_snapshots != 'true'
@@ -134,6 +162,7 @@ jobs:
           name: playwright-screenshots-${{ matrix.artifact_suffix }}
           path: test/playwright/electron/**/*-snapshots/*.png
           if-no-files-found: ignore
+          retention-days: 7
 
       - if: failure()
         uses: actions/upload-artifact@v7
@@ -143,6 +172,7 @@ jobs:
             test-results/**/*-actual.png
             test-results/**/*-diff.png
           if-no-files-found: ignore
+          retention-days: 7
 
   comment-screenshots:
     name: Comment screenshots on PR

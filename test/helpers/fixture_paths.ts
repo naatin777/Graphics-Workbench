@@ -21,7 +21,6 @@ export const operationPathCompatibilitySvgInputPath = path.join(
   'path-compatibility',
   'source.svg',
 );
-export const validPreflightInputDirectory = path.join(testOperationInputDirectory, 'preflight');
 export const invalidPreflightInputDirectory = path.join(testInputDirectory, 'invalid', 'operations', 'preflight');
 
 function findProjectRoot(startDirectory: string): string {
