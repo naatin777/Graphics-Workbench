@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: Generate OS-specific Playwright snapshot artifacts
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: playwright-${{ github.ref }}
@@ -97,6 +104,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "update_snapshots=${{ inputs.update_snapshots }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             HEAD_MESSAGE="$(gh api "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}" --jq '.commit.message')"
           else
@@ -134,6 +146,7 @@ jobs:
           name: playwright-screenshots-${{ matrix.artifact_suffix }}
           path: test/playwright/electron/**/*-snapshots/*.png
           if-no-files-found: ignore
+          retention-days: 7
 
       - if: failure()
         uses: actions/upload-artifact@v7
@@ -143,55 +156,7 @@ jobs:
             test-results/**/*-actual.png
             test-results/**/*-diff.png
           if-no-files-found: ignore
-
-  commit-snapshots:
-    name: Commit CI-generated snapshots
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      needs.playwright.result == 'success'
-    needs: playwright
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      - uses: actions/download-artifact@v7
-        continue-on-error: true
-        with:
-          pattern: playwright-screenshots-*
-          merge-multiple: true
-          path: snapshots
-
-      - name: Apply CI-generated snapshots
-        id: apply
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ ! -d snapshots ] || ! find snapshots -type f -name '*.png' -print -quit | grep -q .; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          rsync -a snapshots/ test/playwright/electron/
-          git add -- test/playwright/electron
-          if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Commit snapshots to the PR branch
-        if: steps.apply.outputs.changed == 'true'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "test(playwright): update CI snapshots"
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          retention-days: 7
 
   comment-screenshots:
     name: Comment screenshots on PR
