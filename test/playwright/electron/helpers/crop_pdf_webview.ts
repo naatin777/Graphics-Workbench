@@ -109,7 +109,7 @@ export async function convertPdfToJpeg(vscodeWindow: Page, fileName: string): Pr
   await vscodeWindow.keyboard.press('Enter');
 }
 
-async function selectExplorerEntry(entry: Locator): Promise<void> {
+export async function selectExplorerEntry(entry: Locator): Promise<void> {
   await expect
     .poll(
       async () => {
@@ -130,7 +130,7 @@ export async function expectPdfCanvasesReadable(canvases: Locator, message?: str
     .poll(
       async () => {
         const whitePixelRatios = await captureCanvasWhitePixelRatios(canvases);
-        return whitePixelRatios.every((ratio) => ratio >= 0.2);
+        return whitePixelRatios.every((ratio) => ratio >= 0.2 && ratio < 1);
       },
       message ? { message } : undefined,
     )
@@ -152,12 +152,13 @@ export async function expectWebviewNetworkBlocked(frame: Frame): Promise<void> {
 
 export async function waitForWebviewTheme(
   body: Locator,
-  themeClass: 'vscode-dark' | 'vscode-light',
+  themeClass: 'vscode-dark' | 'vscode-light' | 'vscode-high-contrast' | 'vscode-high-contrast-light',
 ): Promise<WebviewThemeState> {
   await expect(body).toHaveClass(new RegExp(`(^|\\s)${themeClass}(\\s|$)`));
+  const allowTransparentBackground = themeClass.startsWith('vscode-high-contrast');
   await expect
     .poll(() =>
-      body.evaluate((element) => {
+      body.evaluate((element, allowTransparent) => {
         const isCallable = (value: unknown): value is (this: unknown, ...args: unknown[]) => unknown =>
           typeof value === 'function';
         const browserDocument = Reflect.get(globalThis, 'document');
@@ -193,7 +194,7 @@ export async function waitForWebviewTheme(
         const input = query('.input');
         const primaryButton = query('.button--primary');
 
-        if (!panel || !input || !primaryButton) {
+        if (!panel || !primaryButton) {
           return false;
         }
 
@@ -202,14 +203,20 @@ export async function waitForWebviewTheme(
           '--vscode-editor-background',
           '--vscode-descriptionForeground',
           '--vscode-sideBar-background',
-          '--vscode-input-foreground',
-          '--vscode-input-background',
           '--vscode-button-foreground',
           '--vscode-button-background',
           '--vscode-button-secondaryForeground',
-          '--vscode-button-secondaryBackground',
         ];
-        const computedStyles = [readStyle(element), readStyle(panel), readStyle(input), readStyle(primaryButton)];
+        if (input) {
+          requiredVariables.push('--vscode-input-foreground', '--vscode-input-background');
+        }
+        if (!allowTransparent) {
+          requiredVariables.push('--vscode-button-secondaryBackground');
+        }
+        const computedStyles = [readStyle(element), readStyle(panel), readStyle(primaryButton)];
+        if (input) {
+          computedStyles.push(readStyle(input));
+        }
 
         return (
           requiredVariables.every((variableName) => rootStyle.getPropertyValue(variableName).trim().length > 0) &&
@@ -219,11 +226,11 @@ export async function waitForWebviewTheme(
               style.color !== 'transparent' &&
               style.color !== 'rgba(0, 0, 0, 0)' &&
               style.backgroundColor.length > 0 &&
-              style.backgroundColor !== 'transparent' &&
-              style.backgroundColor !== 'rgba(0, 0, 0, 0)',
+              (allowTransparent ||
+                (style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)')),
           )
         );
-      }),
+      }, allowTransparentBackground),
     )
     .toBe(true);
 

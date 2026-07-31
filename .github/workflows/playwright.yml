@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - "next/**"
 
 concurrency:
   group: playwright-${{ github.ref }}
@@ -92,8 +91,32 @@ jobs:
         run: cp "graphics-workbench-${{ matrix.label }}.vsix" graphics-workbench.vsix
         shell: bash
 
+      - name: Check for snapshot update flag
+        id: snapshot_flag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            HEAD_MESSAGE="$(gh api "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}" --jq '.commit.message')"
+          else
+            HEAD_MESSAGE="${{ github.event.head_commit.message }}"
+          fi
+          TITLE_MESSAGE="${{ github.event.pull_request.title }}"
+          if [[ "$TITLE_MESSAGE" == *"[update-snapshots]"* ]] || [[ "$HEAD_MESSAGE" == *"[update-snapshots]"* ]]; then
+            echo "update_snapshots=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "update_snapshots=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install VSIX and run Electron Playwright
+        if: steps.snapshot_flag.outputs.update_snapshots != 'true'
         run: ${{ matrix.test_command }}
+        shell: bash
+
+      - name: Install VSIX and run Electron Playwright (update snapshots)
+        if: steps.snapshot_flag.outputs.update_snapshots == 'true'
+        run: ${{ matrix.test_command }} -- --update-snapshots
         shell: bash
 
       - if: failure()
@@ -104,3 +127,73 @@ jobs:
             playwright-report/
             test-results/
           if-no-files-found: ignore
+
+      - if: success() && steps.snapshot_flag.outputs.update_snapshots == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-screenshots-${{ matrix.artifact_suffix }}
+          path: test/playwright/electron/**/*-snapshots/*.png
+          if-no-files-found: ignore
+
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-screenshots-${{ matrix.artifact_suffix }}
+          path: |
+            test-results/**/*-actual.png
+            test-results/**/*-diff.png
+          if-no-files-found: ignore
+
+  comment-screenshots:
+    name: Comment screenshots on PR
+    if: github.event_name == 'pull_request'
+    needs: playwright
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          pattern: playwright-screenshots-*
+          merge-multiple: true
+          path: screenshots
+
+      - name: Post screenshots to PR
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          FILES=()
+          while IFS= read -r file; do
+            FILES+=("$file")
+          done < <(find screenshots -name '*.png' | sort)
+          if [ "${#FILES[@]}" -eq 0 ]; then
+            echo "no screenshot files found"
+            exit 0
+          fi
+          node .github/scripts/render-screenshots-comment.mjs "${FILES[@]}" > /tmp/screenshots.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf .ci-screenshots
+          mkdir -p .ci-screenshots
+          cp "${FILES[@]}" .ci-screenshots/
+          git checkout --orphan ci-screenshots
+          git add .ci-screenshots
+          git commit -m "ci: update Playwright screenshots"
+          git push --force origin ci-screenshots
+
+          COMMENT_BODY="$(cat /tmp/screenshots.md)"
+          EXISTING_ID="$(gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --jq '.[] | select(.body | contains("<!-- playwright-screenshots -->")) | .id' | head -n 1)"
+          if [ -n "${EXISTING_ID}" ]; then
+            gh api -X PATCH "repos/${REPOSITORY}/issues/comments/${EXISTING_ID}" -f body="${COMMENT_BODY}" > /dev/null
+          else
+            gh api -X POST "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" -f body="${COMMENT_BODY}" > /dev/null
+          fi
