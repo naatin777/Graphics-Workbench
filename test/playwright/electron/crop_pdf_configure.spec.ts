@@ -579,7 +579,9 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
     await convertPdfToJpeg(env.app.window, cropConfigureFixture.fileName);
     await expect(env.app.window.getByRole('alert').filter({ hasText: 'Failed to convert to JPEG:' })).toBeVisible();
 
-    const failedPdfJpegOutputPaths = [1, 2].map((page) => join(env!.directories.workspacePath, `q a-${page}.jpeg`));
+    const failedPdfJpegOutputPaths = [1, 2].map((page) =>
+      join(env!.directories.workspacePath, `multilingual-text-${page}.jpeg`),
+    );
     for (const failedOutputPath of failedPdfJpegOutputPaths) {
       await expect
         .poll(async () => {
