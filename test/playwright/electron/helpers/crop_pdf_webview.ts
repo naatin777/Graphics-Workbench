@@ -130,7 +130,7 @@ export async function expectPdfCanvasesReadable(canvases: Locator, message?: str
     .poll(
       async () => {
         const whitePixelRatios = await captureCanvasWhitePixelRatios(canvases);
-        return whitePixelRatios.every((ratio) => ratio >= 0.2);
+        return whitePixelRatios.every((ratio) => ratio >= 0.2 && ratio < 0.98);
       },
       message ? { message } : undefined,
     )
