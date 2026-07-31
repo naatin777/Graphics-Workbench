@@ -115,6 +115,13 @@ jobs:
             test-results/
           if-no-files-found: ignore
 
+      - if: success() && steps.snapshot_flag.outputs.update_snapshots == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-screenshots-${{ matrix.artifact_suffix }}
+          path: test/playwright/electron/**/*-snapshots/*.png
+          if-no-files-found: ignore
+
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -126,7 +133,7 @@ jobs:
 
   comment-screenshots:
     name: Comment screenshots on PR
-    if: failure() && github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request'
     needs: playwright
     runs-on: ubuntu-latest
     permissions:
@@ -155,12 +162,14 @@ jobs:
           fi
 
           REPO="${{ github.repository }}"
-          BRANCH="ci-screenshots/$GITHUB_RUN_ID"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          BRANCH="ci-screenshots"
 
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
 
+          rm -rf .ci-screenshots
           mkdir -p .ci-screenshots
           i=0
           for f in "${FILES[@]}"; do
@@ -170,14 +179,20 @@ jobs:
 
           git add .ci-screenshots
           git commit -m "ci: screenshots from run ${GITHUB_RUN_ID}"
-          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "$BRANCH"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "$BRANCH"
 
           {
-            echo "## Playwright snapshot failures (run ${GITHUB_RUN_ID})"
+            echo "<!-- playwright-screenshots -->"
+            echo "## Playwright screenshots (run ${GITHUB_RUN_ID})"
             echo ""
             for f in .ci-screenshots/*.png; do
               echo "![$(basename "$f")](https://github.com/${REPO}/raw/${BRANCH}/$(basename "$f"))"
             done
           } > /tmp/screenshots.md
 
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/screenshots.md
+          COMMENT_ID=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" --jq '[.[] | select(.body | contains("playwright-screenshots"))][0].id // empty')
+          if [ -n "$COMMENT_ID" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${COMMENT_ID}" -F body=@/tmp/screenshots.md
+          else
+            gh pr comment "$PR_NUMBER" --body-file /tmp/screenshots.md
+          fi
