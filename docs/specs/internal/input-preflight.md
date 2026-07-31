@@ -1,73 +1,70 @@
-# 変換入力job validationの内部契約
+# 入力validationの責務
 
-## 目的
+## 決定
 
-変換操作を開始する前に、jobの形式・path・file状態を検査し、実行不能なjobで変換や出力commitを開始しない。validationは入力ファイルを変更しない。
+汎用的なinput preflightは行わない。
 
-## 原則
+入力が壊れているか、実際の形式として読み取れるかは、変換時にその入力を開くdecoderまたは外部toolが判定する。変換backendがthrowした場合はconversion lifecycleが失敗として扱い、stagingをcleanupしてfinal outputをcommitしない。
 
-- 入力段階では安価なjob/path validationだけを行う。
-- 形式固有の妥当性は実際の変換backendが判定する。
-- 生成物はcommit前に出力形式として検証する。
-- 変換または生成物検証に失敗したbatchは一切commitしない。
-- preflightを通過しても、生成物はcommit前に出力形式として再検証する。
+## 理由
 
-## 検査内容
+従来のpreflightは、対応拡張子、`stat`、regular file、0 byte、Raw byte長を変換前に別処理で確認していた。しかし、preflightを通過しても形式固有の破損は判定できず、実変換側のerror handlingは必ず必要だった。
 
-すべての入力で次を確認する。
+同じ入力を事前検査と実変換で二重に扱う代わりに、入力の妥当性判定を実際のreaderへ集約する。
 
-| ID  | 検査                                       | 失敗時 |
-| --- | ------------------------------------------ | ------ |
-| C1  | 対応するsource formatとして判定できる      | error  |
-| C2  | fileが存在し、statとreadが可能             | error  |
-| C3  | regular fileである                         | error  |
-| C4  | 0 byteではない                             | error  |
-| C5  | Raw入力のsidecarが存在し、byte長が一致する | error  |
+## 責務
 
-C5はpreflight内で行い、形式固有のparseは行わない。
+### command / job planning
 
-## 除外された検査
+- 選択されたURIとsource formatから対応するoperationを決定する。
+- output pathを解決する。
+- 明らかに未対応の入力形式はjob生成時に拒否する。
 
-形式固有の深い検査（PDF header/parse/暗号化/page count、Raster画像のSharp metadata/dimensions、SVGのXML parse/root、Mermaid/Draw.ioの文字列検査、EPSのPostScript header/BoundingBox）は削除した。これらの検査は変換backend（pdf-lib、Sharp、rsvg-convert、Puppeteer、Mermaid CLI、Draw.io CLI、Ghostscript）が実行し、失敗時はbackendのエラーとして利用者に伝達する。
+### workspace path boundary
 
-## Batch flow
+- source、output、staging、sidecarがworkspace外へ逸脱しないことを確認する。
+- symlinkを含む実pathの境界確認は`src/security/workspace_path.ts`が担当する。
+- これは入力内容のpreflightではなくfile operation securityである。
+
+### decoder / external tool
+
+- PDFはpdf-lib、pdftocairo、Ghostscriptなど実際に使用するbackendが読み取る。
+- raster入力はSharpが読み取る。
+- SVG、Mermaid、Draw.io、EPSは各rendererまたは外部toolが処理する。
+- backend errorは入力pathとoperation contextを保ったまま上位へ伝播する。
+
+### Raw入力
+
+- sidecarのschemaはRaw readerが検証する。
+- sidecarから計算した期待byte長とRaw fileの実byte長は`openRasterInput`で比較する。
+- sidecarのworkspace境界だけは、readerを呼び出す前のsecurity guardとして確認する。
+
+### output lifecycle
+
+- 変換はstaging内で行う。
+- 1件でも変換または生成物検証に失敗したbatchはfinal outputをcommitしない。
+- 失敗時はstaging artifactをcleanupする。
+
+## Flow
 
 ```text
 command
-  ├─ operation固有のjob/path validation
-  ├─ preflightを入力順で実行（同時実行数2）
-  │   ├─ errorあり    → path付きerrorで停止
-  │   └─ 全件ok       → 続行
-  ├─ stagingへ変換
-  ├─ 生成形式を検証
+  ├─ job / source format / output pathを解決
+  ├─ workspace path boundaryを確認
+  ├─ staging内で実変換
+  │   ├─ decoderまたは外部toolが入力を読めない → throw
+  │   └─ 変換成功                         → 続行
+  ├─ 生成物を検証
   └─ conflict判断後にcommit
 ```
 
 ## Cancellation
 
-- 開始時にcancel済みならvalidatorを起動しない。
-- cancel後はqueue済みvalidatorを開始しない。
-- 実行中validatorが返った後にもsignalを再確認する。
-- cancel時は変換を開始しない。
+conversion lifecycleの`AbortSignal`を使用する。入力専用のvalidator queueやpreflight進捗は持たない。
 
 ## Output channel
 
-各入力について最低限次を記録する。
-
-```text
-[preflight] <source path>: <ok|error> — <reason>
-```
-
-operationがOutput channelを持つ場合、preflightへ同じchannelを渡す。ユーザー向けerrorには失敗した入力pathを含める。
-
-## 生成物検証との境界
-
-preflightは入力の軽量検査であり、外部toolのexit code 0を成果物の正しさとはみなさない。
-
-- PDFはparse可能、1page以上、page boxが有限かつ正寸法であること。
-- SVGは空でなく、SVG rootを含むこと。
-- rasterはSharp encoder / decoderが成功すること。
-- commit前検証に失敗した場合、final outputを反映しない。
+`[preflight]`形式の入力別ログは出力しない。実変換を担当したoperationまたはexternal tool adapterが、tool名、引数、stderr、入力contextを記録する。
 
 ## 対象外
 
