@@ -100,7 +100,7 @@ function themeSortKey(theme) {
  */
 function imageCell(fileName, label, repository) {
   const url = `https://github.com/${repository}/raw/ci-screenshots/.ci-screenshots/${fileName}`;
-  return `[<img src="${url}" width="${IMAGE_WIDTH}" alt="${label}">](${url})`;
+  return `<a href="${url}"><img src="${url}" width="${IMAGE_WIDTH}" alt="${label}"></a>`;
 }
 
 /**
