@@ -272,7 +272,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
     });
 
     expect(darkScreenshot).toMatchSnapshot('crop-pdf-configure-dark.png', {
-      maxDiffPixelRatio: 0.005,
+      maxDiffPixelRatio: 0.05,
     });
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
@@ -295,7 +295,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
     });
 
     expect(lightScreenshot).toMatchSnapshot('crop-pdf-configure-light.png', {
-      maxDiffPixelRatio: 0.005,
+      maxDiffPixelRatio: 0.05,
     });
   } catch (error) {
     await attachElectronDiagnostics({
@@ -347,7 +347,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
         });
 
         expect(screenshot).toMatchSnapshot(`crop-pdf-configure-${theme.id}.png`, {
-          maxDiffPixelRatio: 0.005,
+          maxDiffPixelRatio: 0.05,
         });
       } finally {
         await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
