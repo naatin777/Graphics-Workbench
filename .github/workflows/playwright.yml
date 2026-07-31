@@ -121,6 +121,22 @@ jobs:
             echo "update_snapshots=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Remove current runner snapshots before regeneration
+        if: steps.snapshot_flag.outputs.update_snapshots == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ runner.os }}" in
+            Linux) suffix='linux' ;;
+            macOS) suffix='darwin' ;;
+            Windows) suffix='win32' ;;
+            *) echo "Unsupported runner OS: ${{ runner.os }}" >&2; exit 1 ;;
+          esac
+          find test/playwright/electron -type f \
+            -path '*-snapshots/*' \
+            -name "*-vscode-electron-${suffix}.png" \
+            -delete
+
       - name: Install VSIX and run Electron Playwright
         if: steps.snapshot_flag.outputs.update_snapshots != 'true'
         run: ${{ matrix.test_command }}
