@@ -32,7 +32,7 @@ import {
   operationPngInputPath,
 } from '../helpers/fixture_paths.js';
 
-const pdfFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
+const pdfFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 const pngFixturePath = operationPngInputPath;
 const svgFixturePath = operationPathCompatibilitySvgInputPath;
 const complexSourceFileName =

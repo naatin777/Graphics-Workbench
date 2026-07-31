@@ -11,8 +11,8 @@ import {
 } from '../../src/operations/lifecycle/undo_last_conversion.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
-const firstFixturePath = path.join(operationPdfInputDirectory, 'q a.pdf');
-const secondFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
+const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');
+const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 
 suite('PDF結合operation', () => {
   test('結合結果をstagingへ作成してSafe Modeの両方残すを適用する', async () => {

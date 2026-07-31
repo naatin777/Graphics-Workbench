@@ -23,7 +23,7 @@ import { PDFDocument } from 'pdf-lib';
 import { cropPdfFiles, type RunGhostscript } from '../../src/operations/pdf/crop_pdf_auto.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
-const fixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
+const fixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 const complexSourceFileName =
   '　日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹 ＡＢＣ１２３①.pdf';
 

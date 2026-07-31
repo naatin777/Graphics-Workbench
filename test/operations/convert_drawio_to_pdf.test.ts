@@ -7,10 +7,9 @@ import { PDFDocument } from 'pdf-lib';
 
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
 import { requireValue } from '../helpers/required.js';
-import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { testInputDirectory } from '../helpers/fixture_paths.js';
 
-const drawioFixturePath = path.join(operationPdfInputDirectory, 'q a.drawio');
-const pdfFixturePath = path.join(operationPdfInputDirectory, 'q a.pdf');
+const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 
 suite('Draw.io PDF変換', () => {
   test('ネイティブDraw.ioをページ名ごとのPDFへ分割する', async () => {
@@ -39,13 +38,17 @@ suite('Draw.io PDF変換', () => {
           calls.push(args);
           assert.notStrictEqual(args[0], sourcePath);
           await writeFile(requireValue(args[0]), `${originalSource}\n<!-- mutated staged source -->`);
-          await copyFile(pdfFixturePath, requireValue(args[args.indexOf('-o') + 1]));
+          await writePdfPages(requireValue(args[args.indexOf('-o') + 1]), 3);
         },
       });
 
       assert.deepStrictEqual(
         outputs.map(({ outputPath }) => outputPath),
-        [path.join(workspacePath, 'q a', 'ぺ ー　ジ1.pdf'), path.join(workspacePath, 'q a', 'ページ           2.pdf')],
+        [
+          path.join(workspacePath, 'q a', 'ペ　ー　ジ 1.pdf'),
+          path.join(workspacePath, 'q a', 'p ーe2.pdf'),
+          path.join(workspacePath, 'q a', '😀 ーe2　のco😀 py.pdf'),
+        ],
       );
       assert.deepStrictEqual(calls[0], [
         path.join(
@@ -108,7 +111,7 @@ suite('Draw.io PDF変換', () => {
         runId: 'direct-test',
         runtime: { resolveConflicts: async () => 'overwrite' },
         runDrawio: async (_executable, args) => {
-          await copyFile(pdfFixturePath, requireValue(args[args.indexOf('-o') + 1]));
+          await writePdfPages(requireValue(args[args.indexOf('-o') + 1]), 3);
         },
       });
 
@@ -116,7 +119,7 @@ suite('Draw.io PDF変換', () => {
         outputs.map(({ outputPath: actualPath }) => actualPath),
         [outputPath],
       );
-      assert.strictEqual(await PDFDocument.load(await readFile(outputPath)).then((pdf) => pdf.getPageCount()), 2);
+      assert.strictEqual(await PDFDocument.load(await readFile(outputPath)).then((pdf) => pdf.getPageCount()), 3);
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
@@ -143,7 +146,7 @@ suite('Draw.io PDF変換', () => {
         runId: 'names-test',
         runtime: { resolveConflicts: async () => 'overwrite' },
         runDrawio: async (_executable, args) => {
-          await copyFile(pdfFixturePath, requireValue(args[args.indexOf('-o') + 1]));
+          await writePdfPages(requireValue(args[args.indexOf('-o') + 1]), 2);
         },
       });
 
@@ -156,3 +159,11 @@ suite('Draw.io PDF変換', () => {
     }
   });
 });
+
+async function writePdfPages(filePath: string, pageCount: number): Promise<void> {
+  const document = await PDFDocument.create();
+  for (let page = 1; page <= pageCount; page += 1) {
+    document.addPage([200, 200]);
+  }
+  await writeFile(filePath, await document.save());
+}

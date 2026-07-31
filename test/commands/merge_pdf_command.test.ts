@@ -16,8 +16,8 @@ import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
-const firstFixturePath = path.join(operationPdfInputDirectory, 'q a.pdf');
-const secondFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
+const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');
+const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 
 suite('PDF結合コマンド', () => {
   test('現行の選択PDF結合コマンドが登録されている', async () => {
@@ -267,7 +267,7 @@ suite('PDF結合コマンド', () => {
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       const mergedPdf = await PDFDocument.load(await readFile(outputPath));
-      assert.strictEqual(mergedPdf.getPageCount(), 5);
+      assert.strictEqual(mergedPdf.getPageCount(), 4);
       assert.ok((await stat(outputPath)).size > 0);
     } finally {
       sandbox.restore();

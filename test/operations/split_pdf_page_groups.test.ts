@@ -70,7 +70,7 @@ suite('PDFページグループ分割', () => {
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'group.pdf');
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run');
-    const invalidPdfPath = path.join(invalidPreflightInputDirectory, 'invalid-header.pdf');
+    const invalidPdfPath = path.join(invalidPreflightInputDirectory, 'not-a-pdf.pdf');
 
     try {
       await copyFile(invalidPdfPath, sourcePath);
