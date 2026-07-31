@@ -92,8 +92,23 @@ jobs:
         run: cp "graphics-workbench-${{ matrix.label }}.vsix" graphics-workbench.vsix
         shell: bash
 
+      - name: Check for snapshot update flag
+        id: snapshot_flag
+        shell: bash
+        run: |
+          MESSAGE="${{ github.event.head_commit.message || '' }}${{ github.event.pull_request.title || '' }}${{ github.event.pull_request.body || '' }}"
+          if echo "$MESSAGE" | grep -q '\[update-snapshots\]'; then
+            echo "update_snapshots=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install VSIX and run Electron Playwright
+        if: steps.snapshot_flag.outputs.update_snapshots != 'true'
         run: ${{ matrix.test_command }}
+        shell: bash
+
+      - name: Install VSIX and run Electron Playwright (update snapshots)
+        if: steps.snapshot_flag.outputs.update_snapshots == 'true'
+        run: ${{ matrix.test_command }} -- --update-snapshots
         shell: bash
 
       - if: failure()

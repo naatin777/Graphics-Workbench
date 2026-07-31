@@ -37,6 +37,28 @@ import {
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const alternateTheme = 'Default Light Modern';
+const additionalThemes = [
+  {
+    id: 'default-high-contrast',
+    colorTheme: 'Default High Contrast',
+    themeClass: 'vscode-high-contrast',
+  },
+  {
+    id: 'default-high-contrast-light',
+    colorTheme: 'Default High Contrast Light',
+    themeClass: 'vscode-high-contrast-light',
+  },
+  {
+    id: 'red',
+    colorTheme: 'Red',
+    themeClass: 'vscode-dark',
+  },
+  {
+    id: 'abyss',
+    colorTheme: 'Abyss',
+    themeClass: 'vscode-dark',
+  },
+] as const;
 const expectedCropBox = {
   x: cropConfigureFixture.cropBox.left,
   y: cropConfigureFixture.cropBox.bottom,
@@ -249,11 +271,9 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    if (process.platform === 'linux') {
-      expect(darkScreenshot).toMatchSnapshot('crop-pdf-configure-dark.png', {
-        maxDiffPixelRatio: 0.005,
-      });
-    }
+    expect(darkScreenshot).toMatchSnapshot('crop-pdf-configure-dark.png', {
+      maxDiffPixelRatio: 0.005,
+    });
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -274,10 +294,66 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    if (process.platform === 'linux') {
-      expect(lightScreenshot).toMatchSnapshot('crop-pdf-configure-light.png', {
-        maxDiffPixelRatio: 0.005,
+    expect(lightScreenshot).toMatchSnapshot('crop-pdf-configure-light.png', {
+      maxDiffPixelRatio: 0.005,
+    });
+  } catch (error) {
+    await attachElectronDiagnostics({
+      consoleMessages,
+      error,
+      extensionsDir: env?.directories.extensionsDir ?? '',
+      sharedDataDir: env?.directories.sharedDataDir ?? '',
+      temporaryRoot: env?.directories.temporaryRoot ?? '',
+      testInfo,
+      userDataDir: env?.directories.userDataDir ?? '',
+      window: env?.app.window,
+      workspacePath: env?.directories.workspacePath ?? '',
+    });
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
+test('high contrastと極端な配色でもcanvasが読める', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(240_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    for (const theme of additionalThemes) {
+      await resetTestWorkspace();
+      env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+        ...preparedOptions(),
+        colorTheme: theme.colorTheme,
       });
+      env.app.electronApp.on('console', (message) => {
+        consoleMessages.push(message.text());
+      });
+
+      try {
+        const { body, canvases } = await openCropPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+        await waitForWebviewTheme(body, theme.themeClass);
+        await expectPdfCanvasesReadable(canvases, `PDF canvas rendering failed for the ${theme.colorTheme} theme.`);
+        const screenshot = await captureCropPdfScreenshot(env.app.window, body, {
+          canvases,
+          snapshotPrefix: join(env.directories.temporaryRoot, `crop-pdf-${theme.id}`),
+        });
+        await testInfo.attach(`crop-pdf-configure-${theme.id}`, {
+          body: screenshot,
+          contentType: 'image/png',
+        });
+
+        expect(screenshot).toMatchSnapshot(`crop-pdf-configure-${theme.id}.png`, {
+          maxDiffPixelRatio: 0.005,
+        });
+      } finally {
+        await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+        env = undefined;
+        await resetTestWorkspace();
+      }
     }
   } catch (error) {
     await attachElectronDiagnostics({
