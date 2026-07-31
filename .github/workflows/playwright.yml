@@ -186,7 +186,7 @@ jobs:
             echo "## Playwright screenshots (run ${GITHUB_RUN_ID})"
             echo ""
             for f in .ci-screenshots/*.png; do
-              echo "![$(basename "$f")](https://github.com/${REPO}/raw/${BRANCH}/$(basename "$f"))"
+              echo "![$(basename "$f")](https://github.com/${REPO}/raw/${BRANCH}/${f})"
             done
           } > /tmp/screenshots.md
 
