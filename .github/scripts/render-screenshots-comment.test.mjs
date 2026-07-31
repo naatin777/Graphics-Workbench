@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { renderFailureSection, renderSnapshotSection } from './render-screenshots-comment.mjs';
+import { renderFailureSection, renderMarkdown, renderSnapshotSection } from './render-screenshots-comment.mjs';
 
 const repository = 'naatin777/Graphics-Workbench';
 
@@ -104,4 +104,13 @@ void test('failureテーブルは列定義から3セルで正しく生成され�
   const dataRow = rows[2];
   assert.ok(dataRow);
   assert.strictEqual(dataRow.split('|').filter((cell) => cell.trim() !== '').length, 3);
+});
+
+void test('details はデフォルトで折りたたまれている（open 属性なし）', () => {
+  const markdown = renderMarkdown(fullThemeFiles, repository, 'test-run');
+  assert.match(markdown, /<details>/u);
+  assert.doesNotMatch(markdown, /<details\s+open/u);
+  const openCount = (markdown.match(/<details>/gu) ?? []).length;
+  assert.strictEqual(openCount, 1);
+  assert.match(markdown, /<summary><strong>Crop PDF configure<\/strong><\/summary>/u);
 });

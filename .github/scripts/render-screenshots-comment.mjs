@@ -222,17 +222,13 @@ function renderMarkdown(files, repository, runId) {
   for (const spec of specs) {
     const snapshots = snapshotGroups.get(spec);
     if (snapshots && snapshots.length > 0) {
-      output.push('<details open>', `<summary><strong>${SPEC_LABELS.get(spec) ?? spec}</strong></summary>`, '');
+      output.push('<details>', `<summary><strong>${SPEC_LABELS.get(spec) ?? spec}</strong></summary>`, '');
       output.push(...renderSnapshotSection(snapshots, repository));
       output.push('', '</details>', '');
     }
     const failures = failureGroups.get(spec);
     if (failures && failures.length > 0) {
-      output.push(
-        '<details open>',
-        `<summary><strong>${SPEC_LABELS.get(spec) ?? spec} — mismatches</strong></summary>`,
-        '',
-      );
+      output.push('<details>', `<summary><strong>${SPEC_LABELS.get(spec) ?? spec} — mismatches</strong></summary>`, '');
       output.push(...renderFailureSection(failures, repository));
       output.push('', '</details>', '');
     }
