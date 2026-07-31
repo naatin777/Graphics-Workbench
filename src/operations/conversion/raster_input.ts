@@ -162,7 +162,7 @@ export function readRawSidecar(sourcePath: string): RawSidecar {
   };
 }
 
-export function rawByteLength(sidecar: RawSidecar): number {
+function rawByteLength(sidecar: RawSidecar): number {
   const bytesPerSample = { uchar: 1, ushort: 2, float: 4, double: 8 }[sidecar.depth];
   const byteLength = sidecar.width * sidecar.height * sidecar.channels * bytesPerSample;
   if (!Number.isSafeInteger(byteLength)) {
