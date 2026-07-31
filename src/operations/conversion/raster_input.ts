@@ -1,5 +1,5 @@
 import { once } from 'node:events';
-import { createReadStream, readFileSync } from 'node:fs';
+import { createReadStream, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import sharp, { type Sharp } from 'sharp';
@@ -49,6 +49,7 @@ export function openRasterInput(
 ): RasterInput {
   if (path.extname(sourcePath).toLowerCase() === '.raw') {
     const sidecar = readRawSidecar(sourcePath);
+    validateRawByteLength(sourcePath, sidecar);
     const image = sharp({
       limitInputPixels: maxInputPixels,
       failOn: 'warning',
@@ -168,6 +169,18 @@ export function rawByteLength(sidecar: RawSidecar): number {
     throw new Error('Raw sidecar dimensions produce an unsafe byte length.');
   }
   return byteLength;
+}
+
+function validateRawByteLength(sourcePath: string, sidecar: RawSidecar): void {
+  const sourceStats = statSync(sourcePath);
+  if (!sourceStats.isFile()) {
+    throw new Error(`Raw input is not a regular file: ${sourcePath}`);
+  }
+
+  const expectedBytes = rawByteLength(sidecar);
+  if (sourceStats.size !== expectedBytes) {
+    throw new Error(`Raw byte length mismatch: expected ${expectedBytes} bytes, got ${sourceStats.size}`);
+  }
 }
 
 function isPositiveInteger(value: unknown): value is number {
