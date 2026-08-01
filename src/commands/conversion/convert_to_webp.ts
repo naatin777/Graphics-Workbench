@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { getDefaultConfiguration, type Configuration, type OutputPaths } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration, type Configuration } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
@@ -18,8 +18,8 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
-import { resolveOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import {
@@ -257,66 +257,17 @@ function outputTemplateForSource(
   defaultConfiguration: Configuration,
   outputMode?: 'auto' | 'preserve' | 'split',
 ): string {
-  const splitDefault = outputMode === 'split' ? defaultSplitOutputPath : undefined;
-  const extension = path.extname(sourcePath).toLowerCase();
-  const readPairTemplate = (key: keyof OutputPaths, setting: () => string, defaultSetting: () => string): string =>
-    resolveOutputPathOrPathsTemplate(configuration, key, setting, splitDefault, defaultSetting);
-
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return resolveOutputPathsTemplate(configuration, 'convertDrawioToWebp', defaultDrawioOutputPath);
   }
 
-  switch (extension) {
-    case '.png': {
-      return readPairTemplate(
-        'convertPngToWebp',
-        configuration.outputPath.convertPngToWebp,
-        defaultConfiguration.outputPath.convertPngToWebp,
-      );
-    }
-    case '.jpg':
-    case '.jpeg': {
-      return readPairTemplate(
-        'convertJpegToWebp',
-        configuration.outputPath.convertJpegToWebp,
-        defaultConfiguration.outputPath.convertJpegToWebp,
-      );
-    }
-    case '.avif': {
-      return readPairTemplate(
-        'convertAvifToWebp',
-        configuration.outputPath.convertAvifToWebp,
-        defaultConfiguration.outputPath.convertAvifToWebp,
-      );
-    }
-    case '.svg': {
-      return readPairTemplate(
-        'convertSvgToWebp',
-        configuration.outputPath.convertSvgToWebp,
-        defaultConfiguration.outputPath.convertSvgToWebp,
-      );
-    }
-    case '.mmd':
-    case '.mermaid': {
-      return readPairTemplate(
-        'convertMermaidToWebp',
-        configuration.outputPath.convertMermaidToWebp,
-        defaultConfiguration.outputPath.convertMermaidToWebp,
-      );
-    }
-    case '.gif': {
-      if (splitDefault !== undefined) {
-        return splitDefault;
-      }
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertGifToWebp(),
-        defaultConfiguration.outputPath.convertGifToWebp(),
-      );
-    }
-    default: {
-      throw new Error(`Unsupported WebP input format: ${sourcePath}`);
-    }
-  }
+  return resolveConversionTemplate({
+    target: 'webp',
+    sourcePath,
+    configuration,
+    defaultConfiguration,
+    ...(outputMode === 'split' ? { splitDefault: defaultSplitOutputPath } : {}),
+  });
 }
 
 function readWebpOutputOptions(configuration: Configuration): WebpOutputOptions {

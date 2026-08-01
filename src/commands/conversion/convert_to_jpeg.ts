@@ -8,7 +8,6 @@ import { getDefaultConfiguration, type Configuration } from '../../generated-ext
 
 import {
   isEditableDrawioImagePath,
-  isNativeDrawioPath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
@@ -18,12 +17,13 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { executeJpegConversion, type ConvertToJpegJob } from '../../operations/conversion/convert_to_jpeg.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
@@ -207,46 +207,11 @@ function outputTemplateForSource(
   configuration: Configuration,
   defaultConfiguration: Configuration,
 ): string {
-  const extension = path.extname(sourcePath).toLowerCase();
-
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return resolveOutputPathsTemplate(configuration, 'convertDrawioToJpeg', defaultDrawioOutputPath);
-  }
-
-  switch (extension) {
-    case '.png': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertPngToJpeg(),
-        defaultConfiguration.outputPath.convertPngToJpeg(),
-      );
-    }
-    case '.webp': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertWebpToJpeg(),
-        defaultConfiguration.outputPath.convertWebpToJpeg(),
-      );
-    }
-    case '.avif': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertAvifToJpeg(),
-        defaultConfiguration.outputPath.convertAvifToJpeg(),
-      );
-    }
-    case '.svg': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertSvgToJpeg(),
-        defaultConfiguration.outputPath.convertSvgToJpeg(),
-      );
-    }
-    case '.mmd':
-    case '.mermaid': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertMermaidToJpeg(),
-        defaultConfiguration.outputPath.convertMermaidToJpeg(),
-      );
-    }
-    default: {
-      throw new Error(`Unsupported JPEG input format: ${sourcePath}`);
-    }
-  }
+  return resolveConversionTemplate({
+    target: 'jpeg',
+    sourcePath,
+    configuration,
+    defaultConfiguration,
+    pluralFallback: defaultDrawioOutputPath,
+  });
 }

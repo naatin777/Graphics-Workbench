@@ -8,7 +8,6 @@ import type { Configuration } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
-  isNativeDrawioPath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
@@ -19,7 +18,7 @@ import {
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
-import { resolveOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { executeTiffConversion, type ConvertToTiffJob } from '../../operations/conversion/convert_to_tiff.js';
@@ -184,39 +183,10 @@ async function createPdfJobs(
 }
 
 function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return resolveOutputPathsTemplate(configuration, 'convertDrawioToTiff', defaultDrawioOutputPath);
-  }
-  switch (path.extname(sourcePath).toLowerCase()) {
-    case '.png': {
-      return configuration.outputPath.convertPngToTiff();
-    }
-    case '.jpg':
-    case '.jpeg': {
-      return configuration.outputPath.convertJpegToTiff();
-    }
-    case '.webp': {
-      return configuration.outputPath.convertWebpToTiff();
-    }
-    case '.avif': {
-      return configuration.outputPath.convertAvifToTiff();
-    }
-    case '.gif': {
-      return resolveOutputPathOrPathsTemplate(
-        configuration,
-        'convertGifToTiff',
-        configuration.outputPath.convertGifToTiff,
-      );
-    }
-    case '.svg': {
-      return configuration.outputPath.convertSvgToTiff();
-    }
-    case '.mmd':
-    case '.mermaid': {
-      return configuration.outputPath.convertMermaidToTiff();
-    }
-    default: {
-      throw new Error(`Unsupported TIFF input format: ${sourcePath}`);
-    }
-  }
+  return resolveConversionTemplate({
+    target: 'tiff',
+    sourcePath,
+    configuration,
+    pluralFallback: defaultDrawioOutputPath,
+  });
 }

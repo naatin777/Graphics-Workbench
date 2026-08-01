@@ -355,6 +355,13 @@ export default defineConfig({
       },
     },
     {
+      files: ['scripts/generate-extension-meta.ts'],
+      rules: {
+        // This strip-types build script's local type declarations are not resolved by single-file type-aware lint.
+        'typescript/no-unsafe-argument': 'off',
+      },
+    },
+    {
       files: ['scripts/oxlint-project-plugin.mjs'],
       rules: {
         // The custom plugin consumes Oxlint's untyped ESTree visitor API.

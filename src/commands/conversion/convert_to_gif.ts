@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import type { Configuration, OutputPaths } from '../../generated-extension-meta.js';
+import type { Configuration } from '../../generated-extension-meta.js';
 
 import {
   isEditableDrawioImagePath,
@@ -19,7 +19,7 @@ import {
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
-import { resolveOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { executeGifConversion, type ConvertToGifJob } from '../../operations/conversion/convert_to_gif.js';
@@ -215,49 +215,14 @@ function outputTemplateForSource(
   configuration: Configuration,
   outputMode?: 'auto' | 'preserve' | 'split',
 ): string {
-  const splitDefault = outputMode === 'split' ? defaultSplitOutputPath : undefined;
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return resolveOutputPathsTemplate(configuration, 'convertDrawioToGif', defaultDrawioOutputPath);
   }
 
-  return outputTemplateForExtension(path.extname(sourcePath).toLowerCase(), configuration, splitDefault);
-}
-
-function outputTemplateForExtension(
-  extension: string,
-  configuration: Configuration,
-  splitDefault: string | undefined,
-): string {
-  const readPairTemplate = (key: keyof OutputPaths, setting: () => string): string =>
-    resolveOutputPathOrPathsTemplate(configuration, key, setting, splitDefault);
-
-  switch (extension) {
-    case '.png': {
-      return readPairTemplate('convertPngToGif', configuration.outputPath.convertPngToGif);
-    }
-    case '.jpg':
-    case '.jpeg': {
-      return readPairTemplate('convertJpegToGif', configuration.outputPath.convertJpegToGif);
-    }
-    case '.webp': {
-      return readPairTemplate('convertWebpToGif', configuration.outputPath.convertWebpToGif);
-    }
-    case '.avif': {
-      return readPairTemplate('convertAvifToGif', configuration.outputPath.convertAvifToGif);
-    }
-    case '.tif':
-    case '.tiff': {
-      return readPairTemplate('convertTiffToGif', configuration.outputPath.convertTiffToGif);
-    }
-    case '.svg': {
-      return readPairTemplate('convertSvgToGif', configuration.outputPath.convertSvgToGif);
-    }
-    case '.mmd':
-    case '.mermaid': {
-      return readPairTemplate('convertMermaidToGif', configuration.outputPath.convertMermaidToGif);
-    }
-    default: {
-      throw new Error(`Unsupported GIF input extension: ${extension}`);
-    }
-  }
+  return resolveConversionTemplate({
+    target: 'gif',
+    sourcePath,
+    configuration,
+    ...(outputMode === 'split' ? { splitDefault: defaultSplitOutputPath } : {}),
+  });
 }
