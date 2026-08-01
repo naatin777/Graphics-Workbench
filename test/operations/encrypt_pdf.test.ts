@@ -22,6 +22,7 @@ import { PDFDocument } from 'pdf-lib';
 
 import { encryptPdfFiles } from '../../src/operations/pdf/encrypt_pdf.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { readConfiguredQpdfPath } from '../helpers/external_tool_settings.js';
 
 const execFileAsync = promisify(execFile);
 const password = 'secret-password';
@@ -37,7 +38,7 @@ suite('PDF暗号化', () => {
       await encryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password,
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
         runId: 'run',
       });
 
@@ -64,7 +65,7 @@ suite('PDF暗号化', () => {
       encryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password,
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
       }),
       /Output file already exists/,
     );
@@ -84,7 +85,7 @@ suite('PDF暗号化', () => {
       encryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password,
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
         runtime: { signal: abortController.signal },
       }),
       { name: 'AbortError' },
@@ -95,7 +96,7 @@ suite('PDF暗号化', () => {
 });
 
 async function decryptWithQpdf(sourcePath: string, outputPath: string, pdfPassword: string): Promise<void> {
-  await execFileAsync('qpdf', ['--decrypt', `--password=${pdfPassword}`, sourcePath, outputPath], {
+  await execFileAsync(readConfiguredQpdfPath(), ['--decrypt', `--password=${pdfPassword}`, sourcePath, outputPath], {
     encoding: 'utf8',
     maxBuffer: 10 * 1024 * 1024,
   });
