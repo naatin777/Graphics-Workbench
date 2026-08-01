@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 
 import { createEpsJobs } from '../../src/commands/conversion/convert_to_eps.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
+import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 suite('EPS変換コマンドジョブ', () => {
   test('PDFページごとに${page}ジョブを個別に作成する', async () => {
@@ -58,6 +59,31 @@ suite('EPS変換コマンドジョブ', () => {
         jobs.map((job) => path.basename(job.outputPath)),
         ['custom-source-1.eps'],
       );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test('GIF、TIFFをEPSジョブとして計画する', async () => {
+    const workspace = vscode.workspace.workspaceFolders?.[0];
+    assert.ok(workspace);
+    const root = await mkdtemp(path.join(workspace.uri.fsPath, 'graphics-workbench-convert-to-eps-command-raster-'));
+
+    try {
+      await mkdir(root, { recursive: true });
+      const configuration = fakeConfiguration();
+
+      for (const [format, fixtureFileName] of [
+        ['gif', 'swirl-gradient.gif'],
+        ['tiff', 'heatmap.tiff'],
+      ] as const) {
+        const sourcePath = path.join(root, fixtureFileName);
+        await copyFile(path.join(testInputDirectory, 'valid', format, fixtureFileName), sourcePath);
+
+        const jobs = await createEpsJobs(vscode.Uri.file(sourcePath), configuration);
+        assert.strictEqual(jobs.length, 1);
+        assert.ok(jobs[0]?.outputPath.endsWith('.eps'));
+      }
     } finally {
       await rm(root, { recursive: true, force: true });
     }

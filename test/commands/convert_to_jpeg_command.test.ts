@@ -28,7 +28,7 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
@@ -113,6 +113,16 @@ suite('JPEGに変換コマンド', () => {
     await assertMermaidFileConvertsToJpeg('source.mermaid');
   });
 
+  test('GIF、TIFF、EPSをJPEGへ変換する', async () => {
+    for (const [format, fixtureFileName] of [
+      ['gif', 'swirl-gradient.gif'],
+      ['tiff', 'heatmap.tiff'],
+      ['eps', 'color-swatches.eps'],
+    ] as const) {
+      await assertFixtureConvertsToJpeg(format, fixtureFileName);
+    }
+  });
+
   test('outputPath.convertPngToJpegが設定されている場合は指定した出力先を使う', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
@@ -166,6 +176,22 @@ async function assertMermaidFileConvertsToJpeg(fileName: string): Promise<void> 
   try {
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
+
+    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
+
+    await assertReadableJpeg(replaceExtension(sourcePath, '.jpeg'));
+  } finally {
+    await removeTemporaryDirectory(temporaryDirectory);
+  }
+}
+
+async function assertFixtureConvertsToJpeg(format: string, fixtureFileName: string): Promise<void> {
+  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+  try {
+    const sourcePath = path.join(temporaryDirectory, fixtureFileName);
+    await copyFile(path.join(testInputDirectory, 'valid', format, fixtureFileName), sourcePath);
 
     const commandExecution = vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
     await runCommandAndClearNotificationsUntilDone(commandExecution);
