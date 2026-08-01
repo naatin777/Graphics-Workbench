@@ -70,6 +70,14 @@ function registerCommands(
     );
     return encryptPdfCommand(uri, uris, dependencies);
   });
+  registerFileCommand(context, 'graphics-workbench.decryptPdf', async (uri, uris) => {
+    const { decryptPdfCommand } = await loadCommandModule(
+      outputChannel,
+      './commands/pdf/decrypt_pdf.js',
+      async () => import('./commands/pdf/decrypt_pdf.js'),
+    );
+    return decryptPdfCommand(uri, uris, dependencies);
+  });
   registerFileCommand(context, 'graphics-workbench.cropPdf.auto', async (uri, uris) => {
     const { cropPdfAutoCommand } = await loadCommandModule(
       outputChannel,
