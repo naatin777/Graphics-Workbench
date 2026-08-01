@@ -60,10 +60,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   ]);
   runtime?.signal?.throwIfAborted();
 
-  await assertPreflightPassed(
-    options.jobs.map((job) => ({ ...job, workspacePath: options.workspacePath })),
-    preflightOptionsFromRuntime(runtime),
-  );
+  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;

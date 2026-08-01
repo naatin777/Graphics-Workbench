@@ -55,10 +55,7 @@ async function prepareMerge(options: MergePdfOptions): Promise<{
     assertWritablePathInWorkspace(stagedOutputPath, workspacePath),
   ]);
   runtime?.signal?.throwIfAborted();
-  await assertPreflightPassed(
-    sourcePaths.map((sourcePath) => ({ sourcePath })),
-    preflightOptionsFromRuntime(runtime),
-  );
+  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const mergedDocument = await PDFDocument.create();

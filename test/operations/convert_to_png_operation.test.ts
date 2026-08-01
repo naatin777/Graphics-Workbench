@@ -15,42 +15,6 @@ import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio
 import { requireValue } from '../helpers/required.js';
 
 suite('PNGに変換する処理', () => {
-  test('Raw pixelsをsidecarどおりにPNGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-png-raw-'));
-    try {
-      const sourcePath = path.join(workspacePath, 'source.raw');
-      const outputPath = path.join(workspacePath, 'output.png');
-      await writeFile(sourcePath, Buffer.from([255, 0, 0, 0, 255, 0]));
-      await writeFile(
-        `${sourcePath}.json`,
-        JSON.stringify({
-          version: 1,
-          width: 2,
-          height: 1,
-          channels: 3,
-          depth: 'uchar',
-          colourspace: 'srgb',
-          alpha: false,
-          layout: 'interleaved',
-        }),
-      );
-
-      await executePngConversion({
-        jobs: [{ sourcePath, outputPath, workspacePath }],
-        pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-        ghostscriptTools: { ghostscriptPath: 'gs' },
-        mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
-        drawioTools: { drawioPath: 'drawio' },
-        runtime: { resolveConflicts: async () => 'overwrite' },
-      });
-
-      assert.deepStrictEqual((await sharp(outputPath).metadata()).width, 2);
-      assert.deepStrictEqual((await sharp(outputPath).metadata()).height, 1);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
-  });
-
   test('GIF、アニメーションWebP、TIFFのframeを個別に変換する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-png-frames-'));
 

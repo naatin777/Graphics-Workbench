@@ -28,7 +28,6 @@ type ConfigurationKey =
   | 'outputPath.convertGifToPdf'
   | 'outputPath.convertTiffToPdf'
   | 'outputPath.convertEpsToPdf'
-  | 'outputPath.convertRawToPdf'
   | 'outputPath.convertPngToJpeg'
   | 'outputPath.convertPngToWebp'
   | 'outputPath.convertPngToAvif'
@@ -102,7 +101,6 @@ type ConfigurationKey =
   | 'contextMenu.convertAvif.enabled'
   | 'contextMenu.convertSvg.enabled'
   | 'contextMenu.convertMermaid.enabled'
-  | 'contextMenu.convertRaw.enabled'
   | 'contextMenu.convertDrawioCreate.enabled'
   | 'contextMenu.compressPdf.enabled'
   | 'outputPath.compressPdf';
@@ -354,24 +352,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
       convertMermaidToGif: {
         types: ['string'],
       },
-      convertPngToRaw: {
-        types: ['string'],
-      },
-      convertJpegToRaw: {
-        types: ['string'],
-      },
-      convertWebpToRaw: {
-        types: ['string'],
-      },
-      convertAvifToRaw: {
-        types: ['string'],
-      },
-      convertGifToRaw: {
-        types: ['string'],
-      },
-      convertTiffToRaw: {
-        types: ['string'],
-      },
     },
     additionalProperties: false,
   },
@@ -400,9 +380,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['string'],
   },
   'outputPath.convertEpsToPdf': {
-    types: ['string'],
-  },
-  'outputPath.convertRawToPdf': {
     types: ['string'],
   },
   'outputPath.convertPngToJpeg': {
@@ -628,9 +605,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'contextMenu.convertMermaid.enabled': {
     types: ['boolean'],
   },
-  'contextMenu.convertRaw.enabled': {
-    types: ['boolean'],
-  },
   'contextMenu.convertDrawioCreate.enabled': {
     types: ['boolean'],
   },
@@ -668,7 +642,6 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.convertGifToPdf': 'string',
   'outputPath.convertTiffToPdf': 'string',
   'outputPath.convertEpsToPdf': 'string',
-  'outputPath.convertRawToPdf': 'string',
   'outputPath.convertPngToJpeg': 'string',
   'outputPath.convertPngToWebp': 'string',
   'outputPath.convertPngToAvif': 'string',
@@ -742,7 +715,6 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'contextMenu.convertAvif.enabled': 'boolean',
   'contextMenu.convertSvg.enabled': 'boolean',
   'contextMenu.convertMermaid.enabled': 'boolean',
-  'contextMenu.convertRaw.enabled': 'boolean',
   'contextMenu.convertDrawioCreate.enabled': 'boolean',
   'contextMenu.compressPdf.enabled': 'boolean',
   'outputPath.compressPdf': 'string',
@@ -842,15 +814,6 @@ type OutputPathsToEps = {
   readonly convertPdfToEps?: string;
 };
 
-type OutputPathsToRaw = {
-  readonly convertPngToRaw?: string;
-  readonly convertJpegToRaw?: string;
-  readonly convertWebpToRaw?: string;
-  readonly convertAvifToRaw?: string;
-  readonly convertGifToRaw?: string;
-  readonly convertTiffToRaw?: string;
-};
-
 export type OutputPaths = OutputPathsToPdf &
   OutputPathsToPng &
   OutputPathsToJpeg &
@@ -859,8 +822,7 @@ export type OutputPaths = OutputPathsToPdf &
   OutputPathsToSvg &
   OutputPathsToGif &
   OutputPathsToTiff &
-  OutputPathsToEps &
-  OutputPathsToRaw;
+  OutputPathsToEps;
 export const publicCommandIds = [
   'graphics-workbench.cropPdf.auto',
   'graphics-workbench.undoLastConversion',
@@ -885,7 +847,6 @@ export const publicCommandIds = [
   'graphics-workbench.convertToGifSeparately',
   'graphics-workbench.convertToTiff',
   'graphics-workbench.convertToEps',
-  'graphics-workbench.convertToRaw',
   'graphics-workbench.convertToDrawio',
   'graphics-workbench.convertToDrawioPng',
   'graphics-workbench.convertToDrawioSvg',
@@ -916,7 +877,6 @@ export const CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND = 'graphics-workbench.con
 export const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'graphics-workbench.convertToGifSeparately';
 export const CONVERT_TO_TIFF_COMMAND = 'graphics-workbench.convertToTiff';
 export const CONVERT_TO_EPS_COMMAND = 'graphics-workbench.convertToEps';
-export const CONVERT_TO_RAW_COMMAND = 'graphics-workbench.convertToRaw';
 export const CONVERT_TO_DRAWIO_COMMAND = 'graphics-workbench.convertToDrawio';
 export const CONVERT_TO_DRAWIO_PNG_COMMAND = 'graphics-workbench.convertToDrawioPng';
 export const CONVERT_TO_DRAWIO_SVG_COMMAND = 'graphics-workbench.convertToDrawioSvg';
@@ -962,7 +922,6 @@ export const conversionPairs = {
     { source: 'jpeg', target: 'pdf', setting: 'convertJpegToPdf' },
     { source: 'mermaid', target: 'pdf', setting: 'convertMermaidToPdf' },
     { source: 'png', target: 'pdf', setting: 'convertPngToPdf' },
-    { source: 'raw', target: 'pdf', setting: 'convertRawToPdf' },
     { source: 'svg', target: 'pdf', setting: 'convertSvgToPdf' },
     { source: 'tiff', target: 'pdf', setting: 'convertTiffToPdf' },
     { source: 'webp', target: 'pdf', setting: 'convertWebpToPdf' },
@@ -1010,12 +969,6 @@ export const conversionPairs = {
     { source: 'gif', target: 'png', setting: 'convertGifToPng' },
     { source: 'pdf', target: 'png', setting: 'convertPdfToPng' },
     { source: 'tiff', target: 'png', setting: 'convertTiffToPng' },
-    { source: 'avif', target: 'raw', setting: 'convertAvifToRaw' },
-    { source: 'gif', target: 'raw', setting: 'convertGifToRaw' },
-    { source: 'jpeg', target: 'raw', setting: 'convertJpegToRaw' },
-    { source: 'png', target: 'raw', setting: 'convertPngToRaw' },
-    { source: 'tiff', target: 'raw', setting: 'convertTiffToRaw' },
-    { source: 'webp', target: 'raw', setting: 'convertWebpToRaw' },
     { source: 'drawio', target: 'svg', setting: 'convertDrawioToSvg' },
     { source: 'pdf', target: 'svg', setting: 'convertPdfToSvg' },
     { source: 'drawio', target: 'tiff', setting: 'convertDrawioToTiff' },
@@ -1136,11 +1089,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       convertEpsToPdf: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertEpsToPdf',
-        '${fileDirname}/${fileBasenameNoExtension}.pdf',
-      ),
-      convertRawToPdf: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertRawToPdf',
         '${fileDirname}/${fileBasenameNoExtension}.pdf',
       ),
       convertPngToJpeg: defineConfiguration<string>(
@@ -1487,9 +1435,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       convertMermaid: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertMermaid.enabled', true),
-      },
-      convertRaw: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertRaw.enabled', true),
       },
       convertDrawioCreate: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertDrawioCreate.enabled', true),

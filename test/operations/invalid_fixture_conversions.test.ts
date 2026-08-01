@@ -17,11 +17,6 @@ const invalidCases = [
   { directory: 'pdf', fileName: 'truncated.pdf', outputFormat: 'png' },
   { directory: 'png', fileName: 'not-an-image.png', outputFormat: 'png' },
   { directory: 'png', fileName: 'truncated.png', outputFormat: 'png' },
-  { directory: 'raw', fileName: 'byte-length-mismatch.raw', outputFormat: 'png' },
-  { directory: 'raw', fileName: 'invalid-sidecar.raw', outputFormat: 'png' },
-  { directory: 'raw', fileName: 'malformed-sidecar.raw', outputFormat: 'png' },
-  { directory: 'raw', fileName: 'missing-sidecar.raw', outputFormat: 'png' },
-  { directory: 'raw', fileName: 'oversized-dimensions.raw', outputFormat: 'png' },
   { directory: 'svg', fileName: 'malformed.svg', outputFormat: 'png' },
   { directory: 'tiff', fileName: 'truncated.tiff', outputFormat: 'png' },
   { directory: 'webp', fileName: 'truncated.webp', outputFormat: 'png' },
@@ -35,9 +30,6 @@ suite('invalid fixtureの実変換エラー', () => {
         const inputPath = path.join(testInputDirectory, 'invalid', invalidCase.directory, invalidCase.fileName);
         const destinationPath = workspaceDestinationPath(invalidCase.fileName, index);
         const sourcePath = await copyInputToWorkspace(inputPath, destinationPath);
-        if (invalidCase.directory === 'raw') {
-          await copyOptionalSidecar(inputPath, destinationPath);
-        }
 
         const outputPath = path.join(
           workspacePath,
@@ -60,15 +52,6 @@ suite('invalid fixtureの実変換エラー', () => {
     });
   }
 });
-
-async function copyOptionalSidecar(inputPath: string, destinationPath: string): Promise<void> {
-  try {
-    await access(`${inputPath}.json`);
-  } catch {
-    return;
-  }
-  await copyInputToWorkspace(`${inputPath}.json`, `${destinationPath}.json`);
-}
 
 function workspaceDestinationPath(fileName: string, index: number): string {
   const extension = path.extname(fileName);

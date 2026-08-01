@@ -1,5 +1,3 @@
-import { sourceFormatForPath } from '../../application/policy/source_format.js';
-import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 export interface AssertPreflightPassedOptions {
@@ -7,25 +5,12 @@ export interface AssertPreflightPassedOptions {
 }
 
 /**
- * Keeps the RAW sidecar inside the same trusted workspace boundary as its source.
+ * Asserts cancellation state before a conversion begins.
  *
  * Input readability and format validity are intentionally not checked here. Each
  * decoder or external tool owns those checks while performing the real conversion.
  */
-export async function assertPreflightPassed(
-  jobs: { sourcePath: string; workspacePath?: string }[],
-  options?: AssertPreflightPassedOptions,
-): Promise<void> {
-  options?.signal?.throwIfAborted();
-
-  await Promise.all(
-    jobs.flatMap((job) =>
-      sourceFormatForPath(job.sourcePath) === 'raw' && job.workspacePath !== undefined
-        ? [assertExistingPathInWorkspace(`${job.sourcePath}.json`, job.workspacePath)]
-        : [],
-    ),
-  );
-
+export async function assertPreflightPassed(options?: AssertPreflightPassedOptions): Promise<void> {
   options?.signal?.throwIfAborted();
 }
 

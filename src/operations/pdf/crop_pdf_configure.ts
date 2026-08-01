@@ -50,7 +50,7 @@ export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions)
   runtime?.signal?.throwIfAborted();
   await validateJobPaths(options.job);
 
-  await assertPreflightPassed([options.job], preflightOptionsFromRuntime(runtime));
+  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${randomUUID()}`;

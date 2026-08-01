@@ -1,6 +1,4 @@
 import { once } from 'node:events';
-import { createReadStream, readFileSync, statSync } from 'node:fs';
-import path from 'node:path';
 
 import sharp, { type Sharp } from 'sharp';
 
@@ -16,49 +14,12 @@ export interface RasterAnimationMetadata {
   loop?: number;
 }
 
-export interface RawSidecar {
-  version: 1;
-  width: number;
-  height: number;
-  channels: 1 | 2 | 3 | 4;
-  depth: 'uchar';
-  colourspace: string;
-  alpha: boolean;
-  layout: 'interleaved';
-}
-
-type RawChannels = RawSidecar['channels'];
-
-// ponytail: v1 restricts to uchar with fixed colourspace/alpha per channel count
-const RAW_SIDECAR_CONSTRAINTS: Record<RawChannels, { colourspace: string; alpha: boolean }> = {
-  1: { colourspace: 'b-w', alpha: false },
-  2: { colourspace: 'b-w', alpha: true },
-  3: { colourspace: 'srgb', alpha: false },
-  4: { colourspace: 'srgb', alpha: true },
-};
-
-function readProperty(object: object, key: string): unknown {
-  return Reflect.get(object, key) as unknown;
-}
-
 export function openRasterInput(
   sourcePath: string,
   maxInputPixels: number,
   page?: number,
   animated = false,
 ): RasterInput {
-  if (path.extname(sourcePath).toLowerCase() === '.raw') {
-    const sidecar = readRawSidecar(sourcePath);
-    validateRawByteLength(sourcePath, sidecar);
-    const image = sharp({
-      limitInputPixels: maxInputPixels,
-      failOn: 'warning',
-      raw: { width: sidecar.width, height: sidecar.height, channels: sidecar.channels },
-    });
-    createReadStream(sourcePath).pipe(image);
-    return image;
-  }
-
   const inputOptions: Parameters<typeof sharp>[1] = {
     limitInputPixels: maxInputPixels,
     failOn: 'warning',
@@ -103,88 +64,6 @@ export async function readRasterAnimationMetadata(
   } finally {
     await destroyRasterInput(image);
   }
-}
-
-export function readRawSidecar(sourcePath: string): RawSidecar {
-  const sidecarPath = `${sourcePath}.json`;
-  let value: unknown;
-
-  try {
-    value = JSON.parse(readFileSync(sidecarPath, 'utf8')) as unknown;
-  } catch (error) {
-    throw new Error(`Invalid Raw sidecar: ${sidecarPath}`, { cause: error });
-  }
-
-  if (typeof value !== 'object' || value === null) {
-    throw new Error(`Invalid Raw sidecar: ${sidecarPath}`);
-  }
-
-  const version = readProperty(value, 'version');
-  const width = readProperty(value, 'width');
-  const height = readProperty(value, 'height');
-  const channels = readProperty(value, 'channels');
-  const depth = readProperty(value, 'depth');
-  const colourspace = readProperty(value, 'colourspace');
-  const alpha = readProperty(value, 'alpha');
-  const layout = readProperty(value, 'layout');
-  if (
-    version !== 1 ||
-    !isPositiveInteger(width) ||
-    !isPositiveInteger(height) ||
-    (channels !== 1 && channels !== 2 && channels !== 3 && channels !== 4) ||
-    depth !== 'uchar' ||
-    typeof colourspace !== 'string' ||
-    colourspace.length === 0 ||
-    typeof alpha !== 'boolean' ||
-    layout !== 'interleaved'
-  ) {
-    throw new Error(
-      `Invalid Raw sidecar: ${sidecarPath}; expected version 1, uchar depth, dimensions, colourspace, alpha, and interleaved layout.`,
-    );
-  }
-
-  const expected = RAW_SIDECAR_CONSTRAINTS[channels];
-  if (colourspace !== expected.colourspace || alpha !== expected.alpha) {
-    throw new Error(
-      `Invalid Raw sidecar: ${sidecarPath}; channels ${channels} requires colourspace '${expected.colourspace}' and alpha ${expected.alpha}, got colourspace '${colourspace}' and alpha ${alpha}.`,
-    );
-  }
-
-  return {
-    version: 1,
-    width,
-    height,
-    channels,
-    depth,
-    colourspace,
-    alpha,
-    layout: 'interleaved',
-  };
-}
-
-function rawByteLength(sidecar: RawSidecar): number {
-  const bytesPerSample = { uchar: 1, ushort: 2, float: 4, double: 8 }[sidecar.depth];
-  const byteLength = sidecar.width * sidecar.height * sidecar.channels * bytesPerSample;
-  if (!Number.isSafeInteger(byteLength)) {
-    throw new Error('Raw sidecar dimensions produce an unsafe byte length.');
-  }
-  return byteLength;
-}
-
-function validateRawByteLength(sourcePath: string, sidecar: RawSidecar): void {
-  const sourceStats = statSync(sourcePath);
-  if (!sourceStats.isFile()) {
-    throw new Error(`Raw input is not a regular file: ${sourcePath}`);
-  }
-
-  const expectedBytes = rawByteLength(sidecar);
-  if (sourceStats.size !== expectedBytes) {
-    throw new Error(`Raw byte length mismatch: expected ${expectedBytes} bytes, got ${sourceStats.size}`);
-  }
-}
-
-function isPositiveInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
 export async function destroyRasterInput(image: RasterInput): Promise<void> {

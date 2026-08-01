@@ -44,7 +44,7 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<Commit
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
   await validateJobPaths(options.jobs, 'split-pdf');
-  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
+  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
@@ -64,7 +64,7 @@ export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions)
   runtime?.signal?.throwIfAborted();
   validatePageGroupJobs(options.jobs);
   await validateJobPaths(options.jobs, 'split-pdf');
-  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
+  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;

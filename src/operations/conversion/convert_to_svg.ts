@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -31,7 +31,6 @@ import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { destroyRasterInput, openRasterInput } from './raster_input.js';
 
 // oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
 const execFileAsync = promisify(execFile);
@@ -116,7 +115,7 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
   await validateJobPaths(options.jobs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
 
-  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
+  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
@@ -186,13 +185,7 @@ async function stageSvgConversion(
   };
 }
 
-async function writeSourceAsSvg({
-  job,
-  outputPath,
-  tools,
-  maxInputPixels,
-  signal,
-}: WriteSourceAsSvgOptions): Promise<void> {
+async function writeSourceAsSvg({ job, outputPath, tools, signal }: WriteSourceAsSvgOptions): Promise<void> {
   const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools, runPdfToSvg, outputChannel } = tools;
   const extension = path.extname(job.sourcePath).toLowerCase();
 
@@ -227,11 +220,6 @@ async function writeSourceAsSvg({
       outputChannel,
       signal,
     });
-    return;
-  }
-
-  if (sourceFormatForPath(job.sourcePath) === 'raw') {
-    await writeRawAsSvg(job.sourcePath, outputPath, job.workspacePath, signal, maxInputPixels);
     return;
   }
 
@@ -455,37 +443,10 @@ function isSupportedSourcePath(sourcePath: string): boolean {
   return (
     extension === '.pdf' ||
     extension === '.eps' ||
-    sourceFormatForPath(sourcePath) === 'raw' ||
     sourceFormatForPath(sourcePath) === 'mermaid' ||
     isEditableDrawioImagePath(sourcePath) ||
     isNativeDrawioPath(sourcePath)
   );
-}
-
-async function writeRawAsSvg(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  signal?: AbortSignal,
-  maxInputPixels = getDefaultConfiguration().raster.maxInputPixels(),
-): Promise<void> {
-  signal?.throwIfAborted();
-  const image = openRasterInput(sourcePath, maxInputPixels);
-  try {
-    const [metadata, png] = await Promise.all([image.metadata(), image.png().toBuffer()]);
-    if (!metadata.width || !metadata.height) {
-      throw new Error(`Could not determine image dimensions: ${sourcePath}`);
-    }
-    await assertWritablePathInWorkspace(outputPath, workspacePath);
-    await mkdir(path.dirname(outputPath), { recursive: true });
-    const dataUri = `data:image/png;base64,${png.toString('base64')}`;
-    await writeFile(
-      outputPath,
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${metadata.width}" height="${metadata.height}"><image href="${dataUri}" width="${metadata.width}" height="${metadata.height}"/></svg>`,
-    );
-  } finally {
-    await destroyRasterInput(image);
-  }
 }
 
 function asSvgOutputPath(outputPath: string): `${string}.svg` {

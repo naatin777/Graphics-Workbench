@@ -51,7 +51,6 @@ const pdfImageExtensions = [
   '.mmd',
   '.mermaid',
   '.eps',
-  '.raw',
   '.drawio.png',
   '.dio.png',
   '.drawio.svg',
@@ -250,12 +249,6 @@ export function outputTemplateForSource(
       return resolveOutputPathTemplate(
         configuration.outputPath.convertEpsToPdf(),
         defaultConfiguration.outputPath.convertEpsToPdf(),
-      );
-    }
-    case '.raw': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertRawToPdf(),
-        defaultConfiguration.outputPath.convertRawToPdf(),
       );
     }
     default: {
