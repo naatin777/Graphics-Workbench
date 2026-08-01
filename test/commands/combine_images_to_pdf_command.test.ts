@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 
 import {
   type CombinePreviewItem,
-  COMBINE_IMAGES_TO_PDF_COMMAND,
+  CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND,
   previewCombineInputs,
 } from '../../src/commands/conversion/combine_images_to_pdf.js';
 import { userMessage } from '../../src/commands/shared/user_messages.js';
@@ -42,7 +42,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
 
   test('コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
-    assert.ok(commands.includes(COMBINE_IMAGES_TO_PDF_COMMAND));
+    assert.ok(commands.includes(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND));
   });
 
   test('open workspace外の入力をworkspaceとして扱わない', async () => {
@@ -52,7 +52,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       const sourcePath = path.join(outsideDirectory, 'outside.png');
       await copyFile(VALID_PNG, sourcePath);
 
-      await vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, vscode.Uri.file(sourcePath));
 
       assert.ok(showErrorMessage.calledOnce);
       assert.match(String(showErrorMessage.firstCall.args[0]), /inside an open workspace/);
@@ -62,7 +62,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
   });
 
   test('file scheme以外の入力を拒否する', async () => {
-    await vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.parse('untitled:test.png'));
+    await vscode.commands.executeCommand(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, vscode.Uri.parse('untitled:test.png'));
 
     assert.ok(showErrorMessage.calledOnce);
     assert.match(String(showErrorMessage.firstCall.args[0]), /Only local files/);
@@ -85,7 +85,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
         },
         async () => {
           await runCommandAndClearNotificationsUntilDone(
-            vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(sourcePath)),
+            vscode.commands.executeCommand(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, vscode.Uri.file(sourcePath)),
           );
         },
       );
@@ -116,7 +116,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
         },
         async () => {
           await runCommandAndClearNotificationsUntilDone(
-            vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
+            vscode.commands.executeCommand(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
               vscode.Uri.file(firstSourcePath),
               vscode.Uri.file(secondSourcePath),
             ]),
@@ -162,7 +162,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       await withWorkspaceSettings(
         { 'graphics-workbench.outputPath.convertImagesToSinglePdf': '${fileDirname}/combined-progress.pdf' },
         async () => {
-          await vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
+          await vscode.commands.executeCommand(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
             vscode.Uri.file(firstSourcePath),
             vscode.Uri.file(secondSourcePath),
           ]);
@@ -194,7 +194,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
 
       await withWorkspaceSettings({ 'graphics-workbench.outputPath.convertImagesToSinglePdf': undefined }, async () => {
         await runCommandAndClearNotificationsUntilDone(
-          vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
+          vscode.commands.executeCommand(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
             vscode.Uri.file(firstSourcePath),
             vscode.Uri.file(secondSourcePath),
           ]),
@@ -236,7 +236,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       createQuickPick.callsFake(() => quickPick);
 
       await vscode.commands.executeCommand(
-        COMBINE_IMAGES_TO_PDF_COMMAND,
+        CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND,
         vscode.Uri.file(requireValue(sourcePaths[0])),
         [vscode.Uri.file(requireValue(sourcePaths[0])), vscode.Uri.file(requireValue(sourcePaths[1]))],
       );
@@ -266,7 +266,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       });
 
       await runCommandAndClearNotificationsUntilDone(
-        vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(sourcePath)),
+        vscode.commands.executeCommand(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, vscode.Uri.file(sourcePath)),
       );
 
       assert.strictEqual(showErrorMessage.called, false, String(showErrorMessage.firstCall?.args[0]));
@@ -302,7 +302,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
         .stub(vscode.window, 'withProgress')
         .callsFake(async (_options, task) => task({ report: () => undefined }, cancelledToken));
 
-      await vscode.commands.executeCommand(COMBINE_IMAGES_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand(CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, vscode.Uri.file(sourcePath));
 
       await assertFileDoesNotExist(outputPath);
       assert.ok(showInformationMessage.calledWith(userMessage('message.convertToOutput.cancelled', 'PDF')));

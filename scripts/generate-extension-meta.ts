@@ -97,6 +97,16 @@ function pascalCase(value: string): string {
     .join('');
 }
 
+function commandConstantName(commandId: string, extensionPrefix: string): string {
+  const suffix = commandId.slice(extensionPrefix.length);
+  const snake = suffix
+    .replaceAll('.', '_')
+    .replaceAll(/([A-Z])/g, '_$1')
+    .toUpperCase()
+    .replace(/^_/, '');
+  return `${snake}_COMMAND`;
+}
+
 function schemaType(schema: JsonSchema, typeName: string): string {
   if (schema.enum !== undefined) {
     if (schema.enum.length === 0) {
@@ -379,6 +389,10 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     `export const publicCommandIds = [\n${commandIdList.join('\n')}\n] as const;\n\n` +
+    commandIds
+      .map((commandId) => `export const ${commandConstantName(commandId, extensionPrefix)} = ${quote(commandId)};`)
+      .join('\n') +
+    '\n\n' +
     `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +
     `function createConfigurationInternal(configurationReader: ConfigurationReader) {\n` +
     `  return ${renderConfigs(configurationTree, '    ')} as const;\n` +

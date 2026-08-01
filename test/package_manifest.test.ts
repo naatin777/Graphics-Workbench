@@ -12,12 +12,12 @@ const CONVERT_TO_PDF_COMMAND = 'graphics-workbench.convertToPdf';
 const CONVERT_TO_PNG_COMMAND = 'graphics-workbench.convertToPng';
 const CONVERT_TO_JPEG_COMMAND = 'graphics-workbench.convertToJpeg';
 const CONVERT_TO_WEBP_COMMAND = 'graphics-workbench.convertToWebp';
-const CONVERT_TO_WEBP_PRESERVE_COMMAND = 'graphics-workbench.convertToWebpPreserveAnimation';
+const CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND = 'graphics-workbench.convertToWebpPreserveAnimation';
 const CONVERT_TO_WEBP_SEPARATELY_COMMAND = 'graphics-workbench.convertToWebpSeparately';
 const CONVERT_TO_AVIF_COMMAND = 'graphics-workbench.convertToAvif';
 const CONVERT_TO_SVG_COMMAND = 'graphics-workbench.convertToSvg';
 const CONVERT_TO_GIF_COMMAND = 'graphics-workbench.convertToGif';
-const CONVERT_TO_GIF_PRESERVE_COMMAND = 'graphics-workbench.convertToGifPreserveAnimation';
+const CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND = 'graphics-workbench.convertToGifPreserveAnimation';
 const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'graphics-workbench.convertToGifSeparately';
 const CONVERT_DRAWIO_TO_PDF_COMMAND = 'graphics-workbench.convertDrawioToPdf';
 const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'graphics-workbench.convertDrawioToPdfDirectly';
@@ -499,7 +499,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
     assert.ok(commandIds.has(CONVERT_TO_GIF_COMMAND));
-    assert.ok(commandIds.has(CONVERT_TO_GIF_PRESERVE_COMMAND));
+    assert.ok(commandIds.has(CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND));
     assert.ok(commandIds.has(CONVERT_TO_GIF_SEPARATELY_COMMAND));
   });
 
@@ -508,7 +508,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
     assert.ok(commandIds.has(CONVERT_TO_WEBP_COMMAND));
-    assert.ok(commandIds.has(CONVERT_TO_WEBP_PRESERVE_COMMAND));
+    assert.ok(commandIds.has(CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND));
     assert.ok(commandIds.has(CONVERT_TO_WEBP_SEPARATELY_COMMAND));
   });
 
@@ -517,9 +517,9 @@ suite('package.jsonの変換メニュー定義', () => {
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const commands = new Set(convertMenu.map((entry) => entry.command));
 
-    assert.ok(commands.has(CONVERT_TO_WEBP_PRESERVE_COMMAND));
+    assert.ok(commands.has(CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND));
     assert.ok(commands.has(CONVERT_TO_WEBP_SEPARATELY_COMMAND));
-    assert.ok(commands.has(CONVERT_TO_GIF_PRESERVE_COMMAND));
+    assert.ok(commands.has(CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND));
     assert.ok(commands.has(CONVERT_TO_GIF_SEPARATELY_COMMAND));
   });
 
@@ -528,9 +528,9 @@ suite('package.jsonの変換メニュー定義', () => {
     const paletteEntries = packageJson.contributes.menus.commandPalette ?? [];
     const paletteHidden = new Set(paletteEntries.filter((e) => e.when === 'false').map((e) => e.command));
 
-    assert.ok(paletteHidden.has(CONVERT_TO_WEBP_PRESERVE_COMMAND));
+    assert.ok(paletteHidden.has(CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND));
     assert.ok(paletteHidden.has(CONVERT_TO_WEBP_SEPARATELY_COMMAND));
-    assert.ok(paletteHidden.has(CONVERT_TO_GIF_PRESERVE_COMMAND));
+    assert.ok(paletteHidden.has(CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND));
     assert.ok(paletteHidden.has(CONVERT_TO_GIF_SEPARATELY_COMMAND));
   });
 
@@ -539,9 +539,9 @@ suite('package.jsonの変換メニュー定義', () => {
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((e) => e.command === command);
 
-    const webpPreserve = findEntry(CONVERT_TO_WEBP_PRESERVE_COMMAND);
+    const webpPreserve = findEntry(CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND);
     const webpSeparately = findEntry(CONVERT_TO_WEBP_SEPARATELY_COMMAND);
-    const gifPreserve = findEntry(CONVERT_TO_GIF_PRESERVE_COMMAND);
+    const gifPreserve = findEntry(CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND);
     const gifSeparately = findEntry(CONVERT_TO_GIF_SEPARATELY_COMMAND);
 
     assert.ok(webpPreserve?.when?.includes('resourceExtname =~ /^\\.gif$/i'));

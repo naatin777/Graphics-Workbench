@@ -7,7 +7,7 @@ import { UndoHistoryManager, type UndoManifestStorage } from '../../operations/l
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { userMessage } from '../shared/user_messages.js';
 
-export const UNDO_LAST_CONVERSION_COMMAND = 'graphics-workbench.undoLastConversion';
+export { UNDO_LAST_CONVERSION_COMMAND } from '../../generated-extension-meta.js';
 
 let undoHistory: UndoHistoryManager = new UndoHistoryManager();
 
