@@ -1,12 +1,28 @@
 # 0210: 変換機能と出力パス設定の仕様調査・互換コード削減
 
-Status: In progress — 調査完了（実装は未着手）
+Status: Done — 調査完了と後続実装の一部を実施
 
 ## Objective
 
 未リリース段階のGraphics Workbenchについて、変換機能と出力パス設定を調査し、不要な互換コード・重複実装を特定する。削除は「コードが似ている」だけを理由にせず、製品仕様・現在の実装・互換性維持コード・単なる実装重複の4種類へ分類した上で提案する。
 
 本taskは調査フェーズの成果物（A〜E）を記録する。実装は各項目を独立phaseとして後続で行う。
+
+## 実装進捗（調査完了時点からの実施分）
+
+調査で洗い出した項目のうち、以下の実装を実施済み。未実施項目は `docs/refactor-backlog.md` と [E. 変更計画](#e-変更計画) に残る。
+
+| 項目      | 内容                                                                                     | 実施                                                                                 |
+| --------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| B-1 #1    | convertToPdfのGIF/TIFF/EPS入力宣言が到達不能                                             | 修正（GIF/TIFF/EPS→PDFのテンプレ分岐を追加）。RAWはB-3 #11とともに形式ごと削除       |
+| B-1 #2    | convertToWebpのGIFアニメーション分岐が到達不能                                           | 修正（preserve/splitを含むGIF→WebP分岐を追加）                                       |
+| B-1 #3/#5 | EPSのDraw.io入力計画（native .drawio到達不能 + editableのconvertPngToEpsフォールバック） | 修正（native .drawioは明示拒否、editableは専用 `outputPaths.convertDrawioToEps` へ） |
+| B-2 #6    | 単一出力ペア15個のplural `outputPaths` 二重キー                                          | 削除（flat `outputPath.convertXToY` を正本に統一）                                   |
+| B-2 #7    | Orphan NLSキー（旧pair-specific commandタイトル等）                                      | 削除                                                                                 |
+| B-5       | GIF/TIFF/EPS→JPEG/AVIF/EPS/WebP等のルーティング・コマンドテスト                          | 追加（compressPdf、convertToDrawioコマンド層含む）                                   |
+| B-3 #11   | RAW変換のmixed入力設定                                                                   | RAW形式を削除したため解消                                                            |
+
+未実施（今後の課題）: B-3 #8（convertToDrawioの出力形式固定）、B-3 #9（auto/preserve同一実装）、B-3 #10（Draw.io→ラスターのpage 1のみ）、B-3 #12（preserve/splitコマンド実行テスト）、D-1（planner共通化）、D-2（manifest整合性自動検証）
 
 ---
 
