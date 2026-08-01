@@ -143,7 +143,7 @@ export async function executeRasterConversionBatch(
   await validateJobPaths(options.jobs, options.definition.stagingDirectoryName);
   options.runtime.signal?.throwIfAborted();
 
-  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(options.runtime));
+  await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
   options.runtime.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
@@ -483,7 +483,6 @@ function isSupportedSourcePath(sourcePath: string): boolean {
     extension === '.svg' ||
     isMermaidPath(sourcePath) ||
     isSupportedImageInputPath(sourcePath) ||
-    extension === '.raw' ||
     isEditableDrawioImagePath(sourcePath) ||
     isNativeDrawioPath(sourcePath)
   );

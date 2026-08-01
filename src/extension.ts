@@ -19,7 +19,6 @@ import {
   CONVERT_TO_JPEG_COMMAND,
   CONVERT_TO_PDF_COMMAND,
   CONVERT_TO_PNG_COMMAND,
-  CONVERT_TO_RAW_COMMAND,
   CONVERT_TO_SVG_COMMAND,
   CONVERT_TO_TIFF_COMMAND,
   CONVERT_TO_WEBP_COMMAND,
@@ -255,14 +254,6 @@ function registerCommands(
       async () => import('./commands/conversion/convert_to_eps.js'),
     );
     return convertToEpsCommand(uri, uris, dependencies);
-  });
-  registerFileCommand(context, CONVERT_TO_RAW_COMMAND, async (uri, uris) => {
-    const { convertToRawCommand } = await loadCommandModule(
-      outputChannel,
-      './commands/conversion/convert_to_raw.js',
-      async () => import('./commands/conversion/convert_to_raw.js'),
-    );
-    return convertToRawCommand(uri, uris, dependencies);
   });
   registerFileCommand(context, CONVERT_TO_DRAWIO_COMMAND, async (uri, uris) => {
     const { convertToDrawioCommand } = await loadCommandModule(

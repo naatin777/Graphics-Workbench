@@ -15,7 +15,6 @@ const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
   mermaid: 3,
   pdf: 4,
   png: 3,
-  raw: 4,
   svg: 4,
   tiff: 2,
   webp: 2,

@@ -65,7 +65,7 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
   validateMargin(options.margin);
   await validateJobPaths(options.jobs, 'crop-pdf');
 
-  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
+  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   if (!runtime?.resolveConflicts) {
