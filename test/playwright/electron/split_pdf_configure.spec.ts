@@ -193,3 +193,60 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
     }
   }
 });
+
+test('分割ペインをドラッグで幅を調整できる', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(240_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const { frame, preview } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    await expect(preview).toBeVisible();
+
+    const divider = frame.locator('.split-pane__divider');
+    await expect(divider).toBeVisible();
+    const dividerBox = await divider.boundingBox();
+
+    if (!dividerBox) {
+      throw new Error('Split divider has no visible bounds.');
+    }
+
+    const beforeWidth = await preview.evaluate((element) => element.getBoundingClientRect().width);
+    const dividerCenterX = dividerBox.x + dividerBox.width / 2;
+    const dividerCenterY = dividerBox.y + dividerBox.height / 2;
+
+    await env.app.window.mouse.move(dividerCenterX, dividerCenterY);
+    await env.app.window.mouse.down();
+    await env.app.window.mouse.move(dividerCenterX - 120, dividerCenterY, { steps: 5 });
+    await env.app.window.mouse.up();
+
+    await expect
+      .poll(async () => (await preview.evaluate((element) => element.getBoundingClientRect().width)) < beforeWidth)
+      .toBe(true);
+
+    const afterWidth = await preview.evaluate((element) => element.getBoundingClientRect().width);
+    expect(afterWidth).toBeLessThan(beforeWidth);
+  } catch (error) {
+    await attachElectronDiagnostics({
+      consoleMessages,
+      error,
+      extensionsDir: env?.directories.extensionsDir ?? '',
+      sharedDataDir: env?.directories.sharedDataDir ?? '',
+      temporaryRoot: env?.directories.temporaryRoot ?? '',
+      testInfo,
+      userDataDir: env?.directories.userDataDir ?? '',
+      window: env?.app.window,
+      workspacePath: env?.directories.workspacePath ?? '',
+    });
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});

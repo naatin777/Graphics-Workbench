@@ -175,7 +175,7 @@ describe('Split PDF Webview', () => {
     globalThis.dispatchEvent(new PointerEvent('pointermove', { clientX: 300 }));
     globalThis.dispatchEvent(new PointerEvent('pointerup'));
 
-    expect(leftPane.style.width).toBe('300px');
+    expect(leftPane.style.flex).toBe('0 0 300px');
   });
 });
 

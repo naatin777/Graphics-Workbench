@@ -49,7 +49,7 @@ export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX
     >
       <div
         class='split-pane__left'
-        style={leftWidth() === undefined ? undefined : { width: `${leftWidth()}px` }}
+        style={leftWidth() === undefined ? undefined : { flex: `0 0 ${leftWidth()}px` }}
       >
         {props.left}
       </div>
