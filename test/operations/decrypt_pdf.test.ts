@@ -22,6 +22,7 @@ import { PDFDocument } from 'pdf-lib';
 
 import { decryptPdfFiles } from '../../src/operations/pdf/decrypt_pdf.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { readConfiguredQpdfPath } from '../helpers/external_tool_settings.js';
 
 const execFileAsync = promisify(execFile);
 const password = 'secret-password';
@@ -38,7 +39,7 @@ suite('PDF復号化', () => {
       await decryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password,
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
         runId: 'run',
       });
 
@@ -60,7 +61,7 @@ suite('PDF復号化', () => {
       decryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password: 'wrong-password',
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
       }),
     );
 
@@ -78,7 +79,7 @@ suite('PDF復号化', () => {
       decryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password,
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
       }),
       /Output file already exists/,
     );
@@ -89,10 +90,14 @@ suite('PDF復号化', () => {
 
 async function encryptWithQpdf(sourcePath: string, pdfPassword: string): Promise<void> {
   const encryptedPath = `${sourcePath}.encrypted`;
-  await execFileAsync('qpdf', ['--encrypt', pdfPassword, pdfPassword, '256', '--', sourcePath, encryptedPath], {
-    encoding: 'utf8',
-    maxBuffer: 10 * 1024 * 1024,
-  });
+  await execFileAsync(
+    readConfiguredQpdfPath(),
+    ['--encrypt', pdfPassword, pdfPassword, '256', '--', sourcePath, encryptedPath],
+    {
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
+    },
+  );
   await writeFile(sourcePath, await readFile(encryptedPath));
 }
 
