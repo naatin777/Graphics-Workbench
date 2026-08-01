@@ -155,6 +155,35 @@ suite('外部tool runner — 実行失敗', () => {
   });
 });
 
+suite('外部tool runner — タイムアウト', () => {
+  test('timeoutMsを過ぎるとchild processを終了してrejectする', async () => {
+    const startedPath = path.join(
+      await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-timeout-')),
+      'started.txt',
+    );
+
+    try {
+      await assert.rejects(
+        runExternalTool({
+          toolName: 'timeout-tool',
+          executable: process.execPath,
+          args: [
+            '-e',
+            `require('fs').writeFileSync(${JSON.stringify(startedPath)}, 'started');
+             setTimeout(() => {}, 30000);`,
+          ],
+          timeoutMs: 200,
+        }),
+        (error: unknown) => error instanceof Error,
+      );
+
+      await assert.doesNotReject(import('node:fs/promises').then((fs) => fs.stat(startedPath)));
+    } finally {
+      await rm(path.dirname(startedPath), { recursive: true, force: true });
+    }
+  });
+});
+
 suite('外部tool runner — Cancellation', () => {
   test('AbortSignalがrunExternalToolへ渡り、child processを停止する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-cancel-'));

@@ -25,10 +25,15 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - Menu conditions aligned with implementation format support
 - Version-tag consistency validation in release workflow
 - v1 safety hardening, output validation, test Evidence, and packaged VSIX smoke verification
+- Undo履歴のライフサイクル管理（上限10件・24時間、workspaceStateマニフェスト、孤立データ掃除）
+- 起動時の変換系モジュールdynamic import化（sharp/pdf-lib/Mermaid CLIを実行時ロード）
+- Mermaid CLIの子プロセス実行とキャンセル・タイムアウト
+- PDF変換のJob planningをProgress表示内へ移動（解析中表示とキャンセル対応）
+- 外部実行パス設定のmachine scope化とuntrustedWorkspaces宣言
 
 ## In progress
 
-- [0208: oxlintの制限を段階的に強化する](docs/tasks/0208-gradually-strengthen-oxlint.md) — Phase 38（strict experiment）
+- [0208: oxlintの制限を段階的に強化する](docs/tasks/0208-gradually-strengthen-oxlint.md) — On hold — Phase 38（strict experiment）
 
 ## Non-goals
 

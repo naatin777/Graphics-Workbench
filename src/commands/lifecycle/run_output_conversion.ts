@@ -68,6 +68,9 @@ export async function runConversionLifecycle(options: {
             reportProgress: (completed: number, total: number) => {
               progress.report({ message: userMessage('message.progress.completedCount', completed, total) });
             },
+            reportMessage: (message: string) => {
+              progress.report({ message });
+            },
           };
           if (options.outputChannel !== undefined) {
             runtimeOptions.outputChannel = options.outputChannel;

@@ -3,7 +3,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 import { launch, type Browser, type LaunchOptions } from 'puppeteer-core';
 import sharp from 'sharp';
@@ -33,8 +32,9 @@ import {
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { createMermaidCliRenderOptions, createMermaidPuppeteerConfig } from './mermaid_render_options.js';
+import { createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import {
   runRsvgConvertWithAsciiScratch,
   type RsvgToolScratchOptions,
@@ -349,12 +349,17 @@ async function writeMermaidAsPdf(
   signal?.throwIfAborted();
 
   try {
-    await runMermaidCli(sourcePath, asPdfOutputPath(outputPath), {
-      outputFormat: 'pdf',
-      puppeteerConfig: createMermaidPuppeteerConfig(mermaid),
-      quiet: true,
-      ...createMermaidCliRenderOptions(mermaid),
-    });
+    await runMermaidCliWithSignal(
+      {
+        sourcePath,
+        outputPath: asPdfOutputPath(outputPath),
+        outputFormat: 'pdf',
+        puppeteerConfig: createMermaidPuppeteerConfig(mermaid),
+        theme: mermaid?.theme ?? 'default',
+        backgroundColor: mermaid?.backgroundColor ?? 'white',
+      },
+      signal,
+    );
   } catch (error) {
     if (isAbortError(error)) {
       throw error instanceof Error ? error : new Error(String(error));

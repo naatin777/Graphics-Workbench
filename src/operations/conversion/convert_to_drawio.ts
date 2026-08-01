@@ -3,7 +3,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 import { PDFDocument } from 'pdf-lib';
 import { Parser } from 'xml2js';
 import sharp from 'sharp';
@@ -15,10 +14,10 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { createMermaidCliRenderOptions } from './mermaid_render_options.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import type { ChromeReleaseChannel } from 'puppeteer-core';
 
 // oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
@@ -472,18 +471,22 @@ async function executeMermaid(
   options?: MermaidBackend,
 ): Promise<void> {
   signal?.throwIfAborted();
-  await runMermaidCli(sourcePath, asSvgOutputPath(outputPath), {
-    outputFormat: 'svg',
-    quiet: true,
-    puppeteerConfig: {
-      headless: true,
-      channel: toChromeReleaseChannel(options?.browserChannel ?? 'chrome'),
-      ...(options?.executablePath !== undefined && options.executablePath !== ''
-        ? { executablePath: options.executablePath }
-        : {}),
+  await runMermaidCliWithSignal(
+    {
+      sourcePath,
+      outputPath: asSvgOutputPath(outputPath),
+      outputFormat: 'svg',
+      puppeteerConfig: {
+        headless: true,
+        channel: toChromeReleaseChannel(options?.browserChannel ?? 'chrome'),
+        ...(options?.executablePath === undefined || options.executablePath === ''
+          ? {}
+          : { executablePath: options.executablePath }),
+      },
+      ...(options === undefined ? {} : { theme: options.theme, backgroundColor: options.backgroundColor }),
     },
-    ...(options ? createMermaidCliRenderOptions(options) : {}),
-  });
+    signal,
+  );
   signal?.throwIfAborted();
 }
 

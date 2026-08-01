@@ -27,6 +27,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -38,7 +39,7 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export const CONVERT_TO_PNG_COMMAND = 'graphics-workbench.convertToPng';
+export { CONVERT_TO_PNG_COMMAND } from '../command_ids.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.png';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.png';
@@ -58,10 +59,6 @@ export async function convertToPngCommand(
 
     const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
-    const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) => planPngConversionJobs(sourceUri, configuration, maxInputPixels)),
-    );
-    const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
@@ -74,8 +71,12 @@ export async function convertToPngCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('PNG', sourceUris.length),
-      run: async (runtime) =>
-        executePngConversion({
+      run: async (runtime) => {
+        const plannedJobs = await Promise.all(
+          sourceUris.map(async (sourceUri) => planPngConversionJobs(sourceUri, configuration, maxInputPixels, runtime)),
+        );
+        const jobs = plannedJobs.flat();
+        return executePngConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools,
@@ -83,7 +84,8 @@ export async function convertToPngCommand(
           mermaidTools,
           drawioTools,
           runtime,
-        }),
+        });
+      },
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -100,6 +102,7 @@ async function planPngConversionJobs(
   sourceUri: vscode.Uri,
   configuration: Configuration,
   maxInputPixels: number,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToPngJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -116,7 +119,7 @@ async function planPngConversionJobs(
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return planPdfToPngJobs(sourcePath, workspace, configuration);
+    return planPdfToPngJobs(sourcePath, workspace, configuration, runtime);
   }
 
   if (isNativeDrawioPath(sourcePath)) {
@@ -171,7 +174,10 @@ async function planPdfToPngJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToPngJob[]> {
+  runtime?.signal?.throwIfAborted();
+  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
 
@@ -182,9 +188,12 @@ async function planPdfToPngJobs(
   const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToPng', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
-  return Array.from({ length: pageCount }, (_value, index) => {
+  const jobs: ConvertToPngJob[] = [];
+
+  for (let index = 0; index < pageCount; index += 1) {
+    runtime?.signal?.throwIfAborted();
     const page = index + 1;
-    return {
+    jobs.push({
       sourcePath,
       workspacePath: workspace.uri.fsPath,
       outputPath: resolveOutputPath(
@@ -198,8 +207,10 @@ async function planPdfToPngJobs(
         { allowedExtensions: ['.png'] },
       ),
       page,
-    };
-  });
+    });
+  }
+
+  return jobs;
 }
 
 function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {

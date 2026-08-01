@@ -14,6 +14,7 @@ import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import { MERGE_PDF_CONFIGURE_COMMAND, MERGE_PDF_SELECTED_FILES_COMMAND } from '../command_ids.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
@@ -21,8 +22,7 @@ import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecy
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../shared/command_utils.js';
 
-export const MERGE_PDF_SELECTED_FILES_COMMAND = 'graphics-workbench.mergePdf.selectedFiles';
-export const MERGE_PDF_CONFIGURE_COMMAND = 'graphics-workbench.mergePdf.configure';
+export { MERGE_PDF_CONFIGURE_COMMAND, MERGE_PDF_SELECTED_FILES_COMMAND };
 
 export async function mergePdfSelectedFilesCommand(
   uri?: vscode.Uri,

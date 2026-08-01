@@ -3,7 +3,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 import { Parser } from 'xml2js';
 
 import {
@@ -27,8 +26,9 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import type { DrawioBackend, MermaidBackend, PdftocairoBackend, RunPdfToSvg } from './tools/index.js';
-import { createMermaidCliRenderOptions, createMermaidPuppeteerConfig } from './mermaid_render_options.js';
+import { createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
@@ -377,12 +377,17 @@ async function writeMermaidAsSvg(
   signal?.throwIfAborted();
 
   try {
-    await runMermaidCli(sourcePath, asSvgOutputPath(outputPath), {
-      outputFormat: 'svg',
-      puppeteerConfig: createMermaidPuppeteerConfig(mermaid),
-      quiet: true,
-      ...createMermaidCliRenderOptions(mermaid),
-    });
+    await runMermaidCliWithSignal(
+      {
+        sourcePath,
+        outputPath: asSvgOutputPath(outputPath),
+        outputFormat: 'svg',
+        puppeteerConfig: createMermaidPuppeteerConfig(mermaid),
+        theme: mermaid.theme,
+        backgroundColor: mermaid.backgroundColor,
+      },
+      signal,
+    );
     signal?.throwIfAborted();
   } catch (error) {
     if (isAbortError(error)) {

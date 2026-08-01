@@ -16,6 +16,7 @@ export interface ConversionOutput {
 
 export interface ConversionUndoRecord {
   id: string;
+  createdAt: number;
   outputs: ConversionUndoOutput[];
 }
 
@@ -24,7 +25,10 @@ interface ConversionUndoOutput extends ConversionOutput {
   previousSha256?: string;
 }
 
-export async function createConversionUndoRecord(outputs: ConversionOutput[]): Promise<ConversionUndoRecord> {
+export async function createConversionUndoRecord(
+  outputs: ConversionOutput[],
+  now: () => number = Date.now,
+): Promise<ConversionUndoRecord> {
   if (outputs.length === 0) {
     throw new Error('No conversion outputs were provided.');
   }
@@ -55,6 +59,7 @@ export async function createConversionUndoRecord(outputs: ConversionOutput[]): P
 
   return {
     id: crypto.randomUUID(),
+    createdAt: now(),
     outputs: recordedOutputs,
   };
 }

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -16,8 +17,38 @@ for (const entry of readdirSync(testWorkspaceDirectory)) {
 }
 
 if (existsSync(settingsSourcePath)) {
+  const settings = JSON.parse(readFileSync(settingsSourcePath, 'utf8'));
+  const toolCommands = [
+    ['graphics-workbench.execPath.ghostscript', process.platform === 'win32' ? 'gswin64c' : 'gs'],
+    ['graphics-workbench.execPath.pdftocairo', 'pdftocairo'],
+    ['graphics-workbench.execPath.rsvgConvert', 'rsvg-convert'],
+  ];
+
+  for (const [key, command] of toolCommands) {
+    if (typeof settings[key] !== 'string' || settings[key] === '') {
+      const resolved = resolveExecutable(command);
+      if (resolved !== undefined) {
+        settings[key] = resolved;
+      }
+    }
+  }
+
   mkdirSync(path.dirname(settingsTargetPath), { recursive: true });
-  writeFileSync(settingsTargetPath, readFileSync(settingsSourcePath));
+  writeFileSync(settingsTargetPath, JSON.stringify(settings, null, 2));
+}
+
+function resolveExecutable(command) {
+  const lookupCommand = process.platform === 'win32' ? 'where' : 'which';
+
+  try {
+    const output = execFileSync(lookupCommand, [command], { encoding: 'utf8' });
+    return output
+      .split(/\r?\n/u)
+      .find((line) => line.trim() !== '')
+      ?.trim();
+  } catch {
+    return undefined;
+  }
 }
 
 export default defineConfig({

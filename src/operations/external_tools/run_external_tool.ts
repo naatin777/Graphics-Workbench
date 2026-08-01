@@ -17,6 +17,7 @@ export async function runExternalTool(options: {
   executable: string;
   args: string[];
   signal?: AbortSignal;
+  timeoutMs?: number;
   outputChannel?: LineOutputChannel;
   redactArgument?: (argument: string, index: number) => string;
 }): Promise<ExternalToolResult> {
@@ -29,6 +30,7 @@ export async function runExternalTool(options: {
       encoding: 'utf8',
       maxBuffer: MAX_BUFFER,
       signal: options.signal,
+      ...(options.timeoutMs !== undefined && { timeout: options.timeoutMs }),
     });
   } catch (error) {
     const stderr =
