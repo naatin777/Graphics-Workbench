@@ -279,6 +279,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
       convertDrawioToTiff: {
         types: ['string'],
       },
+      convertDrawioToEps: {
+        types: ['string'],
+      },
       convertPdfToPng: {
         types: ['string'],
       },
@@ -809,6 +812,7 @@ type OutputPathsToTiff = {
 };
 
 type OutputPathsToEps = {
+  readonly convertDrawioToEps?: string;
   readonly convertPdfToEps?: string;
 };
 
@@ -955,6 +959,7 @@ export const conversionPairs = {
   plural: [
     { source: 'drawio', target: 'avif', setting: 'convertDrawioToAvif' },
     { source: 'pdf', target: 'avif', setting: 'convertPdfToAvif' },
+    { source: 'drawio', target: 'eps', setting: 'convertDrawioToEps' },
     { source: 'pdf', target: 'eps', setting: 'convertPdfToEps' },
     { source: 'avif', target: 'gif', setting: 'convertAvifToGif' },
     { source: 'drawio', target: 'gif', setting: 'convertDrawioToGif' },

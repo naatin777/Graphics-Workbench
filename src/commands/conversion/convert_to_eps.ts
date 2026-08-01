@@ -7,7 +7,6 @@ import * as vscode from 'vscode';
 import type { Configuration } from '../../generated-extension-meta.js';
 
 import {
-  isEditableDrawioImagePath,
   isNativeDrawioPath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
@@ -93,22 +92,7 @@ export async function createEpsJobs(sourceUri: vscode.Uri, configuration: Config
   }
 
   if (isNativeDrawioPath(sourcePath)) {
-    const outputTemplate = outputPathTemplateForSource(sourcePath, configuration);
-    return [
-      {
-        sourcePath,
-        workspacePath: workspace.uri.fsPath,
-        outputPath: resolveOutputPath(
-          outputTemplate,
-          {
-            sourcePath: logicalSourcePathForOutputTemplate(sourcePath),
-            workspacePath: workspace.uri.fsPath,
-            workspaceName: workspace.name,
-          },
-          { allowedExtensions: ['.eps'] },
-        ),
-      },
-    ];
+    throw new Error(`Native Draw.io input is not supported for EPS conversion: ${sourcePath}`);
   }
 
   const outputTemplate = outputPathTemplateForSource(sourcePath, configuration);
@@ -142,10 +126,6 @@ export async function createEpsJobs(sourceUri: vscode.Uri, configuration: Config
 }
 
 function outputPathTemplateForSource(sourcePath: string, configuration: Configuration): string {
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return configuration.outputPath.convertPngToEps();
-  }
-
   return resolveConversionTemplate({
     target: 'eps',
     sourcePath,
