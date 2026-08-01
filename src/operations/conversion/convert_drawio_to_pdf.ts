@@ -299,7 +299,7 @@ function safeName(value: string): string {
 
 function safePageName(value: string | undefined, page: number): string {
   const normalized = Array.from(value ?? String(page))
-    .map((character) => (character.charCodeAt(0) <= 31 ? '_' : character))
+    .map((character) => ((character.codePointAt(0) ?? 0) <= 31 ? '_' : character))
     .join('')
     .replaceAll(/[\\/<>:"|?*]/g, '_')
     .trim()

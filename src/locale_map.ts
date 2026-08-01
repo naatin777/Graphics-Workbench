@@ -8,7 +8,7 @@ export type LocaleKeyType = keyof typeof localeEn;
 const localeTableKey = vscode.env.language;
 const localeTable: Record<string, string> = {
   ...localeEn,
-  ...(<{ [key: string]: Record<string, string> }>{ ja: localeJa })[localeTableKey],
+  ...({ ja: localeJa } as Record<string, Record<string, string>>)[localeTableKey],
 };
 
 const localeString = (key: string): string => localeTable[key] ?? key;

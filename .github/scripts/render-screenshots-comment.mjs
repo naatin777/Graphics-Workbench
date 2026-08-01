@@ -245,15 +245,14 @@ if (mainScriptUrl === entryScriptUrl) {
     .filter((file) => file !== undefined);
   if (files.length === 0) {
     process.stdout.write('no screenshot files found\n');
-    process.exit(0);
-  }
+  } else {
+    const repository = process.env.GITHUB_REPOSITORY;
+    if (repository === undefined || repository === '') {
+      throw new Error('GITHUB_REPOSITORY environment variable is required.');
+    }
 
-  const repository = process.env.GITHUB_REPOSITORY;
-  if (repository === undefined || repository === '') {
-    throw new Error('GITHUB_REPOSITORY environment variable is required.');
+    process.stdout.write(renderMarkdown(files, repository, process.env.GITHUB_RUN_ID ?? ''));
   }
-
-  process.stdout.write(renderMarkdown(files, repository, process.env.GITHUB_RUN_ID ?? ''));
 }
 
 export { classify, renderFailureSection, renderMarkdown, renderSnapshotSection };

@@ -81,7 +81,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
     runtime?.signal?.throwIfAborted();
 
     const commitOptions = commitOptionsForRuntime(runtime);
-    return commitStagedOutputs(
+    return await commitStagedOutputs(
       [{ stagedOutputPath, outputPath: options.outputPath, workspacePath: options.workspacePath, stagingRootPath }],
       commitOptions,
     );

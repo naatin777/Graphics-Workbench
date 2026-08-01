@@ -316,6 +316,22 @@ export default defineConfig({
 
   overrides: [
     {
+      files: ['.vscode-test.mjs'],
+      rules: {
+        // @vscode/test-cli re-exports defineConfig through a .cjs→.mjs chain; oxlint's import resolution reports a false positive.
+        'import/named': 'off',
+      },
+    },
+    {
+      files: ['webview/shared/pdf/install_map_get_or_insert_computed.ts'],
+      rules: {
+        // PDF.js Map polyfill installs onto the global Map prototype as a script module.
+        'import/unambiguous': 'off',
+        'eslint/no-implicit-globals': 'off',
+        'node/callback-return': 'off',
+      },
+    },
+    {
       files: [
         'src/**/*.ts',
         'webview/apps/**/*.ts',
@@ -412,6 +428,31 @@ export default defineConfig({
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unsafe-argument': 'off',
         'typescript/no-unnecessary-condition': 'off',
+
+        /*
+         * Phase 39: rule batch with resolved violations
+         */
+        'typescript/consistent-indexed-object-style': 'error',
+        'typescript/consistent-type-assertions': 'error',
+        'unicorn/custom-error-definition': 'error',
+        'unicorn/prefer-number-coercion': 'error',
+        'typescript/parameter-properties': 'error',
+        'unicorn/prefer-code-point': 'error',
+        'typescript/return-await': 'error',
+        'typescript/no-deprecated': 'error',
+        'unicorn/prefer-query-selector': 'error',
+        'import/named': 'error',
+        'import/no-anonymous-default-export': 'error',
+        'unicorn/no-process-exit': 'error',
+        'typescript/dot-notation': 'error',
+        'typescript/no-dynamic-delete': 'error',
+        'eslint/no-regex-spaces': 'error',
+        'eslint/func-names': 'error',
+        'node/callback-return': 'error',
+        'eslint/default-case': 'error',
+        'typescript/explicit-module-boundary-types': 'error',
+        'import/unambiguous': 'error',
+        'eslint/no-implicit-globals': 'error',
         'typescript/no-unsafe-return': 'off',
         'typescript/promise-function-async': 'off',
         'typescript/no-non-null-assertion': 'off',

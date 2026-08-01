@@ -387,7 +387,11 @@ class FakeQuickPick implements vscode.QuickPick<CombinePreviewItem> {
   readonly onDidChangeActive: vscode.Event<readonly CombinePreviewItem[]> = () => new FakeDisposable();
   readonly onDidChangeSelection: vscode.Event<readonly CombinePreviewItem[]> = () => new FakeDisposable();
 
-  constructor(private readonly onShow: (quickPick: FakeQuickPick) => void) {}
+  readonly onShow: (quickPick: FakeQuickPick) => void;
+
+  constructor(onShow: (quickPick: FakeQuickPick) => void) {
+    this.onShow = onShow;
+  }
 
   show(): void {
     this.onShow(this);

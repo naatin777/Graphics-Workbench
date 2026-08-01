@@ -358,8 +358,8 @@ function parseSvgDimensions(tag: string): {
   viewBoxWidth: number | undefined;
   viewBoxHeight: number | undefined;
 } {
-  const width = cssNumber(tag.match(/\bwidth\s*=\s*["']([^"']+)/iu)?.[1]);
-  const height = cssNumber(tag.match(/\bheight\s*=\s*["']([^"']+)/iu)?.[1]);
+  const width = cssNumber(tag.match(/\bwidth\s*=\s*["']\s*([-+\d.e]+)/iu)?.[1]);
+  const height = cssNumber(tag.match(/\bheight\s*=\s*["']\s*([-+\d.e]+)/iu)?.[1]);
   const viewBox = tag.match(/\bviewBox\s*=\s*["']\s*([-+\d.e]+)\s+[-+\d.e]+\s+([-+\d.e]+)\s+([-+\d.e]+)\s*["']/iu);
   return {
     width,
@@ -404,7 +404,7 @@ function isUsableSvgDimensions(
 }
 
 function cssNumber(value: string | undefined): number | undefined {
-  const number = value === undefined || value === '' ? Number.NaN : Number.parseFloat(value);
+  const number = value === undefined || value === '' ? Number.NaN : Number(value);
   return Number.isFinite(number) && number > 0 ? number : undefined;
 }
 

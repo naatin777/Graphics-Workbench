@@ -368,7 +368,7 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
     `function isConfigurationObject(value: unknown): value is Record<string, unknown> {\n  return typeof value === 'object' && value !== null && !Array.isArray(value);\n}\n\n` +
     `function isNumberWithinBounds(value: number, schema: ConfigurationSchema): boolean {\n  return (\n    (schema.minimum === undefined || value >= schema.minimum) &&\n    (schema.maximum === undefined || value <= schema.maximum)\n  );\n}\n\n` +
     `function matchesConfigurationObject(value: unknown, schema: ConfigurationSchema): boolean {\n  if (!isConfigurationObject(value)) {\n    return false;\n  }\n\n  for (const [key, propertyValue] of Object.entries(value)) {\n    const propertySchema = schema.properties?.[key];\n    if (propertySchema === undefined) {\n      if (schema.additionalProperties === false) {\n        return false;\n      }\n      continue;\n    }\n    if (!matchesConfigurationSchema(propertyValue, propertySchema)) {\n      return false;\n    }\n  }\n\n  return true;\n}\n\n` +
-    `function matchesConfigurationType(value: unknown, type: ConfigurationSchemaType, schema: ConfigurationSchema): boolean {\n  switch (type) {\n    case 'array': {\n      if (!Array.isArray(value)) {\n        return false;\n      }\n      const { items } = schema;\n      return items === undefined || value.every((item) => matchesConfigurationSchema(item, items));\n    }\n    case 'boolean': {\n      return typeof value === 'boolean';\n    }\n    case 'integer': {\n      return typeof value === 'number' && Number.isInteger(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'number': {\n      return typeof value === 'number' && Number.isFinite(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'object': {\n      return matchesConfigurationObject(value, schema);\n    }\n    case 'string': {\n      return typeof value === 'string';\n    }\n  }\n  return false;\n}\n\n` +
+    `function matchesConfigurationType(value: unknown, type: ConfigurationSchemaType, schema: ConfigurationSchema): boolean {\n  switch (type) {\n    case 'array': {\n      if (!Array.isArray(value)) {\n        return false;\n      }\n      const { items } = schema;\n      return items === undefined || value.every((item) => matchesConfigurationSchema(item, items));\n    }\n    case 'boolean': {\n      return typeof value === 'boolean';\n    }\n    case 'integer': {\n      return typeof value === 'number' && Number.isInteger(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'number': {\n      return typeof value === 'number' && Number.isFinite(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'object': {\n      return matchesConfigurationObject(value, schema);\n    }\n    case 'string': {\n      return typeof value === 'string';\n    }\n    default: {\n      return false;\n    }\n  }\n}\n\n` +
     `function matchesConfigurationSchema(value: unknown, schema: ConfigurationSchema): boolean {\n  if (!schema.types.some((type) => matchesConfigurationType(value, type, schema))) {\n    return false;\n  }\n  return schema.enumValues === undefined || schema.enumValues.some((candidate) => candidate === value);\n}\n\n` +
     renderConfigurationSchemas(configurationEntries, extensionPrefix) +
     renderConfigurationExpectations(configurationEntries, extensionPrefix) +
@@ -380,10 +380,13 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     `export const publicCommandIds = [\n${commandIdList.join('\n')}\n] as const;\n\n` +
     `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +
-    `export function createConfiguration(configurationReader: ConfigurationReader) {\n` +
+    `function createConfigurationInternal(configurationReader: ConfigurationReader) {\n` +
     `  return ${renderConfigs(configurationTree, '    ')} as const;\n` +
     `}\n\n` +
-    `export type Configuration = ReturnType<typeof createConfiguration>;\n` +
+    `export type Configuration = ReturnType<typeof createConfigurationInternal>;\n` +
+    `export function createConfiguration(configurationReader: ConfigurationReader): Configuration {\n` +
+    `  return createConfigurationInternal(configurationReader);\n` +
+    `}\n\n` +
     `export type GetConfiguration = () => Configuration;\n\n` +
     `const defaultConfigurationReader: ConfigurationReader = {\n` +
     `  get(_key: string): undefined {\n` +
