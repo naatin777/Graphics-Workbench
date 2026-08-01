@@ -8,6 +8,10 @@ import {
 import { readMermaidPuppeteerOptions } from '../../src/config/rendering/mermaid_puppeteer_options.js';
 import type { MermaidBackend } from '../../src/operations/conversion/tools/index.js';
 
+export function readConfiguredQpdfPath(): string {
+  return getExtensionConfiguration().execPath.qpdf();
+}
+
 export function readConfiguredConversionTools(): {
   pdftocairoTools: { pdftocairoPath: string };
   ghostscriptTools: { ghostscriptPath: string };
