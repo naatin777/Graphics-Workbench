@@ -165,6 +165,9 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
+    env.app.window.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     const { body, canvases } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
