@@ -64,9 +64,14 @@ textarea {
 
 .workspace {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
   gap: 16px;
   min-height: 0;
+}
+
+.workspace > * + * {
+  border-left: 1px solid var(--vscode-panel-border);
+  padding-left: 16px;
 }
 
 .pdf-preview {
@@ -283,5 +288,14 @@ body.vscode-high-contrast-light .pdf-page {
   .app__meta {
     max-width: none;
     text-align: left;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace > * + * {
+    border-left: 0;
+    padding-left: 0;
   }
 }

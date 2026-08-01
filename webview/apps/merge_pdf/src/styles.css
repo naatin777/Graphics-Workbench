@@ -58,9 +58,14 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, auto);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
   gap: 16px;
   align-items: start;
+}
+
+.workspace > * + * {
+  border-left: 1px solid var(--vscode-panel-border);
+  padding-left: 16px;
 }
 
 .panel {
@@ -273,6 +278,15 @@ body.vscode-high-contrast-light .thumbnail {
 }
 
 @media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace > * + * {
+    border-left: 0;
+    padding-left: 0;
+  }
+
   .action-panel {
     position: static;
   }
