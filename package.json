@@ -599,11 +599,6 @@
           "default": "${fileDirname}/${fileBasenameNoExtension}-crop.pdf",
           "description": "%config.outputPath.cropPdf%"
         },
-        "graphics-workbench.outputPath.splitPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf",
-          "description": "%config.outputPath.splitPdf%"
-        },
         "graphics-workbench.outputPaths": {
           "type": "object",
           "properties": {
@@ -699,6 +694,10 @@
             },
             "convertMermaidToGif": {
               "type": "string"
+            },
+            "splitPdf": {
+              "type": "string",
+              "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf"
             }
           },
           "additionalProperties": false,

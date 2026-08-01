@@ -11,7 +11,6 @@
   "config.convertToWebp.effort": "WebP出力をエンコードするときのCPU effort。0が最速、6が最も低速です。",
   "config.convertToAvif.effort": "AVIF出力をエンコードするときのCPU effort。0が最速、9が最も低速です。",
   "config.outputPath.cropPdf": "PDFをクロップした後の出力ファイル名",
-  "config.outputPath.splitPdf": "PDF分割後の各ページの出力ファイル名",
   "config.outputPaths": "${page}変数を含む変換結果の出力先テンプレート",
   "config.outputPath.pair": "入力形式と出力形式の組み合わせに対する出力先テンプレート",
   "config.outputPath.convertToDrawio": "Draw.ioファイル作成時の出力ファイル名。拡張子で.dio、編集可能な.dio.png、編集可能な.dio.svgを選択します。",

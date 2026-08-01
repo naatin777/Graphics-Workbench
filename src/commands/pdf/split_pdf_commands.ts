@@ -11,6 +11,7 @@ import {
   type SplitPdfPageGroupRow,
 } from '../../application/protocols/split_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { localeMap } from '../../locale_map.js';
 import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfJob } from '../../operations/pdf/split_pdf.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
@@ -28,6 +29,12 @@ import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/c
 
 export { SPLIT_PDF_ALL_PAGES_COMMAND, SPLIT_PDF_CONFIGURE_COMMAND };
 
+const defaultSplitPdfTemplate = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
+
+function readSplitPdfTemplate(dependencies?: CommandDependencies): string {
+  return resolveOutputPathsTemplate(getCommandConfiguration(dependencies), 'splitPdf', defaultSplitPdfTemplate);
+}
+
 export async function splitPdfAllPagesCommand(
   uri?: vscode.Uri,
   uris?: vscode.Uri[],
@@ -41,7 +48,7 @@ export async function splitPdfAllPagesCommand(
       throw new Error('No PDF files were selected.');
     }
 
-    const outputTemplate = getCommandConfiguration(dependencies).outputPath.splitPdf();
+    const outputTemplate = readSplitPdfTemplate(dependencies);
     const jobs = sourceUris.map((sourceUri) => planSplitPdfJob(sourceUri, outputTemplate));
     const outputs = await vscode.window.withProgress(
       {
@@ -164,10 +171,10 @@ async function runSplitPdfConfigureCommand(
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
   }
 
-  const outputTemplate = getCommandConfiguration(dependencies).outputPath.splitPdf();
+  const outputTemplate = readSplitPdfTemplate(dependencies);
 
   if (!outputTemplate.includes('${page}')) {
-    throw new Error('outputPath.splitPdf must contain ${page} for splitPdf.configure.');
+    throw new Error('outputPaths.splitPdf must contain ${page} for splitPdf.configure.');
   }
 
   const outputPathTemplate = createOutputPathPreviewTemplate(outputTemplate, inputUri, workspaceFolder);
