@@ -58,17 +58,13 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  grid-template-rows: minmax(0, 1fr) minmax(0, auto);
   gap: 16px;
   align-items: start;
 }
 
 .panel {
   min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: 6px;
-  background: var(--vscode-sideBar-background);
 }
 
 .source-panel {
@@ -277,10 +273,6 @@ body.vscode-high-contrast-light .thumbnail {
 }
 
 @media (max-width: 900px) {
-  .workspace {
-    grid-template-columns: 1fr;
-  }
-
   .action-panel {
     position: static;
   }

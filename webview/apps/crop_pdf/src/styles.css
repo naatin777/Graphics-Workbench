@@ -64,7 +64,7 @@ textarea {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   min-height: 0;
 }
@@ -76,9 +76,6 @@ textarea {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: 6px;
-  background: var(--vscode-editor-background);
 }
 
 .pdf-preview__toolbar {
@@ -89,9 +86,7 @@ textarea {
   gap: 16px;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-sideBar-background);
+  padding: 0 0 12px;
 }
 
 .pdf-preview__toolbar h2 {
@@ -114,14 +109,10 @@ textarea {
 
 .pdf-page {
   display: grid;
-  gap: 8px;
   justify-items: center;
   width: max-content;
   margin: 0;
-  padding: 12px;
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: 6px;
-  background: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+  outline: 1px solid transparent;
 }
 
 .pdf-preview canvas {
@@ -129,11 +120,6 @@ textarea {
   height: auto;
   background: white;
   box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
-}
-
-.pdf-page__footer {
-  color: var(--vscode-descriptionForeground);
-  font-size: 0.9em;
 }
 
 .pdf-preview__error {
@@ -159,10 +145,6 @@ textarea {
   gap: 16px;
   min-width: 0;
   max-height: 100%;
-  padding: 16px;
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: 6px;
-  background: var(--vscode-sideBar-background);
 }
 
 .panel__group {
@@ -275,10 +257,11 @@ textarea {
 body.vscode-high-contrast .panel,
 body.vscode-high-contrast-light .panel,
 body.vscode-high-contrast .pdf-preview,
+body.vscode-high-contrast .pdf-preview,
 body.vscode-high-contrast-light .pdf-preview,
 body.vscode-high-contrast .pdf-page,
 body.vscode-high-contrast-light .pdf-page {
-  border-width: 2px;
+  outline: 1px solid var(--vscode-contrastBorder);
 }
 
 @media (max-width: 820px) {
@@ -289,9 +272,5 @@ body.vscode-high-contrast-light .pdf-page {
   .app__meta {
     max-width: none;
     text-align: left;
-  }
-
-  .workspace {
-    grid-template-columns: 1fr;
   }
 }
