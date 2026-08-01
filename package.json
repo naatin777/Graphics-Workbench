@@ -626,6 +626,9 @@
             "convertDrawioToTiff": {
               "type": "string"
             },
+            "convertDrawioToEps": {
+              "type": "string"
+            },
             "convertPdfToPng": {
               "type": "string"
             },
