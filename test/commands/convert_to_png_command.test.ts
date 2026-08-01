@@ -121,10 +121,8 @@ suite('PNGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPaths': {
-            convertGifToPng: '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
-            convertTiffToPng: '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
-          },
+          'graphics-workbench.outputPath.convertGifToPng': '${fileDirname}/${fileBasenameNoExtension}.png',
+          'graphics-workbench.outputPath.convertTiffToPng': '${fileDirname}/${fileBasenameNoExtension}.png',
         },
         async () => {
           const commandExecution = vscode.commands.executeCommand(
@@ -136,7 +134,7 @@ suite('PNGに変換コマンド', () => {
         },
       );
 
-      await Promise.all(sourcePaths.map((sourcePath) => assertReadablePng(framePath(sourcePath, 1))));
+      await Promise.all(sourcePaths.map((sourcePath) => assertReadablePng(replaceExtension(sourcePath, '.png'))));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -323,13 +321,6 @@ async function assertReadablePng(filePath: string): Promise<void> {
 
 function replaceExtension(filePath: string, extension: string): string {
   return path.join(path.dirname(filePath), `${path.basename(filePath, path.extname(filePath))}${extension}`);
-}
-
-function framePath(filePath: string, page: number): string {
-  return path.join(
-    path.dirname(filePath),
-    `${path.basename(filePath, path.extname(filePath))}-${String(page).padStart(1, '0')}.png`,
-  );
 }
 
 async function assertFileDoesNotExist(filePath: string): Promise<void> {
