@@ -88,4 +88,43 @@ suite('EPS変換コマンドジョブ', () => {
       await rm(root, { recursive: true, force: true });
     }
   });
+
+  test('editable Draw.io画像をconvertDrawioToEpsテンプレートで計画する', async () => {
+    const workspace = vscode.workspace.workspaceFolders?.[0];
+    assert.ok(workspace);
+    const root = await mkdtemp(path.join(workspace.uri.fsPath, 'graphics-workbench-convert-to-eps-command-drawio-'));
+
+    try {
+      await mkdir(root, { recursive: true });
+      const sourcePath = path.join(root, 'source.drawio.png');
+      await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
+      const configuration = fakeConfiguration({
+        outputPaths: { convertDrawioToEps: '${fileDirname}/custom-${fileBasenameNoExtension}.eps' },
+      });
+
+      const jobs = await createEpsJobs(vscode.Uri.file(sourcePath), configuration);
+      assert.strictEqual(jobs.length, 1);
+      assert.deepStrictEqual(path.basename(jobs[0]?.outputPath ?? ''), 'custom-source.eps');
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test('native Draw.ioファイルはEPS変換を拒否する', async () => {
+    const workspace = vscode.workspace.workspaceFolders?.[0];
+    assert.ok(workspace);
+    const root = await mkdtemp(
+      path.join(workspace.uri.fsPath, 'graphics-workbench-convert-to-eps-command-native-drawio-'),
+    );
+
+    try {
+      await mkdir(root, { recursive: true });
+      const sourcePath = path.join(root, 'source.drawio');
+      await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio'), sourcePath);
+
+      await assert.rejects(createEpsJobs(vscode.Uri.file(sourcePath), fakeConfiguration()), /Native Draw\.io input/u);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 });
