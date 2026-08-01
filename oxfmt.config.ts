@@ -1,4 +1,4 @@
-export default {
+const config = {
   $schema: './node_modules/oxfmt/configuration_schema.json',
   singleQuote: true,
   jsxSingleQuote: true,
@@ -16,3 +16,5 @@ export default {
     '.playwright/**',
   ],
 };
+
+export default config;

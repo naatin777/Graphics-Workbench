@@ -40,7 +40,7 @@ suite('Draw.ioの複雑なpath変換', () => {
       const sourceText = originalSourceBytes.toString('utf8');
       assert.match(sourceText, /name=" ペ　ー　ジ 1"/u);
       assert.match(sourceText, /name=" p ーe2　"/u);
-      assert.match(sourceText, /name="  😀 ーe2　のco😀 py"/u);
+      assert.match(sourceText, /name=" {2}😀 ーe2　のco😀 py"/u);
 
       const drawioCalls: { executable: string; args: string[] }[] = [];
       const drawio: DrawioBackend = {

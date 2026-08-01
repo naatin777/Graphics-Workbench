@@ -80,7 +80,7 @@ async function writeMergedPdf(
     runtime?.signal?.throwIfAborted();
     await writeFile(stagedOutputPath, await mergedDocument.save());
     runtime?.signal?.throwIfAborted();
-    return commitStagedOutputs(
+    return await commitStagedOutputs(
       [{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }],
       commitOptionsForRuntime(runtime),
     );
