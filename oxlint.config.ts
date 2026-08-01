@@ -410,6 +410,7 @@ export default defineConfig({
         'typescript/no-floating-promises': 'off',
         'promise/prefer-await-to-then': 'off',
         'typescript/no-unsafe-assignment': 'off',
+        'typescript/no-unsafe-argument': 'off',
         'typescript/no-unnecessary-condition': 'off',
         'typescript/no-unsafe-return': 'off',
         'typescript/promise-function-async': 'off',

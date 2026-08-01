@@ -31,6 +31,7 @@ import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import {
@@ -41,7 +42,7 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export const CONVERT_TO_AVIF_COMMAND = 'graphics-workbench.convertToAvif';
+export { CONVERT_TO_AVIF_COMMAND } from '../command_ids.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.avif';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.avif';
@@ -62,12 +63,6 @@ export async function convertToAvifCommand(
     const configuration = getCommandConfiguration(dependencies);
     const defaultConfiguration = getDefaultConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
-    const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) =>
-        planAvifConversionJobs(sourceUri, configuration, defaultConfiguration, maxInputPixels),
-      ),
-    );
-    const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const avif = readAvifOutputOptions(configuration);
@@ -81,8 +76,14 @@ export async function convertToAvifCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('AVIF', sourceUris.length),
-      run: async (runtime) =>
-        executeAvifConversion({
+      run: async (runtime) => {
+        const plannedJobs = await Promise.all(
+          sourceUris.map(async (sourceUri) =>
+            planAvifConversionJobs(sourceUri, configuration, defaultConfiguration, maxInputPixels, runtime),
+          ),
+        );
+        const jobs = plannedJobs.flat();
+        return executeAvifConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools,
@@ -91,7 +92,8 @@ export async function convertToAvifCommand(
           drawioTools,
           avif,
           runtime,
-        }),
+        });
+      },
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -109,6 +111,7 @@ async function planAvifConversionJobs(
   configuration: Configuration,
   defaultConfiguration: Configuration,
   maxInputPixels: number,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToAvifJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -125,7 +128,7 @@ async function planAvifConversionJobs(
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, configuration);
+    return createPdfJobs(sourcePath, workspace, configuration, runtime);
   }
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
@@ -166,7 +169,10 @@ async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToAvifJob[]> {
+  runtime?.signal?.throwIfAborted();
+  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
 
@@ -177,9 +183,12 @@ async function createPdfJobs(
   const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToAvif', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
-  return Array.from({ length: pageCount }, (_value, index) => {
+  const jobs: ConvertToAvifJob[] = [];
+
+  for (let index = 0; index < pageCount; index += 1) {
+    runtime?.signal?.throwIfAborted();
     const page = index + 1;
-    return {
+    jobs.push({
       sourcePath,
       workspacePath: workspace.uri.fsPath,
       outputPath: resolveOutputPath(
@@ -193,8 +202,10 @@ async function createPdfJobs(
         { allowedExtensions: ['.avif'] },
       ),
       page,
-    };
-  });
+    });
+  }
+
+  return jobs;
 }
 
 function outputTemplateForSource(

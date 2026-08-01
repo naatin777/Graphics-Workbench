@@ -2,7 +2,8 @@
 
 ## Current Task
 
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 38（strict experiment）
+- [0209: P1レビュー指摘の修正](0209-fix-p1-review-findings.md) — Done
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — On hold — Phase 38（strict experiment）
 
 ## Task boundaries
 
@@ -68,6 +69,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0209: P1レビュー指摘の修正](0209-fix-p1-review-findings.md) — Done — Undo履歴・dynamic import・Mermaidキャンセル・PDF Progress・実行パスscope
 - [0207: パッケージ済みPlaywrightテストの実行時間を短縮する](0207-speed-up-packaged-playwright-tests.md) — Done — VSIX installation shared per spec; Windows Playwright 7.6m → 2.0m
 - [0206: 現行テスト契約を整理する](0206-organize-current-test-contracts.md) — Done — current test matrix synchronized; golden content fixtures deferred
 - [0205: v1のtest contractを整理する](0205-organize-test-contracts.md) — Done — Evidence matrix and runtime records synchronized

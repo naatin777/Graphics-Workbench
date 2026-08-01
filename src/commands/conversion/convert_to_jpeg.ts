@@ -26,6 +26,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -37,7 +38,7 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export const CONVERT_TO_JPEG_COMMAND = 'graphics-workbench.convertToJpeg';
+export { CONVERT_TO_JPEG_COMMAND } from '../command_ids.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.jpeg';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg';
@@ -58,12 +59,6 @@ export async function convertToJpegCommand(
     const configuration = getCommandConfiguration(dependencies);
     const defaultConfiguration = getDefaultConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
-    const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) =>
-        planJpegConversionJobs(sourceUri, configuration, defaultConfiguration, maxInputPixels),
-      ),
-    );
-    const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
@@ -76,8 +71,14 @@ export async function convertToJpegCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('JPEG', sourceUris.length),
-      run: async (runtime) =>
-        executeJpegConversion({
+      run: async (runtime) => {
+        const plannedJobs = await Promise.all(
+          sourceUris.map(async (sourceUri) =>
+            planJpegConversionJobs(sourceUri, configuration, defaultConfiguration, maxInputPixels, runtime),
+          ),
+        );
+        const jobs = plannedJobs.flat();
+        return executeJpegConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools,
@@ -85,7 +86,8 @@ export async function convertToJpegCommand(
           mermaidTools,
           drawioTools,
           runtime,
-        }),
+        });
+      },
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -103,6 +105,7 @@ async function planJpegConversionJobs(
   configuration: Configuration,
   defaultConfiguration: Configuration,
   maxInputPixels: number,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToJpegJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -119,7 +122,7 @@ async function planJpegConversionJobs(
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, configuration);
+    return createPdfJobs(sourcePath, workspace, configuration, runtime);
   }
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
@@ -160,7 +163,10 @@ async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToJpegJob[]> {
+  runtime?.signal?.throwIfAborted();
+  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
 
@@ -171,9 +177,12 @@ async function createPdfJobs(
   const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToJpeg', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
-  return Array.from({ length: pageCount }, (_value, index) => {
+  const jobs: ConvertToJpegJob[] = [];
+
+  for (let index = 0; index < pageCount; index += 1) {
+    runtime?.signal?.throwIfAborted();
     const page = index + 1;
-    return {
+    jobs.push({
       sourcePath,
       workspacePath: workspace.uri.fsPath,
       outputPath: resolveOutputPath(
@@ -187,8 +196,10 @@ async function createPdfJobs(
         { allowedExtensions: ['.jpg', '.jpeg'] },
       ),
       page,
-    };
-  });
+    });
+  }
+
+  return jobs;
 }
 
 function outputTemplateForSource(

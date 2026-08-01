@@ -18,6 +18,7 @@ import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import { SPLIT_PDF_ALL_PAGES_COMMAND, SPLIT_PDF_CONFIGURE_COMMAND } from '../command_ids.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
@@ -25,8 +26,7 @@ import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecy
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 
-export const SPLIT_PDF_ALL_PAGES_COMMAND = 'graphics-workbench.splitPdf.allPages';
-export const SPLIT_PDF_CONFIGURE_COMMAND = 'graphics-workbench.splitPdf.configure';
+export { SPLIT_PDF_ALL_PAGES_COMMAND, SPLIT_PDF_CONFIGURE_COMMAND };
 
 export async function splitPdfAllPagesCommand(
   uri?: vscode.Uri,

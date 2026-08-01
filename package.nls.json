@@ -1,4 +1,5 @@
 {
+  "workspaceTrust.description": "Graphics Workbench executes external tools such as Draw.io, Ghostscript, and pdftocairo, so it is not available in untrusted workspaces.",
   "config.execPath.drawio": "Path to the draw.io executable. If not specified, the default command for each OS will be used. (Windows: drawio.exe, macOS: drawio, others: drawio)",
   "config.execPath.ghostscript": "Path to the Ghostscript executable. If not specified, the default command will be used. (macOS/Linux: gs, Windows: gswin64c.exe)",
   "config.execPath.pdftocairo": "Path to the pdftocairo executable. If not specified, pdftocairo will be used.",
@@ -159,6 +160,7 @@
   "message.progress.mergePdf.title": "Merging {0} PDF file(s)",
   "message.progress.prepareConversion": "Preparing {0} conversion...",
   "message.progress.completedCount": "Processed {0} of {1} file(s)",
+  "message.progress.analyzingPdf": "Analyzing PDF...",
   "message.progress.preparePdfSplit": "Preparing PDF split...",
   "message.progress.convertDrawioToPdf.title": "Converting {0} Draw.io file(s) to split PDFs",
   "message.progress.convertDrawioToPdfDirectly.title": "Converting {0} Draw.io file(s) to one PDF each",

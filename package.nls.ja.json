@@ -1,4 +1,5 @@
 {
+  "workspaceTrust.description": "Graphics WorkbenchはDraw.io、Ghostscript、pdftocairoなどの外部プログラムを実行するため、信頼されていないワークスペースでは利用できません。",
   "config.execPath.drawio": "drawioの実行ファイルのパス。未指定の場合はOSごとの既定コマンドを使用します。(Windowsの場合はdrawio.exe, macOSの場合はdrawio, その他の場合はdrawio)",
   "config.execPath.ghostscript": "ghostscriptの実行ファイルのパス。未指定の場合はOSごとの既定コマンドを使用します。(macOS/Linuxの場合はgs, Windowsの場合はgswin64c.exe)",
   "config.execPath.pdftocairo": "pdftocairoの実行ファイルのパス。未指定の場合はpdftocairo",
@@ -159,6 +160,7 @@
   "message.progress.mergePdf.title": "{0}個のPDFファイルを結合しています",
   "message.progress.prepareConversion": "{0}変換を準備しています...",
   "message.progress.completedCount": "{1}件中{0}件を処理しました",
+  "message.progress.analyzingPdf": "PDFを解析しています...",
   "message.progress.preparePdfSplit": "PDF分割を準備しています...",
   "message.progress.convertDrawioToPdf.title": "{0}個のDraw.ioファイルをページごとのPDFに変換しています",
   "message.progress.convertDrawioToPdfDirectly.title": "{0}個のDraw.ioファイルをそれぞれ1つのPDFに変換しています",

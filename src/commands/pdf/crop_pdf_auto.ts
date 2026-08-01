@@ -15,7 +15,7 @@ import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecy
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 
-export const CROP_PDF_AUTO_COMMAND = 'graphics-workbench.cropPdf.auto';
+export { CROP_PDF_AUTO_COMMAND } from '../command_ids.js';
 
 export async function cropPdfAutoCommand(
   uri?: vscode.Uri,

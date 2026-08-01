@@ -499,21 +499,25 @@
         "graphics-workbench.execPath.drawio": {
           "type": "string",
           "default": "",
+          "scope": "machine",
           "description": "%config.execPath.drawio%"
         },
         "graphics-workbench.execPath.ghostscript": {
           "type": "string",
           "default": "",
+          "scope": "machine",
           "description": "%config.execPath.ghostscript%"
         },
         "graphics-workbench.execPath.pdftocairo": {
           "type": "string",
           "default": "pdftocairo",
+          "scope": "machine",
           "description": "%config.execPath.pdftocairo%"
         },
         "graphics-workbench.execPath.rsvgConvert": {
           "type": "string",
           "default": "rsvg-convert",
+          "scope": "machine",
           "description": "%config.execPath.rsvgConvert%"
         },
         "graphics-workbench.raster.maxInputPixels": {
@@ -574,6 +578,7 @@
         "graphics-workbench.puppeteer.executablePath": {
           "type": "string",
           "default": "",
+          "scope": "machine",
           "description": "%config.puppeteer.executablePath%"
         },
         "graphics-workbench.puppeteer.browser": {
@@ -1127,5 +1132,11 @@
     "puppeteer@25.3.0": false,
     "keytar": false,
     "@vscode/vsce-sign": false
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "%workspaceTrust.description%"
+    }
   }
 }

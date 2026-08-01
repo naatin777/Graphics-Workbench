@@ -22,7 +22,6 @@ const qualityOptions: { quality: GhostscriptQuality; label: string; description:
   { quality: 'prepress', label: 'Prepress', description: localeMap('quickPick.compressPdf.quality.prepress') },
   { quality: 'default', label: 'Default', description: localeMap('quickPick.compressPdf.quality.default') },
 ];
-export const COMPRESS_PDF_COMMAND = 'graphics-workbench.compressPdf';
 
 export async function compressPdfCommand(
   uri?: vscode.Uri,

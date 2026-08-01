@@ -8,6 +8,7 @@
     "webview/apps/*/vite.config.ts",
     "webview/apps/*/vitest.config.ts",
     "scripts/*.mjs",
+    "src/operations/conversion/tools/mermaid_runner.ts",
     ".vscode-test.mjs"
   ],
   "project": ["src/**/*.ts", "test/**/*.ts", "webview/**/*.{ts,tsx}", "scripts/*.mjs"],
