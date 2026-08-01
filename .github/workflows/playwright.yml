@@ -133,7 +133,7 @@ jobs:
             *) echo "Unsupported runner OS: ${{ runner.os }}" >&2; exit 1 ;;
           esac
           find test/playwright/electron -type f \
-            -path '*-snapshots/*' \
+            -path '*/__snapshots__/*' \
             -name "*-vscode-electron-${suffix}.png" \
             -delete
 
@@ -156,11 +156,11 @@ jobs:
             test-results/
           if-no-files-found: ignore
 
-      - if: success() && steps.snapshot_flag.outputs.update_snapshots == 'true'
+      - if: success()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-screenshots-${{ matrix.artifact_suffix }}
-          path: test/playwright/electron/**/*-snapshots/*.png
+          path: test/playwright/electron/**/__snapshots__/*.png
           if-no-files-found: ignore
           retention-days: 7
 

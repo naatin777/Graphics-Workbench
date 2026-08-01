@@ -122,7 +122,7 @@ export async function setupElectronTest(
   const sourceFixture = join(operationPdfInputDirectory, cropConfigureFixture.fileName);
   const rasterSourceFixture = operationPngInputPath;
   const inputPath = join(workspacePath, cropConfigureFixture.fileName);
-  const outputPath = join(workspacePath, 'q a-crop.pdf');
+  const outputPath = join(workspacePath, 'multilingual-text-crop.pdf');
 
   const directories = [
     mkdir(workspacePath, { recursive: true }),

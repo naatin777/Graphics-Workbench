@@ -113,7 +113,7 @@ suite('拡張機能の基本動作', () => {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
       const sourcePath = path.join(temporaryDirectory, 'document.pdf');
-      await copyFile(path.join(operationPdfInputDirectory, 'q a.pdf'), sourcePath);
+      await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
       await vscode.commands.executeCommand(CROP_PDF_AUTO_COMMAND, vscode.Uri.file(sourcePath));
 
@@ -139,7 +139,7 @@ suite('拡張機能の基本動作', () => {
       sandbox.stub(vscode.window, 'showWarningMessage').resolves(undefined);
 
       const sourcePath = path.join(temporaryDirectory, 'split-test.pdf');
-      await copyFile(path.join(operationPdfInputDirectory, 'q a.pdf'), sourcePath);
+      await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
       await vscode.commands.executeCommand(SPLIT_PDF_ALL_PAGES_COMMAND, vscode.Uri.file(sourcePath));
 

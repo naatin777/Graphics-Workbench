@@ -16,14 +16,14 @@ const EPS_FIXTURE = operationEpsInputPath;
 const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(getExtensionConfiguration());
 
 const supportedInputFixtures = [
-  { format: 'png', width: 370, height: 370 },
+  { format: 'png', width: 320, height: 200 },
   { format: 'jpeg', width: 11, height: 7 },
   { format: 'webp', width: 13, height: 9 },
   { format: 'avif', width: 17, height: 11 },
   { format: 'gif', width: 19, height: 13 },
   { format: 'tiff', width: 23, height: 15 },
   { format: 'svg', width: 29, height: 17 },
-  { format: 'eps', width: 100, height: 100 },
+  { format: 'eps', width: 216, height: 216 },
 ] as const;
 
 type SupportedInputFormat = (typeof supportedInputFixtures)[number]['format'];

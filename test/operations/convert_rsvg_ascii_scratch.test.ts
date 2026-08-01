@@ -24,7 +24,7 @@ import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/inde
 import { operationPathCompatibilitySvgInputPath, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const svgFixturePath = operationPathCompatibilitySvgInputPath;
-const pdfFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
+const pdfFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 const complexSourceFileName =
   '　日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹 ＡＢＣ１２３①.svg';
 const complexOutputFileName = '結果 한국어 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹　ＡＢＣ①.pdf';

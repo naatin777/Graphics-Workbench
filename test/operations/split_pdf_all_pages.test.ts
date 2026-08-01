@@ -25,9 +25,9 @@ import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.
 suite('PDF全ページ分割', () => {
   test('すべてのページを1始まりのページ番号で分割し、作業ファイルを残す', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-split-test-'));
-    const sourcePath = path.join(workspacePath, 'q a.pdf');
+    const sourcePath = path.join(workspacePath, 'multi-page-table.pdf');
     const outputDirectory = path.join(workspacePath, 'source');
-    await copyFile(fixturePath('q a.pdf'), sourcePath);
+    await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
 
     try {
       await splitPdfAllPages({
@@ -56,8 +56,14 @@ suite('PDF全ページ分割', () => {
         });
       }
 
-      const stagingDirectory = path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run', '1-q_a');
-      await assert.doesNotReject(access(path.join(stagingDirectory, 'q a.pdf')));
+      const stagingDirectory = path.join(
+        workspacePath,
+        '.graphics-workbench',
+        'split-pdf',
+        'run',
+        '1-multi-page-table',
+      );
+      await assert.doesNotReject(access(path.join(stagingDirectory, 'multi-page-table.pdf')));
       await assert.doesNotReject(access(path.join(stagingDirectory, 'pages', '1.pdf')));
       await assert.doesNotReject(access(path.join(stagingDirectory, 'pages', '2.pdf')));
     } finally {
@@ -67,7 +73,9 @@ suite('PDF全ページ分割', () => {
 
   test('複数PDFはすべての入力が成功してから出力する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-split-test-'));
-    const sourcePaths = ['q a.pdf', ' 薔薇🌹.pdf'].map((fileName) => path.join(workspacePath, fileName));
+    const sourcePaths = ['multi-page-table.pdf', 'multilingual-text.pdf'].map((fileName) =>
+      path.join(workspacePath, fileName),
+    );
 
     try {
       await Promise.all(sourcePaths.map((sourcePath) => copyFile(fixturePath(path.basename(sourcePath)), sourcePath)));

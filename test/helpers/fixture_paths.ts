@@ -11,17 +11,17 @@ export const testInputDirectory: string = path.join(testRootDirectory, 'input');
 export const testOutputDirectory: string = path.join(testRootDirectory, 'output');
 export const testWorkspaceDirectory: string = path.join(testRootDirectory, 'workspace');
 export const testVscodeSettingsPath: string = path.join(testRootDirectory, 'vscode-settings', 'settings.json');
-const testOperationInputDirectory: string = path.join(testInputDirectory, 'valid', 'operations');
-export const operationPngInputPath = path.join(testOperationInputDirectory, 'png', 'test.png');
-export const operationEpsInputPath = path.join(testOperationInputDirectory, 'eps', 'minimal.eps');
-export const operationPdfInputDirectory = path.join(testOperationInputDirectory, 'pdf-operations');
+export const operationPngInputPath = path.join(testInputDirectory, 'valid', 'png', 'transparent-shapes.png');
+export const operationEpsInputPath = path.join(testInputDirectory, 'valid', 'eps', 'color-swatches.eps');
+export const operationPdfInputDirectory = path.join(testInputDirectory, 'valid', 'pdf');
 export const operationPdfOutputDirectory = path.join(testOutputDirectory, 'pdf', 'pdf-operations');
 export const operationPathCompatibilitySvgInputPath = path.join(
-  testOperationInputDirectory,
-  'path-compatibility',
-  'source.svg',
+  testInputDirectory,
+  'valid',
+  'svg',
+  'transparent-shapes.svg',
 );
-export const invalidPreflightInputDirectory = path.join(testInputDirectory, 'invalid', 'operations', 'preflight');
+export const invalidPreflightInputDirectory = path.join(testInputDirectory, 'invalid', 'pdf');
 
 function findProjectRoot(startDirectory: string): string {
   let currentDirectory = path.resolve(startDirectory);
