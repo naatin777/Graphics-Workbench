@@ -202,7 +202,51 @@ After submitting, report: PR/stack URLs, stack order bottom-to-top, draft/publis
 
 ## merge and cleanup
 
-Require explicit approval before merging. Prefer Graphite's stack-aware merge (`gt merge` on a stack) when available. After merge, run `gt sync` to clean up, but verify it does not delete a working branch unintentionally. Confirm: merged branches cleaned as intended, remaining branches parented on the latest trunk, no uncommitted changes lost, and no branch left stranded in another worktree.
+Merge a stack with Graphite's native `gt merge` from the CLI. Do not use the GitHub Merge button or `gh pr merge` for stacked PRs: merging individual PRs that way deletes the base branch and can auto-close upstack PRs. `gt merge` merges the PRs for all branches from trunk up to the current branch via Graphite; `gt sync` then deletes merged branches and restacks the remaining stack onto the updated trunk.
+
+### Positioning
+
+- Whole stack: move to the top of the stack with `gt top`.
+- Partial stack: move to the last branch you want merged. `gt merge` merges trunk up to and including the current branch only.
+
+### Procedure
+
+Run the checks in this order every time:
+
+```bash
+git status --short
+git worktree list
+gt --version
+gt merge --help
+gt log short
+
+# whole stack: gt top; partial: checkout the last branch to merge
+
+# confirm merge target
+gt merge --dry-run
+
+# run only when the reported PRs match intent
+gt merge --confirm
+
+# reconcile local state after merging
+gt sync
+gt log short
+git status --short
+```
+
+### Safety rules
+
+- Never merge without running `gt merge --dry-run` first.
+- Never run `gt merge` unless `gt merge --help` confirms it is a native Graphite command.
+- Stop immediately if `gt merge` would run `git merge` as a git passthrough.
+- Never merge with uncommitted changes in the working tree.
+- If a relevant branch is checked out in another worktree, confirm the impact before merging.
+- Abort if the reported merge target includes unintended PRs.
+- If `gt merge` fails or stops on a conflict, do not continue merging manually from GitHub; diagnose and resolve before retrying.
+- Always run `gt sync` after merging to clean up merged branches and restack the remaining stack, then verify with `gt log short` and `git status --short`.
+- Before an Agent runs `gt merge` or `gt sync` (remote updates or history changes), present the target and obtain explicit user approval.
+
+Editing the same file across multiple stacked PRs is allowed; each PR just needs a coherent diff against its parent branch.
 
 ## Stack restructuring
 

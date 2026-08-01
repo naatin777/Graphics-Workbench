@@ -78,6 +78,17 @@ gt <command> --help
 | Force re-push unchanged branches  | `gt submit --always`                                       | force-push                    | yes                      | Fixes inconsistent Graphite stack view                      |
 | Preview without remote change     | `gt submit --dry-run`                                      | none                          | no                       | —                                                           |
 
+## Merge
+
+| Purpose                                          | Command              | Side effects                                                                 | Approval | Notes                                                                                      |
+| ------------------------------------------------ | -------------------- | ---------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| Merge PRs from trunk up to the current branch    | `gt merge`           | merges PRs, may delete branches on remote                                    | yes      | Native Graphite merge; do not use `gh pr merge` or the GitHub Merge button for stacked PRs |
+| Report PRs that would be merged, without merging | `gt merge --dry-run` | none                                                                         | no       | Mandatory before any merge                                                                 |
+| Merge with confirmation                          | `gt merge --confirm` | merges PRs after prompting; also prompts if local and remote branches differ | yes      | `-c` alias                                                                                 |
+| Reconcile after merge (delete merged, restack)   | `gt sync`            | fetch, rebase, branch cleanup, possibly force-updates trunk                  | yes      | Always run after merging; see Synchronize and restack below                                |
+
+Positioning: `gt top` merges the whole stack; checking out the last branch you want merged merges trunk up to and including that branch.
+
 ## Restructure
 
 | Purpose                                    | Command      | Side effects                         | Approval | Notes                                                                       |
