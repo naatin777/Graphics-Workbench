@@ -653,51 +653,6 @@
             "convertPdfToEps": {
               "type": "string"
             },
-            "convertPngToWebp": {
-              "type": "string"
-            },
-            "convertJpegToWebp": {
-              "type": "string"
-            },
-            "convertAvifToWebp": {
-              "type": "string"
-            },
-            "convertSvgToWebp": {
-              "type": "string"
-            },
-            "convertMermaidToWebp": {
-              "type": "string"
-            },
-            "convertPngToGif": {
-              "type": "string"
-            },
-            "convertJpegToGif": {
-              "type": "string"
-            },
-            "convertWebpToGif": {
-              "type": "string"
-            },
-            "convertAvifToGif": {
-              "type": "string"
-            },
-            "convertGifToPng": {
-              "type": "string"
-            },
-            "convertTiffToPng": {
-              "type": "string"
-            },
-            "convertTiffToGif": {
-              "type": "string"
-            },
-            "convertGifToTiff": {
-              "type": "string"
-            },
-            "convertSvgToGif": {
-              "type": "string"
-            },
-            "convertMermaidToGif": {
-              "type": "string"
-            },
             "splitPdf": {
               "type": "string",
               "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf"

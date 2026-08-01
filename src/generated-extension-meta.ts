@@ -306,51 +306,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
       convertPdfToEps: {
         types: ['string'],
       },
-      convertPngToWebp: {
-        types: ['string'],
-      },
-      convertJpegToWebp: {
-        types: ['string'],
-      },
-      convertAvifToWebp: {
-        types: ['string'],
-      },
-      convertSvgToWebp: {
-        types: ['string'],
-      },
-      convertMermaidToWebp: {
-        types: ['string'],
-      },
-      convertPngToGif: {
-        types: ['string'],
-      },
-      convertJpegToGif: {
-        types: ['string'],
-      },
-      convertWebpToGif: {
-        types: ['string'],
-      },
-      convertAvifToGif: {
-        types: ['string'],
-      },
-      convertGifToPng: {
-        types: ['string'],
-      },
-      convertTiffToPng: {
-        types: ['string'],
-      },
-      convertTiffToGif: {
-        types: ['string'],
-      },
-      convertGifToTiff: {
-        types: ['string'],
-      },
-      convertSvgToGif: {
-        types: ['string'],
-      },
-      convertMermaidToGif: {
-        types: ['string'],
-      },
       splitPdf: {
         types: ['string'],
       },
@@ -764,8 +719,6 @@ type OutputPathsToPdf = {
 type OutputPathsToPng = {
   readonly convertDrawioToPng?: string;
   readonly convertPdfToPng?: string;
-  readonly convertGifToPng?: string;
-  readonly convertTiffToPng?: string;
 };
 
 type OutputPathsToJpeg = {
@@ -776,11 +729,6 @@ type OutputPathsToJpeg = {
 type OutputPathsToWebp = {
   readonly convertDrawioToWebp?: string;
   readonly convertPdfToWebp?: string;
-  readonly convertPngToWebp?: string;
-  readonly convertJpegToWebp?: string;
-  readonly convertAvifToWebp?: string;
-  readonly convertSvgToWebp?: string;
-  readonly convertMermaidToWebp?: string;
 };
 
 type OutputPathsToAvif = {
@@ -796,19 +744,11 @@ type OutputPathsToSvg = {
 type OutputPathsToGif = {
   readonly convertDrawioToGif?: string;
   readonly convertPdfToGif?: string;
-  readonly convertPngToGif?: string;
-  readonly convertJpegToGif?: string;
-  readonly convertWebpToGif?: string;
-  readonly convertAvifToGif?: string;
-  readonly convertTiffToGif?: string;
-  readonly convertSvgToGif?: string;
-  readonly convertMermaidToGif?: string;
 };
 
 type OutputPathsToTiff = {
   readonly convertDrawioToTiff?: string;
   readonly convertPdfToTiff?: string;
-  readonly convertGifToTiff?: string;
 };
 
 type OutputPathsToEps = {
@@ -961,34 +901,19 @@ export const conversionPairs = {
     { source: 'pdf', target: 'avif', setting: 'convertPdfToAvif' },
     { source: 'drawio', target: 'eps', setting: 'convertDrawioToEps' },
     { source: 'pdf', target: 'eps', setting: 'convertPdfToEps' },
-    { source: 'avif', target: 'gif', setting: 'convertAvifToGif' },
     { source: 'drawio', target: 'gif', setting: 'convertDrawioToGif' },
-    { source: 'jpeg', target: 'gif', setting: 'convertJpegToGif' },
-    { source: 'mermaid', target: 'gif', setting: 'convertMermaidToGif' },
     { source: 'pdf', target: 'gif', setting: 'convertPdfToGif' },
-    { source: 'png', target: 'gif', setting: 'convertPngToGif' },
-    { source: 'svg', target: 'gif', setting: 'convertSvgToGif' },
-    { source: 'tiff', target: 'gif', setting: 'convertTiffToGif' },
-    { source: 'webp', target: 'gif', setting: 'convertWebpToGif' },
     { source: 'drawio', target: 'jpeg', setting: 'convertDrawioToJpeg' },
     { source: 'pdf', target: 'jpeg', setting: 'convertPdfToJpeg' },
     { source: 'drawio', target: 'pdf', setting: 'convertDrawioToPdf' },
     { source: 'drawio', target: 'png', setting: 'convertDrawioToPng' },
-    { source: 'gif', target: 'png', setting: 'convertGifToPng' },
     { source: 'pdf', target: 'png', setting: 'convertPdfToPng' },
-    { source: 'tiff', target: 'png', setting: 'convertTiffToPng' },
     { source: 'drawio', target: 'svg', setting: 'convertDrawioToSvg' },
     { source: 'pdf', target: 'svg', setting: 'convertPdfToSvg' },
     { source: 'drawio', target: 'tiff', setting: 'convertDrawioToTiff' },
-    { source: 'gif', target: 'tiff', setting: 'convertGifToTiff' },
     { source: 'pdf', target: 'tiff', setting: 'convertPdfToTiff' },
-    { source: 'avif', target: 'webp', setting: 'convertAvifToWebp' },
     { source: 'drawio', target: 'webp', setting: 'convertDrawioToWebp' },
-    { source: 'jpeg', target: 'webp', setting: 'convertJpegToWebp' },
-    { source: 'mermaid', target: 'webp', setting: 'convertMermaidToWebp' },
     { source: 'pdf', target: 'webp', setting: 'convertPdfToWebp' },
-    { source: 'png', target: 'webp', setting: 'convertPngToWebp' },
-    { source: 'svg', target: 'webp', setting: 'convertSvgToWebp' },
   ],
 } as const;
 
