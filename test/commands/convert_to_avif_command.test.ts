@@ -31,7 +31,7 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
@@ -122,6 +122,16 @@ suite('AVIFに変換コマンド', () => {
     await assertMermaidFileConvertsToAvif('source.mermaid');
   });
 
+  test('GIF、TIFF、EPSをAVIFへ変換する', async () => {
+    for (const [format, fixtureFileName] of [
+      ['gif', 'swirl-gradient.gif'],
+      ['tiff', 'heatmap.tiff'],
+      ['eps', 'color-swatches.eps'],
+    ] as const) {
+      await assertFixtureConvertsToAvif(format, fixtureFileName);
+    }
+  });
+
   test('AVIFからAVIFへは変換しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
@@ -190,6 +200,22 @@ async function assertMermaidFileConvertsToAvif(fileName: string): Promise<void> 
   try {
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
+
+    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
+
+    await assertReadableAvif(replaceExtension(sourcePath, '.avif'));
+  } finally {
+    await removeTemporaryDirectory(temporaryDirectory);
+  }
+}
+
+async function assertFixtureConvertsToAvif(format: string, fixtureFileName: string): Promise<void> {
+  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+  try {
+    const sourcePath = path.join(temporaryDirectory, fixtureFileName);
+    await copyFile(path.join(testInputDirectory, 'valid', format, fixtureFileName), sourcePath);
 
     const commandExecution = vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
     await runCommandAndClearNotificationsUntilDone(commandExecution);
