@@ -883,6 +883,11 @@
           "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
           "description": "%config.outputPath.convertMermaidToWebp%"
         },
+        "graphics-workbench.outputPath.convertGifToWebp": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
+          "description": "%config.outputPath.convertGifToWebp%"
+        },
         "graphics-workbench.outputPath.convertMermaidToAvif": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}.avif",

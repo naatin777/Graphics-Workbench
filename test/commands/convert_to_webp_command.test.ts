@@ -25,13 +25,17 @@ import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:
 import path from 'node:path';
 
 import { CONVERT_TO_WEBP_COMMAND } from '../../src/commands/conversion/convert_to_webp.js';
+import {
+  CONVERT_TO_WEBP_PRESERVE_COMMAND,
+  CONVERT_TO_WEBP_SEPARATELY_COMMAND,
+} from '../../src/commands/command_ids.js';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
@@ -120,6 +124,49 @@ suite('WebPに変換コマンド', () => {
 
   test('.mermaidファイルを読み取り可能なWebPへ変換する', async () => {
     await assertMermaidFileConvertsToWebp('source.mermaid');
+  });
+
+  test('GIFをアニメーション保持して1つのWebPへ変換する', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const sourcePath = path.join(temporaryDirectory, 'rotating-vector-field.gif');
+      await copyFile(path.join(testInputDirectory, 'valid', 'gif', 'rotating-vector-field.gif'), sourcePath);
+
+      const commandExecution = vscode.commands.executeCommand(
+        CONVERT_TO_WEBP_PRESERVE_COMMAND,
+        vscode.Uri.file(sourcePath),
+      );
+      await runCommandAndClearNotificationsUntilDone(commandExecution);
+
+      const outputPath = replaceExtension(sourcePath, '.webp');
+      const metadata = await sharp(outputPath).metadata();
+      assert.ok((metadata.pages ?? 1) > 1);
+    } finally {
+      await removeTemporaryDirectory(temporaryDirectory);
+    }
+  });
+
+  test('GIFをフレーム分割してページ別のWebPへ変換する', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const sourcePath = path.join(temporaryDirectory, 'rotating-vector-field.gif');
+      await copyFile(path.join(testInputDirectory, 'valid', 'gif', 'rotating-vector-field.gif'), sourcePath);
+
+      const commandExecution = vscode.commands.executeCommand(
+        CONVERT_TO_WEBP_SEPARATELY_COMMAND,
+        vscode.Uri.file(sourcePath),
+      );
+      await runCommandAndClearNotificationsUntilDone(commandExecution);
+
+      const firstFramePath = path.join(temporaryDirectory, 'rotating-vector-field-01.webp');
+      const secondFramePath = path.join(temporaryDirectory, 'rotating-vector-field-02.webp');
+      await assertReadableWebp(firstFramePath);
+      await assertReadableWebp(secondFramePath);
+    } finally {
+      await removeTemporaryDirectory(temporaryDirectory);
+    }
   });
 
   test('WebPからWebPへは変換しない', async () => {
