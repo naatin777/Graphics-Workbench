@@ -843,6 +843,36 @@ export const publicCommandIds = [
   'graphics-workbench.compressPdf',
 ] as const;
 
+export const CROP_PDF_AUTO_COMMAND = 'graphics-workbench.cropPdf.auto';
+export const UNDO_LAST_CONVERSION_COMMAND = 'graphics-workbench.undoLastConversion';
+export const TOGGLE_SAFE_MODE_COMMAND = 'graphics-workbench.toggleSafeMode';
+export const CROP_PDF_CONFIGURE_COMMAND = 'graphics-workbench.cropPdf.configure';
+export const SPLIT_PDF_ALL_PAGES_COMMAND = 'graphics-workbench.splitPdf.allPages';
+export const SPLIT_PDF_CONFIGURE_COMMAND = 'graphics-workbench.splitPdf.configure';
+export const MERGE_PDF_SELECTED_FILES_COMMAND = 'graphics-workbench.mergePdf.selectedFiles';
+export const MERGE_PDF_CONFIGURE_COMMAND = 'graphics-workbench.mergePdf.configure';
+export const CONVERT_TO_PDF_COMMAND = 'graphics-workbench.convertToPdf';
+export const CONVERT_DRAWIO_TO_PDF_COMMAND = 'graphics-workbench.convertDrawioToPdf';
+export const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'graphics-workbench.convertDrawioToPdfDirectly';
+export const CONVERT_TO_PNG_COMMAND = 'graphics-workbench.convertToPng';
+export const CONVERT_TO_JPEG_COMMAND = 'graphics-workbench.convertToJpeg';
+export const CONVERT_TO_WEBP_COMMAND = 'graphics-workbench.convertToWebp';
+export const CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND = 'graphics-workbench.convertToWebpPreserveAnimation';
+export const CONVERT_TO_WEBP_SEPARATELY_COMMAND = 'graphics-workbench.convertToWebpSeparately';
+export const CONVERT_TO_AVIF_COMMAND = 'graphics-workbench.convertToAvif';
+export const CONVERT_TO_SVG_COMMAND = 'graphics-workbench.convertToSvg';
+export const CONVERT_TO_GIF_COMMAND = 'graphics-workbench.convertToGif';
+export const CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND = 'graphics-workbench.convertToGifPreserveAnimation';
+export const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'graphics-workbench.convertToGifSeparately';
+export const CONVERT_TO_TIFF_COMMAND = 'graphics-workbench.convertToTiff';
+export const CONVERT_TO_EPS_COMMAND = 'graphics-workbench.convertToEps';
+export const CONVERT_TO_RAW_COMMAND = 'graphics-workbench.convertToRaw';
+export const CONVERT_TO_DRAWIO_COMMAND = 'graphics-workbench.convertToDrawio';
+export const CONVERT_TO_DRAWIO_PNG_COMMAND = 'graphics-workbench.convertToDrawioPng';
+export const CONVERT_TO_DRAWIO_SVG_COMMAND = 'graphics-workbench.convertToDrawioSvg';
+export const CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND = 'graphics-workbench.convertImagesToSinglePdf';
+export const COMPRESS_PDF_COMMAND = 'graphics-workbench.compressPdf';
+
 // oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.
 function createConfigurationInternal(configurationReader: ConfigurationReader) {
   return {

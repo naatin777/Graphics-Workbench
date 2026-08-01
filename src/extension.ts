@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { LineOutputChannel } from './operations/external_tools/external_tool_ascii_scratch.js';
 import type { CommandDependencies } from './commands/shared/command_dependencies.js';
 import {
-  COMBINE_IMAGES_TO_PDF_COMMAND,
+  CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND,
   COMPRESS_PDF_COMMAND,
   CONVERT_DRAWIO_TO_PDF_COMMAND,
   CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND,
@@ -14,7 +14,7 @@ import {
   CONVERT_TO_DRAWIO_SVG_COMMAND,
   CONVERT_TO_EPS_COMMAND,
   CONVERT_TO_GIF_COMMAND,
-  CONVERT_TO_GIF_PRESERVE_COMMAND,
+  CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND,
   CONVERT_TO_GIF_SEPARATELY_COMMAND,
   CONVERT_TO_JPEG_COMMAND,
   CONVERT_TO_PDF_COMMAND,
@@ -23,7 +23,7 @@ import {
   CONVERT_TO_SVG_COMMAND,
   CONVERT_TO_TIFF_COMMAND,
   CONVERT_TO_WEBP_COMMAND,
-  CONVERT_TO_WEBP_PRESERVE_COMMAND,
+  CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND,
   CONVERT_TO_WEBP_SEPARATELY_COMMAND,
   CROP_PDF_AUTO_COMMAND,
   CROP_PDF_CONFIGURE_COMMAND,
@@ -184,7 +184,7 @@ function registerCommands(
     );
     return convertToWebpCommand(uri, uris, dependencies, { outputMode: 'auto' });
   });
-  registerFileCommand(context, CONVERT_TO_WEBP_PRESERVE_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND, async (uri, uris) => {
     const { convertToWebpCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_webp.js',
@@ -224,7 +224,7 @@ function registerCommands(
     );
     return convertToGifCommand(uri, uris, dependencies, { outputMode: 'auto' });
   });
-  registerFileCommand(context, CONVERT_TO_GIF_PRESERVE_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND, async (uri, uris) => {
     const { convertToGifCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_gif.js',
@@ -288,7 +288,7 @@ function registerCommands(
     );
     return convertToDrawioSvgCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, COMBINE_IMAGES_TO_PDF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, async (uri, uris) => {
     const { combineImagesToPdfCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/combine_images_to_pdf.js',
