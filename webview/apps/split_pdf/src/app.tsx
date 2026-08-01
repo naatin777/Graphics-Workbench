@@ -41,6 +41,7 @@ export function App(): JSX.Element {
   const [applyError, setApplyError] = createSignal('');
   const [renderError, setRenderError] = createSignal('');
   const [previewReady, setPreviewReady] = createSignal(false);
+  const [focusedPagesLabel, setFocusedPagesLabel] = createSignal('');
 
   const rowRefs = new Map<number, RowRefs>();
   let pdfPreview: HTMLElement | undefined;
@@ -280,6 +281,7 @@ export function App(): JSX.Element {
     const focusedRow = rows().find((row) => row.id === focusedRowId());
     const parsedPages = focusedRow ? parsePages(focusedRow.pages, pageCount()) : undefined;
     const focusedPages = new Set(parsedPages?.ok === true ? parsedPages.pages : []);
+    setFocusedPagesLabel(parsedPages?.ok === true ? parsedPages.pages.join(', ') : '');
 
     for (const frame of pdfPages.querySelectorAll<HTMLElement>('[data-pdf-page]')) {
       const pageNumber = Number(frame.dataset.pdfPage);
@@ -456,6 +458,9 @@ export function App(): JSX.Element {
               {labels().preview.renderError}: {renderError()}
             </p>
           </Show>
+          <footer class='pdf-preview__footer'>
+            {labels().pages.title}: {focusedPagesLabel() || '—'}
+          </footer>
         </section>
 
         <section

@@ -73,11 +73,6 @@ export async function renderPdfPages(
     canvas.setAttribute('aria-label', `${options.pageLabel ?? 'Page'} ${pageNumber}`);
     pageFrame.append(canvas);
 
-    const footer = container.ownerDocument.createElement('figcaption');
-    footer.className = 'pdf-page__footer';
-    footer.textContent = `${options.pageLabel ?? 'Page'} ${pageNumber} / ${document.numPages}`;
-    pageFrame.append(footer);
-
     container.append(pageFrame);
     pageFrames.push(pageFrame);
   }

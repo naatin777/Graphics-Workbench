@@ -69,7 +69,7 @@ input:focus-visible {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   min-height: 0;
 }
@@ -81,9 +81,6 @@ input:focus-visible {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  border: 1px solid var(--vscode-panel-border, #454545);
-  border-radius: 6px;
-  background: var(--vscode-editor-background, #1e1e1e);
 }
 
 .pdf-preview__toolbar {
@@ -94,9 +91,7 @@ input:focus-visible {
   gap: 16px;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  border-bottom: 1px solid var(--vscode-panel-border, #454545);
-  background: var(--vscode-sideBar-background, #252526);
+  padding: 0 0 12px;
 }
 
 .pdf-preview__toolbar h2 {
@@ -107,6 +102,17 @@ input:focus-visible {
 .pdf-preview__toolbar p {
   margin: 0;
   color: var(--vscode-descriptionForeground, #9d9d9d);
+}
+
+.pdf-preview__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 8px 12px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  background: var(--vscode-editor-background, #1e1e1e);
+  border-top: 1px solid var(--vscode-panel-border, #454545);
 }
 
 .preview-tools {
@@ -179,19 +185,15 @@ input:focus-visible {
 
 .pdf-page {
   display: grid;
-  gap: 8px;
   justify-items: center;
   width: max-content;
   margin: 0;
-  padding: 12px;
-  border: 1px solid var(--vscode-panel-border, #454545);
-  border-radius: 6px;
-  background: var(--vscode-editorWidget-background, var(--vscode-sideBar-background, #252526));
+  outline: 1px solid transparent;
 }
 
 .pdf-page--focused {
-  border-color: var(--vscode-focusBorder, #007fd4);
-  box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007fd4);
+  outline: 2px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: 4px;
 }
 
 .pdf-preview canvas {
@@ -199,11 +201,6 @@ input:focus-visible {
   height: auto;
   background: #ffffff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
-}
-
-.pdf-page__footer {
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-  font-size: 0.9em;
 }
 
 .pdf-preview__error {
@@ -219,10 +216,6 @@ input:focus-visible {
   min-width: 0;
   max-height: 100%;
   overflow: auto;
-  padding: 16px;
-  border: 1px solid var(--vscode-panel-border, #454545);
-  border-radius: 6px;
-  background: var(--vscode-sideBar-background, #252526);
 }
 
 .panel__heading {
@@ -250,14 +243,14 @@ input:focus-visible {
 .group-row {
   display: grid;
   gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--vscode-panel-border, #454545);
-  border-radius: 4px;
-  background: var(--vscode-editor-background, #1e1e1e);
+  padding: 10px 0;
 }
 
 .group-row--focused {
-  border-color: var(--vscode-focusBorder, #007fd4);
+  background: color-mix(in srgb, var(--vscode-focusBorder, #007fd4) 8%, transparent);
+  border-radius: 4px;
+  padding-inline: 8px;
+  margin-inline: -8px;
 }
 
 .group-row__header {
@@ -395,7 +388,7 @@ body.vscode-high-contrast .group-row,
 body.vscode-high-contrast-light .group-row,
 body.vscode-high-contrast .pdf-page,
 body.vscode-high-contrast-light .pdf-page {
-  border-width: 2px;
+  outline: 1px solid var(--vscode-contrastBorder, #6fc3df);
 }
 
 @media (max-width: 900px) {
@@ -422,10 +415,6 @@ body.vscode-high-contrast-light .pdf-page {
   .app__meta {
     max-width: none;
     text-align: left;
-  }
-
-  .workspace {
-    grid-template-columns: 1fr;
   }
 
   .pdf-preview {
