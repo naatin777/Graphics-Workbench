@@ -7,7 +7,6 @@
 // - MermaidをPDFに変換できること
 // - GIF、TIFFを先頭フレーム・ページの1ページPDFへ変換できること
 // - EPSをPDFへ変換できること
-// - RAWとsidecarをPDFへ変換できること
 // - PNG、JPEG、WebP、AVIF、SVG、Mermaidを1回のコマンドでPDFへ変換できること
 // - 複数PNGを1回のコマンドでPDFへ変換できること
 // - 非対応入力が含まれる場合、変換全体を開始しないこと
@@ -164,10 +163,6 @@ suite('PDFに変換コマンド', () => {
 
   test('EPSを読み取り可能なPDFへ変換する', async () => {
     await assertFixtureConvertsToPdf('eps', 'color-swatches.eps');
-  });
-
-  test('RAWとsidecarを読み取り可能なPDFへ変換する', async () => {
-    await assertFixtureConvertsToPdf('raw', 'rgb-16x12.raw');
   });
 
   test('outputPath.convertPngToPdfが設定されている場合は指定した出力先を使う', async () => {
@@ -400,10 +395,6 @@ async function assertFixtureConvertsToPdf(format: string, fixtureFileName: strin
     const sourcePath = path.join(temporaryDirectory, fixtureFileName);
     const sourceFixturePath = path.join(testInputDirectory, 'valid', format, fixtureFileName);
     await copyFile(sourceFixturePath, sourcePath);
-
-    if (format === 'raw') {
-      await copyFile(`${sourceFixturePath}.json`, `${sourcePath}.json`);
-    }
 
     const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
     await runCommandAndClearNotificationsUntilDone(commandExecution);

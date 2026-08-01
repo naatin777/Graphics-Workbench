@@ -61,10 +61,7 @@ export async function convertToEpsFiles(options: ConvertToEpsFilesOptions): Prom
   const supportedExtensions = options.supportedExtensions ?? DEFAULT_EXTENSIONS;
   validateJobs(options.jobs, supportedExtensions);
   await validateJobPaths(options.jobs, 'convert-to-eps');
-  await assertPreflightPassed(options.jobs, {
-    ...preflightOptionsFromRuntime(options.runtime),
-    ...(options.maxInputPixels === undefined ? {} : { maxInputPixels: options.maxInputPixels }),
-  });
+  await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
   options.runtime.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;

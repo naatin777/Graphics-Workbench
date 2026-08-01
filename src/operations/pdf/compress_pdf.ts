@@ -39,7 +39,7 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
   validateJobs(options.jobs);
   await validateJobPaths(options.jobs, 'compress-pdf');
 
-  await assertPreflightPassed(options.jobs, preflightOptionsFromRuntime(runtime));
+  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   if (!runtime?.resolveConflicts) {

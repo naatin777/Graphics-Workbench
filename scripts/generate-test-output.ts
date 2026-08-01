@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -22,7 +22,7 @@ if (configuredDrawioPathArgument !== undefined) {
 }
 
 async function generateRasterOutputs(): Promise<void> {
-  for (const format of ['avif', 'gif', 'jpeg', 'png', 'raw', 'tiff', 'webp']) {
+  for (const format of ['avif', 'gif', 'jpeg', 'png', 'tiff', 'webp']) {
     for (const inputPath of await listFiles(path.join(inputDirectory, format))) {
       if (inputPath.endsWith('animated-swirl.avif')) {
         continue;
@@ -34,33 +34,8 @@ async function generateRasterOutputs(): Promise<void> {
       const metadata = await input.metadata();
       const page = metadata.pages !== undefined && metadata.pages > 1 ? 2 : undefined;
       const renderedInput = page === undefined ? input : sharp(inputPath, { page: page - 1, pages: 1 });
-      const preparedInput = inputPath.endsWith('.raw')
-        ? sharp(await readFile(inputPath), { raw: rawOptions(await readFile(`${inputPath}.json`)) })
-        : renderedInput;
 
-      await preparedInput.png().toFile(path.join(outputDataDirectory, 'expected.png'));
-
-      if (format === 'png') {
-        const { data, info } = await sharp(inputPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-        await writeFile(path.join(outputDataDirectory, 'expected.raw'), data);
-        await writeFile(
-          path.join(outputDataDirectory, 'expected.raw.json'),
-          `${JSON.stringify(
-            {
-              version: 1,
-              width: info.width,
-              height: info.height,
-              channels: info.channels,
-              depth: 'uchar',
-              colourspace: 'srgb',
-              alpha: true,
-              layout: 'interleaved',
-            },
-            null,
-            2,
-          )}\n`,
-        );
-      }
+      await renderedInput.png().toFile(path.join(outputDataDirectory, 'expected.png'));
     }
   }
 }
@@ -186,35 +161,7 @@ function readDrawioPathArgument(): string | undefined {
 }
 
 async function createSharpInput(inputPath: string): Promise<Sharp> {
-  if (inputPath.endsWith('.raw')) {
-    return sharp(await readFile(inputPath), { raw: rawOptions(await readFile(`${inputPath}.json`)) });
-  }
   return sharp(inputPath);
-}
-
-function rawOptions(serializedSidecar: Buffer): { width: number; height: number; channels: 1 | 2 | 3 | 4 } {
-  const sidecar: unknown = JSON.parse(serializedSidecar.toString());
-  if (!isRawSidecar(sidecar)) {
-    throw new Error('Invalid Raw sidecar.');
-  }
-  return { width: sidecar.width, height: sidecar.height, channels: sidecar.channels };
-}
-
-function isRawSidecar(value: unknown): value is { width: number; height: number; channels: 1 | 2 | 3 | 4 } {
-  if (
-    typeof value !== 'object' ||
-    value === null ||
-    !('width' in value) ||
-    !('height' in value) ||
-    !('channels' in value)
-  ) {
-    return false;
-  }
-  return (
-    typeof value.width === 'number' &&
-    typeof value.height === 'number' &&
-    (value.channels === 1 || value.channels === 2 || value.channels === 3 || value.channels === 4)
-  );
 }
 
 async function renderPdfPage(sourcePath: string, page: number, outputPath: string): Promise<void> {

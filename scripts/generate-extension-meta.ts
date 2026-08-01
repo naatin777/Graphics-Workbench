@@ -123,7 +123,6 @@ const formatNames: Record<string, string> = {
   Pdf: 'pdf',
   Mermaid: 'mermaid',
   Drawio: 'drawio',
-  Raw: 'raw',
   Eps: 'eps',
 };
 

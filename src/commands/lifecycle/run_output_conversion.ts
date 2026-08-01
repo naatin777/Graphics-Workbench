@@ -28,7 +28,6 @@ export type OutputConversionFormat =
   | 'TIFF'
   | 'SVG'
   | 'EPS'
-  | 'RAW'
   | 'Draw.io';
 
 export function createOutputConversionMessages(

@@ -220,11 +220,6 @@
         "category": "Graphics Workbench"
       },
       {
-        "command": "graphics-workbench.convertToRaw",
-        "title": "%command.convertToRaw%",
-        "category": "Graphics Workbench"
-      },
-      {
         "command": "graphics-workbench.convertToDrawio",
         "title": "%command.convertToDrawio%",
         "category": "Graphics Workbench"
@@ -270,7 +265,7 @@
         {
           "submenu": "graphics-workbench.convert",
           "group": "graphics-workbench",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertDrawioToPdf",
@@ -328,22 +323,22 @@
         {
           "command": "graphics-workbench.convertToPdf",
           "group": "graphics-workbench.convert@1",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToPng",
           "group": "graphics-workbench.convert@2",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToJpeg",
           "group": "graphics-workbench.convert@3",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToWebp",
           "group": "graphics-workbench.convert@4",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToWebpPreserveAnimation",
@@ -358,17 +353,17 @@
         {
           "command": "graphics-workbench.convertToAvif",
           "group": "graphics-workbench.convert@5",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToSvg",
           "group": "graphics-workbench.convert@6",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToGif",
           "group": "graphics-workbench.convert@7",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToGifPreserveAnimation",
@@ -383,37 +378,32 @@
         {
           "command": "graphics-workbench.convertToTiff",
           "group": "graphics-workbench.convert@8",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToEps",
           "group": "graphics-workbench.convert@9",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.(tif|tiff)$/i) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
-        },
-        {
-          "command": "graphics-workbench.convertToRaw",
-          "group": "graphics-workbench.convert@10",
-          "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertRaw.enabled && resourceExtname =~ /^\\.(png|jpe?g|webp|avif|gif|tiff?)$/i"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.(tif|tiff)$/i) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
           "command": "graphics-workbench.convertToDrawio",
           "group": "graphics-workbench.convert@11",
-          "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawioCreate.enabled && (resourceExtname =~ /^\\.(pdf|png|jpe?g|webp|avif|gif|tiff?|eps|svg|mmd|mermaid|raw)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i)"
+          "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawioCreate.enabled && (resourceExtname =~ /^\\.(pdf|png|jpe?g|webp|avif|gif|tiff?|eps|svg|mmd|mermaid)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i)"
         },
         {
           "command": "graphics-workbench.convertToDrawioPng",
           "group": "graphics-workbench.convert@12",
-          "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawioCreate.enabled && (resourceExtname =~ /^\\.(pdf|png|jpe?g|webp|avif|gif|tiff?|eps|svg|mmd|mermaid|raw)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i)"
+          "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawioCreate.enabled && (resourceExtname =~ /^\\.(pdf|png|jpe?g|webp|avif|gif|tiff?|eps|svg|mmd|mermaid)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i)"
         },
         {
           "command": "graphics-workbench.convertToDrawioSvg",
           "group": "graphics-workbench.convert@13",
-          "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawioCreate.enabled && (resourceExtname =~ /^\\.(pdf|png|jpe?g|webp|avif|gif|tiff?|eps|svg|mmd|mermaid|raw)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i)"
+          "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawioCreate.enabled && (resourceExtname =~ /^\\.(pdf|png|jpe?g|webp|avif|gif|tiff?|eps|svg|mmd|mermaid)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i)"
         },
         {
           "command": "graphics-workbench.convertImagesToSinglePdf",
           "group": "graphics-workbench.convert@14",
-          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.raw$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled))"
+          "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.eps$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled))"
         }
       ],
       "commandPalette": [
@@ -709,24 +699,6 @@
             },
             "convertMermaidToGif": {
               "type": "string"
-            },
-            "convertPngToRaw": {
-              "type": "string"
-            },
-            "convertJpegToRaw": {
-              "type": "string"
-            },
-            "convertWebpToRaw": {
-              "type": "string"
-            },
-            "convertAvifToRaw": {
-              "type": "string"
-            },
-            "convertGifToRaw": {
-              "type": "string"
-            },
-            "convertTiffToRaw": {
-              "type": "string"
             }
           },
           "additionalProperties": false,
@@ -777,11 +749,6 @@
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
           "description": "%config.outputPath.convertEpsToPdf%"
-        },
-        "graphics-workbench.outputPath.convertRawToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertRawToPdf%"
         },
         "graphics-workbench.outputPath.convertPngToJpeg": {
           "type": "string",
@@ -1106,11 +1073,6 @@
           "type": "boolean",
           "default": true,
           "description": "%config.contextMenu.convertMermaid.enabled%"
-        },
-        "graphics-workbench.contextMenu.convertRaw.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "%config.contextMenu.convertRaw.enabled%"
         },
         "graphics-workbench.contextMenu.convertDrawioCreate.enabled": {
           "type": "boolean",
