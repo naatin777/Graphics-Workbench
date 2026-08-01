@@ -883,6 +883,56 @@
           "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
           "description": "%config.outputPath.convertMermaidToWebp%"
         },
+        "graphics-workbench.outputPath.convertGifToJpeg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
+          "description": "%config.outputPath.convertGifToJpeg%"
+        },
+        "graphics-workbench.outputPath.convertTiffToJpeg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
+          "description": "%config.outputPath.convertTiffToJpeg%"
+        },
+        "graphics-workbench.outputPath.convertEpsToJpeg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
+          "description": "%config.outputPath.convertEpsToJpeg%"
+        },
+        "graphics-workbench.outputPath.convertGifToAvif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
+          "description": "%config.outputPath.convertGifToAvif%"
+        },
+        "graphics-workbench.outputPath.convertTiffToAvif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
+          "description": "%config.outputPath.convertTiffToAvif%"
+        },
+        "graphics-workbench.outputPath.convertEpsToAvif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
+          "description": "%config.outputPath.convertEpsToAvif%"
+        },
+        "graphics-workbench.outputPath.convertGifToEps": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.eps",
+          "description": "%config.outputPath.convertGifToEps%"
+        },
+        "graphics-workbench.outputPath.convertTiffToEps": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.eps",
+          "description": "%config.outputPath.convertTiffToEps%"
+        },
+        "graphics-workbench.outputPath.convertTiffToWebp": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
+          "description": "%config.outputPath.convertTiffToWebp%"
+        },
+        "graphics-workbench.outputPath.convertEpsToWebp": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
+          "description": "%config.outputPath.convertEpsToWebp%"
+        },
         "graphics-workbench.outputPath.convertGifToWebp": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}.webp",

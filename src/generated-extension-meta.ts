@@ -49,6 +49,16 @@ type ConfigurationKey =
   | 'outputPath.convertMermaidToPng'
   | 'outputPath.convertMermaidToJpeg'
   | 'outputPath.convertMermaidToWebp'
+  | 'outputPath.convertGifToJpeg'
+  | 'outputPath.convertTiffToJpeg'
+  | 'outputPath.convertEpsToJpeg'
+  | 'outputPath.convertGifToAvif'
+  | 'outputPath.convertTiffToAvif'
+  | 'outputPath.convertEpsToAvif'
+  | 'outputPath.convertGifToEps'
+  | 'outputPath.convertTiffToEps'
+  | 'outputPath.convertTiffToWebp'
+  | 'outputPath.convertEpsToWebp'
   | 'outputPath.convertGifToWebp'
   | 'outputPath.convertMermaidToAvif'
   | 'outputPath.convertPngToGif'
@@ -455,6 +465,36 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.convertMermaidToWebp': {
     types: ['string'],
   },
+  'outputPath.convertGifToJpeg': {
+    types: ['string'],
+  },
+  'outputPath.convertTiffToJpeg': {
+    types: ['string'],
+  },
+  'outputPath.convertEpsToJpeg': {
+    types: ['string'],
+  },
+  'outputPath.convertGifToAvif': {
+    types: ['string'],
+  },
+  'outputPath.convertTiffToAvif': {
+    types: ['string'],
+  },
+  'outputPath.convertEpsToAvif': {
+    types: ['string'],
+  },
+  'outputPath.convertGifToEps': {
+    types: ['string'],
+  },
+  'outputPath.convertTiffToEps': {
+    types: ['string'],
+  },
+  'outputPath.convertTiffToWebp': {
+    types: ['string'],
+  },
+  'outputPath.convertEpsToWebp': {
+    types: ['string'],
+  },
   'outputPath.convertGifToWebp': {
     types: ['string'],
   },
@@ -649,6 +689,16 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.convertMermaidToPng': 'string',
   'outputPath.convertMermaidToJpeg': 'string',
   'outputPath.convertMermaidToWebp': 'string',
+  'outputPath.convertGifToJpeg': 'string',
+  'outputPath.convertTiffToJpeg': 'string',
+  'outputPath.convertEpsToJpeg': 'string',
+  'outputPath.convertGifToAvif': 'string',
+  'outputPath.convertTiffToAvif': 'string',
+  'outputPath.convertEpsToAvif': 'string',
+  'outputPath.convertGifToEps': 'string',
+  'outputPath.convertTiffToEps': 'string',
+  'outputPath.convertTiffToWebp': 'string',
+  'outputPath.convertEpsToWebp': 'string',
   'outputPath.convertGifToWebp': 'string',
   'outputPath.convertMermaidToAvif': 'string',
   'outputPath.convertPngToGif': 'string',
@@ -875,16 +925,21 @@ export const COMPRESS_PDF_COMMAND = 'graphics-workbench.compressPdf';
 
 export const conversionPairs = {
   flat: [
+    { source: 'eps', target: 'avif', setting: 'convertEpsToAvif' },
+    { source: 'gif', target: 'avif', setting: 'convertGifToAvif' },
     { source: 'jpeg', target: 'avif', setting: 'convertJpegToAvif' },
     { source: 'mermaid', target: 'avif', setting: 'convertMermaidToAvif' },
     { source: 'png', target: 'avif', setting: 'convertPngToAvif' },
     { source: 'svg', target: 'avif', setting: 'convertSvgToAvif' },
+    { source: 'tiff', target: 'avif', setting: 'convertTiffToAvif' },
     { source: 'webp', target: 'avif', setting: 'convertWebpToAvif' },
     { source: 'avif', target: 'eps', setting: 'convertAvifToEps' },
+    { source: 'gif', target: 'eps', setting: 'convertGifToEps' },
     { source: 'jpeg', target: 'eps', setting: 'convertJpegToEps' },
     { source: 'mermaid', target: 'eps', setting: 'convertMermaidToEps' },
     { source: 'png', target: 'eps', setting: 'convertPngToEps' },
     { source: 'svg', target: 'eps', setting: 'convertSvgToEps' },
+    { source: 'tiff', target: 'eps', setting: 'convertTiffToEps' },
     { source: 'webp', target: 'eps', setting: 'convertWebpToEps' },
     { source: 'avif', target: 'gif', setting: 'convertAvifToGif' },
     { source: 'jpeg', target: 'gif', setting: 'convertJpegToGif' },
@@ -894,9 +949,12 @@ export const conversionPairs = {
     { source: 'tiff', target: 'gif', setting: 'convertTiffToGif' },
     { source: 'webp', target: 'gif', setting: 'convertWebpToGif' },
     { source: 'avif', target: 'jpeg', setting: 'convertAvifToJpeg' },
+    { source: 'eps', target: 'jpeg', setting: 'convertEpsToJpeg' },
+    { source: 'gif', target: 'jpeg', setting: 'convertGifToJpeg' },
     { source: 'mermaid', target: 'jpeg', setting: 'convertMermaidToJpeg' },
     { source: 'png', target: 'jpeg', setting: 'convertPngToJpeg' },
     { source: 'svg', target: 'jpeg', setting: 'convertSvgToJpeg' },
+    { source: 'tiff', target: 'jpeg', setting: 'convertTiffToJpeg' },
     { source: 'webp', target: 'jpeg', setting: 'convertWebpToJpeg' },
     { source: 'avif', target: 'pdf', setting: 'convertAvifToPdf' },
     { source: 'eps', target: 'pdf', setting: 'convertEpsToPdf' },
@@ -924,11 +982,13 @@ export const conversionPairs = {
     { source: 'svg', target: 'tiff', setting: 'convertSvgToTiff' },
     { source: 'webp', target: 'tiff', setting: 'convertWebpToTiff' },
     { source: 'avif', target: 'webp', setting: 'convertAvifToWebp' },
+    { source: 'eps', target: 'webp', setting: 'convertEpsToWebp' },
     { source: 'gif', target: 'webp', setting: 'convertGifToWebp' },
     { source: 'jpeg', target: 'webp', setting: 'convertJpegToWebp' },
     { source: 'mermaid', target: 'webp', setting: 'convertMermaidToWebp' },
     { source: 'png', target: 'webp', setting: 'convertPngToWebp' },
     { source: 'svg', target: 'webp', setting: 'convertSvgToWebp' },
+    { source: 'tiff', target: 'webp', setting: 'convertTiffToWebp' },
   ],
   plural: [
     { source: 'drawio', target: 'avif', setting: 'convertDrawioToAvif' },
@@ -1181,6 +1241,56 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       convertMermaidToWebp: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertMermaidToWebp',
+        '${fileDirname}/${fileBasenameNoExtension}.webp',
+      ),
+      convertGifToJpeg: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertGifToJpeg',
+        '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+      ),
+      convertTiffToJpeg: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertTiffToJpeg',
+        '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+      ),
+      convertEpsToJpeg: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertEpsToJpeg',
+        '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+      ),
+      convertGifToAvif: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertGifToAvif',
+        '${fileDirname}/${fileBasenameNoExtension}.avif',
+      ),
+      convertTiffToAvif: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertTiffToAvif',
+        '${fileDirname}/${fileBasenameNoExtension}.avif',
+      ),
+      convertEpsToAvif: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertEpsToAvif',
+        '${fileDirname}/${fileBasenameNoExtension}.avif',
+      ),
+      convertGifToEps: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertGifToEps',
+        '${fileDirname}/${fileBasenameNoExtension}.eps',
+      ),
+      convertTiffToEps: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertTiffToEps',
+        '${fileDirname}/${fileBasenameNoExtension}.eps',
+      ),
+      convertTiffToWebp: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertTiffToWebp',
+        '${fileDirname}/${fileBasenameNoExtension}.webp',
+      ),
+      convertEpsToWebp: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertEpsToWebp',
         '${fileDirname}/${fileBasenameNoExtension}.webp',
       ),
       convertGifToWebp: defineConfiguration<string>(

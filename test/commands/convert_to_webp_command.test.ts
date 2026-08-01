@@ -169,6 +169,15 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
+  test('TIFF、EPSをWebPへ変換する', async () => {
+    for (const [format, fixtureFileName] of [
+      ['tiff', 'heatmap.tiff'],
+      ['eps', 'color-swatches.eps'],
+    ] as const) {
+      await assertFixtureConvertsToWebp(format, fixtureFileName);
+    }
+  });
+
   test('WebPからWebPへは変換しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
@@ -237,6 +246,22 @@ async function assertMermaidFileConvertsToWebp(fileName: string): Promise<void> 
   try {
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
+
+    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
+
+    await assertReadableWebp(replaceExtension(sourcePath, '.webp'));
+  } finally {
+    await removeTemporaryDirectory(temporaryDirectory);
+  }
+}
+
+async function assertFixtureConvertsToWebp(format: string, fixtureFileName: string): Promise<void> {
+  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+  try {
+    const sourcePath = path.join(temporaryDirectory, fixtureFileName);
+    await copyFile(path.join(testInputDirectory, 'valid', format, fixtureFileName), sourcePath);
 
     const commandExecution = vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
     await runCommandAndClearNotificationsUntilDone(commandExecution);
