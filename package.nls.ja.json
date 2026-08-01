@@ -61,6 +61,7 @@
   "config.outputPath.convertMermaidToPng": "MermaidファイルをPNGに変換した後の出力ファイル名",
   "config.outputPath.convertMermaidToJpeg": "MermaidファイルをJPEGに変換した後の出力ファイル名",
   "config.outputPath.convertMermaidToWebp": "MermaidファイルをWebPに変換した後の出力ファイル名",
+  "config.outputPath.convertGifToWebp": "GIFをWebPに変換した後の出力ファイル名",
   "config.outputPath.convertMermaidToAvif": "MermaidファイルをAVIFに変換した後の出力ファイル名",
   "config.contextMenu.enabled": "コンテキストメニューを有効にする",
   "config.contextMenu.cropPdf.enabled": "PDFをクロップするコンテキストメニューを有効にする",

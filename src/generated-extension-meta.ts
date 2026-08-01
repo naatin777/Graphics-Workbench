@@ -49,6 +49,7 @@ type ConfigurationKey =
   | 'outputPath.convertMermaidToPng'
   | 'outputPath.convertMermaidToJpeg'
   | 'outputPath.convertMermaidToWebp'
+  | 'outputPath.convertGifToWebp'
   | 'outputPath.convertMermaidToAvif'
   | 'outputPath.convertPngToGif'
   | 'outputPath.convertJpegToGif'
@@ -454,6 +455,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.convertMermaidToWebp': {
     types: ['string'],
   },
+  'outputPath.convertGifToWebp': {
+    types: ['string'],
+  },
   'outputPath.convertMermaidToAvif': {
     types: ['string'],
   },
@@ -645,6 +649,7 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.convertMermaidToPng': 'string',
   'outputPath.convertMermaidToJpeg': 'string',
   'outputPath.convertMermaidToWebp': 'string',
+  'outputPath.convertGifToWebp': 'string',
   'outputPath.convertMermaidToAvif': 'string',
   'outputPath.convertPngToGif': 'string',
   'outputPath.convertJpegToGif': 'string',
@@ -1048,6 +1053,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       convertMermaidToWebp: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertMermaidToWebp',
+        '${fileDirname}/${fileBasenameNoExtension}.webp',
+      ),
+      convertGifToWebp: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertGifToWebp',
         '${fileDirname}/${fileBasenameNoExtension}.webp',
       ),
       convertMermaidToAvif: defineConfiguration<string>(
