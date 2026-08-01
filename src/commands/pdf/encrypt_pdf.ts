@@ -1,0 +1,143 @@
+import path from 'node:path';
+
+import * as vscode from 'vscode';
+
+import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { readQpdfExecutablePath } from '../../config/external_tools/external_tool_paths.js';
+import { localeMap } from '../../locale_map.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
+import { encryptPdfFiles, type EncryptPdfJob } from '../../operations/pdf/encrypt_pdf.js';
+
+import type { CommandDependencies } from '../shared/command_dependencies.js';
+import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
+import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
+import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
+import { userMessage } from '../shared/user_messages.js';
+import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
+
+export async function encryptPdfCommand(
+  uri?: vscode.Uri,
+  uris?: vscode.Uri[],
+  dependencies?: CommandDependencies,
+): Promise<void> {
+  const outputChannel = dependencies?.outputChannel;
+  try {
+    const sourceUris = selectedUris(uri, uris);
+
+    if (sourceUris.length === 0) {
+      throw new Error('No PDF files were selected.');
+    }
+
+    const password = await promptForPassword();
+
+    if (password === undefined) {
+      return;
+    }
+
+    const configuration = getCommandConfiguration(dependencies);
+    const outputTemplate = configuration.outputPath.encryptPdf();
+    const jobs = sourceUris.map((sourceUri) => planEncryptPdfJob(sourceUri, outputTemplate));
+    const qpdfPath = readQpdfExecutablePath(configuration);
+    const outputs = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: userMessage('message.progress.encryptPdf.title', jobs.length),
+        cancellable: true,
+      },
+      async (progress, token) => {
+        return withCancellationSignal(token, async (signal) => {
+          progress.report({ message: userMessage('message.progress.prepareEncryptPdf') });
+          const runtime: ConversionExecutionContext = {
+            signal,
+            ...(outputChannel !== undefined && { outputChannel }),
+            resolveConflicts: resolveOutputConflicts,
+          };
+          return encryptPdfFiles({ jobs, password, qpdfPath, runtime });
+        });
+      },
+    );
+
+    const successMessage = userMessage('message.encryptPdf.success', jobs.length);
+    let undoId: string;
+
+    try {
+      undoId = await recordConversionForUndo(outputs, outputChannel);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
+      return;
+    }
+
+    const undoAction = userMessage('message.action.undo');
+    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
+
+    if (selectedAction === undoAction) {
+      await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND, undoId);
+    }
+  } catch (error) {
+    if (isAbortError(error)) {
+      await vscode.window.showInformationMessage(userMessage('message.encryptPdf.cancelled'));
+      return;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    await vscode.window.showErrorMessage(userMessage('message.encryptPdf.failed', message));
+  }
+}
+
+async function promptForPassword(): Promise<string | undefined> {
+  const password = await vscode.window.showInputBox({
+    title: localeMap('prompt.encryptPdf.password'),
+    password: true,
+    ignoreFocusOut: true,
+  });
+
+  if (password === undefined) {
+    return undefined;
+  }
+
+  const confirmation = await vscode.window.showInputBox({
+    title: localeMap('prompt.encryptPdf.passwordConfirmation'),
+    password: true,
+    ignoreFocusOut: true,
+  });
+
+  if (confirmation === undefined) {
+    return undefined;
+  }
+
+  if (password !== confirmation) {
+    await vscode.window.showErrorMessage(userMessage('message.encryptPdf.passwordMismatch'));
+    return undefined;
+  }
+
+  return password;
+}
+
+function planEncryptPdfJob(sourceUri: vscode.Uri, outputTemplate: string): EncryptPdfJob {
+  if (sourceUri.scheme !== 'file') {
+    throw new Error(`Only local PDF files are supported: ${sourceUri.toString()}`);
+  }
+
+  const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
+
+  if (!workspace) {
+    throw new Error(`The PDF must be inside an open workspace: ${sourceUri.fsPath}`);
+  }
+
+  const sourcePath = sourceUri.fsPath;
+
+  if (path.extname(sourcePath).toLowerCase() !== '.pdf') {
+    throw new Error(`Only PDF files can be encrypted: ${sourcePath}`);
+  }
+
+  return {
+    sourcePath,
+    workspacePath: workspace.uri.fsPath,
+    outputPath: resolveOutputPath(outputTemplate, {
+      workspacePath: workspace.uri.fsPath,
+      workspaceName: workspace.name,
+      sourcePath,
+    }),
+  };
+}

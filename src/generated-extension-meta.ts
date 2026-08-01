@@ -104,8 +104,10 @@ type ConfigurationKey =
   | 'contextMenu.convertDrawioCreate.enabled'
   | 'contextMenu.compressPdf.enabled'
   | 'contextMenu.linearizePdf.enabled'
+  | 'contextMenu.encryptPdf.enabled'
   | 'outputPath.compressPdf'
-  | 'outputPath.linearizePdf';
+  | 'outputPath.linearizePdf'
+  | 'outputPath.encryptPdf';
 
 export type ConfigurationReader = {
   get(key: string): unknown;
@@ -577,10 +579,16 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'contextMenu.linearizePdf.enabled': {
     types: ['boolean'],
   },
+  'contextMenu.encryptPdf.enabled': {
+    types: ['boolean'],
+  },
   'outputPath.compressPdf': {
     types: ['string'],
   },
   'outputPath.linearizePdf': {
+    types: ['string'],
+  },
+  'outputPath.encryptPdf': {
     types: ['string'],
   },
 };
@@ -687,8 +695,10 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'contextMenu.convertDrawioCreate.enabled': 'boolean',
   'contextMenu.compressPdf.enabled': 'boolean',
   'contextMenu.linearizePdf.enabled': 'boolean',
+  'contextMenu.encryptPdf.enabled': 'boolean',
   'outputPath.compressPdf': 'string',
   'outputPath.linearizePdf': 'string',
+  'outputPath.encryptPdf': 'string',
 };
 function configurationValueType(value: unknown): string {
   if (Array.isArray(value)) {
@@ -815,6 +825,7 @@ export const publicCommandIds = [
   'graphics-workbench.convertImagesToSinglePdf',
   'graphics-workbench.compressPdf',
   'graphics-workbench.linearizePdf',
+  'graphics-workbench.encryptPdf',
 ] as const;
 
 export const CROP_PDF_AUTO_COMMAND = 'graphics-workbench.cropPdf.auto';
@@ -846,6 +857,7 @@ export const CONVERT_TO_DRAWIO_SVG_COMMAND = 'graphics-workbench.convertToDrawio
 export const CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND = 'graphics-workbench.convertImagesToSinglePdf';
 export const COMPRESS_PDF_COMMAND = 'graphics-workbench.compressPdf';
 export const LINEARIZE_PDF_COMMAND = 'graphics-workbench.linearizePdf';
+export const ENCRYPT_PDF_COMMAND = 'graphics-workbench.encryptPdf';
 
 export const conversionPairs = {
   flat: [
@@ -1347,6 +1359,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.linearizePdf',
         '${fileDirname}/${fileBasenameNoExtension}-linearized.pdf',
       ),
+      encryptPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.encryptPdf',
+        '${fileDirname}/${fileBasenameNoExtension}-encrypted.pdf',
+      ),
     },
     outputPaths: defineConfiguration<OutputPaths>(configurationReader, 'outputPaths', {}),
     cropPdf: {
@@ -1395,6 +1412,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       linearizePdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.linearizePdf.enabled', true),
+      },
+      encryptPdf: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.encryptPdf.enabled', true),
       },
     },
   } as const;

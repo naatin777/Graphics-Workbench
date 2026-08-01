@@ -26,6 +26,7 @@ import {
   CONVERT_TO_WEBP_SEPARATELY_COMMAND,
   CROP_PDF_AUTO_COMMAND,
   CROP_PDF_CONFIGURE_COMMAND,
+  ENCRYPT_PDF_COMMAND,
   LINEARIZE_PDF_COMMAND,
   MERGE_PDF_CONFIGURE_COMMAND,
   MERGE_PDF_SELECTED_FILES_COMMAND,
@@ -95,6 +96,14 @@ function registerCommands(
       async () => import('./commands/pdf/linearize_pdf.js'),
     );
     return linearizePdfCommand(uri, uris, dependencies);
+  });
+  registerFileCommand(context, ENCRYPT_PDF_COMMAND, async (uri, uris) => {
+    const { encryptPdfCommand } = await loadCommandModule(
+      outputChannel,
+      './commands/pdf/encrypt_pdf.js',
+      async () => import('./commands/pdf/encrypt_pdf.js'),
+    );
+    return encryptPdfCommand(uri, uris, dependencies);
   });
   registerFileCommand(context, CROP_PDF_AUTO_COMMAND, async (uri, uris) => {
     const { cropPdfAutoCommand } = await loadCommandModule(
