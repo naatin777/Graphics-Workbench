@@ -269,6 +269,21 @@ mainの現行コード219ファイルに対する初回測定では、14,208件�
 
 `lint:strict-experimental -- --fix`も試行した。14,208件から13,000件へ1,208件を自動で減らせたが、168ファイル・2,371行の差分が生成された。`sort-keys`による実行時objectの並べ替えや、type importの分離による通常lintの重複importなど、単純な整形に限定できない変更が混在したため、差分は採用しない。strict実験では、ルール群を分割して自動修正の安全性を確認してから取り込む。
 
+## Phase 39
+
+`-D all -D nursery --type-aware`の現行測定から、違反が3件以下で通常lintへerror昇格できるルール群をまとめて有効化する。Phase 38の実験結果から「違反が多いルールを一括有効化しない」方針は維持し、ここでは既存違反を解消してからerror化する。
+
+対象ルールと既存違反の所在:
+
+- production: `consistent-indexed-object-style`(locale_map.ts)、`consistent-type-assertions`(locale_map.ts)、`custom-error-definition`(operation_cancelled_error.ts)、`prefer-number-coercion`(convert_to_drawio.ts)、`parameter-properties`(safe_mode.ts)、`prefer-code-point`(resolve_output_path.ts・convert_drawio_to_pdf.ts)、`return-await`(combine_images_to_pdf.ts・merge_pdf.ts)
+- webview: `no-deprecated`(vite.config.ts)、`prefer-query-selector`(3つのmain.tsx)
+- scripts/config: `named`(.vscode-test.mjs)、`no-anonymous-default-export`(oxfmt.config.ts)、`no-process-exit`(render-screenshots-comment.mjs)
+- test: `dot-notation`(package_manifest.test.ts)、`no-dynamic-delete`(workspace_settings.ts)、`no-regex-spaces`(convert_to_pdf_drawio_path.test.ts)、`func-names`(drawio_fixture_oracles.test.ts)、`callback-return`(safe_mode_status_bar.test.ts・workspace_settings.ts)
+- 生成ファイル: `default-case`・`explicit-module-boundary-types`(generated-extension-meta.ts)はgenerator修正で対応
+- PDF.js polyfill: `unambiguous`・`no-implicit-globals`・`callback-return`(install_map_get_or_insert_computed.ts)は対象限定のoverride
+
+既存違反を修正または理由付きoverrideした上で、通常lintでerrorとして監視する。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
