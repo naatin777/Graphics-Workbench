@@ -8,7 +8,9 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	poppler-utils \
 	librsvg2-bin \
 	qpdf \
-	xvfb
+	xvfb \
+	fonts-liberation \
+	fonts-dejavu-core
 
 gs_path="$(command -v gs)"
 pdftocairo_path="$(command -v pdftocairo)"

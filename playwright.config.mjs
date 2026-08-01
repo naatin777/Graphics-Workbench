@@ -10,9 +10,9 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   outputDir: path.join(rootDir, 'test-results'),
   snapshotPathTemplate: '{testDir}/electron/__snapshots__/{arg}-{projectName}-{platform}{ext}',
-  timeout: 120_000,
+  timeout: 60_000,
   expect: {
-    timeout: 30_000,
+    timeout: 10_000,
   },
   retries: process.env.CI ? 2 : 0,
   workers: 1,

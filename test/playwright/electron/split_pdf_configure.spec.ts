@@ -99,7 +99,7 @@ async function attachDiagnostics(
 }
 
 test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -153,7 +153,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 });
 
 test('high contrastと極端な配色でもcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -197,7 +197,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
 });
 
 test('分割ペインをドラッグで幅を調整できる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -244,7 +244,7 @@ test('分割ペインをドラッグで幅を調整できる', async ({ playwrig
 });
 
 test('横幅が短いと縦に折り返して分割線を隠す', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 

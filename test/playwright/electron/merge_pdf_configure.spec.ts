@@ -88,7 +88,7 @@ async function addSecondPdf(workspacePath: string): Promise<void> {
 }
 
 test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -156,7 +156,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 });
 
 test('high contrastと極端な配色でもcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 

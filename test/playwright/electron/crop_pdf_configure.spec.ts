@@ -120,7 +120,7 @@ function preparedOptions(): { prepared: PreparedElectronTest } {
 }
 
 test('インストール済みVSIXからextensionをactivateできる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
 
   try {
@@ -149,7 +149,7 @@ test('インストール済みVSIXからextensionをactivateできる', async ({
 });
 
 test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを出力できる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -252,7 +252,7 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
 });
 
 test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -319,7 +319,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 });
 
 test('high contrastと極端な配色でもcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -373,7 +373,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
 });
 
 test('package済みmoduleでMergeが動く', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -425,7 +425,7 @@ test('package済みmoduleでMergeが動く', async ({ playwright }, testInfo) =>
 });
 
 test('package済みmoduleでSplitが動く', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -480,7 +480,7 @@ test('package済みmoduleでSplitが動く', async ({ playwright }, testInfo) =>
 });
 
 test('native Sharp dependencyをloadしてPNG→JPEG変換できる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -523,7 +523,7 @@ test('native Sharp dependencyをloadしてPNG→JPEG変換できる', async ({ p
 });
 
 test('外部networkが遮断されている', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -556,7 +556,7 @@ test('外部networkが遮断されている', async ({ playwright }, testInfo) =
 });
 
 test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
   const missingToolDirectory = await mkdtemp(join(tmpdir(), 'graphics-workbench-missing-pdftocairo-'));
