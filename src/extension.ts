@@ -2,58 +2,23 @@ import * as vscode from 'vscode';
 
 import type { LineOutputChannel } from './operations/external_tools/external_tool_ascii_scratch.js';
 import type { CommandDependencies } from './commands/shared/command_dependencies.js';
-import {
-  CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND,
-  COMPRESS_PDF_COMMAND,
-  CONVERT_DRAWIO_TO_PDF_COMMAND,
-  CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND,
-  CONVERT_PNG_TO_PDF_COMMAND,
-  CONVERT_TO_AVIF_COMMAND,
-  CONVERT_TO_DRAWIO_COMMAND,
-  CONVERT_TO_DRAWIO_PNG_COMMAND,
-  CONVERT_TO_DRAWIO_SVG_COMMAND,
-  CONVERT_TO_EPS_COMMAND,
-  CONVERT_TO_GIF_COMMAND,
-  CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND,
-  CONVERT_TO_GIF_SEPARATELY_COMMAND,
-  CONVERT_TO_JPEG_COMMAND,
-  CONVERT_TO_PDF_COMMAND,
-  CONVERT_TO_PNG_COMMAND,
-  CONVERT_TO_SVG_COMMAND,
-  CONVERT_TO_TIFF_COMMAND,
-  CONVERT_TO_WEBP_COMMAND,
-  CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND,
-  CONVERT_TO_WEBP_SEPARATELY_COMMAND,
-  CROP_PDF_AUTO_COMMAND,
-  CROP_PDF_CONFIGURE_COMMAND,
-  ENCRYPT_PDF_COMMAND,
-  LINEARIZE_PDF_COMMAND,
-  MERGE_PDF_CONFIGURE_COMMAND,
-  MERGE_PDF_SELECTED_FILES_COMMAND,
-  SPLIT_PDF_ALL_PAGES_COMMAND,
-  SPLIT_PDF_CONFIGURE_COMMAND,
-} from './commands/command_ids.js';
 import { initializeSafeMode } from './commands/lifecycle/safe_mode.js';
-import {
-  initializeUndoHistory,
-  undoLastConversionCommand,
-  UNDO_LAST_CONVERSION_COMMAND,
-} from './commands/lifecycle/undo_last_conversion.js';
+import { initializeUndoHistory, undoLastConversionCommand } from './commands/lifecycle/undo_last_conversion.js';
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
 import { getExtensionConfiguration } from './generated-extension-config.js';
-import { publicCommandIds } from './generated-extension-meta.js';
+import { publicCommandIds, type CommandId } from './generated-extension-meta.js';
 
 const latexDocumentSelector: vscode.DocumentSelector = [{ language: 'latex' }, { language: 'tex' }];
 
 export const PUBLIC_COMMAND_IDS = publicCommandIds;
 
-export const INTERNAL_COMMAND_IDS = [CONVERT_PNG_TO_PDF_COMMAND] as const;
+export const INTERNAL_COMMAND_IDS = ['graphics-workbench.convertPngToPdf'] as const;
 export const REGISTERED_COMMAND_IDS = [...PUBLIC_COMMAND_IDS, ...INTERNAL_COMMAND_IDS] as const;
 
 type FileCommandHandler = (uri?: vscode.Uri, uris?: vscode.Uri[]) => Promise<void>;
 
-function registerFileCommand(context: vscode.ExtensionContext, id: string, handler: FileCommandHandler): void {
+function registerFileCommand(context: vscode.ExtensionContext, id: CommandId, handler: FileCommandHandler): void {
   context.subscriptions.push(vscode.commands.registerCommand(id, handler));
 }
 
@@ -81,7 +46,7 @@ function registerCommands(
   dependencies: CommandDependencies,
   outputChannel: LineOutputChannel,
 ): void {
-  registerFileCommand(context, COMPRESS_PDF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.compressPdf', async (uri, uris) => {
     const { compressPdfCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/compress_pdf.js',
@@ -89,7 +54,7 @@ function registerCommands(
     );
     return compressPdfCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, LINEARIZE_PDF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.linearizePdf', async (uri, uris) => {
     const { linearizePdfCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/linearize_pdf.js',
@@ -97,7 +62,7 @@ function registerCommands(
     );
     return linearizePdfCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, ENCRYPT_PDF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.encryptPdf', async (uri, uris) => {
     const { encryptPdfCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/encrypt_pdf.js',
@@ -105,7 +70,7 @@ function registerCommands(
     );
     return encryptPdfCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CROP_PDF_AUTO_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.cropPdf.auto', async (uri, uris) => {
     const { cropPdfAutoCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/crop_pdf_auto.js',
@@ -113,7 +78,7 @@ function registerCommands(
     );
     return cropPdfAutoCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CROP_PDF_CONFIGURE_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.cropPdf.configure', async (uri, uris) => {
     const { cropPdfConfigureCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/crop_pdf_configure.js',
@@ -121,7 +86,7 @@ function registerCommands(
     );
     return cropPdfConfigureCommand(context, uri, uris, dependencies);
   });
-  registerFileCommand(context, SPLIT_PDF_ALL_PAGES_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.splitPdf.allPages', async (uri, uris) => {
     const { splitPdfAllPagesCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/split_pdf_commands.js',
@@ -129,7 +94,7 @@ function registerCommands(
     );
     return splitPdfAllPagesCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, SPLIT_PDF_CONFIGURE_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.splitPdf.configure', async (uri, uris) => {
     const { splitPdfConfigureCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/split_pdf_commands.js',
@@ -137,7 +102,7 @@ function registerCommands(
     );
     return splitPdfConfigureCommand(context, uri, uris, dependencies);
   });
-  registerFileCommand(context, MERGE_PDF_SELECTED_FILES_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.mergePdf.selectedFiles', async (uri, uris) => {
     const { mergePdfSelectedFilesCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/merge_pdf.js',
@@ -145,7 +110,7 @@ function registerCommands(
     );
     return mergePdfSelectedFilesCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, MERGE_PDF_CONFIGURE_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.mergePdf.configure', async (uri, uris) => {
     const { mergePdfConfigureCommand } = await loadCommandModule(
       outputChannel,
       './commands/pdf/merge_pdf.js',
@@ -153,7 +118,7 @@ function registerCommands(
     );
     return mergePdfConfigureCommand(context, uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_PDF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToPdf', async (uri, uris) => {
     const { convertToPdfCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_pdf.js',
@@ -161,7 +126,7 @@ function registerCommands(
     );
     return convertToPdfCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_DRAWIO_TO_PDF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertDrawioToPdf', async (uri, uris) => {
     const { convertDrawioToPagePdfsCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_drawio_to_pdf.js',
@@ -169,7 +134,7 @@ function registerCommands(
     );
     return convertDrawioToPagePdfsCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertDrawioToPdfDirectly', async (uri, uris) => {
     const { convertDrawioToSinglePdfCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_drawio_to_pdf.js',
@@ -177,7 +142,7 @@ function registerCommands(
     );
     return convertDrawioToSinglePdfCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_PNG_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToPng', async (uri, uris) => {
     const { convertToPngCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_png.js',
@@ -185,7 +150,7 @@ function registerCommands(
     );
     return convertToPngCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_JPEG_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToJpeg', async (uri, uris) => {
     const { convertToJpegCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_jpeg.js',
@@ -193,7 +158,7 @@ function registerCommands(
     );
     return convertToJpegCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_WEBP_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToWebp', async (uri, uris) => {
     const { convertToWebpCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_webp.js',
@@ -201,7 +166,7 @@ function registerCommands(
     );
     return convertToWebpCommand(uri, uris, dependencies, { outputMode: 'auto' });
   });
-  registerFileCommand(context, CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToWebpPreserveAnimation', async (uri, uris) => {
     const { convertToWebpCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_webp.js',
@@ -209,7 +174,7 @@ function registerCommands(
     );
     return convertToWebpCommand(uri, uris, dependencies, { outputMode: 'preserve' });
   });
-  registerFileCommand(context, CONVERT_TO_WEBP_SEPARATELY_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToWebpSeparately', async (uri, uris) => {
     const { convertToWebpCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_webp.js',
@@ -217,7 +182,7 @@ function registerCommands(
     );
     return convertToWebpCommand(uri, uris, dependencies, { outputMode: 'split' });
   });
-  registerFileCommand(context, CONVERT_TO_AVIF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToAvif', async (uri, uris) => {
     const { convertToAvifCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_avif.js',
@@ -225,7 +190,7 @@ function registerCommands(
     );
     return convertToAvifCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_SVG_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToSvg', async (uri, uris) => {
     const { convertToSvgCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_svg.js',
@@ -233,7 +198,7 @@ function registerCommands(
     );
     return convertToSvgCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_GIF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToGif', async (uri, uris) => {
     const { convertToGifCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_gif.js',
@@ -241,7 +206,7 @@ function registerCommands(
     );
     return convertToGifCommand(uri, uris, dependencies, { outputMode: 'auto' });
   });
-  registerFileCommand(context, CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToGifPreserveAnimation', async (uri, uris) => {
     const { convertToGifCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_gif.js',
@@ -249,7 +214,7 @@ function registerCommands(
     );
     return convertToGifCommand(uri, uris, dependencies, { outputMode: 'preserve' });
   });
-  registerFileCommand(context, CONVERT_TO_GIF_SEPARATELY_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToGifSeparately', async (uri, uris) => {
     const { convertToGifCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_gif.js',
@@ -257,7 +222,7 @@ function registerCommands(
     );
     return convertToGifCommand(uri, uris, dependencies, { outputMode: 'split' });
   });
-  registerFileCommand(context, CONVERT_TO_TIFF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToTiff', async (uri, uris) => {
     const { convertToTiffCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_tiff.js',
@@ -265,7 +230,7 @@ function registerCommands(
     );
     return convertToTiffCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_EPS_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToEps', async (uri, uris) => {
     const { convertToEpsCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_eps.js',
@@ -273,7 +238,7 @@ function registerCommands(
     );
     return convertToEpsCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_DRAWIO_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToDrawio', async (uri, uris) => {
     const { convertToDrawioCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_drawio.js',
@@ -281,7 +246,7 @@ function registerCommands(
     );
     return convertToDrawioCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_DRAWIO_PNG_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToDrawioPng', async (uri, uris) => {
     const { convertToDrawioPngCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_drawio.js',
@@ -289,7 +254,7 @@ function registerCommands(
     );
     return convertToDrawioPngCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_TO_DRAWIO_SVG_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertToDrawioSvg', async (uri, uris) => {
     const { convertToDrawioSvgCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_drawio.js',
@@ -297,7 +262,7 @@ function registerCommands(
     );
     return convertToDrawioSvgCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertImagesToSinglePdf', async (uri, uris) => {
     const { combineImagesToPdfCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/combine_images_to_pdf.js',
@@ -305,7 +270,7 @@ function registerCommands(
     );
     return combineImagesToPdfCommand(uri, uris, dependencies);
   });
-  registerFileCommand(context, CONVERT_PNG_TO_PDF_COMMAND, async (uri, uris) => {
+  registerFileCommand(context, 'graphics-workbench.convertPngToPdf', async (uri, uris) => {
     const { convertPngToPdfInternalCommand } = await loadCommandModule(
       outputChannel,
       './commands/conversion/convert_to_pdf.js',
@@ -314,7 +279,7 @@ function registerCommands(
     return convertPngToPdfInternalCommand(uri, uris, dependencies);
   });
   context.subscriptions.push(
-    vscode.commands.registerCommand(UNDO_LAST_CONVERSION_COMMAND, async (expectedId?: string) =>
+    vscode.commands.registerCommand('graphics-workbench.undoLastConversion', async (expectedId?: string) =>
       undoLastConversionCommand(expectedId, dependencies),
     ),
   );

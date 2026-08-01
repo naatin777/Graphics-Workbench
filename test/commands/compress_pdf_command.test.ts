@@ -6,7 +6,6 @@ import { PDFDocument } from 'pdf-lib';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { COMPRESS_PDF_COMMAND } from '../../src/commands/command_ids.js';
 import { requireValue } from '../helpers/required.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 
@@ -29,7 +28,10 @@ suite('PDF圧縮コマンド', () => {
         label: 'eBook',
       } as vscode.QuickPickItem & { quality: 'ebook' });
 
-      const commandExecution = vscode.commands.executeCommand(COMPRESS_PDF_COMMAND, vscode.Uri.file(sourcePath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.compressPdf',
+        vscode.Uri.file(sourcePath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       const outputPath = path.join(workspacePath, 'source_compressed.pdf');

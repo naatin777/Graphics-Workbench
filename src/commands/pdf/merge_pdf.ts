@@ -14,15 +14,12 @@ import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { MERGE_PDF_CONFIGURE_COMMAND, MERGE_PDF_SELECTED_FILES_COMMAND } from '../command_ids.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../shared/command_utils.js';
-
-export { MERGE_PDF_CONFIGURE_COMMAND, MERGE_PDF_SELECTED_FILES_COMMAND };
 
 export async function mergePdfSelectedFilesCommand(
   uri?: vscode.Uri,
@@ -86,7 +83,7 @@ export async function mergePdfSelectedFilesCommand(
     const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
     if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND, undoId);
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
     }
   } catch (error) {
     if (isAbortError(error)) {
@@ -118,10 +115,18 @@ export async function mergePdfConfigureCommand(
     const panelTitle = localeMap('submenu.mergePdf');
     const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'merge_pdf');
     const sourceById = new Map(sourceUris.map((sourceUri, index) => [`source-${index + 1}`, sourceUri]));
-    const panel = vscode.window.createWebviewPanel(MERGE_PDF_CONFIGURE_COMMAND, panelTitle, vscode.ViewColumn.Active, {
-      enableScripts: true,
-      localResourceRoots: [appRoot, ...sourceUris.map((sourceUri) => vscode.Uri.file(path.dirname(sourceUri.fsPath)))],
-    });
+    const panel = vscode.window.createWebviewPanel(
+      'graphics-workbench.mergePdf.configure',
+      panelTitle,
+      vscode.ViewColumn.Active,
+      {
+        enableScripts: true,
+        localResourceRoots: [
+          appRoot,
+          ...sourceUris.map((sourceUri) => vscode.Uri.file(path.dirname(sourceUri.fsPath))),
+        ],
+      },
+    );
 
     panel.webview.html = getWebviewHtml({
       webview: panel.webview,
@@ -272,7 +277,7 @@ async function applyConfiguredMerge(params: {
     const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
     if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND, undoId);
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
     }
 
     panel.dispose();

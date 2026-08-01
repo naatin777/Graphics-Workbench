@@ -22,11 +22,9 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
-
-export { CROP_PDF_CONFIGURE_COMMAND } from '../command_ids.js';
 
 export async function cropPdfConfigureCommand(
   context: vscode.ExtensionContext,
@@ -233,7 +231,7 @@ async function applyConfiguredCrop(params: {
     const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
     if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND, undoId);
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -11,11 +11,9 @@ import { cropPdfFiles, type CropPdfJob } from '../../operations/pdf/crop_pdf_aut
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
-
-export { CROP_PDF_AUTO_COMMAND } from '../command_ids.js';
 
 export async function cropPdfAutoCommand(
   uri?: vscode.Uri,
@@ -80,7 +78,7 @@ export async function cropPdfAutoCommand(
     const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
     if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND, undoId);
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
     }
   } catch (error) {
     if (isAbortError(error)) {

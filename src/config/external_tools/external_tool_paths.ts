@@ -15,7 +15,3 @@ export function readPdftocairoExecutablePath(configuration: Configuration): stri
 export function readRsvgConvertExecutablePath(configuration: Configuration): string {
   return configuration.execPath.rsvgConvert();
 }
-
-export function readQpdfExecutablePath(configuration: Configuration): string {
-  return configuration.execPath.qpdf();
-}

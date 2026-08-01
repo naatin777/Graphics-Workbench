@@ -38,8 +38,6 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export { CONVERT_TO_JPEG_COMMAND } from '../command_ids.js';
-
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.jpeg';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg';
 
