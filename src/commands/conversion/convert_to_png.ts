@@ -19,7 +19,7 @@ import {
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
-import { resolveOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { executePngConversion, type ConvertToPngJob } from '../../operations/conversion/convert_to_png.js';
@@ -214,47 +214,10 @@ async function planPdfToPngJobs(
 }
 
 function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {
-  const extension = path.extname(sourcePath).toLowerCase();
-
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return resolveOutputPathsTemplate(configuration, 'convertDrawioToPng', defaultDrawioOutputPath);
-  }
-
-  switch (extension) {
-    case '.jpg':
-    case '.jpeg': {
-      return configuration.outputPath.convertJpegToPng();
-    }
-    case '.webp': {
-      return configuration.outputPath.convertWebpToPng();
-    }
-    case '.avif': {
-      return configuration.outputPath.convertAvifToPng();
-    }
-    case '.gif': {
-      return resolveOutputPathOrPathsTemplate(
-        configuration,
-        'convertGifToPng',
-        configuration.outputPath.convertGifToPng,
-      );
-    }
-    case '.tif':
-    case '.tiff': {
-      return resolveOutputPathOrPathsTemplate(
-        configuration,
-        'convertTiffToPng',
-        configuration.outputPath.convertTiffToPng,
-      );
-    }
-    case '.svg': {
-      return configuration.outputPath.convertSvgToPng();
-    }
-    case '.mmd':
-    case '.mermaid': {
-      return configuration.outputPath.convertMermaidToPng();
-    }
-    default: {
-      throw new Error(`Unsupported PNG input format: ${sourcePath}`);
-    }
-  }
+  return resolveConversionTemplate({
+    target: 'png',
+    sourcePath,
+    configuration,
+    pluralFallback: defaultDrawioOutputPath,
+  });
 }

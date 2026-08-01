@@ -16,6 +16,7 @@ import { readGhostscriptExecutablePath } from '../../config/external_tools/exter
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { convertToEpsFiles, type ConvertToEpsJob } from '../../operations/conversion/convert_to_eps.js';
@@ -144,31 +145,12 @@ function outputPathTemplateForSource(sourcePath: string, configuration: Configur
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     return configuration.outputPath.convertPngToEps();
   }
-  switch (path.extname(sourcePath).toLowerCase()) {
-    case '.png': {
-      return configuration.outputPath.convertPngToEps();
-    }
-    case '.jpg':
-    case '.jpeg': {
-      return configuration.outputPath.convertJpegToEps();
-    }
-    case '.webp': {
-      return configuration.outputPath.convertWebpToEps();
-    }
-    case '.avif': {
-      return configuration.outputPath.convertAvifToEps();
-    }
-    case '.svg': {
-      return configuration.outputPath.convertSvgToEps();
-    }
-    case '.mmd':
-    case '.mermaid': {
-      return configuration.outputPath.convertMermaidToEps();
-    }
-    default: {
-      throw new Error(`Unsupported EPS input format: ${sourcePath}`);
-    }
-  }
+
+  return resolveConversionTemplate({
+    target: 'eps',
+    sourcePath,
+    configuration,
+  });
 }
 
 function planEpsConversionJob(

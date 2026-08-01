@@ -15,11 +15,14 @@ type JsonSchema = {
   maximum?: number;
 };
 type ManifestCommand = { command: string };
+type ManifestMenu = { command: string; group?: string; when?: string };
 type PackageManifest = {
   name: string;
   contributes: {
     commands: ManifestCommand[];
     configuration: { properties: Record<string, JsonSchema> };
+    menus?: Record<string, ManifestMenu[]>;
+    submenus?: { id: string }[];
   };
 };
 type ConfigNode =
@@ -105,6 +108,101 @@ function commandConstantName(commandId: string, extensionPrefix: string): string
     .toUpperCase()
     .replace(/^_/, '');
   return `${snake}_COMMAND`;
+}
+
+type ConversionNamespace = 'outputPath' | 'outputPaths';
+
+const formatNames: Record<string, string> = {
+  Png: 'png',
+  Jpeg: 'jpeg',
+  Webp: 'webp',
+  Avif: 'avif',
+  Gif: 'gif',
+  Tiff: 'tiff',
+  Svg: 'svg',
+  Pdf: 'pdf',
+  Mermaid: 'mermaid',
+  Drawio: 'drawio',
+  Raw: 'raw',
+  Eps: 'eps',
+};
+
+type ConversionPair = {
+  source: string | null;
+  target: string;
+  setting: string;
+  namespace: ConversionNamespace;
+};
+
+function sortConversionPairs(pairs: ConversionPair[]): void {
+  pairs.sort((first, second) =>
+    `${first.target}.${first.source ?? 'any'}.${first.setting}`.localeCompare(
+      `${second.target}.${second.source ?? 'any'}.${second.setting}`,
+    ),
+  );
+}
+
+function conversionPairFromKey(key: string, namespace: ConversionNamespace): ConversionPair | undefined {
+  const match = /^convert([A-Za-z]+)To([A-Za-z]+)$/u.exec(key);
+  if (match === null) {
+    return undefined;
+  }
+  const sourceName = match[1];
+  const targetName = match[2];
+  if (sourceName === undefined || targetName === undefined) {
+    return undefined;
+  }
+  const target = formatNames[targetName];
+  if (target === undefined) {
+    return undefined;
+  }
+  return { source: formatNames[sourceName] ?? null, target, setting: key, namespace };
+}
+
+function renderConversionPairs(packageJson: PackageManifest): string {
+  const properties = packageJson.contributes.configuration.properties;
+  const flatPairs: ConversionPair[] = [];
+  const pluralPairs: ConversionPair[] = [];
+  const extensionPrefix = `${packageJson.name}.`;
+
+  for (const [fullKey] of Object.entries(properties)) {
+    const key = fullKey.slice(extensionPrefix.length);
+    if (!key.startsWith('outputPath.')) {
+      continue;
+    }
+    const pair = conversionPairFromKey(key.slice('outputPath.'.length), 'outputPath');
+    if (pair !== undefined) {
+      flatPairs.push(pair);
+    }
+  }
+
+  const pluralProperties = properties[`${extensionPrefix}outputPaths`]?.properties;
+  if (pluralProperties !== undefined) {
+    for (const key of Object.keys(pluralProperties)) {
+      const pair = conversionPairFromKey(key, 'outputPaths');
+      if (pair !== undefined) {
+        pluralPairs.push(pair);
+      }
+    }
+  }
+
+  sortConversionPairs(flatPairs);
+  sortConversionPairs(pluralPairs);
+
+  const renderPairs = (pairs: ConversionPair[]): string =>
+    pairs
+      .map((pair) => {
+        const source = pair.source === null ? 'null' : quote(pair.source);
+        return `    { source: ${source}, target: ${quote(pair.target)}, setting: ${quote(pair.setting)} },`;
+      })
+      .join('\n');
+
+  return (
+    `export const conversionPairs = {\n` +
+    `  flat: [\n${renderPairs(flatPairs)}\n  ],\n` +
+    `  plural: [\n${renderPairs(pluralPairs)}\n  ],\n` +
+    `} as const;\n`
+  );
 }
 
 function schemaType(schema: JsonSchema, typeName: string): string {
@@ -393,6 +491,8 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
       .map((commandId) => `export const ${commandConstantName(commandId, extensionPrefix)} = ${quote(commandId)};`)
       .join('\n') +
     '\n\n' +
+    renderConversionPairs(packageJson) +
+    '\n' +
     `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +
     `function createConfigurationInternal(configurationReader: ConfigurationReader) {\n` +
     `  return ${renderConfigs(configurationTree, '    ')} as const;\n` +

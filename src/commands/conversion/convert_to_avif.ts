@@ -8,7 +8,6 @@ import { getDefaultConfiguration, type Configuration } from '../../generated-ext
 
 import {
   isEditableDrawioImagePath,
-  isNativeDrawioPath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
@@ -18,7 +17,8 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import {
@@ -213,49 +213,13 @@ function outputTemplateForSource(
   configuration: Configuration,
   defaultConfiguration: Configuration,
 ): string {
-  const extension = path.extname(sourcePath).toLowerCase();
-
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return resolveOutputPathsTemplate(configuration, 'convertDrawioToAvif', defaultDrawioOutputPath);
-  }
-
-  switch (extension) {
-    case '.png': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertPngToAvif(),
-        defaultConfiguration.outputPath.convertPngToAvif(),
-      );
-    }
-    case '.jpg':
-    case '.jpeg': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertJpegToAvif(),
-        defaultConfiguration.outputPath.convertJpegToAvif(),
-      );
-    }
-    case '.webp': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertWebpToAvif(),
-        defaultConfiguration.outputPath.convertWebpToAvif(),
-      );
-    }
-    case '.svg': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertSvgToAvif(),
-        defaultConfiguration.outputPath.convertSvgToAvif(),
-      );
-    }
-    case '.mmd':
-    case '.mermaid': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertMermaidToAvif(),
-        defaultConfiguration.outputPath.convertMermaidToAvif(),
-      );
-    }
-    default: {
-      throw new Error(`Unsupported AVIF input format: ${sourcePath}`);
-    }
-  }
+  return resolveConversionTemplate({
+    target: 'avif',
+    sourcePath,
+    configuration,
+    defaultConfiguration,
+    pluralFallback: defaultDrawioOutputPath,
+  });
 }
 
 function readAvifOutputOptions(configuration: Configuration): AvifOutputOptions {
