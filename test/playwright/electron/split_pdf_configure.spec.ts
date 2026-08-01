@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type PlaywrightWorkerArgs, type TestInfo } from '@playwright/test';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
 import { resetTestWorkspace } from '../../helpers/test_workspace.js';
@@ -18,7 +18,7 @@ import {
   setupElectronTest,
   disposePreparedElectronTest,
 } from './helpers/electron_test_env.js';
-import { captureSplitPdfScreenshot, openSplitPdfConfigure } from './helpers/split_pdf_webview.js';
+import { captureSplitPdfScreenshot, openSplitPdfConfigure, type SplitPdfWebview } from './helpers/split_pdf_webview.js';
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const alternateTheme = 'Default Light Modern';
@@ -46,6 +46,8 @@ const additionalThemes = [
 ] as const;
 
 let preparedElectronTest: PreparedElectronTest | undefined;
+let sharedEnv: ElectronTestEnv | undefined;
+let sharedWebview: SplitPdfWebview | undefined;
 
 test.beforeAll(async () => {
   await resetTestWorkspace();
@@ -54,22 +56,35 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   try {
-    if (preparedElectronTest) {
-      await disposePreparedElectronTest(preparedElectronTest);
-      preparedElectronTest = undefined;
+    if (sharedEnv) {
+      await disposeElectronTest(sharedEnv.app.electronApp, sharedEnv.directories.temporaryRoot);
+      sharedEnv = undefined;
     }
   } finally {
-    await resetTestWorkspace();
+    try {
+      if (preparedElectronTest) {
+        await disposePreparedElectronTest(preparedElectronTest);
+        preparedElectronTest = undefined;
+      }
+    } finally {
+      await resetTestWorkspace();
+    }
   }
 });
 
-test.beforeEach(async () => {
-  await resetTestWorkspace();
-});
-
-test.afterEach(async () => {
-  await resetTestWorkspace();
-});
+async function ensureSharedEnvironment(
+  playwright: PlaywrightWorkerArgs['playwright'],
+): Promise<{ env: ElectronTestEnv; webview: SplitPdfWebview; consoleMessages: string[] }> {
+  if (!sharedEnv) {
+    await resetTestWorkspace();
+    sharedEnv = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    sharedWebview = await openSplitPdfConfigure(sharedEnv.app.window, cropConfigureFixture.fileName);
+  }
+  if (!sharedEnv || !sharedWebview) {
+    throw new Error('Shared Electron test environment was not prepared.');
+  }
+  return { env: sharedEnv, webview: sharedWebview, consoleMessages: [] };
+}
 
 function preparedOptions(): { prepared: PreparedElectronTest } {
   if (!preparedElectronTest) {
@@ -79,19 +94,31 @@ function preparedOptions(): { prepared: PreparedElectronTest } {
   return { prepared: preparedElectronTest };
 }
 
+async function attachDiagnostics(
+  testInfo: TestInfo,
+  env: ElectronTestEnv | undefined,
+  error: unknown,
+  consoleMessages: string[],
+): Promise<void> {
+  await attachElectronDiagnostics({
+    consoleMessages,
+    error,
+    extensionsDir: env?.directories.extensionsDir ?? '',
+    sharedDataDir: env?.directories.sharedDataDir ?? '',
+    temporaryRoot: env?.directories.temporaryRoot ?? '',
+    testInfo,
+    userDataDir: env?.directories.userDataDir ?? '',
+    window: env?.app.window,
+    workspacePath: env?.directories.workspacePath ?? '',
+  });
+}
+
 test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(240_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
+  const { env, webview, consoleMessages } = await ensureSharedEnvironment(playwright);
+  const { body, canvases } = webview;
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
-
-    const { body, canvases } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
-
     const darkTheme = await waitForWebviewTheme(body, 'vscode-dark');
     await expectPdfCanvasesReadable(canvases);
     const darkScreenshot = await captureSplitPdfScreenshot(env.app.window, body);
@@ -124,41 +151,18 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       maxDiffPixelRatio: 0.05,
     });
   } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages,
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
   }
 });
 
 test('high contrastと極端な配色でもcanvasが読める', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(240_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
+  const { env, webview, consoleMessages } = await ensureSharedEnvironment(playwright);
+  const { body, canvases } = webview;
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-      ...preparedOptions(),
-      colorTheme: additionalThemes[0]?.colorTheme ?? 'Default High Contrast',
-    });
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
-
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
-    const { body, canvases } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
 
     for (const theme of additionalThemes) {
       await writeVscodeUserSettings(userSettingsPath, theme.colorTheme);
@@ -175,37 +179,17 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
       });
     }
   } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages,
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
   }
 });
 
 test('分割ペインをドラッグで幅を調整できる', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(240_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
+  const { env, webview, consoleMessages } = await ensureSharedEnvironment(playwright);
+  const { frame, preview } = webview;
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
-
-    const { frame, preview } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
     await expect(preview).toBeVisible();
 
     const divider = frame.locator('.split-pane__divider');
@@ -232,21 +216,7 @@ test('分割ペインをドラッグで幅を調整できる', async ({ playwrig
     const afterWidth = await preview.evaluate((element) => element.getBoundingClientRect().width);
     expect(afterWidth).toBeLessThan(beforeWidth);
   } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages,
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
   }
 });

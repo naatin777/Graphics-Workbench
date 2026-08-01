@@ -217,14 +217,20 @@ export async function waitForWebviewTheme(
         if (input) {
           computedStyles.push(readStyle(input));
         }
+        // The redesign keeps the panel backgroundless; only foreground colors and
+        // the backgrounds of real controls (body, primary button, input) must resolve.
+        const backgroundRequiredStyles = [readStyle(element), readStyle(primaryButton)];
+        if (input) {
+          backgroundRequiredStyles.push(readStyle(input));
+        }
 
         return (
           requiredVariables.every((variableName) => rootStyle.getPropertyValue(variableName).trim().length > 0) &&
           computedStyles.every(
+            (style) => style.color.length > 0 && style.color !== 'transparent' && style.color !== 'rgba(0, 0, 0, 0)',
+          ) &&
+          backgroundRequiredStyles.every(
             (style) =>
-              style.color.length > 0 &&
-              style.color !== 'transparent' &&
-              style.color !== 'rgba(0, 0, 0, 0)' &&
               style.backgroundColor.length > 0 &&
               (allowTransparent ||
                 (style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)')),
