@@ -11,7 +11,6 @@
   "config.convertToWebp.effort": "CPU effort used when encoding WebP output. 0 is fastest and 6 is slowest.",
   "config.convertToAvif.effort": "CPU effort used when encoding AVIF output. 0 is fastest and 9 is slowest.",
   "config.outputPath.cropPdf": "Output file name after cropping the PDF",
-  "config.outputPath.splitPdf": "Output file name for each page after splitting the PDF",
   "config.outputPaths": "Output path templates for conversion results that include a ${page} variable.",
   "config.outputPath.pair": "Output path template for an input/output format pair.",
   "config.outputPath.convertToDrawio": "Output file name when creating a Draw.io file. The extension selects .dio, editable .dio.png, or editable .dio.svg.",
