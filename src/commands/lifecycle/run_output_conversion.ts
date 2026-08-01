@@ -5,7 +5,7 @@ import type { ConversionExecutionContext } from '../../operations/lifecycle/conv
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 
 import { withCancellationSignal } from './progress_cancellation.js';
-import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from './undo_last_conversion.js';
+import { recordConversionForUndo } from './undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, errorMessage } from '../shared/command_utils.js';
 
@@ -95,7 +95,7 @@ export async function runConversionLifecycle(options: {
     const undoAction = userMessage('message.action.undo');
     const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
     if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND, undoId);
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
     }
   } catch (error) {
     if (isAbortError(error)) {

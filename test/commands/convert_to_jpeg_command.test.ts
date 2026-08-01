@@ -23,7 +23,6 @@ import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
 
-import { CONVERT_TO_JPEG_COMMAND } from '../../src/commands/conversion/convert_to_jpeg.js';
 import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
@@ -53,7 +52,7 @@ suite('JPEGに変換コマンド', () => {
   test('コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CONVERT_TO_JPEG_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.convertToJpeg'));
   });
 
   test('PNG、WebP、AVIF、PDFを1つのbatchでJPEGへ変換する', async () => {
@@ -73,7 +72,7 @@ suite('JPEGに変換コマンド', () => {
       const sourcePaths = [pngPath, webpPath, avifPath, pdfPath];
 
       const commandExecution = vscode.commands.executeCommand(
-        CONVERT_TO_JPEG_COMMAND,
+        'graphics-workbench.convertToJpeg',
         vscode.Uri.file(requireValue(sourcePaths[0])),
         sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
       );
@@ -96,7 +95,10 @@ suite('JPEGに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'source.svg');
       await writeTestSvg(sourcePath, generatedSvgWidth, generatedSvgHeight);
 
-      const commandExecution = vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.convertToJpeg',
+        vscode.Uri.file(sourcePath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       await assertReadableJpeg(replaceExtension(sourcePath, '.jpeg'));
@@ -136,7 +138,7 @@ suite('JPEGに変換コマンド', () => {
           'graphics-workbench.outputPath.convertPngToJpeg': '${fileDirname}/custom-${fileBasenameNoExtension}.jpeg',
         },
         async () => {
-          await vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
+          await vscode.commands.executeCommand('graphics-workbench.convertToJpeg', vscode.Uri.file(sourcePath));
         },
       );
 
@@ -159,7 +161,7 @@ suite('JPEGに変換コマンド', () => {
           'graphics-workbench.outputPath.convertPngToJpeg': '',
         },
         async () => {
-          await vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
+          await vscode.commands.executeCommand('graphics-workbench.convertToJpeg', vscode.Uri.file(sourcePath));
         },
       );
 
@@ -177,7 +179,10 @@ async function assertMermaidFileConvertsToJpeg(fileName: string): Promise<void> 
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToJpeg',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadableJpeg(replaceExtension(sourcePath, '.jpeg'));
@@ -193,7 +198,10 @@ async function assertFixtureConvertsToJpeg(format: string, fixtureFileName: stri
     const sourcePath = path.join(temporaryDirectory, fixtureFileName);
     await copyFile(path.join(testInputDirectory, 'valid', format, fixtureFileName), sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_JPEG_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToJpeg',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadableJpeg(replaceExtension(sourcePath, '.jpeg'));

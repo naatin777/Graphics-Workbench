@@ -4,7 +4,6 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { CONVERT_TO_DRAWIO_COMMAND } from '../../src/commands/command_ids.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
@@ -22,7 +21,10 @@ suite('Draw.ioへ変換コマンド', () => {
       const sourcePath = path.join(workspacePath, 'source.png');
       await copyFile(path.join(testInputDirectory, 'valid', 'png', 'checker-mosaic.png'), sourcePath);
 
-      const commandExecution = vscode.commands.executeCommand(CONVERT_TO_DRAWIO_COMMAND, vscode.Uri.file(sourcePath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.convertToDrawio',
+        vscode.Uri.file(sourcePath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       const outputPath = path.join(workspacePath, 'source.dio');

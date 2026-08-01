@@ -5,10 +5,6 @@ import type { OutputConflictDecision } from '../../operations/lifecycle/commit_c
 
 import { userMessage } from '../shared/user_messages.js';
 
-import { TOGGLE_SAFE_MODE_COMMAND } from '../../generated-extension-meta.js';
-
-export { TOGGLE_SAFE_MODE_COMMAND };
-
 let safeModeState: SafeModeState | undefined;
 let statusBarItem: vscode.StatusBarItem | undefined;
 
@@ -24,14 +20,14 @@ export function initializeSafeMode(context: SafeModeContext): void {
     vscode.StatusBarAlignment.Right,
     100,
   );
-  statusBarItem.command = TOGGLE_SAFE_MODE_COMMAND;
+  statusBarItem.command = 'graphics-workbench.toggleSafeMode';
   statusBarItem.tooltip = userMessage('message.safeMode.tooltip');
   updateStatusBar();
   statusBarItem.show();
 
   context.subscriptions.push(
     statusBarItem,
-    vscode.commands.registerCommand(TOGGLE_SAFE_MODE_COMMAND, async () => {
+    vscode.commands.registerCommand('graphics-workbench.toggleSafeMode', async () => {
       await requireSafeModeState().toggle();
       updateStatusBar();
     }),

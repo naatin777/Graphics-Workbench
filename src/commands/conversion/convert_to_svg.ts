@@ -37,8 +37,6 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export { CONVERT_TO_SVG_COMMAND } from '../command_ids.js';
-
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.svg';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.svg';
 

@@ -27,8 +27,6 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { CONVERT_TO_PNG_COMMAND } from '../../src/commands/conversion/convert_to_png.js';
-
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
@@ -74,7 +72,7 @@ suite('PNGに変換コマンド', () => {
   test('コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CONVERT_TO_PNG_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.convertToPng'));
   });
 
   test('JPEG、WebP、AVIF、PDFを1つのbatchでPNGへ変換する', async () => {
@@ -93,7 +91,7 @@ suite('PNGに変換コマンド', () => {
       const sourcePaths = [...imagePaths, pdfPath];
 
       const commandExecution = vscode.commands.executeCommand(
-        CONVERT_TO_PNG_COMMAND,
+        'graphics-workbench.convertToPng',
         vscode.Uri.file(requireValue(sourcePaths[0])),
         sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
       );
@@ -126,7 +124,7 @@ suite('PNGに変換コマンド', () => {
         },
         async () => {
           const commandExecution = vscode.commands.executeCommand(
-            CONVERT_TO_PNG_COMMAND,
+            'graphics-workbench.convertToPng',
             vscode.Uri.file(requireValue(sourcePaths[0])),
             sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
           );
@@ -147,7 +145,10 @@ suite('PNGに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'source.svg');
       await writeTestSvg(sourcePath, generatedSvgWidth, generatedSvgHeight);
 
-      const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PNG_COMMAND, vscode.Uri.file(sourcePath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.convertToPng',
+        vscode.Uri.file(sourcePath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       await assertReadablePng(replaceExtension(sourcePath, '.png'));
@@ -172,7 +173,10 @@ suite('PNGに変換コマンド', () => {
       await writeMermaidFixture(sourcePath);
 
       await withWorkspaceSettings({ 'graphics-workbench.mermaid.backgroundColor': 'transparent' }, async () => {
-        const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PNG_COMMAND, vscode.Uri.file(sourcePath));
+        const commandExecution = vscode.commands.executeCommand(
+          'graphics-workbench.convertToPng',
+          vscode.Uri.file(sourcePath),
+        );
         await runCommandAndClearNotificationsUntilDone(commandExecution);
       });
 
@@ -201,7 +205,10 @@ suite('PNGに変換コマンド', () => {
           },
         },
         async () => {
-          const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PNG_COMMAND, vscode.Uri.file(sourcePath));
+          const commandExecution = vscode.commands.executeCommand(
+            'graphics-workbench.convertToPng',
+            vscode.Uri.file(sourcePath),
+          );
           await runCommandAndClearNotificationsUntilDone(commandExecution);
         },
       );
@@ -220,7 +227,7 @@ suite('PNGに変換コマンド', () => {
       const pngPath = path.join(temporaryDirectory, 'source.png');
       await copyFile(fixturePngPath, pngPath);
 
-      await vscode.commands.executeCommand(CONVERT_TO_PNG_COMMAND, vscode.Uri.file(pngPath));
+      await vscode.commands.executeCommand('graphics-workbench.convertToPng', vscode.Uri.file(pngPath));
 
       await assertFileDoesNotExist(path.join(temporaryDirectory, 'source-1.png'));
     } finally {
@@ -236,7 +243,10 @@ async function assertMermaidFileConvertsToPng(fileName: string): Promise<void> {
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PNG_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToPng',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadablePng(replaceExtension(sourcePath, '.png'));

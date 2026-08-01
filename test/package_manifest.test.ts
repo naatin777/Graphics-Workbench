@@ -8,19 +8,6 @@ import { requireValue } from './helpers/required.js';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-const CONVERT_TO_PDF_COMMAND = 'graphics-workbench.convertToPdf';
-const CONVERT_TO_PNG_COMMAND = 'graphics-workbench.convertToPng';
-const CONVERT_TO_JPEG_COMMAND = 'graphics-workbench.convertToJpeg';
-const CONVERT_TO_WEBP_COMMAND = 'graphics-workbench.convertToWebp';
-const CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND = 'graphics-workbench.convertToWebpPreserveAnimation';
-const CONVERT_TO_WEBP_SEPARATELY_COMMAND = 'graphics-workbench.convertToWebpSeparately';
-const CONVERT_TO_AVIF_COMMAND = 'graphics-workbench.convertToAvif';
-const CONVERT_TO_SVG_COMMAND = 'graphics-workbench.convertToSvg';
-const CONVERT_TO_GIF_COMMAND = 'graphics-workbench.convertToGif';
-const CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND = 'graphics-workbench.convertToGifPreserveAnimation';
-const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'graphics-workbench.convertToGifSeparately';
-const CONVERT_DRAWIO_TO_PDF_COMMAND = 'graphics-workbench.convertDrawioToPdf';
-const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'graphics-workbench.convertDrawioToPdfDirectly';
 const COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND = 'graphics-workbench.convertImagesToSinglePdf';
 const CONVERT_SUBMENU = 'graphics-workbench.convert';
 const CONTEXT_MENU_ENABLED = 'config.graphics-workbench.contextMenu.enabled';
@@ -168,7 +155,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
-    assert.ok(commandIds.has(CONVERT_TO_PDF_COMMAND));
+    assert.ok(commandIds.has('graphics-workbench.convertToPdf'));
 
     for (const legacyCommand of LEGACY_TO_PDF_COMMANDS) {
       assert.ok(!commandIds.has(legacyCommand), `${legacyCommand} should not be public`);
@@ -181,10 +168,10 @@ suite('package.jsonの変換メニュー定義', () => {
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const properties = packageJson.contributes.configuration.properties;
 
-    assert.ok(commandIds.has(CONVERT_DRAWIO_TO_PDF_COMMAND));
-    assert.ok(commandIds.has(CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND));
-    assert.ok(explorerContext.some((entry) => entry.command === CONVERT_DRAWIO_TO_PDF_COMMAND));
-    assert.ok(explorerContext.some((entry) => entry.command === CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND));
+    assert.ok(commandIds.has('graphics-workbench.convertDrawioToPdf'));
+    assert.ok(commandIds.has('graphics-workbench.convertDrawioToPdfDirectly'));
+    assert.ok(explorerContext.some((entry) => entry.command === 'graphics-workbench.convertDrawioToPdf'));
+    assert.ok(explorerContext.some((entry) => entry.command === 'graphics-workbench.convertDrawioToPdfDirectly'));
     assert.strictEqual(
       properties['graphics-workbench.outputPath.convertDrawioToPdfDirectly']?.default,
       '${fileDirname}/${fileBasenameNoExtension}.pdf',
@@ -215,7 +202,7 @@ suite('package.jsonの変換メニュー定義', () => {
         .map((entry) => [entry.command, entry]),
     );
     const expectedSettingsByCommand: Record<string, string[]> = {
-      [CONVERT_TO_PDF_COMMAND]: [
+      ['graphics-workbench.convertToPdf']: [
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
@@ -223,7 +210,7 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      [CONVERT_TO_PNG_COMMAND]: [
+      ['graphics-workbench.convertToPng']: [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
@@ -232,7 +219,7 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      [CONVERT_TO_JPEG_COMMAND]: [
+      ['graphics-workbench.convertToJpeg']: [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
@@ -241,7 +228,7 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      [CONVERT_TO_WEBP_COMMAND]: [
+      ['graphics-workbench.convertToWebp']: [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
@@ -250,7 +237,7 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      [CONVERT_TO_AVIF_COMMAND]: [
+      ['graphics-workbench.convertToAvif']: [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
@@ -259,13 +246,13 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      [CONVERT_TO_SVG_COMMAND]: [
+      ['graphics-workbench.convertToSvg']: [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      [CONVERT_DRAWIO_TO_PDF_COMMAND]: [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
-      [CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND]: [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
+      ['graphics-workbench.convertDrawioToPdf']: [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
+      ['graphics-workbench.convertDrawioToPdfDirectly']: [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
       [COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND]: [
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
@@ -310,7 +297,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const submenu = packageJson.contributes.submenus.find((entry) => entry.id === CONVERT_SUBMENU);
-    const convertToPdf = convertMenu.find((entry) => entry.command === CONVERT_TO_PDF_COMMAND);
+    const convertToPdf = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToPdf');
 
     assert.strictEqual(submenu?.label, '%submenu.convert%');
     assert.ok(explorerContext.some((entry) => entry.submenu === CONVERT_SUBMENU));
@@ -349,7 +336,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const convertSubmenu = explorerContext.find((entry) => entry.submenu === CONVERT_SUBMENU);
-    const convertToPdf = convertMenu.find((entry) => entry.command === CONVERT_TO_PDF_COMMAND);
+    const convertToPdf = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToPdf');
 
     assert.ok(convertSubmenu?.when);
     assert.ok(convertToPdf?.when);
@@ -364,7 +351,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
-    const convertToSvg = convertMenu.find((entry) => entry.command === CONVERT_TO_SVG_COMMAND);
+    const convertToSvg = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToSvg');
 
     assert.ok(
       explorerContext.some(
@@ -383,7 +370,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
-    const convertToPng = convertMenu.find((entry) => entry.command === CONVERT_TO_PNG_COMMAND);
+    const convertToPng = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToPng');
 
     assert.ok(
       explorerContext.some(
@@ -412,7 +399,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
-    const convertToJpeg = convertMenu.find((entry) => entry.command === CONVERT_TO_JPEG_COMMAND);
+    const convertToJpeg = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToJpeg');
 
     assert.ok(
       explorerContext.some(
@@ -440,7 +427,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
-    const convertToWebp = convertMenu.find((entry) => entry.command === CONVERT_TO_WEBP_COMMAND);
+    const convertToWebp = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToWebp');
 
     assert.ok(
       explorerContext.some(
@@ -469,7 +456,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
-    const convertToAvif = convertMenu.find((entry) => entry.command === CONVERT_TO_AVIF_COMMAND);
+    const convertToAvif = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToAvif');
 
     assert.ok(
       explorerContext.some(
@@ -498,18 +485,18 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
-    assert.ok(commandIds.has(CONVERT_TO_GIF_COMMAND));
-    assert.ok(commandIds.has(CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND));
-    assert.ok(commandIds.has(CONVERT_TO_GIF_SEPARATELY_COMMAND));
+    assert.ok(commandIds.has('graphics-workbench.convertToGif'));
+    assert.ok(commandIds.has('graphics-workbench.convertToGifPreserveAnimation'));
+    assert.ok(commandIds.has('graphics-workbench.convertToGifSeparately'));
   });
 
   test('WebPのpreserve/splitコマンドを公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
-    assert.ok(commandIds.has(CONVERT_TO_WEBP_COMMAND));
-    assert.ok(commandIds.has(CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND));
-    assert.ok(commandIds.has(CONVERT_TO_WEBP_SEPARATELY_COMMAND));
+    assert.ok(commandIds.has('graphics-workbench.convertToWebp'));
+    assert.ok(commandIds.has('graphics-workbench.convertToWebpPreserveAnimation'));
+    assert.ok(commandIds.has('graphics-workbench.convertToWebpSeparately'));
   });
 
   test('GIF/WebPのpreserve/splitコマンドを変換サブメニューに追加する', async () => {
@@ -517,10 +504,10 @@ suite('package.jsonの変換メニュー定義', () => {
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const commands = new Set(convertMenu.map((entry) => entry.command));
 
-    assert.ok(commands.has(CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND));
-    assert.ok(commands.has(CONVERT_TO_WEBP_SEPARATELY_COMMAND));
-    assert.ok(commands.has(CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND));
-    assert.ok(commands.has(CONVERT_TO_GIF_SEPARATELY_COMMAND));
+    assert.ok(commands.has('graphics-workbench.convertToWebpPreserveAnimation'));
+    assert.ok(commands.has('graphics-workbench.convertToWebpSeparately'));
+    assert.ok(commands.has('graphics-workbench.convertToGifPreserveAnimation'));
+    assert.ok(commands.has('graphics-workbench.convertToGifSeparately'));
   });
 
   test('GIF/WebPのpreserve/splitコマンドをCommand Paletteから非表示にする', async () => {
@@ -528,10 +515,10 @@ suite('package.jsonの変換メニュー定義', () => {
     const paletteEntries = packageJson.contributes.menus.commandPalette ?? [];
     const paletteHidden = new Set(paletteEntries.filter((e) => e.when === 'false').map((e) => e.command));
 
-    assert.ok(paletteHidden.has(CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND));
-    assert.ok(paletteHidden.has(CONVERT_TO_WEBP_SEPARATELY_COMMAND));
-    assert.ok(paletteHidden.has(CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND));
-    assert.ok(paletteHidden.has(CONVERT_TO_GIF_SEPARATELY_COMMAND));
+    assert.ok(paletteHidden.has('graphics-workbench.convertToWebpPreserveAnimation'));
+    assert.ok(paletteHidden.has('graphics-workbench.convertToWebpSeparately'));
+    assert.ok(paletteHidden.has('graphics-workbench.convertToGifPreserveAnimation'));
+    assert.ok(paletteHidden.has('graphics-workbench.convertToGifSeparately'));
   });
 
   test('WebP preserve/splitは.gifのみ、GIF preserve/splitは.webpのみに表示する', async () => {
@@ -539,10 +526,10 @@ suite('package.jsonの変換メニュー定義', () => {
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((e) => e.command === command);
 
-    const webpPreserve = findEntry(CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND);
-    const webpSeparately = findEntry(CONVERT_TO_WEBP_SEPARATELY_COMMAND);
-    const gifPreserve = findEntry(CONVERT_TO_GIF_PRESERVE_ANIMATION_COMMAND);
-    const gifSeparately = findEntry(CONVERT_TO_GIF_SEPARATELY_COMMAND);
+    const webpPreserve = findEntry('graphics-workbench.convertToWebpPreserveAnimation');
+    const webpSeparately = findEntry('graphics-workbench.convertToWebpSeparately');
+    const gifPreserve = findEntry('graphics-workbench.convertToGifPreserveAnimation');
+    const gifSeparately = findEntry('graphics-workbench.convertToGifSeparately');
 
     assert.ok(webpPreserve?.when?.includes('resourceExtname =~ /^\\.gif$/i'));
     assert.ok(!webpPreserve?.when?.includes('.webp'), 'WebP preserve should not match .webp');
@@ -560,8 +547,8 @@ suite('package.jsonの変換メニュー定義', () => {
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((e) => e.command === command);
 
-    const webp = findEntry(CONVERT_TO_WEBP_COMMAND);
-    const gif = findEntry(CONVERT_TO_GIF_COMMAND);
+    const webp = findEntry('graphics-workbench.convertToWebp');
+    const gif = findEntry('graphics-workbench.convertToGif');
 
     assert.ok(!webp?.when?.includes('gif'), 'Standard WebP should not match .gif');
     assert.ok(!gif?.when?.includes('.webp'), 'Standard GIF should not match .webp');
@@ -570,7 +557,9 @@ suite('package.jsonの変換メニュー定義', () => {
   test('日本語の変換メニューには出力形式のラベルを使う', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const jaMessages = await readJson<Record<string, string>>('package.nls.ja.json');
-    const convertToPdf = packageJson.contributes.commands.find((command) => command.command === CONVERT_TO_PDF_COMMAND);
+    const convertToPdf = packageJson.contributes.commands.find(
+      (command) => command.command === 'graphics-workbench.convertToPdf',
+    );
 
     assert.strictEqual(convertToPdf?.title, '%command.convertToPdf%');
     assert.strictEqual(jaMessages['submenu.convert'], '変換');

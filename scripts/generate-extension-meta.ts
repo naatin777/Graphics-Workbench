@@ -100,16 +100,6 @@ function pascalCase(value: string): string {
     .join('');
 }
 
-function commandConstantName(commandId: string, extensionPrefix: string): string {
-  const suffix = commandId.slice(extensionPrefix.length);
-  const snake = suffix
-    .replaceAll('.', '_')
-    .replaceAll(/([A-Z])/g, '_$1')
-    .toUpperCase()
-    .replace(/^_/, '');
-  return `${snake}_COMMAND`;
-}
-
 type ConversionNamespace = 'outputPath' | 'outputPaths';
 
 const formatNames: Record<string, string> = {
@@ -461,6 +451,8 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
     }
   }
 
+  const internalCommandIds = ['graphics-workbench.convertPngToPdf'];
+
   const configurationKeys = configurationEntries.map(
     ([fullKey]) => `  | ${quote(fullKey.slice(extensionPrefix.length))}`,
   );
@@ -486,10 +478,9 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     `export const publicCommandIds = [\n${commandIdList.join('\n')}\n] as const;\n\n` +
-    commandIds
-      .map((commandId) => `export const ${commandConstantName(commandId, extensionPrefix)} = ${quote(commandId)};`)
-      .join('\n') +
-    '\n\n' +
+    `export type CommandId = (typeof publicCommandIds)[number]${internalCommandIds
+      .map((commandId) => ` | ${quote(commandId)}`)
+      .join('')};\n\n` +
     renderConversionPairs(packageJson) +
     '\n' +
     `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +

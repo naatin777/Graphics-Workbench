@@ -43,8 +43,6 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export { CONVERT_TO_WEBP_COMMAND } from '../command_ids.js';
-
 const defaultSplitOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.webp';
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.webp';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.webp';

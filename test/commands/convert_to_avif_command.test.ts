@@ -24,8 +24,6 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { CONVERT_TO_AVIF_COMMAND } from '../../src/commands/conversion/convert_to_avif.js';
-
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 import { createSandbox } from 'sinon';
@@ -62,7 +60,7 @@ suite('AVIFに変換コマンド', () => {
   test('コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CONVERT_TO_AVIF_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.convertToAvif'));
   });
 
   test('PNG、JPEG、WebP、PDFを1つのbatchでAVIFへ変換する', async () => {
@@ -82,7 +80,7 @@ suite('AVIFに変換コマンド', () => {
       const sourcePaths = [pngPath, jpegPath, webpPath, pdfPath];
 
       const commandExecution = vscode.commands.executeCommand(
-        CONVERT_TO_AVIF_COMMAND,
+        'graphics-workbench.convertToAvif',
         vscode.Uri.file(requireValue(sourcePaths[0])),
         sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
       );
@@ -105,7 +103,10 @@ suite('AVIFに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'source.svg');
       await writeTestSvg(sourcePath, generatedSvgWidth, generatedSvgHeight);
 
-      const commandExecution = vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.convertToAvif',
+        vscode.Uri.file(sourcePath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       await assertReadableAvif(replaceExtension(sourcePath, '.avif'));
@@ -139,7 +140,7 @@ suite('AVIFに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'source.avif');
       await writeImageFixture(sourcePath, 'avif');
 
-      await vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand('graphics-workbench.convertToAvif', vscode.Uri.file(sourcePath));
 
       await assertFileDoesNotExist(path.join(temporaryDirectory, 'source-1.avif'));
     } finally {
@@ -160,7 +161,7 @@ suite('AVIFに変換コマンド', () => {
           'graphics-workbench.outputPath.convertPngToAvif': '${fileDirname}/custom-${fileBasenameNoExtension}.avif',
         },
         async () => {
-          await vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
+          await vscode.commands.executeCommand('graphics-workbench.convertToAvif', vscode.Uri.file(sourcePath));
         },
       );
 
@@ -183,7 +184,7 @@ suite('AVIFに変換コマンド', () => {
           'graphics-workbench.outputPath.convertPngToAvif': '',
         },
         async () => {
-          await vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
+          await vscode.commands.executeCommand('graphics-workbench.convertToAvif', vscode.Uri.file(sourcePath));
         },
       );
 
@@ -201,7 +202,10 @@ async function assertMermaidFileConvertsToAvif(fileName: string): Promise<void> 
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToAvif',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadableAvif(replaceExtension(sourcePath, '.avif'));
@@ -217,7 +221,10 @@ async function assertFixtureConvertsToAvif(format: string, fixtureFileName: stri
     const sourcePath = path.join(temporaryDirectory, fixtureFileName);
     await copyFile(path.join(testInputDirectory, 'valid', format, fixtureFileName), sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_AVIF_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToAvif',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadableAvif(replaceExtension(sourcePath, '.avif'));

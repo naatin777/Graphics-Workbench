@@ -24,12 +24,6 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { CONVERT_TO_WEBP_COMMAND } from '../../src/commands/conversion/convert_to_webp.js';
-import {
-  CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND,
-  CONVERT_TO_WEBP_SEPARATELY_COMMAND,
-} from '../../src/commands/command_ids.js';
-
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 import { createSandbox } from 'sinon';
@@ -66,7 +60,7 @@ suite('WebPに変換コマンド', () => {
   test('コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CONVERT_TO_WEBP_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.convertToWebp'));
   });
 
   test('PNG、JPEG、AVIF、PDFを1つのbatchでWebPへ変換する', async () => {
@@ -86,7 +80,7 @@ suite('WebPに変換コマンド', () => {
       const sourcePaths = [pngPath, jpegPath, avifPath, pdfPath];
 
       const commandExecution = vscode.commands.executeCommand(
-        CONVERT_TO_WEBP_COMMAND,
+        'graphics-workbench.convertToWebp',
         vscode.Uri.file(requireValue(sourcePaths[0])),
         sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
       );
@@ -109,7 +103,10 @@ suite('WebPに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'source.svg');
       await writeTestSvg(sourcePath, generatedSvgWidth, generatedSvgHeight);
 
-      const commandExecution = vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.convertToWebp',
+        vscode.Uri.file(sourcePath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       await assertReadableWebp(replaceExtension(sourcePath, '.webp'));
@@ -134,7 +131,7 @@ suite('WebPに変換コマンド', () => {
       await copyFile(path.join(testInputDirectory, 'valid', 'gif', 'rotating-vector-field.gif'), sourcePath);
 
       const commandExecution = vscode.commands.executeCommand(
-        CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND,
+        'graphics-workbench.convertToWebpPreserveAnimation',
         vscode.Uri.file(sourcePath),
       );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
@@ -155,7 +152,7 @@ suite('WebPに変換コマンド', () => {
       await copyFile(path.join(testInputDirectory, 'valid', 'gif', 'rotating-vector-field.gif'), sourcePath);
 
       const commandExecution = vscode.commands.executeCommand(
-        CONVERT_TO_WEBP_SEPARATELY_COMMAND,
+        'graphics-workbench.convertToWebpSeparately',
         vscode.Uri.file(sourcePath),
       );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
@@ -185,7 +182,7 @@ suite('WebPに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'source.webp');
       await writeImageFixture(sourcePath, 'webp');
 
-      await vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand('graphics-workbench.convertToWebp', vscode.Uri.file(sourcePath));
 
       await assertFileDoesNotExist(path.join(temporaryDirectory, 'source-1.webp'));
     } finally {
@@ -206,7 +203,7 @@ suite('WebPに変換コマンド', () => {
           'graphics-workbench.outputPath.convertPngToWebp': '${fileDirname}/custom-${fileBasenameNoExtension}.webp',
         },
         async () => {
-          await vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
+          await vscode.commands.executeCommand('graphics-workbench.convertToWebp', vscode.Uri.file(sourcePath));
         },
       );
 
@@ -229,7 +226,7 @@ suite('WebPに変換コマンド', () => {
           'graphics-workbench.outputPath.convertPngToWebp': '',
         },
         async () => {
-          await vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
+          await vscode.commands.executeCommand('graphics-workbench.convertToWebp', vscode.Uri.file(sourcePath));
         },
       );
 
@@ -247,7 +244,10 @@ async function assertMermaidFileConvertsToWebp(fileName: string): Promise<void> 
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToWebp',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadableWebp(replaceExtension(sourcePath, '.webp'));
@@ -263,7 +263,10 @@ async function assertFixtureConvertsToWebp(format: string, fixtureFileName: stri
     const sourcePath = path.join(temporaryDirectory, fixtureFileName);
     await copyFile(path.join(testInputDirectory, 'valid', format, fixtureFileName), sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_WEBP_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToWebp',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadableWebp(replaceExtension(sourcePath, '.webp'));

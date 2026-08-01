@@ -16,8 +16,6 @@ import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
 import { localeMap } from '../../locale_map.js';
 
-export { CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND } from '../command_ids.js';
-
 export async function combineImagesToPdfCommand(
   uri?: vscode.Uri,
   uris?: vscode.Uri[],
