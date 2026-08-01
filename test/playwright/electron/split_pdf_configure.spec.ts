@@ -220,3 +220,40 @@ test('分割ペインをドラッグで幅を調整できる', async ({ playwrig
     throw error instanceof Error ? error : new Error(String(error));
   }
 });
+
+test('横幅が短いと縦に折り返して分割線を隠す', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(240_000);
+  const { env, webview, consoleMessages } = await ensureSharedEnvironment(playwright);
+  const { frame } = webview;
+
+  try {
+    const splitPane = frame.locator('.split-pane');
+    const divider = frame.locator('.split-pane__divider');
+    await expect(splitPane).toBeVisible();
+
+    await env.app.window.setViewportSize({ width: 600, height: 900 });
+    await expect
+      .poll(async () => {
+        const style = await splitPane.evaluate((element) =>
+          element.ownerDocument.defaultView?.getComputedStyle(element),
+        );
+        return style?.flexDirection === 'column';
+      })
+      .toBe(true);
+    await expect(divider).toBeHidden();
+
+    await env.app.window.setViewportSize({ width: 1280, height: 900 });
+    await expect
+      .poll(async () => {
+        const style = await splitPane.evaluate((element) =>
+          element.ownerDocument.defaultView?.getComputedStyle(element),
+        );
+        return style?.flexDirection === 'row';
+      })
+      .toBe(true);
+    await expect(divider).toBeVisible();
+  } catch (error) {
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+});
