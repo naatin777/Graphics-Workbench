@@ -15,7 +15,7 @@ export async function withWorkspaceSettings(
 
   for (const [key, value] of Object.entries(settings)) {
     if (value === undefined) {
-      delete nextSettings[key];
+      nextSettings[key] = undefined;
       continue;
     }
 
@@ -32,7 +32,7 @@ export async function withWorkspaceSettings(
 
   try {
     await settingsChanged;
-    await callback();
+    return await callback();
   } finally {
     const settingsRestored = onceWorkspaceConfigurationChanges(changedKeys);
     await restoreWorkspaceSettings(settingsPath, originalSettingsText);

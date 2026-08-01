@@ -43,8 +43,8 @@ suite('Safe Modeステータスバー', () => {
       .stub(vscode.commands, 'registerCommand')
       .callsFake((command: string, callback: (...args: never[]) => unknown) => {
         assert.strictEqual(command, TOGGLE_SAFE_MODE_COMMAND);
-        registeredCommand = async () => {
-          await callback();
+        registeredCommand = async (): Promise<void> => {
+          return void (await callback());
         };
         return new FakeDisposable();
       });

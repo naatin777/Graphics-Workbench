@@ -166,8 +166,10 @@ function matchesConfigurationType(value: unknown, type: ConfigurationSchemaType,
     case 'string': {
       return typeof value === 'string';
     }
+    default: {
+      return false;
+    }
   }
-  return false;
 }
 
 function matchesConfigurationSchema(value: unknown, schema: ConfigurationSchema): boolean {
@@ -817,7 +819,7 @@ export const publicCommandIds = [
 ] as const;
 
 // oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.
-export function createConfiguration(configurationReader: ConfigurationReader) {
+function createConfigurationInternal(configurationReader: ConfigurationReader) {
   return {
     execPath: {
       drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', ''),
@@ -1211,7 +1213,11 @@ export function createConfiguration(configurationReader: ConfigurationReader) {
   } as const;
 }
 
-export type Configuration = ReturnType<typeof createConfiguration>;
+export type Configuration = ReturnType<typeof createConfigurationInternal>;
+export function createConfiguration(configurationReader: ConfigurationReader): Configuration {
+  return createConfigurationInternal(configurationReader);
+}
+
 export type GetConfiguration = () => Configuration;
 
 const defaultConfigurationReader: ConfigurationReader = {

@@ -58,7 +58,7 @@ export function defineWebviewConfig(config: WebviewBuildConfig): UserConfig {
       target: 'es2022',
       cssCodeSplit: false,
 
-      rollupOptions: {
+      rolldownOptions: {
         input: resolve(appRoot, config.entryHtml ?? 'index.html'),
         output: {
           entryFileNames: 'index.js',

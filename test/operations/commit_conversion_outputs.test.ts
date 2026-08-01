@@ -336,7 +336,7 @@ suite('変換結果の反映処理', () => {
   test('Safe Modeの取消はAbortErrorとして確認できる', () => {
     const error = new OperationCancelledError('Do Not Overwrite');
 
-    assert.strictEqual(error.name, 'AbortError');
+    assert.strictEqual(error.name, 'OperationCancelledError');
     assert.match(error.message, /Do Not Overwrite/);
   });
 });

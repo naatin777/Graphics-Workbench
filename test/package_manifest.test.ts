@@ -525,7 +525,7 @@ suite('package.jsonの変換メニュー定義', () => {
 
   test('GIF/WebPのpreserve/splitコマンドをCommand Paletteから非表示にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
-    const paletteEntries = packageJson.contributes.menus['commandPalette'] ?? [];
+    const paletteEntries = packageJson.contributes.menus.commandPalette ?? [];
     const paletteHidden = new Set(paletteEntries.filter((e) => e.when === 'false').map((e) => e.command));
 
     assert.ok(paletteHidden.has(CONVERT_TO_WEBP_PRESERVE_COMMAND));

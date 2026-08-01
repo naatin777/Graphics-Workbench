@@ -93,7 +93,7 @@ function validateOutputPath(outputPath: string, platform: OutputPathPlatform, pa
     }
 
     const controlCharacter = Array.from(component).find((character) => {
-      const characterCode = character.charCodeAt(0);
+      const characterCode = character.codePointAt(0) ?? 0;
       return characterCode >= 1 && characterCode <= 31;
     });
 

@@ -47,7 +47,7 @@ const invalidCases = [
 
 suite('Draw.io fixtureの実変換比較', () => {
   for (const fixtureCase of validCases) {
-    test(`${fixtureCase.inputFileName}をPNG/SVG/PDFへ変換すると固定正解データと一致する`, async function () {
+    test(`${fixtureCase.inputFileName}をPNG/SVG/PDFへ変換すると固定正解データと一致する`, async function convertsFixtureToExpectedOutputs() {
       const drawioPath = readDrawioExecutablePath(getExtensionConfiguration());
       if (drawioPath === '') {
         this.skip();
@@ -139,7 +139,7 @@ suite('Draw.io fixtureの実変換比較', () => {
   }
 
   for (const [index, invalidCase] of invalidCases.entries()) {
-    test(`invalid/drawio/${invalidCase.fileName}をPDFへ実変換すると失敗し、出力を残さない`, async function () {
+    test(`invalid/drawio/${invalidCase.fileName}をPDFへ実変換すると失敗し、出力を残さない`, async function expectsInvalidFixtureToFailWithoutOutput() {
       const drawioPath = readDrawioExecutablePath(getExtensionConfiguration());
       if (drawioPath === '') {
         this.skip();

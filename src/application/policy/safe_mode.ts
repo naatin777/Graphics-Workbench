@@ -6,7 +6,11 @@ export interface StateStorage {
 }
 
 export class SafeModeState {
-  constructor(private readonly storage: StateStorage) {}
+  private readonly storage: StateStorage;
+
+  constructor(storage: StateStorage) {
+    this.storage = storage;
+  }
 
   isEnabled(): boolean {
     return this.storage.get(SAFE_MODE_STATE_KEY, true) ?? true;
