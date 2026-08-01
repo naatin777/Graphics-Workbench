@@ -233,6 +233,31 @@ export function outputTemplateForSource(
         defaultConfiguration.outputPath.convertMermaidToPdf(),
       );
     }
+    case '.gif': {
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertGifToPdf(),
+        defaultConfiguration.outputPath.convertGifToPdf(),
+      );
+    }
+    case '.tif':
+    case '.tiff': {
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertTiffToPdf(),
+        defaultConfiguration.outputPath.convertTiffToPdf(),
+      );
+    }
+    case '.eps': {
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertEpsToPdf(),
+        defaultConfiguration.outputPath.convertEpsToPdf(),
+      );
+    }
+    case '.raw': {
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertRawToPdf(),
+        defaultConfiguration.outputPath.convertRawToPdf(),
+      );
+    }
     default: {
       throw new Error(`Unsupported PDF input format: ${sourcePath}`);
     }

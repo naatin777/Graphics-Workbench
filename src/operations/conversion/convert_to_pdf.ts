@@ -22,6 +22,7 @@ import {
   openRasterInput,
   readRasterAnimationMetadata,
   rasterInputPixelLimitMessage,
+  type RasterAnimationMetadata,
 } from './raster_input.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -247,13 +248,25 @@ async function stageSourceToPdf(
   };
 }
 
+async function readRasterAnimationMetadataSafely(
+  sourcePath: string,
+  maxInputPixels: number,
+): Promise<RasterAnimationMetadata | undefined> {
+  try {
+    return await readRasterAnimationMetadata(sourcePath, maxInputPixels);
+  } catch {
+    // ponytail: libvips cannot animate multi-page TIFFs whose pages differ; fall back to the first frame/page.
+    return undefined;
+  }
+}
+
 export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promise<void> {
   const { sourcePath, outputPath, workspacePath, signal, maxInputPixels, tools, scratchOptions = {} } = options;
   const { svgToPdfTools, mermaidTools, drawioTools, ghostscriptPath } = tools ?? {};
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
-    const animation = await readRasterAnimationMetadata(
+    const animation = await readRasterAnimationMetadataSafely(
       sourcePath,
       maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
     );

@@ -5,6 +5,9 @@
 // - AVIFをPDFに変換できること
 // - SVGをPDFに変換できること
 // - MermaidをPDFに変換できること
+// - GIF、TIFFを先頭フレーム・ページの1ページPDFへ変換できること
+// - EPSをPDFへ変換できること
+// - RAWとsidecarをPDFへ変換できること
 // - PNG、JPEG、WebP、AVIF、SVG、Mermaidを1回のコマンドでPDFへ変換できること
 // - 複数PNGを1回のコマンドでPDFへ変換できること
 // - 非対応入力が含まれる場合、変換全体を開始しないこと
@@ -36,7 +39,7 @@ import { CONVERT_TO_PDF_COMMAND, outputTemplateForSource } from '../../src/comma
 
 import { logicalSourcePathForOutputTemplate } from '../../src/application/policy/source_format.js';
 
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
@@ -149,6 +152,22 @@ suite('PDFに変換コマンド', () => {
 
   test('.mermaidファイルを読み取り可能なPDFへ変換する', async () => {
     await assertMermaidFileConvertsToPdf('source.mermaid');
+  });
+
+  test('GIFを先頭フレームの1ページPDFへ変換する', async () => {
+    await assertFixtureConvertsToPdf('gif', 'swirl-gradient.gif');
+  });
+
+  test('TIFFを先頭ページの1ページPDFへ変換する', async () => {
+    await assertFixtureConvertsToPdf('tiff', 'heatmap.tiff');
+  });
+
+  test('EPSを読み取り可能なPDFへ変換する', async () => {
+    await assertFixtureConvertsToPdf('eps', 'color-swatches.eps');
+  });
+
+  test('RAWとsidecarを読み取り可能なPDFへ変換する', async () => {
+    await assertFixtureConvertsToPdf('raw', 'rgb-16x12.raw');
   });
 
   test('outputPath.convertPngToPdfが設定されている場合は指定した出力先を使う', async () => {
@@ -372,6 +391,27 @@ async function assertReadablePdfWithAtLeastOnePage(pdfPath: string): Promise<voi
   const pdf = await PDFDocument.load(await readFile(pdfPath));
 
   assert.ok(pdf.getPageCount() >= 1);
+}
+
+async function assertFixtureConvertsToPdf(format: string, fixtureFileName: string): Promise<void> {
+  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+  try {
+    const sourcePath = path.join(temporaryDirectory, fixtureFileName);
+    const sourceFixturePath = path.join(testInputDirectory, 'valid', format, fixtureFileName);
+    await copyFile(sourceFixturePath, sourcePath);
+
+    if (format === 'raw') {
+      await copyFile(`${sourceFixturePath}.json`, `${sourcePath}.json`);
+    }
+
+    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
+
+    await assertReadablePdfWithAtLeastOnePage(replaceExtension(sourcePath, '.pdf'));
+  } finally {
+    await removeTemporaryDirectory(temporaryDirectory);
+  }
 }
 
 async function assertPdfPageSize(pdfPath: string, expectedWidth: number, expectedHeight: number): Promise<void> {
