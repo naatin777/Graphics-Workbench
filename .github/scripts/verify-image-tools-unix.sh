@@ -13,10 +13,12 @@ read_setting() {
 gs_path="$(read_setting "graphics-workbench.execPath.ghostscript")"
 pdftocairo_path="$(read_setting "graphics-workbench.execPath.pdftocairo")"
 rsvg_convert_path="$(read_setting "graphics-workbench.execPath.rsvgConvert")"
+qpdf_path="$(read_setting "graphics-workbench.execPath.qpdf")"
 chrome_path="$(read_setting "graphics-workbench.puppeteer.executablePath")"
 test -x "${gs_path}"
 test -x "${pdftocairo_path}"
 test -x "${rsvg_convert_path}"
+test -x "${qpdf_path}"
 test -x "${chrome_path}"
 
 echo "Ghostscript: ${gs_path}"
@@ -27,6 +29,9 @@ echo "pdftocairo: ${pdftocairo_path}"
 
 echo "rsvg-convert: ${rsvg_convert_path}"
 "${rsvg_convert_path}" --version
+
+echo "qpdf: ${qpdf_path}"
+"${qpdf_path}" --version
 
 echo "Chrome from settings.json: ${chrome_path}"
 "${chrome_path}" --version

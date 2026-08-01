@@ -41,9 +41,31 @@ if (-not $gs) {
 	throw 'gswin64c.exe not found after Ghostscript extraction'
 }
 
+$qpdfVersion = '12.3.2'
+$qpdfZip = Join-Path $env:RUNNER_TEMP 'qpdf.zip'
+$qpdfRoot = Join-Path $env:RUNNER_TEMP 'qpdf'
+$qpdfUrl = "https://github.com/qpdf/qpdf/releases/download/v$qpdfVersion/qpdf-$qpdfVersion-msvc64.zip"
+$qpdfSha256 = '8941870a604e7c87ed24566b038d46c24ce76616254d2383c578f60c0677f202'
+
+Write-Host 'Downloading qpdf...'
+Invoke-WebRequest $qpdfUrl -OutFile $qpdfZip
+$actualSha256 = (Get-FileHash $qpdfZip -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actualSha256 -ne $qpdfSha256) {
+	throw "qpdf SHA-256 mismatch: expected $qpdfSha256, got $actualSha256"
+}
+
+New-Item -ItemType Directory -Force -Path $qpdfRoot | Out-Null
+Expand-Archive $qpdfZip -DestinationPath $qpdfRoot -Force
+
+$qpdf = Get-ChildItem -Path $qpdfRoot -Recurse -Filter qpdf.exe | Select-Object -First 1
+if (-not $qpdf) {
+	throw 'qpdf.exe not found after extraction'
+}
+
 if (-not (Test-Path $pdftocairo.FullName)) { throw "missing $($pdftocairo.FullName)" }
 if (-not (Test-Path $rsvgConvert)) { throw "missing $rsvgConvert" }
 if (-not (Test-Path $gs.FullName)) { throw "missing $($gs.FullName)" }
+if (-not (Test-Path $qpdf.FullName)) { throw "missing $($qpdf.FullName)" }
 
 $chromeCandidates = @(
 	(Join-Path $env:ProgramFiles 'Google/Chrome/Application/chrome.exe'),
@@ -61,6 +83,7 @@ $settings = [ordered]@{
 	'graphics-workbench.execPath.ghostscript' = $gs.FullName
 	'graphics-workbench.execPath.pdftocairo' = $pdftocairo.FullName
 	'graphics-workbench.execPath.rsvgConvert' = $rsvgConvert
+	'graphics-workbench.execPath.qpdf' = $qpdf.FullName
 	'graphics-workbench.puppeteer.executablePath' = $chrome
 }
 $settings | ConvertTo-Json | Set-Content $settingsPath -Encoding utf8

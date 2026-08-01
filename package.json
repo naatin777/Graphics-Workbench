@@ -243,6 +243,11 @@
         "command": "graphics-workbench.compressPdf",
         "title": "%command.compressPdf%",
         "category": "Graphics Workbench"
+      },
+      {
+        "command": "graphics-workbench.linearizePdf",
+        "title": "%command.linearizePdf%",
+        "category": "Graphics Workbench"
       }
     ],
     "menus": {
@@ -281,6 +286,11 @@
           "command": "graphics-workbench.compressPdf",
           "group": "graphics-workbench",
           "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.compressPdf.enabled"
+        },
+        {
+          "command": "graphics-workbench.linearizePdf",
+          "group": "graphics-workbench",
+          "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.linearizePdf.enabled"
         }
       ],
       "graphics-workbench.cropPdf": [
@@ -440,6 +450,10 @@
           "when": "false"
         },
         {
+          "command": "graphics-workbench.linearizePdf",
+          "when": "false"
+        },
+        {
           "command": "graphics-workbench.convertToDrawioPng",
           "when": "false"
         },
@@ -509,6 +523,12 @@
           "default": "rsvg-convert",
           "scope": "machine",
           "description": "%config.execPath.rsvgConvert%"
+        },
+        "graphics-workbench.execPath.qpdf": {
+          "type": "string",
+          "default": "qpdf",
+          "scope": "machine",
+          "description": "%config.execPath.qpdf%"
         },
         "graphics-workbench.raster.maxInputPixels": {
           "type": "integer",
@@ -1091,10 +1111,20 @@
           "default": true,
           "description": "%config.contextMenu.compressPdf.enabled%"
         },
+        "graphics-workbench.contextMenu.linearizePdf.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.contextMenu.linearizePdf.enabled%"
+        },
         "graphics-workbench.outputPath.compressPdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}_compressed.pdf",
           "description": "%config.outputPath.compressPdf%"
+        },
+        "graphics-workbench.outputPath.linearizePdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-linearized.pdf",
+          "description": "%config.outputPath.linearizePdf%"
         }
       }
     }

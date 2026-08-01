@@ -26,6 +26,7 @@ import {
   CONVERT_TO_WEBP_SEPARATELY_COMMAND,
   CROP_PDF_AUTO_COMMAND,
   CROP_PDF_CONFIGURE_COMMAND,
+  LINEARIZE_PDF_COMMAND,
   MERGE_PDF_CONFIGURE_COMMAND,
   MERGE_PDF_SELECTED_FILES_COMMAND,
   SPLIT_PDF_ALL_PAGES_COMMAND,
@@ -86,6 +87,14 @@ function registerCommands(
       async () => import('./commands/pdf/compress_pdf.js'),
     );
     return compressPdfCommand(uri, uris, dependencies);
+  });
+  registerFileCommand(context, LINEARIZE_PDF_COMMAND, async (uri, uris) => {
+    const { linearizePdfCommand } = await loadCommandModule(
+      outputChannel,
+      './commands/pdf/linearize_pdf.js',
+      async () => import('./commands/pdf/linearize_pdf.js'),
+    );
+    return linearizePdfCommand(uri, uris, dependencies);
   });
   registerFileCommand(context, CROP_PDF_AUTO_COMMAND, async (uri, uris) => {
     const { cropPdfAutoCommand } = await loadCommandModule(

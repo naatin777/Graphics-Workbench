@@ -4,6 +4,7 @@
   "config.execPath.ghostscript": "ghostscriptの実行ファイルのパス。未指定の場合はOSごとの既定コマンドを使用します。(macOS/Linuxの場合はgs, Windowsの場合はgswin64c.exe)",
   "config.execPath.pdftocairo": "pdftocairoの実行ファイルのパス。未指定の場合はpdftocairo",
   "config.execPath.rsvgConvert": "rsvg-convertの実行ファイルのパス。未指定の場合はrsvg-convert",
+  "config.execPath.qpdf": "qpdfの実行ファイルのパス。未指定の場合はqpdf",
   "config.raster.maxInputPixels": "ラスター画像の入力に許可する最大ピクセル数です。大きな画像は多くのメモリを消費する可能性があるため、必要な場合のみ値を増やしてください。",
   "config.convertToPdf.svg.engine": "SVGをPDFに変換するときに使用する変換方式",
   "config.puppeteer.executablePath": "SVG変換とMermaid変換で共有するブラウザ実行ファイルのパス。指定した場合はブラウザチャンネルより優先されます。",
@@ -262,8 +263,11 @@
   "command.convertImagesToSinglePdf": "画像を1つのPDFに結合",
   "config.outputPath.convertImagesToSinglePdf": "画像結合PDFの出力先",
   "command.compressPdf": "PDFを圧縮",
+  "command.linearizePdf": "PDFをリニアライズ",
   "config.contextMenu.compressPdf.enabled": "PDFを圧縮するコンテキストメニューを有効にする",
+  "config.contextMenu.linearizePdf.enabled": "PDFをリニアライズするコンテキストメニューを有効にする",
   "config.outputPath.compressPdf": "PDF圧縮後の出力ファイル名",
+  "config.outputPath.linearizePdf": "PDFリニアライズ後の出力ファイル名",
   "quickPick.compressPdf.quality.title": "PDF圧縮の品質を選択",
   "quickPick.compressPdf.quality.placeholder": "品質を下げるほどファイルサイズが小さくなります。",
   "quickPick.compressPdf.quality.screen": "最小ファイルサイズ、最低品質",
@@ -274,5 +278,10 @@
   "message.progress.compressPdf.title": "{0}個のPDFファイルを圧縮しています",
   "message.compressPdf.success": "{0}個のPDFファイルを圧縮しました。",
   "message.compressPdf.cancelled": "PDF圧縮はキャンセルされました。",
-  "message.compressPdf.failed": "PDF圧縮に失敗しました: {0}"
+  "message.compressPdf.failed": "PDF圧縮に失敗しました: {0}",
+  "message.progress.linearizePdf.title": "{0}個のPDFファイルをリニアライズしています",
+  "message.progress.prepareLinearizePdf": "PDFリニアライズを準備しています",
+  "message.linearizePdf.success": "{0}個のPDFファイルをリニアライズしました。",
+  "message.linearizePdf.cancelled": "PDFリニアライズはキャンセルされました。",
+  "message.linearizePdf.failed": "PDFリニアライズに失敗しました: {0}"
 }

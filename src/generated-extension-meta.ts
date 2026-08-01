@@ -6,6 +6,7 @@ type ConfigurationKey =
   | 'execPath.ghostscript'
   | 'execPath.pdftocairo'
   | 'execPath.rsvgConvert'
+  | 'execPath.qpdf'
   | 'raster.maxInputPixels'
   | 'convertToPdf.svg.engine'
   | 'mermaid.theme'
@@ -102,7 +103,9 @@ type ConfigurationKey =
   | 'contextMenu.convertMermaid.enabled'
   | 'contextMenu.convertDrawioCreate.enabled'
   | 'contextMenu.compressPdf.enabled'
-  | 'outputPath.compressPdf';
+  | 'contextMenu.linearizePdf.enabled'
+  | 'outputPath.compressPdf'
+  | 'outputPath.linearizePdf';
 
 export type ConfigurationReader = {
   get(key: string): unknown;
@@ -202,6 +205,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['string'],
   },
   'execPath.rsvgConvert': {
+    types: ['string'],
+  },
+  'execPath.qpdf': {
     types: ['string'],
   },
   'raster.maxInputPixels': {
@@ -568,7 +574,13 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'contextMenu.compressPdf.enabled': {
     types: ['boolean'],
   },
+  'contextMenu.linearizePdf.enabled': {
+    types: ['boolean'],
+  },
   'outputPath.compressPdf': {
+    types: ['string'],
+  },
+  'outputPath.linearizePdf': {
     types: ['string'],
   },
 };
@@ -577,6 +589,7 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'execPath.ghostscript': 'string',
   'execPath.pdftocairo': 'string',
   'execPath.rsvgConvert': 'string',
+  'execPath.qpdf': 'string',
   'raster.maxInputPixels': 'integer',
   'convertToPdf.svg.engine': 'one of puppeteer, rsvg-convert',
   'mermaid.theme': 'one of default, forest, dark, neutral, base',
@@ -673,7 +686,9 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'contextMenu.convertMermaid.enabled': 'boolean',
   'contextMenu.convertDrawioCreate.enabled': 'boolean',
   'contextMenu.compressPdf.enabled': 'boolean',
+  'contextMenu.linearizePdf.enabled': 'boolean',
   'outputPath.compressPdf': 'string',
+  'outputPath.linearizePdf': 'string',
 };
 function configurationValueType(value: unknown): string {
   if (Array.isArray(value)) {
@@ -799,6 +814,7 @@ export const publicCommandIds = [
   'graphics-workbench.convertToDrawioSvg',
   'graphics-workbench.convertImagesToSinglePdf',
   'graphics-workbench.compressPdf',
+  'graphics-workbench.linearizePdf',
 ] as const;
 
 export const CROP_PDF_AUTO_COMMAND = 'graphics-workbench.cropPdf.auto';
@@ -829,6 +845,7 @@ export const CONVERT_TO_DRAWIO_PNG_COMMAND = 'graphics-workbench.convertToDrawio
 export const CONVERT_TO_DRAWIO_SVG_COMMAND = 'graphics-workbench.convertToDrawioSvg';
 export const CONVERT_IMAGES_TO_SINGLE_PDF_COMMAND = 'graphics-workbench.convertImagesToSinglePdf';
 export const COMPRESS_PDF_COMMAND = 'graphics-workbench.compressPdf';
+export const LINEARIZE_PDF_COMMAND = 'graphics-workbench.linearizePdf';
 
 export const conversionPairs = {
   flat: [
@@ -925,6 +942,7 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       ghostscript: defineConfiguration<string>(configurationReader, 'execPath.ghostscript', ''),
       pdftocairo: defineConfiguration<string>(configurationReader, 'execPath.pdftocairo', 'pdftocairo'),
       rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
+      qpdf: defineConfiguration<string>(configurationReader, 'execPath.qpdf', 'qpdf'),
     },
     raster: {
       maxInputPixels: defineConfiguration<number>(configurationReader, 'raster.maxInputPixels', 268402689),
@@ -1324,6 +1342,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.compressPdf',
         '${fileDirname}/${fileBasenameNoExtension}_compressed.pdf',
       ),
+      linearizePdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.linearizePdf',
+        '${fileDirname}/${fileBasenameNoExtension}-linearized.pdf',
+      ),
     },
     outputPaths: defineConfiguration<OutputPaths>(configurationReader, 'outputPaths', {}),
     cropPdf: {
@@ -1369,6 +1392,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       compressPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.compressPdf.enabled', true),
+      },
+      linearizePdf: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.linearizePdf.enabled', true),
       },
     },
   } as const;
