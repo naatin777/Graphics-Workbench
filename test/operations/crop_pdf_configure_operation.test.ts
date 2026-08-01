@@ -145,7 +145,7 @@ suite('PDF configure crop処理', () => {
 
   test('多言語・複雑なUnicode・半角全角空白を保ち、複数のoutputPathへ出力する', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
-    const sourceFixtureFileName = ' 薔薇🌹-1.pdf';
+    const sourceFixtureFileName = 'single-page-document.pdf';
     const sourceFileName = cropConfigureFixture.complexUnicodeFileName;
     const sourceBaseName = path.basename(sourceFileName, path.extname(sourceFileName));
     const relativeSourceDirectory = '入力 Multilingual　자료🌏';

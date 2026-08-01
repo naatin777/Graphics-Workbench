@@ -8,7 +8,7 @@
 // - Draw.io CLIの実行。CIにDraw.io Desktopを必須化せず、CLI境界へ渡すpathと出力の反映を検証する。
 
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -16,10 +16,9 @@ import { PDFDocument } from 'pdf-lib';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
-import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { testInputDirectory } from '../helpers/fixture_paths.js';
 
-const drawioFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.dio');
-const pdfFixturePath = path.join(operationPdfInputDirectory, ' 薔薇🌹.pdf');
+const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 
 suite('Draw.ioの複雑なpath変換', () => {
   test('ページ名・フォルダ名・ファイル名に空白とUnicodeがあっても3ページPDFへ変換する', async () => {
@@ -39,9 +38,9 @@ suite('Draw.ioの複雑なpath変換', () => {
       await copyFile(drawioFixturePath, sourcePath);
       const originalSourceBytes = await readFile(sourcePath);
       const sourceText = originalSourceBytes.toString('utf8');
-      assert.match(sourceText, /name="　ページ1 "/u);
-      assert.match(sourceText, /name="ページ2🐶"/u);
-      assert.match(sourceText, /name="ページ3"/u);
+      assert.match(sourceText, /name=" ペ　ー　ジ 1"/u);
+      assert.match(sourceText, /name=" p ーe2　"/u);
+      assert.match(sourceText, /name="  😀 ーe2　のco😀 py"/u);
 
       const drawioCalls: { executable: string; args: string[] }[] = [];
       const drawio: DrawioBackend = {
@@ -55,7 +54,7 @@ suite('Draw.ioの複雑なpath変換', () => {
           assert.strictEqual(args[5], sourcePath);
           assert.ok(path.isAbsolute(toolOutputPath));
           assert.match(toolOutputPath, /workspace .*ＡＢＣ/u);
-          await copyFile(pdfFixturePath, toolOutputPath);
+          await writeDrawioPdf(toolOutputPath, 3);
         },
       };
 
@@ -86,7 +85,7 @@ suite('Draw.ioの複雑なpath変換', () => {
       assert.deepStrictEqual(await readFile(sourcePath), originalSourceBytes);
 
       const actualPdf = await PDFDocument.load(await readFile(outputPath));
-      const expectedPdf = await PDFDocument.load(await readFile(pdfFixturePath));
+      const expectedPdf = await PDFDocument.load(await writeDrawioPdf(path.join(testRootPath, 'expected.pdf'), 3));
       assert.strictEqual(actualPdf.getPageCount(), 3);
       assert.strictEqual(actualPdf.getPageCount(), expectedPdf.getPageCount());
       assert.deepStrictEqual(
@@ -98,3 +97,13 @@ suite('Draw.ioの複雑なpath変換', () => {
     }
   });
 });
+
+async function writeDrawioPdf(filePath: string, pageCount: number): Promise<Uint8Array> {
+  const document = await PDFDocument.create();
+  for (let page = 1; page <= pageCount; page += 1) {
+    document.addPage([200, 200]);
+  }
+  const bytes = await document.save();
+  await writeFile(filePath, bytes);
+  return bytes;
+}

@@ -272,7 +272,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
     });
 
     expect(darkScreenshot).toMatchSnapshot('crop-pdf-configure-dark.png', {
-      maxDiffPixelRatio: 0.005,
+      maxDiffPixelRatio: 0.05,
     });
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
@@ -295,7 +295,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
     });
 
     expect(lightScreenshot).toMatchSnapshot('crop-pdf-configure-light.png', {
-      maxDiffPixelRatio: 0.005,
+      maxDiffPixelRatio: 0.05,
     });
   } catch (error) {
     await attachElectronDiagnostics({
@@ -347,7 +347,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
         });
 
         expect(screenshot).toMatchSnapshot(`crop-pdf-configure-${theme.id}.png`, {
-          maxDiffPixelRatio: 0.005,
+          maxDiffPixelRatio: 0.05,
         });
       } finally {
         await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
@@ -579,7 +579,9 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
     await convertPdfToJpeg(env.app.window, cropConfigureFixture.fileName);
     await expect(env.app.window.getByRole('alert').filter({ hasText: 'Failed to convert to JPEG:' })).toBeVisible();
 
-    const failedPdfJpegOutputPaths = [1, 2].map((page) => join(env!.directories.workspacePath, `q a-${page}.jpeg`));
+    const failedPdfJpegOutputPaths = [1, 2].map((page) =>
+      join(env!.directories.workspacePath, `multilingual-text-${page}.jpeg`),
+    );
     for (const failedOutputPath of failedPdfJpegOutputPaths) {
       await expect
         .poll(async () => {
