@@ -253,6 +253,11 @@
         "command": "graphics-workbench.encryptPdf",
         "title": "%command.encryptPdf%",
         "category": "Graphics Workbench"
+      },
+      {
+        "command": "graphics-workbench.decryptPdf",
+        "title": "%command.decryptPdf%",
+        "category": "Graphics Workbench"
       }
     ],
     "menus": {
@@ -301,6 +306,11 @@
           "command": "graphics-workbench.encryptPdf",
           "group": "graphics-workbench",
           "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.encryptPdf.enabled"
+        },
+        {
+          "command": "graphics-workbench.decryptPdf",
+          "group": "graphics-workbench",
+          "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.decryptPdf.enabled"
         }
       ],
       "graphics-workbench.cropPdf": [
@@ -465,6 +475,10 @@
         },
         {
           "command": "graphics-workbench.encryptPdf",
+          "when": "false"
+        },
+        {
+          "command": "graphics-workbench.decryptPdf",
           "when": "false"
         },
         {
@@ -1135,6 +1149,11 @@
           "default": true,
           "description": "%config.contextMenu.encryptPdf.enabled%"
         },
+        "graphics-workbench.contextMenu.decryptPdf.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.contextMenu.decryptPdf.enabled%"
+        },
         "graphics-workbench.outputPath.compressPdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}_compressed.pdf",
@@ -1149,6 +1168,11 @@
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}-encrypted.pdf",
           "description": "%config.outputPath.encryptPdf%"
+        },
+        "graphics-workbench.outputPath.decryptPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-decrypted.pdf",
+          "description": "%config.outputPath.decryptPdf%"
         }
       }
     }

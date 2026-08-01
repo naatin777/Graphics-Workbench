@@ -105,9 +105,11 @@ type ConfigurationKey =
   | 'contextMenu.compressPdf.enabled'
   | 'contextMenu.linearizePdf.enabled'
   | 'contextMenu.encryptPdf.enabled'
+  | 'contextMenu.decryptPdf.enabled'
   | 'outputPath.compressPdf'
   | 'outputPath.linearizePdf'
-  | 'outputPath.encryptPdf';
+  | 'outputPath.encryptPdf'
+  | 'outputPath.decryptPdf';
 
 export type ConfigurationReader = {
   get(key: string): unknown;
@@ -582,6 +584,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'contextMenu.encryptPdf.enabled': {
     types: ['boolean'],
   },
+  'contextMenu.decryptPdf.enabled': {
+    types: ['boolean'],
+  },
   'outputPath.compressPdf': {
     types: ['string'],
   },
@@ -589,6 +594,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['string'],
   },
   'outputPath.encryptPdf': {
+    types: ['string'],
+  },
+  'outputPath.decryptPdf': {
     types: ['string'],
   },
 };
@@ -696,9 +704,11 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'contextMenu.compressPdf.enabled': 'boolean',
   'contextMenu.linearizePdf.enabled': 'boolean',
   'contextMenu.encryptPdf.enabled': 'boolean',
+  'contextMenu.decryptPdf.enabled': 'boolean',
   'outputPath.compressPdf': 'string',
   'outputPath.linearizePdf': 'string',
   'outputPath.encryptPdf': 'string',
+  'outputPath.decryptPdf': 'string',
 };
 function configurationValueType(value: unknown): string {
   if (Array.isArray(value)) {
@@ -826,6 +836,7 @@ export const publicCommandIds = [
   'graphics-workbench.compressPdf',
   'graphics-workbench.linearizePdf',
   'graphics-workbench.encryptPdf',
+  'graphics-workbench.decryptPdf',
 ] as const;
 
 export type CommandId = (typeof publicCommandIds)[number] | 'graphics-workbench.convertPngToPdf';
@@ -1335,6 +1346,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.encryptPdf',
         '${fileDirname}/${fileBasenameNoExtension}-encrypted.pdf',
       ),
+      decryptPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.decryptPdf',
+        '${fileDirname}/${fileBasenameNoExtension}-decrypted.pdf',
+      ),
     },
     outputPaths: defineConfiguration<OutputPaths>(configurationReader, 'outputPaths', {}),
     cropPdf: {
@@ -1386,6 +1402,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       encryptPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.encryptPdf.enabled', true),
+      },
+      decryptPdf: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.decryptPdf.enabled', true),
       },
     },
   } as const;
