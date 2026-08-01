@@ -19,6 +19,7 @@ import { PDFDocument } from 'pdf-lib';
 
 import { linearizePdfFiles } from '../../src/operations/pdf/linearize_pdf.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { readConfiguredQpdfPath } from '../helpers/external_tool_settings.js';
 
 suite('PDFリニアライズ', () => {
   test('qpdfでPDFをリニアライズして出力する', async () => {
@@ -30,7 +31,7 @@ suite('PDFリニアライズ', () => {
     try {
       await linearizePdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
         runId: 'run',
       });
 
@@ -52,7 +53,7 @@ suite('PDFリニアライズ', () => {
     await assert.rejects(
       linearizePdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
       }),
       /Output file already exists/,
     );
@@ -71,7 +72,7 @@ suite('PDFリニアライズ', () => {
     await assert.rejects(
       linearizePdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
-        qpdfPath: 'qpdf',
+        qpdfPath: readConfiguredQpdfPath(),
         runtime: { signal: abortController.signal },
       }),
       { name: 'AbortError' },
