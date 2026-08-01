@@ -2,8 +2,8 @@
 
 ## Current Task
 
-- [0209: P1レビュー指摘の修正](0209-fix-p1-review-findings.md) — Done
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — On hold — Phase 38（strict experiment）
+- [0210: 変換機能と出力パス設定の仕様調査・互換コード削減](0210-investigate-conversion-spec-and-compat.md) — In progress — 調査完了（実装は未着手）
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — On hold — Phase 39（21ルール一括error化）Done
 
 ## Task boundaries
 
