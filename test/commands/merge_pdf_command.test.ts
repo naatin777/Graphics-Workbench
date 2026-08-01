@@ -9,7 +9,7 @@ import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
 import { localeMap } from '../../src/locale_map.js';
-import { mergePdfConfigureCommand, MERGE_PDF_SELECTED_FILES_COMMAND } from '../../src/commands/pdf/merge_pdf.js';
+import { mergePdfConfigureCommand } from '../../src/commands/pdf/merge_pdf.js';
 
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.js';
@@ -23,7 +23,7 @@ suite('PDF結合コマンド', () => {
   test('現行の選択PDF結合コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(MERGE_PDF_SELECTED_FILES_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.mergePdf.selectedFiles'));
     assert.ok(!commands.includes('graphics-workbench.mergePdf.selectedPages'));
   });
 
@@ -51,7 +51,7 @@ suite('PDF結合コマンド', () => {
       sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
       const commandExecution = vscode.commands.executeCommand(
-        MERGE_PDF_SELECTED_FILES_COMMAND,
+        'graphics-workbench.mergePdf.selectedFiles',
         vscode.Uri.file(firstPdfPath),
         [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath)],
       );
@@ -152,7 +152,7 @@ suite('PDF結合コマンド', () => {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
       const commandExecution = vscode.commands.executeCommand(
-        MERGE_PDF_SELECTED_FILES_COMMAND,
+        'graphics-workbench.mergePdf.selectedFiles',
         vscode.Uri.file(firstPdfPath),
         [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath), vscode.Uri.file(textPath)],
       );
@@ -188,7 +188,7 @@ suite('PDF結合コマンド', () => {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
       const commandExecution = vscode.commands.executeCommand(
-        MERGE_PDF_SELECTED_FILES_COMMAND,
+        'graphics-workbench.mergePdf.selectedFiles',
         vscode.Uri.file(firstPdfPath),
         [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath), vscode.Uri.parse('untitled:notes.pdf')],
       );
@@ -221,7 +221,7 @@ suite('PDF結合コマンド', () => {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
       const commandExecution = vscode.commands.executeCommand(
-        MERGE_PDF_SELECTED_FILES_COMMAND,
+        'graphics-workbench.mergePdf.selectedFiles',
         vscode.Uri.file(pdfPath),
         [vscode.Uri.file(pdfPath)],
       );
@@ -259,7 +259,7 @@ suite('PDF結合コマンド', () => {
       sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
       const commandExecution = vscode.commands.executeCommand(
-        MERGE_PDF_SELECTED_FILES_COMMAND,
+        'graphics-workbench.mergePdf.selectedFiles',
         vscode.Uri.file(firstPdfPath),
         [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath)],
       );
@@ -298,7 +298,7 @@ suite('PDF結合コマンド', () => {
       sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
       const commandExecution = vscode.commands.executeCommand(
-        MERGE_PDF_SELECTED_FILES_COMMAND,
+        'graphics-workbench.mergePdf.selectedFiles',
         vscode.Uri.file(firstPdfPath),
         [vscode.Uri.file(firstPdfPath), vscode.Uri.file(brokenPdfPath)],
       );

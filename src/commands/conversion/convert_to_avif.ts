@@ -42,8 +42,6 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export { CONVERT_TO_AVIF_COMMAND } from '../command_ids.js';
-
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.avif';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.avif';
 

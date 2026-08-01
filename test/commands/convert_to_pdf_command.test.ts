@@ -34,7 +34,7 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { CONVERT_TO_PDF_COMMAND, outputTemplateForSource } from '../../src/commands/conversion/convert_to_pdf.js';
+import { outputTemplateForSource } from '../../src/commands/conversion/convert_to_pdf.js';
 
 import { logicalSourcePathForOutputTemplate } from '../../src/application/policy/source_format.js';
 
@@ -93,7 +93,7 @@ suite('PDFに変換コマンド', () => {
   test('コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CONVERT_TO_PDF_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.convertToPdf'));
   });
 
   test('PNG、JPEG、WebP、AVIFを1つのbatchでPDFへ変換する', async () => {
@@ -112,7 +112,7 @@ suite('PDFに変換コマンド', () => {
       const sourcePaths = [pngPath, ...imagePaths];
 
       const commandExecution = vscode.commands.executeCommand(
-        CONVERT_TO_PDF_COMMAND,
+        'graphics-workbench.convertToPdf',
         vscode.Uri.file(requireValue(sourcePaths[0])),
         sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
       );
@@ -136,7 +136,10 @@ suite('PDFに変換コマンド', () => {
       const sourcePath = path.join(temporaryDirectory, 'source.svg');
       await writeTestSvg(sourcePath, generatedSvgWidth, generatedSvgHeight);
 
-      const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.convertToPdf',
+        vscode.Uri.file(sourcePath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       await assertPdfPageSize(replaceExtension(sourcePath, '.pdf'), generatedSvgWidth, generatedSvgHeight);
@@ -178,7 +181,7 @@ suite('PDFに変換コマンド', () => {
           'graphics-workbench.outputPath.convertPngToPdf': '${fileDirname}/to-pdf-${fileBasenameNoExtension}.pdf',
         },
         async () => {
-          await vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+          await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
         },
       );
 
@@ -201,7 +204,7 @@ suite('PDFに変換コマンド', () => {
           'graphics-workbench.outputPath.convertPngToPdf': '',
         },
         async () => {
-          await vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+          await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
         },
       );
 
@@ -219,7 +222,10 @@ suite('PDFに変換コマンド', () => {
 
       await copyFile(fixturePngPath, pngPath);
 
-      const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(pngPath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.convertToPdf',
+        vscode.Uri.file(pngPath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       await assertPdfPageSizeMatchesImage(path.join(temporaryDirectory, 'raster.pdf'), pngPath);
@@ -276,7 +282,7 @@ suite('PDFに変換コマンド', () => {
       await copyFile(fixturePngPath, firstSourcePath);
       await copyFile(fixturePngPath, secondSourcePath);
 
-      await vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(firstSourcePath), [
+      await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(firstSourcePath), [
         vscode.Uri.file(firstSourcePath),
         vscode.Uri.file(secondSourcePath),
       ]);
@@ -297,7 +303,7 @@ suite('PDFに変換コマンド', () => {
       await copyFile(fixturePngPath, pngPath);
       await writeFile(unsupportedPath, 'not an image');
 
-      await vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(pngPath), [
+      await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(pngPath), [
         vscode.Uri.file(pngPath),
         vscode.Uri.file(unsupportedPath),
       ]);
@@ -317,7 +323,7 @@ suite('PDFに変換コマンド', () => {
       pdf.addPage([120, 80]);
       await writeFile(pdfPath, await pdf.save());
 
-      await vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(pdfPath));
+      await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(pdfPath));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -331,7 +337,10 @@ async function assertMermaidFileConvertsToPdf(fileName: string): Promise<void> {
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToPdf',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadablePdfWithAtLeastOnePage(replaceExtension(sourcePath, '.pdf'));
@@ -396,7 +405,10 @@ async function assertFixtureConvertsToPdf(format: string, fixtureFileName: strin
     const sourceFixturePath = path.join(testInputDirectory, 'valid', format, fixtureFileName);
     await copyFile(sourceFixturePath, sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToPdf',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertReadablePdfWithAtLeastOnePage(replaceExtension(sourcePath, '.pdf'));

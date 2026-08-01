@@ -23,8 +23,6 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { CONVERT_TO_SVG_COMMAND } from '../../src/commands/conversion/convert_to_svg.js';
-
 import { PDFDocument } from 'pdf-lib';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
@@ -48,7 +46,7 @@ suite('SVGに変換コマンド', () => {
   test('コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CONVERT_TO_SVG_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.convertToSvg'));
   });
 
   test('PDFをページごとのSVGへ変換する', async () => {
@@ -58,7 +56,10 @@ suite('SVGに変換コマンド', () => {
       const pdfPath = path.join(temporaryDirectory, 'source-document.pdf');
       await writeTwoPagePdf(pdfPath);
 
-      const commandExecution = vscode.commands.executeCommand(CONVERT_TO_SVG_COMMAND, vscode.Uri.file(pdfPath));
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.convertToSvg',
+        vscode.Uri.file(pdfPath),
+      );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       await assertGeneratedSvg(path.join(temporaryDirectory, 'source-document-1.svg'));
@@ -84,7 +85,10 @@ suite('SVGに変換コマンド', () => {
       await writeMermaidFixture(sourcePath);
 
       await withWorkspaceSettings({ 'graphics-workbench.mermaid.theme': 'dark' }, async () => {
-        const commandExecution = vscode.commands.executeCommand(CONVERT_TO_SVG_COMMAND, vscode.Uri.file(sourcePath));
+        const commandExecution = vscode.commands.executeCommand(
+          'graphics-workbench.convertToSvg',
+          vscode.Uri.file(sourcePath),
+        );
         await runCommandAndClearNotificationsUntilDone(commandExecution);
       });
 
@@ -111,7 +115,10 @@ suite('SVGに変換コマンド', () => {
           },
         },
         async () => {
-          const commandExecution = vscode.commands.executeCommand(CONVERT_TO_SVG_COMMAND, vscode.Uri.file(sourcePath));
+          const commandExecution = vscode.commands.executeCommand(
+            'graphics-workbench.convertToSvg',
+            vscode.Uri.file(sourcePath),
+          );
           await runCommandAndClearNotificationsUntilDone(commandExecution);
         },
       );
@@ -131,7 +138,10 @@ async function assertMermaidFileConvertsToSvg(fileName: string): Promise<void> {
     const sourcePath = path.join(temporaryDirectory, fileName);
     await writeMermaidFixture(sourcePath);
 
-    const commandExecution = vscode.commands.executeCommand(CONVERT_TO_SVG_COMMAND, vscode.Uri.file(sourcePath));
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToSvg',
+      vscode.Uri.file(sourcePath),
+    );
     await runCommandAndClearNotificationsUntilDone(commandExecution);
 
     await assertGeneratedMermaidSvg(replaceExtension(sourcePath, '.svg'));

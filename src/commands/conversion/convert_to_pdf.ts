@@ -34,9 +34,6 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
 
-export { CONVERT_PNG_TO_PDF_COMMAND } from '../command_ids.js';
-export { CONVERT_TO_PDF_COMMAND } from '../command_ids.js';
-
 const pngExtensions = ['.png'] as const;
 const pdfImageExtensions = [
   '.png',

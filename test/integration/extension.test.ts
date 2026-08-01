@@ -5,15 +5,6 @@ import path from 'node:path';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { CROP_PDF_AUTO_COMMAND } from '../../src/commands/pdf/crop_pdf_auto.js';
-import { CROP_PDF_CONFIGURE_COMMAND } from '../../src/commands/pdf/crop_pdf_configure.js';
-import { SPLIT_PDF_ALL_PAGES_COMMAND, SPLIT_PDF_CONFIGURE_COMMAND } from '../../src/commands/pdf/split_pdf_commands.js';
-import { MERGE_PDF_CONFIGURE_COMMAND } from '../../src/commands/pdf/merge_pdf.js';
-import { CONVERT_PNG_TO_PDF_COMMAND } from '../../src/commands/conversion/convert_to_pdf.js';
-import {
-  CONVERT_DRAWIO_TO_PDF_COMMAND,
-  CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND,
-} from '../../src/commands/conversion/convert_drawio_to_pdf.js';
 import { operationPdfInputDirectory, operationPngInputPath } from '../helpers/fixture_paths.js';
 
 suite('拡張機能の基本動作', () => {
@@ -36,40 +27,40 @@ suite('拡張機能の基本動作', () => {
   test('自動cropコマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CROP_PDF_AUTO_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.cropPdf.auto'));
   });
 
   test('configure cropコマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CROP_PDF_CONFIGURE_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.cropPdf.configure'));
     assert.ok(!commands.includes('graphics-workbench.cropPdf.manual'));
   });
 
   test('全ページ分割コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(SPLIT_PDF_ALL_PAGES_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.splitPdf.allPages'));
   });
 
   test('PDF結合・分割のconfigureコマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(MERGE_PDF_CONFIGURE_COMMAND));
-    assert.ok(commands.includes(SPLIT_PDF_CONFIGURE_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.mergePdf.configure'));
+    assert.ok(commands.includes('graphics-workbench.splitPdf.configure'));
   });
 
   test('PNGからPDFへの変換コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CONVERT_PNG_TO_PDF_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.convertPngToPdf'));
   });
 
   test('Draw.io PDF変換コマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
-    assert.ok(commands.includes(CONVERT_DRAWIO_TO_PDF_COMMAND));
-    assert.ok(commands.includes(CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND));
+    assert.ok(commands.includes('graphics-workbench.convertDrawioToPdf'));
+    assert.ok(commands.includes('graphics-workbench.convertDrawioToPdfDirectly'));
   });
 
   test('PNGからPDFへの変換コマンドを実行してファイル変換できる', async () => {
@@ -88,7 +79,7 @@ suite('拡張機能の基本動作', () => {
       const outputPath = path.join(temporaryDirectory, 'source.pdf');
       await copyFile(operationPngInputPath, sourcePath);
 
-      await vscode.commands.executeCommand(CONVERT_PNG_TO_PDF_COMMAND, vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand('graphics-workbench.convertPngToPdf', vscode.Uri.file(sourcePath));
 
       const { PDFDocument } = await import('pdf-lib');
       const pdf = await PDFDocument.load(await readFile(outputPath));
@@ -115,7 +106,7 @@ suite('拡張機能の基本動作', () => {
       const sourcePath = path.join(temporaryDirectory, 'document.pdf');
       await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
-      await vscode.commands.executeCommand(CROP_PDF_AUTO_COMMAND, vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand('graphics-workbench.cropPdf.auto', vscode.Uri.file(sourcePath));
 
       const croppedPath = path.join(temporaryDirectory, 'document-crop.pdf');
       const { PDFDocument } = await import('pdf-lib');
@@ -141,7 +132,7 @@ suite('拡張機能の基本動作', () => {
       const sourcePath = path.join(temporaryDirectory, 'split-test.pdf');
       await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
-      await vscode.commands.executeCommand(SPLIT_PDF_ALL_PAGES_COMMAND, vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand('graphics-workbench.splitPdf.allPages', vscode.Uri.file(sourcePath));
 
       const { PDFDocument } = await import('pdf-lib');
       const splitOutputDir = path.join(temporaryDirectory, 'split-test');

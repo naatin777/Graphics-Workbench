@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { initializeSafeMode, TOGGLE_SAFE_MODE_COMMAND } from '../../src/commands/lifecycle/safe_mode.js';
+import { initializeSafeMode } from '../../src/commands/lifecycle/safe_mode.js';
 
 suite('Safe Modeステータスバー', () => {
   let sandbox: sinon.SinonSandbox;
@@ -42,7 +42,7 @@ suite('Safe Modeステータスバー', () => {
     sandbox
       .stub(vscode.commands, 'registerCommand')
       .callsFake((command: string, callback: (...args: never[]) => unknown) => {
-        assert.strictEqual(command, TOGGLE_SAFE_MODE_COMMAND);
+        assert.strictEqual(command, 'graphics-workbench.toggleSafeMode');
         registeredCommand = async (): Promise<void> => {
           return void (await callback());
         };
@@ -58,7 +58,7 @@ suite('Safe Modeステータスバー', () => {
     initializeSafeMode(createExtensionContext(storage, subscriptions));
 
     assert.strictEqual(statusBarItem.text, '$(shield) Safe Mode: ON');
-    assert.strictEqual(statusBarItem.command, TOGGLE_SAFE_MODE_COMMAND);
+    assert.strictEqual(statusBarItem.command, 'graphics-workbench.toggleSafeMode');
     assert.strictEqual(statusBarItem.tooltip, 'Toggle Safe Mode');
     assert.strictEqual(statusBarItem.showCallCount, 1);
   });

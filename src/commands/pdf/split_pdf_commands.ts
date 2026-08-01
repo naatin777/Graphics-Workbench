@@ -19,15 +19,12 @@ import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { SPLIT_PDF_ALL_PAGES_COMMAND, SPLIT_PDF_CONFIGURE_COMMAND } from '../command_ids.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import { recordConversionForUndo, UNDO_LAST_CONVERSION_COMMAND } from '../lifecycle/undo_last_conversion.js';
+import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
-
-export { SPLIT_PDF_ALL_PAGES_COMMAND, SPLIT_PDF_CONFIGURE_COMMAND };
 
 const defaultSplitPdfTemplate = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
 
@@ -84,7 +81,7 @@ export async function splitPdfAllPagesCommand(
     const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
     if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND, undoId);
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
     }
   } catch (error) {
     if (isAbortError(error)) {
@@ -181,10 +178,15 @@ async function runSplitPdfConfigureCommand(
 
   const panelTitle = localeMap('submenu.splitPdf');
   const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'split_pdf');
-  const panel = vscode.window.createWebviewPanel(SPLIT_PDF_CONFIGURE_COMMAND, panelTitle, vscode.ViewColumn.Active, {
-    enableScripts: true,
-    localResourceRoots: [appRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
-  });
+  const panel = vscode.window.createWebviewPanel(
+    'graphics-workbench.splitPdf.configure',
+    panelTitle,
+    vscode.ViewColumn.Active,
+    {
+      enableScripts: true,
+      localResourceRoots: [appRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
+    },
+  );
   const initMessage: SplitPdfHostToWebview = {
     type: 'init',
     payload: {
@@ -361,7 +363,7 @@ async function applyConfiguredSplit(params: {
     const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
     if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand(UNDO_LAST_CONVERSION_COMMAND, undoId);
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
     }
 
     panel.dispose();
