@@ -18,9 +18,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify:
+    name: Classify CI scope
+    runs-on: ubuntu-latest
+    outputs:
+      scope: ${{ steps.classify.outputs.scope }}
+      run_playwright: ${{ steps.classify.outputs.run_playwright }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - if: github.event_name == 'pull_request'
+        name: Fetch base ref for diff
+        run: git fetch origin "${{ github.event.pull_request.base.ref }}"
+        shell: bash
+
+      - id: classify
+        name: Classify changed files
+        run: node .github/scripts/classify-ci-scope.mjs
+        shell: bash
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BEFORE_SHA: ${{ github.event.before }}
+
   playwright:
     name: packaged Electron Playwright (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
+    needs: classify
+    if: needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
     strategy:
       fail-fast: false
       matrix:
@@ -176,8 +203,10 @@ jobs:
 
   comment-screenshots:
     name: Comment screenshots on PR
-    if: github.event_name == 'pull_request'
-    needs: playwright
+    if: github.event_name == 'pull_request' && needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
+    needs:
+      - classify
+      - playwright
     runs-on: ubuntu-latest
     permissions:
       contents: write
