@@ -11,6 +11,7 @@ import { parsePages } from './pages';
 import type { ExtensionToWebviewMessage, WebviewToExtensionMessage } from './messages';
 import { applyPreviewZoom, capturePreviewZoomAnchor, restorePreviewZoomAnchor } from './preview_zoom';
 import { PreviewToolbar } from './preview_toolbar';
+import { SplitPane } from '../../../shared/split_pane';
 import type { InputKind, PreviewMode, Row } from './types';
 import { vscode } from './vscode';
 
@@ -425,139 +426,144 @@ export function App(): JSX.Element {
       </header>
 
       <div class='workspace'>
-        <section
-          ref={(element) => {
-            pdfPreview = element;
-          }}
-          aria-label={labels().preview.ariaLabel}
-          class='pdf-preview'
-          onWheel={zoomWithWheel}
-        >
-          <PreviewToolbar
-            labels={labels()}
-            previewMode={previewMode()}
-            zoomPercent={zoomPercent()}
-            onPreviewModeChange={(value) => {
-              setPreviewMode(value);
-            }}
-            onZoomChange={(value) => {
-              updateZoom(value);
-            }}
-          />
-          <div
-            ref={(element) => {
-              pdfPages = element;
-            }}
-            class='pdf-preview__pages'
-          />
-          <Show when={renderError()}>
-            <p
-              class='pdf-preview__error'
-              role='status'
-            >
-              {labels().preview.renderError}: {renderError()}
-            </p>
-          </Show>
-          <footer class='pdf-preview__footer'>
-            {labels().pages.title}: {focusedPagesLabel() || '—'}
-          </footer>
-        </section>
-
-        <section
-          aria-label={labels().groups.title}
-          class='panel'
-        >
-          <div class='panel__heading'>
-            <div>
-              <h2>{labels().groups.title}</h2>
-              <p>{labels().groups.outputOrder}</p>
-            </div>
-            <button
-              class='button'
-              type='button'
-              onClick={() => {
-                const rowId = addRow();
-                focusInput(rowId, 'pages');
+        <SplitPane
+          left={
+            <section
+              ref={(element) => {
+                pdfPreview = element;
               }}
+              aria-label={labels().preview.ariaLabel}
+              class='pdf-preview'
+              onWheel={zoomWithWheel}
             >
-              {labels().groups.add}
-            </button>
-          </div>
-
-          <div class='rows'>
-            <For each={rows()}>
-              {(row, index) => (
-                <GroupRow
-                  row={row}
-                  index={index}
-                  rowCount={rows().length}
-                  labels={labels()}
-                  outputPathTemplate={outputPathTemplate()}
-                  focused={focusedRowId() === row.id}
-                  handlers={{
-                    fields: {
-                      setInputRef,
-                      onFocus: (rowId) => {
-                        setFocusedRowId(rowId);
-                      },
-                      onPagesChange: updatePages,
-                      onOutputNameChange: updateOutputName,
-                      onKeyDown: handleRowKeyDown,
-                    },
-                    row: {
-                      onMove: moveRow,
-                      onRemove: removeRow,
-                    },
-                    drag: {
-                      onDragStart: (event, rowId) => {
-                        draggedRowId = rowId;
-                        if (event.dataTransfer) {
-                          event.dataTransfer.effectAllowed = 'move';
-                          event.dataTransfer.setData('text/plain', rowId.toString());
-                        }
-                      },
-                      onDragEnd: () => (draggedRowId = undefined),
-                      onDragOver: (event) => {
-                        event.preventDefault();
-                      },
-                      onDrop: dropRow,
-                    },
+              <PreviewToolbar
+                labels={labels()}
+                previewMode={previewMode()}
+                zoomPercent={zoomPercent()}
+                onPreviewModeChange={(value) => {
+                  setPreviewMode(value);
+                }}
+                onZoomChange={(value) => {
+                  updateZoom(value);
+                }}
+              />
+              <div
+                ref={(element) => {
+                  pdfPages = element;
+                }}
+                class='pdf-preview__pages'
+              />
+              <Show when={renderError()}>
+                <p
+                  class='pdf-preview__error'
+                  role='status'
+                >
+                  {labels().preview.renderError}: {renderError()}
+                </p>
+              </Show>
+              <footer class='pdf-preview__footer'>
+                {labels().pages.title}: {focusedPagesLabel() || '—'}
+              </footer>
+            </section>
+          }
+          right={
+            <section
+              aria-label={labels().groups.title}
+              class='panel'
+            >
+              <div class='panel__heading'>
+                <div>
+                  <h2>{labels().groups.title}</h2>
+                  <p>{labels().groups.outputOrder}</p>
+                </div>
+                <button
+                  class='button'
+                  type='button'
+                  onClick={() => {
+                    const rowId = addRow();
+                    focusInput(rowId, 'pages');
                   }}
-                />
-              )}
-            </For>
-          </div>
+                >
+                  {labels().groups.add}
+                </button>
+              </div>
 
-          <Show when={applyError()}>
-            <p
-              class='panel__error'
-              role='alert'
-            >
-              {applyError()}
-            </p>
-          </Show>
+              <div class='rows'>
+                <For each={rows()}>
+                  {(row, index) => (
+                    <GroupRow
+                      row={row}
+                      index={index}
+                      rowCount={rows().length}
+                      labels={labels()}
+                      outputPathTemplate={outputPathTemplate()}
+                      focused={focusedRowId() === row.id}
+                      handlers={{
+                        fields: {
+                          setInputRef,
+                          onFocus: (rowId) => {
+                            setFocusedRowId(rowId);
+                          },
+                          onPagesChange: updatePages,
+                          onOutputNameChange: updateOutputName,
+                          onKeyDown: handleRowKeyDown,
+                        },
+                        row: {
+                          onMove: moveRow,
+                          onRemove: removeRow,
+                        },
+                        drag: {
+                          onDragStart: (event, rowId) => {
+                            draggedRowId = rowId;
+                            if (event.dataTransfer) {
+                              event.dataTransfer.effectAllowed = 'move';
+                              event.dataTransfer.setData('text/plain', rowId.toString());
+                            }
+                          },
+                          onDragEnd: () => (draggedRowId = undefined),
+                          onDragOver: (event) => {
+                            event.preventDefault();
+                          },
+                          onDrop: dropRow,
+                        },
+                      }}
+                    />
+                  )}
+                </For>
+              </div>
 
-          <div class='actions'>
-            <button
-              class='button button--primary'
-              type='button'
-              disabled={((): boolean => {
-                const result = validateRows();
-                return 'message' in result;
-              })()}
-              onClick={apply}
-            >
-              {labels().actions.apply}
-            </button>
-            <button
-              class='button'
-              type='button'
-              onClick={cancel}
-            >
-              {labels().actions.cancel}
-            </button>
-          </div>
-        </section>
+              <Show when={applyError()}>
+                <p
+                  class='panel__error'
+                  role='alert'
+                >
+                  {applyError()}
+                </p>
+              </Show>
+
+              <div class='actions'>
+                <button
+                  class='button button--primary'
+                  type='button'
+                  disabled={((): boolean => {
+                    const result = validateRows();
+                    return 'message' in result;
+                  })()}
+                  onClick={apply}
+                >
+                  {labels().actions.apply}
+                </button>
+                <button
+                  class='button'
+                  type='button'
+                  onClick={cancel}
+                >
+                  {labels().actions.cancel}
+                </button>
+              </div>
+            </section>
+          }
+        />
       </div>
     </main>
   );

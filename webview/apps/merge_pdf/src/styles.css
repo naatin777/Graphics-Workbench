@@ -57,15 +57,36 @@ button {
 }
 
 .workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-  gap: 16px;
-  align-items: start;
+  min-height: 0;
 }
 
-.workspace > * + * {
-  border-left: 1px solid var(--vscode-panel-border);
-  padding-left: 16px;
+.split-pane {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.split-pane__left {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.split-pane__divider {
+  flex: 0 0 6px;
+  margin: 0 12px 0 8px;
+  cursor: col-resize;
+  background: var(--vscode-panel-border);
+}
+
+.split-pane__divider:hover {
+  background: var(--vscode-focusBorder);
+}
+
+.split-pane__right {
+  flex: 0 0 300px;
+  min-width: 0;
+  min-height: 0;
 }
 
 .panel {
@@ -278,13 +299,16 @@ body.vscode-high-contrast-light .thumbnail {
 }
 
 @media (max-width: 900px) {
-  .workspace {
-    grid-template-columns: 1fr;
+  .split-pane {
+    flex-direction: column;
   }
 
-  .workspace > * + * {
-    border-left: 0;
-    padding-left: 0;
+  .split-pane__divider {
+    display: none;
+  }
+
+  .split-pane__right {
+    flex: 0 0 auto;
   }
 
   .action-panel {

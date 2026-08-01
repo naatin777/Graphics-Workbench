@@ -1,6 +1,7 @@
 import { createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '../../../shared/pdf/render_pdf_pages';
+import { SplitPane } from '../../../shared/split_pane';
 
 import { parseCropBox, parseTarget } from './crop_input';
 import type { CropPdfLabels, ExtensionToWebviewMessage, WebviewToExtensionMessage } from './messages';
@@ -332,198 +333,204 @@ export function App(): JSX.Element {
       </header>
 
       <div class='workspace'>
-        <section
-          ref={(element) => {
-            pdfPreview = element;
-          }}
-          aria-label={labels().preview.ariaLabel}
-          class='pdf-preview'
-          onWheel={zoomWithWheel}
-        >
-          <div class='pdf-preview__toolbar'>
-            <div>
-              <h2>{labels().preview.title}</h2>
-              <p>{labels().preview.description}</p>
-            </div>
-            <div
-              class='zoom'
-              aria-label={labels().preview.zoomLabel}
-            >
-              <button
-                class='button'
-                type='button'
-                aria-label={labels().preview.zoomOut}
-                onClick={zoomOut}
-              >
-                −
-              </button>
-              <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
-              <button
-                class='button'
-                type='button'
-                aria-label={labels().preview.zoomIn}
-                onClick={zoomIn}
-              >
-                +
-              </button>
-            </div>
-          </div>
-          <div
-            ref={(element) => {
-              pdfPages = element;
-            }}
-            class='pdf-preview__pages'
-          />
-          <footer class='pdf-preview__footer'>
-            {labels().targetPages.title}: {targetType() === 'all' ? labels().targetPages.all : selectedPages() || '—'}
-          </footer>
-          {renderError() ? (
-            <p
-              class='pdf-preview__error'
-              role='alert'
-            >
-              {labels().preview.renderError}: {renderError()}
-            </p>
-          ) : undefined}
-        </section>
-
-        <section
-          aria-label={labels().cropBox.settingsLabel}
-          class='panel'
-        >
-          <div class='panel__group'>
-            <h2>{labels().cropBox.title}</h2>
-            <p>{labels().cropBox.description}</p>
-
-            <div class='crop-grid'>
-              <label class='field'>
-                <span class='field__label'>{labels().cropBox.left}</span>
-                <input
-                  class='input'
-                  inputmode='decimal'
-                  type='number'
-                  value={cropBox().left}
-                  onInput={(event) => {
-                    setCropBox({ ...cropBox(), left: event.currentTarget.value });
-                  }}
-                />
-              </label>
-
-              <label class='field'>
-                <span class='field__label'>{labels().cropBox.bottom}</span>
-                <input
-                  class='input'
-                  inputmode='decimal'
-                  type='number'
-                  value={cropBox().bottom}
-                  onInput={(event) => {
-                    setCropBox({ ...cropBox(), bottom: event.currentTarget.value });
-                  }}
-                />
-              </label>
-
-              <label class='field'>
-                <span class='field__label'>{labels().cropBox.right}</span>
-                <input
-                  class='input'
-                  inputmode='decimal'
-                  type='number'
-                  value={cropBox().right}
-                  onInput={(event) => {
-                    setCropBox({ ...cropBox(), right: event.currentTarget.value });
-                  }}
-                />
-              </label>
-
-              <label class='field'>
-                <span class='field__label'>{labels().cropBox.top}</span>
-                <input
-                  class='input'
-                  inputmode='decimal'
-                  type='number'
-                  value={cropBox().top}
-                  onInput={(event) => {
-                    setCropBox({ ...cropBox(), top: event.currentTarget.value });
-                  }}
-                />
-              </label>
-            </div>
-
-            <p class='panel__hint'>
-              {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt
-            </p>
-          </div>
-
-          <fieldset class='target'>
-            <legend>{labels().targetPages.title}</legend>
-
-            <label class='target__option'>
-              <input
-                checked={targetType() === 'all'}
-                name='target'
-                type='radio'
-                onChange={() => {
-                  setTargetType('all');
-                }}
-              />
-              {labels().targetPages.all}
-            </label>
-
-            <label class='target__option'>
-              <input
-                checked={targetType() === 'selected'}
-                name='target'
-                type='radio'
-                onChange={() => {
-                  setTargetType('selected');
-                }}
-              />
-              {labels().targetPages.selected}
-            </label>
-
-            <label class='field'>
-              <span class='field__label'>{labels().targetPages.inputLabel}</span>
-              <input
-                class='input'
-                disabled={targetType() !== 'selected'}
-                placeholder={labels().targetPages.placeholder}
-                type='text'
-                value={selectedPages()}
-                onInput={(event) => {
-                  setSelectedPages(event.currentTarget.value);
-                }}
-              />
-            </label>
-          </fieldset>
-
-          {inputError() ? (
-            <p
-              class='panel__error'
-              role='alert'
-            >
-              {inputError()}
-            </p>
-          ) : undefined}
-
-          <div class='actions'>
-            <button
-              class='button button--primary'
-              type='button'
-              onClick={() => {
-                void applyCrop();
+        <SplitPane
+          left={
+            <section
+              ref={(element) => {
+                pdfPreview = element;
               }}
+              aria-label={labels().preview.ariaLabel}
+              class='pdf-preview'
+              onWheel={zoomWithWheel}
             >
-              {labels().actions.apply}
-            </button>
-            <button
-              class='button'
-              type='button'
-              onClick={cancel}
+              <div class='pdf-preview__toolbar'>
+                <div>
+                  <h2>{labels().preview.title}</h2>
+                  <p>{labels().preview.description}</p>
+                </div>
+                <div
+                  class='zoom'
+                  aria-label={labels().preview.zoomLabel}
+                >
+                  <button
+                    class='button'
+                    type='button'
+                    aria-label={labels().preview.zoomOut}
+                    onClick={zoomOut}
+                  >
+                    −
+                  </button>
+                  <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
+                  <button
+                    class='button'
+                    type='button'
+                    aria-label={labels().preview.zoomIn}
+                    onClick={zoomIn}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div
+                ref={(element) => {
+                  pdfPages = element;
+                }}
+                class='pdf-preview__pages'
+              />
+              <footer class='pdf-preview__footer'>
+                {labels().targetPages.title}:{' '}
+                {targetType() === 'all' ? labels().targetPages.all : selectedPages() || '—'}
+              </footer>
+              {renderError() ? (
+                <p
+                  class='pdf-preview__error'
+                  role='alert'
+                >
+                  {labels().preview.renderError}: {renderError()}
+                </p>
+              ) : undefined}
+            </section>
+          }
+          right={
+            <section
+              aria-label={labels().cropBox.settingsLabel}
+              class='panel'
             >
-              {labels().actions.cancel}
-            </button>
-          </div>
-        </section>
+              <div class='panel__group'>
+                <h2>{labels().cropBox.title}</h2>
+                <p>{labels().cropBox.description}</p>
+
+                <div class='crop-grid'>
+                  <label class='field'>
+                    <span class='field__label'>{labels().cropBox.left}</span>
+                    <input
+                      class='input'
+                      inputmode='decimal'
+                      type='number'
+                      value={cropBox().left}
+                      onInput={(event) => {
+                        setCropBox({ ...cropBox(), left: event.currentTarget.value });
+                      }}
+                    />
+                  </label>
+
+                  <label class='field'>
+                    <span class='field__label'>{labels().cropBox.bottom}</span>
+                    <input
+                      class='input'
+                      inputmode='decimal'
+                      type='number'
+                      value={cropBox().bottom}
+                      onInput={(event) => {
+                        setCropBox({ ...cropBox(), bottom: event.currentTarget.value });
+                      }}
+                    />
+                  </label>
+
+                  <label class='field'>
+                    <span class='field__label'>{labels().cropBox.right}</span>
+                    <input
+                      class='input'
+                      inputmode='decimal'
+                      type='number'
+                      value={cropBox().right}
+                      onInput={(event) => {
+                        setCropBox({ ...cropBox(), right: event.currentTarget.value });
+                      }}
+                    />
+                  </label>
+
+                  <label class='field'>
+                    <span class='field__label'>{labels().cropBox.top}</span>
+                    <input
+                      class='input'
+                      inputmode='decimal'
+                      type='number'
+                      value={cropBox().top}
+                      onInput={(event) => {
+                        setCropBox({ ...cropBox(), top: event.currentTarget.value });
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <p class='panel__hint'>
+                  {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt
+                </p>
+              </div>
+
+              <fieldset class='target'>
+                <legend>{labels().targetPages.title}</legend>
+
+                <label class='target__option'>
+                  <input
+                    checked={targetType() === 'all'}
+                    name='target'
+                    type='radio'
+                    onChange={() => {
+                      setTargetType('all');
+                    }}
+                  />
+                  {labels().targetPages.all}
+                </label>
+
+                <label class='target__option'>
+                  <input
+                    checked={targetType() === 'selected'}
+                    name='target'
+                    type='radio'
+                    onChange={() => {
+                      setTargetType('selected');
+                    }}
+                  />
+                  {labels().targetPages.selected}
+                </label>
+
+                <label class='field'>
+                  <span class='field__label'>{labels().targetPages.inputLabel}</span>
+                  <input
+                    class='input'
+                    disabled={targetType() !== 'selected'}
+                    placeholder={labels().targetPages.placeholder}
+                    type='text'
+                    value={selectedPages()}
+                    onInput={(event) => {
+                      setSelectedPages(event.currentTarget.value);
+                    }}
+                  />
+                </label>
+              </fieldset>
+
+              {inputError() ? (
+                <p
+                  class='panel__error'
+                  role='alert'
+                >
+                  {inputError()}
+                </p>
+              ) : undefined}
+
+              <div class='actions'>
+                <button
+                  class='button button--primary'
+                  type='button'
+                  onClick={() => {
+                    void applyCrop();
+                  }}
+                >
+                  {labels().actions.apply}
+                </button>
+                <button
+                  class='button'
+                  type='button'
+                  onClick={cancel}
+                >
+                  {labels().actions.cancel}
+                </button>
+              </div>
+            </section>
+          }
+        />
       </div>
     </main>
   );
