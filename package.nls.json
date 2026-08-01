@@ -265,12 +265,15 @@
   "command.compressPdf": "Compress PDF",
   "command.linearizePdf": "Linearize PDF",
   "command.encryptPdf": "Encrypt PDF",
+  "command.decryptPdf": "Decrypt PDF",
   "config.contextMenu.compressPdf.enabled": "Enable context menu for compressing PDFs",
   "config.contextMenu.linearizePdf.enabled": "Enable context menu for linearizing PDFs",
   "config.contextMenu.encryptPdf.enabled": "Enable context menu for encrypting PDFs",
+  "config.contextMenu.decryptPdf.enabled": "Enable context menu for decrypting PDFs",
   "config.outputPath.compressPdf": "Output file name after compressing the PDF",
   "config.outputPath.linearizePdf": "Output file name after linearizing the PDF",
   "config.outputPath.encryptPdf": "Output file name after encrypting the PDF",
+  "config.outputPath.decryptPdf": "Output file name after decrypting the PDF",
   "quickPick.compressPdf.quality.title": "Select PDF compression quality",
   "quickPick.compressPdf.quality.placeholder": "Lower quality produces smaller files.",
   "quickPick.compressPdf.quality.screen": "Smallest file size, lowest quality",
@@ -294,5 +297,11 @@
   "message.encryptPdf.failed": "Failed to encrypt PDF: {0}",
   "message.encryptPdf.passwordMismatch": "The passwords do not match.",
   "prompt.encryptPdf.password": "Enter the password to encrypt the PDF",
-  "prompt.encryptPdf.passwordConfirmation": "Re-enter the password to confirm"
+  "prompt.encryptPdf.passwordConfirmation": "Re-enter the password to confirm",
+  "message.progress.decryptPdf.title": "Decrypting {0} PDF file(s)",
+  "message.progress.prepareDecryptPdf": "Preparing PDF decryption",
+  "message.decryptPdf.success": "Decrypted {0} PDF file(s).",
+  "message.decryptPdf.cancelled": "PDF decryption was cancelled.",
+  "message.decryptPdf.failed": "Failed to decrypt PDF: {0}",
+  "prompt.decryptPdf.password": "Enter the PDF password"
 }
