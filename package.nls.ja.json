@@ -264,10 +264,13 @@
   "config.outputPath.convertImagesToSinglePdf": "画像結合PDFの出力先",
   "command.compressPdf": "PDFを圧縮",
   "command.linearizePdf": "PDFをリニアライズ",
+  "command.encryptPdf": "PDFを暗号化",
   "config.contextMenu.compressPdf.enabled": "PDFを圧縮するコンテキストメニューを有効にする",
   "config.contextMenu.linearizePdf.enabled": "PDFをリニアライズするコンテキストメニューを有効にする",
+  "config.contextMenu.encryptPdf.enabled": "PDFを暗号化するコンテキストメニューを有効にする",
   "config.outputPath.compressPdf": "PDF圧縮後の出力ファイル名",
   "config.outputPath.linearizePdf": "PDFリニアライズ後の出力ファイル名",
+  "config.outputPath.encryptPdf": "PDF暗号化後の出力ファイル名",
   "quickPick.compressPdf.quality.title": "PDF圧縮の品質を選択",
   "quickPick.compressPdf.quality.placeholder": "品質を下げるほどファイルサイズが小さくなります。",
   "quickPick.compressPdf.quality.screen": "最小ファイルサイズ、最低品質",
@@ -283,5 +286,13 @@
   "message.progress.prepareLinearizePdf": "PDFリニアライズを準備しています",
   "message.linearizePdf.success": "{0}個のPDFファイルをリニアライズしました。",
   "message.linearizePdf.cancelled": "PDFリニアライズはキャンセルされました。",
-  "message.linearizePdf.failed": "PDFリニアライズに失敗しました: {0}"
+  "message.linearizePdf.failed": "PDFリニアライズに失敗しました: {0}",
+  "message.progress.encryptPdf.title": "{0}個のPDFファイルを暗号化しています",
+  "message.progress.prepareEncryptPdf": "PDF暗号化を準備しています",
+  "message.encryptPdf.success": "{0}個のPDFファイルを暗号化しました。",
+  "message.encryptPdf.cancelled": "PDF暗号化はキャンセルされました。",
+  "message.encryptPdf.failed": "PDF暗号化に失敗しました: {0}",
+  "message.encryptPdf.passwordMismatch": "パスワードが一致しません。",
+  "prompt.encryptPdf.password": "PDFを暗号化するパスワードを入力",
+  "prompt.encryptPdf.passwordConfirmation": "確認のためパスワードをもう一度入力"
 }

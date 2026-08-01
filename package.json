@@ -248,6 +248,11 @@
         "command": "graphics-workbench.linearizePdf",
         "title": "%command.linearizePdf%",
         "category": "Graphics Workbench"
+      },
+      {
+        "command": "graphics-workbench.encryptPdf",
+        "title": "%command.encryptPdf%",
+        "category": "Graphics Workbench"
       }
     ],
     "menus": {
@@ -291,6 +296,11 @@
           "command": "graphics-workbench.linearizePdf",
           "group": "graphics-workbench",
           "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.linearizePdf.enabled"
+        },
+        {
+          "command": "graphics-workbench.encryptPdf",
+          "group": "graphics-workbench",
+          "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.encryptPdf.enabled"
         }
       ],
       "graphics-workbench.cropPdf": [
@@ -451,6 +461,10 @@
         },
         {
           "command": "graphics-workbench.linearizePdf",
+          "when": "false"
+        },
+        {
+          "command": "graphics-workbench.encryptPdf",
           "when": "false"
         },
         {
@@ -1116,6 +1130,11 @@
           "default": true,
           "description": "%config.contextMenu.linearizePdf.enabled%"
         },
+        "graphics-workbench.contextMenu.encryptPdf.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.contextMenu.encryptPdf.enabled%"
+        },
         "graphics-workbench.outputPath.compressPdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}_compressed.pdf",
@@ -1125,6 +1144,11 @@
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}-linearized.pdf",
           "description": "%config.outputPath.linearizePdf%"
+        },
+        "graphics-workbench.outputPath.encryptPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-encrypted.pdf",
+          "description": "%config.outputPath.encryptPdf%"
         }
       }
     }
