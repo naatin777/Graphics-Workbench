@@ -25,6 +25,10 @@ type ConfigurationKey =
   | 'outputPath.convertAvifToPdf'
   | 'outputPath.convertSvgToPdf'
   | 'outputPath.convertMermaidToPdf'
+  | 'outputPath.convertGifToPdf'
+  | 'outputPath.convertTiffToPdf'
+  | 'outputPath.convertEpsToPdf'
+  | 'outputPath.convertRawToPdf'
   | 'outputPath.convertPngToJpeg'
   | 'outputPath.convertPngToWebp'
   | 'outputPath.convertPngToAvif'
@@ -378,6 +382,18 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.convertMermaidToPdf': {
     types: ['string'],
   },
+  'outputPath.convertGifToPdf': {
+    types: ['string'],
+  },
+  'outputPath.convertTiffToPdf': {
+    types: ['string'],
+  },
+  'outputPath.convertEpsToPdf': {
+    types: ['string'],
+  },
+  'outputPath.convertRawToPdf': {
+    types: ['string'],
+  },
   'outputPath.convertPngToJpeg': {
     types: ['string'],
   },
@@ -605,6 +621,10 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.convertAvifToPdf': 'string',
   'outputPath.convertSvgToPdf': 'string',
   'outputPath.convertMermaidToPdf': 'string',
+  'outputPath.convertGifToPdf': 'string',
+  'outputPath.convertTiffToPdf': 'string',
+  'outputPath.convertEpsToPdf': 'string',
+  'outputPath.convertRawToPdf': 'string',
   'outputPath.convertPngToJpeg': 'string',
   'outputPath.convertPngToWebp': 'string',
   'outputPath.convertPngToAvif': 'string',
@@ -908,6 +928,26 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       convertMermaidToPdf: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertMermaidToPdf',
+        '${fileDirname}/${fileBasenameNoExtension}.pdf',
+      ),
+      convertGifToPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertGifToPdf',
+        '${fileDirname}/${fileBasenameNoExtension}.pdf',
+      ),
+      convertTiffToPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertTiffToPdf',
+        '${fileDirname}/${fileBasenameNoExtension}.pdf',
+      ),
+      convertEpsToPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertEpsToPdf',
+        '${fileDirname}/${fileBasenameNoExtension}.pdf',
+      ),
+      convertRawToPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertRawToPdf',
         '${fileDirname}/${fileBasenameNoExtension}.pdf',
       ),
       convertPngToJpeg: defineConfiguration<string>(

@@ -763,6 +763,26 @@
           "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
           "description": "%config.outputPath.convertMermaidToPdf%"
         },
+        "graphics-workbench.outputPath.convertGifToPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
+          "description": "%config.outputPath.convertGifToPdf%"
+        },
+        "graphics-workbench.outputPath.convertTiffToPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
+          "description": "%config.outputPath.convertTiffToPdf%"
+        },
+        "graphics-workbench.outputPath.convertEpsToPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
+          "description": "%config.outputPath.convertEpsToPdf%"
+        },
+        "graphics-workbench.outputPath.convertRawToPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
+          "description": "%config.outputPath.convertRawToPdf%"
+        },
         "graphics-workbench.outputPath.convertPngToJpeg": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
