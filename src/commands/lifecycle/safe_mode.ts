@@ -5,7 +5,9 @@ import type { OutputConflictDecision } from '../../operations/lifecycle/commit_c
 
 import { userMessage } from '../shared/user_messages.js';
 
-export const TOGGLE_SAFE_MODE_COMMAND = 'graphics-workbench.toggleSafeMode';
+import { TOGGLE_SAFE_MODE_COMMAND } from '../../generated-extension-meta.js';
+
+export { TOGGLE_SAFE_MODE_COMMAND };
 
 let safeModeState: SafeModeState | undefined;
 let statusBarItem: vscode.StatusBarItem | undefined;

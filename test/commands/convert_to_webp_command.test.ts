@@ -26,7 +26,7 @@ import path from 'node:path';
 
 import { CONVERT_TO_WEBP_COMMAND } from '../../src/commands/conversion/convert_to_webp.js';
 import {
-  CONVERT_TO_WEBP_PRESERVE_COMMAND,
+  CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND,
   CONVERT_TO_WEBP_SEPARATELY_COMMAND,
 } from '../../src/commands/command_ids.js';
 
@@ -134,7 +134,7 @@ suite('WebPに変換コマンド', () => {
       await copyFile(path.join(testInputDirectory, 'valid', 'gif', 'rotating-vector-field.gif'), sourcePath);
 
       const commandExecution = vscode.commands.executeCommand(
-        CONVERT_TO_WEBP_PRESERVE_COMMAND,
+        CONVERT_TO_WEBP_PRESERVE_ANIMATION_COMMAND,
         vscode.Uri.file(sourcePath),
       );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
