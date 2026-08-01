@@ -18,7 +18,7 @@ import {
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
-import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPathOrPathsTemplate } from '../../config/output/read_output_path_or_paths_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
@@ -302,6 +302,15 @@ function outputTemplateForSource(
         'convertMermaidToWebp',
         configuration.outputPath.convertMermaidToWebp,
         defaultConfiguration.outputPath.convertMermaidToWebp,
+      );
+    }
+    case '.gif': {
+      if (splitDefault !== undefined) {
+        return splitDefault;
+      }
+      return resolveOutputPathTemplate(
+        configuration.outputPath.convertGifToWebp(),
+        defaultConfiguration.outputPath.convertGifToWebp(),
       );
     }
     default: {
