@@ -17,7 +17,6 @@ type ConfigurationKey =
   | 'convertToWebp.effort'
   | 'convertToAvif.effort'
   | 'outputPath.cropPdf'
-  | 'outputPath.splitPdf'
   | 'outputPaths'
   | 'outputPath.convertPngToPdf'
   | 'outputPath.convertJpegToPdf'
@@ -253,9 +252,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.cropPdf': {
     types: ['string'],
   },
-  'outputPath.splitPdf': {
-    types: ['string'],
-  },
   outputPaths: {
     types: ['object'],
     properties: {
@@ -350,6 +346,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
         types: ['string'],
       },
       convertMermaidToGif: {
+        types: ['string'],
+      },
+      splitPdf: {
         types: ['string'],
       },
     },
@@ -631,7 +630,6 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'convertToWebp.effort': 'integer',
   'convertToAvif.effort': 'integer',
   'outputPath.cropPdf': 'string',
-  'outputPath.splitPdf': 'string',
   outputPaths: 'object',
   'outputPath.convertPngToPdf': 'string',
   'outputPath.convertJpegToPdf': 'string',
@@ -814,6 +812,10 @@ type OutputPathsToEps = {
   readonly convertPdfToEps?: string;
 };
 
+type OutputPathsToOther = {
+  readonly splitPdf?: string;
+};
+
 export type OutputPaths = OutputPathsToPdf &
   OutputPathsToPng &
   OutputPathsToJpeg &
@@ -822,7 +824,8 @@ export type OutputPaths = OutputPathsToPdf &
   OutputPathsToSvg &
   OutputPathsToGif &
   OutputPathsToTiff &
-  OutputPathsToEps;
+  OutputPathsToEps &
+  OutputPathsToOther;
 export const publicCommandIds = [
   'graphics-workbench.cropPdf.auto',
   'graphics-workbench.undoLastConversion',
@@ -1040,11 +1043,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         configurationReader,
         'outputPath.cropPdf',
         '${fileDirname}/${fileBasenameNoExtension}-crop.pdf',
-      ),
-      splitPdf: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.splitPdf',
-        '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf',
       ),
       convertPngToPdf: defineConfiguration<string>(
         configurationReader,
