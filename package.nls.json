@@ -264,10 +264,13 @@
   "config.outputPath.convertImagesToSinglePdf": "Output path for combine images to single PDF",
   "command.compressPdf": "Compress PDF",
   "command.linearizePdf": "Linearize PDF",
+  "command.encryptPdf": "Encrypt PDF",
   "config.contextMenu.compressPdf.enabled": "Enable context menu for compressing PDFs",
   "config.contextMenu.linearizePdf.enabled": "Enable context menu for linearizing PDFs",
+  "config.contextMenu.encryptPdf.enabled": "Enable context menu for encrypting PDFs",
   "config.outputPath.compressPdf": "Output file name after compressing the PDF",
   "config.outputPath.linearizePdf": "Output file name after linearizing the PDF",
+  "config.outputPath.encryptPdf": "Output file name after encrypting the PDF",
   "quickPick.compressPdf.quality.title": "Select PDF compression quality",
   "quickPick.compressPdf.quality.placeholder": "Lower quality produces smaller files.",
   "quickPick.compressPdf.quality.screen": "Smallest file size, lowest quality",
@@ -283,5 +286,13 @@
   "message.progress.prepareLinearizePdf": "Preparing PDF linearization",
   "message.linearizePdf.success": "Linearized {0} PDF file(s).",
   "message.linearizePdf.cancelled": "PDF linearization was cancelled.",
-  "message.linearizePdf.failed": "Failed to linearize PDF: {0}"
+  "message.linearizePdf.failed": "Failed to linearize PDF: {0}",
+  "message.progress.encryptPdf.title": "Encrypting {0} PDF file(s)",
+  "message.progress.prepareEncryptPdf": "Preparing PDF encryption",
+  "message.encryptPdf.success": "Encrypted {0} PDF file(s).",
+  "message.encryptPdf.cancelled": "PDF encryption was cancelled.",
+  "message.encryptPdf.failed": "Failed to encrypt PDF: {0}",
+  "message.encryptPdf.passwordMismatch": "The passwords do not match.",
+  "prompt.encryptPdf.password": "Enter the password to encrypt the PDF",
+  "prompt.encryptPdf.passwordConfirmation": "Re-enter the password to confirm"
 }
