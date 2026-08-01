@@ -182,7 +182,8 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
         ),
       )
       .toBe(true);
-    await expect(webviewFrame.locator('.pdf-page__footer')).toHaveText(['Page 1 / 2', 'Page 2 / 2']);
+    await expect(webviewFrame.locator('.pdf-page__footer')).toHaveCount(0);
+    await expect(webviewFrame.locator('.pdf-preview__footer')).toHaveText('Target pages: All pages');
     await expect(webviewFrame.getByText(/PDFを表示できませんでした:/)).toHaveCount(0);
 
     await expectWebviewNetworkBlocked(webviewFrame);

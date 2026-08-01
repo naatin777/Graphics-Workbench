@@ -374,6 +374,9 @@ export function App(): JSX.Element {
             }}
             class='pdf-preview__pages'
           />
+          <footer class='pdf-preview__footer'>
+            {labels().targetPages.title}: {targetType() === 'all' ? labels().targetPages.all : selectedPages() || '—'}
+          </footer>
           {renderError() ? (
             <p
               class='pdf-preview__error'
