@@ -27,6 +27,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import {
@@ -36,8 +37,6 @@ import {
   readDrawioOptions,
   selectedUris,
 } from '../shared/command_utils.js';
-
-export const CONVERT_TO_TIFF_COMMAND = 'graphics-workbench.convertToTiff';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.tiff';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.tiff';
@@ -55,17 +54,19 @@ export async function convertToTiffCommand(
     }
     const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
-    const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) => planTiffConversionJobs(sourceUri, configuration, maxInputPixels)),
-    );
-    const jobs = plannedJobs.flat();
     await runConversionLifecycle({
       operationName: 'convert-to-tiff',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('TIFF', sourceUris.length),
-      run: async (runtime) =>
-        executeTiffConversion({
+      run: async (runtime) => {
+        const plannedJobs = await Promise.all(
+          sourceUris.map(async (sourceUri) =>
+            planTiffConversionJobs(sourceUri, configuration, maxInputPixels, runtime),
+          ),
+        );
+        const jobs = plannedJobs.flat();
+        return executeTiffConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
@@ -76,7 +77,8 @@ export async function convertToTiffCommand(
           mermaidTools: readMermaidPuppeteerOptions(configuration),
           drawioTools: readDrawioOptions(configuration),
           runtime,
-        }),
+        });
+      },
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -92,6 +94,7 @@ async function planTiffConversionJobs(
   sourceUri: vscode.Uri,
   configuration: Configuration,
   maxInputPixels: number,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToTiffJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -105,7 +108,7 @@ async function planTiffConversionJobs(
   }
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, configuration);
+    return createPdfJobs(sourcePath, workspace, configuration, runtime);
   }
   const outputTemplate = outputTemplateForSource(sourcePath, configuration);
   if (isRasterImagePath(sourcePath)) {
@@ -143,7 +146,10 @@ async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToTiffJob[]> {
+  runtime?.signal?.throwIfAborted();
+  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
   if (pageCount === 0) {
@@ -151,9 +157,13 @@ async function createPdfJobs(
   }
   const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToTiff', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
-  return Array.from({ length: pageCount }, (_value, index) => {
+
+  const jobs: ConvertToTiffJob[] = [];
+
+  for (let index = 0; index < pageCount; index += 1) {
+    runtime?.signal?.throwIfAborted();
     const page = index + 1;
-    return {
+    jobs.push({
       sourcePath,
       workspacePath: workspace.uri.fsPath,
       outputPath: resolveOutputPath(
@@ -167,8 +177,10 @@ async function createPdfJobs(
         { allowedExtensions: ['.tif', '.tiff'] },
       ),
       page,
-    };
-  });
+    });
+  }
+
+  return jobs;
 }
 
 function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {

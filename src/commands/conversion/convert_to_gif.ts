@@ -27,6 +27,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import { createRasterFrameJobs, readRasterAnimationMetadata } from './create_raster_frame_jobs.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import {
@@ -36,10 +37,6 @@ import {
   readDrawioOptions,
   selectedUris,
 } from '../shared/command_utils.js';
-
-export const CONVERT_TO_GIF_COMMAND = 'graphics-workbench.convertToGif';
-export const CONVERT_TO_GIF_PRESERVE_COMMAND = 'graphics-workbench.convertToGifPreserveAnimation';
-export const CONVERT_TO_GIF_SEPARATELY_COMMAND = 'graphics-workbench.convertToGifSeparately';
 
 const defaultSplitOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.gif';
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.gif';
@@ -63,19 +60,19 @@ export async function convertToGifCommand(
     }
     const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
-    const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) =>
-        planGifConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode),
-      ),
-    );
-    const jobs = plannedJobs.flat();
     await runConversionLifecycle({
       operationName: 'convert-to-gif',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('GIF', sourceUris.length),
-      run: async (runtime) =>
-        executeGifConversion({
+      run: async (runtime) => {
+        const plannedJobs = await Promise.all(
+          sourceUris.map(async (sourceUri) =>
+            planGifConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode, runtime),
+          ),
+        );
+        const jobs = plannedJobs.flat();
+        return executeGifConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
@@ -86,7 +83,8 @@ export async function convertToGifCommand(
           mermaidTools: readMermaidPuppeteerOptions(configuration),
           drawioTools: readDrawioOptions(configuration),
           runtime,
-        }),
+        });
+      },
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -103,6 +101,7 @@ async function planGifConversionJobs(
   configuration: Configuration,
   maxInputPixels: number,
   outputMode?: 'auto' | 'preserve' | 'split',
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToGifJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -116,7 +115,7 @@ async function planGifConversionJobs(
   }
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, configuration);
+    return createPdfJobs(sourcePath, workspace, configuration, runtime);
   }
   const outputTemplate = outputTemplateForSource(sourcePath, configuration, outputMode);
   if (isRasterImagePath(sourcePath)) {
@@ -174,7 +173,10 @@ async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToGifJob[]> {
+  runtime?.signal?.throwIfAborted();
+  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
   if (pageCount === 0) {
@@ -182,9 +184,13 @@ async function createPdfJobs(
   }
   const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToGif', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
-  return Array.from({ length: pageCount }, (_value, index) => {
+
+  const jobs: ConvertToGifJob[] = [];
+
+  for (let index = 0; index < pageCount; index += 1) {
+    runtime?.signal?.throwIfAborted();
     const page = index + 1;
-    return {
+    jobs.push({
       sourcePath,
       workspacePath: workspace.uri.fsPath,
       outputPath: resolveOutputPath(
@@ -198,8 +204,10 @@ async function createPdfJobs(
         { allowedExtensions: ['.gif'] },
       ),
       page,
-    };
-  });
+    });
+  }
+
+  return jobs;
 }
 
 function outputTemplateForSource(

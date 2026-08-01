@@ -12,8 +12,8 @@ import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_DRAWIO_TO_PDF_COMMAND = 'graphics-workbench.convertDrawioToPdf';
-export const CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND = 'graphics-workbench.convertDrawioToPdfDirectly';
+export { CONVERT_DRAWIO_TO_PDF_COMMAND } from '../command_ids.js';
+export { CONVERT_DRAWIO_TO_PDF_DIRECTLY_COMMAND } from '../command_ids.js';
 
 const defaultOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
 const defaultDirectOutputPath = '${fileDirname}/${fileBasenameNoExtension}.pdf';

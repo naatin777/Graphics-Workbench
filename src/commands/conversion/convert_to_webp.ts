@@ -31,6 +31,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import { createRasterFrameJobs, readRasterAnimationMetadata } from './create_raster_frame_jobs.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -42,9 +43,7 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export const CONVERT_TO_WEBP_COMMAND = 'graphics-workbench.convertToWebp';
-export const CONVERT_TO_WEBP_PRESERVE_COMMAND = 'graphics-workbench.convertToWebpPreserveAnimation';
-export const CONVERT_TO_WEBP_SEPARATELY_COMMAND = 'graphics-workbench.convertToWebpSeparately';
+export { CONVERT_TO_WEBP_COMMAND } from '../command_ids.js';
 
 const defaultSplitOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.webp';
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.webp';
@@ -71,12 +70,6 @@ export async function convertToWebpCommand(
     const configuration = getCommandConfiguration(dependencies);
     const defaultConfiguration = getDefaultConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
-    const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) =>
-        planWebpConversionJobs(sourceUri, configuration, defaultConfiguration, maxInputPixels, options?.outputMode),
-      ),
-    );
-    const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const webp = readWebpOutputOptions(configuration);
@@ -90,8 +83,20 @@ export async function convertToWebpCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('WebP', sourceUris.length),
-      run: async (runtime) =>
-        executeWebpConversion({
+      run: async (runtime) => {
+        const plannedJobs = await Promise.all(
+          sourceUris.map(async (sourceUri) =>
+            planWebpConversionJobs(sourceUri, {
+              configuration,
+              defaultConfiguration,
+              maxInputPixels,
+              ...(options?.outputMode !== undefined && { outputMode: options.outputMode }),
+              runtime,
+            }),
+          ),
+        );
+        const jobs = plannedJobs.flat();
+        return executeWebpConversion({
           jobs,
           maxInputPixels,
           pdftocairoTools,
@@ -100,7 +105,8 @@ export async function convertToWebpCommand(
           drawioTools,
           webp,
           runtime,
-        }),
+        });
+      },
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -115,10 +121,19 @@ export async function convertToWebpCommand(
 
 async function planWebpConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: Configuration,
-  defaultConfiguration: Configuration,
-  maxInputPixels: number,
-  outputMode?: 'auto' | 'preserve' | 'split',
+  {
+    configuration,
+    defaultConfiguration,
+    maxInputPixels,
+    outputMode,
+    runtime,
+  }: {
+    configuration: Configuration;
+    defaultConfiguration: Configuration;
+    maxInputPixels: number;
+    outputMode?: 'auto' | 'preserve' | 'split';
+    runtime?: ConversionExecutionContext;
+  },
 ): Promise<ConvertToWebpJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -135,7 +150,7 @@ async function planWebpConversionJobs(
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, configuration);
+    return createPdfJobs(sourcePath, workspace, configuration, runtime);
   }
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
@@ -197,7 +212,10 @@ async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToWebpJob[]> {
+  runtime?.signal?.throwIfAborted();
+  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
 
@@ -208,9 +226,12 @@ async function createPdfJobs(
   const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToWebp', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
-  return Array.from({ length: pageCount }, (_value, index) => {
+  const jobs: ConvertToWebpJob[] = [];
+
+  for (let index = 0; index < pageCount; index += 1) {
+    runtime?.signal?.throwIfAborted();
     const page = index + 1;
-    return {
+    jobs.push({
       sourcePath,
       workspacePath: workspace.uri.fsPath,
       outputPath: resolveOutputPath(
@@ -224,8 +245,10 @@ async function createPdfJobs(
         { allowedExtensions: ['.webp'] },
       ),
       page,
-    };
-  });
+    });
+  }
+
+  return jobs;
 }
 
 function outputTemplateForSource(

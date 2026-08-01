@@ -25,6 +25,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import {
@@ -35,7 +36,7 @@ import {
   selectedUris,
 } from '../shared/command_utils.js';
 
-export const CONVERT_TO_SVG_COMMAND = 'graphics-workbench.convertToSvg';
+export { CONVERT_TO_SVG_COMMAND } from '../command_ids.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.svg';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.svg';
@@ -55,10 +56,6 @@ export async function convertToSvgCommand(
 
     const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
-    const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) => planSvgConversionJobs(sourceUri, configuration)),
-    );
-    const jobs = plannedJobs.flat();
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
@@ -71,8 +68,12 @@ export async function convertToSvgCommand(
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('SVG', sourceUris.length),
-      run: async (runtime) =>
-        convertToSvgFiles({
+      run: async (runtime) => {
+        const plannedJobs = await Promise.all(
+          sourceUris.map(async (sourceUri) => planSvgConversionJobs(sourceUri, configuration, runtime)),
+        );
+        const jobs = plannedJobs.flat();
+        return convertToSvgFiles({
           jobs,
           maxInputPixels,
           pdftocairoTools,
@@ -80,7 +81,8 @@ export async function convertToSvgCommand(
           mermaidTools,
           drawioTools,
           runtime,
-        }),
+        });
+      },
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -93,7 +95,11 @@ export async function convertToSvgCommand(
   }
 }
 
-async function planSvgConversionJobs(sourceUri: vscode.Uri, configuration: Configuration): Promise<ConvertToSvgJob[]> {
+async function planSvgConversionJobs(
+  sourceUri: vscode.Uri,
+  configuration: Configuration,
+  runtime?: ConversionExecutionContext,
+): Promise<ConvertToSvgJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
@@ -109,7 +115,7 @@ async function planSvgConversionJobs(sourceUri: vscode.Uri, configuration: Confi
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, configuration);
+    return createPdfJobs(sourcePath, workspace, configuration, runtime);
   }
 
   if (isNativeDrawioPath(sourcePath)) {
@@ -153,7 +159,10 @@ async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
+  runtime?: ConversionExecutionContext,
 ): Promise<ConvertToSvgJob[]> {
+  runtime?.signal?.throwIfAborted();
+  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const document = await PDFDocument.load(await readFile(sourcePath));
   const pageCount = document.getPageCount();
 
@@ -164,9 +173,12 @@ async function createPdfJobs(
   const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToSvg', defaultPdfOutputPath);
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
-  return Array.from({ length: pageCount }, (_value, index) => {
+  const jobs: ConvertToSvgJob[] = [];
+
+  for (let index = 0; index < pageCount; index += 1) {
+    runtime?.signal?.throwIfAborted();
     const page = index + 1;
-    return {
+    jobs.push({
       sourcePath,
       workspacePath: workspace.uri.fsPath,
       outputPath: resolveOutputPath(
@@ -180,8 +192,10 @@ async function createPdfJobs(
         { allowedExtensions: ['.svg'] },
       ),
       page,
-    };
-  });
+    });
+  }
+
+  return jobs;
 }
 
 function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {

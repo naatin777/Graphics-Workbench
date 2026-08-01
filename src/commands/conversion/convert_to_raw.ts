@@ -12,8 +12,6 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertFileScheme, getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 import { userMessage } from '../shared/user_messages.js';
 
-export const CONVERT_TO_RAW_COMMAND = 'graphics-workbench.convertToRaw';
-
 const defaultOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.raw';
 
 export async function convertToRawCommand(

@@ -15,10 +15,6 @@ import { createOutputConversionMessages, runConversionLifecycle } from '../lifec
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertFileScheme, getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
 
-export const CONVERT_TO_DRAWIO_COMMAND = 'graphics-workbench.convertToDrawio';
-export const CONVERT_TO_DRAWIO_PNG_COMMAND = 'graphics-workbench.convertToDrawioPng';
-export const CONVERT_TO_DRAWIO_SVG_COMMAND = 'graphics-workbench.convertToDrawioSvg';
-
 const drawioExtensions = ['.drawio', '.dio', '.drawio.png', '.dio.png', '.drawio.svg', '.dio.svg'] as const;
 
 export async function convertToDrawioCommand(

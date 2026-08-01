@@ -27,7 +27,6 @@ import { assertFileScheme, getCommandConfiguration, isAbortError, selectedUris }
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
 
-export const CONVERT_TO_EPS_COMMAND = 'graphics-workbench.convertToEps';
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.eps';
 
 export async function convertToEpsCommand(

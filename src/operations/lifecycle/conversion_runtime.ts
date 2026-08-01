@@ -3,6 +3,7 @@ import type { LineOutputChannel } from '../external_tools/external_tool_ascii_sc
 
 type ConflictResolver = (conflicts: string[]) => Promise<OutputConflictDecision>;
 type ProgressReporter = (completed: number, total: number) => void;
+type MessageReporter = (message: string) => void;
 
 /** Dependencies shared by one conversion run, not by an individual source job. */
 export interface ConversionExecutionContext {
@@ -10,4 +11,5 @@ export interface ConversionExecutionContext {
   outputChannel?: LineOutputChannel;
   resolveConflicts?: ConflictResolver;
   reportProgress?: ProgressReporter;
+  reportMessage?: MessageReporter;
 }
