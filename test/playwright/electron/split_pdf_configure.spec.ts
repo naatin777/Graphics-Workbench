@@ -149,34 +149,30 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
   const consoleMessages: string[] = [];
 
   try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(),
+      colorTheme: additionalThemes[0]?.colorTheme ?? 'Default High Contrast',
+    });
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
+    const { body, canvases } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+
     for (const theme of additionalThemes) {
-      await resetTestWorkspace();
-      env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-        ...preparedOptions(),
-        colorTheme: theme.colorTheme,
-      });
-      env.app.electronApp.on('console', (message) => {
-        consoleMessages.push(message.text());
+      await writeVscodeUserSettings(userSettingsPath, theme.colorTheme);
+      await waitForWebviewTheme(body, theme.themeClass);
+      await expectPdfCanvasesReadable(canvases, `PDF canvas rendering failed for the ${theme.colorTheme} theme.`);
+      const screenshot = await captureSplitPdfScreenshot(env.app.window, body);
+      await testInfo.attach(`split-pdf-configure-${theme.id}`, {
+        body: screenshot,
+        contentType: 'image/png',
       });
 
-      try {
-        const { body, canvases } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
-        await waitForWebviewTheme(body, theme.themeClass);
-        await expectPdfCanvasesReadable(canvases, `PDF canvas rendering failed for the ${theme.colorTheme} theme.`);
-        const screenshot = await captureSplitPdfScreenshot(env.app.window, body);
-        await testInfo.attach(`split-pdf-configure-${theme.id}`, {
-          body: screenshot,
-          contentType: 'image/png',
-        });
-
-        expect(screenshot).toMatchSnapshot(`split-pdf-configure-${theme.id}.png`, {
-          maxDiffPixelRatio: 0.05,
-        });
-      } finally {
-        await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-        env = undefined;
-        await resetTestWorkspace();
-      }
+      expect(screenshot).toMatchSnapshot(`split-pdf-configure-${theme.id}.png`, {
+        maxDiffPixelRatio: 0.05,
+      });
     }
   } catch (error) {
     await attachElectronDiagnostics({
