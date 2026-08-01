@@ -18,6 +18,7 @@ import {
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { convertToSvgFiles, type ConvertToSvgJob } from '../../operations/conversion/convert_to_svg.js';
@@ -199,19 +200,10 @@ async function createPdfJobs(
 }
 
 function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {
-  const extension = path.extname(sourcePath).toLowerCase();
-
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return resolveOutputPathsTemplate(configuration, 'convertDrawioToSvg', defaultDrawioOutputPath);
-  }
-
-  switch (extension) {
-    case '.mmd':
-    case '.mermaid': {
-      return configuration.outputPath.convertMermaidToSvg();
-    }
-    default: {
-      throw new Error(`Unsupported SVG input format: ${sourcePath}`);
-    }
-  }
+  return resolveConversionTemplate({
+    target: 'svg',
+    sourcePath,
+    configuration,
+    pluralFallback: defaultDrawioOutputPath,
+  });
 }
