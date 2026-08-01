@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 31 (experiment)
+Status: In progress — Phase 39（21ルール一括error化）Done
 
 ## Objective
 
@@ -269,9 +269,9 @@ mainの現行コード219ファイルに対する初回測定では、14,208件�
 
 `lint:strict-experimental -- --fix`も試行した。14,208件から13,000件へ1,208件を自動で減らせたが、168ファイル・2,371行の差分が生成された。`sort-keys`による実行時objectの並べ替えや、type importの分離による通常lintの重複importなど、単純な整形に限定できない変更が混在したため、差分は採用しない。strict実験では、ルール群を分割して自動修正の安全性を確認してから取り込む。
 
-## Phase 39
+## Phase 39 — Done
 
-`-D all -D nursery --type-aware`の現行測定から、違反が3件以下で通常lintへerror昇格できるルール群をまとめて有効化する。Phase 38の実験結果から「違反が多いルールを一括有効化しない」方針は維持し、ここでは既存違反を解消してからerror化する。
+`-D all -D nursery --type-aware`の現行測定から、違反が3件以下で通常lintへerror昇格できるルール群をまとめて有効化した。Phase 38の実験結果から「違反が多いルールを一括有効化しない」方針は維持し、既存違反を解消してからerror化した。
 
 対象ルールと既存違反の所在:
 
