@@ -2,6 +2,15 @@ import { type Locator, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 
+export async function waitForWebviewFontsReady(body: Locator): Promise<void> {
+  await body.evaluate(async (element) => {
+    const fonts = element.ownerDocument.fonts;
+    if (fonts.ready !== undefined) {
+      await fonts.ready;
+    }
+  });
+}
+
 export async function captureCropPdfScreenshot(
   page: Page,
   body: Locator,
@@ -18,6 +27,7 @@ export async function captureCropPdfScreenshot(
       document.head.append(style);
     }
   });
+  await waitForWebviewFontsReady(body);
   const bodyBounds = await body.boundingBox();
 
   if (!bodyBounds) {

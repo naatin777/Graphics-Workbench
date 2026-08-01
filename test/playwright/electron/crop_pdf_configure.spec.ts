@@ -323,37 +323,33 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
   const consoleMessages: string[] = [];
 
   try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(),
+      colorTheme: additionalThemes[0]?.colorTheme ?? 'Default High Contrast',
+    });
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
+    const { body, canvases } = await openCropPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+
     for (const theme of additionalThemes) {
-      await resetTestWorkspace();
-      env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-        ...preparedOptions(),
-        colorTheme: theme.colorTheme,
+      await writeVscodeUserSettings(userSettingsPath, theme.colorTheme);
+      await waitForWebviewTheme(body, theme.themeClass);
+      await expectPdfCanvasesReadable(canvases, `PDF canvas rendering failed for the ${theme.colorTheme} theme.`);
+      const screenshot = await captureCropPdfScreenshot(env.app.window, body, {
+        canvases,
+        snapshotPrefix: join(env.directories.temporaryRoot, `crop-pdf-${theme.id}`),
       });
-      env.app.electronApp.on('console', (message) => {
-        consoleMessages.push(message.text());
+      await testInfo.attach(`crop-pdf-configure-${theme.id}`, {
+        body: screenshot,
+        contentType: 'image/png',
       });
 
-      try {
-        const { body, canvases } = await openCropPdfConfigure(env.app.window, cropConfigureFixture.fileName);
-        await waitForWebviewTheme(body, theme.themeClass);
-        await expectPdfCanvasesReadable(canvases, `PDF canvas rendering failed for the ${theme.colorTheme} theme.`);
-        const screenshot = await captureCropPdfScreenshot(env.app.window, body, {
-          canvases,
-          snapshotPrefix: join(env.directories.temporaryRoot, `crop-pdf-${theme.id}`),
-        });
-        await testInfo.attach(`crop-pdf-configure-${theme.id}`, {
-          body: screenshot,
-          contentType: 'image/png',
-        });
-
-        expect(screenshot).toMatchSnapshot(`crop-pdf-configure-${theme.id}.png`, {
-          maxDiffPixelRatio: 0.05,
-        });
-      } finally {
-        await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-        env = undefined;
-        await resetTestWorkspace();
-      }
+      expect(screenshot).toMatchSnapshot(`crop-pdf-configure-${theme.id}.png`, {
+        maxDiffPixelRatio: 0.05,
+      });
     }
   } catch (error) {
     await attachElectronDiagnostics({
