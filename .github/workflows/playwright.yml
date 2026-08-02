@@ -19,7 +19,8 @@ concurrency:
 
 jobs:
   playwright:
-    name: Playwright E2E (packaged VSIX, ${{ matrix.label }})
+    # Keep this job name stable: branch protection requires these three contexts.
+    name: packaged Electron Playwright (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
