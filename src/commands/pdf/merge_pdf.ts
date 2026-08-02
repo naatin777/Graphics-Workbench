@@ -15,6 +15,7 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
+import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
@@ -55,6 +56,7 @@ export async function mergePdfSelectedFilesCommand(
         return withCancellationSignal(token, async (signal) => {
           const runtime: ConversionExecutionContext = {
             signal,
+            ...createProgressReporters(_progress),
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
           };
