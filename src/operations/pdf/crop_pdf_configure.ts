@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument, type PDFPage } from 'pdf-lib';
@@ -16,6 +16,11 @@ import {
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+import {
+  MAX_CROP_CONFIGURE_INPUT_BYTES,
+  MAX_CROP_CONFIGURE_OUTPUT_BYTES,
+  MAX_CROP_CONFIGURE_PAGES,
+} from './crop_pdf_limits.js';
 
 export interface CropBox {
   left: number;
@@ -102,8 +107,20 @@ async function createConfiguredCropOutput(
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
 
   signal?.throwIfAborted();
-  const document = await PDFDocument.load(await readFile(copiedSourcePath));
+  const sourceStat = await stat(copiedSourcePath);
+  if (sourceStat.size > MAX_CROP_CONFIGURE_INPUT_BYTES) {
+    throw new Error(`Crop Configure supports PDF inputs up to ${MAX_CROP_CONFIGURE_INPUT_BYTES / (1024 * 1024)} MiB.`);
+  }
+  const sourceBytes = await readFile(copiedSourcePath);
+  if (sourceBytes.byteLength > MAX_CROP_CONFIGURE_INPUT_BYTES) {
+    throw new Error(`Crop Configure supports PDF inputs up to ${MAX_CROP_CONFIGURE_INPUT_BYTES / (1024 * 1024)} MiB.`);
+  }
+  signal?.throwIfAborted();
+  const document = await PDFDocument.load(sourceBytes);
   const pages = document.getPages();
+  if (pages.length > MAX_CROP_CONFIGURE_PAGES) {
+    throw new Error(`Crop Configure supports up to ${MAX_CROP_CONFIGURE_PAGES} pages.`);
+  }
   const targetPageIndexes = targetToPageIndexes(job.target, pages.length);
 
   for (const pageIndex of targetPageIndexes) {
@@ -113,7 +130,13 @@ async function createConfiguredCropOutput(
 
   await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
   signal?.throwIfAborted();
-  await writeFile(stagedOutputPath, await document.save());
+  const outputBytes = await document.save();
+  if (outputBytes.byteLength > MAX_CROP_CONFIGURE_OUTPUT_BYTES) {
+    throw new Error(
+      `Crop Configure produced an output larger than ${MAX_CROP_CONFIGURE_OUTPUT_BYTES / (1024 * 1024)} MiB.`,
+    );
+  }
+  await writeFile(stagedOutputPath, outputBytes);
   signal?.throwIfAborted();
 
   return {

@@ -1,7 +1,5 @@
-import { execFile } from 'node:child_process';
 import { copyFile, mkdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { PDFDocument } from 'pdf-lib';
 
@@ -13,9 +11,7 @@ import {
   validateAsciiScratchInput,
   validateAsciiScratchOutput,
 } from '../external_tools/external_tool_ascii_scratch.js';
-
-// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
-const execFileAsync = promisify(execFile);
+import { runExternalTool } from '../external_tools/run_external_tool.js';
 
 export interface EpsToPdfResult {
   pdfPath: string;
@@ -200,10 +196,11 @@ async function executeGhostscript(
   timeout: number,
   signal?: AbortSignal,
 ): Promise<void> {
-  await execFileAsync(executable, args, {
-    encoding: 'utf8',
-    maxBuffer: 10 * 1024 * 1024,
-    timeout,
-    signal,
+  await runExternalTool({
+    toolName: 'Ghostscript',
+    executable,
+    args,
+    timeoutMs: timeout,
+    ...(signal === undefined ? {} : { signal }),
   });
 }

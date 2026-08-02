@@ -124,9 +124,9 @@ PDF・画像として内容が妥当かを検証する生成物検証は各変�
 ## Safe ModeとUndo
 
 - Safe Modeの競合判断は論理出力に対して行う
-- `PreparedConversionOutput.stagedOutputPath`はworkspace内transaction stagingを指す
+- `PreparedConversionOutput.stagedOutputPath`は通常workspace内transaction stagingを指す。機密PDF qpdf処理だけは、`stagingWorkspacePath`で検証された専用OS一時rootを指す
 - 上書き前backupはworkspace内に置く
-- Undoには論理出力とworkspace内backupだけを記録する
+- Undoには論理出力と、`stagingWorkspacePath`を含む検証済みbackupだけを記録する
 - tool scratchとscratch内fileはUndo対象にしない
 - scratch cleanup失敗を理由に、反映済み論理出力をUndo以外の方法で戻さない
 

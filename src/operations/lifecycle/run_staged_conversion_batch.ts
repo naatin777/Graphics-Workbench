@@ -1,7 +1,11 @@
 import pLimit from 'p-limit';
 
 import { isAbortError } from '../../application/error_utils.js';
-import { stagingArtifactsForJobs, withStagingCleanup } from './cleanup_conversion_artifacts.js';
+import {
+  stagingArtifactsForJobs,
+  type ConversionArtifactRoot,
+  withStagingCleanup,
+} from './cleanup_conversion_artifacts.js';
 import {
   commitStagedOutputs,
   type CommitConversionOutputsOptions,
@@ -17,6 +21,7 @@ export interface StagedConversionBatch<Job extends { workspacePath: string }> {
   operationName: string;
   stagingOperationName?: string;
   runId: string;
+  artifactRoots?: readonly ConversionArtifactRoot[];
   runtime?: ConversionExecutionContext;
   stage: (
     job: Job,
@@ -31,11 +36,9 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
   options: StagedConversionBatch<Job>,
 ): Promise<CommittedConversionOutput[]> {
   const runtime = options.runtime ?? {};
-  const artifacts = stagingArtifactsForJobs(
-    options.jobs,
-    options.stagingOperationName ?? options.operationName,
-    options.runId,
-  );
+  const artifacts =
+    options.artifactRoots ??
+    stagingArtifactsForJobs(options.jobs, options.stagingOperationName ?? options.operationName, options.runId);
   const abortController = new AbortController();
   const abortFromCaller = (): void => {
     abortController.abort(options.runtime?.signal?.reason);

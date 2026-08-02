@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { OperationCancelledError } from '../../lifecycle/operation_cancelled_error.js';
+import { terminateProcessTree } from '../../external_tools/run_external_tool.js';
 
 type MermaidOutputFormat = 'svg' | 'png' | 'pdf';
 
@@ -41,12 +42,13 @@ export async function runMermaidCliWithSignal(
 
     const runnerPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'mermaid_runner.js');
     const child = fork(runnerPath, [], {
+      detached: process.platform !== 'win32',
       stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
     });
     let settled = false;
 
     const timer = setTimeout(() => {
-      child.kill('SIGKILL');
+      terminateProcessTree(child);
       finish(new Error(`Mermaid CLI timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
@@ -65,7 +67,7 @@ export async function runMermaidCliWithSignal(
     };
 
     const abort = (): void => {
-      child.kill('SIGKILL');
+      terminateProcessTree(child);
     };
     signal?.addEventListener('abort', abort, { once: true });
 

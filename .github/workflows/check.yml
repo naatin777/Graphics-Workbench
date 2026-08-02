@@ -6,11 +6,30 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pull-requests: read
+
 concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  validate-pr-description:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22.23.1"
+
+      - name: Require PR verification evidence
+        run: node .github/scripts/validate-pr-description.mjs
+        env:
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+
   check:
     runs-on: ubuntu-latest
     steps:

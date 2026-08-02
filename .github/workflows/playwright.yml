@@ -13,6 +13,9 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: read
+
 concurrency:
   group: playwright-${{ github.ref }}
   cancel-in-progress: true
@@ -280,17 +283,25 @@ jobs:
             echo 'no Linux screenshot files found'
             exit 0
           fi
-          node .github/scripts/render-screenshots-comment.mjs "${FILES[@]}" > /tmp/screenshots.md
-
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          SCREENSHOT_REF="ci-screenshots-${PR_NUMBER}-${GITHUB_RUN_ID}"
           rm -rf .ci-screenshots
           mkdir -p .ci-screenshots
           cp "${FILES[@]}" .ci-screenshots/
-          git checkout --orphan ci-screenshots
-          git add .ci-screenshots
-          git commit -m 'ci: update Linux Playwright screenshots'
-          git push --force origin ci-screenshots
+          TEMP_INDEX="$(mktemp)"
+          rm -f "${TEMP_INDEX}"
+          GIT_INDEX_FILE="${TEMP_INDEX}" git read-tree --empty
+          GIT_INDEX_FILE="${TEMP_INDEX}" git add --all .ci-screenshots
+          SCREENSHOT_TREE="$(GIT_INDEX_FILE="${TEMP_INDEX}" git write-tree)"
+          SCREENSHOT_SHA="$(printf 'ci: store Linux Playwright screenshots for PR %s run %s\n\n' "${PR_NUMBER}" "${GITHUB_RUN_ID}" | git commit-tree "${SCREENSHOT_TREE}")"
+          rm -f "${TEMP_INDEX}"
+          git push origin "${SCREENSHOT_SHA}:refs/heads/${SCREENSHOT_REF}"
+
+          GITHUB_SCREENSHOT_REF="${SCREENSHOT_SHA}" \
+            GITHUB_REPOSITORY="${REPOSITORY}" \
+            GITHUB_RUN_ID="${GITHUB_RUN_ID}" \
+            node .github/scripts/render-screenshots-comment.mjs "${FILES[@]}" > /tmp/screenshots.md
 
           COMMENT_BODY="$(cat /tmp/screenshots.md)"
           EXISTING_ID="$(gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --jq '.[] | select(.body | contains("<!-- playwright-screenshots -->")) | .id' | head -n 1)"

@@ -10,7 +10,7 @@
 // - 変換処理そのもの
 
 import assert from 'node:assert/strict';
-import { copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -61,6 +61,65 @@ suite('変換結果の反映処理', () => {
 
     assert.strictEqual(decisions.length, 1);
     assert.deepStrictEqual(new Set(decisions[0]), new Set(outputs.map((item) => item.outputPath)));
+  });
+
+  test('実体volumeのcase sensitivityを使って出力重複を判定する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-case-test-'));
+    const firstStagedPath = path.join(workspacePath, '.graphics-workbench', 'first.pdf');
+    const secondStagedPath = path.join(workspacePath, '.graphics-workbench', 'second.pdf');
+    const firstOutputPath = path.join(workspacePath, 'Figure.pdf');
+    const secondOutputPath = path.join(workspacePath, 'figure.pdf');
+
+    try {
+      await writeFixture(firstStagedPath, 'first');
+      await writeFixture(secondStagedPath, 'second');
+      const probePath = path.join(workspacePath, `.case-probe-${crypto.randomUUID()}`);
+      await writeFile(probePath, '');
+      let caseInsensitive = false;
+      try {
+        await access(probePath.toUpperCase());
+        caseInsensitive = true;
+      } catch {
+        caseInsensitive = false;
+      }
+      await rm(probePath, { force: true });
+
+      const outputs = [
+        { stagedOutputPath: firstStagedPath, outputPath: firstOutputPath, workspacePath },
+        { stagedOutputPath: secondStagedPath, outputPath: secondOutputPath, workspacePath },
+      ];
+
+      if (caseInsensitive) {
+        await assert.rejects(commitStagedOutputs(outputs), /same output/);
+      } else {
+        const committed = await commitStagedOutputs(outputs);
+        assert.strictEqual(committed.length, 2);
+      }
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
+  test('Unicode NFC正規化後に同じ出力となるpathを重複として扱う', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-unicode-test-'));
+    const firstStagedPath = path.join(workspacePath, '.graphics-workbench', 'first.pdf');
+    const secondStagedPath = path.join(workspacePath, '.graphics-workbench', 'second.pdf');
+    const firstOutputPath = path.join(workspacePath, 'Cafe\u0301.pdf');
+    const secondOutputPath = path.join(workspacePath, 'Café.pdf');
+
+    try {
+      await writeFixture(firstStagedPath, 'first');
+      await writeFixture(secondStagedPath, 'second');
+      await assert.rejects(
+        commitStagedOutputs([
+          { stagedOutputPath: firstStagedPath, outputPath: firstOutputPath, workspacePath },
+          { stagedOutputPath: secondStagedPath, outputPath: secondOutputPath, workspacePath },
+        ]),
+        /same output/,
+      );
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
   });
 
   test('上書きしない判断の場合はどの出力も反映しない', async () => {

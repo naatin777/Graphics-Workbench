@@ -1,7 +1,5 @@
-import { execFile } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import {
   isEditableDrawioImagePath,
@@ -35,9 +33,6 @@ import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import sharp from 'sharp';
-
-// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
-const execFileAsync = promisify(execFile);
 
 type RasterEncoder = (
   sourcePath: string,
@@ -312,9 +307,10 @@ async function writePdfPageAsRaster(request: RasterRenderRequest, context: Raste
       }
 
       const outputPrefix = toolOutputPath.slice(0, -path.extname(toolOutputPath).length);
-      await execFileAsync(
-        context.pdftocairoTools.pdftocairoPath,
-        [
+      await runExternalTool({
+        toolName: 'pdftocairo',
+        executable: context.pdftocairoTools.pdftocairoPath,
+        args: [
           '-png',
           '-singlefile',
           '-f',
@@ -324,12 +320,9 @@ async function writePdfPageAsRaster(request: RasterRenderRequest, context: Raste
           toolSourcePath,
           outputPrefix,
         ],
-        {
-          encoding: 'utf8',
-          maxBuffer: 10 * 1024 * 1024,
-          signal: context.runtime.signal,
-        },
-      );
+        ...(context.runtime.signal === undefined ? {} : { signal: context.runtime.signal }),
+        ...(context.runtime.outputChannel === undefined ? {} : { outputChannel: context.runtime.outputChannel }),
+      });
     },
   });
 

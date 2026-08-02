@@ -26,6 +26,7 @@ Safe Modeの利用者向け状態、選択肢、出力結果は、[product speci
 - Undo成功後は、そのrecordのbackupを含むartifactを削除する。cleanup failureはconversionやUndoの成功を取り消さない。
 - extension activationでは`.graphics-workbench/`全体を削除せず、別windowのactive staging、Undo backup、未知directory、harness logを保護する。
 - Windows外部toolの診断用ASCII scratchは通常のoperation artifactと別管理する。
+- 暗号化・復号の機密PDF stagingはOS一時directoryの専用rootで管理し、Undoが参照するrootだけをmanifest付きで保持する。
 
 ## Undo integration
 

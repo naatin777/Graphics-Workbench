@@ -168,7 +168,12 @@ export class UndoHistoryManager {
           createdAt: record.createdAt,
           roots: record.outputs.flatMap((output) =>
             output.stagingRootPath !== undefined && output.stagingRootPath !== ''
-              ? [{ workspacePath: output.workspacePath, rootPath: output.stagingRootPath }]
+              ? [
+                  {
+                    workspacePath: output.stagingWorkspacePath ?? output.workspacePath,
+                    rootPath: output.stagingRootPath,
+                  },
+                ]
               : [],
           ),
         })),
@@ -225,7 +230,7 @@ function toArtifactRoots(outputs: readonly ConversionOutput[], preserveBackups =
       ? [
           {
             rootPath: output.stagingRootPath,
-            workspacePath: output.workspacePath,
+            workspacePath: output.stagingWorkspacePath ?? output.workspacePath,
             ...(preserveBackups && output.previousFilePath !== undefined
               ? { preservePaths: [output.previousFilePath] }
               : {}),
