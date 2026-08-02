@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { statSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-import { type ElectronApplication, type Page } from '@playwright/test';
+import { type ElectronApplication, type JSHandle, type Page, type TestInfo } from '@playwright/test';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 
 import { cropConfigureFixture } from '../../../helpers/crop_configure_fixture.js';
@@ -18,6 +18,7 @@ import { installPackagedVsix } from './packaged_vsix.js';
 
 const vscodeVersion = '1.128.0';
 const temporaryBase = tmpdir();
+const defaultElectronContentSize = { width: 1280, height: 900 };
 
 export interface ElectronTestEnv {
   app: {
@@ -51,6 +52,11 @@ export interface ElectronTestOptions {
   extraSettings?: Record<string, unknown>;
   copyFixtures?: boolean;
   prepared?: PreparedElectronTest;
+  viewportWidth?: number;
+}
+
+interface NativeElectronWindow {
+  setContentSize: (width: number, height: number) => void;
 }
 
 export async function prepareElectronTest(packagedVsixPath: string): Promise<PreparedElectronTest> {
@@ -98,6 +104,11 @@ export function resolvePackagedVsixPath(): string {
   return value;
 }
 
+export function getElectronViewportWidth(testInfo: TestInfo): number {
+  const value = testInfo.project.metadata?.electronViewportWidth;
+  return typeof value === 'number' && value > 0 ? value : defaultElectronContentSize.width;
+}
+
 export async function setupElectronTest(
   electron: {
     launch: (options: { executablePath: string; cwd: string; args: string[] }) => Promise<ElectronApplication>;
@@ -109,6 +120,10 @@ export async function setupElectronTest(
   const extraSettings = options.extraSettings ?? {};
   const copyFixtures = options.copyFixtures ?? true;
   const prepared = options.prepared;
+  const contentSize = {
+    width: options.viewportWidth ?? defaultElectronContentSize.width,
+    height: defaultElectronContentSize.height,
+  };
 
   const temporaryRoot = await mkdtemp(join(temporaryBase, 'gw-'));
   const workspacePath = testWorkspaceDirectory;
@@ -182,7 +197,12 @@ export async function setupElectronTest(
   });
 
   const window = await electronApp.firstWindow();
-  await window.setViewportSize({ width: 1280, height: 900 });
+  // Page viewport emulation does not resize the native window, which leaves a black strip on macOS.
+  const browserWindow: JSHandle<NativeElectronWindow> = await electronApp.browserWindow(window);
+  await browserWindow.evaluate((nativeWindow, size) => {
+    nativeWindow.setContentSize(size.width, size.height);
+  }, contentSize);
+  await window.setViewportSize(contentSize);
 
   return {
     app: { electronApp, window, extensionPath },

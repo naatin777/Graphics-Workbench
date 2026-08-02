@@ -126,7 +126,7 @@ button {
 
 .source-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -299,8 +299,27 @@ body.vscode-high-contrast-light .thumbnail {
 }
 
 @media (max-width: 900px) {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    overflow: auto;
+  }
+
+  .app {
+    height: auto;
+  }
+
   .split-pane {
+    height: auto;
     flex-direction: column;
+  }
+
+  .split-pane__left {
+    flex: 0 0 auto;
   }
 
   .split-pane__divider {

@@ -1,7 +1,7 @@
 import { cp } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type TestInfo } from '@playwright/test';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
 import { operationPdfInputDirectory } from '../../helpers/fixture_paths.js';
@@ -14,6 +14,7 @@ import {
   resolvePackagedVsixPath,
   setupElectronTest,
   disposePreparedElectronTest,
+  getElectronViewportWidth,
 } from './helpers/electron_test_env.js';
 import { captureMergePdfScreenshot, openMergePdfConfigure } from './helpers/merge_pdf_webview.js';
 import {
@@ -74,12 +75,12 @@ test.afterEach(async () => {
   await resetTestWorkspace();
 });
 
-function preparedOptions(): { prepared: PreparedElectronTest } {
+function preparedOptions(testInfo: TestInfo): { prepared: PreparedElectronTest; viewportWidth: number } {
   if (!preparedElectronTest) {
     throw new Error('Packaged Electron test environment was not prepared.');
   }
 
-  return { prepared: preparedElectronTest };
+  return { prepared: preparedElectronTest, viewportWidth: getElectronViewportWidth(testInfo) };
 }
 
 async function addSecondPdf(workspacePath: string): Promise<void> {
@@ -93,7 +94,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -164,7 +165,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
     for (const theme of additionalThemes) {
       await resetTestWorkspace();
       env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-        ...preparedOptions(),
+        ...preparedOptions(testInfo),
         colorTheme: theme.colorTheme,
       });
       env.app.electronApp.on('console', (message) => {

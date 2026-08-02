@@ -161,7 +161,7 @@ jobs:
           esac
           find test/playwright/electron -type f \
             -path '*/__snapshots__/*' \
-            -name "*-vscode-electron-${suffix}.png" \
+            -name "*-vscode-electron*-${suffix}.png" \
             -delete
 
       - name: Install VSIX and run Electron Playwright

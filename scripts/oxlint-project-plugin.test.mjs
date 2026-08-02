@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { findCandidateGroups, splitIdentifierIntoTokens } from './oxlint-project-plugin.mjs';
+import { findCandidateGroups, isFixedE2EWaitCall, splitIdentifierIntoTokens } from './oxlint-project-plugin.mjs';
 
 function property(name) {
   return {
@@ -30,4 +30,29 @@ void test('does not report generic transport tokens as nesting candidates', () =
   const candidates = findCandidateGroups([property('onReady'), property('onApply'), property('payload')]);
 
   assert.deepStrictEqual(candidates, []);
+});
+
+void test('identifies fixed Playwright waits', () => {
+  assert.equal(
+    isFixedE2EWaitCall({
+      callee: {
+        computed: false,
+        property: { name: 'waitForTimeout', type: 'Identifier' },
+        type: 'MemberExpression',
+      },
+      type: 'CallExpression',
+    }),
+    true,
+  );
+  assert.equal(
+    isFixedE2EWaitCall({
+      callee: {
+        computed: false,
+        property: { name: 'waitFor', type: 'Identifier' },
+        type: 'MemberExpression',
+      },
+      type: 'CallExpression',
+    }),
+    false,
+  );
 });

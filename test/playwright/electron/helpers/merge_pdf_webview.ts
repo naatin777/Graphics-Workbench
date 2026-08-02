@@ -1,7 +1,11 @@
 import { expect, type Frame, type Locator, type Page } from '@playwright/test';
 
-import { selectExplorerEntry } from './crop_pdf_webview.js';
-import { settleWebviewPaint, waitForWebviewFontsReady } from './crop_pdf_screenshot.js';
+import {
+  expectWebviewHasNoHorizontalOverflow,
+  expectWebviewPanesNotOverlapping,
+  selectExplorerEntry,
+} from './crop_pdf_webview.js';
+import { settleWebviewPaint, waitForWebviewFontsReady, waitForWebviewLayoutToSettle } from './crop_pdf_screenshot.js';
 
 export interface MergePdfWebview {
   body: Locator;
@@ -79,6 +83,9 @@ export async function openMergePdfConfigure(vscodeWindow: Page, fileNames: strin
     throw new Error('Merge PDF Configure webview was not found after it was created.');
   }
 
+  await expectWebviewHasNoHorizontalOverflow(webviewFrame);
+  await expectWebviewPanesNotOverlapping(webviewFrame);
+
   return {
     body: webviewFrame.locator('body'),
     canvases: webviewFrame.locator('canvas.thumbnail__canvas'),
@@ -100,6 +107,7 @@ export async function captureMergePdfScreenshot(page: Page, body: Locator): Prom
   });
   await waitForWebviewFontsReady(body);
   await settleWebviewPaint(page);
+  await waitForWebviewLayoutToSettle(body);
   const bodyBounds = await body.boundingBox();
 
   if (!bodyBounds) {

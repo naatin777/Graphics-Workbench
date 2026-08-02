@@ -53,8 +53,8 @@ capabilityごとにEvidenceの強さとgapを記録します。
 
 ## Runner scope
 
-| Runner                               | Files | Cases | Config                                            |
-| ------------------------------------ | ----- | ----- | ------------------------------------------------- |
-| VS Code Extension Host (Mocha)       | 69    | 377   | `.vscode-test.mjs` — VS Code 1.128.0              |
-| Vitest (JSDOM)                       | 3     | 4     | webview app vitest configs                        |
-| Playwright Electron (installed VSIX) | 1     | 8     | `playwright.config.mjs` — vscode-electron project |
+| Runner                               | Files | Cases | Config                                                                                           |
+| ------------------------------------ | ----- | ----- | ------------------------------------------------------------------------------------------------ |
+| VS Code Extension Host (Mocha)       | 69    | 377   | `.vscode-test.mjs` — VS Code 1.128.0                                                             |
+| Vitest (JSDOM)                       | 3     | 4     | webview app vitest configs                                                                       |
+| Playwright Electron (installed VSIX) | 3     | 26    | `playwright.config.mjs` — vscode-electron / vscode-electron-narrow projects; 13 cases × 2 widths |

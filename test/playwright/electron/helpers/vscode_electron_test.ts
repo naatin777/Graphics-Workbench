@@ -11,7 +11,8 @@ const execFileAsync = promisify(execFile);
 const WINDOWS_REMOVE_TIMEOUT_MS = 10_000;
 const WINDOWS_KILL_TIMEOUT_MS = 10_000;
 const DISPOSE_HARD_TIMEOUT_MS = 15_000;
-const PROCESS_TERMINATE_GRACE_MS = 3_000;
+const PROCESS_KILL_SETTLE_MS = 250;
+const UNIX_PROCESS_LIST_TIMEOUT_MS = 5_000;
 
 interface ElectronTestPaths {
   extensionsDir: string;
@@ -235,10 +236,6 @@ async function readLogFiles(directory: string): Promise<string[]> {
 }
 
 async function terminateElectronProcess(electronProcess: ReturnType<ElectronApplication['process']>): Promise<void> {
-  if (electronProcess.exitCode !== null || electronProcess.signalCode !== null) {
-    return;
-  }
-
   const pid = electronProcess.pid;
 
   if (pid === undefined) {
@@ -256,22 +253,12 @@ async function terminateElectronProcess(electronProcess: ReturnType<ElectronAppl
     return;
   }
 
-  // Escalate SIGTERM to SIGKILL so a hung app can never block the runner.
-  try {
-    process.kill(pid, 'SIGTERM');
-  } catch {
-    return;
-  }
-
-  await waitForProcessExit(electronProcess, PROCESS_TERMINATE_GRACE_MS);
-
-  if (electronProcess.exitCode === null && electronProcess.signalCode === null) {
-    try {
-      process.kill(pid, 'SIGKILL');
-    } catch {
-      // The process exited between the check and the kill.
-    }
-  }
+  // A graceful VS Code quit can open native save/quit prompts unrelated to the product.
+  // Test data is disposable, so kill the complete process tree directly.
+  const descendantPids = await findDescendantPids(pid);
+  signalProcess(pid, 'SIGKILL');
+  signalProcessTree(descendantPids, 'SIGKILL');
+  await waitForProcessTreeExit([pid, ...descendantPids], PROCESS_KILL_SETTLE_MS);
 }
 
 async function forceKillProcessTree(pid: number): Promise<void> {
@@ -286,29 +273,84 @@ async function forceKillProcessTree(pid: number): Promise<void> {
     return;
   }
 
-  try {
-    process.kill(pid, 'SIGKILL');
-  } catch {
-    // The process already exited.
+  const descendantPids = await findDescendantPids(pid);
+  signalProcess(pid, 'SIGKILL');
+  signalProcessTree(descendantPids, 'SIGKILL');
+}
+
+async function findDescendantPids(rootPid: number): Promise<number[]> {
+  const processTable = await execFileAsync('ps', ['-axo', 'pid=,ppid='], {
+    timeout: UNIX_PROCESS_LIST_TIMEOUT_MS,
+  }).catch(() => ({ stdout: '' }));
+  const childrenByParent = new Map<number, number[]>();
+
+  for (const line of processTable.stdout.split('\n')) {
+    const [pidText, parentPidText] = line.trim().split(/\s+/u);
+    const pid = Number(pidText);
+    const parentPid = Number(parentPidText);
+
+    if (!Number.isInteger(pid) || !Number.isInteger(parentPid) || pid <= 0 || parentPid < 0) {
+      continue;
+    }
+
+    const children = childrenByParent.get(parentPid) ?? [];
+    children.push(pid);
+    childrenByParent.set(parentPid, children);
+  }
+
+  const descendants: number[] = [];
+  const pending = [rootPid];
+  const visited = new Set<number>(pending);
+
+  while (pending.length > 0) {
+    const parentPid = pending.shift();
+    if (parentPid === undefined) {
+      break;
+    }
+
+    for (const childPid of childrenByParent.get(parentPid) ?? []) {
+      if (visited.has(childPid)) {
+        continue;
+      }
+
+      visited.add(childPid);
+      descendants.push(childPid);
+      pending.push(childPid);
+    }
+  }
+
+  return descendants.toReversed();
+}
+
+function signalProcessTree(pids: number[], signal: NodeJS.Signals): void {
+  for (const pid of pids) {
+    signalProcess(pid, signal);
   }
 }
 
-async function waitForProcessExit(
-  electronProcess: ReturnType<ElectronApplication['process']>,
-  milliseconds: number,
-): Promise<void> {
-  if (electronProcess.exitCode !== null || electronProcess.signalCode !== null) {
-    return;
+function signalProcess(pid: number, signal: NodeJS.Signals): void {
+  try {
+    process.kill(pid, signal);
+  } catch {
+    // The process exited between process discovery and signaling.
   }
+}
 
-  await Promise.race([
-    new Promise<void>((resolve) => {
-      electronProcess.once('exit', () => {
-        resolve();
-      });
-    }),
-    timeout(milliseconds),
-  ]);
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function waitForProcessTreeExit(pids: number[], milliseconds: number): Promise<void> {
+  const deadline = Date.now() + milliseconds;
+
+  while (pids.some(isProcessAlive) && Date.now() < deadline) {
+    await timeout(100);
+  }
 }
 
 function timeout(milliseconds: number): Promise<void> {

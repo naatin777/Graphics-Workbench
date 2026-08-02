@@ -17,6 +17,7 @@ import {
   resolvePackagedVsixPath,
   setupElectronTest,
   disposePreparedElectronTest,
+  getElectronViewportWidth,
 } from './helpers/electron_test_env.js';
 import { captureSplitPdfScreenshot, openSplitPdfConfigure } from './helpers/split_pdf_webview.js';
 
@@ -71,12 +72,12 @@ test.afterEach(async () => {
   await resetTestWorkspace();
 });
 
-function preparedOptions(): { prepared: PreparedElectronTest } {
+function preparedOptions(testInfo: TestInfo): { prepared: PreparedElectronTest; viewportWidth: number } {
   if (!preparedElectronTest) {
     throw new Error('Packaged Electron test environment was not prepared.');
   }
 
-  return { prepared: preparedElectronTest };
+  return { prepared: preparedElectronTest, viewportWidth: getElectronViewportWidth(testInfo) };
 }
 
 async function attachDiagnostics(
@@ -104,7 +105,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -159,7 +160,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
 
   try {
     env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-      ...preparedOptions(),
+      ...preparedOptions(testInfo),
       colorTheme: additionalThemes[0]?.colorTheme ?? 'Default High Contrast',
     });
     env.app.electronApp.on('console', (message) => {
@@ -196,13 +197,13 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
   }
 });
 
-test('分割ペインをドラッグで幅を調整できる', async ({ playwright }, testInfo) => {
+test('分割ペインが幅に応じて配置され長幅でドラッグ調整できる', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -211,6 +212,20 @@ test('分割ペインをドラッグで幅を調整できる', async ({ playwrig
     await expect(preview).toBeVisible();
 
     const divider = frame.locator('.split-pane__divider');
+
+    if (getElectronViewportWidth(testInfo) <= 900) {
+      await expect
+        .poll(async () => {
+          const style = await frame
+            .locator('.split-pane')
+            .evaluate((element) => element.ownerDocument.defaultView?.getComputedStyle(element));
+          return style?.flexDirection === 'column';
+        })
+        .toBe(true);
+      await expect(divider).toBeHidden();
+      return;
+    }
+
     await expect(divider).toBeVisible();
     const dividerBox = await divider.boundingBox();
 
@@ -233,53 +248,6 @@ test('分割ペインをドラッグで幅を調整できる', async ({ playwrig
 
     const afterWidth = await preview.evaluate((element) => element.getBoundingClientRect().width);
     expect(afterWidth).toBeLessThan(beforeWidth);
-  } catch (error) {
-    await attachDiagnostics(testInfo, env, error, consoleMessages);
-    throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
-  }
-});
-
-test('横幅が短いと縦に折り返して分割線を隠す', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(120_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
-
-  try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
-
-    const { frame } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
-    const splitPane = frame.locator('.split-pane');
-    const divider = frame.locator('.split-pane__divider');
-    await expect(splitPane).toBeVisible();
-
-    await env.app.window.setViewportSize({ width: 600, height: 900 });
-    await expect
-      .poll(async () => {
-        const style = await splitPane.evaluate((element) =>
-          element.ownerDocument.defaultView?.getComputedStyle(element),
-        );
-        return style?.flexDirection === 'column';
-      })
-      .toBe(true);
-    await expect(divider).toBeHidden();
-
-    await env.app.window.setViewportSize({ width: 1280, height: 900 });
-    await expect
-      .poll(async () => {
-        const style = await splitPane.evaluate((element) =>
-          element.ownerDocument.defaultView?.getComputedStyle(element),
-        );
-        return style?.flexDirection === 'row';
-      })
-      .toBe(true);
-    await expect(divider).toBeVisible();
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));

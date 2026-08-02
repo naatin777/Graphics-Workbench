@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type TestInfo } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
@@ -31,6 +31,7 @@ import {
   prepareElectronTest,
   resolvePackagedVsixPath,
   setupElectronTest,
+  getElectronViewportWidth,
   type ElectronTestEnv,
   type PreparedElectronTest,
 } from './helpers/electron_test_env.js';
@@ -111,12 +112,12 @@ test.afterEach(async () => {
   await resetTestWorkspace();
 });
 
-function preparedOptions(): { prepared: PreparedElectronTest } {
+function preparedOptions(testInfo: TestInfo): { prepared: PreparedElectronTest; viewportWidth: number } {
   if (!preparedElectronTest) {
     throw new Error('Packaged Electron test environment was not prepared.');
   }
 
-  return { prepared: preparedElectronTest };
+  return { prepared: preparedElectronTest, viewportWidth: getElectronViewportWidth(testInfo) };
 }
 
 test('インストール済みVSIXからextensionをactivateできる', async ({ playwright }, testInfo) => {
@@ -124,7 +125,7 @@ test('インストール済みVSIXからextensionをactivateできる', async ({
   let env: ElectronTestEnv | undefined;
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
 
     await expect(env.app.window.getByText('Safe Mode: ON', { exact: true })).toBeVisible();
     await expect(env.app.window.getByRole('tree', { name: 'Files Explorer' })).toBeVisible();
@@ -154,7 +155,7 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -257,7 +258,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -325,7 +326,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
 
   try {
     env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-      ...preparedOptions(),
+      ...preparedOptions(testInfo),
       colorTheme: additionalThemes[0]?.colorTheme ?? 'Default High Contrast',
     });
     env.app.electronApp.on('console', (message) => {
@@ -372,13 +373,13 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
   }
 });
 
-test('package済みmoduleでMergeが動く', async ({ playwright }, testInfo) => {
+test('package済みmoduleでMergeとSplitが動く', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -404,36 +405,6 @@ test('package済みmoduleでMergeが動く', async ({ playwright }, testInfo) =>
     const mergedDocument = await PDFDocument.load(await readFile(mergedOutputPath));
     expect(mergedDocument.getPageCount()).toBe(4);
     expect(await readFile(env.files.inputPath)).toEqual(env.files.sourceFixtureBytes);
-  } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages,
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
-    throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
-  }
-});
-
-test('package済みmoduleでSplitが動く', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(120_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
-
-  try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
 
     const splitOutputDirectory = join(env.directories.workspacePath, 'packaged-split');
 
@@ -485,7 +456,7 @@ test('native Sharp dependencyをloadしてPNG→JPEG変換できる', async ({ p
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -528,7 +499,7 @@ test('外部networkが遮断されている', async ({ playwright }, testInfo) =
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -564,7 +535,7 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
 
   try {
     env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-      ...preparedOptions(),
+      ...preparedOptions(testInfo),
       extraSettings: {
         'graphics-workbench.execPath.pdftocairo': missingToolPath,
       },

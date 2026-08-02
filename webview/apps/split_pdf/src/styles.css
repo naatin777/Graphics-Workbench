@@ -204,7 +204,7 @@ input:focus-visible {
   gap: 16px;
   align-content: start;
   justify-items: center;
-  min-width: min-content;
+  min-width: 0;
   min-height: 100%;
   padding: 16px;
 }
@@ -447,7 +447,12 @@ body.vscode-high-contrast-light .pdf-page {
   }
 
   .split-pane {
+    height: auto;
     flex-direction: column;
+  }
+
+  .split-pane__left {
+    flex: 0 0 auto;
   }
 
   .split-pane__divider {

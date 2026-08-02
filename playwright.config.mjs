@@ -24,6 +24,12 @@ export default defineConfig({
     {
       name: 'vscode-electron',
       testMatch: '**/electron/**/*.spec.ts',
+      metadata: { electronViewportWidth: 1280 },
+    },
+    {
+      name: 'vscode-electron-narrow',
+      testMatch: '**/electron/**/*.spec.ts',
+      metadata: { electronViewportWidth: 600 },
     },
   ],
   use: {

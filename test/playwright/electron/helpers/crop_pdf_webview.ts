@@ -60,6 +60,9 @@ export async function openCropPdfConfigure(vscodeWindow: Page, fileName: string)
     throw new Error('Crop PDF Configure webview was not found after it was created.');
   }
 
+  await expectWebviewHasNoHorizontalOverflow(webviewFrame);
+  await expectWebviewPanesNotOverlapping(webviewFrame);
+
   return {
     body: webviewFrame.locator('body'),
     canvases: webviewFrame.locator('canvas[data-pdf-page]'),
@@ -125,7 +128,69 @@ export async function selectExplorerEntry(entry: Locator): Promise<void> {
     .toBe(true);
 }
 
+export async function expectWebviewHasNoHorizontalOverflow(frame: Frame): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const [root, body] = await Promise.all(
+          [frame.locator('html'), frame.locator('body')].map(async (locator) =>
+            locator.evaluate((element) => ({
+              clientWidth: Reflect.get(element, 'clientWidth'),
+              scrollWidth: Reflect.get(element, 'scrollWidth'),
+            })),
+          ),
+        );
+        if (!root || !body) {
+          return false;
+        }
+
+        const rootClientWidth = typeof root.clientWidth === 'number' ? root.clientWidth : 0;
+        const rootScrollWidth = typeof root.scrollWidth === 'number' ? root.scrollWidth : 0;
+        const bodyScrollWidth = typeof body.scrollWidth === 'number' ? body.scrollWidth : 0;
+        return rootClientWidth > 0 && Math.max(rootScrollWidth, bodyScrollWidth) <= rootClientWidth + 1;
+      },
+      { message: 'Webview content must not overflow horizontally.' },
+    )
+    .toBe(true);
+}
+
+export async function expectWebviewPanesNotOverlapping(frame: Frame): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        frame.locator('.split-pane > *').evaluateAll((elements) => {
+          const rectangles = elements
+            .map((element) => {
+              const bounds = element.getBoundingClientRect();
+              return {
+                bottom: bounds.bottom,
+                height: bounds.height,
+                left: bounds.left,
+                right: bounds.right,
+                top: bounds.top,
+                width: bounds.width,
+              };
+            })
+            .filter((bounds) => bounds.width > 0 && bounds.height > 0);
+
+          return rectangles.every((current, index) =>
+            rectangles.slice(index + 1).every((other) => {
+              const horizontalOverlap = current.left < other.right - 1 && current.right > other.left + 1;
+              const verticalOverlap = current.top < other.bottom - 1 && current.bottom > other.top + 1;
+              return !(horizontalOverlap && verticalOverlap);
+            }),
+          );
+        }),
+      { message: 'Webview split panes must not overlap.' },
+    )
+    .toBe(true);
+}
+
 export async function expectPdfCanvasesReadable(canvases: Locator, message?: string): Promise<void> {
+  await expect
+    .poll(() => canvases.count(), { message: 'PDF preview must create at least one canvas.' })
+    .toBeGreaterThan(0);
+
   await expect
     .poll(
       async () => {
