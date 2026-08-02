@@ -18,36 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  classify:
-    name: Classify CI scope
-    runs-on: ubuntu-latest
-    outputs:
-      scope: ${{ steps.classify.outputs.scope }}
-      run_playwright: ${{ steps.classify.outputs.run_playwright }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - if: github.event_name == 'pull_request'
-        name: Fetch base ref for diff
-        run: git fetch origin "${{ github.event.pull_request.base.ref }}"
-        shell: bash
-
-      - id: classify
-        name: Classify changed files
-        run: node .github/scripts/classify-ci-scope.mjs
-        shell: bash
-        env:
-          CI_EVENT_NAME: ${{ github.event_name }}
-          CI_BASE_REF: ${{ github.event.pull_request.base.ref }}
-          CI_BEFORE_SHA: ${{ github.event.before }}
-
   playwright:
-    name: Packaged Electron Playwright (${{ matrix.label }})
+    name: Playwright E2E (packaged VSIX, ${{ matrix.label }})
     runs-on: ${{ matrix.os }}
-    needs: classify
-    if: needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
     strategy:
       fail-fast: false
       matrix:
@@ -164,14 +137,14 @@ jobs:
             -name '*-linux.png' \
             -delete
 
-      - name: Install VSIX and run Electron Playwright
+      - name: Run Playwright against packaged VSIX
         if: matrix.snapshot_enabled != true || steps.snapshot_flag.outputs.update_snapshots != 'true'
         run: ${{ matrix.test_command }}
         shell: bash
         env:
           PLAYWRIGHT_VISUAL_SNAPSHOTS: ${{ matrix.visual_snapshots }}
 
-      - name: Install VSIX and run Electron Playwright (update snapshots)
+      - name: Run Playwright against packaged VSIX (update snapshots)
         if: matrix.snapshot_enabled == true && steps.snapshot_flag.outputs.update_snapshots == 'true'
         run: ${{ matrix.test_command }} -- --update-snapshots
         shell: bash
@@ -210,10 +183,8 @@ jobs:
 
   commit-snapshots:
     name: Commit regenerated Linux snapshots
-    if: github.event_name == 'pull_request' && needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
-    needs:
-      - classify
-      - playwright
+    if: github.event_name == 'pull_request'
+    needs: playwright
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -280,10 +251,8 @@ jobs:
 
   comment-screenshots:
     name: Comment Linux screenshots on PR
-    if: github.event_name == 'pull_request' && needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
-    needs:
-      - classify
-      - playwright
+    if: github.event_name == 'pull_request'
+    needs: playwright
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -361,8 +361,7 @@ PDF → JPEG smokeに必要なのはpdftocairoである。既存install script�
 
 - Linux: full UI / responsive suite（wide+narrow pixel comparison）を実行する。wide packaged conversion smokeもこのfull suiteに含む
 - macOS / Windows: wideのpackaged conversion smokeを実行する
-- `run_playwright` classifierは当初booleanのままでもよい。OS別commandをmatrixで変えれば責務分離できる
-- unknown fileは現在どおり安全側へ倒す
+- changed-fileによるCI scope classifierは廃止し、PR / main pushでは定義済みのTest・Playwright jobを常時実行する。変更漏れによる誤skipを避け、workflowを単純化する
 - macOS / Windowsからsnapshot updateを外す
 - screenshot artifact / PR commentはLinux snapshotを正本として扱う
 - failure時のPlaywright report、trace、actual image、diagnostic、Extension Host log uploadは維持する
@@ -606,7 +605,7 @@ smokeを1 specへ集めるとVSIX install回数を減らせる。一方、1つ�
 
 1. `PROJECT_STATE.md`、このtask、test policy、packaging仕様、CI Evidence mapを読む
 2. `npx playwright test --list --project=vscode-electron --project=vscode-electron-narrow`でLinux 33 cases（wide 18 + narrow 15）を確認する
-3. PR workflowのLinuxが33 cases、macOS / Windowsが各3 smoke casesになることをworkflow commandとlist結果で確認する
+3. PR workflowのLinuxが33 cases、macOS / Windowsが各3 smoke casesになることをworkflow commandとlist結果で確認する。CI scope classifier jobが存在しないことも確認する
 4. release workflowの3 OSが各33 casesを実行し、各OSのscreenshot artifactを保存することを確認する
 5. Linux wide 18枚 + narrow 18枚のbaselineを目視確認し、PRのsnapshot update対象がLinuxだけであることを確認する
 6. Dockerを`linux/amd64`と`linux/arm64`でbuildし、全33 Linux casesとsnapshot copy-backを実行する（daemonが使えない場合は未検証として記録する）
@@ -619,8 +618,6 @@ smokeを1 specへ集めるとVSIX install回数を減らせる。一方、1つ�
 
 - `.github/workflows/playwright.yml`
 - `.github/workflows/release.yml`
-- `.github/scripts/classify-ci-scope.mjs`
-- `.github/scripts/classify-ci-scope.test.mjs`
 - `.github/scripts/install-test-tools-linux.sh`
 - `.github/scripts/install-image-tools-macos.sh`
 - `.github/scripts/install-image-tools-windows.ps1`

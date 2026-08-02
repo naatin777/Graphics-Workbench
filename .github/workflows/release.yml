@@ -256,7 +256,7 @@ jobs:
               run: cp "graphics-workbench-${{ matrix.label }}.vsix" graphics-workbench.vsix
               shell: bash
 
-            - name: Install VSIX and run Electron Playwright
+            - name: Run Playwright against packaged VSIX
               run: ${{ matrix.test_command }}
               shell: bash
               env:
