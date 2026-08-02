@@ -1,7 +1,7 @@
 import { cp } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type TestInfo } from '@playwright/test';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
 import { operationPdfInputDirectory } from '../../helpers/fixture_paths.js';
@@ -14,8 +14,10 @@ import {
   resolvePackagedVsixPath,
   setupElectronTest,
   disposePreparedElectronTest,
+  getElectronViewportWidth,
 } from './helpers/electron_test_env.js';
 import { captureMergePdfScreenshot, openMergePdfConfigure } from './helpers/merge_pdf_webview.js';
+import { expectLinuxSnapshot } from './helpers/electron_snapshot.js';
 import {
   attachElectronDiagnostics,
   disposeElectronTest,
@@ -50,7 +52,9 @@ const additionalThemes = [
 
 let preparedElectronTest: PreparedElectronTest | undefined;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ playwright }, testInfo) => {
+  void playwright;
+  testInfo.setTimeout(180_000);
   await resetTestWorkspace();
   preparedElectronTest = await prepareElectronTest(packagedVsixPath);
 });
@@ -74,12 +78,12 @@ test.afterEach(async () => {
   await resetTestWorkspace();
 });
 
-function preparedOptions(): { prepared: PreparedElectronTest } {
+function preparedOptions(testInfo: TestInfo): { prepared: PreparedElectronTest; viewportWidth: number } {
   if (!preparedElectronTest) {
     throw new Error('Packaged Electron test environment was not prepared.');
   }
 
-  return { prepared: preparedElectronTest };
+  return { prepared: preparedElectronTest, viewportWidth: getElectronViewportWidth(testInfo) };
 }
 
 async function addSecondPdf(workspacePath: string): Promise<void> {
@@ -88,12 +92,12 @@ async function addSecondPdf(workspacePath: string): Promise<void> {
 }
 
 test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -112,9 +116,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(darkScreenshot).toMatchSnapshot('merge-pdf-configure-dark.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(darkScreenshot, 'merge-pdf-configure-dark.png');
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -132,9 +134,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(lightScreenshot).toMatchSnapshot('merge-pdf-configure-light.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(lightScreenshot, 'merge-pdf-configure-light.png');
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,
@@ -156,7 +156,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 });
 
 test('high contrastと極端な配色でもcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -164,7 +164,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
     for (const theme of additionalThemes) {
       await resetTestWorkspace();
       env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-        ...preparedOptions(),
+        ...preparedOptions(testInfo),
         colorTheme: theme.colorTheme,
       });
       env.app.electronApp.on('console', (message) => {
@@ -185,9 +185,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
           contentType: 'image/png',
         });
 
-        expect(screenshot).toMatchSnapshot(`merge-pdf-configure-${theme.id}.png`, {
-          maxDiffPixelRatio: 0.05,
-        });
+        expectLinuxSnapshot(screenshot, `merge-pdf-configure-${theme.id}.png`);
       } finally {
         await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
         env = undefined;

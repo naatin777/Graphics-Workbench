@@ -9,6 +9,7 @@
 
 - `multi-page-table.pdf`: 2ページの元PDF（crop/split/merge configure の基準入力）
 - `multilingual-text.pdf`: 2ページの元PDF（crop configure・merge/split の2つ目の入力）
+- `multi-page-mixed-content.pdf`: 15ページの混在サイズPDF（長いプレビューのスクロールと実操作E2E用）
 - `single-page-document.pdf`: 1ページの元PDF（Unicode名で複数outputPathへ出力するテスト用）
 - `drawio/unicode-page-names.drawio`: 3ページのDraw.io原本（drawio変換テスト用）
 

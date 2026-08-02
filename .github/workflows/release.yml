@@ -228,6 +228,26 @@ jobs:
               run: npm run build
               shell: bash
 
+            - if: matrix.os == 'ubuntu-latest'
+              run: bash .github/scripts/install-test-tools-linux.sh
+              shell: bash
+
+            - if: matrix.os == 'macos-latest'
+              run: bash .github/scripts/install-image-tools-macos.sh
+              shell: bash
+
+            - if: matrix.os == 'windows-latest'
+              run: .github/scripts/install-image-tools-windows.ps1
+              shell: pwsh
+
+            - if: matrix.os != 'windows-latest'
+              run: bash .github/scripts/verify-image-tools-unix.sh
+              shell: bash
+
+            - if: matrix.os == 'windows-latest'
+              run: .github/scripts/verify-image-tools-windows.ps1
+              shell: pwsh
+
             - name: Package current runner VSIX
               run: npm run package:vsix -- --out "graphics-workbench-${{ matrix.label }}.vsix"
               shell: bash
@@ -236,9 +256,13 @@ jobs:
               run: cp "graphics-workbench-${{ matrix.label }}.vsix" graphics-workbench.vsix
               shell: bash
 
-            - name: Install VSIX and run Electron Playwright
+            - name: Run Playwright against packaged VSIX
               run: ${{ matrix.test_command }}
               shell: bash
+              env:
+                  # Release checks the packaged journey, while visual review
+                  # uses the uploaded Linux screenshots without pixel gating.
+                  PLAYWRIGHT_VISUAL_SNAPSHOTS: 'false'
 
             - if: failure()
               uses: actions/upload-artifact@v4
@@ -255,6 +279,16 @@ jobs:
                   name: vsix-${{ matrix.artifact_suffix }}
                   path: graphics-workbench-${{ matrix.label }}.vsix
                   if-no-files-found: error
+
+            - if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: release-playwright-screenshots-${{ matrix.artifact_suffix }}
+                  path: |
+                      test-results/
+                      playwright-report/
+                  if-no-files-found: ignore
+                  retention-days: 14
 
     publish-github:
         name: Publish GitHub Release

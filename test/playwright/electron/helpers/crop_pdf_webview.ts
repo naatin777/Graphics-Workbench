@@ -60,6 +60,10 @@ export async function openCropPdfConfigure(vscodeWindow: Page, fileName: string)
     throw new Error('Crop PDF Configure webview was not found after it was created.');
   }
 
+  await expectWebviewHasNoHorizontalOverflow(webviewFrame);
+  await expectWebviewPanesNotOverlapping(webviewFrame);
+  await expectPdfPreviewCentered(webviewFrame);
+
   return {
     body: webviewFrame.locator('body'),
     canvases: webviewFrame.locator('canvas[data-pdf-page]'),
@@ -125,7 +129,149 @@ export async function selectExplorerEntry(entry: Locator): Promise<void> {
     .toBe(true);
 }
 
+export async function expectWebviewHasNoHorizontalOverflow(frame: Frame): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const [root, body] = await Promise.all(
+          [frame.locator('html'), frame.locator('body')].map(async (locator) =>
+            locator.evaluate((element) => ({
+              clientWidth: Reflect.get(element, 'clientWidth'),
+              scrollWidth: Reflect.get(element, 'scrollWidth'),
+            })),
+          ),
+        );
+        if (!root || !body) {
+          return false;
+        }
+
+        const rootClientWidth = typeof root.clientWidth === 'number' ? root.clientWidth : 0;
+        const rootScrollWidth = typeof root.scrollWidth === 'number' ? root.scrollWidth : 0;
+        const bodyScrollWidth = typeof body.scrollWidth === 'number' ? body.scrollWidth : 0;
+        return rootClientWidth > 0 && Math.max(rootScrollWidth, bodyScrollWidth) <= rootClientWidth + 1;
+      },
+      { message: 'Webview content must not overflow horizontally.' },
+    )
+    .toBe(true);
+}
+
+export async function expectWebviewPanesNotOverlapping(frame: Frame): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        frame.locator('.split-pane > *').evaluateAll((elements) => {
+          const rectangles = elements
+            .map((element) => {
+              const bounds = element.getBoundingClientRect();
+              return {
+                bottom: bounds.bottom,
+                height: bounds.height,
+                left: bounds.left,
+                right: bounds.right,
+                top: bounds.top,
+                width: bounds.width,
+              };
+            })
+            .filter((bounds) => bounds.width > 0 && bounds.height > 0);
+
+          return rectangles.every((current, index) =>
+            rectangles.slice(index + 1).every((other) => {
+              const horizontalOverlap = current.left < other.right - 1 && current.right > other.left + 1;
+              const verticalOverlap = current.top < other.bottom - 1 && current.bottom > other.top + 1;
+              return !(horizontalOverlap && verticalOverlap);
+            }),
+          );
+        }),
+      { message: 'Webview split panes must not overlap.' },
+    )
+    .toBe(true);
+}
+
+export async function expectPdfPreviewCentered(frame: Frame): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const metrics = await frame.locator('.pdf-preview').evaluate((preview) => {
+          const pages = preview.querySelector('.pdf-preview__pages');
+          const canvas = preview.querySelector('canvas[data-pdf-page]');
+          if (!pages || !canvas) {
+            return { delta: -1, pagesWidth: 0, canvasWidth: 0 };
+          }
+
+          const pagesBounds = pages.getBoundingClientRect();
+          const canvasBounds = canvas.getBoundingClientRect();
+          const pagesCenter = pagesBounds.left + pagesBounds.width / 2;
+          const canvasCenter = canvasBounds.left + canvasBounds.width / 2;
+          return {
+            delta: Math.abs(pagesCenter - canvasCenter),
+            pagesWidth: pagesBounds.width,
+            canvasWidth: canvasBounds.width,
+          };
+        });
+        // Native scrollbars and the preview padding can shift the visual center by a few pixels.
+        return metrics.delta >= 0 && metrics.delta <= 8;
+      },
+      { message: 'PDF preview pages must remain horizontally centered.' },
+    )
+    .toBe(true);
+}
+
+export async function expectWebviewPreviewScrollable(frame: Frame): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const preview = frame.locator('.pdf-preview');
+        const metrics = await preview.evaluate((element) => ({
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+          canScroll: (() => {
+            const initialScrollTop = element.scrollTop;
+            element.scrollTop = Math.min(element.scrollHeight, initialScrollTop + element.clientHeight);
+            const moved = element.scrollTop > initialScrollTop;
+            element.scrollTop = initialScrollTop;
+            return moved;
+          })(),
+        }));
+
+        return metrics.clientHeight > 0 && metrics.scrollHeight > metrics.clientHeight && metrics.canScroll;
+      },
+      { message: 'PDF preview must expose a vertical scroll area.' },
+    )
+    .toBe(true);
+}
+
+export async function renderAllPdfPreviewPages(frame: Frame): Promise<void> {
+  await frame.locator('.pdf-preview').evaluate(async (element) => {
+    const waitForPaint = (): Promise<void> => {
+      const requestAnimationFrameValue = element.ownerDocument.defaultView?.requestAnimationFrame;
+
+      if (!requestAnimationFrameValue) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve) => {
+        requestAnimationFrameValue(() => {
+          requestAnimationFrameValue(() => resolve());
+        });
+      });
+    };
+    const step = Math.max(1, element.clientHeight * 0.8);
+
+    for (let top = 0; top <= element.scrollHeight; top += step) {
+      element.scrollTop = top;
+      await waitForPaint();
+    }
+
+    element.scrollTop = 0;
+    await waitForPaint();
+  });
+}
+
 export async function expectPdfCanvasesReadable(canvases: Locator, message?: string): Promise<void> {
+  await expect
+    .poll(() => canvases.count(), { message: 'PDF preview must create at least one canvas.' })
+    .toBeGreaterThan(0);
+
   await expect
     .poll(
       async () => {
@@ -217,14 +363,20 @@ export async function waitForWebviewTheme(
         if (input) {
           computedStyles.push(readStyle(input));
         }
+        // The redesign keeps the panel backgroundless; only foreground colors and
+        // the backgrounds of real controls (body, primary button, input) must resolve.
+        const backgroundRequiredStyles = [readStyle(element), readStyle(primaryButton)];
+        if (input) {
+          backgroundRequiredStyles.push(readStyle(input));
+        }
 
         return (
           requiredVariables.every((variableName) => rootStyle.getPropertyValue(variableName).trim().length > 0) &&
           computedStyles.every(
+            (style) => style.color.length > 0 && style.color !== 'transparent' && style.color !== 'rgba(0, 0, 0, 0)',
+          ) &&
+          backgroundRequiredStyles.every(
             (style) =>
-              style.color.length > 0 &&
-              style.color !== 'transparent' &&
-              style.color !== 'rgba(0, 0, 0, 0)' &&
               style.backgroundColor.length > 0 &&
               (allowTransparent ||
                 (style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0, 0, 0, 0)')),

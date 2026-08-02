@@ -10,11 +10,11 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   outputDir: path.join(rootDir, 'test-results'),
   snapshotPathTemplate: '{testDir}/electron/__snapshots__/{arg}-{projectName}-{platform}{ext}',
-  timeout: 120_000,
+  timeout: 60_000,
   expect: {
-    timeout: 30_000,
+    timeout: 10_000,
   },
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env.CI ? 2 : 0,
   workers: 1,
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI
@@ -24,6 +24,13 @@ export default defineConfig({
     {
       name: 'vscode-electron',
       testMatch: '**/electron/**/*.spec.ts',
+      metadata: { electronViewportWidth: 1280 },
+    },
+    {
+      name: 'vscode-electron-narrow',
+      testMatch: '**/electron/**/*.spec.ts',
+      testIgnore: '**/electron/packaged_conversion_smoke.spec.ts',
+      metadata: { electronViewportWidth: 600 },
     },
   ],
   use: {

@@ -7,24 +7,26 @@
 
 ## 1. Workflow map
 
-| Workflow        | Trigger              | Docs-only behavior | Platform                | Main command / Evidence                         | Failure artifact                   | Evidence class                                                 |
-| --------------- | -------------------- | ------------------ | ----------------------- | ----------------------------------------------- | ---------------------------------- | -------------------------------------------------------------- |
-| Check           | PR、main push        | skipしない         | Linux                   | `npm run check`                                 | なし                               | lint、format、4種typecheck                                     |
-| Test            | PR、main push        | skipしない         | Linux / macOS / Windows | `build` → `test` + `test:webview`               | Extension Host user-data directory | Host、operation、filesystem、JSDOM component test              |
-| Playwright      | PR、main push        | skipしない         | Linux / macOS / Windows | `build` → VSIX package → `test:playwright:vsix` | Playwright report / test-results   | installed VSIX、Webview、theme、Host bridge、Sharp native load |
-| Release package | tag                  | 対象外             | Linux / macOS / Windows | `build` → target VSIX package → Electron E2E    | `test-results/`, VSIX              | installed artifact、native dependency、packaged user journey   |
-| Release publish | tag、package全成功後 | 対象外             | Linux                   | downloaded VSIX artifactsをpublish              | registry response                  | distribution action                                            |
+| Workflow        | Trigger              | Docs-only behavior | Platform                | Main command / Evidence                                                                                                                                                                                           | Failure artifact                           | Evidence class                                                                                   |
+| --------------- | -------------------- | ------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Check           | PR、main push        | skipしない         | Linux                   | `npm run check`                                                                                                                                                                                                   | なし                                       | lint、format、4種typecheck                                                                       |
+| Test            | PR、main push        | skipしない         | Linux / macOS / Windows | `build` → `test` + `test:webview`                                                                                                                                                                                 | Extension Host user-data directory         | Host、operation、filesystem、JSDOM component test                                                |
+| Playwright      | PR、main push        | skipしない         | Linux / macOS / Windows | Linux: `xvfb-run npm run test:playwright:vsix`（33 cases、wide+narrow pixel）; macOS / Windows: `npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts`（3 cases） | Playwright report / test-results           | Linux full visual / responsive; 3 OS wide packaged conversion smoke                              |
+| Release package | tag                  | 対象外             | Linux / macOS / Windows | 全OS: `npm run test:playwright:vsix`（33 cases、pixel比較なし、各OS screenshot artifact）                                                                                                                         | `test-results/`, screenshot artifact, VSIX | runner-matched artifact, native dependency, successful packaged conversion, manual visual review |
+| Release publish | tag、package全成功後 | 対象外             | Linux                   | downloaded VSIX artifactsをpublish                                                                                                                                                                                | registry response                          | distribution action                                                                              |
 
 ## 2. Local command semantics
 
-| Command                        | Includes                                                     | Excludes                        | Interpretation                    |
-| ------------------------------ | ------------------------------------------------------------ | ------------------------------- | --------------------------------- |
-| `npm run check`                | lint、format、4種typecheck                                   | runtime tests、package、NLS     | static verification               |
-| `npm run build`                | clean、compile、test compile、Webview build                  | runtime tests、package          | shared prerequisite               |
-| `npm test`                     | fixed VS Code Extension Host test-cli                        | Browser、Electron、package      | Host / operation integration      |
-| `npm run test:webview`         | crop、merge、split JSDOM component tests                     | PDF.js real rendering、Electron | fast component interaction checks |
-| `npm run test:playwright:vsix` | Electron project with the packaged `graphics-workbench.vsix` | Browser、Host Mocha             | installed VSIX journey            |
-| `npm run package:vsix`         | runner-matched target package                                | installed execution             | artifact creation only            |
+| Command                                                                                                | Includes                                                                                                              | Excludes                        | Interpretation                                             |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------- |
+| `npm run check`                                                                                        | lint、format、4種typecheck                                                                                            | runtime tests、package、NLS     | static verification                                        |
+| `npm run build`                                                                                        | clean、compile、test compile、Webview build                                                                           | runtime tests、package          | shared prerequisite                                        |
+| `npm test`                                                                                             | fixed VS Code Extension Host test-cli                                                                                 | Browser、Electron、package      | Host / operation integration                               |
+| `npm run test:webview`                                                                                 | crop、merge、split JSDOM component tests                                                                              | PDF.js real rendering、Electron | fast component interaction checks                          |
+| `npm run test:playwright:vsix`                                                                         | packaged `graphics-workbench.vsix`のwide / narrow full suite（PR Linuxではpixel比較、releaseではscreenshot artifact） | Browser、Host Mocha             | full installed VSIX visual / responsive journey            |
+| `npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts` | macOS / Windowsではwideの3 packaged conversion smoke                                                                  | Browser、Host Mocha、narrow UI  | cross-platform artifact / bridge / native conversion smoke |
+| `npm run package:vsix`                                                                                 | runner-matched target package                                                                                         | installed execution             | artifact creation only                                     |
+| `docker buildx build ... docker/playwright-visual/Dockerfile`                                          | 固定Linux wide+narrow full visual image（amd64 / arm64）                                                              | native macOS / Windows          | local full Playwright reproduction / snapshot regeneration |
 
 ## 3. PR Evidence currently available
 
@@ -53,11 +55,12 @@ Test workflowはLinux、macOS、WindowsでVS Code Extension Host suiteを実行�
 
 ### Packaged Electron on three OS
 
-Playwright workflowはLinux、macOS、Windowsでrunner-matched VSIXをpackageし、`graphics-workbench.vsix`としてそのVSIXだけをElectronへinstallして実行する。
+Playwright workflowはLinux、macOS、Windowsでrunner-matched VSIXをpackageし、`graphics-workbench.vsix`としてそのVSIXだけをElectronへinstallして実行する。PRはLinuxでwide / narrowのfull UI・responsive・pixel snapshotを、macOS / Windowsでwideの3 conversion smokeを実行する。release packageは3 OSすべてでwide / narrow full suiteを実行し、pixel比較なしのscreenshot artifactを保存して目視確認する。DockerはActionsの通常jobには組み込まず、Linux full Playwrightのローカル再現とsnapshot regenerationに使う。
 
-- real VS Code window / Webview
-- VSIX由来のtheme、Host bridge、CSP、PDF.js canvas
-- packaged dependencyとSharp native load
+- real VS Code window / Webview / Host bridge
+- Linux wide+narrowのtheme / pixel snapshot、Linux wide / narrowのCSP、PDF.js canvas、responsive layout
+- 3 OSのpackaged Sharp native loadとPNG→JPEG output decode
+- 3 OSのconfigured `pdftocairo`、Unicode / space path、staging / commit、PDF→JPEG success
 - OSごとのinstallation、path、native module差
 
 Browser-only runnerやsource directory fallbackは現行構成に存在しない。過去のBrowser test記録は履歴資料として保持する。
@@ -71,9 +74,12 @@ release package jobは各native runnerで次を実行する。
 3. runnerに一致するVSIX targetをpackage
 4. VSIXを実VS Codeへinstall
 5. Electron specをpackaged modeで実行
-6. Crop Configureを操作
-7. PNG→JPEGでSharp native dependencyを確認
-8. missing `pdftocairo` error boundaryを確認
+6. PRはLinux full UI / responsive / wide+narrow pixel snapshot、macOS / Windows wide conversion smokeを実行
+7. release packageは3 OSでfull Playwrightを実行し、各OS screenshot artifactを目視確認
+8. 小さいCrop Applyで実Extension Host bridgeとPDF outputを確認
+9. PNG→JPEGでSharp native dependency、decode / format / dimensionsを確認
+10. PDF→JPEG成功でpdftocairo、Unicode / space path、ASCII scratch、staging / commit、notificationを確認
+11. Linux full suiteでmissing `pdftocairo` error boundaryを確認
 
 これにより、development extension testでは得られない次を確認する。
 
@@ -81,20 +87,21 @@ release package jobは各native runnerで次を実行する。
 - production dependency deployment
 - native Sharp binary
 - installed extension discovery
-- controlled external-fetch failureを確認するpackaged Webview
+- controlled external-fetch failureを確認するLinux packaged Webview
+- macOS / Windowsのsuccessful external conversion
 
 ## 5. Gaps and misleading names
 
-| ID         | Observation                                             | Risk                                                | Current handling                                   |
-| ---------- | ------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------- |
-| CI-GAP-001 | branch protectionのrequired statusが未確認              | workflow定義とmerge gateを混同                      | GitHub repository rulesetで別途確認                |
-| CI-GAP-002 | 3 OSのpackage、VSIX install、Electron E2EはCI実測が必要 | local macOSだけではcross-platform successを証明不可 | GitHub Actionsの結果を正本にする                   |
-| CI-GAP-003 | VSIX package failure時の詳細ログはrunner output中心     | package failureの再現情報が少ない                   | package commandのstdout/stderrとartifactを確認する |
-| CI-GAP-004 | Electron E2EはreleaseとPRで同じpackaged journeyを実行   | runtime costは増える                                | installed VSIXの配布物contractを優先する           |
+| ID         | Observation                                                                                                     | Risk                                                | Current handling                                                                 |
+| ---------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------- |
+| CI-GAP-001 | branch protectionのrequired statusが未確認                                                                      | workflow定義とmerge gateを混同                      | GitHub repository rulesetで別途確認                                              |
+| CI-GAP-002 | 3 OSのpackage、VSIX install、Electron E2EはCI実測が必要                                                         | local macOSだけではcross-platform successを証明不可 | GitHub Actionsの結果を正本にする                                                 |
+| CI-GAP-003 | VSIX package failure時の詳細ログはrunner output中心                                                             | package failureの再現情報が少ない                   | package commandのstdout/stderrとartifactを確認する                               |
+| CI-GAP-004 | Electron E2EはreleaseとPRでOS別allocation（PRはLinux full + macOS / Windows smoke、releaseは3 OS full）が異なる | releaseとPRのcase差を見落とす                       | workflow commandとrunner-matched VSIX artifactを同期し、OS別Evidenceを正本にする |
 
-## 6. Candidate gate model
+## 6. Gate model after task 0212
 
-採用前の候補であり、まだworkflowを変更しない。
+0212でworkflowへ反映したrequired-scope allocationを記録する。branch protectionのrequired status自体は別管理であり、この文書では設定しない。
 
 ### PR static gate
 
@@ -104,15 +111,14 @@ release package jobは各native runnerで次を実行する。
 
 - 3 OS VS Code Extension Host
 - 3 OS JSDOM Webview component tests
-- 3 OS installed VSIX Electron E2E
+- Linux full installed VSIX Electron E2E
+- macOS / Windows wide packaged conversion smoke
 
 ### PR Electron gate
 
-候補:
-
-- Linux critical journey 1件
-- Webview / command / packaging関連path変更時だけ
-- full Electronはmanual / scheduled
+- Linux: full UI / responsive suite（wide / narrow pixel snapshot canonical）
+- macOS / Windows: wide packaged conversion smoke（Crop bridge、Sharp PNG→JPEG、pdftocairo PDF→JPEG）
+- macOS / WindowsのPRではpixel snapshotとnarrow UI suiteをrequired scopeにしない。release packageでは3 OSともnarrow UI suiteを実行し、画像artifactを目視確認する
 
 ### Pre-release / release candidate gate
 
@@ -141,7 +147,7 @@ release package jobは各native runnerで次を実行する。
 
 - `check.yml`がstatic checkを実行する
 - `test.yml`が3 OSのbuild、VS Code Extension Host、JSDOM component testを実行する
-- `playwright.yml`が3 OSのbuild、runner-matched VSIX package、installed VSIX Electron E2Eを実行する
-- `release.yml`が同じpackaged E2Eを通過したVSIXだけをpublishする
+- `playwright.yml`が3 OSのbuild、runner-matched VSIX packageを行い、PRではLinux full wide+narrow pixel E2E、macOS / Windowsではwide packaged conversion smokeを実行する
+- `release.yml`が3 OS full Playwrightとscreenshot artifactを通過したrunner-matched VSIXだけをpublishする
 
 Browser-only runner、docs-only classifier、source directory fallbackは現行構成から除去し、過去の監査資料は履歴として保持する。
