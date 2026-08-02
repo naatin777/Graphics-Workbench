@@ -87,16 +87,16 @@ Branch protection/ruleset status was not inferable from repository files. `gh au
 
 ### Local script semantics
 
-| Script                 | Actual execution                            | Includes                                     | Excludes                                   | Name alignment                          |
-| ---------------------- | ------------------------------------------- | -------------------------------------------- | ------------------------------------------ | --------------------------------------- |
-| `test`                 | `vscode-test`                               | Host test glob                               | Browser, Electron, package                 | Host-only and build-free                |
-| `test:webview`         | three app Vitest configs                    | crop/merge/split JSDOM component tests       | real PDF.js/canvas, Electron               | component-only and build-free           |
-| `test:playwright:vsix` | `playwright test --project=vscode-electron` | installed VSIX Electron E2E                  | Browser, Host Mocha                        | packaged VSIX contract                  |
-| `check:nls`            | Node `scripts/check-nls.mjs`                | NLS key/placeholder/manifest reference       | extension activation, package installation | aligned as static script                |
-| `package:vsix`         | Node `scripts/package-vsix.mjs`             | deploy production dependencies, VSIX package | installed execution                        | aligned as artifact creation only       |
-| `package`              | `build && package:vsix`                     | build + VSIX artifact                        | installed smoke                            | artifact creation convenience           |
-| `check:all`            | `check && check:nls`                        | static/lint/format/type/NLS                  | runtime tests, package                     | aligned as static, not all verification |
-| Vitest                 | `test:webview`                              | 4 JSDOM component cases                      | PDF.js real rendering, Electron            | formal component test role              |
+| Script                 | Actual execution                                      | Includes                                     | Excludes                                   | Name alignment                          |
+| ---------------------- | ----------------------------------------------------- | -------------------------------------------- | ------------------------------------------ | --------------------------------------- |
+| `test`                 | `vscode-test`                                         | Host test glob                               | Browser, Electron, package                 | Host-only and build-free                |
+| `test:webview`         | three app Vitest configs                              | crop/merge/split JSDOM component tests       | real PDF.js/canvas, Electron               | component-only and build-free           |
+| `test:playwright:vsix` | `playwright test` (wide and narrow Electron projects) | installed VSIX Electron E2E                  | Browser, Host Mocha                        | packaged VSIX contract                  |
+| `check:nls`            | Node `scripts/check-nls.mjs`                          | NLS key/placeholder/manifest reference       | extension activation, package installation | aligned as static script                |
+| `package:vsix`         | Node `scripts/package-vsix.mjs`                       | deploy production dependencies, VSIX package | installed execution                        | aligned as artifact creation only       |
+| `package`              | `build && package:vsix`                               | build + VSIX artifact                        | installed smoke                            | artifact creation convenience           |
+| `check:all`            | `check && check:nls`                                  | static/lint/format/type/NLS                  | runtime tests, package                     | aligned as static, not all verification |
+| Vitest                 | `test:webview`                                        | 4 JSDOM component cases                      | PDF.js real rendering, Electron            | formal component test role              |
 
 ## Test architecture issues
 

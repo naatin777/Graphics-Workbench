@@ -18,6 +18,7 @@ import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_comm
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
 const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');
 const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
+const longFixturePath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
 
 suite('PDF結合コマンド', () => {
   test('現行の選択PDF結合コマンドが登録されている', async () => {
@@ -88,6 +89,43 @@ suite('PDF結合コマンド', () => {
           outputPageNumber += 1;
         }
       }
+    } finally {
+      sandbox.restore();
+      await rm(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
+
+  test('10ページ以上のPDFを実際に結合できる', async () => {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    assert.ok(workspaceFolder);
+
+    const sandbox = createSandbox();
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-long-command-'),
+    );
+
+    try {
+      const longPdfPath = path.join(temporaryDirectory, 'long-input.pdf');
+      const secondPdfPath = path.join(temporaryDirectory, 'second-input.pdf');
+      const outputPath = path.join(temporaryDirectory, 'merged.pdf');
+      await copyFile(longFixturePath, longPdfPath);
+      await copyFile(secondFixturePath, secondPdfPath);
+
+      sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
+      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+      sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+
+      const commandExecution = vscode.commands.executeCommand(
+        'graphics-workbench.mergePdf.selectedFiles',
+        vscode.Uri.file(longPdfPath),
+        [vscode.Uri.file(longPdfPath), vscode.Uri.file(secondPdfPath)],
+      );
+
+      await runCommandAndClearNotificationsUntilDone(commandExecution);
+
+      const mergedPdf = await PDFDocument.load(await readFile(outputPath));
+      assert.strictEqual(mergedPdf.getPageCount(), 17);
+      assert.ok((await stat(outputPath)).size > 0);
     } finally {
       sandbox.restore();
       await rm(temporaryDirectory, { recursive: true, force: true });

@@ -76,12 +76,19 @@ describe('Merge PDF Webview', () => {
 
   test('reorders files with drag and drop and sends the displayed order', () => {
     const cards = document.querySelectorAll<HTMLElement>('.source-card');
-    const firstHandle = cards[0]?.querySelector<HTMLButtonElement>('.button--handle');
+    const firstCard = cards[0];
+    const firstHandle = firstCard?.querySelector<HTMLButtonElement>('.button--handle');
     const targetCard = cards[2];
 
-    if (!firstHandle || !targetCard) {
+    if (!firstCard || !firstHandle || !targetCard) {
       throw new Error('Merge source cards were not rendered.');
     }
+
+    expect(
+      [...firstCard.querySelectorAll<HTMLButtonElement>('.source-card__controls .button')].map((button) =>
+        button.textContent?.trim(),
+      ),
+    ).toEqual(['⠿', '↑', '↓', '×']);
 
     const dataTransfer: DragDataTransfer = {
       effectAllowed: '',

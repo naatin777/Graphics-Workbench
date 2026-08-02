@@ -121,6 +121,17 @@ describe('Split PDF Webview', () => {
     expect(document.activeElement).toBe(document.querySelector('input[aria-label="Pages 2"]'));
   });
 
+  test('keeps the edited group input focused while its value changes', async () => {
+    await flushPromises();
+
+    const pages = findInput('Pages 1');
+    pages.focus();
+    setInput(pages, '1');
+    await flushPromises();
+
+    expect(document.activeElement).toBe(pages);
+  });
+
   test('toggles all-page preview, changes zoom, and applies groups', async () => {
     await flushPromises();
     sendMessage.mockClear();
@@ -138,12 +149,44 @@ describe('Split PDF Webview', () => {
 
     setInput(zoom, '200');
     expect(zoom.value).toBe('200');
-
     document.querySelector<HTMLButtonElement>('button.button--primary')?.click();
     expect(sendMessage).toHaveBeenLastCalledWith({
       type: 'apply',
       payload: { rows: [{ pages: [1, 2], outputName: '1-2' }] },
     });
+  });
+
+  test('dragging the split divider resizes the preview pane', async () => {
+    await flushPromises();
+
+    const divider = document.querySelector('.split-pane__divider');
+    const leftPane = document.querySelector<HTMLElement>('.split-pane__left');
+
+    if (!divider || !leftPane) {
+      throw new Error('Split pane was not rendered.');
+    }
+
+    const container = document.querySelector('.split-pane');
+    if (!container) {
+      throw new Error('Split pane container was not rendered.');
+    }
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      width: 800,
+      left: 0,
+      right: 800,
+      top: 0,
+      bottom: 0,
+      x: 0,
+      y: 0,
+      height: 0,
+      toJSON: () => ({}),
+    });
+
+    divider.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100 }));
+    globalThis.dispatchEvent(new PointerEvent('pointermove', { clientX: 300 }));
+    globalThis.dispatchEvent(new PointerEvent('pointerup'));
+
+    expect(leftPane.style.flex).toBe('0 0 300px');
   });
 });
 

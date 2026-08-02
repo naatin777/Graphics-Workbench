@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type TestInfo } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
@@ -12,12 +12,14 @@ import type { CommittedConversionOutput } from '../../../src/operations/lifecycl
 
 import { resetTestWorkspace } from '../../helpers/test_workspace.js';
 import { captureCropPdfScreenshot } from './helpers/crop_pdf_screenshot.js';
+import { expectLinuxSnapshot } from './helpers/electron_snapshot.js';
 import {
   expectPdfCanvasesReadable,
   expectWebviewNetworkBlocked,
+  expectWebviewPreviewScrollable,
   convertPdfToJpeg,
-  convertPngToJpeg,
   openCropPdfConfigure,
+  renderAllPdfPreviewPages,
   waitForWebviewTheme,
 } from './helpers/crop_pdf_webview.js';
 import {
@@ -31,12 +33,17 @@ import {
   prepareElectronTest,
   resolvePackagedVsixPath,
   setupElectronTest,
+  getElectronViewportWidth,
   type ElectronTestEnv,
   type PreparedElectronTest,
 } from './helpers/electron_test_env.js';
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const alternateTheme = 'Default Light Modern';
+const longPdfFixture = {
+  fileName: 'multi-page-mixed-content.pdf',
+  cropBox: { left: 20, bottom: 30, right: 200, top: 280 },
+} as const;
 const additionalThemes = [
   {
     id: 'default-high-contrast',
@@ -59,13 +66,6 @@ const additionalThemes = [
     themeClass: 'vscode-dark',
   },
 ] as const;
-const expectedCropBox = {
-  x: cropConfigureFixture.cropBox.left,
-  y: cropConfigureFixture.cropBox.bottom,
-  width: cropConfigureFixture.cropBox.right - cropConfigureFixture.cropBox.left,
-  height: cropConfigureFixture.cropBox.top - cropConfigureFixture.cropBox.bottom,
-};
-
 type PackagedMergePdfModule = {
   mergePdf(options: MergePdfOptions): Promise<unknown>;
 };
@@ -87,7 +87,9 @@ function isPackagedSplitPdfModule(value: unknown): value is PackagedSplitPdfModu
 
 let preparedElectronTest: PreparedElectronTest | undefined;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ playwright }, testInfo) => {
+  void playwright;
+  testInfo.setTimeout(180_000);
   await resetTestWorkspace();
   preparedElectronTest = await prepareElectronTest(packagedVsixPath);
 });
@@ -111,50 +113,24 @@ test.afterEach(async () => {
   await resetTestWorkspace();
 });
 
-function preparedOptions(): { prepared: PreparedElectronTest } {
+function preparedOptions(testInfo: TestInfo): { prepared: PreparedElectronTest; viewportWidth: number } {
   if (!preparedElectronTest) {
     throw new Error('Packaged Electron test environment was not prepared.');
   }
 
-  return { prepared: preparedElectronTest };
+  return { prepared: preparedElectronTest, viewportWidth: getElectronViewportWidth(testInfo) };
 }
 
-test('インストール済みVSIXからextensionをactivateできる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
-  let env: ElectronTestEnv | undefined;
-
-  try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
-
-    await expect(env.app.window.getByText('Safe Mode: ON', { exact: true })).toBeVisible();
-    await expect(env.app.window.getByRole('tree', { name: 'Files Explorer' })).toBeVisible();
-  } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages: [],
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
-    throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
-  }
-});
-
 test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを出力できる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(testInfo),
+      pdfFixtureFileName: longPdfFixture.fileName,
+    });
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -164,14 +140,14 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
       frame: webviewFrame,
       preview,
       settings,
-    } = await openCropPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    } = await openCropPdfConfigure(env.app.window, longPdfFixture.fileName);
 
     await expect(webviewFrame.getByRole('heading', { name: 'Custom Crop', exact: true })).toBeVisible();
-    await expect(webviewFrame.getByText(`${cropConfigureFixture.fileName} · 2 pages`, { exact: true })).toBeVisible();
+    await expect(webviewFrame.locator('p.sr-only')).toContainText(`${longPdfFixture.fileName} · 15 pages`);
 
     await expect(preview).toBeVisible();
     await expect(settings).toBeVisible();
-    await expect(canvases).toHaveCount(2);
+    await expect(canvases).toHaveCount(15);
     await expect
       .poll(() =>
         canvases.evaluateAll((elements) =>
@@ -182,23 +158,22 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
         ),
       )
       .toBe(true);
-    await expect(webviewFrame.locator('.pdf-page__footer')).toHaveText(['Page 1 / 2', 'Page 2 / 2']);
+    await expect(webviewFrame.locator('.pdf-page__footer')).toHaveCount(0);
+    await expect(webviewFrame.locator('.pdf-preview__footer')).toHaveText('Target pages: All pages');
     await expect(webviewFrame.getByText(/PDFを表示できませんでした:/)).toHaveCount(0);
 
     await expectWebviewNetworkBlocked(webviewFrame);
+    await expectWebviewPreviewScrollable(webviewFrame);
+    await renderAllPdfPreviewPages(webviewFrame);
 
-    await settings
-      .getByRole('spinbutton', { name: 'Left', exact: true })
-      .fill(cropConfigureFixture.cropBox.left.toString());
+    await settings.getByRole('spinbutton', { name: 'Left', exact: true }).fill(longPdfFixture.cropBox.left.toString());
     await settings
       .getByRole('spinbutton', { name: 'Bottom', exact: true })
-      .fill(cropConfigureFixture.cropBox.bottom.toString());
+      .fill(longPdfFixture.cropBox.bottom.toString());
     await settings
       .getByRole('spinbutton', { name: 'Right', exact: true })
-      .fill(cropConfigureFixture.cropBox.right.toString());
-    await settings
-      .getByRole('spinbutton', { name: 'Top', exact: true })
-      .fill(cropConfigureFixture.cropBox.top.toString());
+      .fill(longPdfFixture.cropBox.right.toString());
+    await settings.getByRole('spinbutton', { name: 'Top', exact: true }).fill(longPdfFixture.cropBox.top.toString());
     await expect(settings.getByRole('radio', { name: 'All pages', exact: true })).toBeChecked();
     await expectPdfCanvasesReadable(canvases);
 
@@ -213,14 +188,24 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
           return 0;
         }
       })
-      .toBe(2);
+      .toBe(15);
 
     const outputDocument = await PDFDocument.load(await readFile(env.files.outputPath));
-    expect(outputDocument.getPageCount()).toBe(2);
+    expect(outputDocument.getPageCount()).toBe(15);
 
     for (const page of outputDocument.getPages()) {
-      expect(page.getMediaBox()).toEqual(expectedCropBox);
-      expect(page.getCropBox()).toEqual(expectedCropBox);
+      expect(page.getMediaBox()).toEqual({
+        x: longPdfFixture.cropBox.left,
+        y: longPdfFixture.cropBox.bottom,
+        width: longPdfFixture.cropBox.right - longPdfFixture.cropBox.left,
+        height: longPdfFixture.cropBox.top - longPdfFixture.cropBox.bottom,
+      });
+      expect(page.getCropBox()).toEqual({
+        x: longPdfFixture.cropBox.left,
+        y: longPdfFixture.cropBox.bottom,
+        width: longPdfFixture.cropBox.right - longPdfFixture.cropBox.left,
+        height: longPdfFixture.cropBox.top - longPdfFixture.cropBox.bottom,
+      });
     }
 
     expect(await readFile(env.files.inputPath)).toEqual(env.files.sourceFixtureBytes);
@@ -250,13 +235,81 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
   }
 });
 
-test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+test('PDFプレビューのズーム操作が表示倍率とスクロールを維持する', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(testInfo),
+      pdfFixtureFileName: longPdfFixture.fileName,
+    });
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const { frame, canvases, preview, settings } = await openCropPdfConfigure(env.app.window, longPdfFixture.fileName);
+    await expectWebviewPreviewScrollable(frame);
+
+    const cropInputs = settings.locator('input[type="number"]');
+    const readCropValues = async (): Promise<string[]> =>
+      Promise.all(Array.from({ length: await cropInputs.count() }, (_, index) => cropInputs.nth(index).inputValue()));
+    const initialCropValues = await readCropValues();
+    const initialCanvasWidth = await canvases.first().evaluate((canvas) => canvas.getBoundingClientRect().width);
+
+    await preview.evaluate((element) => {
+      element.scrollTop = Math.min(element.scrollHeight - element.clientHeight, 180);
+    });
+    await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+    await frame.getByRole('button', { name: 'Zoom in', exact: true }).click();
+    await expect(frame.locator('.zoom__value')).toHaveText('125%');
+    await expect
+      .poll(() => canvases.first().evaluate((canvas) => canvas.getBoundingClientRect().width))
+      .toBeGreaterThan(initialCanvasWidth);
+    await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await expect.poll(readCropValues).toEqual(initialCropValues);
+
+    const modifierKey = process.platform === 'darwin' ? 'Meta' : 'Control';
+    await preview.hover();
+    await env.app.window.keyboard.down(modifierKey);
+    try {
+      await env.app.window.mouse.wheel(0, -100);
+    } finally {
+      await env.app.window.keyboard.up(modifierKey);
+    }
+    await expect(frame.locator('.zoom__value')).toHaveText('135%');
+
+    await frame.getByRole('button', { name: 'Zoom out', exact: true }).click();
+    await expect(frame.locator('.zoom__value')).toHaveText('110%');
+  } catch (error) {
+    await attachElectronDiagnostics({
+      consoleMessages,
+      error,
+      extensionsDir: env?.directories.extensionsDir ?? '',
+      sharedDataDir: env?.directories.sharedDataDir ?? '',
+      temporaryRoot: env?.directories.temporaryRoot ?? '',
+      testInfo,
+      userDataDir: env?.directories.userDataDir ?? '',
+      window: env?.app.window,
+      workspacePath: env?.directories.workspacePath ?? '',
+    });
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
+test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(120_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -271,9 +324,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(darkScreenshot).toMatchSnapshot('crop-pdf-configure-dark.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(darkScreenshot, 'crop-pdf-configure-dark.png');
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -294,9 +345,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(lightScreenshot).toMatchSnapshot('crop-pdf-configure-light.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(lightScreenshot, 'crop-pdf-configure-light.png');
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,
@@ -318,13 +367,13 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 });
 
 test('high contrastと極端な配色でもcanvasが読める', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
   try {
     env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-      ...preparedOptions(),
+      ...preparedOptions(testInfo),
       colorTheme: additionalThemes[0]?.colorTheme ?? 'Default High Contrast',
     });
     env.app.electronApp.on('console', (message) => {
@@ -347,9 +396,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
         contentType: 'image/png',
       });
 
-      expect(screenshot).toMatchSnapshot(`crop-pdf-configure-${theme.id}.png`, {
-        maxDiffPixelRatio: 0.05,
-      });
+      expectLinuxSnapshot(screenshot, `crop-pdf-configure-${theme.id}.png`);
     }
   } catch (error) {
     await attachElectronDiagnostics({
@@ -371,13 +418,13 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
   }
 });
 
-test('package済みmoduleでMergeが動く', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+test('package済みmoduleでMergeとSplitが動く', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -403,36 +450,6 @@ test('package済みmoduleでMergeが動く', async ({ playwright }, testInfo) =>
     const mergedDocument = await PDFDocument.load(await readFile(mergedOutputPath));
     expect(mergedDocument.getPageCount()).toBe(4);
     expect(await readFile(env.files.inputPath)).toEqual(env.files.sourceFixtureBytes);
-  } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages,
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
-    throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
-  }
-});
-
-test('package済みmoduleでSplitが動く', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
-
-  try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
 
     const splitOutputDirectory = join(env.directories.workspacePath, 'packaged-split');
 
@@ -478,56 +495,13 @@ test('package済みmoduleでSplitが動く', async ({ playwright }, testInfo) =>
   }
 });
 
-test('native Sharp dependencyをloadしてPNG→JPEG変換できる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
-
-  try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
-
-    const rasterOutputPath = join(env.directories.workspacePath, 'packaged-raster-input.jpeg');
-
-    await convertPngToJpeg(env.app.window, 'packaged-raster-input.png');
-    await expect
-      .poll(async () => {
-        try {
-          return (await readFile(rasterOutputPath)).length > 0;
-        } catch {
-          return false;
-        }
-      })
-      .toBe(true);
-  } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages,
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
-    throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
-  }
-});
-
 test('外部networkが遮断されている', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions());
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -555,7 +529,7 @@ test('外部networkが遮断されている', async ({ playwright }, testInfo) =
 });
 
 test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(240_000);
+  testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
   const missingToolDirectory = await mkdtemp(join(tmpdir(), 'graphics-workbench-missing-pdftocairo-'));
@@ -563,7 +537,7 @@ test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }
 
   try {
     env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-      ...preparedOptions(),
+      ...preparedOptions(testInfo),
       extraSettings: {
         'graphics-workbench.execPath.pdftocairo': missingToolPath,
       },

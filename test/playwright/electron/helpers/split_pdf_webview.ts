@@ -1,7 +1,11 @@
 import { expect, type Frame, type Locator, type Page } from '@playwright/test';
 
-import { selectExplorerEntry } from './crop_pdf_webview.js';
-import { waitForWebviewFontsReady } from './crop_pdf_screenshot.js';
+import {
+  expectWebviewHasNoHorizontalOverflow,
+  expectWebviewPanesNotOverlapping,
+  selectExplorerEntry,
+} from './crop_pdf_webview.js';
+import { settleWebviewPaint, waitForWebviewFontsReady, waitForWebviewLayoutToSettle } from './crop_pdf_screenshot.js';
 
 export interface SplitPdfWebview {
   body: Locator;
@@ -57,6 +61,9 @@ export async function openSplitPdfConfigure(vscodeWindow: Page, fileName: string
     throw new Error('Split PDF Configure webview was not found after it was created.');
   }
 
+  await expectWebviewHasNoHorizontalOverflow(webviewFrame);
+  await expectWebviewPanesNotOverlapping(webviewFrame);
+
   return {
     body: webviewFrame.locator('body'),
     canvases: webviewFrame.locator('canvas[data-pdf-page]'),
@@ -79,6 +86,8 @@ export async function captureSplitPdfScreenshot(page: Page, body: Locator): Prom
     }
   });
   await waitForWebviewFontsReady(body);
+  await settleWebviewPaint(page);
+  await waitForWebviewLayoutToSettle(body);
   const bodyBounds = await body.boundingBox();
 
   if (!bodyBounds) {

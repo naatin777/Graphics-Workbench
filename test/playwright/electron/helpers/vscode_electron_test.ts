@@ -9,6 +9,10 @@ import { testVscodeSettingsPath } from '../../../helpers/fixture_paths.js';
 
 const execFileAsync = promisify(execFile);
 const WINDOWS_REMOVE_TIMEOUT_MS = 10_000;
+const WINDOWS_KILL_TIMEOUT_MS = 10_000;
+const DISPOSE_HARD_TIMEOUT_MS = 15_000;
+const PROCESS_KILL_SETTLE_MS = 250;
+const UNIX_PROCESS_LIST_TIMEOUT_MS = 5_000;
 
 interface ElectronTestPaths {
   extensionsDir: string;
@@ -134,37 +138,27 @@ export async function disposeElectronTest(
   temporaryRoot: string,
 ): Promise<void> {
   const isWindows = process.platform === 'win32';
+  const parentPid = electronApp?.process().pid;
 
   try {
-    if (!electronApp) {
-      return;
+    await withHardTimeout('dispose Electron test', DISPOSE_HARD_TIMEOUT_MS, async () => {
+      try {
+        if (!electronApp) {
+          return;
+        }
+
+        const electronProcess = electronApp.process();
+        await terminateElectronProcess(electronProcess);
+      } finally {
+        await removeTemporaryRoot(temporaryRoot);
+      }
+    });
+  } catch (error) {
+    // A stuck Electron process must never block the runner; force-kill the tree.
+    if (parentPid !== undefined) {
+      await forceKillProcessTree(parentPid);
     }
-
-    const electronProcess = electronApp.process();
-
-    if (isWindows) {
-      // Kill the entire process tree while the parent PID still exists.
-      // A graceful close can exit the parent before renderer/extension-host
-      // children, leaving them alive and locking the VS Code test directory.
-      await terminateElectronProcess(electronProcess);
-      await Promise.race([
-        electronApp.close().then(
-          () => undefined,
-          () => undefined,
-        ),
-        timeout(1_000),
-      ]);
-      return;
-    }
-
-    const closePromise = electronApp.close().then(
-      () => undefined,
-      () => undefined,
-    );
-    await Promise.race([closePromise, timeout(5_000)]);
-    await terminateElectronProcess(electronProcess);
-  } finally {
-    await removeTemporaryRoot(temporaryRoot);
+    throw error instanceof Error ? error : new Error(String(error));
   }
 
   if (!isWindows && (await pathExists(temporaryRoot))) {
@@ -242,33 +236,145 @@ async function readLogFiles(directory: string): Promise<string[]> {
 }
 
 async function terminateElectronProcess(electronProcess: ReturnType<ElectronApplication['process']>): Promise<void> {
-  if (electronProcess.exitCode !== null || electronProcess.signalCode !== null) {
+  const pid = electronProcess.pid;
+
+  if (pid === undefined) {
     return;
   }
 
-  if (process.platform === 'win32' && electronProcess.pid !== undefined) {
-    await execFileAsync('taskkill', ['/PID', String(electronProcess.pid), '/T', '/F'], {
-      timeout: 10_000,
+  if (process.platform === 'win32') {
+    await execFileAsync('taskkill', ['/PID', String(pid), '/T', '/F'], {
+      timeout: WINDOWS_KILL_TIMEOUT_MS,
       windowsHide: true,
     }).then(
       () => undefined,
       () => undefined,
     );
-
-    if (electronProcess.exitCode === null && electronProcess.signalCode === null) {
-      electronProcess.kill();
-    }
-
     return;
   }
 
-  electronProcess.kill();
+  // A graceful VS Code quit can open native save/quit prompts unrelated to the product.
+  // Test data is disposable, so kill the complete process tree directly.
+  const descendantPids = await findDescendantPids(pid);
+  signalProcess(pid, 'SIGKILL');
+  signalProcessTree(descendantPids, 'SIGKILL');
+  await waitForProcessTreeExit([pid, ...descendantPids], PROCESS_KILL_SETTLE_MS);
+}
+
+async function forceKillProcessTree(pid: number): Promise<void> {
+  if (process.platform === 'win32') {
+    await execFileAsync('taskkill', ['/PID', String(pid), '/T', '/F'], {
+      timeout: WINDOWS_KILL_TIMEOUT_MS,
+      windowsHide: true,
+    }).then(
+      () => undefined,
+      () => undefined,
+    );
+    return;
+  }
+
+  const descendantPids = await findDescendantPids(pid);
+  signalProcess(pid, 'SIGKILL');
+  signalProcessTree(descendantPids, 'SIGKILL');
+}
+
+async function findDescendantPids(rootPid: number): Promise<number[]> {
+  const processTable = await execFileAsync('ps', ['-axo', 'pid=,ppid='], {
+    timeout: UNIX_PROCESS_LIST_TIMEOUT_MS,
+  }).catch(() => ({ stdout: '' }));
+  const childrenByParent = new Map<number, number[]>();
+
+  for (const line of processTable.stdout.split('\n')) {
+    const [pidText, parentPidText] = line.trim().split(/\s+/u);
+    const pid = Number(pidText);
+    const parentPid = Number(parentPidText);
+
+    if (!Number.isInteger(pid) || !Number.isInteger(parentPid) || pid <= 0 || parentPid < 0) {
+      continue;
+    }
+
+    const children = childrenByParent.get(parentPid) ?? [];
+    children.push(pid);
+    childrenByParent.set(parentPid, children);
+  }
+
+  const descendants: number[] = [];
+  const pending = [rootPid];
+  const visited = new Set<number>(pending);
+
+  while (pending.length > 0) {
+    const parentPid = pending.shift();
+    if (parentPid === undefined) {
+      break;
+    }
+
+    for (const childPid of childrenByParent.get(parentPid) ?? []) {
+      if (visited.has(childPid)) {
+        continue;
+      }
+
+      visited.add(childPid);
+      descendants.push(childPid);
+      pending.push(childPid);
+    }
+  }
+
+  return descendants.toReversed();
+}
+
+function signalProcessTree(pids: number[], signal: NodeJS.Signals): void {
+  for (const pid of pids) {
+    signalProcess(pid, signal);
+  }
+}
+
+function signalProcess(pid: number, signal: NodeJS.Signals): void {
+  try {
+    process.kill(pid, signal);
+  } catch {
+    // The process exited between process discovery and signaling.
+  }
+}
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function waitForProcessTreeExit(pids: number[], milliseconds: number): Promise<void> {
+  const deadline = Date.now() + milliseconds;
+
+  while (pids.some(isProcessAlive) && Date.now() < deadline) {
+    await timeout(100);
+  }
 }
 
 function timeout(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
+}
+
+async function withHardTimeout<T>(label: string, milliseconds: number, callback: () => Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      callback(),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${milliseconds}ms.`));
+        }, milliseconds);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }
 }
 
 function pathExists(filePath: string): Promise<boolean> {

@@ -312,6 +312,7 @@ export default defineConfig({
     'project/max-conditional-spreads-per-object': 'error',
     'project/max-flat-type-members': 'error',
     'project/forbid-raster-input-limit-bypass': 'error',
+    'project/no-fixed-e2e-wait': 'error',
   },
 
   overrides: [

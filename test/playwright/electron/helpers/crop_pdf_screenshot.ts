@@ -1,4 +1,4 @@
-import { type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 
@@ -9,6 +9,100 @@ export async function waitForWebviewFontsReady(body: Locator): Promise<void> {
       await fonts.ready;
     }
   });
+}
+
+/** Lets layout and paint settle after fonts load so snapshots are deterministic. */
+export async function settleWebviewPaint(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const requestAnimationFrameValue = Reflect.get(globalThis, 'requestAnimationFrame');
+        const isCallable = (value: unknown): value is (callback: () => void) => unknown => typeof value === 'function';
+        if (!isCallable(requestAnimationFrameValue)) {
+          resolve();
+          return;
+        }
+
+        requestAnimationFrameValue(() => {
+          requestAnimationFrameValue(resolve);
+        });
+      }),
+  );
+}
+
+export async function waitForWebviewLayoutToSettle(body: Locator): Promise<void> {
+  let previousSignature = '';
+  let stableSamples = 0;
+
+  await expect
+    .poll(
+      async () => {
+        const signature = await body.evaluate((element) => {
+          const ownerDocument = Reflect.get(element, 'ownerDocument');
+          const querySelector = ownerDocument && Reflect.get(ownerDocument, 'querySelector');
+          const isCallable = (value: unknown): value is (this: unknown, ...args: unknown[]) => unknown =>
+            typeof value === 'function';
+          if (!isCallable(querySelector)) {
+            return '';
+          }
+
+          const readBounds = (target: unknown): string => {
+            const getBoundingClientRect = target && Reflect.get(target, 'getBoundingClientRect');
+            if (!isCallable(getBoundingClientRect)) {
+              return 'missing';
+            }
+
+            const bounds = getBoundingClientRect.call(target);
+            if (typeof bounds !== 'object' || bounds === null) {
+              return 'missing';
+            }
+
+            return ['top', 'left', 'width', 'height', 'bottom', 'right']
+              .map((property) => {
+                const value = Reflect.get(bounds, property);
+                return typeof value === 'number' ? Math.round(value) : 0;
+              })
+              .join(',');
+          };
+
+          const selectors = [
+            '.app',
+            '.app__header',
+            '.split-pane',
+            '.split-pane__left',
+            '.split-pane__right',
+            '.pdf-preview',
+            '.pdf-preview__toolbar',
+            '.pdf-preview__toolbar h2',
+            '.pdf-preview__toolbar p',
+            '.zoom',
+            '.zoom__value',
+            '.pdf-preview__pages',
+            '.panel',
+            '.source-grid',
+            '.source-card',
+            '.group-row',
+          ];
+          return selectors
+            .map((selector) => {
+              const target = querySelector.call(ownerDocument, selector);
+              return `${selector}:${readBounds(target)}`;
+            })
+            .join('|');
+        });
+
+        if (signature === '' || signature !== previousSignature) {
+          previousSignature = signature;
+          stableSamples = 0;
+          return false;
+        }
+
+        stableSamples += 1;
+        return stableSamples >= 2;
+      },
+      { message: 'Webview layout did not settle.' },
+    )
+    .toBe(true);
 }
 
 export async function captureCropPdfScreenshot(
@@ -28,6 +122,8 @@ export async function captureCropPdfScreenshot(
     }
   });
   await waitForWebviewFontsReady(body);
+  await settleWebviewPaint(page);
+  await waitForWebviewLayoutToSettle(body);
   const bodyBounds = await body.boundingBox();
 
   if (!bodyBounds) {

@@ -209,6 +209,36 @@ const forbidRasterInputLimitBypass = {
   },
 };
 
+function isFixedE2EWaitCall(node) {
+  if (node?.type !== 'CallExpression' || node.callee?.type !== 'MemberExpression') {
+    return false;
+  }
+
+  const property = node.callee.property;
+  const propertyName = property?.type === 'Identifier' ? property.name : property?.value;
+  return propertyName === 'waitForTimeout';
+}
+
+const noFixedE2EWait = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      fixedWait: 'Do not use fixed Playwright waits. Wait for an observable UI state or animation frame instead.',
+    },
+  },
+
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (isFixedE2EWaitCall(node)) {
+          context.report({ node, messageId: 'fixedWait' });
+        }
+      },
+    };
+  },
+};
+
 export default {
   meta: {
     name: 'project',
@@ -218,7 +248,8 @@ export default {
     'max-conditional-spreads-per-object': maxConditionalSpreadsPerObject,
     'max-flat-type-members': maxFlatTypeMembers,
     'forbid-raster-input-limit-bypass': forbidRasterInputLimitBypass,
+    'no-fixed-e2e-wait': noFixedE2EWait,
   },
 };
 
-export { findCandidateGroups, splitIdentifierIntoTokens };
+export { findCandidateGroups, isFixedE2EWaitCall, splitIdentifierIntoTokens };

@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { createStore } from 'solid-js/store';
 
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 
@@ -11,6 +12,7 @@ import { parsePages } from './pages';
 import type { ExtensionToWebviewMessage, WebviewToExtensionMessage } from './messages';
 import { applyPreviewZoom, capturePreviewZoomAnchor, restorePreviewZoomAnchor } from './preview_zoom';
 import { PreviewToolbar } from './preview_toolbar';
+import { SplitPane } from '../../../shared/split_pane';
 import type { InputKind, PreviewMode, Row } from './types';
 import { vscode } from './vscode';
 
@@ -30,7 +32,7 @@ export function App(): JSX.Element {
     outputNameEdited: false,
   });
 
-  const [rows, setRows] = createSignal<Row[]>([createRow()]);
+  const [rows, setRows] = createStore<Row[]>([createRow()]);
   const [labels, setLabels] = createSignal(defaultLabels);
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
@@ -63,36 +65,40 @@ export function App(): JSX.Element {
 
   const addRow = (): number => {
     const row = createRow();
-    setRows((current) => [...current, row]);
+    setRows(rows.length, row);
     setFocusedRowId(row.id);
     setApplyError('');
     return row.id;
   };
 
   const updatePages = (rowId: number, pages: string): void => {
-    setRows((current) =>
-      current.map((row) =>
-        row.id === rowId
-          ? {
-              ...row,
-              pages,
-              outputName: row.outputNameEdited ? row.outputName : pages,
-            }
-          : row,
-      ),
-    );
+    const rowIndex = rows.findIndex((row) => row.id === rowId);
+    const row = rows[rowIndex];
+
+    if (rowIndex < 0 || !row) {
+      return;
+    }
+
+    setRows(rowIndex, {
+      pages,
+      ...(row.outputNameEdited ? {} : { outputName: pages }),
+    });
     setApplyError('');
   };
 
   const updateOutputName = (rowId: number, outputName: string): void => {
-    setRows((current) =>
-      current.map((row) => (row.id === rowId ? { ...row, outputName, outputNameEdited: true } : row)),
-    );
+    const rowIndex = rows.findIndex((row) => row.id === rowId);
+
+    if (rowIndex < 0) {
+      return;
+    }
+
+    setRows(rowIndex, { outputName, outputNameEdited: true });
     setApplyError('');
   };
 
   const removeRow = (rowId: number): void => {
-    const current = rows();
+    const current = rows;
     const index = current.findIndex((row) => row.id === rowId);
 
     if (index < 0) {
@@ -108,8 +114,9 @@ export function App(): JSX.Element {
       return;
     }
 
+    setRows((currentRows) => currentRows.filter((row) => row.id !== rowId));
+
     const nextRows = current.filter((row) => row.id !== rowId);
-    setRows(nextRows);
 
     if (focusedRowId() === rowId) {
       const nextFocusedRow = nextRows[Math.min(index, nextRows.length - 1)];
@@ -123,7 +130,7 @@ export function App(): JSX.Element {
   };
 
   const moveRow = (rowId: number, direction: -1 | 1): void => {
-    const current = rows();
+    const current = rows;
     const index = current.findIndex((row) => row.id === rowId);
     const nextIndex = index + direction;
 
@@ -150,7 +157,7 @@ export function App(): JSX.Element {
     }
 
     event.preventDefault();
-    const current = rows();
+    const current = rows;
     const row = current[rowIndex];
 
     if (!row) {
@@ -189,7 +196,7 @@ export function App(): JSX.Element {
       return;
     }
 
-    const current = rows();
+    const current = rows;
     const sourceIndex = current.findIndex((row) => row.id === sourceRowId);
     const targetIndex = current.findIndex((row) => row.id === targetRowId);
 
@@ -213,7 +220,7 @@ export function App(): JSX.Element {
     const outputNames = new Set<string>();
     const configuredRows: SplitPdfPageGroupRow[] = [];
 
-    for (const [index, row] of rows().entries()) {
+    for (const [index, row] of rows.entries()) {
       const parsedPages = parsePages(row.pages, pageCount());
 
       if (!parsedPages.ok) {
@@ -278,7 +285,7 @@ export function App(): JSX.Element {
       return;
     }
 
-    const focusedRow = rows().find((row) => row.id === focusedRowId());
+    const focusedRow = rows.find((row) => row.id === focusedRowId());
     const parsedPages = focusedRow ? parsePages(focusedRow.pages, pageCount()) : undefined;
     const focusedPages = new Set(parsedPages?.ok === true ? parsedPages.pages : []);
     setFocusedPagesLabel(parsedPages?.ok === true ? parsedPages.pages.join(', ') : '');
@@ -369,7 +376,6 @@ export function App(): JSX.Element {
   };
 
   createEffect(() => {
-    rows();
     focusedRowId();
     pageCount();
     previewMode();
@@ -414,150 +420,151 @@ export function App(): JSX.Element {
 
   return (
     <main class='app'>
-      <header class='app__header'>
-        <div>
-          <h1>{labels().header.title}</h1>
-          <p>{labels().header.description}</p>
-        </div>
-        <p class='app__meta'>
-          {fileName()} | {pageCount()} {labels().pages.title}
-        </p>
-      </header>
+      <h1 class='sr-only'>{labels().header.title}</h1>
+      <p class='sr-only'>
+        {fileName()} | {pageCount()} {labels().pages.title}. {labels().header.description}
+      </p>
 
       <div class='workspace'>
-        <section
-          ref={(element) => {
-            pdfPreview = element;
-          }}
-          aria-label={labels().preview.ariaLabel}
-          class='pdf-preview'
-          onWheel={zoomWithWheel}
-        >
-          <PreviewToolbar
-            labels={labels()}
-            previewMode={previewMode()}
-            zoomPercent={zoomPercent()}
-            onPreviewModeChange={(value) => {
-              setPreviewMode(value);
-            }}
-            onZoomChange={(value) => {
-              updateZoom(value);
-            }}
-          />
-          <div
-            ref={(element) => {
-              pdfPages = element;
-            }}
-            class='pdf-preview__pages'
-          />
-          <Show when={renderError()}>
-            <p
-              class='pdf-preview__error'
-              role='status'
-            >
-              {labels().preview.renderError}: {renderError()}
-            </p>
-          </Show>
-          <footer class='pdf-preview__footer'>
-            {labels().pages.title}: {focusedPagesLabel() || '—'}
-          </footer>
-        </section>
-
-        <section
-          aria-label={labels().groups.title}
-          class='panel'
-        >
-          <div class='panel__heading'>
-            <div>
-              <h2>{labels().groups.title}</h2>
-              <p>{labels().groups.outputOrder}</p>
-            </div>
-            <button
-              class='button'
-              type='button'
-              onClick={() => {
-                const rowId = addRow();
-                focusInput(rowId, 'pages');
+        <SplitPane
+          left={
+            <section
+              ref={(element) => {
+                pdfPreview = element;
               }}
+              aria-label={labels().preview.ariaLabel}
+              class='pdf-preview'
+              classList={{ 'pdf-preview--fit': zoomPercent() <= 100 }}
+              onWheel={zoomWithWheel}
             >
-              {labels().groups.add}
-            </button>
-          </div>
-
-          <div class='rows'>
-            <For each={rows()}>
-              {(row, index) => (
-                <GroupRow
-                  row={row}
-                  index={index}
-                  rowCount={rows().length}
-                  labels={labels()}
-                  outputPathTemplate={outputPathTemplate()}
-                  focused={focusedRowId() === row.id}
-                  handlers={{
-                    fields: {
-                      setInputRef,
-                      onFocus: (rowId) => {
-                        setFocusedRowId(rowId);
-                      },
-                      onPagesChange: updatePages,
-                      onOutputNameChange: updateOutputName,
-                      onKeyDown: handleRowKeyDown,
-                    },
-                    row: {
-                      onMove: moveRow,
-                      onRemove: removeRow,
-                    },
-                    drag: {
-                      onDragStart: (event, rowId) => {
-                        draggedRowId = rowId;
-                        if (event.dataTransfer) {
-                          event.dataTransfer.effectAllowed = 'move';
-                          event.dataTransfer.setData('text/plain', rowId.toString());
-                        }
-                      },
-                      onDragEnd: () => (draggedRowId = undefined),
-                      onDragOver: (event) => {
-                        event.preventDefault();
-                      },
-                      onDrop: dropRow,
-                    },
+              <PreviewToolbar
+                labels={labels()}
+                previewMode={previewMode()}
+                zoomPercent={zoomPercent()}
+                onPreviewModeChange={(value) => {
+                  setPreviewMode(value);
+                }}
+                onZoomChange={(value) => {
+                  updateZoom(value);
+                }}
+              />
+              <div
+                ref={(element) => {
+                  pdfPages = element;
+                }}
+                class='pdf-preview__pages'
+              />
+              <Show when={renderError()}>
+                <p
+                  class='pdf-preview__error'
+                  role='status'
+                >
+                  {labels().preview.renderError}: {renderError()}
+                </p>
+              </Show>
+              <footer class='pdf-preview__footer'>
+                {labels().pages.title}: {focusedPagesLabel() || '—'}
+              </footer>
+            </section>
+          }
+          right={
+            <section
+              aria-label={labels().groups.title}
+              class='panel'
+            >
+              <div class='panel__heading'>
+                <div>
+                  <h2>{labels().groups.title}</h2>
+                  <p>{labels().groups.outputOrder}</p>
+                </div>
+                <button
+                  class='button'
+                  type='button'
+                  onClick={() => {
+                    const rowId = addRow();
+                    focusInput(rowId, 'pages');
                   }}
-                />
-              )}
-            </For>
-          </div>
+                >
+                  {labels().groups.add}
+                </button>
+              </div>
 
-          <Show when={applyError()}>
-            <p
-              class='panel__error'
-              role='alert'
-            >
-              {applyError()}
-            </p>
-          </Show>
+              <div class='rows'>
+                <For each={rows}>
+                  {(row, index) => (
+                    <GroupRow
+                      row={row}
+                      index={index}
+                      rowCount={rows.length}
+                      labels={labels()}
+                      outputPathTemplate={outputPathTemplate()}
+                      focused={focusedRowId() === row.id}
+                      handlers={{
+                        fields: {
+                          setInputRef,
+                          onFocus: (rowId) => {
+                            setFocusedRowId(rowId);
+                          },
+                          onPagesChange: updatePages,
+                          onOutputNameChange: updateOutputName,
+                          onKeyDown: handleRowKeyDown,
+                        },
+                        row: {
+                          onMove: moveRow,
+                          onRemove: removeRow,
+                        },
+                        drag: {
+                          onDragStart: (event, rowId) => {
+                            draggedRowId = rowId;
+                            if (event.dataTransfer) {
+                              event.dataTransfer.effectAllowed = 'move';
+                              event.dataTransfer.setData('text/plain', rowId.toString());
+                            }
+                          },
+                          onDragEnd: () => (draggedRowId = undefined),
+                          onDragOver: (event) => {
+                            event.preventDefault();
+                          },
+                          onDrop: dropRow,
+                        },
+                      }}
+                    />
+                  )}
+                </For>
+              </div>
 
-          <div class='actions'>
-            <button
-              class='button button--primary'
-              type='button'
-              disabled={((): boolean => {
-                const result = validateRows();
-                return 'message' in result;
-              })()}
-              onClick={apply}
-            >
-              {labels().actions.apply}
-            </button>
-            <button
-              class='button'
-              type='button'
-              onClick={cancel}
-            >
-              {labels().actions.cancel}
-            </button>
-          </div>
-        </section>
+              <Show when={applyError()}>
+                <p
+                  class='panel__error'
+                  role='alert'
+                >
+                  {applyError()}
+                </p>
+              </Show>
+
+              <div class='actions'>
+                <button
+                  class='button button--primary'
+                  type='button'
+                  disabled={((): boolean => {
+                    const result = validateRows();
+                    return 'message' in result;
+                  })()}
+                  onClick={apply}
+                >
+                  {labels().actions.apply}
+                </button>
+                <button
+                  class='button'
+                  type='button'
+                  onClick={cancel}
+                >
+                  {labels().actions.cancel}
+                </button>
+              </div>
+            </section>
+          }
+        />
       </div>
     </main>
   );
