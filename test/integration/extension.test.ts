@@ -7,60 +7,28 @@ import * as vscode from 'vscode';
 
 import { operationPdfInputDirectory, operationPngInputPath } from '../helpers/fixture_paths.js';
 
-suite('拡張機能の基本動作', () => {
-  test('拡張機能が登録されている', () => {
+suite('Extension activation smoke', () => {
+  test('拡張機能をactivateすると代表commandが利用可能になる', async () => {
     const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
 
     assert.ok(extension);
-  });
-
-  test('拡張機能をactivateできる', async () => {
-    const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
-
-    assert.ok(extension);
-
     await extension.activate();
-
     assert.strictEqual(extension.isActive, true);
-  });
 
-  test('自動cropコマンドが登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.cropPdf.auto'));
-  });
-
-  test('configure cropコマンドが登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.cropPdf.configure'));
+    for (const command of [
+      'graphics-workbench.cropPdf.auto',
+      'graphics-workbench.cropPdf.configure',
+      'graphics-workbench.splitPdf.allPages',
+      'graphics-workbench.mergePdf.configure',
+      'graphics-workbench.splitPdf.configure',
+      'graphics-workbench.convertPngToPdf',
+      'graphics-workbench.convertDrawioToPdf',
+      'graphics-workbench.convertDrawioToPdfDirectly',
+    ]) {
+      assert.ok(commands.includes(command), `Expected command to be registered: ${command}`);
+    }
     assert.ok(!commands.includes('graphics-workbench.cropPdf.manual'));
-  });
-
-  test('全ページ分割コマンドが登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.splitPdf.allPages'));
-  });
-
-  test('PDF結合・分割のconfigureコマンドが登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.mergePdf.configure'));
-    assert.ok(commands.includes('graphics-workbench.splitPdf.configure'));
-  });
-
-  test('PNGからPDFへの変換コマンドが登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.convertPngToPdf'));
-  });
-
-  test('Draw.io PDF変換コマンドが登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.convertDrawioToPdf'));
-    assert.ok(commands.includes('graphics-workbench.convertDrawioToPdfDirectly'));
   });
 
   test('PNGからPDFへの変換コマンドを実行してファイル変換できる', async () => {
