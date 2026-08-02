@@ -11,7 +11,9 @@
 
 ## Rendering lifecycle
 
-PDF metadataと最初のpageを先に読み込み、残りはplaceholderと`IntersectionObserver`で遅延renderする。初期PDF解析は進捗通知とcancel signalの内側でWorker Threadへ分離し、入力file size 256 MiB、page count 2,000、metadata解析時間30秒を安全上限とする。Apply時にも入力size/page countを再検証し、生成PDFは512 MiBを超えないようにする。Apply送信は全canvasのrender完了を前提にせず、panel dispose時はobserver、PDF.js render task、page/document resourceを可能な範囲でcleanupする。
+PDF metadataと最初のpageを先に読み込み、残りはplaceholderと`IntersectionObserver`で遅延renderする。初期PDF解析は進捗通知とcancel signalの内側でWorker Threadへ分離し、metadata requestはfile pathだけを受け取る。入力byte数、page数、metadata処理時間の根拠のない固定拒否値は設けず、cancel時はWorkerをterminateする。Apply送信は全canvasのrender完了を前提にせず、panel dispose時はobserver、PDF.js render task、page/document resourceを可能な範囲でcleanupする。
+
+Apply後のPDF読み込み・crop・saveはExtension Host内で実行せず、専用の`crop_pdf_runner` child processへ委譲する。Hostから渡すのはstaging上の入力path、出力path、crop box、targetだけとし、PDF bytesをIPCへ載せない。出力byte数にも事前に根拠のない固定拒否値を設けず、child processのread/load/save/write失敗を通常の変換エラーとして扱う。cancel時はchild process treeを終了し、staging cleanupとcommit前のsignal確認を行う。
 
 ## Operation staging
 
@@ -21,7 +23,7 @@ configure operationの作業fileはworkspace内の次のstaging rootで管理す
 <workspace>/.graphics-workbench/crop-pdf-configure/<一意ID>/
 ```
 
-入力コピーと完成artifactはoperation単位で管理する。final pathへのcommitはstaging処理と分離し、commit失敗時のrollback、stagingの寿命、activation時のcleanupは、[Safe Mode internal contract](safe-mode.md)と[file operation security contract](file-operation-security.md)を正本とする。
+入力コピーと完成artifactはoperation単位で管理する。入力コピーはchild processが読むsnapshotとなり、完成artifactはchild processがstaging pathへ直接書き込む。final pathへのcommitはstaging処理と分離し、commit失敗時のrollback、stagingの寿命、activation時のcleanupは、[Safe Mode internal contract](safe-mode.md)と[file operation security contract](file-operation-security.md)を正本とする。
 
 ## Commit integration
 
