@@ -11,7 +11,7 @@
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { access, copyFile, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -26,6 +26,8 @@ import { cropPdfWithConfiguredBox, type CropBox } from '../../src/operations/pdf
 
 import { cropConfigureFixture } from '../helpers/crop_configure_fixture.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { RecordingOutputChannel } from '../helpers/recording_output_channel.js';
+import { assertWorkspaceChangesSince, captureWorkspaceSnapshot } from '../helpers/workspace_snapshot.js';
 
 const execFileAsync = promisify(execFile);
 suite('PDF configure crop処理', () => {
@@ -48,6 +50,8 @@ suite('PDF configure crop処理', () => {
     const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, '入力 PDF');
     const outputPath = path.join(workspacePath, '出力 PDF', 'q a-all-crop.pdf');
     const cropBox = cropConfigureFixture.cropBox;
+    const logs = new RecordingOutputChannel();
+    const before = await captureWorkspaceSnapshot(workspacePath);
 
     const outputs = await cropPdfWithConfiguredBox({
       job: {
@@ -58,6 +62,7 @@ suite('PDF configure crop処理', () => {
         target: { type: 'all' },
       },
       runId: 'all-pages',
+      runtime: { outputChannel: logs },
     });
 
     assert.deepStrictEqual(outputs, [
@@ -71,11 +76,28 @@ suite('PDF configure crop処理', () => {
     const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
     const outputDocument = await PDFDocument.load(await readFile(outputPath));
     assert.strictEqual(outputDocument.getPageCount(), 2);
-
     for (const [index, page] of outputDocument.getPages().entries()) {
       assertCropBox(page, cropBox);
       assert.deepStrictEqual(page.getMediaBox(), sourceDocument.getPage(index)?.getMediaBox());
     }
+
+    const after = await captureWorkspaceSnapshot(workspacePath);
+    assertWorkspaceChangesSince(before, after, {
+      created: [
+        path.join('出力 PDF', 'q a-all-crop.pdf'),
+        path.join(
+          '.graphics-workbench',
+          'crop-pdf-configure',
+          'all-pages',
+          'multilingual-text',
+          'multilingual-text.pdf',
+        ),
+        path.join('.graphics-workbench', 'crop-pdf-configure', 'all-pages', 'multilingual-text', 'result.pdf'),
+      ],
+    });
+    assert.ok(logs.hasLine('[crop-pdf-configure] staging-validated'));
+    assert.ok(logs.hasLine('[crop-pdf-configure] operation-completed'));
+    assert.equal(logs.hasLine(/operation-failed|operation-cancelled/iu), false);
 
     await assertRenderedCropMatchesSource({
       sourcePath,
@@ -99,6 +121,7 @@ suite('PDF configure crop処理', () => {
     const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, '選択元');
     const outputPath = path.join(workspacePath, '選択結果', 'q a-selected-crop.pdf');
     const cropBox = cropConfigureFixture.cropBox;
+    const before = await captureWorkspaceSnapshot(workspacePath);
 
     await cropPdfWithConfiguredBox({
       job: {
@@ -136,6 +159,53 @@ suite('PDF configure crop処理', () => {
     });
 
     assert.deepStrictEqual(await readFile(sourcePath), await readFile(inputFixturePath(cropConfigureFixture.fileName)));
+    const after = await captureWorkspaceSnapshot(workspacePath);
+    assertWorkspaceChangesSince(before, after, {
+      created: [
+        path.join('選択結果', 'q a-selected-crop.pdf'),
+        path.join(
+          '.graphics-workbench',
+          'crop-pdf-configure',
+          'selected-pages',
+          'multilingual-text',
+          'multilingual-text.pdf',
+        ),
+        path.join('.graphics-workbench', 'crop-pdf-configure', 'selected-pages', 'multilingual-text', 'result.pdf'),
+      ],
+    });
+  });
+
+  test('child成功後に既存outputへのcommitが失敗すると、既存outputを維持しstagingだけをcleanupする', async () => {
+    const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
+    const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, 'commit失敗元');
+    const outputPath = path.join(workspacePath, 'commit-failure', 'result.pdf');
+    const logs = new RecordingOutputChannel();
+    await mkdir(path.dirname(outputPath), { recursive: true });
+    await writeFile(outputPath, 'existing output');
+    const before = await captureWorkspaceSnapshot(workspacePath);
+
+    await assert.rejects(
+      cropPdfWithConfiguredBox({
+        job: {
+          sourcePath,
+          workspacePath,
+          outputPath,
+          cropBox: cropConfigureFixture.cropBox,
+          target: { type: 'all' },
+        },
+        runId: 'commit-failure',
+        runtime: { outputChannel: logs },
+      }),
+      /Output file already exists/iu,
+    );
+
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing output');
+    const after = await captureWorkspaceSnapshot(workspacePath);
+    assertWorkspaceChangesSince(before, after, {});
+    assert.ok(logs.hasLine('child-success-received'));
+    assert.ok(logs.hasLine('[crop-pdf-configure] staging-cleaned'));
+    assert.ok(logs.hasLine('[crop-pdf-configure] operation-failed'));
+    assert.equal(logs.hasLine('[crop-pdf-configure] operation-completed'), false);
   });
 
   test('多言語・複雑なUnicode・半角全角空白を保ち、複数のoutputPathへ出力する', async () => {
@@ -261,8 +331,7 @@ async function copyFixtureToWorkspace(
   return destination;
 }
 
-function assertCropBox(page: PDFPage | undefined, cropBox: CropBox): void {
-  assert.ok(page);
+function assertCropBox(page: PDFPage, cropBox: CropBox): void {
   const expected = {
     x: cropBox.left,
     y: cropBox.bottom,
