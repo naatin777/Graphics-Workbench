@@ -151,10 +151,8 @@ export function App(): JSX.Element {
 
   return (
     <main class='app'>
-      <header class='app__header'>
-        <h1>{labels().header.title}</h1>
-        <p>{labels().header.description}</p>
-      </header>
+      <h1 class='sr-only'>{labels().header.title}</h1>
+      <p class='sr-only'>{labels().header.description}</p>
 
       <div class='workspace'>
         <SplitPane

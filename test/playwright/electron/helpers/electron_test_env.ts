@@ -51,6 +51,7 @@ export interface ElectronTestOptions {
   colorTheme?: string;
   extraSettings?: Record<string, unknown>;
   copyFixtures?: boolean;
+  pdfFixtureFileName?: string;
   prepared?: PreparedElectronTest;
   viewportWidth?: number;
 }
@@ -119,6 +120,7 @@ export async function setupElectronTest(
   const colorTheme = options.colorTheme ?? 'Default Dark Modern';
   const extraSettings = options.extraSettings ?? {};
   const copyFixtures = options.copyFixtures ?? true;
+  const pdfFixtureFileName = options.pdfFixtureFileName ?? cropConfigureFixture.fileName;
   const prepared = options.prepared;
   const contentSize = {
     width: options.viewportWidth ?? defaultElectronContentSize.width,
@@ -134,10 +136,10 @@ export async function setupElectronTest(
   const extensionsDir = prepared?.extensionsDir ?? join(temporaryRoot, 'extensions');
 
   const projectRoot = process.cwd();
-  const sourceFixture = join(operationPdfInputDirectory, cropConfigureFixture.fileName);
+  const sourceFixture = join(operationPdfInputDirectory, pdfFixtureFileName);
   const rasterSourceFixture = operationPngInputPath;
-  const inputPath = join(workspacePath, cropConfigureFixture.fileName);
-  const outputPath = join(workspacePath, 'multilingual-text-crop.pdf');
+  const inputPath = join(workspacePath, pdfFixtureFileName);
+  const outputPath = join(workspacePath, `${pdfFixtureFileName.replace(/\.pdf$/i, '')}-crop.pdf`);
 
   const directories = [
     mkdir(workspacePath, { recursive: true }),

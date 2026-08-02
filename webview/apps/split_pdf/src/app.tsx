@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { createStore } from 'solid-js/store';
 
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 
@@ -31,7 +32,7 @@ export function App(): JSX.Element {
     outputNameEdited: false,
   });
 
-  const [rows, setRows] = createSignal<Row[]>([createRow()]);
+  const [rows, setRows] = createStore<Row[]>([createRow()]);
   const [labels, setLabels] = createSignal(defaultLabels);
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
@@ -64,36 +65,40 @@ export function App(): JSX.Element {
 
   const addRow = (): number => {
     const row = createRow();
-    setRows((current) => [...current, row]);
+    setRows(rows.length, row);
     setFocusedRowId(row.id);
     setApplyError('');
     return row.id;
   };
 
   const updatePages = (rowId: number, pages: string): void => {
-    setRows((current) =>
-      current.map((row) =>
-        row.id === rowId
-          ? {
-              ...row,
-              pages,
-              outputName: row.outputNameEdited ? row.outputName : pages,
-            }
-          : row,
-      ),
-    );
+    const rowIndex = rows.findIndex((row) => row.id === rowId);
+    const row = rows[rowIndex];
+
+    if (rowIndex < 0 || !row) {
+      return;
+    }
+
+    setRows(rowIndex, {
+      pages,
+      ...(row.outputNameEdited ? {} : { outputName: pages }),
+    });
     setApplyError('');
   };
 
   const updateOutputName = (rowId: number, outputName: string): void => {
-    setRows((current) =>
-      current.map((row) => (row.id === rowId ? { ...row, outputName, outputNameEdited: true } : row)),
-    );
+    const rowIndex = rows.findIndex((row) => row.id === rowId);
+
+    if (rowIndex < 0) {
+      return;
+    }
+
+    setRows(rowIndex, { outputName, outputNameEdited: true });
     setApplyError('');
   };
 
   const removeRow = (rowId: number): void => {
-    const current = rows();
+    const current = rows;
     const index = current.findIndex((row) => row.id === rowId);
 
     if (index < 0) {
@@ -109,8 +114,9 @@ export function App(): JSX.Element {
       return;
     }
 
+    setRows((currentRows) => currentRows.filter((row) => row.id !== rowId));
+
     const nextRows = current.filter((row) => row.id !== rowId);
-    setRows(nextRows);
 
     if (focusedRowId() === rowId) {
       const nextFocusedRow = nextRows[Math.min(index, nextRows.length - 1)];
@@ -124,7 +130,7 @@ export function App(): JSX.Element {
   };
 
   const moveRow = (rowId: number, direction: -1 | 1): void => {
-    const current = rows();
+    const current = rows;
     const index = current.findIndex((row) => row.id === rowId);
     const nextIndex = index + direction;
 
@@ -151,7 +157,7 @@ export function App(): JSX.Element {
     }
 
     event.preventDefault();
-    const current = rows();
+    const current = rows;
     const row = current[rowIndex];
 
     if (!row) {
@@ -190,7 +196,7 @@ export function App(): JSX.Element {
       return;
     }
 
-    const current = rows();
+    const current = rows;
     const sourceIndex = current.findIndex((row) => row.id === sourceRowId);
     const targetIndex = current.findIndex((row) => row.id === targetRowId);
 
@@ -214,7 +220,7 @@ export function App(): JSX.Element {
     const outputNames = new Set<string>();
     const configuredRows: SplitPdfPageGroupRow[] = [];
 
-    for (const [index, row] of rows().entries()) {
+    for (const [index, row] of rows.entries()) {
       const parsedPages = parsePages(row.pages, pageCount());
 
       if (!parsedPages.ok) {
@@ -279,7 +285,7 @@ export function App(): JSX.Element {
       return;
     }
 
-    const focusedRow = rows().find((row) => row.id === focusedRowId());
+    const focusedRow = rows.find((row) => row.id === focusedRowId());
     const parsedPages = focusedRow ? parsePages(focusedRow.pages, pageCount()) : undefined;
     const focusedPages = new Set(parsedPages?.ok === true ? parsedPages.pages : []);
     setFocusedPagesLabel(parsedPages?.ok === true ? parsedPages.pages.join(', ') : '');
@@ -370,7 +376,6 @@ export function App(): JSX.Element {
   };
 
   createEffect(() => {
-    rows();
     focusedRowId();
     pageCount();
     previewMode();
@@ -415,15 +420,10 @@ export function App(): JSX.Element {
 
   return (
     <main class='app'>
-      <header class='app__header'>
-        <div>
-          <h1>{labels().header.title}</h1>
-          <p>{labels().header.description}</p>
-        </div>
-        <p class='app__meta'>
-          {fileName()} | {pageCount()} {labels().pages.title}
-        </p>
-      </header>
+      <h1 class='sr-only'>{labels().header.title}</h1>
+      <p class='sr-only'>
+        {fileName()} | {pageCount()} {labels().pages.title}. {labels().header.description}
+      </p>
 
       <div class='workspace'>
         <SplitPane
@@ -434,6 +434,7 @@ export function App(): JSX.Element {
               }}
               aria-label={labels().preview.ariaLabel}
               class='pdf-preview'
+              classList={{ 'pdf-preview--fit': zoomPercent() <= 100 }}
               onWheel={zoomWithWheel}
             >
               <PreviewToolbar
@@ -489,12 +490,12 @@ export function App(): JSX.Element {
               </div>
 
               <div class='rows'>
-                <For each={rows()}>
+                <For each={rows}>
                   {(row, index) => (
                     <GroupRow
                       row={row}
                       index={index}
-                      rowCount={rows().length}
+                      rowCount={rows.length}
                       labels={labels()}
                       outputPathTemplate={outputPathTemplate()}
                       focused={focusedRowId() === row.id}

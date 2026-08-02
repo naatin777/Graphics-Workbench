@@ -30,36 +30,11 @@ textarea {
 
 .app {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 16px;
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: 16px;
-}
-
-.app__header {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.app__header h1 {
-  margin: 0 0 4px;
-  font-size: 1.4rem;
-  font-weight: 600;
-}
-
-.app__header p {
-  margin: 0;
-  color: var(--vscode-descriptionForeground);
-}
-
-.app__meta {
-  flex: 0 0 auto;
-  max-width: 40%;
-  text-align: right;
+  padding: 8px;
 }
 
 .workspace {
@@ -80,7 +55,7 @@ textarea {
 
 .split-pane__divider {
   flex: 0 0 6px;
-  margin: 0 12px 0 8px;
+  margin: 0 8px 0 4px;
   cursor: col-resize;
   background: var(--vscode-panel-border);
 }
@@ -98,6 +73,7 @@ textarea {
 .pdf-preview {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
   min-width: 0;
   min-height: 0;
   overflow: auto;
@@ -109,10 +85,10 @@ textarea {
   top: 0;
   z-index: 1;
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0 12px;
+  padding: 0 0 8px;
 }
 
 .pdf-preview__toolbar h2 {
@@ -121,16 +97,17 @@ textarea {
 }
 
 .pdf-preview__toolbar p {
+  display: none;
   margin: 0;
   color: var(--vscode-descriptionForeground);
 }
 
 .pdf-preview__pages {
   display: grid;
-  gap: 16px;
+  gap: 12px;
   justify-items: center;
   min-width: 0;
-  padding: 16px;
+  padding: 12px 0;
 }
 
 .pdf-preview__footer {
@@ -147,16 +124,27 @@ textarea {
 .pdf-page {
   display: grid;
   justify-items: center;
+  max-width: 100%;
   width: max-content;
   margin: 0;
   outline: 1px solid transparent;
 }
 
+.pdf-preview--fit .pdf-page {
+  width: 100%;
+}
+
 .pdf-preview canvas {
   display: block;
   height: auto;
+  max-width: 100%;
   background: white;
   box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+}
+
+.pdf-preview:not(.pdf-preview--fit) .pdf-page,
+.pdf-preview:not(.pdf-preview--fit) canvas {
+  max-width: none;
 }
 
 .pdf-preview__error {
@@ -179,7 +167,7 @@ textarea {
 .panel {
   display: grid;
   align-content: start;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
   max-height: 100%;
 }
@@ -208,12 +196,12 @@ textarea {
 .crop-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .field {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .field__label {
@@ -245,7 +233,7 @@ textarea {
 
 .target {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   padding: 0;
   border: 0;
 }
@@ -319,15 +307,6 @@ body.vscode-high-contrast-light .pdf-page {
     overflow: visible;
   }
 
-  .app__header {
-    display: grid;
-  }
-
-  .app__meta {
-    max-width: none;
-    text-align: left;
-  }
-
   .split-pane {
     height: auto;
     flex-direction: column;
@@ -346,6 +325,7 @@ body.vscode-high-contrast-light .pdf-page {
   }
 
   .pdf-preview {
+    height: auto;
     min-height: 55vh;
     max-height: 70vh;
   }
@@ -353,4 +333,16 @@ body.vscode-high-contrast-light .pdf-page {
   .panel {
     max-height: none;
   }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

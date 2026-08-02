@@ -15,9 +15,11 @@ import { captureCropPdfScreenshot } from './helpers/crop_pdf_screenshot.js';
 import {
   expectPdfCanvasesReadable,
   expectWebviewNetworkBlocked,
+  expectWebviewPreviewScrollable,
   convertPdfToJpeg,
   convertPngToJpeg,
   openCropPdfConfigure,
+  renderAllPdfPreviewPages,
   waitForWebviewTheme,
 } from './helpers/crop_pdf_webview.js';
 import {
@@ -38,6 +40,10 @@ import {
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const alternateTheme = 'Default Light Modern';
+const longPdfFixture = {
+  fileName: 'multi-page-mixed-content.pdf',
+  cropBox: { left: 20, bottom: 30, right: 200, top: 280 },
+} as const;
 const additionalThemes = [
   {
     id: 'default-high-contrast',
@@ -60,13 +66,6 @@ const additionalThemes = [
     themeClass: 'vscode-dark',
   },
 ] as const;
-const expectedCropBox = {
-  x: cropConfigureFixture.cropBox.left,
-  y: cropConfigureFixture.cropBox.bottom,
-  width: cropConfigureFixture.cropBox.right - cropConfigureFixture.cropBox.left,
-  height: cropConfigureFixture.cropBox.top - cropConfigureFixture.cropBox.bottom,
-};
-
 type PackagedMergePdfModule = {
   mergePdf(options: MergePdfOptions): Promise<unknown>;
 };
@@ -155,7 +154,10 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
   const consoleMessages: string[] = [];
 
   try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(testInfo),
+      pdfFixtureFileName: longPdfFixture.fileName,
+    });
     env.app.electronApp.on('console', (message) => {
       consoleMessages.push(message.text());
     });
@@ -165,14 +167,14 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
       frame: webviewFrame,
       preview,
       settings,
-    } = await openCropPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    } = await openCropPdfConfigure(env.app.window, longPdfFixture.fileName);
 
     await expect(webviewFrame.getByRole('heading', { name: 'Custom Crop', exact: true })).toBeVisible();
-    await expect(webviewFrame.getByText(`${cropConfigureFixture.fileName} · 2 pages`, { exact: true })).toBeVisible();
+    await expect(webviewFrame.locator('p.sr-only')).toContainText(`${longPdfFixture.fileName} · 15 pages`);
 
     await expect(preview).toBeVisible();
     await expect(settings).toBeVisible();
-    await expect(canvases).toHaveCount(2);
+    await expect(canvases).toHaveCount(15);
     await expect
       .poll(() =>
         canvases.evaluateAll((elements) =>
@@ -188,19 +190,17 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
     await expect(webviewFrame.getByText(/PDFを表示できませんでした:/)).toHaveCount(0);
 
     await expectWebviewNetworkBlocked(webviewFrame);
+    await expectWebviewPreviewScrollable(webviewFrame);
+    await renderAllPdfPreviewPages(webviewFrame);
 
-    await settings
-      .getByRole('spinbutton', { name: 'Left', exact: true })
-      .fill(cropConfigureFixture.cropBox.left.toString());
+    await settings.getByRole('spinbutton', { name: 'Left', exact: true }).fill(longPdfFixture.cropBox.left.toString());
     await settings
       .getByRole('spinbutton', { name: 'Bottom', exact: true })
-      .fill(cropConfigureFixture.cropBox.bottom.toString());
+      .fill(longPdfFixture.cropBox.bottom.toString());
     await settings
       .getByRole('spinbutton', { name: 'Right', exact: true })
-      .fill(cropConfigureFixture.cropBox.right.toString());
-    await settings
-      .getByRole('spinbutton', { name: 'Top', exact: true })
-      .fill(cropConfigureFixture.cropBox.top.toString());
+      .fill(longPdfFixture.cropBox.right.toString());
+    await settings.getByRole('spinbutton', { name: 'Top', exact: true }).fill(longPdfFixture.cropBox.top.toString());
     await expect(settings.getByRole('radio', { name: 'All pages', exact: true })).toBeChecked();
     await expectPdfCanvasesReadable(canvases);
 
@@ -215,14 +215,24 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
           return 0;
         }
       })
-      .toBe(2);
+      .toBe(15);
 
     const outputDocument = await PDFDocument.load(await readFile(env.files.outputPath));
-    expect(outputDocument.getPageCount()).toBe(2);
+    expect(outputDocument.getPageCount()).toBe(15);
 
     for (const page of outputDocument.getPages()) {
-      expect(page.getMediaBox()).toEqual(expectedCropBox);
-      expect(page.getCropBox()).toEqual(expectedCropBox);
+      expect(page.getMediaBox()).toEqual({
+        x: longPdfFixture.cropBox.left,
+        y: longPdfFixture.cropBox.bottom,
+        width: longPdfFixture.cropBox.right - longPdfFixture.cropBox.left,
+        height: longPdfFixture.cropBox.top - longPdfFixture.cropBox.bottom,
+      });
+      expect(page.getCropBox()).toEqual({
+        x: longPdfFixture.cropBox.left,
+        y: longPdfFixture.cropBox.bottom,
+        width: longPdfFixture.cropBox.right - longPdfFixture.cropBox.left,
+        height: longPdfFixture.cropBox.top - longPdfFixture.cropBox.bottom,
+      });
     }
 
     expect(await readFile(env.files.inputPath)).toEqual(env.files.sourceFixtureBytes);

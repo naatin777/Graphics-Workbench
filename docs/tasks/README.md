@@ -72,7 +72,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
-- [0211: パッケージ済みElectron E2Eの安定性・幅別UI検証を改善する](0211-stabilize-packaged-playwright-e2e.md) — Done — Electron E2Eを13ケース×2幅へ安定化し、重複テストを統合
+- [0211: パッケージ済みElectron E2Eの安定性・幅別UI検証を改善する](0211-stabilize-packaged-playwright-e2e.md) — Done — Electron E2Eを15ケース×2幅へ安定化し、重複テストを統合
 - [0210: 変換機能と出力パス設定の仕様調査・互換コード削減](0210-investigate-conversion-spec-and-compat.md) — Done — 到達不能分岐修正・二重キー削除・orphan NLS削除・テスト追加
 - [0209: P1レビュー指摘の修正](0209-fix-p1-review-findings.md) — Done — Undo履歴・dynamic import・Mermaidキャンセル・PDF Progress・実行パスscope
 - [0207: パッケージ済みPlaywrightテストの実行時間を短縮する](0207-speed-up-packaged-playwright-tests.md) — Done — VSIX installation shared per spec; Windows Playwright 7.6m → 2.0m

@@ -1,10 +1,16 @@
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { expect, test, type TestInfo } from '@playwright/test';
+import { expect, test, type Frame, type TestInfo } from '@playwright/test';
+import { PDFDocument } from 'pdf-lib';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
 import { resetTestWorkspace } from '../../helpers/test_workspace.js';
-import { expectPdfCanvasesReadable, waitForWebviewTheme } from './helpers/crop_pdf_webview.js';
+import {
+  expectPdfCanvasesReadable,
+  expectPdfPreviewCentered,
+  waitForWebviewTheme,
+} from './helpers/crop_pdf_webview.js';
 import {
   attachElectronDiagnostics,
   disposeElectronTest,
@@ -99,6 +105,12 @@ async function attachDiagnostics(
   });
 }
 
+async function selectFirstSplitPage(frame: Frame): Promise<void> {
+  await frame.getByRole('textbox', { name: 'Pages 1', exact: true }).fill('1');
+  await frame.getByRole('button', { name: 'All pages', exact: true }).click();
+  await expectPdfPreviewCentered(frame);
+}
+
 test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
@@ -110,7 +122,8 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       consoleMessages.push(message.text());
     });
 
-    const { body, canvases } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    const { body, canvases, frame } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    await selectFirstSplitPage(frame);
 
     const darkTheme = await waitForWebviewTheme(body, 'vscode-dark');
     await expectPdfCanvasesReadable(canvases);
@@ -171,7 +184,8 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
     });
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
-    const { body, canvases } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    const { body, canvases, frame } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    await selectFirstSplitPage(frame);
 
     for (const theme of additionalThemes) {
       await writeVscodeUserSettings(userSettingsPath, theme.colorTheme);
@@ -248,6 +262,78 @@ test('分割ペインが幅に応じて配置され長幅でドラッグ調整�
 
     const afterWidth = await preview.evaluate((element) => element.getBoundingClientRect().width);
     expect(afterWidth).toBeLessThan(beforeWidth);
+  } catch (error) {
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
+test('グループ入力中にフォーカスを維持する', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(120_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const { frame } = await openSplitPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    const pages = frame.getByRole('textbox', { name: 'Pages 1', exact: true });
+    const outputName = frame.getByRole('textbox', { name: 'Output name 1', exact: true });
+
+    await pages.fill('1-2');
+    await expect.poll(() => pages.evaluate((element) => element.ownerDocument.activeElement === element)).toBe(true);
+    await expect(outputName).toHaveValue('1-2');
+  } catch (error) {
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
+test('入力したグループ設定でSplit PDFを実行できる', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(120_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(testInfo),
+      pdfFixtureFileName: 'multi-page-mixed-content.pdf',
+    });
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const { frame } = await openSplitPdfConfigure(env.app.window, 'multi-page-mixed-content.pdf');
+    const pages = frame.getByRole('textbox', { name: 'Pages 1', exact: true });
+    const outputName = frame.getByRole('textbox', { name: 'Output name 1', exact: true });
+    const outputPath = join(env.directories.workspacePath, 'multi-page-mixed-content', 'selected-pages.pdf');
+
+    await pages.fill('1, 10-12');
+    await expect(outputName).toHaveValue('1, 10-12');
+    await outputName.fill('selected-pages');
+    await frame.getByRole('button', { name: 'Apply', exact: true }).click();
+
+    await expect(env.app.window.getByText('Created 1 split PDF file(s).', { exact: true })).toBeVisible();
+    await expect
+      .poll(async () => {
+        try {
+          return (await PDFDocument.load(await readFile(outputPath))).getPageCount();
+        } catch {
+          return 0;
+        }
+      })
+      .toBe(4);
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));

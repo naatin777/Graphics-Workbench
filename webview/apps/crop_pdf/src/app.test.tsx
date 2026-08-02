@@ -139,6 +139,17 @@ describe('Crop PDF Webview', () => {
       },
     });
   });
+
+  test('keeps the crop input focused while its value changes', async () => {
+    await flushPromises();
+
+    const left = findNumberInput('Left');
+    left.focus();
+    setInput(left, '1');
+    await flushPromises();
+
+    expect(document.activeElement).toBe(left);
+  });
 });
 
 function findNumberInput(label: string): HTMLInputElement {

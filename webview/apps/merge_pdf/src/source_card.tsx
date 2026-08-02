@@ -49,44 +49,48 @@ export function SourceCard(props: {
             type='button'
             draggable={true}
             aria-label={props.labels.controls.dragHandle}
+            title={props.labels.controls.dragHandle}
             onDragStart={(event) => {
               props.handlers.onDragStart(event, props.source.sourceId);
             }}
             onDragEnd={props.handlers.onDragEnd}
           >
-            ::
+            <span aria-hidden='true'>⠿</span>
           </button>
           <button
-            class='button'
+            class='button button--icon'
             type='button'
             disabled={props.index() === 0}
             aria-label={props.labels.controls.moveUp}
+            title={props.labels.controls.moveUp}
             onClick={() => {
               props.handlers.onMove(props.source.sourceId, -1);
             }}
           >
-            {props.labels.controls.moveUp}
+            <span aria-hidden='true'>↑</span>
           </button>
           <button
-            class='button'
+            class='button button--icon'
             type='button'
             disabled={props.index() === props.sourceCount - 1}
             aria-label={props.labels.controls.moveDown}
+            title={props.labels.controls.moveDown}
             onClick={() => {
               props.handlers.onMove(props.source.sourceId, 1);
             }}
           >
-            {props.labels.controls.moveDown}
+            <span aria-hidden='true'>↓</span>
           </button>
           <button
-            class='button button--danger'
+            class='button button--icon button--danger'
             type='button'
             aria-label={`${props.labels.controls.removeSource}: ${props.source.fileName}`}
+            title={props.labels.controls.removeSource}
             onClick={() => {
               props.handlers.onRemove(props.source.sourceId);
             }}
           >
-            {props.labels.controls.removeSource}
+            <span aria-hidden='true'>×</span>
           </button>
         </div>
       </div>

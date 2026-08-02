@@ -121,6 +121,17 @@ describe('Split PDF Webview', () => {
     expect(document.activeElement).toBe(document.querySelector('input[aria-label="Pages 2"]'));
   });
 
+  test('keeps the edited group input focused while its value changes', async () => {
+    await flushPromises();
+
+    const pages = findInput('Pages 1');
+    pages.focus();
+    setInput(pages, '1');
+    await flushPromises();
+
+    expect(document.activeElement).toBe(pages);
+  });
+
   test('toggles all-page preview, changes zoom, and applies groups', async () => {
     await flushPromises();
     sendMessage.mockClear();

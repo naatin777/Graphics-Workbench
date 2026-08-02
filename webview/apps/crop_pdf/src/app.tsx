@@ -322,15 +322,10 @@ export function App(): JSX.Element {
 
   return (
     <main class='app'>
-      <header class='app__header'>
-        <div>
-          <h1>{labels().header.title}</h1>
-          <p>{labels().header.description}</p>
-        </div>
-        <p class='app__meta'>
-          {fileName()} · {pageCount()} {labels().header.pages}
-        </p>
-      </header>
+      <h1 class='sr-only'>{labels().header.title}</h1>
+      <p class='sr-only'>
+        {fileName()} · {pageCount()} {labels().header.pages}. {labels().header.description}
+      </p>
 
       <div class='workspace'>
         <SplitPane
@@ -341,6 +336,7 @@ export function App(): JSX.Element {
               }}
               aria-label={labels().preview.ariaLabel}
               class='pdf-preview'
+              classList={{ 'pdf-preview--fit': previewZoom() <= 1 }}
               onWheel={zoomWithWheel}
             >
               <div class='pdf-preview__toolbar'>
