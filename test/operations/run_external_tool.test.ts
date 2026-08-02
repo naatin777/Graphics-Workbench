@@ -249,6 +249,39 @@ suite('外部tool runner — Cancellation', () => {
 
     assert.ok(!lines.some((line) => line.includes('super-secret-token')), 'secret must not leak in cancellation log');
   });
+
+  test('AbortSignalで外部toolの子孫プロセスも停止する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-tree-cancel-'));
+    const sentinelPath = path.join(workspacePath, 'sentinel.txt');
+    const startedPath = path.join(workspacePath, 'started.txt');
+
+    try {
+      const controller = new AbortController();
+      const treeScript = `
+        const { spawn } = require('node:child_process');
+        const fs = require('node:fs');
+        fs.writeFileSync(process.env.GW_STARTED_PATH, 'started');
+        spawn(process.execPath, ['-e', "setTimeout(() => require('node:fs').writeFileSync(process.env.GW_SENTINEL_PATH, 'done'), 30000)"], { stdio: 'ignore', env: process.env });
+        setTimeout(() => {}, 30000);
+      `;
+      const promise = runExternalTool({
+        toolName: 'tree-tool',
+        executable: process.execPath,
+        args: ['-e', treeScript],
+        env: { ...process.env, GW_STARTED_PATH: startedPath, GW_SENTINEL_PATH: sentinelPath },
+        signal: controller.signal,
+      });
+
+      await waitForFile(startedPath, 5000);
+      controller.abort();
+      await assert.rejects(promise);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await assert.rejects(import('node:fs/promises').then((fs) => fs.stat(sentinelPath)));
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
 });
 
 async function waitForFile(filePath: string, timeoutMs: number): Promise<void> {

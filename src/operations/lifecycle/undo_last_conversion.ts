@@ -12,6 +12,7 @@ export interface ConversionOutput {
   workspacePath: string;
   previousFilePath?: string;
   stagingRootPath?: string;
+  stagingWorkspacePath?: string | undefined;
 }
 
 export interface ConversionUndoRecord {
@@ -46,7 +47,7 @@ export async function createConversionUndoRecord(
       await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
       const previousSha256 =
         output.previousFilePath !== undefined && output.previousFilePath !== ''
-          ? await recordPreviousFile(output.previousFilePath, output.workspacePath)
+          ? await recordPreviousFile(output.previousFilePath, output.stagingWorkspacePath ?? output.workspacePath)
           : undefined;
 
       return {
@@ -77,7 +78,10 @@ export async function undoConversionOutputs(
       await validateUnchangedOutput(output);
 
       if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-        await assertExistingPathInWorkspace(output.previousFilePath, output.workspacePath);
+        await assertExistingPathInWorkspace(
+          output.previousFilePath,
+          output.stagingWorkspacePath ?? output.workspacePath,
+        );
         await copyFile(output.previousFilePath, output.outputPath);
       } else {
         await rm(output.outputPath);
@@ -151,7 +155,7 @@ async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<vo
   }
 
   if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-    await assertExistingPathInWorkspace(output.previousFilePath, output.workspacePath);
+    await assertExistingPathInWorkspace(output.previousFilePath, output.stagingWorkspacePath ?? output.workspacePath);
 
     if ((await calculateSha256(output.previousFilePath)) !== output.previousSha256) {
       throw new Error(`Output backup changed after conversion: ${output.previousFilePath}`);
@@ -171,7 +175,12 @@ async function calculateSha256(filePath: string): Promise<string> {
 function toArtifactRoots(record: ConversionUndoRecord): ConversionArtifactRoot[] {
   return record.outputs.flatMap((output) =>
     output.stagingRootPath !== undefined && output.stagingRootPath !== ''
-      ? [{ rootPath: output.stagingRootPath, workspacePath: output.workspacePath }]
+      ? [
+          {
+            rootPath: output.stagingRootPath,
+            workspacePath: output.stagingWorkspacePath ?? output.workspacePath,
+          },
+        ]
       : [],
   );
 }

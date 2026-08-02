@@ -11,7 +11,7 @@
 
 ## Rendering lifecycle
 
-PDF metadataと最初のpageを先に読み込み、残りはplaceholderと`IntersectionObserver`で遅延renderする。Apply送信は全canvasのrender完了を前提にせず、panel dispose時はobserver、PDF.js render task、page/document resourceを可能な範囲でcleanupする。
+PDF metadataと最初のpageを先に読み込み、残りはplaceholderと`IntersectionObserver`で遅延renderする。初期PDF解析は進捗通知とcancel signalの内側でWorker Threadへ分離し、入力file size 256 MiB、page count 2,000、metadata解析時間30秒を安全上限とする。Apply時にも入力size/page countを再検証し、生成PDFは512 MiBを超えないようにする。Apply送信は全canvasのrender完了を前提にせず、panel dispose時はobserver、PDF.js render task、page/document resourceを可能な範囲でcleanupする。
 
 ## Operation staging
 

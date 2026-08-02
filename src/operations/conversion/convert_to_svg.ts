@@ -1,7 +1,5 @@
-import { execFile } from 'node:child_process';
 import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { Parser } from 'xml2js';
 
@@ -31,9 +29,6 @@ import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-
-// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
-const execFileAsync = promisify(execFile);
 
 export interface ConvertToSvgJob {
   sourcePath: string;
@@ -332,15 +327,13 @@ async function writePdfPageAsSvg({
           return;
         }
 
-        await execFileAsync(
-          pdftocairoTools.pdftocairoPath,
-          ['-svg', '-f', String(page), '-l', String(page), toolSourcePath, toolOutputPath],
-          {
-            encoding: 'utf8',
-            maxBuffer: 10 * 1024 * 1024,
-            signal,
-          },
-        );
+        await runExternalTool({
+          toolName: 'pdftocairo',
+          executable: pdftocairoTools.pdftocairoPath,
+          args: ['-svg', '-f', String(page), '-l', String(page), toolSourcePath, toolOutputPath],
+          ...(signal === undefined ? {} : { signal }),
+          ...(outputChannel === undefined ? {} : { outputChannel }),
+        });
       },
     });
   } catch (error) {

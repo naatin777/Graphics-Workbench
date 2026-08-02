@@ -1,7 +1,6 @@
-import { readFile } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import path from 'node:path';
-
-import { PDFDocument } from 'pdf-lib';
+import { Worker } from 'node:worker_threads';
 import * as vscode from 'vscode';
 
 import {
@@ -13,6 +12,12 @@ import {
 } from '../../application/protocols/crop_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { localeMap } from '../../locale_map.js';
+import { OperationCancelledError } from '../../operations/lifecycle/operation_cancelled_error.js';
+import {
+  CROP_CONFIGURE_METADATA_TIMEOUT_MS,
+  MAX_CROP_CONFIGURE_INPUT_BYTES,
+  MAX_CROP_CONFIGURE_PAGES,
+} from '../../operations/pdf/crop_pdf_limits.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
@@ -26,6 +31,12 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
+
+export {
+  CROP_CONFIGURE_METADATA_TIMEOUT_MS,
+  MAX_CROP_CONFIGURE_INPUT_BYTES,
+  MAX_CROP_CONFIGURE_PAGES,
+} from '../../operations/pdf/crop_pdf_limits.js';
 
 export async function cropPdfConfigureCommand(
   context: vscode.ExtensionContext,
@@ -63,9 +74,34 @@ async function runCropPdfConfigureCommand(
 
   await assertExistingPathInWorkspace(inputUri.fsPath, workspaceFolder.uri.fsPath);
 
-  const pdf = await PDFDocument.load(await readFile(inputUri.fsPath));
-  const firstPage = pdf.getPages()[0];
-  const firstPageMediaBox = firstPage?.getMediaBox();
+  const pdf = await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: userMessage('message.progress.cropPdf.title', 1),
+      cancellable: true,
+    },
+    async (progress, token) =>
+      withCancellationSignal(token, async (signal) => {
+        signal.throwIfAborted();
+        progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
+        const fileStat = await stat(inputUri.fsPath);
+        const fileSize = fileStat.size;
+        if (fileSize > MAX_CROP_CONFIGURE_INPUT_BYTES) {
+          throw new Error(
+            `Crop Configure supports PDF inputs up to ${MAX_CROP_CONFIGURE_INPUT_BYTES / (1024 * 1024)} MiB.`,
+          );
+        }
+
+        signal.throwIfAborted();
+        return inspectCropPdfMetadata(
+          inputUri.fsPath,
+          MAX_CROP_CONFIGURE_INPUT_BYTES,
+          MAX_CROP_CONFIGURE_PAGES,
+          signal,
+          CROP_CONFIGURE_METADATA_TIMEOUT_MS,
+        );
+      }),
+  );
   const outputTemplate = getCommandConfiguration(dependencies).outputPath.cropPdf();
   const initMessage: CropConfigureHostToWebview = {
     type: 'init',
@@ -78,10 +114,10 @@ async function runCropPdfConfigureCommand(
         wasmUrl: '',
       },
       fileName: path.basename(inputUri.fsPath),
-      pageCount: pdf.getPageCount(),
+      pageCount: pdf.pageCount,
       initialPage: 1,
-      width: firstPageMediaBox?.width ?? 0,
-      height: firstPageMediaBox?.height ?? 0,
+      width: pdf.width,
+      height: pdf.height,
       labels: cropPdfLabels(),
     },
   };
@@ -161,6 +197,89 @@ async function runCropPdfConfigureCommand(
         isApplying = false;
       }
     })();
+  });
+}
+
+interface CropPdfMetadata {
+  pageCount: number;
+  width: number;
+  height: number;
+}
+
+interface CropPdfMetadataWorkerMessage {
+  ok: boolean;
+  pageCount?: number;
+  width?: number;
+  height?: number;
+  error?: string;
+}
+
+async function inspectCropPdfMetadata(
+  filePath: string,
+  maxBytes: number,
+  maxPages: number,
+  signal: AbortSignal,
+  timeoutMs: number,
+): Promise<CropPdfMetadata> {
+  return new Promise<CropPdfMetadata>((resolve, reject) => {
+    const worker = new Worker(new URL('./crop_pdf_metadata_worker.js', import.meta.url));
+    let settled = false;
+    const timer = setTimeout(() => {
+      finish(new Error(`Crop Configure metadata inspection timed out after ${timeoutMs}ms.`));
+    }, timeoutMs);
+
+    const cleanup = (): void => {
+      signal.removeEventListener('abort', abort);
+      clearTimeout(timer);
+      void worker.terminate();
+    };
+    const finish = (error?: Error, metadata?: CropPdfMetadata): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      if (error !== undefined) {
+        reject(error);
+      } else if (metadata === undefined) {
+        reject(new Error('Crop Configure metadata worker returned no result.'));
+      } else {
+        resolve(metadata);
+      }
+    };
+    const abort = (): void => {
+      finish(new OperationCancelledError('Crop Configure metadata inspection was cancelled.'));
+    };
+
+    worker.on('message', (message: CropPdfMetadataWorkerMessage) => {
+      if (
+        message.ok &&
+        message.pageCount !== undefined &&
+        message.width !== undefined &&
+        message.height !== undefined
+      ) {
+        finish(undefined, { pageCount: message.pageCount, width: message.width, height: message.height });
+        return;
+      }
+
+      finish(new Error(message.error ?? 'Crop Configure metadata inspection failed.'));
+    });
+    worker.on('error', (error) => {
+      finish(error);
+    });
+    worker.on('exit', (code) => {
+      if (!settled) {
+        finish(new Error(`Crop Configure metadata worker exited without a result (code ${code}).`));
+      }
+    });
+    signal.addEventListener('abort', abort, { once: true });
+    if (signal.aborted) {
+      abort();
+      return;
+    }
+
+    // oxlint-disable-next-line unicorn/require-post-message-target-origin -- Worker MessagePort has no targetOrigin.
+    worker.postMessage({ filePath, maxBytes, maxPages });
   });
 }
 

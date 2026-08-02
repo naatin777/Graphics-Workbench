@@ -4,6 +4,7 @@ import type { LineOutputChannel } from './operations/external_tools/external_too
 import type { CommandDependencies } from './commands/shared/command_dependencies.js';
 import { initializeSafeMode } from './commands/lifecycle/safe_mode.js';
 import { initializeUndoHistory, undoLastConversionCommand } from './commands/lifecycle/undo_last_conversion.js';
+import { cleanupStaleSecurePdfStagingRoots } from './operations/lifecycle/secure_staging.js';
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
 import { getExtensionConfiguration } from './generated-extension-config.js';
@@ -295,6 +296,7 @@ function registerCommands(
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const activatedAt = Date.now();
+  await cleanupStaleSecurePdfStagingRoots();
   initializeSafeMode(context);
   const outputChannel = vscode.window.createOutputChannel('Graphics Workbench');
   initializeUndoHistory({ workspaceState: context.workspaceState, outputChannel });
