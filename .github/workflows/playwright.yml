@@ -114,18 +114,23 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message || '' }}
+          TITLE_MESSAGE: ${{ github.event.pull_request.title || '' }}
+          UPDATE_SNAPSHOTS_INPUT: ${{ inputs.update_snapshots || false }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "update_snapshots=${{ inputs.update_snapshots }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "update_snapshots=$UPDATE_SNAPSHOTS_INPUT" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            HEAD_MESSAGE="$(gh api "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}" --jq '.commit.message')"
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            HEAD_MESSAGE="$(gh api "repos/$REPOSITORY/commits/$HEAD_SHA" --jq '.commit.message')"
           else
-            HEAD_MESSAGE="${{ github.event.head_commit.message }}"
+            HEAD_MESSAGE="$HEAD_COMMIT_MESSAGE"
           fi
-          TITLE_MESSAGE="${{ github.event.pull_request.title }}"
           if [[ "$TITLE_MESSAGE" == *"[update-snapshots]"* ]] || [[ "$HEAD_MESSAGE" == *"[update-snapshots]"* ]]; then
             echo "update_snapshots=true" >> "$GITHUB_OUTPUT"
           else
@@ -187,7 +192,9 @@ jobs:
 
   commit-snapshots:
     name: Commit regenerated Linux snapshots
-    if: github.event_name == 'pull_request'
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     needs: playwright
     runs-on: ubuntu-latest
     permissions:
@@ -204,9 +211,11 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TITLE_MESSAGE: ${{ github.event.pull_request.title || '' }}
         run: |
-          HEAD_MESSAGE="$(gh api "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}" --jq '.commit.message')"
-          TITLE_MESSAGE="${{ github.event.pull_request.title }}"
+          HEAD_MESSAGE="$(gh api "repos/$REPOSITORY/commits/$HEAD_SHA" --jq '.commit.message')"
           if [[ "$TITLE_MESSAGE" == *"[update-snapshots]"* ]] || [[ "$HEAD_MESSAGE" == *"[update-snapshots]"* ]]; then
             echo "update_snapshots=true" >> "$GITHUB_OUTPUT"
           else
@@ -226,7 +235,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          TITLE_MESSAGE: ${{ github.event.pull_request.title }}
+          TITLE_MESSAGE: ${{ github.event.pull_request.title || '' }}
         run: |
           set -euo pipefail
           SNAPSHOT_COUNT="$(find snapshots -name '*-linux.png' 2>/dev/null | wc -l | tr -d ' ')"
@@ -255,7 +264,9 @@ jobs:
 
   comment-screenshots:
     name: Comment Linux screenshots on PR
-    if: github.event_name == 'pull_request'
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     needs: playwright
     runs-on: ubuntu-latest
     permissions:

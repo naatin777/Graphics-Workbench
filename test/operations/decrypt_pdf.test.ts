@@ -45,6 +45,12 @@ suite('PDF復号化', () => {
 
       const decrypted = await PDFDocument.load(await readFile(outputPath));
       assert.ok(decrypted.getPageCount() >= 1);
+
+      const encryptionInfo = await execFileAsync(readConfiguredQpdfPath(), ['--show-encryption', outputPath], {
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      assert.match(encryptionInfo.stdout, /File is not encrypted/);
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
