@@ -6,6 +6,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 
 import { runCropPdfProcess } from '../../src/operations/pdf/run_crop_pdf_process.js';
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 suite('Crop Configure child process', () => {
   test('PDFを子プロセスでcropし、staging outputへ書き込む', async () => {
@@ -14,7 +15,7 @@ suite('Crop Configure child process', () => {
     const outputPath = path.join(workspacePath, 'result.pdf');
 
     try {
-      await copyFile('test/input/valid/pdf/multilingual-text.pdf', sourcePath);
+      await copyFile(path.join(operationPdfInputDirectory, 'multilingual-text.pdf'), sourcePath);
       await runCropPdfProcess({
         sourcePath,
         stagedOutputPath: outputPath,
