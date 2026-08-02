@@ -338,7 +338,9 @@ async function commitResolvedOutputs(
     if (stagingRootPath !== undefined) {
       result.stagingRootPath = stagingRootPath;
     }
-    result.stagingWorkspacePath = stagingWorkspacePath;
+    if (stagingWorkspacePath !== undefined) {
+      result.stagingWorkspacePath = stagingWorkspacePath;
+    }
 
     options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] committed output: ${outputPath}`);
 
