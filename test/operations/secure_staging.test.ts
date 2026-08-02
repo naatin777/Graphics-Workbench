@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { access, stat, writeFile } from 'node:fs/promises';
+import { access, readFile, stat, writeFile } from 'node:fs/promises';
 
 import {
   cleanupStaleSecurePdfStagingRoots,
   createSecurePdfStagingRoot,
 } from '../../src/operations/lifecycle/secure_staging.js';
+import { isRecord } from '../../src/application/protocols/protocol_utils.js';
 
 suite('機密PDF staging lifecycle', () => {
   test('active root is preserved and an old root is removed on activation cleanup', async () => {
@@ -24,11 +25,20 @@ suite('機密PDF staging lifecycle', () => {
         assert.equal((await stat(activeRoot)).mode & 0o777, 0o700);
         assert.equal((await stat(`${activeRoot}/manifest.json`)).mode & 0o777, 0o600);
       }
+      const parsedManifest: unknown = JSON.parse(await readFile(`${activeRoot}/manifest.json`, 'utf8'));
+      assert.ok(isRecord(parsedManifest));
+      const manifest = parsedManifest;
+      assert.equal(typeof manifest.sessionId, 'string');
+      assert.equal(typeof manifest.extensionHostStartedAt, 'number');
+      assert.equal(typeof manifest.updatedAt, 'number');
+      assert.equal(typeof manifest.operationId, 'string');
       await cleanupStaleSecurePdfStagingRoots(Date.now());
       await access(activeRoot);
 
       await cleanupStaleSecurePdfStagingRoots(Date.now() + 2 * 24 * 60 * 60 * 1000);
       await access(activeRoot);
+      await cleanupStaleSecurePdfStagingRoots(Date.now() + 8 * 24 * 60 * 60 * 1000);
+      await assert.rejects(access(activeRoot));
       await assert.rejects(access(oldRoot));
     } finally {
       const { rm } = await import('node:fs/promises');

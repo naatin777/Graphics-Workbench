@@ -5,12 +5,24 @@ import type { LineOutputChannel } from './external_tool_ascii_scratch.js';
 
 const MAX_BUFFER = 10 * 1024 * 1024;
 const TERMINATION_GRACE_MS = 250;
-const DEFAULT_TIMEOUTS_MS: Readonly<Record<string, number>> = {
+const TERMINATION_WATCHDOG_MS = 5_000;
+export type ExternalToolId = 'qpdf' | 'drawio' | 'ghostscript' | 'pdftocairo' | 'rsvg-convert' | 'mermaid';
+
+const DEFAULT_TIMEOUTS_MS: Readonly<Record<ExternalToolId, number>> = {
   qpdf: 120_000,
   drawio: 300_000,
-  Ghostscript: 300_000,
+  ghostscript: 300_000,
   pdftocairo: 120_000,
   'rsvg-convert': 120_000,
+  mermaid: 120_000,
+};
+const TOOL_ID_BY_NAME: Readonly<Record<string, ExternalToolId>> = {
+  qpdf: 'qpdf',
+  drawio: 'drawio',
+  ghostscript: 'ghostscript',
+  pdftocairo: 'pdftocairo',
+  'rsvg-convert': 'rsvg-convert',
+  mermaid: 'mermaid',
 };
 
 export interface ExternalToolResult {
@@ -20,6 +32,8 @@ export interface ExternalToolResult {
 
 /** Runs a tool with cancellation, a bounded wait, and process-tree cleanup. */
 export async function runExternalTool(options: {
+  /** Stable timeout identity; `toolName` remains the user-facing label. */
+  toolId?: ExternalToolId;
   toolName: string;
   executable: string;
   args: string[];
@@ -37,21 +51,28 @@ export async function runExternalTool(options: {
     throw createAbortError();
   }
 
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUTS_MS[options.toolName];
+  const toolId = options.toolId ?? TOOL_ID_BY_NAME[options.toolName.toLowerCase()];
+  const defaultTimeoutMs = toolId === undefined ? undefined : DEFAULT_TIMEOUTS_MS[toolId];
+  const timeoutMs = options.timeoutMs ?? defaultTimeoutMs;
 
   return new Promise<ExternalToolResult>((resolve, reject) => {
     // The abort callback is declared before spawn so it can handle a signal during startup.
     // oxlint-disable-next-line prefer-const
     let child: ChildProcessByStdio<null, Readable, Readable> | undefined;
     let timer: NodeJS.Timeout | undefined;
+    let terminationWatchdog: NodeJS.Timeout | undefined;
     let terminationReason: Error | undefined;
     let settled = false;
     let stdout = '';
     let stderr = '';
+    let outputBytes = 0;
 
     const cleanup = (): void => {
       if (timer !== undefined) {
         clearTimeout(timer);
+      }
+      if (terminationWatchdog !== undefined) {
+        clearTimeout(terminationWatchdog);
       }
       options.signal?.removeEventListener('abort', abort);
     };
@@ -66,14 +87,22 @@ export async function runExternalTool(options: {
       reject(error);
     };
 
+    const requestTermination = (reason: Error): void => {
+      if (settled) {
+        return;
+      }
+      terminationReason ??= reason;
+      terminateProcessTree(child);
+      terminationWatchdog ??= setTimeout(() => {
+        finishFailure(terminationReason ?? new Error(`${options.toolName} did not terminate`));
+      }, TERMINATION_WATCHDOG_MS);
+    };
+
     const abort = (): void => {
       if (settled) {
         return;
       }
-      terminationReason = createAbortError();
-      if (child !== undefined) {
-        terminateProcessTree(child);
-      }
+      requestTermination(createAbortError());
     };
 
     const runningChild = (child = spawn(options.executable, options.args, {
@@ -85,13 +114,27 @@ export async function runExternalTool(options: {
     runningChild.stdout.setEncoding('utf8');
     runningChild.stderr.setEncoding('utf8');
     runningChild.stdout.on('data', (chunk: string) => {
-      stdout += chunk;
-      if (Buffer.byteLength(stdout) > MAX_BUFFER && terminationReason === undefined) {
-        terminationReason = new Error(`${options.toolName} exceeded the ${MAX_BUFFER} byte output limit`);
-        terminateProcessTree(runningChild);
+      if (terminationReason !== undefined) {
+        return;
       }
+      const chunkBytes = Buffer.byteLength(chunk);
+      if (outputBytes + chunkBytes > MAX_BUFFER) {
+        requestTermination(new Error(`${options.toolName} exceeded the ${MAX_BUFFER} byte output limit`));
+        return;
+      }
+      outputBytes += chunkBytes;
+      stdout += chunk;
     });
     runningChild.stderr.on('data', (chunk: string) => {
+      if (terminationReason !== undefined) {
+        return;
+      }
+      const chunkBytes = Buffer.byteLength(chunk);
+      if (outputBytes + chunkBytes > MAX_BUFFER) {
+        requestTermination(new Error(`${options.toolName} exceeded the ${MAX_BUFFER} byte output limit`));
+        return;
+      }
+      outputBytes += chunkBytes;
       stderr += chunk;
     });
     runningChild.on('error', (error) => {
@@ -124,8 +167,7 @@ export async function runExternalTool(options: {
         if (settled) {
           return;
         }
-        terminationReason = new Error(`${options.toolName} timed out after ${timeoutMs}ms`);
-        terminateProcessTree(child);
+        requestTermination(new Error(`${options.toolName} timed out after ${timeoutMs}ms`));
       }, timeoutMs);
     }
   });
