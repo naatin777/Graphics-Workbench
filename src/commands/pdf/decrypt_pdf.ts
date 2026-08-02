@@ -9,6 +9,7 @@ import { decryptPdfFiles, type DecryptPdfJob } from '../../operations/pdf/decryp
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
+import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -48,6 +49,7 @@ export async function decryptPdfCommand(
           progress.report({ message: userMessage('message.progress.prepareDecryptPdf') });
           const runtime: ConversionExecutionContext = {
             signal,
+            ...createProgressReporters(progress),
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
           };

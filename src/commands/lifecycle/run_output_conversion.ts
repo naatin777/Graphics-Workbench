@@ -5,6 +5,7 @@ import type { ConversionExecutionContext } from '../../operations/lifecycle/conv
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 
 import { withCancellationSignal } from './progress_cancellation.js';
+import { createProgressReporters } from './progress_reporting.js';
 import { recordConversionForUndo } from './undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, errorMessage } from '../shared/command_utils.js';
@@ -64,12 +65,7 @@ export async function runConversionLifecycle(options: {
           progress.report({ message: options.messages.prepareMessage });
           const runtimeOptions: ConversionExecutionContext = {
             signal,
-            reportProgress: (completed: number, total: number) => {
-              progress.report({ message: userMessage('message.progress.completedCount', completed, total) });
-            },
-            reportMessage: (message: string) => {
-              progress.report({ message });
-            },
+            ...createProgressReporters(progress),
           };
           if (options.outputChannel !== undefined) {
             runtimeOptions.outputChannel = options.outputChannel;

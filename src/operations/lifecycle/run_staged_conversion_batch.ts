@@ -58,12 +58,16 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
       artifacts,
       async () => {
         const limit = pLimit(CONVERSION_CONCURRENCY);
+        let completedCount = 0;
         const settled = await Promise.allSettled(
           options.jobs.map(async (job, index) =>
             limit(async () => {
               batchRuntime.signal?.throwIfAborted();
               try {
-                return await options.stage(job, index, options.runId, batchRuntime);
+                const output = await options.stage(job, index, options.runId, batchRuntime);
+                completedCount += 1;
+                options.runtime?.reportProgress?.(completedCount, options.jobs.length);
+                return output;
               } catch (error) {
                 const stageError = error instanceof Error ? error : new Error(String(error));
                 abortController.abort(stageError);
