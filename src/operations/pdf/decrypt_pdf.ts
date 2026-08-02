@@ -88,7 +88,7 @@ async function decryptPdf(params: {
 
   await runQpdfWithJobJson({
     qpdfPath,
-    job: { inputFile: job.sourcePath, outputFile: stagedOutputPath, password },
+    job: { inputFile: job.sourcePath, outputFile: stagedOutputPath, password, decrypt: '' },
     ...(signal === undefined ? {} : { signal }),
     temporaryDirectory: params.stagingRootPath,
   });

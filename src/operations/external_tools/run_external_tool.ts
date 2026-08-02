@@ -104,7 +104,7 @@ export async function runExternalTool(options: {
       }
       if (code !== 0) {
         finishFailure(
-          new Error(`${options.toolName} exited with code ${code ?? 'unknown'} (signal ${signal ?? 'none'})`),
+          new Error(`${options.toolName} failed (exited with code ${code ?? 'unknown'}, signal ${signal ?? 'none'})`),
         );
         return;
       }

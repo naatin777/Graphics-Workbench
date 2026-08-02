@@ -56,6 +56,9 @@ export async function runMermaidCliWithSignal(
       if (settled) {
         return;
       }
+      if (error !== undefined && signal?.aborted === true) {
+        error = new OperationCancelledError('Mermaid rendering was cancelled.');
+      }
       settled = true;
       clearTimeout(timer);
       signal?.removeEventListener('abort', abort);

@@ -9,7 +9,8 @@ export interface QpdfJobJson {
   inputFile: string;
   outputFile: string;
   password?: string;
-  decrypt?: never;
+  /** Equivalent to qpdf's `--decrypt` flag (`"decrypt": ""` in Job JSON). */
+  decrypt?: '';
   encrypt?: {
     userPassword: string;
     ownerPassword: string;

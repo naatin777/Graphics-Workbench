@@ -15,6 +15,7 @@ suite('qpdf job-json runner', () => {
         inputFile: '/workspace/input.pdf',
         outputFile: '/tmp/output.pdf',
         password,
+        decrypt: '',
       },
       runTool: async (options) => {
         assert.equal(options.args.length, 1);
@@ -28,6 +29,7 @@ suite('qpdf job-json runner', () => {
         const job: unknown = JSON.parse(await readFile(jobFilePath, 'utf8'));
         assert.ok(isRecord(job));
         assert.equal(job.password, password);
+        assert.equal(job.decrypt, '');
         if (process.platform !== 'win32') {
           assert.equal((await stat(jobFilePath)).mode & 0o777, 0o600);
         }
