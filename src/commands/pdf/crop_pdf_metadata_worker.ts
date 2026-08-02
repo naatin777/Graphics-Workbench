@@ -1,12 +1,10 @@
-import { readFile, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { parentPort } from 'node:worker_threads';
 
 import { PDFDocument } from 'pdf-lib';
 
 interface CropPdfMetadataRequest {
   filePath: string;
-  maxBytes: number;
-  maxPages: number;
 }
 
 if (parentPort === null) {
@@ -20,21 +18,10 @@ parentPort.on('message', (message: unknown) => {
 async function inspectMetadata(message: unknown): Promise<void> {
   try {
     const request = parseRequest(message);
-    const fileStat = await stat(request.filePath);
-    if (fileStat.size > request.maxBytes) {
-      throw new Error(`Crop Configure supports PDF inputs up to ${request.maxBytes / (1024 * 1024)} MiB.`);
-    }
-
     const bytes = await readFile(request.filePath);
-    if (bytes.byteLength > request.maxBytes) {
-      throw new Error(`Crop Configure supports PDF inputs up to ${request.maxBytes / (1024 * 1024)} MiB.`);
-    }
 
     const document = await PDFDocument.load(bytes);
     const pageCount = document.getPageCount();
-    if (pageCount > request.maxPages) {
-      throw new Error(`Crop Configure supports up to ${request.maxPages} pages.`);
-    }
 
     const mediaBox = document.getPages()[0]?.getMediaBox();
     /* oxlint-disable unicorn/require-post-message-target-origin -- Worker MessagePort has no targetOrigin. */
@@ -61,13 +48,9 @@ function parseRequest(value: unknown): CropPdfMetadataRequest {
   }
 
   const candidate = value as Partial<CropPdfMetadataRequest>;
-  if (
-    typeof candidate.filePath !== 'string' ||
-    typeof candidate.maxBytes !== 'number' ||
-    typeof candidate.maxPages !== 'number'
-  ) {
+  if (typeof candidate.filePath !== 'string') {
     throw new Error('Invalid Crop Configure metadata worker request.');
   }
 
-  return { filePath: candidate.filePath, maxBytes: candidate.maxBytes, maxPages: candidate.maxPages };
+  return { filePath: candidate.filePath };
 }

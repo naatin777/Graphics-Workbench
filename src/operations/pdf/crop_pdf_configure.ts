@@ -1,8 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { copyFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
-
-import { PDFDocument, type PDFPage } from 'pdf-lib';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { safeName } from './pdf_utils.js';
@@ -16,25 +14,10 @@ import {
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import {
-  MAX_CROP_CONFIGURE_INPUT_BYTES,
-  MAX_CROP_CONFIGURE_OUTPUT_BYTES,
-  MAX_CROP_CONFIGURE_PAGES,
-} from './crop_pdf_limits.js';
+import { runCropPdfProcess } from './run_crop_pdf_process.js';
+import { type CropBox, type CropTarget } from './crop_pdf_core.js';
 
-export interface CropBox {
-  left: number;
-  bottom: number;
-  right: number;
-  top: number;
-}
-
-type CropTarget =
-  | { type: 'all' }
-  | {
-      type: 'selected';
-      pages: number[];
-    };
+export type { CropBox } from './crop_pdf_core.js';
 
 interface CropPdfConfigureJob {
   sourcePath: string;
@@ -107,36 +90,17 @@ async function createConfiguredCropOutput(
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
 
   signal?.throwIfAborted();
-  const sourceStat = await stat(copiedSourcePath);
-  if (sourceStat.size > MAX_CROP_CONFIGURE_INPUT_BYTES) {
-    throw new Error(`Crop Configure supports PDF inputs up to ${MAX_CROP_CONFIGURE_INPUT_BYTES / (1024 * 1024)} MiB.`);
-  }
-  const sourceBytes = await readFile(copiedSourcePath);
-  if (sourceBytes.byteLength > MAX_CROP_CONFIGURE_INPUT_BYTES) {
-    throw new Error(`Crop Configure supports PDF inputs up to ${MAX_CROP_CONFIGURE_INPUT_BYTES / (1024 * 1024)} MiB.`);
-  }
-  signal?.throwIfAborted();
-  const document = await PDFDocument.load(sourceBytes);
-  const pages = document.getPages();
-  if (pages.length > MAX_CROP_CONFIGURE_PAGES) {
-    throw new Error(`Crop Configure supports up to ${MAX_CROP_CONFIGURE_PAGES} pages.`);
-  }
-  const targetPageIndexes = targetToPageIndexes(job.target, pages.length);
-
-  for (const pageIndex of targetPageIndexes) {
-    signal?.throwIfAborted();
-    setPageCropBox(pages[pageIndex], job.cropBox);
-  }
-
   await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
   signal?.throwIfAborted();
-  const outputBytes = await document.save();
-  if (outputBytes.byteLength > MAX_CROP_CONFIGURE_OUTPUT_BYTES) {
-    throw new Error(
-      `Crop Configure produced an output larger than ${MAX_CROP_CONFIGURE_OUTPUT_BYTES / (1024 * 1024)} MiB.`,
-    );
-  }
-  await writeFile(stagedOutputPath, outputBytes);
+  await runCropPdfProcess(
+    {
+      sourcePath: copiedSourcePath,
+      stagedOutputPath,
+      cropBox: job.cropBox,
+      target: job.target,
+    },
+    signal,
+  );
   signal?.throwIfAborted();
 
   return {
@@ -156,65 +120,4 @@ async function validateJobPaths(job: CropPdfConfigureJob): Promise<void> {
       job.workspacePath,
     ),
   ]);
-}
-
-function targetToPageIndexes(target: CropTarget, pageCount: number): number[] {
-  if (pageCount === 0) {
-    throw new Error('PDF has no pages.');
-  }
-
-  if (target.type === 'all') {
-    return Array.from({ length: pageCount }, (_value, index) => index);
-  }
-
-  if (target.pages.length === 0) {
-    throw new Error('At least one page must be selected.');
-  }
-
-  const indexes = target.pages.map((page) => {
-    if (!Number.isInteger(page) || page < 1 || page > pageCount) {
-      throw new Error(`Selected page is out of range: ${page}`);
-    }
-
-    return page - 1;
-  });
-
-  return [...new Set(indexes)];
-}
-
-function setPageCropBox(page: PDFPage | undefined, cropBox: CropBox): void {
-  if (!page) {
-    throw new Error('Target page was not found.');
-  }
-
-  validateCropBox(cropBox, page);
-  const width = cropBox.right - cropBox.left;
-  const height = cropBox.top - cropBox.bottom;
-  page.setMediaBox(cropBox.left, cropBox.bottom, width, height);
-  page.setCropBox(cropBox.left, cropBox.bottom, width, height);
-}
-
-function validateCropBox(cropBox: CropBox, page: PDFPage): void {
-  const mediaBox = page.getMediaBox();
-  const mediaRight = mediaBox.x + mediaBox.width;
-  const mediaTop = mediaBox.y + mediaBox.height;
-
-  for (const [key, value] of Object.entries(cropBox)) {
-    if (!Number.isFinite(value)) {
-      throw new Error(`Crop box ${key} must be a finite number.`);
-    }
-  }
-
-  if (cropBox.left >= cropBox.right || cropBox.bottom >= cropBox.top) {
-    throw new Error('Crop box must have positive width and height.');
-  }
-
-  if (
-    cropBox.left < mediaBox.x ||
-    cropBox.bottom < mediaBox.y ||
-    cropBox.right > mediaRight ||
-    cropBox.top > mediaTop
-  ) {
-    throw new Error('Crop box must be inside the page media box.');
-  }
 }
