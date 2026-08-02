@@ -9,6 +9,7 @@ import { resetTestWorkspace } from '../../helpers/test_workspace.js';
 import {
   expectPdfCanvasesReadable,
   expectPdfPreviewCentered,
+  expectWebviewPreviewScrollable,
   waitForWebviewTheme,
 } from './helpers/crop_pdf_webview.js';
 import {
@@ -201,6 +202,62 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
         maxDiffPixelRatio: 0.05,
       });
     }
+  } catch (error) {
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
+test('PDFプレビューのズーム入力とCtrlまたはCommandホイールが動作する', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(120_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(testInfo),
+      pdfFixtureFileName: 'multi-page-mixed-content.pdf',
+    });
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const { frame, canvases, preview } = await openSplitPdfConfigure(env.app.window, 'multi-page-mixed-content.pdf');
+    await selectFirstSplitPage(frame);
+    await expect(canvases).toHaveCount(15);
+    await expectWebviewPreviewScrollable(frame);
+
+    const numericZoom = frame.locator('input[type="number"][aria-label="Preview zoom"]');
+    const rangeZoom = frame.locator('input[type="range"][aria-label="Preview zoom"]');
+    const initialCanvasWidth = await canvases.first().evaluate((canvas) => canvas.getBoundingClientRect().width);
+
+    await preview.evaluate((element) => {
+      element.scrollTop = Math.min(element.scrollHeight - element.clientHeight, 180);
+    });
+    await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+    await numericZoom.fill('200');
+    await expect(numericZoom).toHaveValue('200');
+    await expect(rangeZoom).toHaveValue('200');
+    await expect
+      .poll(() => canvases.first().evaluate((canvas) => canvas.getBoundingClientRect().width))
+      .toBeGreaterThan(initialCanvasWidth);
+    await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+    const modifierKey = process.platform === 'darwin' ? 'Meta' : 'Control';
+    await preview.hover();
+    await env.app.window.keyboard.down(modifierKey);
+    try {
+      await env.app.window.mouse.wheel(0, -100);
+    } finally {
+      await env.app.window.keyboard.up(modifierKey);
+    }
+    await expect(numericZoom).toHaveValue('205');
+    await expect(rangeZoom).toHaveValue('205');
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));

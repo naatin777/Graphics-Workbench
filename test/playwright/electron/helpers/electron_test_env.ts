@@ -190,6 +190,7 @@ export async function setupElectronTest(
       '--skip-release-notes',
       '--disable-workspace-trust',
       '--disable-extension=vscode.git',
+      '--disable-crash-reporter',
       '--no-sandbox',
       '--disable-gpu-sandbox',
       '--no-cached-data',

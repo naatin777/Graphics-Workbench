@@ -262,6 +262,74 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
   }
 });
 
+test('PDFプレビューのズーム操作が表示倍率とスクロールを維持する', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(120_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(testInfo),
+      pdfFixtureFileName: longPdfFixture.fileName,
+    });
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const { frame, canvases, preview, settings } = await openCropPdfConfigure(env.app.window, longPdfFixture.fileName);
+    await expectWebviewPreviewScrollable(frame);
+
+    const cropInputs = settings.locator('input[type="number"]');
+    const readCropValues = async (): Promise<string[]> =>
+      Promise.all(Array.from({ length: await cropInputs.count() }, (_, index) => cropInputs.nth(index).inputValue()));
+    const initialCropValues = await readCropValues();
+    const initialCanvasWidth = await canvases.first().evaluate((canvas) => canvas.getBoundingClientRect().width);
+
+    await preview.evaluate((element) => {
+      element.scrollTop = Math.min(element.scrollHeight - element.clientHeight, 180);
+    });
+    await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+    await frame.getByRole('button', { name: 'Zoom in', exact: true }).click();
+    await expect(frame.locator('.zoom__value')).toHaveText('125%');
+    await expect
+      .poll(() => canvases.first().evaluate((canvas) => canvas.getBoundingClientRect().width))
+      .toBeGreaterThan(initialCanvasWidth);
+    await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await expect.poll(readCropValues).toEqual(initialCropValues);
+
+    const modifierKey = process.platform === 'darwin' ? 'Meta' : 'Control';
+    await preview.hover();
+    await env.app.window.keyboard.down(modifierKey);
+    try {
+      await env.app.window.mouse.wheel(0, -100);
+    } finally {
+      await env.app.window.keyboard.up(modifierKey);
+    }
+    await expect(frame.locator('.zoom__value')).toHaveText('135%');
+
+    await frame.getByRole('button', { name: 'Zoom out', exact: true }).click();
+    await expect(frame.locator('.zoom__value')).toHaveText('110%');
+  } catch (error) {
+    await attachElectronDiagnostics({
+      consoleMessages,
+      error,
+      extensionsDir: env?.directories.extensionsDir ?? '',
+      sharedDataDir: env?.directories.sharedDataDir ?? '',
+      temporaryRoot: env?.directories.temporaryRoot ?? '',
+      testInfo,
+      userDataDir: env?.directories.userDataDir ?? '',
+      window: env?.app.window,
+      workspacePath: env?.directories.workspacePath ?? '',
+    });
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
 test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
