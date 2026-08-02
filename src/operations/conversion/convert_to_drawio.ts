@@ -1,7 +1,5 @@
-import { execFile } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { PDFDocument } from 'pdf-lib';
 import { Parser } from 'xml2js';
@@ -20,8 +18,6 @@ import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import type { ChromeReleaseChannel } from 'puppeteer-core';
 
-// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
-const execFileAsync = promisify(execFile);
 interface DrawioInput {
   sourcePath: string;
   pageName?: string;
@@ -438,7 +434,12 @@ async function executePdfToSvg(
   page: number,
   signal?: AbortSignal,
 ): Promise<void> {
-  await execFileAsync(executable, ['-svg', '-f', String(page), '-l', String(page), sourcePath, outputPath], { signal });
+  await runExternalTool({
+    toolName: 'pdftocairo',
+    executable,
+    args: ['-svg', '-f', String(page), '-l', String(page), sourcePath, outputPath],
+    ...(signal === undefined ? {} : { signal }),
+  });
 }
 
 async function executeDrawio(

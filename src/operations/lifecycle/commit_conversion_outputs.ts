@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs';
-import { access, copyFile, mkdir, open, rename, rm, stat } from 'node:fs/promises';
+import { access, copyFile, mkdir, open, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -20,6 +20,8 @@ export interface PreparedConversionOutput {
   outputPath: string;
   workspacePath: string;
   stagingRootPath?: string;
+  /** Filesystem root that authorizes stagingRootPath and stagedOutputPath. */
+  stagingWorkspacePath?: string | undefined;
   keepBothGroup?: {
     basePath: string;
     suffix: string;
@@ -31,6 +33,7 @@ export interface CommittedConversionOutput {
   workspacePath: string;
   previousFilePath?: string;
   stagingRootPath?: string;
+  stagingWorkspacePath?: string | undefined;
 }
 
 export interface CommitConversionOutputsOptions {
@@ -59,6 +62,10 @@ interface ExistingOutputSnapshot {
 interface FileIdentity {
   dev: number;
   ino: number;
+}
+
+function stagingBoundary(output: PreparedConversionOutput): string {
+  return output.stagingWorkspacePath ?? output.workspacePath;
 }
 
 export interface RollbackFailure {
@@ -96,8 +103,9 @@ export async function commitStagedOutputs(
 
   try {
     options.signal?.throwIfAborted();
-    assertUniqueRequestedOutputs(outputs);
     await validatePreparedOutputs(outputs);
+    const normalizePath = await createPathNormalizer(outputs.map((output) => output.outputPath));
+    assertUniqueRequestedOutputs(outputs, normalizePath);
 
     const conflicts = await findExistingOutputs(outputs);
     const decision = await resolveDecision(
@@ -105,7 +113,7 @@ export async function commitStagedOutputs(
       options.resolveConflicts,
     );
     options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] conflict decision: ${decision}`);
-    resolvedOutputs = await resolveOutputPaths(outputs, decision, conflicts);
+    resolvedOutputs = await resolveOutputPaths(outputs, decision, conflicts, normalizePath);
 
     options.signal?.throwIfAborted();
     await assertConflictOutputsUnchanged(resolvedOutputs);
@@ -148,10 +156,11 @@ async function resolveOutputPaths(
   outputs: PreparedConversionOutput[],
   decision: OutputConflictDecision,
   conflicts: ExistingOutputSnapshot[],
+  normalizePath: PathNormalizer,
 ): Promise<ResolvedOutput[]> {
   const reservedPaths = new Set(outputs.map((item) => normalizePath(item.outputPath)));
   const snapshots = new Map(conflicts.map((conflict) => [normalizePath(conflict.output.outputPath), conflict]));
-  const groupPaths = await resolveKeepBothGroups(outputs, decision, reservedPaths);
+  const groupPaths = await resolveKeepBothGroups(outputs, decision, reservedPaths, normalizePath);
   const resolved: ResolvedOutput[] = [];
 
   for (const output of outputs) {
@@ -162,7 +171,7 @@ async function resolveOutputPaths(
       outputPath = `${groupPath}${output.keepBothGroup?.suffix ?? ''}`;
       reservedPaths.add(normalizePath(outputPath));
     } else if (decision === 'keep-both' && (await pathExists(output.outputPath))) {
-      outputPath = await findAvailableOutputPath(output.outputPath, reservedPaths);
+      outputPath = await findAvailableOutputPath(output.outputPath, reservedPaths, normalizePath);
       reservedPaths.add(normalizePath(outputPath));
     }
 
@@ -185,6 +194,7 @@ async function resolveKeepBothGroups(
   outputs: PreparedConversionOutput[],
   decision: OutputConflictDecision,
   reservedPaths: Set<string>,
+  normalizePath: PathNormalizer,
 ): Promise<Map<string, string>> {
   const groups = new Map<string, PreparedConversionOutput[]>();
 
@@ -252,7 +262,7 @@ async function createBackups(
 
     await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
     const previousFilePath = `${output.stagedOutputPath}.previous`;
-    await assertWritablePathInWorkspace(previousFilePath, output.workspacePath);
+    await assertWritablePathInWorkspace(previousFilePath, stagingBoundary(output));
     await mkdir(path.dirname(previousFilePath), { recursive: true });
     await copyFileImpl(output.outputPath, previousFilePath, fsConstants.COPYFILE_EXCL);
     output.previousFilePath = previousFilePath;
@@ -270,13 +280,13 @@ async function commitResolvedOutputs(
   try {
     for (const output of outputs) {
       options.signal?.throwIfAborted();
-      await assertExistingPathInWorkspace(output.stagedOutputPath, output.workspacePath);
+      await assertExistingPathInWorkspace(output.stagedOutputPath, stagingBoundary(output));
       await assertWritablePathInWorkspace(output.outputPath, output.workspacePath);
       await mkdir(path.dirname(output.outputPath), { recursive: true });
       options.signal?.throwIfAborted();
 
       if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-        await assertExistingPathInWorkspace(output.previousFilePath, output.workspacePath);
+        await assertExistingPathInWorkspace(output.previousFilePath, stagingBoundary(output));
 
         if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
           throw new Error(`Output changed before overwrite: ${output.outputPath}`);
@@ -318,7 +328,7 @@ async function commitResolvedOutputs(
     throw error instanceof Error ? error : new Error(String(error));
   }
 
-  return committed.map(({ outputPath, workspacePath, previousFilePath, stagingRootPath }) => {
+  return committed.map(({ outputPath, workspacePath, previousFilePath, stagingRootPath, stagingWorkspacePath }) => {
     const result: CommittedConversionOutput = { outputPath, workspacePath };
 
     if (previousFilePath !== undefined) {
@@ -327,6 +337,9 @@ async function commitResolvedOutputs(
 
     if (stagingRootPath !== undefined) {
       result.stagingRootPath = stagingRootPath;
+    }
+    if (stagingWorkspacePath !== undefined) {
+      result.stagingWorkspacePath = stagingWorkspacePath;
     }
 
     options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] committed output: ${outputPath}`);
@@ -341,7 +354,7 @@ function toArtifactRoots(outputs: PreparedConversionOutput[]): ConversionArtifac
       ? [
           {
             rootPath: output.stagingRootPath,
-            workspacePath: output.workspacePath,
+            workspacePath: stagingBoundary(output),
           },
         ]
       : [],
@@ -367,7 +380,7 @@ async function rollbackCommittedOutputs(
       await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
 
       if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-        await assertExistingPathInWorkspace(output.previousFilePath, output.workspacePath);
+        await assertExistingPathInWorkspace(output.previousFilePath, stagingBoundary(output));
 
         if (
           output.copyCompleted === true &&
@@ -444,7 +457,7 @@ async function copyPreparedOutput(
 async function validatePreparedOutputs(outputs: PreparedConversionOutput[]): Promise<void> {
   await Promise.all(
     outputs.flatMap((output) => [
-      assertExistingPathInWorkspace(output.stagedOutputPath, output.workspacePath),
+      assertExistingPathInWorkspace(output.stagedOutputPath, stagingBoundary(output)),
       assertWritablePathInWorkspace(output.outputPath, output.workspacePath),
     ]),
   );
@@ -461,7 +474,13 @@ async function createExistingOutputSnapshot(output: PreparedConversionOutput): P
   return { output, contentHash: await hashFile(output.outputPath) };
 }
 
-async function findAvailableOutputPath(requestedPath: string, reservedPaths: Set<string>): Promise<string> {
+type PathNormalizer = (filePath: string) => string;
+
+async function findAvailableOutputPath(
+  requestedPath: string,
+  reservedPaths: Set<string>,
+  normalizePath: PathNormalizer,
+): Promise<string> {
   const extension = path.extname(requestedPath);
   const basename = path.basename(requestedPath, extension);
   const directory = path.dirname(requestedPath);
@@ -476,7 +495,7 @@ async function findAvailableOutputPath(requestedPath: string, reservedPaths: Set
   }
 }
 
-function assertUniqueRequestedOutputs(outputs: PreparedConversionOutput[]): void {
+function assertUniqueRequestedOutputs(outputs: PreparedConversionOutput[], normalizePath: PathNormalizer): void {
   const normalizedPaths = new Set<string>();
 
   for (const output of outputs) {
@@ -490,9 +509,67 @@ function assertUniqueRequestedOutputs(outputs: PreparedConversionOutput[]): void
   }
 }
 
-function normalizePath(filePath: string): string {
-  const resolved = path.resolve(filePath);
-  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+async function createPathNormalizer(filePaths: readonly string[]): Promise<PathNormalizer> {
+  const caseInsensitiveDirectories = new Set<string>();
+  const checkedDirectories = new Set<string>();
+
+  for (const filePath of filePaths) {
+    const directory = await findNearestExistingDirectory(path.dirname(path.resolve(filePath)));
+    if (checkedDirectories.has(directory)) {
+      continue;
+    }
+    checkedDirectories.add(directory);
+    if (process.platform === 'win32' || (await isCaseInsensitiveDirectory(directory))) {
+      caseInsensitiveDirectories.add(directory);
+    }
+  }
+
+  return (filePath: string): string => {
+    const resolved = path.resolve(filePath).normalize('NFC');
+    const directory = path.dirname(resolved);
+    const isCaseInsensitive = [...caseInsensitiveDirectories].some((root) => {
+      const relative = path.relative(root, directory);
+      return relative === '' || (!path.isAbsolute(relative) && !relative.startsWith(`..${path.sep}`));
+    });
+    return isCaseInsensitive ? resolved.toLocaleLowerCase('en-US') : resolved;
+  };
+}
+
+async function findNearestExistingDirectory(directory: string): Promise<string> {
+  let current = path.resolve(directory);
+  for (;;) {
+    try {
+      const currentStat = await stat(current);
+      if (currentStat.isDirectory()) {
+        return current;
+      }
+    } catch {
+      // Continue toward the filesystem root.
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return current;
+    }
+    current = parent;
+  }
+}
+
+async function isCaseInsensitiveDirectory(directory: string): Promise<boolean> {
+  const probeName = `.graphics-workbench-case-probe-${crypto.randomUUID()}`;
+  const lowerPath = path.join(directory, probeName.toLowerCase());
+  const upperPath = path.join(directory, probeName.toUpperCase());
+
+  try {
+    await writeFile(lowerPath, '', { flag: 'wx' });
+    try {
+      await access(upperPath);
+      return true;
+    } catch {
+      return false;
+    }
+  } finally {
+    await rm(lowerPath, { force: true });
+  }
 }
 
 async function pathExists(filePath: string): Promise<boolean> {

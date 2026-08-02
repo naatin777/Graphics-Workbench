@@ -1,7 +1,5 @@
-import { execFile } from 'node:child_process';
 import { copyFile, mkdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -10,6 +8,7 @@ import {
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { runExternalTool } from '../external_tools/run_external_tool.js';
 import {
   createAsciiInputOutputScratch,
   defaultWindowsScratchBaseCandidates,
@@ -28,8 +27,6 @@ import {
   isSupportedImageInputPath,
 } from '../../application/policy/source_format.js';
 
-// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
-const execFileAsync = promisify(execFile);
 const DEFAULT_EXTENSIONS = ['.pdf', '.svg', '.eps', '.mmd', '.mermaid'] as const;
 
 export interface ConvertToEpsJob {
@@ -227,7 +224,12 @@ async function validateGeneratedEps(epsPath: string): Promise<void> {
 }
 
 async function executeGhostscript(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
-  await execFileAsync(executable, args, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, signal });
+  await runExternalTool({
+    toolName: 'Ghostscript',
+    executable,
+    args,
+    ...(signal === undefined ? {} : { signal }),
+  });
 }
 
 function validateJobs(jobs: ConvertToEpsJob[], supportedExtensions: readonly string[]): void {

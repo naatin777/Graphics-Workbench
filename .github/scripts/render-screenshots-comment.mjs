@@ -102,8 +102,8 @@ function themeSortKey(theme) {
  * @param {string} repository
  * @returns {string}
  */
-function imageCell(fileName, label, repository) {
-  const url = `https://github.com/${repository}/raw/ci-screenshots/.ci-screenshots/${fileName}`;
+function imageCell(fileName, label, repository, imageRef = 'ci-screenshots') {
+  const url = `https://github.com/${repository}/raw/${imageRef}/.ci-screenshots/${fileName}`;
   return `<a href="${url}"><img src="${url}" width="${IMAGE_WIDTH}" alt="${label}"></a>`;
 }
 
@@ -124,7 +124,7 @@ function renderTableDelimiter(columnCount) {
  * @param {string} repository
  * @returns {string[]}
  */
-function renderSnapshotSection(files, repository) {
+function renderSnapshotSection(files, repository, imageRef = 'ci-screenshots') {
   /** @type {Map<string, Map<string, Screenshot>>} */
   const byTheme = new Map();
   for (const file of files) {
@@ -142,7 +142,12 @@ function renderSnapshotSection(files, repository) {
     const cells = PLATFORM_ORDER.map((platform) => {
       const file = platforms?.get(platform);
       return file
-        ? imageCell(file.name, `${titleCase(theme)} (${PLATFORM_LABELS.get(platform) ?? platform})`, repository)
+        ? imageCell(
+            file.name,
+            `${titleCase(theme)} (${PLATFORM_LABELS.get(platform) ?? platform})`,
+            repository,
+            imageRef,
+          )
         : '-';
     });
     output.push(renderTableRow([titleCase(theme), ...cells]));
@@ -155,7 +160,7 @@ function renderSnapshotSection(files, repository) {
  * @param {string} repository
  * @returns {string[]}
  */
-function renderFailureSection(files, repository) {
+function renderFailureSection(files, repository, imageRef = 'ci-screenshots') {
   /** @type {Map<string, Map<string, Screenshot>>} */
   const byTheme = new Map();
   for (const file of files) {
@@ -180,8 +185,8 @@ function renderFailureSection(files, repository) {
     output.push(
       renderTableRow([
         label,
-        actual ? imageCell(actual.name, `${label} actual`, repository) : '-',
-        diff ? imageCell(diff.name, `${label} diff`, repository) : '-',
+        actual ? imageCell(actual.name, `${label} actual`, repository, imageRef) : '-',
+        diff ? imageCell(diff.name, `${label} diff`, repository, imageRef) : '-',
       ]),
     );
   }
@@ -209,7 +214,7 @@ function groupBySpec(files) {
  * @param {string} runId
  * @returns {string}
  */
-function renderMarkdown(files, repository, runId) {
+function renderMarkdown(files, repository, runId, imageRef = 'ci-screenshots') {
   const output = [COMMENT_MARKER, '', `## Playwright screenshots (run ${runId})`, ''];
   const snapshotGroups = groupBySpec(files.filter((file) => file.kind === 'snapshot'));
   const failureGroups = groupBySpec(files.filter((file) => file.kind === 'failure'));
@@ -223,13 +228,13 @@ function renderMarkdown(files, repository, runId) {
     const snapshots = snapshotGroups.get(spec);
     if (snapshots && snapshots.length > 0) {
       output.push('<details>', `<summary><strong>${SPEC_LABELS.get(spec) ?? spec}</strong></summary>`, '');
-      output.push(...renderSnapshotSection(snapshots, repository));
+      output.push(...renderSnapshotSection(snapshots, repository, imageRef));
       output.push('', '</details>', '');
     }
     const failures = failureGroups.get(spec);
     if (failures && failures.length > 0) {
       output.push('<details>', `<summary><strong>${SPEC_LABELS.get(spec) ?? spec} — mismatches</strong></summary>`, '');
-      output.push(...renderFailureSection(failures, repository));
+      output.push(...renderFailureSection(failures, repository, imageRef));
       output.push('', '</details>', '');
     }
   }
@@ -251,7 +256,9 @@ if (mainScriptUrl === entryScriptUrl) {
       throw new Error('GITHUB_REPOSITORY environment variable is required.');
     }
 
-    process.stdout.write(renderMarkdown(files, repository, process.env.GITHUB_RUN_ID ?? ''));
+    process.stdout.write(
+      renderMarkdown(files, repository, process.env.GITHUB_RUN_ID ?? '', process.env.GITHUB_SCREENSHOT_REF),
+    );
   }
 }
 

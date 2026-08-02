@@ -114,3 +114,9 @@ void test('details はデフォルトで折りたたまれている（open 属�
   assert.strictEqual(openCount, 1);
   assert.match(markdown, /<summary><strong>Crop PDF configure<\/strong><\/summary>/u);
 });
+
+void test('画像URLは指定した不変refを使用し、共有ci-screenshotsブランチへ戻らない', () => {
+  const markdown = renderMarkdown(fullThemeFiles, repository, 'test-run', '9f'.repeat(20));
+  assert.match(markdown, /raw\/9f9f9f9f/u);
+  assert.doesNotMatch(markdown, /raw\/ci-screenshots\//u);
+});

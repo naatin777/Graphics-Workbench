@@ -1,7 +1,6 @@
-import { access, copyFile, mkdir } from 'node:fs/promises';
+import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { safeName, validateJobPaths } from './pdf_utils.js';
 
@@ -12,6 +11,8 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createSecurePdfStagingRoot } from '../lifecycle/secure_staging.js';
+import { runQpdfWithJobJson } from './run_qpdf_with_job_json.js';
 
 export interface EncryptPdfJob {
   sourcePath: string;
@@ -43,20 +44,22 @@ export async function encryptPdfFiles(options: EncryptPdfOptions): Promise<Commi
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const stagingRootPath = await createSecurePdfStagingRoot('encrypt-pdf');
 
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'encrypt-pdf',
     stagingOperationName: 'encrypt-pdf',
     runId,
+    artifactRoots: [{ rootPath: stagingRootPath, workspacePath: stagingRootPath }],
     runtime: runtime ?? {},
-    stage: async (job, index, currentRunId, batchRuntime) =>
+    stage: async (job, index, _runId, batchRuntime) =>
       encryptPdf({
         job,
         index,
         password: options.password,
         qpdfPath: options.qpdfPath,
-        runId: currentRunId,
+        stagingRootPath,
         signal: batchRuntime.signal,
       }),
   });
@@ -67,33 +70,31 @@ async function encryptPdf(params: {
   index: number;
   password: string;
   qpdfPath: string;
-  runId: string;
+  stagingRootPath: string;
   signal: AbortSignal | undefined;
 }): Promise<PreparedConversionOutput> {
-  const { job, password, qpdfPath, runId, signal } = params;
+  const { job, password, qpdfPath, signal } = params;
   signal?.throwIfAborted();
 
   const itemName = `${params.index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'encrypt-pdf', runId, itemName);
-  const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
+  const workDirectory = path.join(params.stagingRootPath, itemName);
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
   await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
-  await assertWritablePathInWorkspace(workDirectory, job.workspacePath);
+  await assertWritablePathInWorkspace(workDirectory, params.stagingRootPath);
   signal?.throwIfAborted();
   await mkdir(workDirectory, { recursive: true });
-  await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
-  await copyFile(job.sourcePath, copiedSourcePath);
-  await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
 
-  await runExternalTool({
-    toolName: 'qpdf',
-    executable: qpdfPath,
-    args: ['--encrypt', password, password, '256', '--', copiedSourcePath, stagedOutputPath],
+  await runQpdfWithJobJson({
+    qpdfPath,
+    job: {
+      inputFile: job.sourcePath,
+      outputFile: stagedOutputPath,
+      encrypt: { userPassword: password, ownerPassword: password, '256bit': {} },
+    },
     ...(signal === undefined ? {} : { signal }),
-    redactArgument: (argument, index) => (index === 1 || index === 2 ? '<redacted>' : argument),
+    temporaryDirectory: params.stagingRootPath,
   });
 
   signal?.throwIfAborted();
@@ -102,7 +103,8 @@ async function encryptPdf(params: {
     stagedOutputPath,
     outputPath: job.outputPath,
     workspacePath: job.workspacePath,
-    stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'encrypt-pdf', runId),
+    stagingRootPath: params.stagingRootPath,
+    stagingWorkspacePath: params.stagingRootPath,
   };
 }
 

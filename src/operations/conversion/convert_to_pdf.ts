@@ -1,10 +1,8 @@
-import { execFile } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { PDFDocument, type PDFPage } from 'pdf-lib';
-import { launch, type Browser, type LaunchOptions } from 'puppeteer-core';
+import { launch, type Browser, type LaunchOptions, type Page } from 'puppeteer-core';
 import sharp from 'sharp';
 import { errorMessage, isAbortError } from '../../application/error_utils.js';
 
@@ -41,12 +39,11 @@ import {
   type RsvgToolScratchOptions,
 } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { OperationCancelledError } from '../lifecycle/operation_cancelled_error.js';
 import type { DrawioBackend, MermaidBackend, SvgToPdfBackend } from './tools/index.js';
 
 const defaultSupportedImageExtensions = ['.png'] as const;
 const svgExtension = '.svg';
-// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
-const execFileAsync = promisify(execFile);
 
 export function validateSvgToPdfOptions(options: SvgToPdfBackend): void {
   if (
@@ -569,10 +566,11 @@ async function writeSvgAsPdfWithRsvgConvert(
 }
 
 async function executeRsvgConvert(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
-  await execFileAsync(executable, args, {
-    encoding: 'utf8',
-    maxBuffer: 10 * 1024 * 1024,
-    signal,
+  await runExternalTool({
+    toolName: 'rsvg-convert',
+    executable,
+    args,
+    ...(signal === undefined ? {} : { signal }),
   });
 }
 
@@ -588,39 +586,87 @@ async function writeSvgAsPdfWithPuppeteer(
   signal?.throwIfAborted();
 
   let browser: Browser | undefined;
+  let page: Page | undefined;
+  let rejectAbort: ((error: Error) => void) | undefined;
+  let renderingAborted = false;
+  const abortPromise =
+    signal === undefined
+      ? undefined
+      : new Promise<never>((_resolve, reject) => {
+          rejectAbort = reject;
+        });
+  const abort = (): void => {
+    renderingAborted = true;
+    rejectAbort?.(new OperationCancelledError('SVG PDF rendering was cancelled.'));
+    void closePage(page);
+    void closeBrowser(browser);
+  };
+  const isRenderingAborted = (): boolean => renderingAborted || signal?.aborted === true;
 
   try {
-    browser = await launch(createSvgPuppeteerLaunchOptions(options));
-    signal?.throwIfAborted();
-
-    const page = await browser.newPage();
-    await page.setJavaScriptEnabled(false);
-    await page.setRequestInterception(true);
-    page.on('request', (request) => {
-      // The SVG is injected as inline content. No network or subframe navigation
-      // is required, including requests created from foreignObject content.
-      void (async (): Promise<void> => {
-        try {
-          await request.abort();
-        } catch {
-          // The request may already be aborted by Puppeteer during page teardown.
+    signal?.addEventListener('abort', abort, { once: true });
+    const render = (async (): Promise<void> => {
+      try {
+        browser = await launch(createSvgPuppeteerLaunchOptions(options));
+        if (isRenderingAborted()) {
+          throw new OperationCancelledError('SVG PDF rendering was cancelled.');
         }
-      })();
-    });
-    await page.setContent(svgPageHtml(svg, size), { waitUntil: 'load' });
-    signal?.throwIfAborted();
-    await page.pdf({
-      path: outputPath,
-      width: `${size.width / 72}in`,
-      height: `${size.height / 72}in`,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
-      printBackground: true,
-      preferCSSPageSize: false,
-    });
+
+        page = await browser.newPage();
+        if (isRenderingAborted()) {
+          throw new OperationCancelledError('SVG PDF rendering was cancelled.');
+        }
+        await page.setJavaScriptEnabled(false);
+        await page.setRequestInterception(true);
+        page.on('request', (request) => {
+          // The SVG is injected as inline content. No network or subframe navigation
+          // is required, including requests created from foreignObject content.
+          void (async (): Promise<void> => {
+            try {
+              await request.abort();
+            } catch {
+              // The request may already be aborted by Puppeteer during page teardown.
+            }
+          })();
+        });
+        await page.setContent(svgPageHtml(svg, size), { waitUntil: 'load' });
+        signal?.throwIfAborted();
+        await page.pdf({
+          path: outputPath,
+          width: `${size.width / 72}in`,
+          height: `${size.height / 72}in`,
+          margin: { top: '0', right: '0', bottom: '0', left: '0' },
+          printBackground: true,
+          preferCSSPageSize: false,
+        });
+      } finally {
+        // The outer race may have returned before launch/newPage completed. Keep
+        // cleanup here so late-arriving handles are closed as well.
+        await closePage(page);
+        await closeBrowser(browser);
+      }
+    })();
+    await (abortPromise === undefined ? render : Promise.race([render, abortPromise]));
   } finally {
-    await browser?.close().catch(() => {
-      // Browser cleanup is best effort after PDF generation.
-    });
+    signal?.removeEventListener('abort', abort);
+    await closePage(page);
+    await closeBrowser(browser);
+  }
+}
+
+async function closeBrowser(browser: Browser | undefined): Promise<void> {
+  try {
+    await browser?.close();
+  } catch {
+    // Browser cleanup is best effort after PDF generation or cancellation.
+  }
+}
+
+async function closePage(page: Page | undefined): Promise<void> {
+  try {
+    await page?.close();
+  } catch {
+    // Page cleanup is best effort after cancellation.
   }
 }
 

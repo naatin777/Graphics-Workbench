@@ -2,11 +2,11 @@
 
 ## 原則
 
-`execPath` を除き、拡張機能が読み書きするファイルとディレクトリは、対象workspaceの実体内に存在しなければならない。
+`execPath` と、下記で明示する機密PDF用OS一時領域を除き、拡張機能が読み書きするファイルとディレクトリは、対象workspaceの実体内に存在しなければならない。
 
 workspace外を対象とする操作は、読み取り・書き込みともエラーにする。
 
-例外として、[外部コマンド用ASCII scratch仕様](external-tool-ascii-scratch.md)で定義したWindowsのtool scratchだけは、検証済みOS一時directory内の読み書きを許可する。この例外をユーザー入力path、論理出力、Safe Mode backup、Undoへ広げない。
+例外として、[外部コマンド用ASCII scratch仕様](external-tool-ascii-scratch.md)で定義したWindowsのtool scratchと、機密PDFの専用stagingだけは、検証済みOS一時directory内の読み書きを許可する。この例外をユーザー入力pathや論理出力へ広げない。
 
 ## パス判定
 
@@ -61,11 +61,24 @@ OS一時scratchはworkspace境界とは別の専用境界として扱う。
 - 外部コマンドへworkspace pathを直接渡さない
 - scratchからユーザー指定outputPathへ直接書き込まない
 
+## 機密PDF用OS一時staging
+
+暗号化・復号のqpdf処理では、平文になり得る入力copyと完成artifactをworkspaceへ置かない。
+
+- `mkdtemp`で作成した専用rootを使用し、POSIXではroot `0700`、file `0600`を設定する。WindowsではユーザーのOS一時directoryから継承したACLを使用する。
+- staging rootにPID、開始時刻、operationを記録したmanifestを置く。
+- qpdfへ渡す秘密情報はjob-json fileへ書き、process argvにはpasswordを含めない。job-json fileはqpdf実行後に必ず削除する。
+- `PreparedConversionOutput.stagingWorkspacePath`でworkspace境界と専用staging境界を分離する。
+- success時にUndoが参照するrootだけを保持し、failure・cancel・Undo後はrootを削除する。
+- activation時は現ユーザー所有のdirectoryだけを対象に、manifestのPIDが不在で、かつ24時間を超えた専用rootだけを削除する。symlink、現役PIDのroot、manifestを書き込む途中の新しいrootは削除しない。workspace全体や未知のtemporary directoryは走査しない。
+
 ## 競合
 
 パス検証から実際のファイル操作までの間にsymlinkが差し替えられる競合を、Node.jsの通常のパスAPIだけで完全に防ぐことはこのタスクの範囲外とする。
 
 重要な書き込み直前に再検証し、検証と操作の間隔を短くする。
+
+出力pathの重複判定は、OS名を固定条件にせず出力先の実体directoryへcase probeを行う。case-insensitive volumeでは小文字化し、すべてのvolumeではUnicodeをNFCへ正規化してから、同一batch内のrequested path、Keep Bothの予約path、available suffixを比較する。
 
 ## commitとrollback
 
@@ -85,4 +98,4 @@ OS一時scratchはworkspace境界とは別の専用境界として扱う。
 
 v1ではsession ownershipを証明できないため、拡張機能起動時に`.graphics-workbench`全体を削除しない。別windowのactive staging、Undo backup、未知のdirectory、harness log、symlink先を残す。
 
-通常のsuccess/failure/cancellation/Undoに伴うcleanupは、artifact lifecycleで明示された今回のoperation rootに限って実行する。crash後の残骸は次回起動時に自動削除しない。
+通常のsuccess/failure/cancellation/Undoに伴うcleanupは、artifact lifecycleで明示された今回のoperation rootに限って実行する。機密PDF用の専用rootだけはmanifestとPIDを使って次回起動時に孤立判定し、孤立したrootを削除する。

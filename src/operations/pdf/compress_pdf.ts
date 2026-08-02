@@ -1,7 +1,5 @@
-import { execFile } from 'node:child_process';
 import { access, copyFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { safeName, validateJobPaths } from './pdf_utils.js';
@@ -13,9 +11,7 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-
-// oxlint-disable-next-line typescript/strict-void-return -- Node's execFile overload returns ChildProcess while promisify consumes its callback.
-const execFileAsync = promisify(execFile);
+import { runExternalTool } from '../external_tools/run_external_tool.js';
 
 export interface CompressPdfJob {
   sourcePath: string;
@@ -94,9 +90,10 @@ async function compressPdf(params: {
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
 
-  await execFileAsync(
-    ghostscriptPath,
-    [
+  await runExternalTool({
+    toolName: 'Ghostscript',
+    executable: ghostscriptPath,
+    args: [
       '-dSAFER',
       '-dBATCH',
       '-dNOPAUSE',
@@ -107,12 +104,8 @@ async function compressPdf(params: {
       `-sOutputFile=${stagedOutputPath}`,
       copiedSourcePath,
     ],
-    {
-      encoding: 'utf8',
-      maxBuffer: 10 * 1024 * 1024,
-      signal,
-    },
-  );
+    ...(signal === undefined ? {} : { signal }),
+  });
 
   signal?.throwIfAborted();
 
