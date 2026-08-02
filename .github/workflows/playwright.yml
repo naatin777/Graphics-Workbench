@@ -201,6 +201,78 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  commit-snapshots:
+    name: Commit regenerated snapshots
+    if: github.event_name == 'pull_request' && needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
+    needs:
+      - classify
+      - playwright
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Check for snapshot update flag
+        id: snapshot_flag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          HEAD_MESSAGE="$(gh api "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}" --jq '.commit.message')"
+          TITLE_MESSAGE="${{ github.event.pull_request.title }}"
+          if [[ "$TITLE_MESSAGE" == *"[update-snapshots]"* ]] || [[ "$HEAD_MESSAGE" == *"[update-snapshots]"* ]]; then
+            echo "update_snapshots=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "update_snapshots=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.snapshot_flag.outputs.update_snapshots == 'true'
+        uses: actions/download-artifact@v7
+        with:
+          pattern: playwright-screenshots-*
+          merge-multiple: true
+          path: snapshots
+
+      - if: steps.snapshot_flag.outputs.update_snapshots == 'true'
+        name: Commit regenerated snapshots to the PR branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          TITLE_MESSAGE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          SNAPSHOT_COUNT="$(find snapshots -name '*.png' 2>/dev/null | wc -l | tr -d ' ')"
+          if [ "$SNAPSHOT_COUNT" = "0" ]; then
+            echo "no regenerated snapshots found"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p test/playwright/electron/__snapshots__
+          find snapshots -name '*.png' -exec cp {} test/playwright/electron/__snapshots__/ \;
+          git add test/playwright/electron/__snapshots__/*.png
+
+          if git diff --cached --quiet; then
+            echo "snapshots unchanged"
+          else
+            git commit -m "test(playwright): update snapshots"
+            git push origin "HEAD:${HEAD_REF}"
+          fi
+
+          CLEAN_TITLE="${TITLE_MESSAGE/"[update-snapshots]"/}"
+          CLEAN_TITLE="$(echo "${CLEAN_TITLE}" | xargs)"
+          if [ "${CLEAN_TITLE}" != "${TITLE_MESSAGE}" ]; then
+            gh pr edit "${PR_NUMBER}" --title "${CLEAN_TITLE}"
+          fi
+
   comment-screenshots:
     name: Comment screenshots on PR
     if: github.event_name == 'pull_request' && needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'

@@ -11,6 +11,11 @@ export async function waitForWebviewFontsReady(body: Locator): Promise<void> {
   });
 }
 
+/** Lets layout and paint settle after fonts load so snapshots are deterministic. */
+export async function settleWebviewPaint(page: Page): Promise<void> {
+  await page.waitForTimeout(150);
+}
+
 export async function captureCropPdfScreenshot(
   page: Page,
   body: Locator,
@@ -28,6 +33,7 @@ export async function captureCropPdfScreenshot(
     }
   });
   await waitForWebviewFontsReady(body);
+  await settleWebviewPaint(page);
   const bodyBounds = await body.boundingBox();
 
   if (!bodyBounds) {

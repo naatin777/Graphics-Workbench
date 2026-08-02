@@ -1,7 +1,7 @@
 import { expect, type Frame, type Locator, type Page } from '@playwright/test';
 
 import { selectExplorerEntry } from './crop_pdf_webview.js';
-import { waitForWebviewFontsReady } from './crop_pdf_screenshot.js';
+import { settleWebviewPaint, waitForWebviewFontsReady } from './crop_pdf_screenshot.js';
 
 export interface MergePdfWebview {
   body: Locator;
@@ -99,6 +99,7 @@ export async function captureMergePdfScreenshot(page: Page, body: Locator): Prom
     }
   });
   await waitForWebviewFontsReady(body);
+  await settleWebviewPaint(page);
   const bodyBounds = await body.boundingBox();
 
   if (!bodyBounds) {
