@@ -5,6 +5,7 @@ import path from 'node:path';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { safeName } from './pdf_utils.js';
 
+import { isAbortError } from '../../application/error_utils.js';
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
   commitStagedOutputs,
@@ -38,6 +39,8 @@ export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions)
   runtime?.signal?.throwIfAborted();
   await validateJobPaths(options.job);
 
+  runtime?.outputChannel?.appendLine('[crop-pdf-configure] operation-started');
+
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
@@ -49,21 +52,37 @@ export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions)
     const preparedOutput = await createConfiguredCropOutput(options, runId);
 
     runtime?.signal?.throwIfAborted();
-    const commitOptions: CommitConversionOutputsOptions = { operationName: 'crop-pdf-configure' as const };
-    if (runtime?.signal !== undefined) {
-      commitOptions.signal = runtime.signal;
-    }
-    if (runtime?.resolveConflicts !== undefined) {
-      commitOptions.resolveConflicts = runtime.resolveConflicts;
-    }
-    if (runtime?.outputChannel !== undefined) {
-      commitOptions.outputChannel = runtime.outputChannel;
-    }
-    return await commitStagedOutputs([preparedOutput], commitOptions);
+    const commitOptions = createCommitOptions(runtime);
+    const outputs = await commitStagedOutputs([preparedOutput], commitOptions);
+    runtime?.outputChannel?.appendLine('[crop-pdf-configure] operation-completed');
+    return outputs;
   } catch (error) {
     await cleanupConversionArtifacts(artifacts, runtime?.outputChannel, error);
+    appendCropConfigureFailureLogs(runtime?.outputChannel, error);
     throw error instanceof Error ? error : new Error(String(error));
   }
+}
+
+function createCommitOptions(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
+  const options: CommitConversionOutputsOptions = { operationName: 'crop-pdf-configure' };
+  if (runtime?.signal !== undefined) {
+    options.signal = runtime.signal;
+  }
+  if (runtime?.resolveConflicts !== undefined) {
+    options.resolveConflicts = runtime.resolveConflicts;
+  }
+  if (runtime?.outputChannel !== undefined) {
+    options.outputChannel = runtime.outputChannel;
+  }
+  return options;
+}
+
+function appendCropConfigureFailureLogs(
+  outputChannel: ConversionExecutionContext['outputChannel'],
+  error: unknown,
+): void {
+  outputChannel?.appendLine('[crop-pdf-configure] staging-cleaned');
+  outputChannel?.appendLine(`[crop-pdf-configure] ${isAbortError(error) ? 'operation-cancelled' : 'operation-failed'}`);
 }
 
 async function createConfiguredCropOutput(
@@ -100,8 +119,13 @@ async function createConfiguredCropOutput(
       target: job.target,
     },
     signal,
+    {
+      ...(runtime?.outputChannel !== undefined && { outputChannel: runtime.outputChannel }),
+    },
   );
   signal?.throwIfAborted();
+  await assertExistingPathInWorkspace(stagedOutputPath, job.workspacePath);
+  runtime?.outputChannel?.appendLine('[crop-pdf-configure] staging-validated');
 
   return {
     stagedOutputPath,
