@@ -156,6 +156,23 @@ suite('外部tool runner — 実行失敗', () => {
 });
 
 suite('外部tool runner — タイムアウト', () => {
+  test('stdoutとstderrの合計出力を上限で停止する', async () => {
+    await assert.rejects(
+      runExternalTool({
+        toolName: 'output-flood-tool',
+        executable: process.execPath,
+        args: [
+          '-e',
+          `process.stdout.write('x'.repeat(6 * 1024 * 1024));
+           process.stderr.write('y'.repeat(6 * 1024 * 1024));
+           setTimeout(() => {}, 30000);`,
+        ],
+        timeoutMs: 3000,
+      }),
+      /output limit/,
+    );
+  });
+
   test('timeoutMsを過ぎるとchild processを終了してrejectする', async () => {
     const startedPath = path.join(
       await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-timeout-')),

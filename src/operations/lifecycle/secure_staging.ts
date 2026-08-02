@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { chmod, lstat, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,23 +7,48 @@ import { isRecord } from '../../application/protocols/protocol_utils.js';
 
 const STAGING_PREFIX = 'graphics-workbench-pdf-';
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+const MAX_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_ID = randomUUID();
+const EXTENSION_HOST_STARTED_AT = Date.now();
 
 interface StagingManifest {
+  sessionId: string;
+  extensionHostStartedAt: number;
   pid: number;
   startedAt: number;
+  updatedAt: number;
   operation: string;
+  operationId: string;
 }
 
 /** Creates a user-scoped temporary root for sensitive PDF intermediates. */
 export async function createSecurePdfStagingRoot(operation: string): Promise<string> {
   const rootPath = await mkdtemp(path.join(os.tmpdir(), STAGING_PREFIX));
-  await chmod(rootPath, 0o700).catch(() => {
-    // Windows uses the ACL inherited from the per-user temporary directory.
-  });
+  try {
+    await (process.platform === 'win32'
+      ? chmod(rootPath, 0o700).catch(() => {
+          // Windows uses the ACL inherited from the per-user temporary directory.
+        })
+      : chmod(rootPath, 0o700));
 
-  const manifest: StagingManifest = { pid: process.pid, startedAt: Date.now(), operation };
-  await writeFile(path.join(rootPath, 'manifest.json'), JSON.stringify(manifest), { mode: 0o600 });
-  return rootPath;
+    const now = Date.now();
+    const manifest: StagingManifest = {
+      sessionId: SESSION_ID,
+      extensionHostStartedAt: EXTENSION_HOST_STARTED_AT,
+      pid: process.pid,
+      startedAt: now,
+      updatedAt: now,
+      operation,
+      operationId: randomUUID(),
+    };
+    await writeFile(path.join(rootPath, 'manifest.json'), JSON.stringify(manifest), { mode: 0o600 });
+    return rootPath;
+  } catch (error) {
+    await rm(rootPath, { recursive: true, force: true }).catch(() => {
+      // Preserve the original permission or manifest error.
+    });
+    throw error instanceof Error ? error : new Error(String(error));
+  }
 }
 
 /** Removes abandoned sensitive staging roots from a previous extension-host process. */
@@ -55,10 +81,10 @@ export async function cleanupStaleSecurePdfStagingRoots(now: number = Date.now()
         const startedAt = manifest?.startedAt ?? 0;
         const processIsAlive = manifest?.pid !== undefined && isProcessAlive(manifest.pid);
         const age = startedAt > 0 ? now - startedAt : await rootAge(rootPath, now);
-        // Never remove a root owned by a live extension host, even when an
-        // additional window is activated much later. A manifest-less root is
-        // retained until it is old enough to rule out a concurrent creator.
-        if (processIsAlive || age < STALE_AFTER_MS) {
+        // Keep young roots and roots belonging to a live extension host, but
+        // enforce an absolute retention limit so PID reuse cannot protect a
+        // sensitive directory forever.
+        if (age < STALE_AFTER_MS || (processIsAlive && age < MAX_RETENTION_MS)) {
           return;
         }
 
@@ -86,7 +112,15 @@ function isStagingManifest(value: unknown): value is StagingManifest {
   if (!isRecord(value)) {
     return false;
   }
-  return typeof value.pid === 'number' && typeof value.startedAt === 'number' && typeof value.operation === 'string';
+  return (
+    typeof value.sessionId === 'string' &&
+    typeof value.extensionHostStartedAt === 'number' &&
+    typeof value.pid === 'number' &&
+    typeof value.startedAt === 'number' &&
+    typeof value.updatedAt === 'number' &&
+    typeof value.operation === 'string' &&
+    typeof value.operationId === 'string'
+  );
 }
 
 function isProcessAlive(pid: number): boolean {
