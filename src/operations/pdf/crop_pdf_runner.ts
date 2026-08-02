@@ -1,80 +1,88 @@
-import { cropPdfFile, type CropPdfFileRequest } from './crop_pdf_core.js';
+import { cropPdfFile } from './crop_pdf_core.js';
+import {
+  CROP_PDF_PROCESS_PROTOCOL_VERSION,
+  parseCropPdfProcessRequest,
+  type CropPdfProcessFailure,
+  type CropPdfProcessMessage,
+  type CropPdfProcessStarted,
+  type CropPdfProcessSuccess,
+} from './crop_pdf_process_protocol.js';
 
-interface CropRunnerSuccess {
-  ok: true;
-}
-
-interface CropRunnerFailure {
-  ok: false;
-  error: string;
-}
+let requestReceived = false;
 
 process.on('message', (message: unknown) => {
+  if (requestReceived) {
+    sendResult(
+      {
+        type: 'failure',
+        protocolVersion: CROP_PDF_PROCESS_PROTOCOL_VERSION,
+        requestId: readRequestId(message),
+        error: 'Crop Configure runner received more than one request.',
+      },
+      true,
+    );
+    return;
+  }
+
+  requestReceived = true;
   void runRequest(message);
 });
 
 async function runRequest(message: unknown): Promise<void> {
+  let requestId = readRequestId(message);
+
   try {
-    await cropPdfFile(parseRequest(message));
-    sendResult({ ok: true } satisfies CropRunnerSuccess);
+    const request = parseCropPdfProcessRequest(message);
+    requestId = request.requestId;
+    sendResult(
+      {
+        type: 'started',
+        protocolVersion: CROP_PDF_PROCESS_PROTOCOL_VERSION,
+        requestId,
+      } satisfies CropPdfProcessStarted,
+      false,
+    );
+    await cropPdfFile(request);
+    sendResult(
+      {
+        type: 'success',
+        protocolVersion: CROP_PDF_PROCESS_PROTOCOL_VERSION,
+        requestId,
+      } satisfies CropPdfProcessSuccess,
+      true,
+    );
   } catch (error) {
-    const failureMessage = error instanceof Error ? error.message : String(error);
-    sendResult({ ok: false, error: failureMessage } satisfies CropRunnerFailure);
+    sendResult(
+      {
+        type: 'failure',
+        protocolVersion: CROP_PDF_PROCESS_PROTOCOL_VERSION,
+        requestId,
+        error: error instanceof Error ? error.message : String(error),
+      } satisfies CropPdfProcessFailure,
+      true,
+    );
   }
 }
 
-function sendResult(message: CropRunnerSuccess | CropRunnerFailure): void {
+function sendResult(message: CropPdfProcessMessage, disconnectAfterSend: boolean): void {
   if (process.send === undefined) {
     return;
   }
+
   process.send(message, () => {
-    process.disconnect();
+    if (disconnectAfterSend) {
+      process.disconnect();
+    }
   });
 }
 
-function parseRequest(value: unknown): CropPdfFileRequest {
-  if (!isRecord(value)) {
-    throw new Error('Invalid Crop Configure runner request.');
+function readRequestId(value: unknown): string {
+  if (typeof value === 'object' && value !== null && 'requestId' in value) {
+    const requestId = (value as { requestId?: unknown }).requestId;
+    if (typeof requestId === 'string' && requestId !== '') {
+      return requestId;
+    }
   }
 
-  const cropBox = value.cropBox;
-  if (!isCropBox(cropBox)) {
-    throw new Error('Invalid Crop Configure runner crop box.');
-  }
-
-  const target = value.target;
-  if (!isCropTarget(target)) {
-    throw new Error('Invalid Crop Configure runner target.');
-  }
-
-  if (typeof value.sourcePath !== 'string' || typeof value.stagedOutputPath !== 'string') {
-    throw new Error('Invalid Crop Configure runner paths.');
-  }
-
-  return { sourcePath: value.sourcePath, stagedOutputPath: value.stagedOutputPath, cropBox, target };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isCropBox(value: unknown): value is CropPdfFileRequest['cropBox'] {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    typeof value.left === 'number' &&
-    typeof value.bottom === 'number' &&
-    typeof value.right === 'number' &&
-    typeof value.top === 'number'
-  );
-}
-
-function isCropTarget(value: unknown): value is CropPdfFileRequest['target'] {
-  if (!isRecord(value) || (value.type !== 'all' && value.type !== 'selected')) {
-    return false;
-  }
-
-  return value.type === 'all' || (Array.isArray(value.pages) && value.pages.every((page) => typeof page === 'number'));
+  return 'unknown';
 }

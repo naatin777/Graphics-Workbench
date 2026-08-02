@@ -23,8 +23,10 @@ suite('Crop Configure child process', () => {
         target: { type: 'all' },
       });
 
+      const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
       const document = await PDFDocument.load(await readFile(outputPath));
-      assert.deepStrictEqual(document.getPage(0).getMediaBox(), {
+      assert.deepStrictEqual(document.getPage(0).getMediaBox(), sourceDocument.getPage(0).getMediaBox());
+      assert.deepStrictEqual(document.getPage(0).getCropBox(), {
         x: 20,
         y: 30,
         width: 180,

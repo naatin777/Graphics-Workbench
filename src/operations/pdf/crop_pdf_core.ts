@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, rename, rm, writeFile } from 'node:fs/promises';
 
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 
@@ -23,8 +23,25 @@ export interface CropPdfFileRequest {
   target: CropTarget;
 }
 
+export interface CropPdfFileWriter {
+  writeFile: (filePath: string, data: Uint8Array) => Promise<void>;
+  rename: (sourcePath: string, destinationPath: string) => Promise<void>;
+  remove: (filePath: string) => Promise<void>;
+}
+
+const defaultWriter: CropPdfFileWriter = {
+  writeFile,
+  rename,
+  remove: async (filePath) => {
+    await rm(filePath, { force: true });
+  },
+};
+
 /** Applies a configured crop in the isolated crop child process. */
-export async function cropPdfFile(request: CropPdfFileRequest): Promise<void> {
+export async function cropPdfFile(
+  request: CropPdfFileRequest,
+  writer: CropPdfFileWriter = defaultWriter,
+): Promise<void> {
   const sourceBytes = await readFile(request.sourcePath);
   const document = await PDFDocument.load(sourceBytes);
   const pages = document.getPages();
@@ -35,7 +52,15 @@ export async function cropPdfFile(request: CropPdfFileRequest): Promise<void> {
   }
 
   const outputBytes = await document.save();
-  await writeFile(request.stagedOutputPath, outputBytes);
+  const temporaryOutputPath = `${request.stagedOutputPath}.partial`;
+  try {
+    await writer.writeFile(temporaryOutputPath, outputBytes);
+    await writer.rename(temporaryOutputPath, request.stagedOutputPath);
+  } finally {
+    await writer.remove(temporaryOutputPath).catch(() => {
+      // The operation owner cleans the staging root after a failed child run.
+    });
+  }
 }
 
 function targetToPageIndexes(target: CropTarget, pageCount: number): number[] {
@@ -70,7 +95,8 @@ function setPageCropBox(page: PDFPage | undefined, cropBox: CropBox): void {
   validateCropBox(cropBox, page);
   const width = cropBox.right - cropBox.left;
   const height = cropBox.top - cropBox.bottom;
-  page.setMediaBox(cropBox.left, cropBox.bottom, width, height);
+  // Crop Configure changes the visible region only. The MediaBox remains the
+  // source page boundary so content coordinates and page geometry are preserved.
   page.setCropBox(cropBox.left, cropBox.bottom, width, height);
 }
 
