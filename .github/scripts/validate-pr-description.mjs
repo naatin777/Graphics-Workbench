@@ -14,9 +14,24 @@ export function validatePrDescription(body) {
     return { valid: false, reason: 'PR body must contain a ## Verification section.' };
   }
 
+  let inComment = false;
   const visibleContent = sectionMatch[1]
-    .replaceAll(/<!--[\s\S]*?-->/gu, '')
-    .replaceAll(/^\s*[-*]\s*$/gmu, '')
+    .split(/\r?\n/u)
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (inComment) {
+        if (trimmed.endsWith('-->')) {
+          inComment = false;
+        }
+        return false;
+      }
+      if (trimmed.startsWith('<!')) {
+        inComment = !trimmed.endsWith('-->');
+        return false;
+      }
+      return !/^\s*[-*]\s*$/u.test(line);
+    })
+    .join('\n')
     .trim();
   if (visibleContent === '') {
     return {

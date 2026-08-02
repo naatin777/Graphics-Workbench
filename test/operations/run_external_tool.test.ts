@@ -257,16 +257,18 @@ suite('外部tool runner — Cancellation', () => {
 
     try {
       const controller = new AbortController();
+      const treeScript = `
+        const { spawn } = require('node:child_process');
+        const fs = require('node:fs');
+        fs.writeFileSync(process.env.GW_STARTED_PATH, 'started');
+        spawn(process.execPath, ['-e', "setTimeout(() => require('node:fs').writeFileSync(process.env.GW_SENTINEL_PATH, 'done'), 30000)"], { stdio: 'ignore', env: process.env });
+        setTimeout(() => {}, 30000);
+      `;
       const promise = runExternalTool({
         toolName: 'tree-tool',
         executable: process.execPath,
-        args: [
-          '-e',
-          `const { spawn } = require('node:child_process');
-           require('node:fs').writeFileSync(${JSON.stringify(startedPath)}, 'started');
-           spawn(process.execPath, ['-e', ${JSON.stringify(`setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(sentinelPath)}, 'done'), 30000);`)}], { stdio: 'ignore' });
-           setTimeout(() => {}, 30000);`,
-        ],
+        args: ['-e', treeScript],
+        env: { ...process.env, GW_STARTED_PATH: startedPath, GW_SENTINEL_PATH: sentinelPath },
         signal: controller.signal,
       });
 

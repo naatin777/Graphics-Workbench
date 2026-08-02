@@ -25,6 +25,7 @@ export async function runExternalTool(options: {
   args: string[];
   signal?: AbortSignal;
   timeoutMs?: number;
+  env?: NodeJS.ProcessEnv;
   outputChannel?: LineOutputChannel;
   redactArgument?: (argument: string, index: number) => string;
 }): Promise<ExternalToolResult> {
@@ -77,6 +78,7 @@ export async function runExternalTool(options: {
 
     const runningChild = (child = spawn(options.executable, options.args, {
       detached: process.platform !== 'win32',
+      env: options.env ?? process.env,
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     }));
