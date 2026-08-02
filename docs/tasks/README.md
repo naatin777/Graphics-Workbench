@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- なし
+- [0212: package済みPlaywrightのOS別責務を再配分する](0212-rebalance-packaged-playwright-platform-coverage.md) — Implementation complete; PRはLinux full visual + macOS / Windows packaged smoke、releaseは3 OS full screenshot artifact、localはmulti-arch Docker Linux full。clean-head ActionsとDocker amd64のEvidence pending
 
 ## On hold
 

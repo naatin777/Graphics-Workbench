@@ -12,12 +12,12 @@ import type { CommittedConversionOutput } from '../../../src/operations/lifecycl
 
 import { resetTestWorkspace } from '../../helpers/test_workspace.js';
 import { captureCropPdfScreenshot } from './helpers/crop_pdf_screenshot.js';
+import { expectLinuxSnapshot } from './helpers/electron_snapshot.js';
 import {
   expectPdfCanvasesReadable,
   expectWebviewNetworkBlocked,
   expectWebviewPreviewScrollable,
   convertPdfToJpeg,
-  convertPngToJpeg,
   openCropPdfConfigure,
   renderAllPdfPreviewPages,
   waitForWebviewTheme,
@@ -87,7 +87,9 @@ function isPackagedSplitPdfModule(value: unknown): value is PackagedSplitPdfModu
 
 let preparedElectronTest: PreparedElectronTest | undefined;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ playwright }, testInfo) => {
+  void playwright;
+  testInfo.setTimeout(180_000);
   await resetTestWorkspace();
   preparedElectronTest = await prepareElectronTest(packagedVsixPath);
 });
@@ -118,35 +120,6 @@ function preparedOptions(testInfo: TestInfo): { prepared: PreparedElectronTest; 
 
   return { prepared: preparedElectronTest, viewportWidth: getElectronViewportWidth(testInfo) };
 }
-
-test('インストール済みVSIXからextensionをactivateできる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(120_000);
-  let env: ElectronTestEnv | undefined;
-
-  try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
-
-    await expect(env.app.window.getByText('Safe Mode: ON', { exact: true })).toBeVisible();
-    await expect(env.app.window.getByRole('tree', { name: 'Files Explorer' })).toBeVisible();
-  } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages: [],
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
-    throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
-  }
-});
 
 test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを出力できる', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(120_000);
@@ -351,9 +324,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(darkScreenshot).toMatchSnapshot('crop-pdf-configure-dark.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(darkScreenshot, 'crop-pdf-configure-dark.png');
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -374,9 +345,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(lightScreenshot).toMatchSnapshot('crop-pdf-configure-light.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(lightScreenshot, 'crop-pdf-configure-light.png');
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,
@@ -427,9 +396,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
         contentType: 'image/png',
       });
 
-      expect(screenshot).toMatchSnapshot(`crop-pdf-configure-${theme.id}.png`, {
-        maxDiffPixelRatio: 0.05,
-      });
+      expectLinuxSnapshot(screenshot, `crop-pdf-configure-${theme.id}.png`);
     }
   } catch (error) {
     await attachElectronDiagnostics({
@@ -508,49 +475,6 @@ test('package済みmoduleでMergeとSplitが動く', async ({ playwright }, test
       const splitDocument = await PDFDocument.load(await readFile(splitOutput.outputPath));
       expect(splitDocument.getPageCount()).toBe(1);
     }
-  } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages,
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
-    throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
-  }
-});
-
-test('native Sharp dependencyをloadしてPNG→JPEG変換できる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(120_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
-
-  try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
-
-    const rasterOutputPath = join(env.directories.workspacePath, 'packaged-raster-input.jpeg');
-
-    await convertPngToJpeg(env.app.window, 'packaged-raster-input.png');
-    await expect
-      .poll(async () => {
-        try {
-          return (await readFile(rasterOutputPath)).length > 0;
-        } catch {
-          return false;
-        }
-      })
-      .toBe(true);
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,

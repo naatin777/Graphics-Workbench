@@ -33,7 +33,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- なし
+- [0212: package済みPlaywrightのOS別責務を再配分する](docs/tasks/0212-rebalance-packaged-playwright-platform-coverage.md) — PRはLinux full visual + macOS / Windows packaged smoke、releaseは3 OS full visual artifact、localはmulti-arch Docker Linux fullを実装。clean-head ActionsとDocker amd64のEvidence待ち
 
 ## Non-goals
 
@@ -56,6 +56,9 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - extension manifestのNode制約は置かず、repositoryの開発・install用Node制約は`devEngines.runtime`で管理する。
 - CIのnpm cacheは、npm 12.0.1への更新後に`actions/cache`で復元し、`setup-node`の自動cacheは使わない。
 - Browser Playwrightは廃止し、実VS Codeを必要とする配布物E2Eはpackage済みVSIXのElectron Playwrightで確認する。
+- PRのPackaged Electron E2Eは、Linuxがwide+narrow full UI / responsive / pixel snapshotのowner、macOS / Windowsがwide packaged conversion smokeのownerとなる。release前は3 OSすべてで全wide+narrow suiteを実行し、pixel gateではなく各OSのscreenshot artifactを目視確認する。
+- GitHub ActionsのPRでは3 OSともpackaged Playwrightを実行する。Linuxはfull 33 cases、macOS / Windowsはwide packaged conversion smoke 3 casesで、macOS / Windowsではpixel比較を行わない。
+- Linux visualのローカル再現には、Playwright・npm・lockfileを固定し、外部変換toolのpath/versionをbuild時にverifyする`docker/playwright-visual/Dockerfile`を使う。Docker imageは`linux/amd64`と`linux/arm64`を対象に全33 casesを実行できるが、GitHub Actions runnerへDocker実行を組み込まない。
 - required platform、quality priority、不可逆な変更はmaintainerが決める。
 - Selection Gateが決まるまで、大規模なproduction architecture変更を開始しない。
 - 作業中は `docs/tasks/README.md` からリンクされた1つのtaskに限定する。作業がない場合はCurrent Taskを空にする。

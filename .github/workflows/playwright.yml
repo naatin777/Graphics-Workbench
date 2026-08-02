@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       update_snapshots:
-        description: Generate OS-specific Playwright snapshot artifacts
+        description: Generate Linux canonical Playwright snapshot artifacts
         required: false
         default: false
         type: boolean
@@ -44,7 +44,7 @@ jobs:
           CI_BEFORE_SHA: ${{ github.event.before }}
 
   playwright:
-    name: packaged Electron Playwright (${{ matrix.label }})
+    name: Packaged Electron Playwright (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     needs: classify
     if: needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
@@ -56,20 +56,26 @@ jobs:
             label: Linux
             test_command: xvfb-run npm run test:playwright:vsix
             artifact_suffix: linux
+            snapshot_enabled: true
+            visual_snapshots: true
           - os: macos-latest
             label: macOS
-            test_command: npm run test:playwright:vsix
+            test_command: npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts
             artifact_suffix: macos
+            snapshot_enabled: false
+            visual_snapshots: false
           - os: windows-latest
             label: Windows
-            test_command: npm run test:playwright:vsix
+            test_command: npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts
             artifact_suffix: windows
+            snapshot_enabled: false
+            visual_snapshots: false
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22.23.1"
+          node-version: '22.23.1'
           package-manager-cache: false
 
       - run: npm install -g npm@12.0.1
@@ -125,7 +131,8 @@ jobs:
         run: cp "graphics-workbench-${{ matrix.label }}.vsix" graphics-workbench.vsix
         shell: bash
 
-      - name: Check for snapshot update flag
+      - if: matrix.snapshot_enabled == true
+        name: Check for snapshot update flag
         id: snapshot_flag
         shell: bash
         env:
@@ -148,31 +155,28 @@ jobs:
             echo "update_snapshots=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Remove current runner snapshots before regeneration
-        if: steps.snapshot_flag.outputs.update_snapshots == 'true'
+      - if: matrix.snapshot_enabled == true && steps.snapshot_flag.outputs.update_snapshots == 'true'
+        name: Remove Linux snapshots before regeneration
         shell: bash
         run: |
-          set -euo pipefail
-          case "${{ runner.os }}" in
-            Linux) suffix='linux' ;;
-            macOS) suffix='darwin' ;;
-            Windows) suffix='win32' ;;
-            *) echo "Unsupported runner OS: ${{ runner.os }}" >&2; exit 1 ;;
-          esac
           find test/playwright/electron -type f \
             -path '*/__snapshots__/*' \
-            -name "*-vscode-electron*-${suffix}.png" \
+            -name '*-linux.png' \
             -delete
 
       - name: Install VSIX and run Electron Playwright
-        if: steps.snapshot_flag.outputs.update_snapshots != 'true'
+        if: matrix.snapshot_enabled != true || steps.snapshot_flag.outputs.update_snapshots != 'true'
         run: ${{ matrix.test_command }}
         shell: bash
+        env:
+          PLAYWRIGHT_VISUAL_SNAPSHOTS: ${{ matrix.visual_snapshots }}
 
       - name: Install VSIX and run Electron Playwright (update snapshots)
-        if: steps.snapshot_flag.outputs.update_snapshots == 'true'
+        if: matrix.snapshot_enabled == true && steps.snapshot_flag.outputs.update_snapshots == 'true'
         run: ${{ matrix.test_command }} -- --update-snapshots
         shell: bash
+        env:
+          PLAYWRIGHT_VISUAL_SNAPSHOTS: ${{ matrix.visual_snapshots }}
 
       - if: failure()
         uses: actions/upload-artifact@v7
@@ -183,18 +187,21 @@ jobs:
             test-results/
           if-no-files-found: ignore
 
-      - if: success()
+      - if: success() && matrix.snapshot_enabled == true
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-screenshots-${{ matrix.artifact_suffix }}
-          path: test/playwright/electron/**/__snapshots__/*.png
+          name: playwright-screenshots-linux
+          path: |
+            test/playwright/electron/**/__snapshots__/*-linux.png
+            test-results/
+            playwright-report/
           if-no-files-found: ignore
           retention-days: 7
 
-      - if: failure()
+      - if: failure() && matrix.snapshot_enabled == true
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-screenshots-${{ matrix.artifact_suffix }}
+          name: playwright-screenshots-linux
           path: |
             test-results/**/*-actual.png
             test-results/**/*-diff.png
@@ -202,7 +209,7 @@ jobs:
           retention-days: 7
 
   commit-snapshots:
-    name: Commit regenerated snapshots
+    name: Commit regenerated Linux snapshots
     if: github.event_name == 'pull_request' && needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
     needs:
       - classify
@@ -234,8 +241,7 @@ jobs:
       - if: steps.snapshot_flag.outputs.update_snapshots == 'true'
         uses: actions/download-artifact@v7
         with:
-          pattern: playwright-screenshots-*
-          merge-multiple: true
+          name: playwright-screenshots-linux
           path: snapshots
 
       - if: steps.snapshot_flag.outputs.update_snapshots == 'true'
@@ -248,33 +254,32 @@ jobs:
           TITLE_MESSAGE: ${{ github.event.pull_request.title }}
         run: |
           set -euo pipefail
-          SNAPSHOT_COUNT="$(find snapshots -name '*.png' 2>/dev/null | wc -l | tr -d ' ')"
+          SNAPSHOT_COUNT="$(find snapshots -name '*-linux.png' 2>/dev/null | wc -l | tr -d ' ')"
           if [ "$SNAPSHOT_COUNT" = "0" ]; then
-            echo "no regenerated snapshots found"
+            echo 'no regenerated Linux snapshots found'
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p test/playwright/electron/__snapshots__
-          find snapshots -name '*.png' -exec cp {} test/playwright/electron/__snapshots__/ \;
-          git add test/playwright/electron/__snapshots__/*.png
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          find snapshots -name '*-linux.png' -exec cp {} test/playwright/electron/__snapshots__/ \;
+          git add test/playwright/electron/__snapshots__/*-linux.png
 
           if git diff --cached --quiet; then
-            echo "snapshots unchanged"
+            echo 'snapshots unchanged'
           else
-            git commit -m "test(playwright): update snapshots"
+            git commit -m 'test(playwright): update Linux snapshots'
             git push origin "HEAD:${HEAD_REF}"
           fi
 
-          CLEAN_TITLE="${TITLE_MESSAGE/"[update-snapshots]"/}"
+          CLEAN_TITLE="${TITLE_MESSAGE/'[update-snapshots]'/}"
           CLEAN_TITLE="$(echo "${CLEAN_TITLE}" | xargs)"
           if [ "${CLEAN_TITLE}" != "${TITLE_MESSAGE}" ]; then
             gh pr edit "${PR_NUMBER}" --title "${CLEAN_TITLE}"
           fi
 
   comment-screenshots:
-    name: Comment screenshots on PR
+    name: Comment Linux screenshots on PR
     if: github.event_name == 'pull_request' && needs.classify.outputs.scope == 'code' && needs.classify.outputs.run_playwright == 'yes'
     needs:
       - classify
@@ -289,11 +294,10 @@ jobs:
       - uses: actions/download-artifact@v7
         continue-on-error: true
         with:
-          pattern: playwright-screenshots-*
-          merge-multiple: true
+          name: playwright-screenshots-linux
           path: screenshots
 
-      - name: Post screenshots to PR
+      - name: Post Linux screenshots to PR
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -301,24 +305,21 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          FILES=()
-          while IFS= read -r file; do
-            FILES+=("$file")
-          done < <(find screenshots -name '*.png' | sort)
+          mapfile -t FILES < <(find screenshots -name '*-linux.png' | sort)
           if [ "${#FILES[@]}" -eq 0 ]; then
-            echo "no screenshot files found"
+            echo 'no Linux screenshot files found'
             exit 0
           fi
           node .github/scripts/render-screenshots-comment.mjs "${FILES[@]}" > /tmp/screenshots.md
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -rf .ci-screenshots
           mkdir -p .ci-screenshots
           cp "${FILES[@]}" .ci-screenshots/
           git checkout --orphan ci-screenshots
           git add .ci-screenshots
-          git commit -m "ci: update Playwright screenshots"
+          git commit -m 'ci: update Linux Playwright screenshots'
           git push --force origin ci-screenshots
 
           COMMENT_BODY="$(cat /tmp/screenshots.md)"

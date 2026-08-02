@@ -27,6 +27,7 @@ import {
   getElectronViewportWidth,
 } from './helpers/electron_test_env.js';
 import { captureSplitPdfScreenshot, openSplitPdfConfigure } from './helpers/split_pdf_webview.js';
+import { expectLinuxSnapshot } from './helpers/electron_snapshot.js';
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const alternateTheme = 'Default Light Modern';
@@ -55,7 +56,9 @@ const additionalThemes = [
 
 let preparedElectronTest: PreparedElectronTest | undefined;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ playwright }, testInfo) => {
+  void playwright;
+  testInfo.setTimeout(180_000);
   await resetTestWorkspace();
   preparedElectronTest = await prepareElectronTest(packagedVsixPath);
 });
@@ -134,9 +137,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(darkScreenshot).toMatchSnapshot('split-pdf-configure-dark.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(darkScreenshot, 'split-pdf-configure-dark.png');
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -154,9 +155,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(lightScreenshot).toMatchSnapshot('split-pdf-configure-light.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(lightScreenshot, 'split-pdf-configure-light.png');
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));
@@ -198,9 +197,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
         contentType: 'image/png',
       });
 
-      expect(screenshot).toMatchSnapshot(`split-pdf-configure-${theme.id}.png`, {
-        maxDiffPixelRatio: 0.05,
-      });
+      expectLinuxSnapshot(screenshot, `split-pdf-configure-${theme.id}.png`);
     }
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);

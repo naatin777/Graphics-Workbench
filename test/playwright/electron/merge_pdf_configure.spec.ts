@@ -17,6 +17,7 @@ import {
   getElectronViewportWidth,
 } from './helpers/electron_test_env.js';
 import { captureMergePdfScreenshot, openMergePdfConfigure } from './helpers/merge_pdf_webview.js';
+import { expectLinuxSnapshot } from './helpers/electron_snapshot.js';
 import {
   attachElectronDiagnostics,
   disposeElectronTest,
@@ -51,7 +52,9 @@ const additionalThemes = [
 
 let preparedElectronTest: PreparedElectronTest | undefined;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ playwright }, testInfo) => {
+  void playwright;
+  testInfo.setTimeout(180_000);
   await resetTestWorkspace();
   preparedElectronTest = await prepareElectronTest(packagedVsixPath);
 });
@@ -113,9 +116,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(darkScreenshot).toMatchSnapshot('merge-pdf-configure-dark.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(darkScreenshot, 'merge-pdf-configure-dark.png');
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -133,9 +134,7 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       contentType: 'image/png',
     });
 
-    expect(lightScreenshot).toMatchSnapshot('merge-pdf-configure-light.png', {
-      maxDiffPixelRatio: 0.05,
-    });
+    expectLinuxSnapshot(lightScreenshot, 'merge-pdf-configure-light.png');
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,
@@ -186,9 +185,7 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
           contentType: 'image/png',
         });
 
-        expect(screenshot).toMatchSnapshot(`merge-pdf-configure-${theme.id}.png`, {
-          maxDiffPixelRatio: 0.05,
-        });
+        expectLinuxSnapshot(screenshot, `merge-pdf-configure-${theme.id}.png`);
       } finally {
         await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
         env = undefined;

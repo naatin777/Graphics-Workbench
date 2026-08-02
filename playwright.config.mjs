@@ -29,6 +29,7 @@ export default defineConfig({
     {
       name: 'vscode-electron-narrow',
       testMatch: '**/electron/**/*.spec.ts',
+      testIgnore: '**/electron/packaged_conversion_smoke.spec.ts',
       metadata: { electronViewportWidth: 600 },
     },
   ],

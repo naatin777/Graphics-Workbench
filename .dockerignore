@@ -1,0 +1,10 @@
+.git
+.vscode-test
+.vscode-test-ci-data
+coverage
+media
+node_modules
+out
+playwright-report
+test-results
+*.vsix
