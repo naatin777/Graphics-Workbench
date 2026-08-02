@@ -191,15 +191,11 @@ test('Crop Configure Webviewを開きPDFを表示しApplyして正しいPDFを�
       .toBe(15);
 
     const outputDocument = await PDFDocument.load(await readFile(env.files.outputPath));
+    const inputDocument = await PDFDocument.load(await readFile(env.files.inputPath));
     expect(outputDocument.getPageCount()).toBe(15);
 
-    for (const page of outputDocument.getPages()) {
-      expect(page.getMediaBox()).toEqual({
-        x: longPdfFixture.cropBox.left,
-        y: longPdfFixture.cropBox.bottom,
-        width: longPdfFixture.cropBox.right - longPdfFixture.cropBox.left,
-        height: longPdfFixture.cropBox.top - longPdfFixture.cropBox.bottom,
-      });
+    for (const [index, page] of outputDocument.getPages().entries()) {
+      expect(page.getMediaBox()).toEqual(inputDocument.getPage(index).getMediaBox());
       expect(page.getCropBox()).toEqual({
         x: longPdfFixture.cropBox.left,
         y: longPdfFixture.cropBox.bottom,

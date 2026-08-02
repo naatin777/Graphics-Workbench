@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
+import { fork } from 'node:child_process';
 import { copyFile, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from 'pdf-lib';
 
-import { runCropPdfProcess } from '../../src/operations/pdf/run_crop_pdf_process.js';
+import {
+  createCropProcessChild,
+  runCropPdfProcess,
+  type CropProcessChild,
+} from '../../src/operations/pdf/run_crop_pdf_process.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 suite('Crop Configure child process', () => {
@@ -53,5 +59,36 @@ suite('Crop Configure child process', () => {
       ),
       /cancelled/,
     );
+  });
+
+  test('child wrapperはNode childのmessageを転送し、disposeでNode側listenerを解放する', async () => {
+    const runnerPath = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../../src/operations/pdf/crop_pdf_runner.js',
+    );
+    const underlying = fork(runnerPath, [], {
+      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+    });
+    const child: CropProcessChild = createCropProcessChild(underlying);
+
+    try {
+      const message = await new Promise<unknown>((resolve, reject) => {
+        child.once('message', resolve);
+        child.once('error', reject);
+        underlying.send({ type: 'unknown', protocolVersion: 1, requestId: 'wrapper' });
+      });
+
+      assert.deepStrictEqual(message, {
+        type: 'failure',
+        protocolVersion: 1,
+        requestId: 'wrapper',
+        error: 'Invalid Crop Configure runner request.',
+      });
+      assert.strictEqual(underlying.listenerCount('message'), 1);
+      child.dispose();
+      assert.strictEqual(underlying.listenerCount('message'), 0);
+    } finally {
+      underlying.kill();
+    }
   });
 });

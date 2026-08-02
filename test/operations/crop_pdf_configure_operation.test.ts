@@ -25,7 +25,7 @@ import { resolveOutputPath } from '../../src/config/output/resolve_output_path.j
 import { cropPdfWithConfiguredBox, type CropBox } from '../../src/operations/pdf/crop_pdf_configure.js';
 
 import { cropConfigureFixture } from '../helpers/crop_configure_fixture.js';
-import { operationPdfInputDirectory, operationPdfOutputDirectory } from '../helpers/fixture_paths.js';
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const execFileAsync = promisify(execFile);
 suite('PDF configure crop処理', () => {
@@ -68,11 +68,13 @@ suite('PDF configure crop処理', () => {
       },
     ]);
 
+    const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
     const outputDocument = await PDFDocument.load(await readFile(outputPath));
     assert.strictEqual(outputDocument.getPageCount(), 2);
 
-    for (const page of outputDocument.getPages()) {
-      assertPageBox(page, cropBox);
+    for (const [index, page] of outputDocument.getPages().entries()) {
+      assertCropBox(page, cropBox);
+      assert.deepStrictEqual(page.getMediaBox(), sourceDocument.getPage(index)?.getMediaBox());
     }
 
     await assertRenderedCropMatchesSource({
@@ -112,17 +114,10 @@ suite('PDF configure crop処理', () => {
     const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
     const outputDocument = await PDFDocument.load(await readFile(outputPath));
     assert.strictEqual(outputDocument.getPageCount(), 2);
-    assertPageBox(outputDocument.getPage(0), cropBox);
+    assertCropBox(outputDocument.getPage(0), cropBox);
+    assert.deepStrictEqual(outputDocument.getPage(0).getMediaBox(), sourceDocument.getPage(0).getMediaBox());
     assert.deepStrictEqual(outputDocument.getPage(1).getMediaBox(), sourceDocument.getPage(1).getMediaBox());
     assert.deepStrictEqual(outputDocument.getPage(1).getCropBox(), sourceDocument.getPage(1).getCropBox());
-
-    const expectedCroppedDocument = await PDFDocument.load(
-      await readFile(outputFixturePath(cropConfigureFixture.expectedCroppedPageFileName)),
-    );
-    const expectedCroppedBox = expectedCroppedDocument.getPage(0).getMediaBox();
-    const actualCroppedBox = outputDocument.getPage(0).getMediaBox();
-    assert.strictEqual(actualCroppedBox.width, expectedCroppedBox.width);
-    assert.strictEqual(actualCroppedBox.height, expectedCroppedBox.height);
 
     await assertRenderedCropMatchesSource({
       sourcePath,
@@ -241,10 +236,6 @@ function inputFixturePath(fileName: string): string {
   return path.join(operationPdfInputDirectory, fileName);
 }
 
-function outputFixturePath(fileName: string): string {
-  return path.join(operationPdfOutputDirectory, fileName);
-}
-
 async function createTemporaryWorkspace(temporaryDirectories: string[]): Promise<string> {
   const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench crop 作業🌹-'));
   temporaryDirectories.push(workspacePath);
@@ -270,7 +261,8 @@ async function copyFixtureToWorkspace(
   return destination;
 }
 
-function assertPageBox(page: PDFPage, cropBox: CropBox): void {
+function assertCropBox(page: PDFPage | undefined, cropBox: CropBox): void {
+  assert.ok(page);
   const expected = {
     x: cropBox.left,
     y: cropBox.bottom,
@@ -278,7 +270,6 @@ function assertPageBox(page: PDFPage, cropBox: CropBox): void {
     height: cropBox.top - cropBox.bottom,
   };
 
-  assert.deepStrictEqual(page.getMediaBox(), expected);
   assert.deepStrictEqual(page.getCropBox(), expected);
 }
 
@@ -348,6 +339,7 @@ async function renderPdfPage(pdfPath: string, pageNumber: number, outputPrefix: 
   assert.notStrictEqual(pdftocairoPath, '', 'pdftocairo must be configured in test/vscode-settings/settings.json');
 
   await execFileAsync(pdftocairoPath, [
+    '-cropbox',
     '-png',
     '-singlefile',
     '-f',

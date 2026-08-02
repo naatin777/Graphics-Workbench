@@ -124,14 +124,10 @@ test('package済みVSIXのCrop ConfigureからHost bridgeを通してPDFを変�
       })
       .toBe(2);
     const outputDocument = await PDFDocument.load(await readFile(env.files.outputPath));
+    const inputDocument = await PDFDocument.load(await readFile(env.files.inputPath));
     expect(outputDocument.getPageCount()).toBe(2);
-    for (const page of outputDocument.getPages()) {
-      expect(page.getMediaBox()).toEqual({
-        x: cropConfigureFixture.cropBox.left,
-        y: cropConfigureFixture.cropBox.bottom,
-        width: cropConfigureFixture.cropBox.right - cropConfigureFixture.cropBox.left,
-        height: cropConfigureFixture.cropBox.top - cropConfigureFixture.cropBox.bottom,
-      });
+    for (const [index, page] of outputDocument.getPages().entries()) {
+      expect(page.getMediaBox()).toEqual(inputDocument.getPage(index).getMediaBox());
       expect(page.getCropBox()).toEqual({
         x: cropConfigureFixture.cropBox.left,
         y: cropConfigureFixture.cropBox.bottom,
