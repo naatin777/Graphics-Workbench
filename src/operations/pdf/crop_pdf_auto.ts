@@ -21,6 +21,7 @@ import {
 } from '../external_tools/external_tool_ascii_scratch.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 
 export interface CropPdfJob {
@@ -122,7 +123,8 @@ async function convertPdf(params: {
   const { signal, outputChannel } = runtime;
   signal?.throwIfAborted();
   const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'crop-pdf', runId, itemName);
+  const stagingRootPath = createStagingRoot(job.workspacePath, 'crop-pdf', runId);
+  const workDirectory = path.join(stagingRootPath, itemName);
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
@@ -172,7 +174,7 @@ async function convertPdf(params: {
       stagedOutputPath,
       outputPath: job.outputPath,
       workspacePath: job.workspacePath,
-      stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'crop-pdf', runId),
+      stagingRootPath,
     };
   } catch (error) {
     if (scratch) {

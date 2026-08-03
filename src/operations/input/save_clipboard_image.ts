@@ -14,6 +14,7 @@ import {
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { convertToPdfFiles, type ConvertToPdfFilesOptions } from '../conversion/convert_to_pdf.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 
 export interface ClipboardImageData {
   type: { ext: string };
@@ -146,7 +147,7 @@ async function saveClipboardImageAsPdf(
 }
 
 function clipboardStagingRoot(workspacePath: string, runId: string): string {
-  return path.join(workspacePath, '.graphics-workbench', 'clipboard-paste', runId);
+  return createStagingRoot(workspacePath, 'clipboard-paste', runId);
 }
 
 async function stageClipboardImage(

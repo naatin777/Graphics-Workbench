@@ -39,6 +39,7 @@ import {
   type RsvgToolScratchOptions,
 } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 import { OperationCancelledError } from '../lifecycle/operation_cancelled_error.js';
 import type { DrawioBackend, MermaidBackend, SvgToPdfBackend } from './tools/index.js';
 
@@ -203,7 +204,7 @@ async function stageSourceToPdf(
     `${index + 1}`,
     'result.pdf',
   );
-  const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', 'convert-png-to-pdf', runId);
+  const stagingRootPath = createStagingRoot(job.workspacePath, 'convert-png-to-pdf', runId);
 
   const writeOptions: WriteSourceAsPdfOptions = {
     sourcePath: job.sourcePath,

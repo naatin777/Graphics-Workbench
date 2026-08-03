@@ -17,6 +17,7 @@ import { getDefaultConfiguration } from '../../generated-extension-meta.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 import {
   type RsvgToolScratchOptions,
   type RunRsvgConvert,
@@ -64,7 +65,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
-  const stagingRootPath = path.join(options.workspacePath, '.graphics-workbench', 'combine-images', runId);
+  const stagingRootPath = createStagingRoot(options.workspacePath, 'combine-images', runId);
   const artifacts: ConversionArtifactRoot[] = [{ rootPath: stagingRootPath, workspacePath: options.workspacePath }];
 
   try {

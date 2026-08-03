@@ -29,6 +29,7 @@ import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 
 export interface ConvertToSvgJob {
   sourcePath: string;
@@ -151,7 +152,8 @@ async function stageSvgConversion(
     signal,
   } = options;
   signal?.throwIfAborted();
-  const stageDirectory = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-svg', runId, `${index + 1}`);
+  const stagingRootPath = createStagingRoot(job.workspacePath, 'convert-to-svg', runId);
+  const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, 'result.svg');
 
   await writeSourceAsSvg({
@@ -176,7 +178,7 @@ async function stageSvgConversion(
     stagedOutputPath,
     outputPath: job.outputPath,
     workspacePath: job.workspacePath,
-    stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'convert-to-svg', runId),
+    stagingRootPath,
   };
 }
 

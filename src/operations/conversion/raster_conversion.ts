@@ -32,6 +32,7 @@ import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 import sharp from 'sharp';
 
 type RasterEncoder = (
@@ -168,7 +169,7 @@ async function stageRasterConversion(
 ): Promise<PreparedConversionOutput> {
   context.runtime.signal?.throwIfAborted();
   const { stagingDirectoryName, resultExtension } = context.definition;
-  const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', stagingDirectoryName, context.runId);
+  const stagingRootPath = createStagingRoot(job.workspacePath, stagingDirectoryName, context.runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, `result.${resultExtension}`);
 
