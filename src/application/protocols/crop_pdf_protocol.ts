@@ -5,6 +5,22 @@ export interface CropBox {
   top: number;
 }
 
+export interface PdfRectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type PdfPageRotation = 0 | 90 | 180 | 270;
+
+export interface PdfPageGeometry {
+  page: number;
+  mediaBox: PdfRectangle;
+  cropBox: PdfRectangle;
+  rotation: PdfPageRotation;
+}
+
 export type CropTarget = { type: 'all' } | { type: 'selected'; pages: number[] };
 
 export interface CropPdfLabels {
@@ -68,8 +84,8 @@ export type CropConfigureHostToWebview =
         fileName: string;
         pageCount: number;
         initialPage: number;
-        width?: number;
-        height?: number;
+        pageGeometry: PdfPageGeometry[];
+        initialCropBox: CropBox;
         labels: CropPdfLabels;
       };
     }

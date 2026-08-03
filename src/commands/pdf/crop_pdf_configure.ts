@@ -1,11 +1,11 @@
 import path from 'node:path';
-import { Worker } from 'node:worker_threads';
 import * as vscode from 'vscode';
 
 import {
   type CropBox,
   type CropConfigureHostToWebview,
   type CropPdfLabels,
+  type PdfPageGeometry,
   type CropTarget,
   isCropConfigureMessage,
 } from '../../application/protocols/crop_pdf_protocol.js';
@@ -17,6 +17,7 @@ import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configur
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
+import { inspectCropPdfMetadata } from '../../operations/pdf/run_crop_pdf_metadata.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
@@ -90,8 +91,8 @@ async function runCropPdfConfigureCommand(
       fileName: path.basename(inputUri.fsPath),
       pageCount: pdf.pageCount,
       initialPage: 1,
-      width: pdf.width,
-      height: pdf.height,
+      pageGeometry: pdf.pages,
+      initialCropBox: initialCropBoxForPages(pdf.pages),
       labels: cropPdfLabels(),
     },
   };
@@ -174,8 +175,11 @@ async function runCropPdfConfigureCommand(
           inputUri,
           workspaceFolder,
           outputTemplate,
-          cropBox: message.payload.cropBox,
-          target: message.payload.target,
+          crop: {
+            cropBox: message.payload.cropBox,
+            target: message.payload.target,
+            pageGeometry: pdf.pages,
+          },
           panel,
           operationSignal: operationController.signal,
           onCompleted: () => {
@@ -191,79 +195,6 @@ async function runCropPdfConfigureCommand(
   });
 }
 
-interface CropPdfMetadata {
-  pageCount: number;
-  width: number;
-  height: number;
-}
-
-interface CropPdfMetadataWorkerMessage {
-  ok: boolean;
-  pageCount?: number;
-  width?: number;
-  height?: number;
-  error?: string;
-}
-
-async function inspectCropPdfMetadata(filePath: string, signal: AbortSignal): Promise<CropPdfMetadata> {
-  return new Promise<CropPdfMetadata>((resolve, reject) => {
-    const worker = new Worker(new URL('./crop_pdf_metadata_worker.js', import.meta.url));
-    let settled = false;
-
-    const cleanup = (): void => {
-      signal.removeEventListener('abort', abort);
-      void worker.terminate();
-    };
-    const finish = (error?: Error, metadata?: CropPdfMetadata): void => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      cleanup();
-      if (error !== undefined) {
-        reject(error);
-      } else if (metadata === undefined) {
-        reject(new Error('Crop Configure metadata worker returned no result.'));
-      } else {
-        resolve(metadata);
-      }
-    };
-    const abort = (): void => {
-      finish(new OperationCancelledError('Crop Configure metadata inspection was cancelled.'));
-    };
-
-    worker.on('message', (message: CropPdfMetadataWorkerMessage) => {
-      if (
-        message.ok &&
-        message.pageCount !== undefined &&
-        message.width !== undefined &&
-        message.height !== undefined
-      ) {
-        finish(undefined, { pageCount: message.pageCount, width: message.width, height: message.height });
-        return;
-      }
-
-      finish(new Error(message.error ?? 'Crop Configure metadata inspection failed.'));
-    });
-    worker.on('error', (error) => {
-      finish(error);
-    });
-    worker.on('exit', (code) => {
-      if (!settled) {
-        finish(new Error(`Crop Configure metadata worker exited without a result (code ${code}).`));
-      }
-    });
-    signal.addEventListener('abort', abort, { once: true });
-    if (signal.aborted) {
-      abort();
-      return;
-    }
-
-    // oxlint-disable-next-line unicorn/require-post-message-target-origin -- Worker MessagePort has no targetOrigin.
-    worker.postMessage({ filePath });
-  });
-}
-
 function toWebviewDirectoryUri(webview: vscode.Webview, extensionUri: vscode.Uri, directoryName: string): string {
   const uri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'webview', 'crop_pdf', directoryName));
 
@@ -274,31 +205,26 @@ async function applyConfiguredCrop(params: {
   inputUri: vscode.Uri;
   workspaceFolder: vscode.WorkspaceFolder;
   outputTemplate: string;
-  cropBox: CropBox;
-  target: CropTarget;
+  crop: {
+    cropBox: CropBox;
+    target: CropTarget;
+    pageGeometry: PdfPageGeometry[];
+  };
   panel: vscode.WebviewPanel;
   operationSignal: AbortSignal;
   onCompleted: () => void;
   outputChannel?: LineOutputChannel;
 }): Promise<void> {
   try {
-    const {
-      inputUri,
-      workspaceFolder,
-      outputTemplate,
-      cropBox,
-      target,
-      panel,
-      operationSignal,
-      onCompleted,
-      outputChannel,
-    } = params;
+    const { inputUri, workspaceFolder, outputTemplate, crop, panel, operationSignal, onCompleted, outputChannel } =
+      params;
     const sourcePath = inputUri.fsPath;
     const outputPath = resolveOutputPath(outputTemplate, {
       workspacePath: workspaceFolder.uri.fsPath,
       workspaceName: workspaceFolder.name,
       sourcePath,
     });
+    validateCropBoxForTarget(crop.cropBox, crop.target, crop.pageGeometry);
 
     const outputs = await vscode.window.withProgress(
       {
@@ -322,8 +248,8 @@ async function applyConfiguredCrop(params: {
                 sourcePath,
                 workspacePath: workspaceFolder.uri.fsPath,
                 outputPath,
-                cropBox,
-                target,
+                cropBox: crop.cropBox,
+                target: crop.target,
               },
               runtime,
             });
@@ -365,6 +291,55 @@ async function applyConfiguredCrop(params: {
     void params.panel.webview.postMessage({ type: 'error', payload: { message } });
     await vscode.window.showErrorMessage(userMessage('message.cropPdf.failed', message));
   }
+}
+
+function validateCropBoxForTarget(cropBox: CropBox, target: CropTarget, pageGeometry: PdfPageGeometry[]): void {
+  const pages = target.type === 'all' ? pageGeometry : target.pages.map((page) => pageGeometry[page - 1]);
+  for (const geometry of pages) {
+    if (geometry === undefined) {
+      throw new Error('Selected page metadata is unavailable. Close and reopen Crop Configure.');
+    }
+
+    const mediaRight = geometry.mediaBox.x + geometry.mediaBox.width;
+    const mediaTop = geometry.mediaBox.y + geometry.mediaBox.height;
+    if (
+      cropBox.left < geometry.mediaBox.x ||
+      cropBox.bottom < geometry.mediaBox.y ||
+      cropBox.right > mediaRight ||
+      cropBox.top > mediaTop
+    ) {
+      throw new Error(`Crop box must be inside page ${geometry.page} media box.`);
+    }
+  }
+}
+
+function initialCropBoxForPages(pageGeometry: PdfPageGeometry[]): CropBox {
+  const firstPage = pageGeometry[0];
+  if (firstPage === undefined) {
+    return { left: 0, bottom: 0, right: 0, top: 0 };
+  }
+
+  const commonCropBox = {
+    left: firstPage.cropBox.x,
+    bottom: firstPage.cropBox.y,
+    right: firstPage.cropBox.x + firstPage.cropBox.width,
+    top: firstPage.cropBox.y + firstPage.cropBox.height,
+  };
+  for (const geometry of pageGeometry.slice(1)) {
+    commonCropBox.left = Math.max(commonCropBox.left, geometry.cropBox.x);
+    commonCropBox.bottom = Math.max(commonCropBox.bottom, geometry.cropBox.y);
+    commonCropBox.right = Math.min(commonCropBox.right, geometry.cropBox.x + geometry.cropBox.width);
+    commonCropBox.top = Math.min(commonCropBox.top, geometry.cropBox.y + geometry.cropBox.height);
+  }
+
+  return commonCropBox.left < commonCropBox.right && commonCropBox.bottom < commonCropBox.top
+    ? commonCropBox
+    : {
+        left: firstPage.cropBox.x,
+        bottom: firstPage.cropBox.y,
+        right: firstPage.cropBox.x + firstPage.cropBox.width,
+        top: firstPage.cropBox.y + firstPage.cropBox.height,
+      };
 }
 
 function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri {

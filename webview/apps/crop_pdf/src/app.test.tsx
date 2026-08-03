@@ -64,8 +64,21 @@ const initMessage: ExtensionToWebviewMessage = {
     fileName: 'source.pdf',
     pageCount: 2,
     initialPage: 1,
-    width: 600,
-    height: 800,
+    pageGeometry: [
+      {
+        page: 1,
+        mediaBox: { x: 0, y: 0, width: 600, height: 800 },
+        cropBox: { x: 0, y: 0, width: 600, height: 800 },
+        rotation: 0,
+      },
+      {
+        page: 2,
+        mediaBox: { x: 0, y: 0, width: 600, height: 800 },
+        cropBox: { x: 0, y: 0, width: 600, height: 800 },
+        rotation: 0,
+      },
+    ],
+    initialCropBox: { left: 0, bottom: 0, right: 600, top: 800 },
     pdfSrc: 'vscode-resource://source.pdf',
     resources: {
       workerSrc: '',
