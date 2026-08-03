@@ -21,7 +21,11 @@ suite('外部tool実行ファイルの設定', () => {
 
   test('空文字のGhostscript設定はOS標準の実行ファイル名へフォールバックする', () => {
     assert.strictEqual(readDrawioExecutablePath(fakeConfiguration({ 'execPath.drawio': '' })), '');
-    assert.strictEqual(readGhostscriptExecutablePath(fakeConfiguration({ 'execPath.ghostscript': '' })), 'gs');
+    const expectedGhostscript = process.platform === 'win32' ? 'gswin64c' : 'gs';
+    assert.strictEqual(
+      readGhostscriptExecutablePath(fakeConfiguration({ 'execPath.ghostscript': '' })),
+      expectedGhostscript,
+    );
     assert.strictEqual(resolveGhostscriptExecutablePath('', 'win32'), 'gswin64c');
     assert.strictEqual(resolveGhostscriptExecutablePath('', 'linux'), 'gs');
   });
