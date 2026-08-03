@@ -54,6 +54,7 @@ const labels: CropPdfLabels = {
   },
   actions: {
     apply: 'Apply',
+    processing: 'Processing…',
     cancel: 'Cancel',
   },
 };
@@ -64,8 +65,21 @@ const initMessage: ExtensionToWebviewMessage = {
     fileName: 'source.pdf',
     pageCount: 2,
     initialPage: 1,
-    width: 600,
-    height: 800,
+    pageGeometry: [
+      {
+        page: 1,
+        mediaBox: { x: 0, y: 0, width: 600, height: 800 },
+        cropBox: { x: 0, y: 0, width: 600, height: 800 },
+        rotation: 0,
+      },
+      {
+        page: 2,
+        mediaBox: { x: 0, y: 0, width: 600, height: 800 },
+        cropBox: { x: 0, y: 0, width: 600, height: 800 },
+        rotation: 0,
+      },
+    ],
+    initialCropBox: { left: 0, bottom: 0, right: 600, top: 800 },
     pdfSrc: 'vscode-resource://source.pdf',
     resources: {
       workerSrc: '',
@@ -138,7 +152,9 @@ describe('Crop PDF Webview', () => {
         target: { type: 'selected', pages: [2] },
       },
     });
-    expect(document.querySelector<HTMLButtonElement>('button.button--primary')?.disabled).toBe(true);
+    const applyButton = document.querySelector<HTMLButtonElement>('button.button--primary');
+    expect(applyButton?.disabled).toBe(true);
+    expect(applyButton?.textContent).toContain('Processing');
     expect(findNumberInput('Left').disabled).toBe(true);
     expect(selectedPages.disabled).toBe(true);
 
@@ -150,6 +166,7 @@ describe('Crop PDF Webview', () => {
     await flushPromises();
     expect(document.querySelector('[role="alert"]')?.textContent).toContain('crop failed');
     expect(document.querySelector<HTMLButtonElement>('button.button--primary')?.disabled).toBe(false);
+    expect(document.querySelector<HTMLButtonElement>('button.button--primary')?.textContent).toContain('Apply');
   });
 
   test('keeps the crop input focused while its value changes', async () => {

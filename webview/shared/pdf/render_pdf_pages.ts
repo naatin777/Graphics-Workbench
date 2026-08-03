@@ -4,6 +4,7 @@ import './install_map_get_or_insert_computed';
 import * as pdfjsModule from 'pdfjs-dist';
 import type { PDFPageProxy } from 'pdfjs-dist';
 
+import { calculatePageWindow, MAX_RENDERED_PAGES } from './page_window';
 // Vite turns this worker query into an asset URL even though the source module has no default export.
 // oxlint-disable-next-line import/default
 import pdfJsWorkerUrl from './pdfjs_worker?worker&url';
@@ -11,6 +12,8 @@ import pdfJsWorkerUrl from './pdfjs_worker?worker&url';
 type PdfJs = typeof pdfjsModule;
 
 let pdfJsWorkerPromise: Promise<Worker> | undefined;
+const MAX_EAGER_PAGES = 32;
+const PAGE_GAP_PX = 12;
 
 export interface PdfRenderController {
   firstPageReady: Promise<void>;
@@ -54,12 +57,18 @@ export async function renderPdfPages(
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
   const document = await loadingTask.promise;
+
+  if (document.numPages > MAX_EAGER_PAGES) {
+    return createWindowedRenderController();
+  }
+
   const renderPromises = new Map<number, Promise<void>>();
   const pages = new Map<number, PDFPageProxy>();
   const renderTasks = new Set<ReturnType<PDFPageProxy['render']>>();
   const renderState = { disposed: false };
 
   container.replaceChildren();
+  container.style.removeProperty('display');
   const pageFrames: HTMLElement[] = [];
 
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
@@ -180,6 +189,186 @@ export async function renderPdfPages(
       await loadingTask.destroy();
     },
   };
+
+  function createWindowedRenderController(): PdfRenderController {
+    const windowRenderPromises = new Map<number, Promise<void>>();
+    const windowRenderingPages = new Set<number>();
+    const windowPages = new Map<number, PDFPageProxy>();
+    const windowRenderTasks = new Set<ReturnType<PDFPageProxy['render']>>();
+    const windowPageFrames = new Map<number, HTMLElement>();
+    const windowRenderState = { disposed: false };
+    const pageWindow = container.ownerDocument.createElement('div');
+    const topSpacer = container.ownerDocument.createElement('div');
+    const bottomSpacer = container.ownerDocument.createElement('div');
+    let estimatedPageHeight = 400;
+    let windowStart = 1;
+    let windowEnd = Math.min(document.numPages, MAX_RENDERED_PAGES);
+
+    pageWindow.className = 'pdf-page-window';
+    topSpacer.setAttribute('aria-hidden', 'true');
+    bottomSpacer.setAttribute('aria-hidden', 'true');
+    container.replaceChildren(topSpacer, pageWindow, bottomSpacer);
+    container.style.display = 'block';
+    pageWindow.style.display = 'grid';
+    pageWindow.style.gap = `${PAGE_GAP_PX}px`;
+    pageWindow.style.justifyItems = 'center';
+
+    const updateSpacers = (): void => {
+      const stride = estimatedPageHeight + PAGE_GAP_PX;
+      topSpacer.style.height = `${Math.max(0, windowStart - 1) * stride}px`;
+      bottomSpacer.style.height = `${Math.max(0, document.numPages - windowEnd) * stride}px`;
+    };
+
+    const createPageFrame = (pageNumber: number): HTMLElement => {
+      const pageFrame = container.ownerDocument.createElement('figure');
+      pageFrame.className = 'pdf-page';
+      pageFrame.dataset.pdfPage = pageNumber.toString();
+
+      const canvas = container.ownerDocument.createElement('canvas');
+      canvas.dataset.pdfPage = pageNumber.toString();
+      canvas.className = 'pdf-page__canvas';
+      canvas.setAttribute('aria-label', `${options.pageLabel ?? 'Page'} ${pageNumber}`);
+      pageFrame.append(canvas);
+      return pageFrame;
+    };
+
+    const renderWindowPage = async (pageNumber: number): Promise<void> => {
+      const existing = windowRenderPromises.get(pageNumber);
+      if (existing) {
+        return existing;
+      }
+
+      const renderPromise = (async (): Promise<void> => {
+        try {
+          if (windowRenderState.disposed) {
+            return;
+          }
+
+          const page = await document.getPage(pageNumber);
+          windowPages.set(pageNumber, page);
+          const pageFrame = windowPageFrames.get(pageNumber);
+          // The scroll handler can evict a page while getPage is pending.
+          // oxlint-disable-next-line typescript/no-unnecessary-condition
+          if (windowRenderState.disposed || pageFrame === undefined) {
+            page.cleanup();
+            windowPages.delete(pageNumber);
+            return;
+          }
+          const canvas = pageFrame.querySelector<HTMLCanvasElement>('canvas[data-pdf-page]');
+          if (canvas === null) {
+            page.cleanup();
+            windowPages.delete(pageNumber);
+            return;
+          }
+
+          const renderTask = renderPageToCanvasWithTask(page, canvas);
+          windowRenderTasks.add(renderTask);
+          windowRenderingPages.add(pageNumber);
+          try {
+            await renderTask.promise;
+          } finally {
+            windowRenderingPages.delete(pageNumber);
+            windowRenderTasks.delete(renderTask);
+            if (!windowPageFrames.has(pageNumber)) {
+              page.cleanup();
+              windowPages.delete(pageNumber);
+              windowRenderPromises.delete(pageNumber);
+            }
+          }
+
+          if (pageNumber === 1) {
+            const pageHeight = Number(canvas.dataset.pdfHeight);
+            if (Number.isFinite(pageHeight) && pageHeight > 0) {
+              estimatedPageHeight = pageHeight;
+              updateSpacers();
+            }
+          }
+        } catch (error: unknown) {
+          if (!windowRenderState.disposed && windowPageFrames.has(pageNumber)) {
+            options.onRenderError?.(error);
+          }
+          throw error instanceof Error ? error : new Error(String(error));
+        }
+      })();
+
+      windowRenderPromises.set(pageNumber, renderPromise);
+      return renderPromise;
+    };
+
+    const updateWindow = (): void => {
+      if (windowRenderState.disposed) {
+        return;
+      }
+
+      const root = options.root;
+      const scrollTop = root?.scrollTop ?? 0;
+      const viewportHeight = root?.clientHeight ?? estimatedPageHeight * MAX_RENDERED_PAGES;
+      const pageWindowRange = calculatePageWindow(document.numPages, scrollTop, viewportHeight, estimatedPageHeight);
+      windowStart = pageWindowRange.start;
+      windowEnd = pageWindowRange.end;
+
+      for (const [pageNumber, pageFrame] of windowPageFrames) {
+        if (pageNumber < windowStart || pageNumber > windowEnd) {
+          pageFrame.remove();
+          windowPageFrames.delete(pageNumber);
+          windowPages.get(pageNumber)?.cleanup();
+          windowPages.delete(pageNumber);
+          if (!windowRenderingPages.has(pageNumber)) {
+            windowRenderPromises.delete(pageNumber);
+          }
+        }
+      }
+
+      for (let pageNumber = windowStart; pageNumber <= windowEnd; pageNumber += 1) {
+        if (!windowPageFrames.has(pageNumber)) {
+          const pageFrame = createPageFrame(pageNumber);
+          windowPageFrames.set(pageNumber, pageFrame);
+          pageWindow.append(pageFrame);
+        }
+      }
+
+      updateSpacers();
+      for (let pageNumber = windowStart; pageNumber <= windowEnd; pageNumber += 1) {
+        void (async (): Promise<void> => {
+          try {
+            await renderWindowPage(pageNumber);
+          } catch {
+            // The render error was already reported through onRenderError.
+          }
+        })();
+      }
+    };
+
+    const scrollRoot = options.root;
+    scrollRoot?.addEventListener('scroll', updateWindow, { passive: true });
+    updateWindow();
+    const windowFirstPageReady = renderWindowPage(1);
+
+    return {
+      firstPageReady: windowFirstPageReady,
+      async dispose(): Promise<void> {
+        if (windowRenderState.disposed) {
+          return;
+        }
+
+        windowRenderState.disposed = true;
+        scrollRoot?.removeEventListener('scroll', updateWindow);
+        for (const renderTask of windowRenderTasks) {
+          renderTask.cancel();
+        }
+        await Promise.allSettled(windowRenderPromises.values());
+
+        for (const page of windowPages.values()) {
+          page.cleanup();
+        }
+
+        container.replaceChildren();
+        container.style.removeProperty('display');
+        await document.cleanup();
+        await loadingTask.destroy();
+      },
+    };
+  }
 }
 
 async function loadPdfJs(): Promise<PdfJs> {

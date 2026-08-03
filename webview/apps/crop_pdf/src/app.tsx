@@ -17,7 +17,7 @@ const defaultLabels: CropPdfLabels = {
   },
   preview: {
     title: 'Preview',
-    description: 'Zoom does not change crop values in PDF points.',
+    description: 'Zoom does not change crop values in PDF user space points.',
     ariaLabel: 'PDF preview',
     zoomLabel: 'Preview zoom',
     zoomOut: 'Zoom out',
@@ -28,7 +28,7 @@ const defaultLabels: CropPdfLabels = {
   cropBox: {
     settingsLabel: 'Crop settings',
     title: 'Crop box',
-    description: 'Set the area to keep in PDF points.',
+    description: 'Set the area to keep in PDF user space points.',
     left: 'Left',
     bottom: 'Bottom',
     right: 'Right',
@@ -51,12 +51,13 @@ const defaultLabels: CropPdfLabels = {
   },
   actions: {
     apply: 'Apply',
+    processing: 'Processing…',
     cancel: 'Cancel',
   },
 };
 
 type CropInitPayload = Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'];
-type PageSize = { width: number; height: number };
+type PageSize = { width: number; height: number; x: number; y: number };
 type CropBoxState = { left: string; bottom: string; right: string; top: string };
 type RenderPreviewOptions = {
   payload: CropInitPayload;
@@ -154,6 +155,34 @@ function updatePreviewPageSize(options: {
   });
 }
 
+function initialPageGeometry(payload: CropInitPayload): {
+  pageSize: PageSize;
+  cropBox: CropBoxState;
+} {
+  const geometry = payload.pageGeometry[0];
+  if (!geometry) {
+    return {
+      pageSize: { x: 0, y: 0, width: 0, height: 0 },
+      cropBox: { left: '0', bottom: '0', right: '0', top: '0' },
+    };
+  }
+
+  return {
+    pageSize: {
+      x: geometry.mediaBox.x,
+      y: geometry.mediaBox.y,
+      width: geometry.mediaBox.width,
+      height: geometry.mediaBox.height,
+    },
+    cropBox: {
+      left: payload.initialCropBox.left.toString(),
+      bottom: payload.initialCropBox.bottom.toString(),
+      right: payload.initialCropBox.right.toString(),
+      top: payload.initialCropBox.top.toString(),
+    },
+  };
+}
+
 function isDefaultCropBox(cropBox: CropBoxState): boolean {
   return cropBox.left === '0' && cropBox.bottom === '0' && cropBox.right === '0' && cropBox.top === '0';
 }
@@ -161,7 +190,7 @@ function isDefaultCropBox(cropBox: CropBoxState): boolean {
 export function App(): JSX.Element {
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
-  const [pageSize, setPageSize] = createSignal({ width: 0, height: 0 });
+  const [pageSize, setPageSize] = createSignal({ x: 0, y: 0, width: 0, height: 0 });
   const [cropBox, setCropBox] = createSignal({
     left: '0',
     bottom: '0',
@@ -197,22 +226,13 @@ export function App(): JSX.Element {
 
       const initialPage = event.data.payload.initialPage;
       const totalPages = event.data.payload.pageCount;
-      const pageWidth = event.data.payload.width ?? 0;
-      const pageHeight = event.data.payload.height ?? 0;
+      const initialGeometry = initialPageGeometry(event.data.payload);
 
       setFileName(event.data.payload.fileName);
       setLabels(event.data.payload.labels);
       setPageCount(totalPages);
-      setPageSize({
-        width: pageWidth,
-        height: pageHeight,
-      });
-      setCropBox({
-        left: '0',
-        bottom: '0',
-        right: pageWidth.toString(),
-        top: pageHeight.toString(),
-      });
+      setPageSize(initialGeometry.pageSize);
+      setCropBox(initialGeometry.cropBox);
       setTargetType('all');
       setSelectedPages(initialPage.toString());
       setInputError('');
@@ -230,7 +250,7 @@ export function App(): JSX.Element {
           pageSize,
           cropBox,
           setPageSize: (value) => {
-            setPageSize(value);
+            setPageSize({ ...value, x: pageSize().x, y: pageSize().y });
           },
           setCropBox: (value) => {
             setCropBox(value);
@@ -469,7 +489,8 @@ export function App(): JSX.Element {
                 </div>
 
                 <p class='panel__hint'>
-                  {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt
+                  {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt ({pageSize().x},{' '}
+                  {pageSize().y})
                 </p>
               </div>
 
@@ -535,7 +556,7 @@ export function App(): JSX.Element {
                     void applyCrop();
                   }}
                 >
-                  {labels().actions.apply}
+                  {isApplying() ? labels().actions.processing : labels().actions.apply}
                 </button>
                 <button
                   class='button'
@@ -556,17 +577,21 @@ export function App(): JSX.Element {
 function getPreviewPageSize(container: HTMLDivElement | undefined): {
   width: number;
   height: number;
+  x: number;
+  y: number;
 } {
   const firstPageCanvas = container?.querySelector<HTMLCanvasElement>('canvas[data-pdf-page="1"]');
 
   if (!firstPageCanvas) {
-    return { width: 0, height: 0 };
+    return { x: 0, y: 0, width: 0, height: 0 };
   }
 
   const width = Number(firstPageCanvas.dataset.pdfWidth);
   const height = Number(firstPageCanvas.dataset.pdfHeight);
 
   return {
+    x: 0,
+    y: 0,
     width: Number.isFinite(width) ? width : firstPageCanvas.width,
     height: Number.isFinite(height) ? height : firstPageCanvas.height,
   };

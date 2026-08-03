@@ -276,7 +276,7 @@ function isAllowedChildProcessFile(filename) {
   return (
     /(?:^|\/)src\/operations\/external_tools\/[^/]+\.ts$/u.test(normalized) ||
     normalized.endsWith('/src/operations/conversion/tools/run_mermaid_cli.ts') ||
-    normalized.endsWith('/src/operations/pdf/run_crop_pdf_process.ts')
+    /(?:^|\/src\/operations\/pdf\/)run_crop_pdf_(?:process|metadata)\.ts$/u.test(normalized)
   );
 }
 
