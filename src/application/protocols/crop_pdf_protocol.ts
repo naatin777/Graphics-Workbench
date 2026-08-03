@@ -1,3 +1,5 @@
+import type { PdfPreviewSettings } from './pdf_preview_protocol.js';
+
 export interface CropBox {
   left: number;
   bottom: number;
@@ -82,6 +84,7 @@ export type CropConfigureHostToWebview =
           standardFontDataUrl?: string;
           wasmUrl?: string;
         };
+        preview: PdfPreviewSettings;
         fileName: string;
         pageCount: number;
         initialPage: number;

@@ -57,6 +57,7 @@ export async function convertToTiffCommand(
       operationName: 'convert-to-tiff',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: createOutputConversionMessages('TIFF', sourceUris.length),
       run: async (runtime) => {
         const plannedJobs = await Promise.all(

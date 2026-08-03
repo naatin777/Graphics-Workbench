@@ -8,6 +8,7 @@ import {
   type MergePdfLabels,
 } from '../../application/protocols/merge_pdf_protocol.js';
 import { localeMap } from '../../locale_map.js';
+import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { mergePdf } from '../../operations/pdf/merge_pdf.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
@@ -16,11 +17,12 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
+import { confirmLargeOperation } from '../lifecycle/large_operation_warning.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '../shared/command_utils.js';
+import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
 
 export async function mergePdfSelectedFilesCommand(
   uri?: vscode.Uri,
@@ -34,6 +36,8 @@ export async function mergePdfSelectedFilesCommand(
     if (sourceUris.length < 2) {
       throw new Error('Select at least two PDF files.');
     }
+
+    getCommandConfiguration(dependencies);
 
     const workspace = await workspaceForSources(sourceUris);
     const outputUri = await vscode.window.showSaveDialog({
@@ -54,6 +58,10 @@ export async function mergePdfSelectedFilesCommand(
       },
       async (_progress, token) => {
         return withCancellationSignal(token, async (signal) => {
+          await confirmLargeOperation({
+            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
+            signal,
+          });
           const runtime: ConversionExecutionContext = {
             signal,
             ...createProgressReporters(_progress),
@@ -150,6 +158,7 @@ export async function mergePdfConfigureCommand(
         cMapUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'cmaps'),
         standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
         wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
+        preview: readPdfPreviewSettings(getCommandConfiguration(dependencies)),
         labels: mergePdfLabels(),
       },
     };
@@ -245,6 +254,11 @@ async function applyConfiguredMerge(params: {
           if (token.isCancellationRequested) {
             abortController.abort();
           }
+
+          await confirmLargeOperation({
+            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
+            signal: abortController.signal,
+          });
 
           const runtime: ConversionExecutionContext = {
             signal: abortController.signal,

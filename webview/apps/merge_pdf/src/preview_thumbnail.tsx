@@ -8,7 +8,7 @@ import { vscode } from './vscode';
 export type PdfOptions = Partial<
   Pick<
     Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'],
-    'workerSrc' | 'cMapUrl' | 'standardFontDataUrl' | 'wasmUrl'
+    'workerSrc' | 'cMapUrl' | 'standardFontDataUrl' | 'wasmUrl' | 'preview'
   >
 >;
 

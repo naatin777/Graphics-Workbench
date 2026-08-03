@@ -1,8 +1,15 @@
 import type * as vscode from 'vscode';
 
 import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
+import { configureExternalToolTimeouts } from '../../config/external_tools/external_tool_settings.js';
+import { configureLargeOperationWarningSettings } from '../../config/large_operation_warnings.js';
+import { getMaxConcurrentHeavyProcesses } from '../../config/performance.js';
 import { getExtensionConfiguration } from '../../generated-extension-config.js';
 import type { Configuration } from '../../generated-extension-meta.js';
+import {
+  sharedConversionJobLimiter,
+  sharedHeavyProcessLimiter,
+} from '../../operations/external_tools/heavy_process_limiter.js';
 
 import type { CommandDependencies } from './command_dependencies.js';
 
@@ -24,7 +31,13 @@ export function readDrawioOptions(configuration: Configuration): { drawioPath: s
 
 export function getCommandConfiguration(dependencies?: CommandDependencies): Configuration {
   const getConfiguration = dependencies?.getConfiguration ?? getExtensionConfiguration;
-  return getConfiguration();
+  const configuration = getConfiguration();
+  configureExternalToolTimeouts(configuration);
+  configureLargeOperationWarningSettings(configuration);
+  const concurrency = getMaxConcurrentHeavyProcesses(configuration);
+  sharedHeavyProcessLimiter.setConcurrency(concurrency);
+  sharedConversionJobLimiter.setConcurrency(concurrency);
+  return configuration;
 }
 
 export function assertFileScheme(sourceUri: vscode.Uri): void {

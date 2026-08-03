@@ -10,6 +10,7 @@ import {
   isCropConfigureMessage,
 } from '../../application/protocols/crop_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
 import { OperationCancelledError } from '../../operations/lifecycle/operation_cancelled_error.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
@@ -22,6 +23,7 @@ import { inspectCropPdfMetadata } from '../../operations/pdf/run_crop_pdf_metada
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
+import { confirmLargeOperation } from '../lifecycle/large_operation_warning.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -77,7 +79,8 @@ async function runCropPdfConfigureCommand(
         return inspectCropPdfMetadata(inputUri.fsPath, signal);
       }),
   );
-  const outputTemplate = getCommandConfiguration(dependencies).outputPath.cropPdf();
+  const configuration = getCommandConfiguration(dependencies);
+  const outputTemplate = configuration.outputPath.cropPdf();
   const initMessage: CropConfigureHostToWebview = {
     type: 'init',
     payload: {
@@ -88,6 +91,7 @@ async function runCropPdfConfigureCommand(
         standardFontDataUrl: '',
         wasmUrl: '',
       },
+      preview: readPdfPreviewSettings(configuration),
       fileName: path.basename(inputUri.fsPath),
       pageCount: pdf.pageCount,
       initialPage: 1,
@@ -246,6 +250,11 @@ async function applyConfiguredCrop(params: {
           token,
           async (signal) => {
             progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
+            await confirmLargeOperation({
+              sourcePaths: [sourcePath],
+              pdfPageCount: crop.pageGeometry.length,
+              signal,
+            });
             const runtime: ConversionExecutionContext = {
               signal,
               ...createProgressReporters(progress),

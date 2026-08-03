@@ -76,6 +76,7 @@ const initMessage: ExtensionToWebviewMessage = {
       standardFontDataUrl: '',
       wasmUrl: '',
     },
+    preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
     labels,
   },
 };

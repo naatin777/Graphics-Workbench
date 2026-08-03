@@ -38,4 +38,25 @@ suite('生成された設定スキーマ検証', () => {
       /Invalid configuration value for graphics-workbench\.outputPaths: expected object, received object\./,
     );
   });
+
+  test('大規模入力・性能設定の既定値を提供する', () => {
+    const configuration = fakeConfiguration();
+
+    assert.strictEqual(configuration.preview.maxCanvasPixels(), 40_000_000);
+    assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
+    assert.strictEqual(configuration.performance.maxConcurrentHeavyProcesses(), 2);
+    assert.strictEqual(configuration.externalTools.qpdf.timeoutSeconds(), 120);
+    assert.strictEqual(configuration.largeOperationWarnings.enabled(), true);
+  });
+
+  test('新しい数値設定の範囲を拒否する', () => {
+    assert.throws(
+      () => fakeConfiguration({ 'preview.maxDevicePixelRatio': 0 }).preview.maxDevicePixelRatio(),
+      /Invalid configuration value for graphics-workbench\.preview\.maxDevicePixelRatio/iu,
+    );
+    assert.throws(
+      () => fakeConfiguration({ 'externalTools.qpdf.timeoutSeconds': 86401 }).externalTools.qpdf.timeoutSeconds(),
+      /Invalid configuration value for graphics-workbench\.externalTools\.qpdf\.timeoutSeconds/iu,
+    );
+  });
 });

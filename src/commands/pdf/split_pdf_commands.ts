@@ -11,6 +11,7 @@ import {
   type SplitPdfPageGroupRow,
 } from '../../application/protocols/split_pdf_protocol.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { localeMap } from '../../locale_map.js';
 import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfJob } from '../../operations/pdf/split_pdf.js';
@@ -21,6 +22,7 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
+import { confirmLargeOperation } from '../lifecycle/large_operation_warning.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
@@ -57,6 +59,10 @@ export async function splitPdfAllPagesCommand(
       async (progress, token) => {
         return withCancellationSignal(token, async (signal) => {
           progress.report({ message: userMessage('message.progress.preparePdfSplit') });
+          await confirmLargeOperation({
+            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
+            signal,
+          });
           const runtime: ConversionExecutionContext = {
             signal,
             ...createProgressReporters(progress),
@@ -203,6 +209,7 @@ async function runSplitPdfConfigureCommand(
         standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
         wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
       },
+      preview: readPdfPreviewSettings(getCommandConfiguration(dependencies)),
       labels: splitPdfLabels(),
     },
   };
@@ -319,6 +326,11 @@ async function applyConfiguredSplit(params: {
           }
 
           progress.report({ message: userMessage('message.progress.preparePdfSplit') });
+          await confirmLargeOperation({
+            sourcePaths: [sourcePath],
+            pdfPageCount: pageCount,
+            signal: abortController.signal,
+          });
           const runtime: ConversionExecutionContext = {
             signal: abortController.signal,
             ...(outputChannel !== undefined && { outputChannel }),

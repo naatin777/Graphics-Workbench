@@ -61,6 +61,7 @@ export async function combineImagesToPdfCommand(
       operationName: 'combine-images-to-pdf',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: jobs.map((job) => job.sourcePath),
       messages: createOutputConversionMessages('PDF', jobs.length),
       run: async (runtime) =>
         combineImagesToPdf({

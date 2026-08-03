@@ -48,6 +48,7 @@ const initMessage: ExtensionToWebviewMessage = {
       { sourceId: 'source-2', fileName: 'two.pdf', pdfSrc: 'vscode-resource://two.pdf' },
       { sourceId: 'source-3', fileName: 'three.pdf', pdfSrc: 'vscode-resource://three.pdf' },
     ],
+    preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
     labels,
   },
 };

@@ -22,6 +22,14 @@ suite('Raster入力pixel上限設定', () => {
     });
   });
 
+  test('最大値は1,000,000,000に制限される', () => {
+    assert.strictEqual(getMaxInputPixels(fakeConfiguration({ 'raster.maxInputPixels': 1_000_000_000 })), 1_000_000_000);
+    assert.throws(
+      () => getMaxInputPixels(fakeConfiguration({ 'raster.maxInputPixels': 1_000_000_001 })),
+      /Invalid configuration value for graphics-workbench\.raster\.maxInputPixels/iu,
+    );
+  });
+
   test('未設定の値は既定値へ戻す', () => {
     assert.strictEqual(
       getMaxInputPixels(fakeConfiguration({ 'raster.maxInputPixels': undefined })),

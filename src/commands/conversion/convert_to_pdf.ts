@@ -146,6 +146,7 @@ async function convertSelectedSourcesToPdf(
       operationName: messages.operationName,
       ...(messages.outputChannel !== undefined && { outputChannel: messages.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: {
         progressTitle: userMessage(messages.titleKey, jobs.length),
         prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),

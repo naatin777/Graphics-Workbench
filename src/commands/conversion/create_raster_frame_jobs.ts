@@ -1,4 +1,5 @@
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
+import { assertAnimationPixelLimit } from '../../config/raster_limits.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   destroyRasterInput,
@@ -25,16 +26,21 @@ export async function createRasterFrameJobs(options: {
   outputTemplate: string;
   allowedExtensions: readonly string[];
   maxInputPixels: number;
+  maxAnimationPixels?: number;
   frameMode?: 'first' | 'all';
   createJob: (job: RasterFrameJob) => RasterFrameJob;
 }): Promise<RasterFrameJob[]> {
   await assertExistingPathInWorkspace(options.sourcePath, options.workspacePath);
   const image = openRasterInput(options.sourcePath, options.maxInputPixels);
   let pages: number;
+  let width = 0;
+  let pageHeight = 0;
 
   try {
     const metadata = await image.metadata();
     pages = metadata.pages ?? 1;
+    width = metadata.width;
+    pageHeight = metadata.pageHeight ?? metadata.height;
   } finally {
     await destroyRasterInput(image);
   }
@@ -44,6 +50,9 @@ export async function createRasterFrameJobs(options: {
   }
 
   const frameMode = options.frameMode ?? 'first';
+  if (frameMode === 'all' && pages > 1 && options.maxAnimationPixels !== undefined) {
+    assertAnimationPixelLimit(width, pageHeight, pages, options.maxAnimationPixels, options.sourcePath);
+  }
   const outputPages = frameMode === 'all' ? pages : 1;
   assertPageTemplateForSplitOutput(options.outputTemplate, outputPages);
 

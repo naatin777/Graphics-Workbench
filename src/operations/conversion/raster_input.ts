@@ -9,6 +9,7 @@ export type RasterInput = Sharp;
 
 export interface RasterAnimationMetadata {
   pages: number;
+  width?: number;
   pageHeight: number;
   delay?: number[];
   loop?: number;
@@ -42,8 +43,16 @@ export async function readRasterAnimationMetadata(
   try {
     const metadata = await image.metadata();
     const pages = metadata.pages ?? 1;
+    const width = metadata.width;
     const pageHeight = metadata.pageHeight ?? metadata.height;
-    if (!Number.isInteger(pages) || pages < 1 || !Number.isInteger(pageHeight) || pageHeight < 1) {
+    if (
+      !Number.isInteger(pages) ||
+      pages < 1 ||
+      !Number.isInteger(width) ||
+      width < 1 ||
+      !Number.isInteger(pageHeight) ||
+      pageHeight < 1
+    ) {
       throw new Error(`Could not determine image animation metadata: ${sourcePath}`);
     }
     if (pages <= 1) {
@@ -52,6 +61,7 @@ export async function readRasterAnimationMetadata(
 
     const result: RasterAnimationMetadata = {
       pages,
+      width,
       pageHeight,
     };
     if (metadata.delay !== undefined) {

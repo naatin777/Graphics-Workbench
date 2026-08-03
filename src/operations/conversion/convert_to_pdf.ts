@@ -33,6 +33,7 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { sharedHeavyProcessLimiter } from '../external_tools/heavy_process_limiter.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import {
   runRsvgConvertWithAsciiScratch,
@@ -647,7 +648,10 @@ async function writeSvgAsPdfWithPuppeteer(
         await closeBrowser(browser);
       }
     })();
-    await (abortPromise === undefined ? render : Promise.race([render, abortPromise]));
+    await sharedHeavyProcessLimiter.run(
+      async () => (abortPromise === undefined ? render : Promise.race([render, abortPromise])),
+      signal,
+    );
   } finally {
     signal?.removeEventListener('abort', abort);
     await closePage(page);

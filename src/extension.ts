@@ -9,6 +9,12 @@ import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
 import { getExtensionConfiguration } from './generated-extension-config.js';
 import { publicCommandIds, type CommandId } from './generated-extension-meta.js';
+import { configureExternalToolTimeouts } from './config/external_tools/external_tool_settings.js';
+import { getMaxConcurrentHeavyProcesses } from './config/performance.js';
+import {
+  sharedConversionJobLimiter,
+  sharedHeavyProcessLimiter,
+} from './operations/external_tools/heavy_process_limiter.js';
 
 const latexDocumentSelector: vscode.DocumentSelector = [{ language: 'latex' }, { language: 'tex' }];
 
@@ -294,6 +300,14 @@ function registerCommands(
   );
 }
 
+function configureHeavyProcessRuntime(): void {
+  const configuration = getExtensionConfiguration();
+  configureExternalToolTimeouts(configuration);
+  const concurrency = getMaxConcurrentHeavyProcesses(configuration);
+  sharedHeavyProcessLimiter.setConcurrency(concurrency);
+  sharedConversionJobLimiter.setConcurrency(concurrency);
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const activatedAt = Date.now();
   await cleanupStaleSecurePdfStagingRoots();
@@ -302,6 +316,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   initializeUndoHistory({ workspaceState: context.workspaceState, outputChannel });
   const dependencies = { getConfiguration: getExtensionConfiguration, outputChannel } satisfies CommandDependencies;
   context.subscriptions.push(outputChannel);
+
+  configureHeavyProcessRuntime();
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (
+        event.affectsConfiguration('graphics-workbench.performance.maxConcurrentHeavyProcesses') ||
+        event.affectsConfiguration('graphics-workbench.externalTools')
+      ) {
+        configureHeavyProcessRuntime();
+      }
+    }),
+    new vscode.Disposable(() => {
+      sharedHeavyProcessLimiter.stop();
+      sharedConversionJobLimiter.stop();
+    }),
+  );
 
   registerCommands(context, dependencies, outputChannel);
   context.subscriptions.push(

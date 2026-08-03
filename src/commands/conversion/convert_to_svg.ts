@@ -66,6 +66,7 @@ export async function convertToSvgCommand(
       operationName: 'convert-to-svg',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: createOutputConversionMessages('SVG', sourceUris.length),
       run: async (runtime) => {
         const plannedJobs = await Promise.all(

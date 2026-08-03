@@ -205,6 +205,7 @@ suite('PDFページグループ分割', () => {
             standardFontDataUrl: 'vscode-resource://fonts/',
             wasmUrl: 'vscode-resource://wasm/',
           },
+          preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
           labels,
         },
       }),

@@ -113,6 +113,7 @@ function renderOptions(
   signal: AbortSignal,
 ): Parameters<typeof renderPdfPages>[2] {
   return {
+    preview: payload.preview,
     ...(pdfPreview !== undefined && { root: pdfPreview }),
     ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
       ? { workerSrc: payload.resources.workerSrc }

@@ -26,6 +26,7 @@ export function App(): JSX.Element {
       const payload = event.data.payload;
       setSources(payload.sources.slice());
       setPdfOptions({
+        preview: payload.preview,
         ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
         ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
         ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''

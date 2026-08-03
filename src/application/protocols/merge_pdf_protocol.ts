@@ -6,6 +6,7 @@ import {
   isString,
   isWebviewUri,
 } from './protocol_utils.js';
+import { isPdfPreviewSettings, type PdfPreviewSettings } from './pdf_preview_protocol.js';
 
 export interface MergePdfSource {
   sourceId: string;
@@ -51,6 +52,7 @@ export type MergePdfHostToWebview =
         cMapUrl?: string;
         standardFontDataUrl?: string;
         wasmUrl?: string;
+        preview: PdfPreviewSettings;
         labels: MergePdfLabels;
       };
     }
@@ -90,7 +92,11 @@ export function isMergePdfHostToWebviewMessage(value: unknown): value is MergePd
 
   return (
     hasExactKeys(value, ['type', 'payload']) &&
-    hasExactKeys(value.payload, ['sources', 'labels'], ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl']) &&
+    hasExactKeys(
+      value.payload,
+      ['sources', 'preview', 'labels'],
+      ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl'],
+    ) &&
     Array.isArray(value.payload.sources) &&
     value.payload.sources.length >= 2 &&
     value.payload.sources.every(isMergePdfSource) &&
@@ -99,6 +105,7 @@ export function isMergePdfHostToWebviewMessage(value: unknown): value is MergePd
     isOptionalWebviewUri(value.payload.cMapUrl) &&
     isOptionalWebviewUri(value.payload.standardFontDataUrl) &&
     isOptionalWebviewUri(value.payload.wasmUrl) &&
+    isPdfPreviewSettings(value.payload.preview) &&
     isMergePdfLabels(value.payload.labels)
   );
 }

@@ -65,7 +65,6 @@
   },
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.16.0",
-    "p-limit": "^7.3.1",
     "pdf-lib": "^1.17.1",
     "puppeteer-core": "^25.4.0",
     "sharp": "^0.35.3",
@@ -560,12 +559,114 @@
           "scope": "machine",
           "description": "%config.execPath.qpdf%"
         },
+        "graphics-workbench.externalTools.qpdf.timeoutSeconds": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 0,
+          "maximum": 86400,
+          "scope": "machine",
+          "description": "%config.externalTools.qpdf.timeoutSeconds%"
+        },
+        "graphics-workbench.externalTools.drawio.timeoutSeconds": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 0,
+          "maximum": 86400,
+          "scope": "machine",
+          "description": "%config.externalTools.drawio.timeoutSeconds%"
+        },
+        "graphics-workbench.externalTools.ghostscript.timeoutSeconds": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 0,
+          "maximum": 86400,
+          "scope": "machine",
+          "description": "%config.externalTools.ghostscript.timeoutSeconds%"
+        },
+        "graphics-workbench.externalTools.pdftocairo.timeoutSeconds": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 0,
+          "maximum": 86400,
+          "scope": "machine",
+          "description": "%config.externalTools.pdftocairo.timeoutSeconds%"
+        },
+        "graphics-workbench.externalTools.rsvgConvert.timeoutSeconds": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 0,
+          "maximum": 86400,
+          "scope": "machine",
+          "description": "%config.externalTools.rsvgConvert.timeoutSeconds%"
+        },
+        "graphics-workbench.externalTools.mermaid.timeoutSeconds": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 0,
+          "maximum": 86400,
+          "scope": "machine",
+          "description": "%config.externalTools.mermaid.timeoutSeconds%"
+        },
         "graphics-workbench.raster.maxInputPixels": {
           "type": "integer",
           "default": 268402689,
           "minimum": 1,
-          "maximum": 9007199254740991,
+          "maximum": 1000000000,
+          "scope": "machine",
           "description": "%config.raster.maxInputPixels%"
+        },
+        "graphics-workbench.raster.maxAnimationPixels": {
+          "type": "integer",
+          "default": 500000000,
+          "minimum": 1,
+          "maximum": 5000000000,
+          "scope": "machine",
+          "description": "%config.raster.maxAnimationPixels%"
+        },
+        "graphics-workbench.preview.maxCanvasPixels": {
+          "type": "integer",
+          "default": 40000000,
+          "minimum": 1000000,
+          "scope": "machine",
+          "description": "%config.preview.maxCanvasPixels%"
+        },
+        "graphics-workbench.preview.maxDevicePixelRatio": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 8,
+          "scope": "machine",
+          "description": "%config.preview.maxDevicePixelRatio%"
+        },
+        "graphics-workbench.performance.maxConcurrentHeavyProcesses": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 16,
+          "scope": "machine",
+          "description": "%config.performance.maxConcurrentHeavyProcesses%"
+        },
+        "graphics-workbench.largeOperationWarnings.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "%config.largeOperationWarnings.enabled%"
+        },
+        "graphics-workbench.largeOperationWarnings.pdfPages": {
+          "type": "integer",
+          "default": 1000,
+          "minimum": 0,
+          "maximum": 10000000,
+          "scope": "resource",
+          "description": "%config.largeOperationWarnings.pdfPages%"
+        },
+        "graphics-workbench.largeOperationWarnings.inputSizeMiB": {
+          "type": "integer",
+          "default": 500,
+          "minimum": 0,
+          "maximum": 1048576,
+          "scope": "resource",
+          "description": "%config.largeOperationWarnings.inputSizeMiB%"
         },
         "graphics-workbench.convertToPdf.svg.engine": {
           "type": "string",
