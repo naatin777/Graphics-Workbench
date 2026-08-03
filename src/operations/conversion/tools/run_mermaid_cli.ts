@@ -27,12 +27,14 @@ interface MermaidRunnerFailure {
 
 // ponytail: fixed render ceiling. Mermaid CLI launches a browser that can hang on malformed input.
 const MERMAID_RENDER_TIMEOUT_MS = 120_000;
+const CHILD_TERMINATION_WATCHDOG_MS = 5_000;
 
 /** Runs Mermaid CLI in a child process so abort and timeouts can terminate the browser. */
 export async function runMermaidCliWithSignal(
   request: MermaidCliRunRequest,
   signal?: AbortSignal,
   timeoutMs: number = MERMAID_RENDER_TIMEOUT_MS,
+  terminationWatchdogMs: number = CHILD_TERMINATION_WATCHDOG_MS,
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     if (signal?.aborted === true) {
@@ -46,11 +48,16 @@ export async function runMermaidCliWithSignal(
       stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
     });
     let settled = false;
+    let terminationReason: Error | undefined;
+    let terminationWatchdog: NodeJS.Timeout | undefined;
 
-    const timer = setTimeout(() => {
-      terminateProcessTree(child);
-      finish(new Error(`Mermaid CLI timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
+    const cleanup = (): void => {
+      clearTimeout(timer);
+      if (terminationWatchdog !== undefined) {
+        clearTimeout(terminationWatchdog);
+      }
+      signal?.removeEventListener('abort', abort);
+    };
 
     const finish = (error?: Error): void => {
       if (settled) {
@@ -60,8 +67,7 @@ export async function runMermaidCliWithSignal(
         error = new OperationCancelledError('Mermaid rendering was cancelled.');
       }
       settled = true;
-      clearTimeout(timer);
-      signal?.removeEventListener('abort', abort);
+      cleanup();
       if (error === undefined) {
         resolve();
       } else {
@@ -69,9 +75,26 @@ export async function runMermaidCliWithSignal(
       }
     };
 
-    const abort = (): void => {
+    const requestTermination = (reason: Error): void => {
+      if (settled) {
+        return;
+      }
+
+      terminationReason ??= reason;
       terminateProcessTree(child);
+      terminationWatchdog ??= setTimeout(() => {
+        finish(terminationReason ?? new Error('Mermaid CLI child did not terminate.'));
+      }, terminationWatchdogMs);
     };
+
+    const timer = setTimeout(() => {
+      requestTermination(new Error(`Mermaid CLI timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    const abort = (): void => {
+      requestTermination(new OperationCancelledError('Mermaid rendering was cancelled.'));
+    };
+
     signal?.addEventListener('abort', abort, { once: true });
 
     child.on('message', (message: unknown) => {
@@ -87,14 +110,22 @@ export async function runMermaidCliWithSignal(
     });
 
     child.on('exit', (code, childSignal) => {
-      if (signal?.aborted === true) {
-        finish(new OperationCancelledError('Mermaid rendering was cancelled.'));
+      if (terminationReason !== undefined) {
+        finish(terminationReason);
         return;
       }
       finish(new Error(`Mermaid CLI exited with code ${code ?? 'unknown'} (signal ${childSignal ?? 'none'})`));
     });
 
-    child.send(request);
+    try {
+      child.send(request, (error) => {
+        if (error !== null) {
+          finish(error);
+        }
+      });
+    } catch (error) {
+      finish(error instanceof Error ? error : new Error(String(error)));
+    }
   });
 }
 
