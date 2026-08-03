@@ -13,7 +13,7 @@ import {
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 
 export interface MergePdfOptions {
   sourcePaths: string[];
@@ -45,7 +45,7 @@ async function prepareMerge(options: MergePdfOptions): Promise<{
   const { sourcePaths, outputPath, workspacePath, runtime } = options;
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
   const stagingRootPath = createStagingRoot(workspacePath, 'merge-pdf', runId);
   const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
   await Promise.all([

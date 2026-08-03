@@ -11,6 +11,7 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createRunId } from '../lifecycle/run_id.js';
 import { createSecurePdfStagingRoot } from '../lifecycle/secure_staging.js';
 import { runQpdfWithJobJson } from './run_qpdf_with_job_json.js';
 
@@ -43,7 +44,7 @@ export async function encryptPdfFiles(options: EncryptPdfOptions): Promise<Commi
 
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
   const stagingRootPath = await createSecurePdfStagingRoot('encrypt-pdf');
 
   return runStagedConversionBatch({

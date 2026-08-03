@@ -11,7 +11,7 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 
@@ -46,7 +46,7 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
 
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
 
   return runStagedConversionBatch({
     jobs: options.jobs,

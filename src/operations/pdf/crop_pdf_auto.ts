@@ -21,7 +21,7 @@ import {
 } from '../external_tools/external_tool_ascii_scratch.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 
@@ -72,7 +72,7 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
 
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
   const runGhostscript = options.runGhostscript ?? executeGhostscript;
   const platform = options.platform ?? process.platform;
   const scratchBaseCandidates = options.scratchBaseCandidates ?? defaultWindowsScratchBaseCandidates();
