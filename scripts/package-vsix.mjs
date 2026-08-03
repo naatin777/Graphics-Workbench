@@ -50,9 +50,6 @@ function parsePackageArguments(args) {
   if (!supportedTargets.has(target)) {
     throw new Error(`Unsupported VSIX target: ${target}`);
   }
-  if (target !== currentTarget) {
-    throw new Error(`VSIX target ${target} must match the current runner target ${currentTarget}`);
-  }
 
   return {
     outputPath: path.resolve(rootDirectory, values.out ?? 'graphics-workbench.vsix'),
