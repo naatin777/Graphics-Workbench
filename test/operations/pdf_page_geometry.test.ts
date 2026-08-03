@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+
+import { degrees, PDFDocument } from 'pdf-lib';
+
+import { getPdfPageGeometry } from '../../src/operations/pdf/pdf_page_geometry.js';
+
+suite('PDF page geometry', () => {
+  test('reports absolute MediaBox/CropBox coordinates and normalized rotation', async () => {
+    const document = await PDFDocument.create();
+    const page = document.addPage([600, 800]);
+    page.setMediaBox(100, 200, 600, 800);
+    page.setCropBox(120, 220, 500, 700);
+    page.setRotation(degrees(90));
+
+    const secondPage = document.addPage([400, 300]);
+    secondPage.setMediaBox(-10, -20, 400, 300);
+    secondPage.setCropBox(-5, -10, 200, 150);
+    secondPage.setRotation(degrees(270));
+
+    const reloaded = await PDFDocument.load(await document.save());
+
+    assert.deepStrictEqual(getPdfPageGeometry(reloaded.getPage(0), 1), {
+      page: 1,
+      mediaBox: { x: 100, y: 200, width: 600, height: 800 },
+      cropBox: { x: 120, y: 220, width: 500, height: 700 },
+      rotation: 90,
+    });
+    assert.deepStrictEqual(getPdfPageGeometry(reloaded.getPage(1), 2), {
+      page: 2,
+      mediaBox: { x: -10, y: -20, width: 400, height: 300 },
+      cropBox: { x: -5, y: -10, width: 200, height: 150 },
+      rotation: 270,
+    });
+  });
+});
