@@ -20,6 +20,10 @@ void test('検証コマンドと未検証理由を受け入れる', () => {
   );
 });
 
+void test('Dependabotの自動生成PRはVerification見出しがなくても受け入れる', () => {
+  assert.deepStrictEqual(validatePrDescription('', { authorLogin: 'dependabot[bot]' }), { valid: true });
+});
+
 void test('Verification見出しがない本文を拒否する', () => {
   assert.deepStrictEqual(validatePrDescription('## Summary\n\n- change'), {
     valid: false,
