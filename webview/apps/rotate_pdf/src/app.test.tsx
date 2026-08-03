@@ -5,13 +5,15 @@ import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderPdfPages = vi.hoisted(() =>
-  vi.fn<(...args: unknown[]) => Promise<unknown>>(async (_pdfSrc: string, container: Element) => {
-    for (let page = 1; page <= 4; page += 1) {
-      const figure = document.createElement('figure');
-      figure.setAttribute('data-pdf-page', String(page));
-      const canvas = document.createElement('canvas');
-      figure.append(canvas);
-      container.append(figure);
+  vi.fn<(...args: unknown[]) => Promise<unknown>>(async (_pdfSrc: unknown, container: unknown) => {
+    if (container instanceof Element) {
+      for (let page = 1; page <= 4; page += 1) {
+        const figure = document.createElement('figure');
+        figure.setAttribute('data-pdf-page', String(page));
+        const canvas = document.createElement('canvas');
+        figure.append(canvas);
+        container.append(figure);
+      }
     }
     return {
       firstPageReady: Promise.resolve(),
@@ -97,8 +99,8 @@ test('3つの回転角度ラジオを表示し、Applyで選択ページと角�
   const pages = document.querySelectorAll('[data-pdf-page]');
   expect(pages).toHaveLength(4);
 
-  pages[1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  pages[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  pages[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  pages[3]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
   const applyButton = [...document.querySelectorAll('button')].find((button) => button.textContent === 'Apply');
   expect(applyButton).toBeDefined();
