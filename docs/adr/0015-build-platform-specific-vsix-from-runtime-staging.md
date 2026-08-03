@@ -4,6 +4,8 @@
 
 採用
 
+> 補足: 6 targetをUbuntu上のnpm platform overrideで生成するrelease matrixの決定は、[ADR-0023](0023-build-six-target-vsix-with-npm-platform-overrides.md)で更新した。root package、lockfile、`.vscodeignore`、VSCE entrypointの方針は引き続き有効である。
+
 ## 日付
 
 2026-07-15

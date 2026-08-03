@@ -10,9 +10,13 @@ rootの`package.json`をそのまま使い、`.vscodeignore`でruntimeに不要�
 
 ## target
 
-package scriptは現在runnerの`process.platform`と`process.arch`からtargetを求める。指定targetがcurrent runnerと異なる場合は失敗する。release matrixはrunnerが実際に提供するtargetを生成する。
+package scriptはtarget未指定時にはrunnerの`process.platform`と`process.arch`からtargetを求め、明示的なtarget指定時には6つのsupported targetを受け付ける。releaseのpackage matrixはUbuntu runner上でnpmの`--os`、`--cpu`、Linuxの`--libc=glibc`を使ってoptional dependency treeをtargetごとに解決する。対応targetは`win32-x64`、`win32-arm64`、`darwin-x64`、`darwin-arm64`、`linux-x64`、`linux-arm64`で、Alpineは含めない。
 
-未検証native dependencyを含むcross-compile targetを提供しない。
+`sharp@0.35.3`はWindows向けに`@img/sharp-win32-*`を提供し、独立した`@img/sharp-libvips-win32-*`を提供しない。Windows VSIXはtarget用`@img/sharp-win32-*`を必須とし、macOS / glibc Linuxではtarget用`@img/sharp-*`と`@img/sharp-libvips-*`の両方を必須とする。
+
+6 target package jobはVSIX内容を検証し、実行テストはrunnerとtargetが一致する`linux-x64`で最小Sharp smokeを行う。既存の3 OS `package-smoke` jobは、runner上で生成したVSIXを実VS Code Electronへinstallするrelease smoke evidenceを維持する。
+
+VSIXのtarget内容は生成後にZIP central directoryをNode.jsで検査し、`node_modules/sharp`、target native package、不要な他platform native package、直接devDependencyの混入を確認する。
 
 ## CLI
 
