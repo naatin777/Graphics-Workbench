@@ -9,7 +9,6 @@ export default defineConfig({
   testDir: path.join(rootDir, 'test/playwright'),
   testMatch: '**/*.spec.ts',
   outputDir: path.join(rootDir, 'test-results'),
-  snapshotPathTemplate: '{testDir}/electron/__snapshots__/{arg}-{projectName}-{platform}{ext}',
   timeout: 60_000,
   expect: {
     timeout: 10_000,

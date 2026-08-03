@@ -33,7 +33,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0214: 6 target VSIXをネイティブランナーで生成・検証・公開する](docs/tasks/0214-native-runner-platform-vsix-release.md) — 5 targetをネイティブランナーで生成しsharpを実実行検証、win32-arm64はcross維持、`--skip-duplicate`とPAT未設定ガード。ADR-0026新設・ADR-0023置き換え
+- [0215: Playwrightのpixel matchingを廃止し目視レビューへ移行する](docs/tasks/0215-drop-playwright-pixel-matching.md) — `toMatchSnapshot` / `__snapshots__` / `PLAYWRIGHT_VISUAL_SNAPSHOTS` / Docker visual runnerを削除し、`visual:capture`（OS非依存）＋目視レビューへ移行。ADR-0027新設・ADR-0024/0025置き換え
 
 ## Non-goals
 
@@ -59,6 +59,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - PRのPackaged Electron E2Eは、Linuxがwide+narrow full UI / responsive / pixel snapshotのowner、macOS / Windowsがwide packaged conversion smokeのownerとなる。release前は3 OSすべてで全wide+narrow suiteを実行し、pixel gateではなく各OSのscreenshot artifactを目視確認する。
 - GitHub ActionsのPRでは3 OSともpackaged Playwrightを実行する。Linuxはfull 33 cases、macOS / Windowsはwide packaged conversion smoke 3 casesで、macOS / Windowsではpixel比較を行わない。
 - Playwright基準画像はCIで再生成せず、ローカルの`docker/playwright-visual`で再生成して目視確認し、通常のcommitでGit管理する。CIは基準画像の比較（verify）だけを行う（ADR-0025）。
+- Playwrightスクリーンショットはpixel比較せず、`npm run visual:capture`で`artifacts/visual-review/`へ生成し人間が目視確認する。承認した画像のみreferenceとしてGit管理する（ADR-0027、ADR-0024/0025は置き換え済み）。
 - releaseの6 target VSIXは、可能な限り対象と同一OS・CPUのGitHub-hosted runnerで生成し、`sharp`を実実行検証する。Windows ARM64は`windows-11-arm`がPublic previewのためcross-package生成・内容検証のみとする（ADR-0026）。
 - Linux visualのローカル再現には、Playwright・npm・lockfileを固定し、外部変換toolのpath/versionをbuild時にverifyする`docker/playwright-visual/Dockerfile`を使う。Docker imageは`linux/amd64`と`linux/arm64`を対象に全33 casesを実行できるが、GitHub Actions runnerへDocker実行を組み込まない。
 - required platform、quality priority、不可逆な変更はmaintainerが決める。

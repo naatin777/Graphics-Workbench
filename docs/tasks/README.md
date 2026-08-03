@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0214: 6 target VSIXをネイティブランナーで生成・検証・公開する](0214-native-runner-platform-vsix-release.md) — Implemented — 5 targetをネイティブランナーで生成しsharpを実実行検証、win32-arm64はcross維持、`--skip-duplicate`とPAT未設定ガード、ADR-0026新設・ADR-0023置き換え
+- [0215: Playwrightのpixel matchingを廃止し目視レビューへ移行する](0215-drop-playwright-pixel-matching.md) — Implemented — `toMatchSnapshot` / `__snapshots__` / `PLAYWRIGHT_VISUAL_SNAPSHOTS` / Docker visual runnerを削除し、`visual:capture`（OS非依存）＋目視レビューへ移行。ADR-0027新設・ADR-0024/0025置き換え
 
 ## On hold
 
@@ -72,6 +72,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0214: 6 target VSIXをネイティブランナーで生成・検証・公開する](0214-native-runner-platform-vsix-release.md) — Done — 5 targetをネイティブランナーで生成しsharpを実実行検証、win32-arm64はcross維持、`--skip-duplicate`とPAT未設定ガード、ADR-0026新設・ADR-0023置き換え
 - [0213: Playwright基準画像の更新をCIからローカルへ移す](0213-move-playwright-baseline-updates-locally.md) — Done — CIから`[update-snapshots]` / artifact配布 / bot commit / PRコメントを削除し、基準画像更新をローカルDocker + git pushへ一本化。ADR-0025新設・ADR-0024置き換え
 - [0212: package済みPlaywrightのOS別責務を再配分する](0212-rebalance-packaged-playwright-platform-coverage.md) — Done — PRはLinux full visual + macOS / Windows packaged smoke、releaseは3 OS full screenshot artifact、localはmulti-arch Docker Linux full。Docker amd64のEvidenceはpending
 - [0211: パッケージ済みElectron E2Eの安定性・幅別UI検証を改善する](0211-stabilize-packaged-playwright-e2e.md) — Done — Electron E2Eを17ケース×2幅へ安定化し、重複テストを統合

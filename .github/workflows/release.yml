@@ -381,10 +381,11 @@ jobs:
             - name: Run Playwright against packaged VSIX
               run: ${{ matrix.test_command }}
               shell: bash
-              env:
-                  # Release checks the packaged journey, while visual review
-                  # uses the uploaded Linux screenshots without pixel gating.
-                  PLAYWRIGHT_VISUAL_SNAPSHOTS: 'false'
+
+            - if: success()
+              name: Capture visual review screenshots
+              run: npm run visual:capture
+              shell: bash
 
             - if: failure()
               uses: actions/upload-artifact@v4
@@ -405,10 +406,8 @@ jobs:
             - if: always()
               uses: actions/upload-artifact@v4
               with:
-                  name: release-playwright-screenshots-${{ matrix.artifact_suffix }}
-                  path: |
-                      test-results/
-                      playwright-report/
+                  name: release-visual-review-${{ matrix.artifact_suffix }}
+                  path: artifacts/visual-review/
                   if-no-files-found: ignore
                   retention-days: 14
 
