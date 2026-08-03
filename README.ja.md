@@ -73,14 +73,14 @@ Open VSX Registry からもインストールできます。
 
 一部の機能では、VS Code 拡張機能とは別に外部ツールが必要です。使用する機能に応じて、必要なツールをインストールしてください。
 
-| ツール                   | 用途                                        | 必須になる機能                                                          | 備考                                                                           |
-| ------------------------ | ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Ghostscript              | PDF の余白検出                              | PDF トリミング                                                          | `gs` または `gswin64c` が利用可能である必要があります                          |
-| Poppler / `pdftocairo`   | PDFページの画像化                           | PDFからPNG/JPEG/WebP/AVIF/SVGへの変換                                   | macOS: `brew install poppler`、Debian/Ubuntu: `sudo apt install poppler-utils` |
-| rsvg-convert             | SVG から PDF への変換                       | `rsvg-convert`バックエンドを選択した場合                                | SVG 変換バックエンドの 1 つです                                                |
-| Google Chrome / Chromium | SVG / Mermaid 変換                          | SVG から PDF、Mermaid から PDF/PNG/JPEG/WebP/AVIF/SVG                   | Puppeteer / Mermaid CLI から使用します                                         |
-| Draw.io Desktop          | Draw.ioファイルとeditable Draw.io画像の変換 | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Draw.io デスクトップアプリケーションが必要です                                 |
-| Firefox                  | SVG から PDF への変換                       | `puppeteer.browser` を `firefox` にした場合                             | Firefox の実行ファイルが必要です                                               |
+| ツール                   | 用途                                        | 必須になる機能                                                          | 備考                                                                                   |
+| ------------------------ | ------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Ghostscript              | PDF の余白検出                              | PDF トリミング                                                          | 設定が空の場合は macOS / Linux で `gs`、Windows で `gswin64c` を `PATH` から解決します |
+| Poppler / `pdftocairo`   | PDFページの画像化                           | PDFからPNG/JPEG/WebP/AVIF/SVGへの変換                                   | OSのパッケージマネージャーまたは公式配布物で導入し、`PATH`または設定で指定             |
+| rsvg-convert             | SVG から PDF への変換                       | `rsvg-convert`バックエンドを選択した場合                                | SVG 変換バックエンドの 1 つです                                                        |
+| Google Chrome / Chromium | SVG / Mermaid 変換                          | SVG から PDF、Mermaid から PDF/PNG/JPEG/WebP/AVIF/SVG                   | Puppeteer / Mermaid CLI から使用します                                                 |
+| Draw.io Desktop          | Draw.ioファイルとeditable Draw.io画像の変換 | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Draw.io デスクトップアプリケーションが必要です                                         |
+| Firefox                  | SVG から PDF への変換                       | `puppeteer.browser` を `firefox` にした場合                             | Firefox の実行ファイルが必要です                                                       |
 
 ### すべての機能を利用する場合
 
@@ -112,6 +112,8 @@ rsvg-convert または Google Chrome / Chromium
 brew install ghostscript poppler librsvg
 ```
 
+HomebrewはmacOSでの導入例です。拡張機能本体はHomebrewを呼び出さず、各OSの`PATH`または`graphics-workbench.execPath.*`設定から外部ツールを解決します。
+
 Draw.io Desktop は以下からインストールしてください。
 
 [Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases)
@@ -134,6 +136,8 @@ Draw.io Desktop は以下からインストールしてください。
 - Poppler（`pdftocairo`）
 - Draw.io Desktop
 - Google Chrome / Chromium
+
+WindowsではHomebrewを使用せず、各ツールのWindows向け配布物または組織のパッケージマネージャーで導入してください。`pdftocairo.exe`、`rsvg-convert.exe`、`qpdf.exe`、`gswin64c.exe`を`PATH`へ追加するか、VS Codeの設定で実行ファイルのパスを指定します。
 
 ## 設定
 

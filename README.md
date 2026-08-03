@@ -68,9 +68,9 @@ GIF/TIFF input uses only the first page/frame. Use the explicit animation preser
 ## Required Tools
 
 - **Draw.io**: The Draw.io desktop application is required to convert native Draw.io files (`.drawio`, `.dio`) and editable Draw.io images (`.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg`). Download it from [Draw.io](https://github.com/jgraph/drawio-desktop/releases).
-- **Ghostscript**: Required for PDF margin detection during PDF cropping.
-- **Poppler / `pdftocairo`**: Required for rendering PDF pages to PNG, JPEG, WebP, AVIF, or SVG. On macOS: `brew install poppler`. On Debian/Ubuntu: `apt install poppler-utils`.
-- **rsvg-convert**: Required only when `graphics-workbench.convertToPdf.svg.engine` is set to `rsvg-convert`. It is provided by [librsvg](https://wiki.gnome.org/Projects/LibRsvg). On macOS: `brew install librsvg`. On Debian/Ubuntu: `apt install librsvg2-bin`.
+- **Ghostscript**: Required for PDF margin detection during PDF cropping. If `graphics-workbench.execPath.ghostscript` is empty, the extension uses `gs` on macOS/Linux and `gswin64c` on Windows, resolved from `PATH`.
+- **Poppler / `pdftocairo`**: Required for rendering PDF pages to PNG, JPEG, WebP, AVIF, or SVG. Install it using the package manager or installer for your OS, then make `pdftocairo` available on `PATH` or set `graphics-workbench.execPath.pdftocairo`.
+- **rsvg-convert**: Required only when `graphics-workbench.convertToPdf.svg.engine` is set to `rsvg-convert`. It is provided by [librsvg](https://wiki.gnome.org/Projects/LibRsvg). Install it using the package manager or installer for your OS, then make `rsvg-convert` available on `PATH` or set `graphics-workbench.execPath.rsvgConvert`.
 - **Google Chrome / Chromium**: Required for Mermaid conversion and optional for SVG conversion when the Puppeteer browser is set to `chrome`.
 - **Firefox**: Can be selected for SVG conversion with `graphics-workbench.puppeteer.browser` set to `firefox`.
 

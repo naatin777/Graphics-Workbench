@@ -5,7 +5,18 @@ export function readDrawioExecutablePath(configuration: Configuration): string {
 }
 
 export function readGhostscriptExecutablePath(configuration: Configuration): string {
-  return configuration.execPath.ghostscript();
+  return resolveGhostscriptExecutablePath(configuration.execPath.ghostscript());
+}
+
+export function resolveGhostscriptExecutablePath(
+  configuredPath: string,
+  platform: NodeJS.Platform = process.platform,
+): string {
+  if (configuredPath !== '') {
+    return configuredPath;
+  }
+
+  return platform === 'win32' ? 'gswin64c' : 'gs';
 }
 
 export function readPdftocairoExecutablePath(configuration: Configuration): string {
