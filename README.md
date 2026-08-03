@@ -42,6 +42,25 @@ You can install this extension in one of the following ways:
   It can also be installed from Open VSX, an alternative marketplace for VS Code.
   [Open VSX](https://open-vsx.org/extension/naatin777/graphics-workbench)
 
+### Platform-specific packages
+
+Graphics Workbench is published as a separate VSIX per OS and CPU architecture, each containing the matching native `sharp` binaries. Normal installs from Marketplace / Open VSX let VS Code automatically select the package for your environment.
+
+| Environment         | Package        |
+| ------------------- | -------------- |
+| Windows Intel/AMD   | `win32-x64`    |
+| Windows ARM         | `win32-arm64`  |
+| Intel Mac           | `darwin-x64`   |
+| Apple Silicon Mac   | `darwin-arm64` |
+| Linux x64 (glibc)   | `linux-x64`    |
+| Linux ARM64 (glibc) | `linux-arm64`  |
+
+When manually picking a VSIX from GitHub Releases, choose the file matching your environment from the table above.
+
+With Remote SSH / WSL / Dev Container, the extension runs in the remote Extension Host, so the package for the remote OS and CPU is installed. VS Code selects it automatically.
+
+Unsupported environments (Alpine Linux / musl, ARM32, and other environments without a `sharp` binary) are not supported; no Universal fallback package is provided.
+
 ## Commands
 
 | Feature                | Input                                                                                                        | Output                  | Use case                                   | Required external tools                                          |

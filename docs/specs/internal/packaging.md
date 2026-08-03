@@ -10,13 +10,40 @@ rootの`package.json`をそのまま使い、`.vscodeignore`でruntimeに不要�
 
 ## target
 
-package scriptはtarget未指定時にはrunnerの`process.platform`と`process.arch`からtargetを求め、明示的なtarget指定時には6つのsupported targetを受け付ける。releaseのpackage matrixはUbuntu runner上でnpmの`--os`、`--cpu`、Linuxの`--libc=glibc`を使ってoptional dependency treeをtargetごとに解決する。対応targetは`win32-x64`、`win32-arm64`、`darwin-x64`、`darwin-arm64`、`linux-x64`、`linux-arm64`で、Alpineは含めない。
+package scriptはtarget未指定時にはrunnerの`process.platform`と`process.arch`からtargetを求め、明示的なtarget指定時には6つのsupported targetを受け付ける。releaseのpackage matrixは、runnerとtargetが一致する場合は`npm ci --include=optional`、一致しないcross targetはnpmの`--os`、`--cpu`、Linuxの`--libc=glibc`を使ってoptional dependency treeをtargetごとに解決する。対応targetは`win32-x64`、`win32-arm64`、`darwin-x64`、`darwin-arm64`、`linux-x64`、`linux-arm64`で、Alpineは含めない。
+
+targetとrunnerの対応:
+
+| target         | runner             | 実行                                      |
+| -------------- | ------------------ | ----------------------------------------- |
+| `win32-x64`    | `windows-latest`   | native                                    |
+| `win32-arm64`  | `ubuntu-latest`    | cross（`windows-11-arm`はPublic preview） |
+| `darwin-x64`   | `macos-15-intel`   | native                                    |
+| `darwin-arm64` | `macos-latest`     | native                                    |
+| `linux-x64`    | `ubuntu-latest`    | native                                    |
+| `linux-arm64`  | `ubuntu-24.04-arm` | native                                    |
 
 `sharp@0.35.3`はWindows向けに`@img/sharp-win32-*`を提供し、独立した`@img/sharp-libvips-win32-*`を提供しない。Windows VSIXはtarget用`@img/sharp-win32-*`を必須とし、macOS / glibc Linuxではtarget用`@img/sharp-*`と`@img/sharp-libvips-*`の両方を必須とする。
 
-6 target package jobはVSIX内容を検証し、実行テストはrunnerとtargetが一致する`linux-x64`で最小Sharp smokeを行う。既存の3 OS `package-smoke` jobは、runner上で生成したVSIXを実VS Code Electronへinstallするrelease smoke evidenceを維持する。
+6 target package jobはVSIX内容を検証し、runnerとtargetが一致する5 targetでは`scripts/test-sharp.mjs`（sharp import、libvipsロード、PNG生成、platform / arch / Node / N-API / sharp / libvips versionログ）を実行する。crossの`win32-arm64`は生成・内容検証のみでnative実行しない。既存の3 OS `package-smoke` jobは、runner上で生成したVSIXを実VS Code Electronへinstallするrelease smoke evidenceを維持する。
 
 VSIXのtarget内容は生成後にZIP central directoryをNode.jsで検査し、`node_modules/sharp`、target native package、不要な他platform native package、直接devDependencyの混入を確認する。
+
+## Marketplace publish
+
+Marketplace公開はEntra ID認証を使う。Azure DevOps PATは2026-12-01に廃止されるため使わない。
+
+公開前に必要な設定:
+
+1. Visual Studio Marketplaceのpublisher管理ページ（`marketplace.visualstudio.com/manage`）でpublisher `naatin777` を作成する
+2. Azure ADアプリ登録（またはuser-assigned managed identity）を作成する
+3. GitHub Actions用のOIDC federated credentialを登録する（subject: `repo:naatin777/Graphics-Workbench:ref:refs/tags/v*`）
+4. Marketplace publisherのメンバーにそのidentityを追加し、Contributorロールを付与する
+5. GitHub Actions Secretに`AZURE_CLIENT_ID`、`AZURE_TENANT_ID`、`AZURE_SUBSCRIPTION_ID`を設定する
+
+workflowは`azure/login@v2`（`permissions: id-token: write`）で認証を確立し、`vsce publish --azure-credential --skip-duplicate`で各VSIXを公開する。認証情報が未設定の間はpublish stepをskipし、公開処理を有効化しない。
+
+Open VSX公開はOpen VSX固有の`OVSX_PAT`を使う。これはAzure DevOps PATとは別系統であり、上記の廃止対象ではない。
 
 ## CLI
 
