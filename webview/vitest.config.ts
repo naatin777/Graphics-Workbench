@@ -29,6 +29,10 @@ export function defineWebviewTestConfig(config: WebviewTestConfig): ReturnType<t
           webviewRoot,
           '../src/application/protocols/split_pdf_protocol.ts',
         ),
+        '@graphics-workbench-rotate-pdf-protocol': resolve(
+          webviewRoot,
+          '../src/application/protocols/rotate_pdf_protocol.ts',
+        ),
       },
     },
     test: {

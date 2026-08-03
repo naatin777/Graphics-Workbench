@@ -17,6 +17,10 @@ import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
 
+import {
+  isRotatePdfHostToWebviewMessage,
+  isRotatePdfWebviewToHostMessage,
+} from '../../src/application/protocols/rotate_pdf_protocol.js';
 import { rotatePdfFiles } from '../../src/operations/pdf/rotate_pdf.js';
 
 suite('PDF回転', () => {
@@ -123,3 +127,67 @@ async function writePdf(filePath: string, pageCount: number): Promise<void> {
   }
   await writeFile(filePath, await document.save());
 }
+
+suite('rotatePdf protocol guard', () => {
+  const labels = {
+    header: { title: 'Rotate PDF', description: 'description' },
+    preview: {
+      title: 'Preview',
+      description: 'description',
+      ariaLabel: 'preview',
+      renderError: 'error',
+      applyError: 'error',
+    },
+    rotation: {
+      title: 'Rotation',
+      angleLabel: 'angle',
+      selectAll: 'all',
+      selectAllAriaLabel: 'all',
+      pageToggle: 'toggle',
+    },
+    validation: { pagesRequired: 'required', pageOutOfRange: 'range', angleInvalid: 'invalid' },
+    actions: { apply: 'Apply', cancel: 'Cancel' },
+  };
+
+  const initPayload = {
+    sourceId: 'source-1',
+    fileName: 'source.pdf',
+    pageCount: 3,
+    pdfSrc: 'vscode-resource://source.pdf',
+    resources: { workerSrc: '', cMapUrl: '', standardFontDataUrl: '', wasmUrl: '' },
+    preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
+    labels,
+  };
+
+  test('正しいinitメッセージを受け入れる', () => {
+    assert.strictEqual(isRotatePdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
+  });
+
+  test('不正なapply角度を拒否する', () => {
+    assert.strictEqual(
+      isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 45, pageIndices: [1] } }),
+      false,
+    );
+  });
+
+  test('空のページ選択を拒否する', () => {
+    assert.strictEqual(
+      isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 90, pageIndices: [] } }),
+      false,
+    );
+  });
+
+  test('正しいapplyメッセージを受け入れる', () => {
+    assert.strictEqual(
+      isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 180, pageIndices: [1, 3] } }),
+      true,
+    );
+  });
+
+  test('追加キーを持つinitを拒否する', () => {
+    assert.strictEqual(
+      isRotatePdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
+      false,
+    );
+  });
+});

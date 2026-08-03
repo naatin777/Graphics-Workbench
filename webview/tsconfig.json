@@ -36,7 +36,8 @@
       "@webview-shared/*": ["./shared/*"],
       "@graphics-workbench-crop-pdf-protocol": ["../src/application/protocols/crop_pdf_protocol.ts"],
       "@graphics-workbench-merge-pdf-protocol": ["../src/application/protocols/merge_pdf_protocol.ts"],
-      "@graphics-workbench-split-pdf-protocol": ["../src/application/protocols/split_pdf_protocol.ts"]
+      "@graphics-workbench-split-pdf-protocol": ["../src/application/protocols/split_pdf_protocol.ts"],
+      "@graphics-workbench-rotate-pdf-protocol": ["../src/application/protocols/rotate_pdf_protocol.ts"]
     }
   },
   "include": [

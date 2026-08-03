@@ -1,0 +1,142 @@
+:root {
+  --rotate-border: color-mix(in srgb, currentColor 25%, transparent);
+  --rotate-accent: var(--vscode-button-background, #0e639c);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+}
+
+.rotate {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 12px;
+  gap: 12px;
+}
+
+.rotate__header h1 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.rotate__description {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.rotate__file {
+  margin: 4px 0 0;
+  opacity: 0.7;
+  overflow-wrap: anywhere;
+}
+
+.rotate__body {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  min-height: 0;
+}
+
+.rotate__preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--rotate-border);
+}
+
+.rotate__preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--rotate-border);
+}
+
+.rotate__pages {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+
+.rotate__pages :global(.pdf-page) {
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.rotate__pages :global(.pdf-page.pdf-page--selected) {
+  border-color: var(--rotate-accent);
+  outline: 2px solid var(--rotate-accent);
+  outline-offset: 1px;
+}
+
+.rotate__panel {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--rotate-border);
+}
+
+.rotate__angle fieldset {
+  border: 1px solid var(--rotate-border);
+  padding: 8px;
+}
+
+.rotate__angle-options {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.rotate__angle-options label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--rotate-border);
+  cursor: pointer;
+}
+
+.rotate__selection {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.rotate__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.rotate__actions button {
+  flex: 1;
+}
+
+.rotate__actions .rotate__apply {
+  background: var(--rotate-accent);
+  color: var(--vscode-button-foreground);
+}
+
+[role='alert'] {
+  color: var(--vscode-errorForeground, #f48771);
+}

@@ -93,6 +93,14 @@ function registerCommands(
     );
     return rotatePdfCommand(uri, uris, dependencies);
   });
+  registerFileCommand(context, 'graphics-workbench.rotatePdf.configure', async (uri, uris) => {
+    const { rotatePdfConfigureCommand } = await loadCommandModule(
+      outputChannel,
+      './commands/pdf/rotate_pdf_configure.js',
+      async () => import('./commands/pdf/rotate_pdf_configure.js'),
+    );
+    return rotatePdfConfigureCommand(context, uri, uris, dependencies);
+  });
   registerFileCommand(context, 'graphics-workbench.cropPdf.auto', async (uri, uris) => {
     const { cropPdfAutoCommand } = await loadCommandModule(
       outputChannel,

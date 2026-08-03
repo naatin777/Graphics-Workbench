@@ -48,6 +48,13 @@ export function defineWebviewConfig(config: WebviewBuildConfig): UserConfig {
           'protocols',
           'split_pdf_protocol.ts',
         ),
+        '@graphics-workbench-rotate-pdf-protocol': resolve(
+          projectRoot,
+          'src',
+          'application',
+          'protocols',
+          'rotate_pdf_protocol.ts',
+        ),
       },
     },
 
