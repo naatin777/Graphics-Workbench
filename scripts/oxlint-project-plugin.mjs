@@ -567,6 +567,10 @@ const noSecretOutputLog = {
   },
 };
 
+function isChildProcessSource(node) {
+  return node?.type === 'Literal' && (node.value === 'child_process' || node.value === 'node:child_process');
+}
+
 const noDirectChildProcess = {
   meta: {
     type: 'problem',
@@ -580,10 +584,6 @@ const noDirectChildProcess = {
   create(context) {
     if (isAllowedChildProcessFile(getContextFilename(context))) {
       return {};
-    }
-
-    function isChildProcessSource(node) {
-      return node?.type === 'Literal' && (node.value === 'child_process' || node.value === 'node:child_process');
     }
 
     return {

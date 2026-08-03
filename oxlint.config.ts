@@ -198,6 +198,15 @@ export default defineConfig({
     'unicorn/no-negated-condition': 'error',
     'unicorn/prefer-ternary': 'error',
     'unicorn/switch-case-braces': 'error',
+    'eslint/no-else-return': 'error',
+    'eslint/no-lonely-if': 'error',
+    'eslint/no-useless-catch': 'error',
+    'eslint/object-shorthand': 'error',
+    'typescript/no-this-alias': 'error',
+    'typescript/default-param-last': 'error',
+    'typescript/prefer-readonly': 'error',
+    'unicorn/prefer-optional-catch-binding': 'error',
+    'unicorn/consistent-function-scoping': 'error',
 
     /*
      * TypeScript
