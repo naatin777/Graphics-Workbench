@@ -1,6 +1,6 @@
 # 0212: package済みPlaywrightのOS別責務を再配分する
 
-Status: Implementation complete; cross-platform GitHub Actions evidence pending — maintainer direction recorded 2026-08-02
+Status: Implementation complete; Docker linux/amd64 evidence pending — maintainer direction recorded 2026-08-02
 
 ## Implementation evidence (2026-08-02)
 
@@ -12,6 +12,8 @@ Status: Implementation complete; cross-platform GitHub Actions evidence pending 
 - `npm run check`, `npm run typecheck:test`, `npm run build`, `npm run package:vsix`, `npm run test:webview`, `.github/scripts/*.test.mjs`, changed TypeScript `oxlint`, YAML parse, and `git diff --check`: passed。
 - The packaged Electron tests passed locally on macOS after granting GUI process execution. Linux, Windows, and GitHub Actions release-package execution remain unverified here.
 - GitHub Actions run [30733186958](https://github.com/naatin777/Graphics-Workbench/actions/runs/30733186958) passed the Linux, macOS, and Windows packaged Playwright jobs, snapshot commit, and PR screenshot comment for the preceding clean implementation commit. The current uncommitted workflow/Docker changes still require a fresh run.
+- Clean PR head `d0466bd` in [PR #93](https://github.com/naatin777/Graphics-Workbench/pull/93) passed the refreshed packaged Playwright workflow [30780708280](https://github.com/naatin777/Graphics-Workbench/actions/runs/30780708280) and Extension Host coverage workflow [30780708248](https://github.com/naatin777/Graphics-Workbench/actions/runs/30780708248) on Linux, macOS, and Windows before merge.
+- The normal packaged Playwright run recorded Linux 7m22s, macOS 3m26s, and Windows 5m28s for the platform jobs; the workflow elapsed 7m47s. This confirms the intended PR case-count reduction on macOS / Windows while preserving the Linux full suite.
 - ARM64 Docker verification: `docker build --platform linux/arm64` passed, conversion-tool verification passed, and `docker run --shm-size=2g ...:arm64` completed all 33 Linux wide+narrow cases in 3.4 minutes with no retry. The local Docker CLI has no `buildx` plugin, so the amd64 build/runtime remains unverified on this ARM host even though the official base image and Dockerfile are multi-architecture.
 - Docker entrypoint starts Xvfb explicitly and waits for its display socket; the standard run uses `--shm-size=2g`. Each packaged spec's prepare hook allows 180 seconds so a first-run VS Code download does not become a false flaky result.
 - A local process-count check was unavailable because the macOS `sysmond` service is not present in this environment; the existing Electron disposal/process-tree cleanup code was not changed.
@@ -454,9 +456,9 @@ file nameやtag自体をcontractにしない。重要なのは、どのoracleを
 - [x] 1 worker、per-test workspace / user-data / process isolation、process tree cleanupを維持している
 - [x] fixed Playwright sleepを追加していない
 - [x] 実装後のproject / spec / case countを記録している
-- [ ] macOS / Windowsの変更前後timingを通常runで記録している（CI実行待ち）
+- [x] macOS / Windowsの変更前後timingを通常runで記録している（[30780708280](https://github.com/naatin777/Graphics-Workbench/actions/runs/30780708280)）
 - [x] test policy、packaging仕様、CI Evidence map、test matrix、task記録のcase countと責務を同期した
-- [ ] GitHub ActionsのLinux / macOS / Windows package smokeがcleanなPR headでpassしている（この環境では未実行）
+- [x] GitHub ActionsのLinux / macOS / Windows package smokeがcleanなPR headでpassしている（[PR #93](https://github.com/naatin777/Graphics-Workbench/pull/93)、head `d0466bd`）
 
 ## Verification plan
 
