@@ -16,7 +16,7 @@ import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_bat
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
-export interface ReorderPdfJob {
+interface ReorderPdfJob {
   sourcePath: string;
   workspacePath: string;
   outputPath: string;
