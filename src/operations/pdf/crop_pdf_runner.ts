@@ -9,6 +9,14 @@ import {
 } from './crop_pdf_process_protocol.js';
 
 let requestReceived = false;
+let disconnectRequested = false;
+
+process.on('disconnect', () => {
+  if (!disconnectRequested) {
+    process.exitCode = 1;
+    process.exit();
+  }
+});
 
 process.on('message', (message: unknown) => {
   if (requestReceived) {
@@ -69,11 +77,24 @@ function sendResult(message: CropPdfProcessMessage, disconnectAfterSend: boolean
     return;
   }
 
-  process.send(message, () => {
-    if (disconnectAfterSend) {
-      process.disconnect();
-    }
-  });
+  try {
+    process.send(message, (error) => {
+      if (error !== null) {
+        process.exitCode = 1;
+        process.exit();
+        return;
+      }
+
+      if (disconnectAfterSend && process.connected) {
+        disconnectRequested = true;
+        process.disconnect();
+        process.exit(0);
+      }
+    });
+  } catch {
+    process.exitCode = 1;
+    process.exit();
+  }
 }
 
 function readRequestId(value: unknown): string {

@@ -108,6 +108,8 @@ async function runCropPdfConfigureCommand(
     },
   );
   let isApplying = false;
+  let operationState: 'idle' | 'running' | 'completed' = 'idle';
+  const operationController = new AbortController();
 
   panel.webview.html = getWebviewHtml({
     webview: panel.webview,
@@ -128,6 +130,12 @@ async function runCropPdfConfigureCommand(
   );
   initMessage.payload.resources.wasmUrl = toWebviewDirectoryUri(panel.webview, context.extensionUri, 'wasm');
 
+  panel.onDidDispose(() => {
+    if (operationState === 'running') {
+      operationController.abort(new OperationCancelledError('Crop Configure panel was closed.'));
+    }
+  });
+
   panel.webview.onDidReceiveMessage((message: unknown) => {
     if (!isCropConfigureMessage(message)) {
       return;
@@ -141,6 +149,9 @@ async function runCropPdfConfigureCommand(
     }
 
     if (message.type === 'cancel') {
+      if (operationState === 'running') {
+        operationController.abort(new OperationCancelledError('Crop Configure was cancelled.'));
+      }
       panel.dispose();
       return;
     }
@@ -156,6 +167,7 @@ async function runCropPdfConfigureCommand(
     }
 
     isApplying = true;
+    operationState = 'running';
     void (async (): Promise<void> => {
       try {
         await applyConfiguredCrop({
@@ -165,10 +177,15 @@ async function runCropPdfConfigureCommand(
           cropBox: message.payload.cropBox,
           target: message.payload.target,
           panel,
+          operationSignal: operationController.signal,
+          onCompleted: () => {
+            operationState = 'completed';
+          },
           ...(outputChannel !== undefined && { outputChannel }),
         });
       } finally {
         isApplying = false;
+        operationState = 'completed';
       }
     })();
   });
@@ -260,10 +277,22 @@ async function applyConfiguredCrop(params: {
   cropBox: CropBox;
   target: CropTarget;
   panel: vscode.WebviewPanel;
+  operationSignal: AbortSignal;
+  onCompleted: () => void;
   outputChannel?: LineOutputChannel;
 }): Promise<void> {
   try {
-    const { inputUri, workspaceFolder, outputTemplate, cropBox, target, panel, outputChannel } = params;
+    const {
+      inputUri,
+      workspaceFolder,
+      outputTemplate,
+      cropBox,
+      target,
+      panel,
+      operationSignal,
+      onCompleted,
+      outputChannel,
+    } = params;
     const sourcePath = inputUri.fsPath;
     const outputPath = resolveOutputPath(outputTemplate, {
       workspacePath: workspaceFolder.uri.fsPath,
@@ -278,25 +307,29 @@ async function applyConfiguredCrop(params: {
         cancellable: true,
       },
       async (progress, token) =>
-        withCancellationSignal(token, async (signal) => {
-          progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
-          const runtime: ConversionExecutionContext = {
-            signal,
-            ...createProgressReporters(progress),
-            ...(outputChannel !== undefined && { outputChannel }),
-            resolveConflicts: resolveOutputConflicts,
-          };
-          return cropPdfWithConfiguredBox({
-            job: {
-              sourcePath,
-              workspacePath: workspaceFolder.uri.fsPath,
-              outputPath,
-              cropBox,
-              target,
-            },
-            runtime,
-          });
-        }),
+        withCancellationSignal(
+          token,
+          async (signal) => {
+            progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
+            const runtime: ConversionExecutionContext = {
+              signal,
+              ...createProgressReporters(progress),
+              ...(outputChannel !== undefined && { outputChannel }),
+              resolveConflicts: resolveOutputConflicts,
+            };
+            return cropPdfWithConfiguredBox({
+              job: {
+                sourcePath,
+                workspacePath: workspaceFolder.uri.fsPath,
+                outputPath,
+                cropBox,
+                target,
+              },
+              runtime,
+            });
+          },
+          operationSignal,
+        ),
     );
 
     const successMessage = userMessage('message.cropPdf.success', outputs.length);
@@ -305,6 +338,7 @@ async function applyConfiguredCrop(params: {
     try {
       undoId = await recordConversionForUndo(outputs, outputChannel);
     } catch (error) {
+      onCompleted();
       panel.dispose();
       const message = error instanceof Error ? error.message : String(error);
       await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
@@ -312,6 +346,7 @@ async function applyConfiguredCrop(params: {
     }
 
     const undoAction = userMessage('message.action.undo');
+    onCompleted();
     panel.dispose();
     const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
@@ -326,6 +361,8 @@ async function applyConfiguredCrop(params: {
       return;
     }
 
+    // oxlint-disable-next-line unicorn/require-post-message-target-origin -- Webview.postMessage has no targetOrigin parameter.
+    void params.panel.webview.postMessage({ type: 'error', payload: { message } });
     await vscode.window.showErrorMessage(userMessage('message.cropPdf.failed', message));
   }
 }
