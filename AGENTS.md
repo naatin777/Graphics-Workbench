@@ -15,6 +15,11 @@
 - 明示されていない将来要件を推測して実装しない。
 - タスクで変更を求められていない既存挙動を維持する。
 
+## コミットとPR
+
+- gt（Graphite）の`gt submit --no-edit`は、PR titleをcommit messageの1行目から取るが、PR本文は自動入力されない（空になり、GitHubのPRテンプレートが適用される）。
+- PR本文が必要な場合は、`gt submit`（対話）または`gt submit --edit-description`で説明を入力するか、submit後に`gh pr edit <PR番号> --body "..."`で入力する。commit messageのbodyはPR本文へ反映されない。
+
 ## 実装
 
 - 最も近い既存実装を確認し、適切なら再利用する。
