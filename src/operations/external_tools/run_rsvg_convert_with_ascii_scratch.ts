@@ -1,4 +1,4 @@
-import { copyFile, lstat } from 'node:fs/promises';
+import { lstat } from 'node:fs/promises';
 
 import {
   createAsciiInputOutputScratch,
@@ -8,6 +8,7 @@ import {
   validateAsciiScratchOutput,
   type LineOutputChannel,
 } from './external_tool_ascii_scratch.js';
+import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 export interface RsvgToolScratchOptions {
   platform?: NodeJS.Platform;
@@ -47,7 +48,7 @@ export async function runRsvgConvertWithAsciiScratch(options: {
 
   try {
     options.signal?.throwIfAborted();
-    await copyFile(options.sourcePath, scratch.inputPath);
+    await copyFileWithAbort(options.sourcePath, scratch.inputPath, undefined, options.signal);
     options.signal?.throwIfAborted();
     await validateAsciiScratchInput(scratch, 'rsvg-convert');
 
@@ -60,7 +61,7 @@ export async function runRsvgConvertWithAsciiScratch(options: {
     options.signal?.throwIfAborted();
     await validateAsciiScratchOutput(scratch);
     options.signal?.throwIfAborted();
-    await copyFile(scratch.outputPath, options.outputPath);
+    await copyFileWithAbort(scratch.outputPath, options.outputPath, undefined, options.signal);
     options.signal?.throwIfAborted();
     await removeSuccessfulScratch(scratch, options.scratch.outputChannel);
   } catch (error) {

@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Parser } from 'xml2js';
@@ -17,6 +17,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
+import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { createStagingRoot } from '../lifecycle/run_id.js';
 import { validateGeneratedPdf } from './convert_to_pdf.js';
 
@@ -203,7 +204,7 @@ async function prepareDrawioInput(options: {
         options.runtime,
         options.runDrawio,
       )
-    : copyFile(options.sourcePath, drawioSourcePath));
+    : copyFileWithAbort(options.sourcePath, drawioSourcePath, undefined, options.runtime.signal));
   await assertExistingPathInWorkspace(drawioSourcePath, options.workspacePath);
   return drawioSourcePath;
 }

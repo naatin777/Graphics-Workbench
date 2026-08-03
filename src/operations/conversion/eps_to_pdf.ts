@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, stat } from 'node:fs/promises';
+import { mkdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -12,6 +12,7 @@ import {
   validateAsciiScratchOutput,
 } from '../external_tools/external_tool_ascii_scratch.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 export interface EpsToPdfResult {
   pdfPath: string;
@@ -48,7 +49,7 @@ export async function convertEpsToPdf(options: EpsToPdfOptions): Promise<EpsToPd
   await mkdir(options.stagingDirectory, { recursive: true });
 
   const stagingEpsPath = path.join(options.stagingDirectory, 'source.eps');
-  await copyFile(options.epsPath, stagingEpsPath);
+  await copyFileWithAbort(options.epsPath, stagingEpsPath, undefined, options.signal);
   options.signal?.throwIfAborted();
 
   const pdfPath = path.join(options.stagingDirectory, 'eps-result.pdf');
@@ -84,7 +85,7 @@ async function convertEpsToPdfOnWindows(
   let scratchSucceeded = false;
 
   try {
-    await copyFile(stagingEpsPath, scratch.inputPath);
+    await copyFileWithAbort(stagingEpsPath, scratch.inputPath, undefined, options.signal);
     await validateAsciiScratchInput(scratch);
     options.outputChannel?.appendLine(`[scratch] logical input: ${options.epsPath}`);
     options.outputChannel?.appendLine(`[scratch] tool input: ${scratch.inputPath}`);
@@ -94,7 +95,7 @@ async function convertEpsToPdfOnWindows(
     await runGhostscriptCommand(options, scratch.inputPath, scratch.outputPath, timeout);
     await validateAsciiScratchOutput(scratch);
     await validateGeneratedPdf(scratch.outputPath);
-    await copyFile(scratch.outputPath, pdfPath);
+    await copyFileWithAbort(scratch.outputPath, pdfPath, undefined, options.signal);
     options.signal?.throwIfAborted();
     await validateGeneratedPdf(pdfPath);
     options.signal?.throwIfAborted();
