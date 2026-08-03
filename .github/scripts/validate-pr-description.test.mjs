@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { findEnvironmentSpecificPaths } from './environment-paths.mjs';
 import { validatePrDescription } from './validate-pr-description.mjs';
 
 void test('テンプレートのコメントと単独のplaceholderは空として扱う', () => {
@@ -22,6 +23,41 @@ void test('検証コマンドと未検証理由を受け入れる', () => {
 
 void test('Dependabotの自動生成PRはVerification見出しがなくても受け入れる', () => {
   assert.deepStrictEqual(validatePrDescription('', { authorLogin: 'dependabot[bot]' }), { valid: true });
+});
+
+void test('PR本文の環境依存パスを拒否する', () => {
+  const localPath = ['', 'Users', 'alice', 'project'].join('/');
+
+  assert.deepStrictEqual(
+    validatePrDescription(`## Verification\n\n- ${localPath} (pass)`, {
+      authorLogin: 'dependabot[bot]',
+    }),
+    {
+      valid: false,
+      reason: 'PR body must not contain environment-specific absolute paths (line 3).',
+    },
+  );
+});
+
+void test('OS別の環境依存パスだけを検出する', () => {
+  const posixUserHomePath = ['', 'Users', 'alice', 'project'].join('/');
+  const linuxUserHomePath = ['', 'home', 'alice', 'project'].join('/');
+  const windowsUserHomePath = ['C:', 'Users', 'alice', 'project'].join('\\');
+  const macTemporaryPath = ['', 'private', 'var', 'folders', 'xx'].join('/');
+
+  assert.deepStrictEqual(
+    findEnvironmentSpecificPaths(
+      [posixUserHomePath, linuxUserHomePath, windowsUserHomePath, macTemporaryPath].join('\n'),
+    ),
+    [
+      { line: 1, label: 'POSIX user-home path' },
+      { line: 2, label: 'POSIX user-home path' },
+      { line: 3, label: 'Windows user-home path' },
+      { line: 4, label: 'macOS temporary path' },
+    ],
+  );
+
+  assert.deepStrictEqual(findEnvironmentSpecificPaths(posixUserHomePath), [{ line: 1, label: 'POSIX user-home path' }]);
 });
 
 void test('Verification見出しがない本文を拒否する', () => {
