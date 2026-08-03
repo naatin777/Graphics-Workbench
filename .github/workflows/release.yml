@@ -463,6 +463,10 @@ jobs:
         permissions:
             contents: read
             id-token: write
+        env:
+            AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+            AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+            AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         steps:
             - uses: actions/checkout@v7
 
@@ -498,21 +502,24 @@ jobs:
             - name: List and verify the six VSIX packages
               shell: bash
               run: |
-                  ls -1 ./*.vsix
-                  count="$(ls -1 ./*.vsix | wc -l | tr -d ' ')"
+                  count=0
+                  for vsix in ./*.vsix; do
+                    echo "$vsix"
+                    count=$((count + 1))
+                  done
                   if [[ "$count" != "6" ]]; then
                     echo "::error::expected 6 VSIX packages, found $count"
                     exit 1
                   fi
 
-            - if: ${{ secrets.AZURE_CLIENT_ID != '' }}
+            - if: ${{ env.AZURE_CLIENT_ID != '' }}
               uses: azure/login@v2
               with:
-                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
-                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-                  subscription: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                  client-id: ${{ env.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ env.AZURE_TENANT_ID }}
+                  subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
-            - if: ${{ secrets.AZURE_CLIENT_ID != '' }}
+            - if: ${{ env.AZURE_CLIENT_ID != '' }}
               name: Publish tested VSIX packages
               shell: bash
               run: |
@@ -520,7 +527,7 @@ jobs:
                     npx --no-install vsce publish --packagePath "$vsix" --azure-credential --skip-duplicate
                   done
 
-            - if: ${{ secrets.AZURE_CLIENT_ID == '' }}
+            - if: ${{ env.AZURE_CLIENT_ID == '' }}
               name: Skip Visual Studio Marketplace publish
               shell: bash
               run: echo "Entra ID credentials are not configured; skipping Visual Studio Marketplace publish"
@@ -536,6 +543,8 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: read
+        env:
+            OVSX_PAT: ${{ secrets.OVSX_PAT }}
         steps:
             - uses: actions/checkout@v7
 
@@ -568,17 +577,15 @@ jobs:
                   merge-multiple: true
                   path: .
 
-            - if: ${{ secrets.OVSX_PAT != '' }}
+            - if: ${{ env.OVSX_PAT != '' }}
               name: Publish tested VSIX packages
               shell: bash
-              env:
-                  OVSX_PAT: ${{ secrets.OVSX_PAT }}
               run: |
                   for vsix in ./*.vsix; do
                     npx --no-install ovsx publish "$vsix" --pat "$OVSX_PAT"
                   done
 
-            - if: ${{ secrets.OVSX_PAT == '' }}
+            - if: ${{ env.OVSX_PAT == '' }}
               name: Skip Open VSX publish
               shell: bash
               run: echo "OVSX_PAT is not configured; skipping Open VSX publish"
