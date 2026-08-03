@@ -30,6 +30,7 @@ jobs:
         run: node .github/scripts/validate-pr-description.mjs
         env:
           PR_BODY: ${{ github.event.pull_request.body || '' }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || '' }}
 
   check:
     runs-on: ubuntu-latest

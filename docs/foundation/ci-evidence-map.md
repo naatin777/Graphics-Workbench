@@ -106,7 +106,7 @@ release package jobは各native runnerで次を実行する。
 ### PR static gate
 
 - check: lint / format / four typechecks
-- pull request description: `## Verification` must contain non-placeholder evidence or an explicit not-run reason
+- pull request description: non-Dependabot PRs must have a `## Verification` section with non-placeholder evidence or an explicit not-run reason; Dependabot PRs are verified by the CI jobs themselves
 
 ### PR behavior gate
 
