@@ -111,6 +111,15 @@ async function runCropPdfConfigureCommand(
   let isApplying = false;
   let operationState: 'idle' | 'running' | 'completed' = 'idle';
   const operationController = new AbortController();
+  context.subscriptions.push(
+    new vscode.Disposable(() => {
+      if (operationState === 'running') {
+        operationController.abort(
+          new OperationCancelledError('Crop Configure was cancelled during extension shutdown.'),
+        );
+      }
+    }),
+  );
 
   panel.webview.html = getWebviewHtml({
     webview: panel.webview,
@@ -415,6 +424,7 @@ function cropPdfLabels(): CropPdfLabels {
     },
     actions: {
       apply: localeMap('webview.cropPdf.apply'),
+      processing: localeMap('webview.cropPdf.processing'),
       cancel: localeMap('webview.cropPdf.cancel'),
     },
   };

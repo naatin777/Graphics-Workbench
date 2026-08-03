@@ -189,6 +189,7 @@
   "webview.cropPdf.zoomIn": "Zoom in",
   "webview.cropPdf.previewZoom": "Preview zoom",
   "webview.cropPdf.apply": "Apply",
+  "webview.cropPdf.processing": "Processing…",
   "webview.cropPdf.cancel": "Cancel",
   "webview.cropPdf.previewRenderError": "Could not display the PDF",
   "webview.cropPdf.previewApplyError": "PDF preview must render before applying.",

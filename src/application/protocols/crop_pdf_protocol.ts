@@ -66,6 +66,7 @@ export interface CropPdfLabels {
   };
   actions: {
     apply: string;
+    processing: string;
     cancel: string;
   };
 }

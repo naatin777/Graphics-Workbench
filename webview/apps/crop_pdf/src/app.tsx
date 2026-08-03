@@ -51,6 +51,7 @@ const defaultLabels: CropPdfLabels = {
   },
   actions: {
     apply: 'Apply',
+    processing: 'Processing…',
     cancel: 'Cancel',
   },
 };
@@ -555,7 +556,7 @@ export function App(): JSX.Element {
                     void applyCrop();
                   }}
                 >
-                  {labels().actions.apply}
+                  {isApplying() ? labels().actions.processing : labels().actions.apply}
                 </button>
                 <button
                   class='button'

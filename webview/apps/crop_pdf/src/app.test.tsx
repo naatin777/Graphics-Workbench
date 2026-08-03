@@ -54,6 +54,7 @@ const labels: CropPdfLabels = {
   },
   actions: {
     apply: 'Apply',
+    processing: 'Processing…',
     cancel: 'Cancel',
   },
 };
@@ -151,7 +152,9 @@ describe('Crop PDF Webview', () => {
         target: { type: 'selected', pages: [2] },
       },
     });
-    expect(document.querySelector<HTMLButtonElement>('button.button--primary')?.disabled).toBe(true);
+    const applyButton = document.querySelector<HTMLButtonElement>('button.button--primary');
+    expect(applyButton?.disabled).toBe(true);
+    expect(applyButton?.textContent).toContain('Processing');
     expect(findNumberInput('Left').disabled).toBe(true);
     expect(selectedPages.disabled).toBe(true);
 
@@ -163,6 +166,7 @@ describe('Crop PDF Webview', () => {
     await flushPromises();
     expect(document.querySelector('[role="alert"]')?.textContent).toContain('crop failed');
     expect(document.querySelector<HTMLButtonElement>('button.button--primary')?.disabled).toBe(false);
+    expect(document.querySelector<HTMLButtonElement>('button.button--primary')?.textContent).toContain('Apply');
   });
 
   test('keeps the crop input focused while its value changes', async () => {

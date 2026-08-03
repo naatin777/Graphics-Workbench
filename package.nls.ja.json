@@ -189,6 +189,7 @@
   "webview.cropPdf.zoomIn": "ズームイン",
   "webview.cropPdf.previewZoom": "プレビューのズーム",
   "webview.cropPdf.apply": "適用",
+  "webview.cropPdf.processing": "処理中…",
   "webview.cropPdf.cancel": "キャンセル",
   "webview.cropPdf.previewRenderError": "PDFを表示できませんでした",
   "webview.cropPdf.previewApplyError": "適用する前にPDFプレビューを表示してください。",
