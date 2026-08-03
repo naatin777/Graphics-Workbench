@@ -16,6 +16,17 @@ export interface CleanupPreservingError {
   readonly cleanupPreservePaths?: readonly string[];
 }
 
+interface CleanupFailure {
+  readonly rootPath: string;
+  readonly error: Error;
+}
+
+export interface CleanupResult {
+  readonly attempted: number;
+  readonly succeeded: number;
+  readonly failures: readonly CleanupFailure[];
+}
+
 export function stagingArtifactsForJobs(
   jobs: readonly { workspacePath: string }[],
   operation: string,
@@ -35,7 +46,7 @@ export async function cleanupConversionArtifacts(
   artifacts: readonly ConversionArtifactRoot[],
   outputChannel?: LineOutputChannel,
   failure?: unknown,
-): Promise<void> {
+): Promise<CleanupResult> {
   const inheritedPreservePaths = getCleanupPreservePaths(failure);
   const artifactsWithInheritedPreserves = artifacts.map((artifact) => ({
     ...artifact,
@@ -45,15 +56,28 @@ export async function cleanupConversionArtifacts(
     ],
   }));
 
-  for (const artifact of deduplicateArtifacts(artifactsWithInheritedPreserves)) {
+  const uniqueArtifacts = deduplicateArtifacts(artifactsWithInheritedPreserves);
+  const failures: CleanupFailure[] = [];
+
+  for (const artifact of uniqueArtifacts) {
     try {
       await removeUnusedArtifactEntries(artifact);
     } catch (error) {
-      outputChannel?.appendLine(
-        `[cleanup] failed for ${artifact.rootPath}: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      failures.push({ rootPath: artifact.rootPath, error: normalizedError });
+      outputChannel?.appendLine(`[cleanup] failed for ${artifact.rootPath}: ${normalizedError.message}`);
     }
   }
+
+  if (failures.length > 0) {
+    outputChannel?.appendLine(`[cleanup] ${failures.length}/${uniqueArtifacts.length} artifact roots failed`);
+  }
+
+  return {
+    attempted: uniqueArtifacts.length,
+    succeeded: uniqueArtifacts.length - failures.length,
+    failures,
+  };
 }
 
 export async function withStagingCleanup<T>(
