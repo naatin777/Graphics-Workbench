@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument, type PDFPage } from 'pdf-lib';
@@ -22,6 +22,7 @@ import {
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createStagingRoot } from '../lifecycle/run_id.js';
+import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 
 export interface CropPdfJob {
@@ -134,7 +135,7 @@ async function convertPdf(params: {
   await mkdir(workDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
-  await copyFile(job.sourcePath, copiedSourcePath);
+  await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
   let scratch: AsciiScratch | undefined;
 
@@ -209,7 +210,7 @@ async function prepareGhostscriptInput(options: {
   const scratch = await createAsciiInputScratch(scratchArgs);
   try {
     options.signal?.throwIfAborted();
-    await copyFile(options.copiedSourcePath, scratch.inputPath);
+    await copyFileWithAbort(options.copiedSourcePath, scratch.inputPath, undefined, options.signal);
     options.signal?.throwIfAborted();
     await validateAsciiScratchInput(scratch);
     options.outputChannel?.appendLine(`[scratch] logical input: ${options.sourcePath}`);

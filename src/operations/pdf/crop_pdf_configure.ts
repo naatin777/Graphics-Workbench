@@ -1,8 +1,9 @@
-import { copyFile, mkdir } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { assertSafePathSegment, createRunId, createStagingRoot, type RunId } from '../lifecycle/run_id.js';
+import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 import { isAbortError } from '../../application/error_utils.js';
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
@@ -100,7 +101,7 @@ async function createConfiguredCropOutput(
   await assertWritablePathInWorkspace(workDirectory, job.workspacePath);
   await mkdir(workDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
-  await copyFile(job.sourcePath, copiedSourcePath);
+  await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
 
   signal?.throwIfAborted();

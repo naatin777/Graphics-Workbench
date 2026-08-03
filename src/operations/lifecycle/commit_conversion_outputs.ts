@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs';
-import { access, copyFile, mkdir, open, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { access, mkdir, open, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -10,6 +10,7 @@ import {
   type ConversionArtifactRoot,
 } from './cleanup_conversion_artifacts.js';
 import { OperationCancelledError } from './operation_cancelled_error.js';
+import { copyFileWithAbort, type AbortableCopyFile } from './copy_file_with_abort.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import { filesHaveEqualContents, hashFile } from '../input/file_content_hash.js';
 
@@ -41,7 +42,7 @@ export interface CommitConversionOutputsOptions {
   signal?: AbortSignal;
   operationName?: string;
   outputChannel?: LineOutputChannel;
-  copyFile?: (source: string, destination: string, flags?: number) => Promise<void>;
+  copyFile?: AbortableCopyFile;
   rename?: typeof rename;
   rm?: typeof rm;
 }
@@ -117,7 +118,7 @@ export async function commitStagedOutputs(
 
     options.signal?.throwIfAborted();
     await assertConflictOutputsUnchanged(resolvedOutputs);
-    await createBackups(resolvedOutputs, decision, options.copyFile ?? copyFile);
+    await createBackups(resolvedOutputs, decision, options.copyFile ?? copyFileWithAbort, options.signal);
     options.signal?.throwIfAborted();
 
     return await commitResolvedOutputs(resolvedOutputs, options);
@@ -249,7 +250,8 @@ function appendNumericSuffix(filePath: string, suffix: number): string {
 async function createBackups(
   outputs: ResolvedOutput[],
   decision: OutputConflictDecision,
-  copyFileImpl: (source: string, destination: string, flags?: number) => Promise<void>,
+  copyFileImpl: AbortableCopyFile,
+  signal: AbortSignal | undefined,
 ): Promise<void> {
   if (decision !== 'overwrite') {
     return;
@@ -264,7 +266,7 @@ async function createBackups(
     const previousFilePath = `${output.stagedOutputPath}.previous`;
     await assertWritablePathInWorkspace(previousFilePath, stagingBoundary(output));
     await mkdir(path.dirname(previousFilePath), { recursive: true });
-    await copyFileImpl(output.outputPath, previousFilePath, fsConstants.COPYFILE_EXCL);
+    await copyFileImpl(output.outputPath, previousFilePath, fsConstants.COPYFILE_EXCL, signal);
     output.previousFilePath = previousFilePath;
   }
 }
@@ -275,7 +277,7 @@ async function commitResolvedOutputs(
 ): Promise<CommittedConversionOutput[]> {
   const committed: ResolvedOutput[] = [];
   const rollbackCandidates: ResolvedOutput[] = [];
-  const copyFileImpl = options.copyFile ?? copyFile;
+  const copyFileImpl = options.copyFile ?? copyFileWithAbort;
 
   try {
     for (const output of outputs) {
@@ -365,7 +367,7 @@ async function rollbackCommittedOutputs(
   outputs: ResolvedOutput[],
   options: CommitConversionOutputsOptions,
 ): Promise<RollbackFailure[]> {
-  const copyFileImpl = options.copyFile ?? copyFile;
+  const copyFileImpl = options.copyFile ?? copyFileWithAbort;
   const rmImpl = options.rm ?? rm;
   const failures: RollbackFailure[] = [];
 
@@ -417,10 +419,10 @@ async function rollbackCommittedOutputs(
 async function copyPreparedOutput(
   output: ResolvedOutput,
   options: CommitConversionOutputsOptions,
-  copyFileImpl: (source: string, destination: string, flags?: number) => Promise<void>,
+  copyFileImpl: AbortableCopyFile,
 ): Promise<void> {
   if (output.previousFilePath === undefined) {
-    await copyFileImpl(output.stagedOutputPath, output.outputPath);
+    await copyFileImpl(output.stagedOutputPath, output.outputPath, undefined, options.signal);
     return;
   }
 
@@ -432,7 +434,7 @@ async function copyPreparedOutput(
 
   try {
     await assertWritablePathInWorkspace(temporaryPath, output.workspacePath);
-    await copyFileImpl(output.stagedOutputPath, temporaryPath);
+    await copyFileImpl(output.stagedOutputPath, temporaryPath, undefined, options.signal);
     await assertExistingPathInWorkspace(temporaryPath, output.workspacePath);
 
     try {

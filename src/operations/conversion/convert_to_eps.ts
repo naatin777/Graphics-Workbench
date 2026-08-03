@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, stat } from 'node:fs/promises';
+import { mkdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
@@ -9,6 +9,7 @@ import {
 } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createStagingRoot } from '../lifecycle/run_id.js';
+import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import {
   createAsciiInputOutputScratch,
@@ -178,12 +179,12 @@ async function runPdfToEps(options: {
     });
     let succeeded = false;
     try {
-      await copyFile(options.pdfPath, scratch.inputPath);
+      await copyFileWithAbort(options.pdfPath, scratch.inputPath, undefined, options.signal);
       await validateAsciiScratchInput(scratch);
       await runGhostscript(options.ghostscriptPath, argsFor(scratch.inputPath, scratch.outputPath), options.signal);
       options.signal?.throwIfAborted();
       await validateAsciiScratchOutput(scratch);
-      await copyFile(scratch.outputPath, options.epsPath);
+      await copyFileWithAbort(scratch.outputPath, options.epsPath, undefined, options.signal);
       await validateGeneratedEps(options.epsPath);
       succeeded = true;
     } finally {
