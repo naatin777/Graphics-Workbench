@@ -33,7 +33,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0212: package済みPlaywrightのOS別責務を再配分する](docs/tasks/0212-rebalance-packaged-playwright-platform-coverage.md) — PRはLinux full visual + macOS / Windows packaged smoke、releaseは3 OS full visual artifact、localはmulti-arch Docker Linux fullを実装。CI scope classifierは廃止し、対象jobを常時実行する。clean-head ActionsとDocker amd64のEvidence待ち
+- [0212: package済みPlaywrightのOS別責務を再配分する](docs/tasks/0212-rebalance-packaged-playwright-platform-coverage.md) — PRはLinux full visual + macOS / Windows packaged smoke、releaseは3 OS full visual artifact、localはmulti-arch Docker Linux fullを実装。CI scope classifierは廃止し、対象jobを常時実行する。clean-head ActionsとOS別timingは確認済み、Docker amd64のEvidence待ち
 
 ## Non-goals
 
