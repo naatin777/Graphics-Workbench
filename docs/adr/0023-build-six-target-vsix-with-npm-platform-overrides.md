@@ -2,7 +2,7 @@
 
 ## ステータス
 
-採用
+置き換え済み（[ADR-0026: 6 target VSIXをネイティブランナーで生成しsharpを実行検証する](0026-native-runner-platform-vsix-release.md)で置き換え）
 
 ## 日付
 

@@ -69,6 +69,25 @@ Open VSX Registry からもインストールできます。
 
 [Open VSX](https://open-vsx.org/extension/naatin777/graphics-workbench)
 
+### プラットフォーム別パッケージ
+
+Graphics Workbench は OS・CPU ごとにネイティブバイナリ（`sharp`）を含む VSIX を分けて公開しています。Marketplace / Open VSX からの通常インストールでは、VS Code が実行環境に合うパッケージを自動選択するため、利用者が選択する必要はありません。
+
+| 環境                | パッケージ     |
+| ------------------- | -------------- |
+| Windows Intel / AMD | `win32-x64`    |
+| Windows ARM         | `win32-arm64`  |
+| Intel Mac           | `darwin-x64`   |
+| Apple Silicon Mac   | `darwin-arm64` |
+| Linux x64 (glibc)   | `linux-x64`    |
+| Linux ARM64 (glibc) | `linux-arm64`  |
+
+GitHub Releases から手動で VSIX を選ぶ場合は、上記の表から自分の環境に合うファイルを選んでください。
+
+Remote SSH / WSL / Dev Container では、この拡張機能はローカルではなくリモート側の Extension Host で動作するため、リモート環境の OS・CPU 向けパッケージがインストールされます。VS Code が自動で選択します。
+
+非対応環境（Alpine Linux / musl、ARM32 など、`sharp` のバイナリがない環境）はサポート対象外です。Universal 版のフォールバックは提供しません。
+
 ## 外部依存関係
 
 一部の機能では、VS Code 拡張機能とは別に外部ツールが必要です。使用する機能に応じて、必要なツールをインストールしてください。
