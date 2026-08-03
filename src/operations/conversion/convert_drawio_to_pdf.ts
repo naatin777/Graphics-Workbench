@@ -17,6 +17,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 import { validateGeneratedPdf } from './convert_to_pdf.js';
 
 export interface DrawioPdfJob {
@@ -83,7 +84,7 @@ async function stageDrawioJob(options: {
   runtime: ConversionExecutionContext;
 }): Promise<PreparedConversionOutput[]> {
   const { job, index: jobIndex, runId, operationName, outputMode, drawioPath, runDrawio, runtime } = options;
-  const stageRootPath = path.join(job.workspacePath, '.graphics-workbench', operationName, runId);
+  const stageRootPath = createStagingRoot(job.workspacePath, operationName, runId);
   const logicalSourcePath = logicalSourcePathForOutputTemplate(job.sourcePath);
   const stageDirectory = path.join(
     stageRootPath,

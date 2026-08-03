@@ -11,6 +11,7 @@ import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/inp
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
@@ -92,7 +93,7 @@ async function stageDrawio(
   runtime: ConversionExecutionContext,
   options: ConvertToDrawioOptions,
 ): Promise<PreparedConversionOutput> {
-  const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-drawio', runId);
+  const stagingRootPath = createStagingRoot(job.workspacePath, 'convert-to-drawio', runId);
   const stageDirectory = path.join(stagingRootPath, 'inputs');
   const stagedOutputPath = path.join(stagingRootPath, `result${drawioExtension(job.outputPath)}`);
   await assertWritablePathInWorkspace(stagingRootPath, job.workspacePath);

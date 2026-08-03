@@ -1,9 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import { copyFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { safeName } from './pdf_utils.js';
+import { assertSafePathSegment, createRunId, createStagingRoot, type RunId } from '../lifecycle/run_id.js';
 
 import { isAbortError } from '../../application/error_utils.js';
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
@@ -31,7 +30,7 @@ interface CropPdfConfigureJob {
 export interface CropPdfConfigureOptions {
   job: CropPdfConfigureJob;
   runtime?: ConversionExecutionContext;
-  runId?: string;
+  createRunId?: () => RunId;
 }
 
 export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions): Promise<CommittedConversionOutput[]> {
@@ -44,8 +43,9 @@ export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions)
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? `${Date.now()}-${randomUUID()}`;
-  const stagingRootPath = path.join(options.job.workspacePath, '.graphics-workbench', 'crop-pdf-configure', runId);
+  const runId = options.createRunId?.() ?? createRunId();
+  assertSafePathSegment(runId, 'runId');
+  const stagingRootPath = createStagingRoot(options.job.workspacePath, 'crop-pdf-configure', runId);
   const artifacts: ConversionArtifactRoot[] = [{ rootPath: stagingRootPath, workspacePath: options.job.workspacePath }];
 
   try {
@@ -87,18 +87,13 @@ function appendCropConfigureFailureLogs(
 
 async function createConfiguredCropOutput(
   options: CropPdfConfigureOptions,
-  runId: string,
+  runId: RunId,
 ): Promise<PreparedConversionOutput> {
   const { job, runtime } = options;
   const signal = runtime?.signal;
-  const workDirectory = path.join(
-    job.workspacePath,
-    '.graphics-workbench',
-    'crop-pdf-configure',
-    runId,
-    safeName(path.basename(job.sourcePath, path.extname(job.sourcePath))),
-  );
-  const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
+  const stagingRootPath = createStagingRoot(job.workspacePath, 'crop-pdf-configure', runId);
+  const workDirectory = path.join(stagingRootPath, 'item-1');
+  const copiedSourcePath = path.join(workDirectory, 'input.pdf');
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
   signal?.throwIfAborted();
@@ -131,7 +126,7 @@ async function createConfiguredCropOutput(
     stagedOutputPath,
     outputPath: job.outputPath,
     workspacePath: job.workspacePath,
-    stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'crop-pdf-configure', runId),
+    stagingRootPath,
   };
 }
 

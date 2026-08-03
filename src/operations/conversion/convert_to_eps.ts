@@ -8,6 +8,7 @@ import {
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import {
   createAsciiInputOutputScratch,
@@ -79,7 +80,7 @@ async function stageSourceToEps(
   options: ConvertToEpsFilesOptions,
 ): Promise<PreparedConversionOutput> {
   runtime.signal?.throwIfAborted();
-  const stagingRootPath = path.join(job.workspacePath, '.graphics-workbench', 'convert-to-eps', runId);
+  const stagingRootPath = createStagingRoot(job.workspacePath, 'convert-to-eps', runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const pdfPath = path.join(stageDirectory, 'source.pdf');
   const stagedOutputPath = path.join(stageDirectory, 'result.eps');
