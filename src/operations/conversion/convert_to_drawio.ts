@@ -11,7 +11,7 @@ import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/inp
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
@@ -76,7 +76,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
   }
 
   await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
 
   return runStagedConversionBatch({
     jobs: options.jobs,

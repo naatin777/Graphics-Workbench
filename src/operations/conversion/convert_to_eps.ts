@@ -8,7 +8,7 @@ import {
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import {
@@ -63,7 +63,7 @@ export async function convertToEpsFiles(options: ConvertToEpsFilesOptions): Prom
   await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
   options.runtime.signal?.throwIfAborted();
 
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'convert-to-eps',
