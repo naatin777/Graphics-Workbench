@@ -26,8 +26,7 @@ import {
   disposePreparedElectronTest,
   getElectronViewportWidth,
 } from './helpers/electron_test_env.js';
-import { captureSplitPdfScreenshot, openSplitPdfConfigure } from './helpers/split_pdf_webview.js';
-import { expectLinuxSnapshot } from './helpers/electron_snapshot.js';
+import { openSplitPdfConfigure } from './helpers/split_pdf_webview.js';
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const alternateTheme = 'Default Light Modern';
@@ -131,13 +130,6 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 
     const darkTheme = await waitForWebviewTheme(body, 'vscode-dark');
     await expectPdfCanvasesReadable(canvases);
-    const darkScreenshot = await captureSplitPdfScreenshot(env.app.window, body);
-    await testInfo.attach('split-pdf-configure-dark', {
-      body: darkScreenshot,
-      contentType: 'image/png',
-    });
-
-    expectLinuxSnapshot(darkScreenshot, 'split-pdf-configure-dark.png');
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -149,13 +141,6 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       canvases,
       'PDF canvas rendering became unreadable after switching the VS Code theme.',
     );
-    const lightScreenshot = await captureSplitPdfScreenshot(env.app.window, body);
-    await testInfo.attach('split-pdf-configure-light', {
-      body: lightScreenshot,
-      contentType: 'image/png',
-    });
-
-    expectLinuxSnapshot(lightScreenshot, 'split-pdf-configure-light.png');
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));
@@ -191,13 +176,6 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
       await writeVscodeUserSettings(userSettingsPath, theme.colorTheme);
       await waitForWebviewTheme(body, theme.themeClass);
       await expectPdfCanvasesReadable(canvases, `PDF canvas rendering failed for the ${theme.colorTheme} theme.`);
-      const screenshot = await captureSplitPdfScreenshot(env.app.window, body);
-      await testInfo.attach(`split-pdf-configure-${theme.id}`, {
-        body: screenshot,
-        contentType: 'image/png',
-      });
-
-      expectLinuxSnapshot(screenshot, `split-pdf-configure-${theme.id}.png`);
     }
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);

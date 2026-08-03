@@ -11,8 +11,6 @@ import type { SplitPdfOptions } from '../../../src/operations/pdf/split_pdf.js';
 import type { CommittedConversionOutput } from '../../../src/operations/lifecycle/commit_conversion_outputs.js';
 
 import { resetTestWorkspace } from '../../helpers/test_workspace.js';
-import { captureCropPdfScreenshot } from './helpers/crop_pdf_screenshot.js';
-import { expectLinuxSnapshot } from './helpers/electron_snapshot.js';
 import {
   expectPdfCanvasesReadable,
   expectWebviewNetworkBlocked,
@@ -314,13 +312,6 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 
     const darkTheme = await waitForWebviewTheme(body, 'vscode-dark');
     await expectPdfCanvasesReadable(canvases);
-    const darkScreenshot = await captureCropPdfScreenshot(env.app.window, body);
-    await testInfo.attach('crop-pdf-configure-dark', {
-      body: darkScreenshot,
-      contentType: 'image/png',
-    });
-
-    expectLinuxSnapshot(darkScreenshot, 'crop-pdf-configure-dark.png');
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -332,16 +323,6 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       canvases,
       'PDF canvas rendering became unreadable after switching the VS Code theme.',
     );
-    const lightScreenshot = await captureCropPdfScreenshot(env.app.window, body, {
-      canvases,
-      snapshotPrefix: join(env.directories.temporaryRoot, 'crop-pdf-light'),
-    });
-    await testInfo.attach('crop-pdf-configure-light', {
-      body: lightScreenshot,
-      contentType: 'image/png',
-    });
-
-    expectLinuxSnapshot(lightScreenshot, 'crop-pdf-configure-light.png');
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,
@@ -383,16 +364,6 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
       await writeVscodeUserSettings(userSettingsPath, theme.colorTheme);
       await waitForWebviewTheme(body, theme.themeClass);
       await expectPdfCanvasesReadable(canvases, `PDF canvas rendering failed for the ${theme.colorTheme} theme.`);
-      const screenshot = await captureCropPdfScreenshot(env.app.window, body, {
-        canvases,
-        snapshotPrefix: join(env.directories.temporaryRoot, `crop-pdf-${theme.id}`),
-      });
-      await testInfo.attach(`crop-pdf-configure-${theme.id}`, {
-        body: screenshot,
-        contentType: 'image/png',
-      });
-
-      expectLinuxSnapshot(screenshot, `crop-pdf-configure-${theme.id}.png`);
     }
   } catch (error) {
     await attachElectronDiagnostics({

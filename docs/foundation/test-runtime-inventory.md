@@ -134,7 +134,7 @@ These are not current Node migration candidates. They require a production or ow
 - Explorer context menuからCrop Configureを開く
 - actual Webview frame / heading / canvas
 - VS Code dark / light themeとcomputed style
-- visual snapshot
+- visual review screenshot（目視、pixel比較なし）
 - Apply後のPDF MediaBox / CropBox
 - success notification
 - packaged modeのcontrolled external-fetch failure
@@ -143,13 +143,13 @@ These are not current Node migration candidates. They require a production or ow
 
 判定:
 
-| Group                                      | Proper evidence layer              | Current issue                          |
-| ------------------------------------------ | ---------------------------------- | -------------------------------------- |
-| open command → Webview → Apply → output    | RT-ELECTRON                        | critical journeyとして妥当             |
-| dark / light visual snapshot               | RT-ELECTRON                        | journeyと同一caseでfailure原因が広い   |
-| installed VSIX / controlled external-fetch | RT-PACKAGE                         | development journeyとmode switchで共存 |
-| package内部module直接import                | RT-PACKAGEまたはNode package smoke | 利用者journeyのpublic boundaryではない |
-| Sharp native load                          | RT-PACKAGE + RT-PLATFORM           | release artifact Evidenceとして妥当    |
+| Group                                      | Proper evidence layer              | Current issue                                               |
+| ------------------------------------------ | ---------------------------------- | ----------------------------------------------------------- |
+| open command → Webview → Apply → output    | RT-ELECTRON                        | critical journeyとして妥当                                  |
+| dark / light visual review                 | RT-ELECTRON + manual               | pixel比較しない、`visual:capture`の画像を目視レビューで確認 |
+| installed VSIX / controlled external-fetch | RT-PACKAGE                         | development journeyとmode switchで共存                      |
+| package内部module直接import                | RT-PACKAGEまたはNode package smoke | 利用者journeyのpublic boundaryではない                      |
+| Sharp native load                          | RT-PACKAGE + RT-PLATFORM           | release artifact Evidenceとして妥当                         |
 
 ## 7. Proposed first migration experiment
 

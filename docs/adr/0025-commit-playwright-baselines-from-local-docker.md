@@ -2,7 +2,7 @@
 
 ## ステータス
 
-採用
+置き換え済み（[ADR-0027: Playwrightスクリーンショットをpixel比較せず目視レビュー資料として扱う](0027-visual-review-instead-of-pixel-matching.md)で置き換え）
 
 ## 日付
 

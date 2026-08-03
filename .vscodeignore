@@ -5,6 +5,8 @@ webview/**
 out/test/**
 test-results/**
 playwright-report/**
+artifacts/**
+blob-report/**
 coverage/**
 knip.json
 scripts/**

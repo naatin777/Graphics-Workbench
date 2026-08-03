@@ -16,8 +16,7 @@ import {
   disposePreparedElectronTest,
   getElectronViewportWidth,
 } from './helpers/electron_test_env.js';
-import { captureMergePdfScreenshot, openMergePdfConfigure } from './helpers/merge_pdf_webview.js';
-import { expectLinuxSnapshot } from './helpers/electron_snapshot.js';
+import { openMergePdfConfigure } from './helpers/merge_pdf_webview.js';
 import {
   attachElectronDiagnostics,
   disposeElectronTest,
@@ -110,13 +109,6 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
 
     const darkTheme = await waitForWebviewTheme(body, 'vscode-dark');
     await expectPdfCanvasesReadable(canvases);
-    const darkScreenshot = await captureMergePdfScreenshot(env.app.window, body);
-    await testInfo.attach('merge-pdf-configure-dark', {
-      body: darkScreenshot,
-      contentType: 'image/png',
-    });
-
-    expectLinuxSnapshot(darkScreenshot, 'merge-pdf-configure-dark.png');
 
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
     await writeVscodeUserSettings(userSettingsPath, alternateTheme);
@@ -128,13 +120,6 @@ test('dark/light themeへ追従しcanvasが読める', async ({ playwright }, te
       canvases,
       'PDF canvas rendering became unreadable after switching the VS Code theme.',
     );
-    const lightScreenshot = await captureMergePdfScreenshot(env.app.window, body);
-    await testInfo.attach('merge-pdf-configure-light', {
-      body: lightScreenshot,
-      contentType: 'image/png',
-    });
-
-    expectLinuxSnapshot(lightScreenshot, 'merge-pdf-configure-light.png');
   } catch (error) {
     await attachElectronDiagnostics({
       consoleMessages,
@@ -179,13 +164,6 @@ test('high contrastと極端な配色でもcanvasが読める', async ({ playwri
         ]);
         await waitForWebviewTheme(body, theme.themeClass);
         await expectPdfCanvasesReadable(canvases, `PDF canvas rendering failed for the ${theme.colorTheme} theme.`);
-        const screenshot = await captureMergePdfScreenshot(env.app.window, body);
-        await testInfo.attach(`merge-pdf-configure-${theme.id}`, {
-          body: screenshot,
-          contentType: 'image/png',
-        });
-
-        expectLinuxSnapshot(screenshot, `merge-pdf-configure-${theme.id}.png`);
       } finally {
         await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
         env = undefined;
