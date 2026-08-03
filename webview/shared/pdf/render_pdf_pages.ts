@@ -2,7 +2,7 @@
 import './install_map_get_or_insert_computed';
 
 import * as pdfjsModule from 'pdfjs-dist';
-import type { PDFPageProxy } from 'pdfjs-dist';
+import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 
 import { calculatePageWindow, MAX_RENDERED_PAGES } from './page_window';
 // Vite turns this worker query into an asset URL even though the source module has no default export.
@@ -25,6 +25,7 @@ export async function renderFirstPdfPage(
   canvas: HTMLCanvasElement,
   options: PdfRenderOptions = {},
 ): Promise<void> {
+  throwIfAborted(options.signal);
   const pdfjs = await loadPdfJs();
 
   if (options.workerSrc !== undefined && options.workerSrc !== '') {
@@ -32,14 +33,36 @@ export async function renderFirstPdfPage(
   }
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
-  const document = await loadingTask.promise;
+  let renderTask: ReturnType<PDFPageProxy['render']> | undefined;
+  const abort = (): void => {
+    renderTask?.cancel();
+    void loadingTask.destroy();
+  };
+  options.signal?.addEventListener('abort', abort, { once: true });
 
   try {
-    const page = await document.getPage(1);
-    await renderPageToCanvas(page, canvas);
-    page.cleanup();
+    const document = await loadingTask.promise;
+    try {
+      throwIfAborted(options.signal);
+      const page = await document.getPage(1);
+      try {
+        throwIfAborted(options.signal);
+        renderTask = renderPageToCanvasWithTask(page, canvas);
+        await renderTask.promise;
+      } finally {
+        renderTask = undefined;
+        page.cleanup();
+      }
+    } finally {
+      await document.cleanup();
+    }
+  } catch (error: unknown) {
+    if (options.signal?.aborted === true) {
+      throw createAbortError();
+    }
+    throw error instanceof Error ? error : new Error(String(error));
   } finally {
-    await document.cleanup();
+    options.signal?.removeEventListener('abort', abort);
     await loadingTask.destroy();
   }
 }
@@ -49,6 +72,7 @@ export async function renderPdfPages(
   container: HTMLElement,
   options: PdfRenderOptions = {},
 ): Promise<PdfRenderController> {
+  throwIfAborted(options.signal);
   const pdfjs = await loadPdfJs();
 
   if (options.workerSrc !== undefined && options.workerSrc !== '') {
@@ -56,10 +80,26 @@ export async function renderPdfPages(
   }
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
-  const document = await loadingTask.promise;
+  const abortLoading = (): void => {
+    void loadingTask.destroy();
+  };
+  options.signal?.addEventListener('abort', abortLoading, { once: true });
+
+  let document: PDFDocumentProxy;
+  try {
+    document = await loadingTask.promise;
+    throwIfAborted(options.signal);
+  } catch (error: unknown) {
+    options.signal?.removeEventListener('abort', abortLoading);
+    if (options.signal?.aborted === true) {
+      throw createAbortError();
+    }
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+  options.signal?.removeEventListener('abort', abortLoading);
 
   if (document.numPages > MAX_EAGER_PAGES) {
-    return createWindowedRenderController();
+    return attachRenderSignal(createWindowedRenderController(), options.signal);
   }
 
   const renderPromises = new Map<number, Promise<void>>();
@@ -126,7 +166,9 @@ export async function renderPdfPages(
           page.cleanup();
         }
       } catch (error: unknown) {
-        options.onRenderError?.(error);
+        if (options.signal?.aborted !== true) {
+          options.onRenderError?.(error);
+        }
         throw error instanceof Error ? error : new Error(String(error));
       }
     })();
@@ -167,28 +209,31 @@ export async function renderPdfPages(
 
   const firstPageReady = renderPage(1);
 
-  return {
-    firstPageReady,
-    async dispose(): Promise<void> {
-      if (renderState.disposed) {
-        return;
-      }
+  return attachRenderSignal(
+    {
+      firstPageReady,
+      async dispose(): Promise<void> {
+        if (renderState.disposed) {
+          return;
+        }
 
-      renderState.disposed = true;
-      observer?.disconnect();
-      for (const renderTask of renderTasks) {
-        renderTask.cancel();
-      }
-      await Promise.allSettled(renderPromises.values());
+        renderState.disposed = true;
+        observer?.disconnect();
+        for (const renderTask of renderTasks) {
+          renderTask.cancel();
+        }
+        await Promise.allSettled(renderPromises.values());
 
-      for (const page of pages.values()) {
-        page.cleanup();
-      }
+        for (const page of pages.values()) {
+          page.cleanup();
+        }
 
-      await document.cleanup();
-      await loadingTask.destroy();
+        await document.cleanup();
+        await loadingTask.destroy();
+      },
     },
-  };
+    options.signal,
+  );
 
   function createWindowedRenderController(): PdfRenderController {
     const windowRenderPromises = new Map<number, Promise<void>>();
@@ -285,7 +330,9 @@ export async function renderPdfPages(
           }
         } catch (error: unknown) {
           if (!windowRenderState.disposed && windowPageFrames.has(pageNumber)) {
-            options.onRenderError?.(error);
+            if (options.signal?.aborted !== true) {
+              options.onRenderError?.(error);
+            }
           }
           throw error instanceof Error ? error : new Error(String(error));
         }
@@ -371,6 +418,32 @@ export async function renderPdfPages(
   }
 }
 
+function attachRenderSignal(controller: PdfRenderController, signal: AbortSignal | undefined): PdfRenderController {
+  if (signal === undefined) {
+    return controller;
+  }
+
+  let disposed = false;
+  const dispose = controller.dispose;
+  const abort = (): void => {
+    void dispose();
+  };
+  signal.addEventListener('abort', abort, { once: true });
+
+  return {
+    firstPageReady: controller.firstPageReady,
+    async dispose(): Promise<void> {
+      if (disposed) {
+        return;
+      }
+
+      disposed = true;
+      signal.removeEventListener('abort', abort);
+      await dispose();
+    },
+  };
+}
+
 async function loadPdfJs(): Promise<PdfJs> {
   pdfjsModule.GlobalWorkerOptions.workerSrc = 'pdf.worker.mjs';
   pdfjsModule.GlobalWorkerOptions.workerPort ??= await loadPdfJsWorker();
@@ -399,6 +472,19 @@ interface PdfRenderOptions {
   root?: Element;
   pageLabel?: string;
   onRenderError?: (error: unknown) => void;
+  signal?: AbortSignal;
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted === true) {
+    throw createAbortError();
+  }
+}
+
+function createAbortError(): Error {
+  const error = new Error('PDF preview rendering was cancelled.');
+  error.name = 'AbortError';
+  return error;
 }
 
 function createDocumentOptions(pdfSrc: string, options: PdfRenderOptions): Parameters<PdfJs['getDocument']>[0] {
@@ -436,8 +522,4 @@ function renderPageToCanvasWithTask(page: PDFPageProxy, canvas: HTMLCanvasElemen
     ...(outputScale === 1 ? {} : { transform: [outputScale, 0, 0, outputScale, 0, 0] }),
     viewport,
   });
-}
-
-async function renderPageToCanvas(page: PDFPageProxy, canvas: HTMLCanvasElement): Promise<void> {
-  await renderPageToCanvasWithTask(page, canvas).promise;
 }
