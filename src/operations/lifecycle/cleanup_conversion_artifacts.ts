@@ -2,6 +2,7 @@ import { lstat, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { createStagingRoot } from './run_id.js';
 
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 
@@ -23,7 +24,7 @@ export function stagingArtifactsForJobs(
   return [
     ...new Map(
       jobs.map((job) => {
-        const rootPath = path.join(job.workspacePath, '.graphics-workbench', operation, runId);
+        const rootPath = createStagingRoot(job.workspacePath, operation, runId);
         return [rootPath, { rootPath, workspacePath: job.workspacePath }];
       }),
     ).values(),

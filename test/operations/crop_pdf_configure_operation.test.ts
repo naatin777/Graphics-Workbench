@@ -23,6 +23,7 @@ import { readPdftocairoExecutablePath } from '../../src/config/external_tools/ex
 import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
 import { resolveOutputPath } from '../../src/config/output/resolve_output_path.js';
 import { cropPdfWithConfiguredBox, type CropBox } from '../../src/operations/pdf/crop_pdf_configure.js';
+import { asRunId } from '../../src/operations/lifecycle/run_id.js';
 
 import { cropConfigureFixture } from '../helpers/crop_configure_fixture.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
@@ -61,7 +62,7 @@ suite('PDF configure crop処理', () => {
         cropBox,
         target: { type: 'all' },
       },
-      runId: 'all-pages',
+      createRunId: () => asRunId('all-pages'),
       runtime: { outputChannel: logs },
     });
 
@@ -85,14 +86,8 @@ suite('PDF configure crop処理', () => {
     assertWorkspaceChangesSince(before, after, {
       created: [
         path.join('出力 PDF', 'q a-all-crop.pdf'),
-        path.join(
-          '.graphics-workbench',
-          'crop-pdf-configure',
-          'all-pages',
-          'multilingual-text',
-          'multilingual-text.pdf',
-        ),
-        path.join('.graphics-workbench', 'crop-pdf-configure', 'all-pages', 'multilingual-text', 'result.pdf'),
+        path.join('.graphics-workbench', 'crop-pdf-configure', 'all-pages', 'item-1', 'input.pdf'),
+        path.join('.graphics-workbench', 'crop-pdf-configure', 'all-pages', 'item-1', 'result.pdf'),
       ],
     });
     assert.ok(logs.hasLine('[crop-pdf-configure] staging-validated'));
@@ -131,7 +126,7 @@ suite('PDF configure crop処理', () => {
         cropBox,
         target: { type: 'selected', pages: [1, 1] },
       },
-      runId: 'selected-pages',
+      createRunId: () => asRunId('selected-pages'),
     });
 
     const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
@@ -163,14 +158,8 @@ suite('PDF configure crop処理', () => {
     assertWorkspaceChangesSince(before, after, {
       created: [
         path.join('選択結果', 'q a-selected-crop.pdf'),
-        path.join(
-          '.graphics-workbench',
-          'crop-pdf-configure',
-          'selected-pages',
-          'multilingual-text',
-          'multilingual-text.pdf',
-        ),
-        path.join('.graphics-workbench', 'crop-pdf-configure', 'selected-pages', 'multilingual-text', 'result.pdf'),
+        path.join('.graphics-workbench', 'crop-pdf-configure', 'selected-pages', 'item-1', 'input.pdf'),
+        path.join('.graphics-workbench', 'crop-pdf-configure', 'selected-pages', 'item-1', 'result.pdf'),
       ],
     });
   });
@@ -193,7 +182,7 @@ suite('PDF configure crop処理', () => {
           cropBox: cropConfigureFixture.cropBox,
           target: { type: 'all' },
         },
-        runId: 'commit-failure',
+        createRunId: () => asRunId('commit-failure'),
         runtime: { outputChannel: logs },
       }),
       /Output file already exists/iu,
@@ -272,7 +261,7 @@ suite('PDF configure crop処理', () => {
             },
             target: { type: 'all' },
           },
-          runId: `output-path-${index + 1}`,
+          createRunId: () => asRunId(`output-path-${index + 1}`),
         });
 
         assert.strictEqual(outputs[0]?.outputPath, expectedPath);

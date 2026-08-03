@@ -13,6 +13,7 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
+import { createStagingRoot } from '../lifecycle/run_id.js';
 
 export interface SplitPdfJob {
   sourcePath: string;
@@ -89,7 +90,8 @@ async function splitPdf(params: {
   signal?.throwIfAborted();
 
   const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'split-pdf', runId, itemName);
+  const stagingRootPath = createStagingRoot(job.workspacePath, 'split-pdf', runId);
+  const workDirectory = path.join(stagingRootPath, itemName);
   const pagesDirectory = path.join(workDirectory, 'pages');
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
 
@@ -133,7 +135,7 @@ async function splitPdf(params: {
       stagedOutputPath,
       outputPath: job.outputPathForPage(page),
       workspacePath: job.workspacePath,
-      stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'split-pdf', runId),
+      stagingRootPath,
     });
   }
 
@@ -157,7 +159,8 @@ async function splitPdfPageGroups(params: {
   signal?.throwIfAborted();
 
   const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const workDirectory = path.join(job.workspacePath, '.graphics-workbench', 'split-pdf', runId, itemName);
+  const stagingRootPath = createStagingRoot(job.workspacePath, 'split-pdf', runId);
+  const workDirectory = path.join(stagingRootPath, itemName);
   const groupsDirectory = path.join(workDirectory, 'groups');
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
 
@@ -209,7 +212,7 @@ async function splitPdfPageGroups(params: {
       stagedOutputPath,
       outputPath: outputPathForGroup(groupIndex, pages),
       workspacePath: job.workspacePath,
-      stagingRootPath: path.join(job.workspacePath, '.graphics-workbench', 'split-pdf', runId),
+      stagingRootPath,
     });
   }
 

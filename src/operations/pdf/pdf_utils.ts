@@ -1,9 +1,11 @@
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { isSafePathSegment } from '../lifecycle/run_id.js';
 
 export function safeName(value: string): string {
-  return value.replaceAll(/[^a-zA-Z0-9._-]/g, '_') || 'pdf';
+  const sanitized = value.replaceAll(/[^a-zA-Z0-9._-]/g, '_');
+  return isSafePathSegment(sanitized) ? sanitized : 'pdf';
 }
 
 interface PdfJob {

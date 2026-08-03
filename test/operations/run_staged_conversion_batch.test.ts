@@ -66,6 +66,33 @@ suite('ステージング済み変換バッチ', () => {
     }
   });
 
+  test('安全でないrunIdはpath構築前に拒否し、workspace内の任意directoryをcleanupしない', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
+    const protectedDirectory = path.join(workspacePath, 'src');
+    const protectedFile = path.join(protectedDirectory, 'keep.txt');
+
+    try {
+      await mkdir(protectedDirectory, { recursive: true });
+      await writeFile(protectedFile, 'keep');
+
+      await assert.rejects(
+        runStagedConversionBatch({
+          jobs: [{ workspacePath }],
+          operationName: 'fixture-raster',
+          runId: '../../src',
+          stage: async () => {
+            throw new Error('stage must not start');
+          },
+        }),
+        /Unsafe runId/iu,
+      );
+
+      assert.strictEqual(await readFile(protectedFile, 'utf8'), 'keep');
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
   test('1件のstage失敗後も実行中のstageを待ってからcleanupする', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'abort-run');
