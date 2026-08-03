@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -14,6 +14,7 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createStagingRoot } from '../lifecycle/run_id.js';
+import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 export interface SplitPdfJob {
   sourcePath: string;
@@ -101,7 +102,7 @@ async function splitPdf(params: {
   await mkdir(pagesDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
-  await copyFile(job.sourcePath, copiedSourcePath);
+  await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
@@ -170,7 +171,7 @@ async function splitPdfPageGroups(params: {
   await mkdir(groupsDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
-  await copyFile(job.sourcePath, copiedSourcePath);
+  await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();

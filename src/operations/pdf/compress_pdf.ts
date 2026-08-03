@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir } from 'node:fs/promises';
+import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -12,6 +12,7 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createStagingRoot } from '../lifecycle/run_id.js';
+import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 
 export interface CompressPdfJob {
@@ -88,7 +89,7 @@ async function compressPdf(params: {
   await mkdir(workDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
-  await copyFile(job.sourcePath, copiedSourcePath);
+  await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
 
