@@ -26,7 +26,7 @@ export function isSafePathSegment(value: string): value is RunId {
     value.length > INTERNAL_PATH_SEGMENT_LIMIT ||
     value === '.' ||
     value === '..' ||
-    !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/u.test(value) ||
+    !/^[a-zA-Z0-9._-]+$/u.test(value) ||
     /[ .]$/u.test(value) ||
     /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/iu.test(value)
   ) {
