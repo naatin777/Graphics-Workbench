@@ -11,7 +11,7 @@ Status: Implementation complete; Docker linux/amd64 evidence pending — maintai
 - `CI=true npx playwright test --project=vscode-electron electron/merge_pdf_configure.spec.ts electron/split_pdf_configure.spec.ts`: 8 passed in 48.8s（macOS local）。
 - `npm run check`, `npm run typecheck:test`, `npm run build`, `npm run package:vsix`, `npm run test:webview`, `.github/scripts/*.test.mjs`, changed TypeScript `oxlint`, YAML parse, and `git diff --check`: passed。
 - The packaged Electron tests passed locally on macOS after granting GUI process execution. Linux, Windows, and GitHub Actions release-package execution remain unverified here.
-- GitHub Actions run [30733186958](https://github.com/naatin777/Graphics-Workbench/actions/runs/30733186958) passed the Linux, macOS, and Windows packaged Playwright jobs, snapshot commit, and PR screenshot comment for the preceding clean implementation commit. The current uncommitted workflow/Docker changes still require a fresh run.
+- GitHub Actions run [30733186958](https://github.com/naatin777/Graphics-Workbench/actions/runs/30733186958) passed the Linux, macOS, and Windows packaged Playwright jobs, snapshot commit, and PR screenshot artifact link for the preceding clean implementation commit. The current uncommitted workflow/Docker changes still require a fresh run.
 - Clean PR head `d0466bd` in [PR #93](https://github.com/naatin777/Graphics-Workbench/pull/93) passed the refreshed packaged Playwright workflow [30780708280](https://github.com/naatin777/Graphics-Workbench/actions/runs/30780708280) and Extension Host coverage workflow [30780708248](https://github.com/naatin777/Graphics-Workbench/actions/runs/30780708248) on Linux, macOS, and Windows before merge.
 - The normal packaged Playwright run recorded Linux 7m22s, macOS 3m26s, and Windows 5m28s for the platform jobs; the workflow elapsed 7m47s. This confirms the intended PR case-count reduction on macOS / Windows while preserving the Linux full suite.
 - ARM64 Docker verification: `docker build --platform linux/arm64` passed, conversion-tool verification passed, and `docker run --shm-size=2g ...:arm64` completed all 33 Linux wide+narrow cases in 3.4 minutes with no retry. The local Docker CLI has no `buildx` plugin, so the amd64 build/runtime remains unverified on this ARM host even though the official base image and Dockerfile are multi-architecture.
@@ -365,7 +365,7 @@ PDF → JPEG smokeに必要なのはpdftocairoである。既存install script�
 - macOS / Windows: wideのpackaged conversion smokeを実行する
 - changed-fileによるCI scope classifierは廃止し、PR / main pushでは定義済みのTest・Playwright jobを常時実行する。変更漏れによる誤skipを避け、workflowを単純化する
 - macOS / Windowsからsnapshot updateを外す
-- screenshot artifact / PR commentはLinux snapshotを正本として扱う
+- screenshot artifactはLinux snapshotを正本として扱い、PRコメントにはActions runへのリンクだけを掲載する
 - failure時のPlaywright report、trace、actual image、diagnostic、Extension Host log uploadは維持する
 
 ### `.github/workflows/release.yml`
@@ -448,7 +448,7 @@ file nameやtag自体をcontractにしない。重要なのは、どのoracleを
 - [x] direct-import Merge / Split testをHost journeyとして数えていない
 - [x] macOS Meta-wheel coverageをPR smokeではgapとして記録し、release full suiteで確認する
 - [x] macOS / Windows pixel snapshotをrequired canonical Evidenceから外している
-- [x] Linux snapshot更新とPR screenshot commentの対象をLinuxへ絞っている
+- [x] Linux snapshot更新とPR screenshot artifact linkの対象をLinuxへ絞っている
 - [x] PR Linux wide+narrow pixel比較、release 3 OS screenshot artifact、Docker local full runnerの責務を分離している
 - [x] `docker/playwright-visual/Dockerfile`とmulti-arch build / snapshot copy-back手順を追加している
 - [x] Docker daemon上で`linux/arm64`のvisual runnerを実行し、同一手順で33 casesがpassしている

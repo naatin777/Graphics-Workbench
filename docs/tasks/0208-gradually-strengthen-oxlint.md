@@ -277,7 +277,7 @@ mainの現行コード219ファイルに対する初回測定では、14,208件�
 
 - production: `consistent-indexed-object-style`(locale_map.ts)、`consistent-type-assertions`(locale_map.ts)、`custom-error-definition`(operation_cancelled_error.ts)、`prefer-number-coercion`(convert_to_drawio.ts)、`parameter-properties`(safe_mode.ts)、`prefer-code-point`(resolve_output_path.ts・convert_drawio_to_pdf.ts)、`return-await`(combine_images_to_pdf.ts・merge_pdf.ts)
 - webview: `no-deprecated`(vite.config.ts)、`prefer-query-selector`(3つのmain.tsx)
-- scripts/config: `named`(.vscode-test.mjs)、`no-anonymous-default-export`(oxfmt.config.ts)、`no-process-exit`(render-screenshots-comment.mjs)
+- scripts/config: `named`(.vscode-test.mjs)、`no-anonymous-default-export`(oxfmt.config.ts)。`no-process-exit`は後に廃止したスクリーンショットrendererへ適用していた
 - test: `dot-notation`(package_manifest.test.ts)、`no-dynamic-delete`(workspace_settings.ts)、`no-regex-spaces`(convert_to_pdf_drawio_path.test.ts)、`func-names`(drawio_fixture_oracles.test.ts)、`callback-return`(safe_mode_status_bar.test.ts・workspace_settings.ts)
 - 生成ファイル: `default-case`・`explicit-module-boundary-types`(generated-extension-meta.ts)はgenerator修正で対応
 - PDF.js polyfill: `unambiguous`・`no-implicit-globals`・`callback-return`(install_map_get_or_insert_computed.ts)は対象限定のoverride
