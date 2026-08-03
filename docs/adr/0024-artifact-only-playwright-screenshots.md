@@ -1,6 +1,6 @@
 # ADR 0024: PlaywrightスクリーンショットをArtifactで配布する
 
-- Status: Accepted
+- Status: 置き換え済み（[ADR-0025: Playwright基準画像をローカルで確定してGit管理する](0025-commit-playwright-baselines-from-local-docker.md)で置き換え）
 - Date: 2026-08-03
 
 ## Context

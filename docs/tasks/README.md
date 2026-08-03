@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0212: package済みPlaywrightのOS別責務を再配分する](0212-rebalance-packaged-playwright-platform-coverage.md) — Implementation complete; PRはLinux full visual + macOS / Windows packaged smoke、releaseは3 OS full screenshot artifact、localはmulti-arch Docker Linux full。clean-head ActionsとOS別timingは確認済み、Docker amd64のEvidence pending
+- [0213: Playwright基準画像の更新をCIからローカルへ移す](0213-move-playwright-baseline-updates-locally.md) — Implemented — CIから`[update-snapshots]` / artifact配布 / bot commit / PRコメントを削除し、基準画像更新をローカルDocker + git pushへ一本化。ADR-0025新設・ADR-0024置き換え
 
 ## On hold
 
@@ -72,6 +72,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0212: package済みPlaywrightのOS別責務を再配分する](0212-rebalance-packaged-playwright-platform-coverage.md) — Done — PRはLinux full visual + macOS / Windows packaged smoke、releaseは3 OS full screenshot artifact、localはmulti-arch Docker Linux full。Docker amd64のEvidenceはpending
 - [0211: パッケージ済みElectron E2Eの安定性・幅別UI検証を改善する](0211-stabilize-packaged-playwright-e2e.md) — Done — Electron E2Eを17ケース×2幅へ安定化し、重複テストを統合
 - [0210: 変換機能と出力パス設定の仕様調査・互換コード削減](0210-investigate-conversion-spec-and-compat.md) — Done — 到達不能分岐修正・二重キー削除・orphan NLS削除・テスト追加
 - [0209: P1レビュー指摘の修正](0209-fix-p1-review-findings.md) — Done — Undo履歴・dynamic import・Mermaidキャンセル・PDF Progress・実行パスscope
