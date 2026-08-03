@@ -33,6 +33,10 @@ export function defineWebviewTestConfig(config: WebviewTestConfig): ReturnType<t
           webviewRoot,
           '../src/application/protocols/rotate_pdf_protocol.ts',
         ),
+        '@graphics-workbench-reorder-pdf-protocol': resolve(
+          webviewRoot,
+          '../src/application/protocols/reorder_pdf_protocol.ts',
+        ),
       },
     },
     test: {

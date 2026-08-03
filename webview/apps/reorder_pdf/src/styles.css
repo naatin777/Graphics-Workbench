@@ -1,0 +1,130 @@
+:root {
+  --reorder-border: color-mix(in srgb, currentColor 25%, transparent);
+  --reorder-accent: var(--vscode-button-background, #0e639c);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+}
+
+.reorder {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 12px;
+  gap: 12px;
+}
+
+.reorder__header h1 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.reorder__description {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.reorder__file {
+  margin: 4px 0 0;
+  opacity: 0.7;
+  overflow-wrap: anywhere;
+}
+
+.reorder__body {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  min-height: 0;
+}
+
+.reorder__preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--reorder-border);
+}
+
+.reorder__preview-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--reorder-border);
+}
+
+.reorder__pages {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+
+.reorder__pages :global(.pdf-page) {
+  position: relative;
+}
+
+.reorder-page__controls {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 85%, transparent);
+  border: 1px solid var(--reorder-border);
+  padding: 2px;
+}
+
+.reorder-page__position {
+  min-width: 1.5em;
+  text-align: center;
+  font-weight: 600;
+}
+
+.reorder__panel {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--reorder-border);
+}
+
+.reorder__selection {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.reorder__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.reorder__actions button {
+  flex: 1;
+}
+
+.reorder__actions .reorder__apply {
+  background: var(--reorder-accent);
+  color: var(--vscode-button-foreground);
+}
+
+[role='alert'] {
+  color: var(--vscode-errorForeground, #f48771);
+}

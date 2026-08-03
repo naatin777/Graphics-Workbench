@@ -1,6 +1,6 @@
 # 0216: PDF回転とページ並び替えを追加する
 
-Status: In progress — Branch 1（rotate quick pick）・Branch 2（rotate configure webview）Implemented
+Status: Implemented — Branch 1〜3 Done
 
 ## Objective
 
@@ -37,10 +37,22 @@ PDFページの回転（QuickPick方式とConfigure Webview方式）と、ペー
 - `test/operations/rotate_pdf.test.ts` — protocol guardテスト追加
 - `webview/apps/rotate_pdf/src/app.test.tsx` — vitest 3件
 
+## Changes (Branch 3)
+
+- `src/operations/pdf/reorder_pdf.ts` — `reorderPdfFiles`（`copyPages`で`pageOrder`順に出力、順列を検証）
+- `src/application/protocols/reorder_pdf_protocol.ts` — init / applyプロトコルとランタイムguard
+- `webview/apps/reorder_pdf/` — SolidJS app（ページ上下移動 + Apply）
+- `src/commands/pdf/reorder_pdf_configure.ts` — `reorderPdf.configure`
+- `src/extension.ts` — `graphics-workbench.reorderPdf.configure`登録
+- `package.json` / NLS — reorder manifest / ラベル / scripts
+- `docs/specs/product/reorder-pdf-configure.md` / `docs/specs/internal/reorder-pdf-configure-protocol.md`
+- `test/operations/reorder_pdf.test.ts` — 操作 + protocol guardテスト
+- `webview/apps/reorder_pdf/src/app.test.tsx` — vitest 3件
+
 ## Verification
 
-- `npm run typecheck` / `typecheck:test` / `check:nls` / oxlint: pass
-- 操作テスト（回転・選択ページ・既存出力・キャンセル・範囲外）はvscode-testで実行が必要
+- `npm run check` / `npm run check:nls` / `npm run test:webview`（5 app・18 tests）: pass
+- 操作テスト（回転・並び替え・既存出力・キャンセル・範囲外）はvscode-testで実行が必要
 
 ## Completion conditions
 

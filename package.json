@@ -36,16 +36,18 @@
     "format:fix": "oxfmt --config ./oxfmt.config.ts --write src test webview/apps webview/shared package.json tsconfig.json tsconfig.test.json webview/tsconfig.json webview/tsconfig.test.json webview/*.ts scripts/*.ts scripts/verify-vsix.mjs scripts/verify-vsix.test.mjs .github/scripts/*.mjs .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
     "compile": "tsc -p tsconfig.json",
     "compile:test": "tsc -p tsconfig.test.json",
-    "compile:webview": "npm run compile:webview:crop_pdf && npm run compile:webview:merge_pdf && npm run compile:webview:split_pdf && npm run compile:webview:rotate_pdf",
+    "compile:webview": "npm run compile:webview:crop_pdf && npm run compile:webview:merge_pdf && npm run compile:webview:split_pdf && npm run compile:webview:rotate_pdf && npm run compile:webview:reorder_pdf",
     "compile:webview:crop_pdf": "vite build --config webview/apps/crop_pdf/vite.config.ts",
     "compile:webview:merge_pdf": "vite build --config webview/apps/merge_pdf/vite.config.ts",
     "compile:webview:split_pdf": "vite build --config webview/apps/split_pdf/vite.config.ts",
     "compile:webview:rotate_pdf": "vite build --config webview/apps/rotate_pdf/vite.config.ts",
-    "test:webview": "npm run test:webview:crop_pdf && npm run test:webview:merge_pdf && npm run test:webview:split_pdf && npm run test:webview:rotate_pdf",
+    "compile:webview:reorder_pdf": "vite build --config webview/apps/reorder_pdf/vite.config.ts",
+    "test:webview": "npm run test:webview:crop_pdf && npm run test:webview:merge_pdf && npm run test:webview:split_pdf && npm run test:webview:rotate_pdf && npm run test:webview:reorder_pdf",
     "test:webview:crop_pdf": "vitest run --config webview/apps/crop_pdf/vitest.config.ts",
     "test:webview:merge_pdf": "vitest run --config webview/apps/merge_pdf/vitest.config.ts",
     "test:webview:split_pdf": "vitest run --config webview/apps/split_pdf/vitest.config.ts",
     "test:webview:rotate_pdf": "vitest run --config webview/apps/rotate_pdf/vitest.config.ts",
+    "test:webview:reorder_pdf": "vitest run --config webview/apps/reorder_pdf/vitest.config.ts",
     "build": "npm run clean && npm run compile && npm run compile:test && npm run compile:webview",
     "check": "npm run lint && npm run format && npm run typecheck && npm run typecheck:test && npm run typecheck:webview && npm run typecheck:webview:test",
     "check:environment-paths": "node .github/scripts/check-environment-paths.mjs",
@@ -271,6 +273,11 @@
         "command": "graphics-workbench.rotatePdf.configure",
         "title": "%command.rotatePdf.configure%",
         "category": "Graphics Workbench"
+      },
+      {
+        "command": "graphics-workbench.reorderPdf.configure",
+        "title": "%command.reorderPdf.configure%",
+        "category": "Graphics Workbench"
       }
     ],
     "menus": {
@@ -294,6 +301,11 @@
           "submenu": "graphics-workbench.rotatePdf",
           "group": "graphics-workbench",
           "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.rotatePdf.enabled"
+        },
+        {
+          "submenu": "graphics-workbench.reorderPdf",
+          "group": "graphics-workbench",
+          "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.reorderPdf.enabled"
         },
         {
           "submenu": "graphics-workbench.convert",
@@ -377,6 +389,13 @@
           "command": "graphics-workbench.rotatePdf.configure",
           "group": "graphics-workbench.rotatePdf",
           "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.rotatePdf.enabled"
+        }
+      ],
+      "graphics-workbench.reorderPdf": [
+        {
+          "command": "graphics-workbench.reorderPdf.configure",
+          "group": "graphics-workbench.reorderPdf",
+          "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.reorderPdf.enabled"
         }
       ],
       "graphics-workbench.convert": [
@@ -542,6 +561,10 @@
         {
           "command": "graphics-workbench.rotatePdf.configure",
           "when": "false"
+        },
+        {
+          "command": "graphics-workbench.reorderPdf.configure",
+          "when": "false"
         }
       ]
     },
@@ -561,6 +584,10 @@
       {
         "id": "graphics-workbench.rotatePdf",
         "label": "%submenu.rotatePdf%"
+      },
+      {
+        "id": "graphics-workbench.reorderPdf",
+        "label": "%submenu.reorderPdf%"
       },
       {
         "id": "graphics-workbench.convert",
@@ -1302,6 +1329,16 @@
           "type": "boolean",
           "default": true,
           "description": "%config.contextMenu.rotatePdf.enabled%"
+        },
+        "graphics-workbench.contextMenu.reorderPdf.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.contextMenu.reorderPdf.enabled%"
+        },
+        "graphics-workbench.outputPath.reorderPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-reordered.pdf",
+          "description": "%config.outputPath.reorderPdf%"
         },
         "graphics-workbench.outputPath.rotatePdf": {
           "type": "string",

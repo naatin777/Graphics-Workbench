@@ -101,6 +101,14 @@ function registerCommands(
     );
     return rotatePdfConfigureCommand(context, uri, uris, dependencies);
   });
+  registerFileCommand(context, 'graphics-workbench.reorderPdf.configure', async (uri, uris) => {
+    const { reorderPdfConfigureCommand } = await loadCommandModule(
+      outputChannel,
+      './commands/pdf/reorder_pdf_configure.js',
+      async () => import('./commands/pdf/reorder_pdf_configure.js'),
+    );
+    return reorderPdfConfigureCommand(context, uri, uris, dependencies);
+  });
   registerFileCommand(context, 'graphics-workbench.cropPdf.auto', async (uri, uris) => {
     const { cropPdfAutoCommand } = await loadCommandModule(
       outputChannel,
