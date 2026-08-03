@@ -5,6 +5,7 @@ import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
   readRsvgConvertExecutablePath,
+  resolveGhostscriptExecutablePath,
 } from '../../src/config/external_tools/external_tool_paths.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
@@ -18,8 +19,18 @@ suite('外部tool実行ファイルの設定', () => {
     assert.strictEqual(readRsvgConvertExecutablePath(configuration), 'rsvg-convert');
   });
 
-  test('空文字の設定値をフォールバックせず返す', () => {
+  test('空文字のGhostscript設定はOS標準の実行ファイル名へフォールバックする', () => {
     assert.strictEqual(readDrawioExecutablePath(fakeConfiguration({ 'execPath.drawio': '' })), '');
-    assert.strictEqual(readGhostscriptExecutablePath(fakeConfiguration({ 'execPath.ghostscript': '' })), '');
+    const expectedGhostscript = process.platform === 'win32' ? 'gswin64c' : 'gs';
+    assert.strictEqual(
+      readGhostscriptExecutablePath(fakeConfiguration({ 'execPath.ghostscript': '' })),
+      expectedGhostscript,
+    );
+    assert.strictEqual(resolveGhostscriptExecutablePath('', 'win32'), 'gswin64c');
+    assert.strictEqual(resolveGhostscriptExecutablePath('', 'linux'), 'gs');
+  });
+
+  test('明示したGhostscriptパスはOSに関係なく優先する', () => {
+    assert.strictEqual(resolveGhostscriptExecutablePath('/custom/gs', 'win32'), '/custom/gs');
   });
 });
