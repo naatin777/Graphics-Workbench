@@ -119,6 +119,8 @@ type ConfigurationKey =
   | 'contextMenu.linearizePdf.enabled'
   | 'contextMenu.encryptPdf.enabled'
   | 'contextMenu.decryptPdf.enabled'
+  | 'contextMenu.rotatePdf.enabled'
+  | 'outputPath.rotatePdf'
   | 'outputPath.compressPdf'
   | 'outputPath.linearizePdf'
   | 'outputPath.encryptPdf'
@@ -662,6 +664,12 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'contextMenu.decryptPdf.enabled': {
     types: ['boolean'],
   },
+  'contextMenu.rotatePdf.enabled': {
+    types: ['boolean'],
+  },
+  'outputPath.rotatePdf': {
+    types: ['string'],
+  },
   'outputPath.compressPdf': {
     types: ['string'],
   },
@@ -793,6 +801,8 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'contextMenu.linearizePdf.enabled': 'boolean',
   'contextMenu.encryptPdf.enabled': 'boolean',
   'contextMenu.decryptPdf.enabled': 'boolean',
+  'contextMenu.rotatePdf.enabled': 'boolean',
+  'outputPath.rotatePdf': 'string',
   'outputPath.compressPdf': 'string',
   'outputPath.linearizePdf': 'string',
   'outputPath.encryptPdf': 'string',
@@ -925,6 +935,7 @@ export const publicCommandIds = [
   'graphics-workbench.linearizePdf',
   'graphics-workbench.encryptPdf',
   'graphics-workbench.decryptPdf',
+  'graphics-workbench.rotatePdf.rotate',
 ] as const;
 
 export type CommandId = (typeof publicCommandIds)[number] | 'graphics-workbench.convertPngToPdf';
@@ -1468,6 +1479,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.convertImagesToSinglePdf',
         '',
       ),
+      rotatePdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.rotatePdf',
+        '${fileDirname}/${fileBasenameNoExtension}-rotated.pdf',
+      ),
       compressPdf: defineConfiguration<string>(
         configurationReader,
         'outputPath.compressPdf',
@@ -1542,6 +1558,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       decryptPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.decryptPdf.enabled', true),
+      },
+      rotatePdf: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.rotatePdf.enabled', true),
       },
     },
   } as const;
