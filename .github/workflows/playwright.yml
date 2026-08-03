@@ -263,25 +263,24 @@ jobs:
           fi
 
   comment-screenshots:
-    name: Comment Linux screenshots on PR
+    name: Link Linux screenshot artifact on PR
     if: >
+      always() &&
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository
     needs: playwright
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      actions: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v7
-
       - uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           name: playwright-screenshots-linux
           path: screenshots
 
-      - name: Post Linux screenshots to PR
+      - name: Link Linux screenshot artifact from PR
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -289,35 +288,29 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          mapfile -t FILES < <(find screenshots -name '*-linux.png' | sort)
-          if [ "${#FILES[@]}" -eq 0 ]; then
+          if [ ! -d screenshots ]; then
+            echo 'screenshot artifact directory is unavailable'
+            exit 0
+          fi
+          SCREENSHOT_FILE="$(find screenshots -name '*-linux.png' -print -quit)"
+          if [ -z "${SCREENSHOT_FILE}" ]; then
             echo 'no Linux screenshot files found'
             exit 0
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          SCREENSHOT_REF="ci-screenshots-${PR_NUMBER}-${GITHUB_RUN_ID}"
-          rm -rf .ci-screenshots
-          mkdir -p .ci-screenshots
-          cp "${FILES[@]}" .ci-screenshots/
-          TEMP_INDEX="$(mktemp)"
-          rm -f "${TEMP_INDEX}"
-          GIT_INDEX_FILE="${TEMP_INDEX}" git read-tree --empty
-          GIT_INDEX_FILE="${TEMP_INDEX}" git add --all .ci-screenshots
-          SCREENSHOT_TREE="$(GIT_INDEX_FILE="${TEMP_INDEX}" git write-tree)"
-          SCREENSHOT_SHA="$(printf 'ci: store Linux Playwright screenshots for PR %s run %s\n\n' "${PR_NUMBER}" "${GITHUB_RUN_ID}" | git commit-tree "${SCREENSHOT_TREE}")"
-          rm -f "${TEMP_INDEX}"
-          git push origin "${SCREENSHOT_SHA}:refs/heads/${SCREENSHOT_REF}"
-
-          GITHUB_SCREENSHOT_REF="${SCREENSHOT_SHA}" \
-            GITHUB_REPOSITORY="${REPOSITORY}" \
-            GITHUB_RUN_ID="${GITHUB_RUN_ID}" \
-            node .github/scripts/render-screenshots-comment.mjs "${FILES[@]}" > /tmp/screenshots.md
-
-          COMMENT_BODY="$(cat /tmp/screenshots.md)"
+          RUN_URL="https://github.com/${REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          COMMENT_BODY="$(printf '%s\n\n%s\n\n%s\n' \
+            '<!-- playwright-screenshots -->' \
+            '## Playwright screenshots' \
+            "[Open the Playwright Actions run](${RUN_URL}) and download the \`playwright-screenshots-linux\` artifact (retained for 7 days).")"
           EXISTING_ID="$(gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --jq '.[] | select(.body | contains("<!-- playwright-screenshots -->")) | .id' | head -n 1)"
           if [ -n "${EXISTING_ID}" ]; then
             gh api -X PATCH "repos/${REPOSITORY}/issues/comments/${EXISTING_ID}" -f body="${COMMENT_BODY}" > /dev/null
           else
             gh api -X POST "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" -f body="${COMMENT_BODY}" > /dev/null
           fi
+          {
+            echo '### Playwright screenshots'
+            echo
+            echo "- [Open the Actions run](${RUN_URL})"
+            echo '- Artifact: `playwright-screenshots-linux` (retained for 7 days)'
+          } >> "${GITHUB_STEP_SUMMARY}"
