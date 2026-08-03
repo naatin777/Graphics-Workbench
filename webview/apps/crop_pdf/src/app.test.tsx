@@ -138,6 +138,18 @@ describe('Crop PDF Webview', () => {
         target: { type: 'selected', pages: [2] },
       },
     });
+    expect(document.querySelector<HTMLButtonElement>('button.button--primary')?.disabled).toBe(true);
+    expect(findNumberInput('Left').disabled).toBe(true);
+    expect(selectedPages.disabled).toBe(true);
+
+    globalThis.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: 'error', payload: { message: 'crop failed' } } satisfies ExtensionToWebviewMessage,
+      }),
+    );
+    await flushPromises();
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain('crop failed');
+    expect(document.querySelector<HTMLButtonElement>('button.button--primary')?.disabled).toBe(false);
   });
 
   test('keeps the crop input focused while its value changes', async () => {

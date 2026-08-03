@@ -174,6 +174,7 @@ export function App(): JSX.Element {
   const [labels, setLabels] = createSignal(defaultLabels);
   const [renderError, setRenderError] = createSignal('');
   const [inputError, setInputError] = createSignal('');
+  const [isApplying, setIsApplying] = createSignal(false);
   let pdfPages: HTMLDivElement | undefined;
   let pdfPreview: HTMLElement | undefined;
   let renderPromise: Promise<void> | undefined;
@@ -181,7 +182,13 @@ export function App(): JSX.Element {
 
   onMount(() => {
     const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>): void => {
-      if (event.data.type !== 'init' || !pdfPages) {
+      if (!pdfPages) {
+        return;
+      }
+
+      if (event.data.type === 'error') {
+        setIsApplying(false);
+        setInputError(event.data.payload.message);
         return;
       }
 
@@ -210,6 +217,7 @@ export function App(): JSX.Element {
       setSelectedPages(initialPage.toString());
       setInputError('');
       setRenderError('');
+      setIsApplying(false);
       const { payload } = event.data;
       renderPromise = renderPreview({
         payload,
@@ -246,6 +254,10 @@ export function App(): JSX.Element {
   });
 
   const applyCrop = async (): Promise<void> => {
+    if (isApplying()) {
+      return;
+    }
+
     if (!renderPromise) {
       setInputError(labels().preview.applyError);
       return;
@@ -281,6 +293,7 @@ export function App(): JSX.Element {
       },
     };
 
+    setIsApplying(true);
     vscode.sendMessage(message);
   };
 
@@ -390,6 +403,7 @@ export function App(): JSX.Element {
           right={
             <section
               aria-label={labels().cropBox.settingsLabel}
+              aria-busy={isApplying()}
               class='panel'
             >
               <div class='panel__group'>
@@ -401,6 +415,7 @@ export function App(): JSX.Element {
                     <span class='field__label'>{labels().cropBox.left}</span>
                     <input
                       class='input'
+                      disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
                       value={cropBox().left}
@@ -414,6 +429,7 @@ export function App(): JSX.Element {
                     <span class='field__label'>{labels().cropBox.bottom}</span>
                     <input
                       class='input'
+                      disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
                       value={cropBox().bottom}
@@ -427,6 +443,7 @@ export function App(): JSX.Element {
                     <span class='field__label'>{labels().cropBox.right}</span>
                     <input
                       class='input'
+                      disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
                       value={cropBox().right}
@@ -440,6 +457,7 @@ export function App(): JSX.Element {
                     <span class='field__label'>{labels().cropBox.top}</span>
                     <input
                       class='input'
+                      disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
                       value={cropBox().top}
@@ -461,6 +479,7 @@ export function App(): JSX.Element {
                 <label class='target__option'>
                   <input
                     checked={targetType() === 'all'}
+                    disabled={isApplying()}
                     name='target'
                     type='radio'
                     onChange={() => {
@@ -473,6 +492,7 @@ export function App(): JSX.Element {
                 <label class='target__option'>
                   <input
                     checked={targetType() === 'selected'}
+                    disabled={isApplying()}
                     name='target'
                     type='radio'
                     onChange={() => {
@@ -486,7 +506,7 @@ export function App(): JSX.Element {
                   <span class='field__label'>{labels().targetPages.inputLabel}</span>
                   <input
                     class='input'
-                    disabled={targetType() !== 'selected'}
+                    disabled={isApplying() || targetType() !== 'selected'}
                     placeholder={labels().targetPages.placeholder}
                     type='text'
                     value={selectedPages()}
@@ -509,6 +529,7 @@ export function App(): JSX.Element {
               <div class='actions'>
                 <button
                   class='button button--primary'
+                  disabled={isApplying()}
                   type='button'
                   onClick={() => {
                     void applyCrop();

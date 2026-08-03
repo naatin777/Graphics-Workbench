@@ -329,6 +329,53 @@ suite('Crop PDF child process', () => {
       await assert.rejects(operation, /reported success but exited with code 1/iu);
     });
 
+    test('success→disconnect後にexitしないFakeはcompletion grace後にterminateする', async () => {
+      const child = new FakeChildProcess();
+      let terminationRequests = 0;
+      const operation = runCropPdfProcess(createTestRequest('/workspace', '/workspace/staging/result.pdf'), undefined, {
+        launcher: () => child,
+        terminate: () => {
+          terminationRequests += 1;
+        },
+        completionGraceMs: 5,
+        terminationWatchdogMs: 5,
+        requestId: 'fake-completion-grace',
+      });
+
+      child.emitMessage({ type: 'started', protocolVersion: 1, requestId: 'fake-completion-grace' });
+      child.emitMessage({ type: 'success', protocolVersion: 1, requestId: 'fake-completion-grace' });
+      child.emitDisconnect();
+
+      await assert.rejects(operation, /did not exit after success/iu);
+      assert.strictEqual(terminationRequests, 1);
+    });
+
+    test('failure→disconnect後にexitしないFakeもfailureを保ったままterminateする', async () => {
+      const child = new FakeChildProcess();
+      let terminationRequests = 0;
+      const operation = runCropPdfProcess(createTestRequest('/workspace', '/workspace/staging/result.pdf'), undefined, {
+        launcher: () => child,
+        terminate: () => {
+          terminationRequests += 1;
+        },
+        completionGraceMs: 5,
+        terminationWatchdogMs: 5,
+        requestId: 'fake-failure-grace',
+      });
+
+      child.emitMessage({ type: 'started', protocolVersion: 1, requestId: 'fake-failure-grace' });
+      child.emitMessage({
+        type: 'failure',
+        protocolVersion: 1,
+        requestId: 'fake-failure-grace',
+        error: 'child failed',
+      });
+      child.emitDisconnect();
+
+      await assert.rejects(operation, /child failed/iu);
+      assert.strictEqual(terminationRequests, 1);
+    });
+
     for (const [name, messages] of invalidMessageCases()) {
       test(`不正IPC ${name}を成功扱いせずpayloadをログへ出さない`, async () => {
         const child = new FakeChildProcess();
@@ -386,6 +433,28 @@ suite('Crop PDF child process', () => {
       assert.strictEqual(child.disposed, true);
       assertNoLog(logs, /operation-completed|child-success-received/iu);
     });
+
+    test('terminateがthrowしてもtermination watchdogでPromiseを終了する', async () => {
+      const child = new FakeChildProcess();
+      const controller = new AbortController();
+      const operation = runCropPdfProcess(
+        createTestRequest('/workspace', '/workspace/staging/result.pdf'),
+        controller.signal,
+        {
+          launcher: () => child,
+          terminate: () => {
+            throw new Error('terminate failed');
+          },
+          terminationWatchdogMs: 5,
+          requestId: 'fake-terminate-throws',
+        },
+      );
+
+      child.emitMessage({ type: 'started', protocolVersion: 1, requestId: 'fake-terminate-throws' });
+      controller.abort();
+
+      await assert.rejects(operation, { name: 'OperationCancelledError' });
+    });
   });
 
   suite('DIしたwriter・launcher・Output Channel', () => {
@@ -413,9 +482,7 @@ suite('Crop PDF child process', () => {
         let renameCalled = false;
         const writer: CropPdfFileWriter = {
           writeFile: async () => {
-            const error = new Error('No space left on device') as NodeJS.ErrnoException;
-            error.code = 'ENOSPC';
-            throw error;
+            throw new Error('No space left on device');
           },
           rename: async () => {
             renameCalled = true;
@@ -450,9 +517,7 @@ suite('Crop PDF child process', () => {
         runCropPdfProcess(createTestRequest('/workspace', '/workspace/staging/result.pdf'), undefined, {
           launcher: () => {
             launcherCalls += 1;
-            const error = new Error('spawn crop runner ENOENT') as NodeJS.ErrnoException;
-            error.code = 'ENOENT';
-            throw error;
+            throw new Error('spawn crop runner ENOENT');
           },
           outputChannel: logs,
           requestId: 'fake-launch-failure',
@@ -501,7 +566,7 @@ class FakeChildProcess extends EventEmitter {
   readonly sentMessages: unknown[] = [];
   readonly pid = 12345;
   exitCode: number | null = null;
-  signalCode: NodeJS.Signals | null = null;
+  signalCode: null = null;
   disposed = false;
 
   terminate(): void {
@@ -526,7 +591,7 @@ class FakeChildProcess extends EventEmitter {
     this.emit('disconnect');
   }
 
-  emitExit(code: number | null, signal: NodeJS.Signals | null): void {
+  emitExit(code: number | null, signal: null): void {
     this.exitCode = code;
     this.signalCode = signal;
     this.emit('exit', code, signal);

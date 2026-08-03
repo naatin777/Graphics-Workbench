@@ -15,6 +15,7 @@ import {
 } from './crop_pdf_process_protocol.js';
 
 const TERMINATION_WATCHDOG_MS = 5_000;
+const COMPLETION_GRACE_MS = 5_000;
 
 export interface CropProcessChild extends EventEmitter {
   readonly pid: number | undefined;
@@ -32,6 +33,7 @@ export interface RunCropPdfProcessOptions {
   launcher?: (runnerPath: string) => CropProcessChild;
   terminate?: (child: CropProcessChild) => void;
   terminationWatchdogMs?: number;
+  completionGraceMs?: number;
 }
 
 /** Runs crop processing outside the Extension Host so cancellation can kill the whole process tree. */
@@ -57,6 +59,7 @@ export async function runCropPdfProcess(
   const launcher = options.launcher ?? defaultLauncher;
   const terminate = options.terminate ?? defaultTerminate;
   const watchdogMs = options.terminationWatchdogMs ?? TERMINATION_WATCHDOG_MS;
+  const completionGraceMs = options.completionGraceMs ?? COMPLETION_GRACE_MS;
   const processRequest = createCropPdfProcessRequest(request, requestId);
 
   log('operation-started');
@@ -83,10 +86,14 @@ export async function runCropPdfProcess(
     let exitSignal: NodeJS.Signals | null = null;
     let terminationReason: Error | undefined;
     let terminationWatchdog: NodeJS.Timeout | undefined;
+    let completionGraceTimer: NodeJS.Timeout | undefined;
 
     const cleanup = (): void => {
       if (terminationWatchdog !== undefined) {
         clearTimeout(terminationWatchdog);
+      }
+      if (completionGraceTimer !== undefined) {
+        clearTimeout(completionGraceTimer);
       }
       signal?.removeEventListener('abort', abort);
       child.removeListener('message', onMessage);
@@ -122,11 +129,28 @@ export async function runCropPdfProcess(
       terminationReason ??= reason;
       if (terminationWatchdog === undefined) {
         log('process-termination-requested', `reason=${formatLogValue(terminationReason.message)}`);
-        terminate(child);
         terminationWatchdog = setTimeout(() => {
           finish(terminationReason ?? new Error('Crop runner did not terminate.'));
         }, watchdogMs);
+        try {
+          terminate(child);
+        } catch (error) {
+          log('process-termination-failed', `error=${formatLogValue(asError(error).message)}`);
+        }
       }
+    };
+
+    const requestCompletionTermination = (): void => {
+      if (settled || exited || terminationReason !== undefined || completionGraceTimer !== undefined) {
+        return;
+      }
+
+      completionGraceTimer = setTimeout(() => {
+        const reason = successReceived
+          ? new Error('Crop runner did not exit after success.')
+          : (failure ?? new Error('Crop runner did not exit after completion or disconnect.'));
+        requestTermination(reason);
+      }, completionGraceMs);
     };
 
     const abort = (): void => {
@@ -211,6 +235,7 @@ export async function runCropPdfProcess(
         }
         successReceived = true;
         log('child-success-received');
+        requestCompletionTermination();
         canComplete();
         return;
       }
@@ -222,17 +247,19 @@ export async function runCropPdfProcess(
       failure = new Error(message.error);
       failureReceivedFromChild = true;
       log('child-failure-received');
+      requestCompletionTermination();
       canComplete();
     };
 
     const onError = (error: Error): void => {
       log('child-error', `error=${formatLogValue(error.message)}`);
-      finish(terminationReason ?? error);
+      requestTermination(terminationReason ?? error);
     };
 
     const onDisconnect = (): void => {
       disconnected = true;
       log('child-disconnected');
+      requestCompletionTermination();
       canComplete();
     };
 
