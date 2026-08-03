@@ -313,6 +313,12 @@ export default defineConfig({
     'project/max-flat-type-members': 'error',
     'project/forbid-raster-input-limit-bypass': 'error',
     'project/no-fixed-e2e-wait': 'error',
+    'project/no-webview-api-bypass': 'error',
+    'project/require-webview-listener-cleanup': 'error',
+    'project/require-process-envelope': 'error',
+    'project/no-pdf-bytes-in-process-ipc': 'error',
+    'project/no-secret-output-log': 'error',
+    'project/no-direct-child-process': 'error',
   },
 
   overrides: [
