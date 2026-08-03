@@ -47,6 +47,7 @@ export async function convertToEpsCommand(
       operationName: 'convert-to-eps',
       ...(dependencies?.outputChannel === undefined ? {} : { outputChannel: dependencies.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: createOutputConversionMessages('EPS', sourceUris.length),
       run: async (runtime) =>
         convertToEpsFiles({

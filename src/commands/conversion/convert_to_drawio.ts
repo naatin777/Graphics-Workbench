@@ -97,6 +97,7 @@ async function convertToDrawioWithDefaults(
       operationName: 'convert-to-drawio',
       ...(dependencies?.outputChannel !== undefined && { outputChannel: dependencies.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: createOutputConversionMessages('Draw.io', sourceUris.length),
       run: async (runtime) =>
         convertToDrawioFiles({

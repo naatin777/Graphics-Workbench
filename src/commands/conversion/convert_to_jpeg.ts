@@ -68,6 +68,7 @@ export async function convertToJpegCommand(
       operationName: 'convert-to-jpeg',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: createOutputConversionMessages('JPEG', sourceUris.length),
       run: async (runtime) => {
         const plannedJobs = await Promise.all(

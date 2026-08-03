@@ -17,6 +17,7 @@ import {
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
+import { assertAnimationPixelLimit, getMaxAnimationPixels } from '../../config/raster_limits.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
@@ -68,6 +69,7 @@ export async function convertToWebpCommand(
     const configuration = getCommandConfiguration(dependencies);
     const defaultConfiguration = getDefaultConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
+    const maxAnimationPixels = getMaxAnimationPixels(configuration);
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const webp = readWebpOutputOptions(configuration);
@@ -80,6 +82,7 @@ export async function convertToWebpCommand(
       operationName: 'convert-to-webp',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: createOutputConversionMessages('WebP', sourceUris.length),
       run: async (runtime) => {
         const plannedJobs = await Promise.all(
@@ -88,6 +91,7 @@ export async function convertToWebpCommand(
               configuration,
               defaultConfiguration,
               maxInputPixels,
+              maxAnimationPixels,
               ...(options?.outputMode !== undefined && { outputMode: options.outputMode }),
               runtime,
             }),
@@ -123,12 +127,14 @@ async function planWebpConversionJobs(
     configuration,
     defaultConfiguration,
     maxInputPixels,
+    maxAnimationPixels,
     outputMode,
     runtime,
   }: {
     configuration: Configuration;
     defaultConfiguration: Configuration;
     maxInputPixels: number;
+    maxAnimationPixels: number;
     outputMode?: 'auto' | 'preserve' | 'split';
     runtime?: ConversionExecutionContext;
   },
@@ -156,6 +162,13 @@ async function planWebpConversionJobs(
   if (isRasterImagePath(sourcePath)) {
     const animation = extension === '.gif' ? await readRasterAnimationMetadata(sourcePath, maxInputPixels) : undefined;
     if (animation !== undefined && outputMode !== 'split') {
+      assertAnimationPixelLimit(
+        animation.width ?? 0,
+        animation.pageHeight,
+        animation.pages,
+        maxAnimationPixels,
+        sourcePath,
+      );
       return [
         {
           sourcePath,
@@ -181,6 +194,7 @@ async function planWebpConversionJobs(
       outputTemplate,
       allowedExtensions: ['.webp'],
       maxInputPixels,
+      maxAnimationPixels,
       frameMode: outputMode === 'split' ? 'all' : 'first',
       createJob: (job) => job,
     });

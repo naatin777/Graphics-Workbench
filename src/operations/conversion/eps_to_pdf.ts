@@ -34,7 +34,12 @@ export interface EpsToPdfOptions {
   timeout?: number;
 }
 
-type RunGhostscript = (executable: string, args: string[], timeout: number, signal?: AbortSignal) => Promise<void>;
+type RunGhostscript = (
+  executable: string,
+  args: string[],
+  timeout: number | undefined,
+  signal?: AbortSignal,
+) => Promise<void>;
 
 /**
  * Converts an EPS file to a single-page PDF via Ghostscript.
@@ -44,7 +49,7 @@ export async function convertEpsToPdf(options: EpsToPdfOptions): Promise<EpsToPd
   options.signal?.throwIfAborted();
 
   const platform = options.platform ?? process.platform;
-  const timeout = options.timeout ?? 30_000;
+  const timeout = options.timeout;
 
   await mkdir(options.stagingDirectory, { recursive: true });
 
@@ -67,7 +72,7 @@ async function convertEpsToPdfOnWindows(
   options: EpsToPdfOptions,
   stagingEpsPath: string,
   pdfPath: string,
-  timeout: number,
+  timeout: number | undefined,
 ): Promise<EpsToPdfResult> {
   const scratchOptions: Parameters<typeof createAsciiInputOutputScratch>[0] = {
     baseCandidates: options.scratchBaseCandidates ?? defaultWindowsScratchBaseCandidates(),
@@ -116,7 +121,7 @@ async function runGhostscriptCommand(
   options: EpsToPdfOptions,
   inputPath: string,
   outputPath: string,
-  timeout: number,
+  timeout: number | undefined,
 ): Promise<void> {
   const runGhostscript = options.tools.runGhostscript ?? executeGhostscript;
   await runGhostscript(
@@ -194,14 +199,17 @@ async function validateGeneratedPdf(pdfPath: string): Promise<void> {
 async function executeGhostscript(
   executable: string,
   args: string[],
-  timeout: number,
+  timeout: number | undefined,
   signal?: AbortSignal,
 ): Promise<void> {
-  await runExternalTool({
+  const toolOptions: Parameters<typeof runExternalTool>[0] = {
     toolName: 'Ghostscript',
     executable,
     args,
-    timeoutMs: timeout,
     ...(signal === undefined ? {} : { signal }),
-  });
+  };
+  if (timeout !== undefined) {
+    toolOptions.timeoutMs = timeout;
+  }
+  await runExternalTool(toolOptions);
 }

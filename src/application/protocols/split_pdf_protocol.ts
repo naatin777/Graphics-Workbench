@@ -7,6 +7,7 @@ import {
   isString,
   isWebviewUri,
 } from './protocol_utils.js';
+import { isPdfPreviewSettings, type PdfPreviewSettings } from './pdf_preview_protocol.js';
 
 export interface SplitPdfLabels {
   header: {
@@ -74,6 +75,7 @@ export type SplitPdfHostToWebview =
           standardFontDataUrl?: string;
           wasmUrl?: string;
         };
+        preview: PdfPreviewSettings;
         labels: SplitPdfLabels;
       };
     }
@@ -198,6 +200,7 @@ function isSplitPdfInitPayload(payload: Record<string, unknown>): boolean {
       'pdfSrc',
       'outputPathTemplate',
       'resources',
+      'preview',
       'labels',
     ]) &&
     isNonEmptyString(payload.sourceId) &&
@@ -206,6 +209,7 @@ function isSplitPdfInitPayload(payload: Record<string, unknown>): boolean {
     isWebviewUri(payload.pdfSrc) &&
     isNonEmptyString(payload.outputPathTemplate) &&
     isSplitPdfResources(payload.resources) &&
+    isPdfPreviewSettings(payload.preview) &&
     isSplitPdfLabels(payload.labels)
   );
 }

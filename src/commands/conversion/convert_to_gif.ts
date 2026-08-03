@@ -17,6 +17,7 @@ import {
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
+import { assertAnimationPixelLimit, getMaxAnimationPixels } from '../../config/raster_limits.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
@@ -60,15 +61,23 @@ export async function convertToGifCommand(
     }
     const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
+    const maxAnimationPixels = getMaxAnimationPixels(configuration);
     await runConversionLifecycle({
       operationName: 'convert-to-gif',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
+      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: createOutputConversionMessages('GIF', sourceUris.length),
       run: async (runtime) => {
         const plannedJobs = await Promise.all(
           sourceUris.map(async (sourceUri) =>
-            planGifConversionJobs(sourceUri, configuration, maxInputPixels, options?.outputMode, runtime),
+            planGifConversionJobs(sourceUri, {
+              configuration,
+              maxInputPixels,
+              maxAnimationPixels,
+              ...(options?.outputMode !== undefined && { outputMode: options.outputMode }),
+              runtime,
+            }),
           ),
         );
         const jobs = plannedJobs.flat();
@@ -98,10 +107,19 @@ export async function convertToGifCommand(
 
 async function planGifConversionJobs(
   sourceUri: vscode.Uri,
-  configuration: Configuration,
-  maxInputPixels: number,
-  outputMode?: 'auto' | 'preserve' | 'split',
-  runtime?: ConversionExecutionContext,
+  {
+    configuration,
+    maxInputPixels,
+    maxAnimationPixels,
+    outputMode,
+    runtime,
+  }: {
+    configuration: Configuration;
+    maxInputPixels: number;
+    maxAnimationPixels: number;
+    outputMode?: 'auto' | 'preserve' | 'split';
+    runtime?: ConversionExecutionContext;
+  },
 ): Promise<ConvertToGifJob[]> {
   assertFileScheme(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -121,6 +139,13 @@ async function planGifConversionJobs(
   if (isRasterImagePath(sourcePath)) {
     const animation = extension === '.webp' ? await readRasterAnimationMetadata(sourcePath, maxInputPixels) : undefined;
     if (animation !== undefined && outputMode !== 'split') {
+      assertAnimationPixelLimit(
+        animation.width ?? 0,
+        animation.pageHeight,
+        animation.pages,
+        maxAnimationPixels,
+        sourcePath,
+      );
       return [
         {
           sourcePath,
@@ -145,6 +170,7 @@ async function planGifConversionJobs(
       outputTemplate,
       allowedExtensions: ['.gif'],
       maxInputPixels,
+      maxAnimationPixels,
       frameMode: outputMode === 'split' ? 'all' : 'first',
       createJob: (job) => job,
     });

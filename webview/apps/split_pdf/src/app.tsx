@@ -336,6 +336,7 @@ export function App(): JSX.Element {
 
     try {
       const controller = await renderPdfPages(payload.pdfSrc, pdfPages, {
+        preview: payload.preview,
         ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
           ? { workerSrc: payload.resources.workerSrc }
           : {}),

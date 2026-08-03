@@ -7,7 +7,20 @@ type ConfigurationKey =
   | 'execPath.pdftocairo'
   | 'execPath.rsvgConvert'
   | 'execPath.qpdf'
+  | 'externalTools.qpdf.timeoutSeconds'
+  | 'externalTools.drawio.timeoutSeconds'
+  | 'externalTools.ghostscript.timeoutSeconds'
+  | 'externalTools.pdftocairo.timeoutSeconds'
+  | 'externalTools.rsvgConvert.timeoutSeconds'
+  | 'externalTools.mermaid.timeoutSeconds'
   | 'raster.maxInputPixels'
+  | 'raster.maxAnimationPixels'
+  | 'preview.maxCanvasPixels'
+  | 'preview.maxDevicePixelRatio'
+  | 'performance.maxConcurrentHeavyProcesses'
+  | 'largeOperationWarnings.enabled'
+  | 'largeOperationWarnings.pdfPages'
+  | 'largeOperationWarnings.inputSizeMiB'
   | 'convertToPdf.svg.engine'
   | 'mermaid.theme'
   | 'mermaid.backgroundColor'
@@ -214,10 +227,72 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'execPath.qpdf': {
     types: ['string'],
   },
+  'externalTools.qpdf.timeoutSeconds': {
+    types: ['integer'],
+    minimum: 0,
+    maximum: 86400,
+  },
+  'externalTools.drawio.timeoutSeconds': {
+    types: ['integer'],
+    minimum: 0,
+    maximum: 86400,
+  },
+  'externalTools.ghostscript.timeoutSeconds': {
+    types: ['integer'],
+    minimum: 0,
+    maximum: 86400,
+  },
+  'externalTools.pdftocairo.timeoutSeconds': {
+    types: ['integer'],
+    minimum: 0,
+    maximum: 86400,
+  },
+  'externalTools.rsvgConvert.timeoutSeconds': {
+    types: ['integer'],
+    minimum: 0,
+    maximum: 86400,
+  },
+  'externalTools.mermaid.timeoutSeconds': {
+    types: ['integer'],
+    minimum: 0,
+    maximum: 86400,
+  },
   'raster.maxInputPixels': {
     types: ['integer'],
     minimum: 1,
-    maximum: 9007199254740991,
+    maximum: 1000000000,
+  },
+  'raster.maxAnimationPixels': {
+    types: ['integer'],
+    minimum: 1,
+    maximum: 5000000000,
+  },
+  'preview.maxCanvasPixels': {
+    types: ['integer'],
+    minimum: 1000000,
+  },
+  'preview.maxDevicePixelRatio': {
+    types: ['number'],
+    minimum: 1,
+    maximum: 8,
+  },
+  'performance.maxConcurrentHeavyProcesses': {
+    types: ['integer'],
+    minimum: 1,
+    maximum: 16,
+  },
+  'largeOperationWarnings.enabled': {
+    types: ['boolean'],
+  },
+  'largeOperationWarnings.pdfPages': {
+    types: ['integer'],
+    minimum: 0,
+    maximum: 10000000,
+  },
+  'largeOperationWarnings.inputSizeMiB': {
+    types: ['integer'],
+    minimum: 0,
+    maximum: 1048576,
   },
   'convertToPdf.svg.engine': {
     types: ['string'],
@@ -606,7 +681,20 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'execPath.pdftocairo': 'string',
   'execPath.rsvgConvert': 'string',
   'execPath.qpdf': 'string',
+  'externalTools.qpdf.timeoutSeconds': 'integer',
+  'externalTools.drawio.timeoutSeconds': 'integer',
+  'externalTools.ghostscript.timeoutSeconds': 'integer',
+  'externalTools.pdftocairo.timeoutSeconds': 'integer',
+  'externalTools.rsvgConvert.timeoutSeconds': 'integer',
+  'externalTools.mermaid.timeoutSeconds': 'integer',
   'raster.maxInputPixels': 'integer',
+  'raster.maxAnimationPixels': 'integer',
+  'preview.maxCanvasPixels': 'integer',
+  'preview.maxDevicePixelRatio': 'number',
+  'performance.maxConcurrentHeavyProcesses': 'integer',
+  'largeOperationWarnings.enabled': 'boolean',
+  'largeOperationWarnings.pdfPages': 'integer',
+  'largeOperationWarnings.inputSizeMiB': 'integer',
   'convertToPdf.svg.engine': 'one of puppeteer, rsvg-convert',
   'mermaid.theme': 'one of default, forest, dark, neutral, base',
   'mermaid.backgroundColor': 'string',
@@ -938,8 +1026,57 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
       qpdf: defineConfiguration<string>(configurationReader, 'execPath.qpdf', 'qpdf'),
     },
+    externalTools: {
+      qpdf: {
+        timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.qpdf.timeoutSeconds', 120),
+      },
+      drawio: {
+        timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.drawio.timeoutSeconds', 300),
+      },
+      ghostscript: {
+        timeoutSeconds: defineConfiguration<number>(
+          configurationReader,
+          'externalTools.ghostscript.timeoutSeconds',
+          300,
+        ),
+      },
+      pdftocairo: {
+        timeoutSeconds: defineConfiguration<number>(
+          configurationReader,
+          'externalTools.pdftocairo.timeoutSeconds',
+          120,
+        ),
+      },
+      rsvgConvert: {
+        timeoutSeconds: defineConfiguration<number>(
+          configurationReader,
+          'externalTools.rsvgConvert.timeoutSeconds',
+          120,
+        ),
+      },
+      mermaid: {
+        timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.mermaid.timeoutSeconds', 120),
+      },
+    },
     raster: {
       maxInputPixels: defineConfiguration<number>(configurationReader, 'raster.maxInputPixels', 268402689),
+      maxAnimationPixels: defineConfiguration<number>(configurationReader, 'raster.maxAnimationPixels', 500000000),
+    },
+    preview: {
+      maxCanvasPixels: defineConfiguration<number>(configurationReader, 'preview.maxCanvasPixels', 40000000),
+      maxDevicePixelRatio: defineConfiguration<number>(configurationReader, 'preview.maxDevicePixelRatio', 2),
+    },
+    performance: {
+      maxConcurrentHeavyProcesses: defineConfiguration<number>(
+        configurationReader,
+        'performance.maxConcurrentHeavyProcesses',
+        2,
+      ),
+    },
+    largeOperationWarnings: {
+      enabled: defineConfiguration<boolean>(configurationReader, 'largeOperationWarnings.enabled', true),
+      pdfPages: defineConfiguration<number>(configurationReader, 'largeOperationWarnings.pdfPages', 1000),
+      inputSizeMiB: defineConfiguration<number>(configurationReader, 'largeOperationWarnings.inputSizeMiB', 500),
     },
     convertToPdf: {
       svg: {

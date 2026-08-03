@@ -19,6 +19,7 @@ suite('Merge PDF Webviewプロトコル', () => {
           cMapUrl: 'vscode-resource://cmaps/',
           standardFontDataUrl: 'vscode-resource://standard_fonts/',
           wasmUrl: 'vscode-resource://wasm/',
+          preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
           labels: {
             header: { title: 'Merge PDFs', description: 'Arrange files.' },
             sources: { list: 'PDF files', listDescription: 'Drag files.', count: 'files selected' },

@@ -1,5 +1,3 @@
-import pLimit from 'p-limit';
-
 import { isAbortError } from '../../application/error_utils.js';
 import {
   stagingArtifactsForJobs,
@@ -13,8 +11,7 @@ import {
   type PreparedConversionOutput,
 } from './commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from './conversion_runtime.js';
-
-const CONVERSION_CONCURRENCY = 2;
+import { sharedConversionJobLimiter } from '../external_tools/heavy_process_limiter.js';
 
 export interface StagedConversionBatch<Job extends { workspacePath: string }> {
   jobs: Job[];
@@ -60,11 +57,10 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
     return await withStagingCleanup(
       artifacts,
       async () => {
-        const limit = pLimit(CONVERSION_CONCURRENCY);
         let completedCount = 0;
         const settled = await Promise.allSettled(
           options.jobs.map(async (job, index) =>
-            limit(async () => {
+            sharedConversionJobLimiter.run(async () => {
               batchRuntime.signal?.throwIfAborted();
               try {
                 const output = await options.stage(job, index, options.runId, batchRuntime);
@@ -76,7 +72,7 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
                 abortController.abort(stageError);
                 throw stageError;
               }
-            }),
+            }, batchRuntime.signal),
           ),
         );
         const failure =

@@ -5,6 +5,7 @@ import * as pdfjsModule from 'pdfjs-dist';
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 
 import { calculatePageWindow, MAX_RENDERED_PAGES } from './page_window';
+import { calculatePdfCanvasDimensions } from './canvas_limits';
 // Vite turns this worker query into an asset URL even though the source module has no default export.
 // oxlint-disable-next-line import/default
 import pdfJsWorkerUrl from './pdfjs_worker?worker&url';
@@ -47,7 +48,7 @@ export async function renderFirstPdfPage(
       const page = await document.getPage(1);
       try {
         throwIfAborted(options.signal);
-        renderTask = renderPageToCanvasWithTask(page, canvas);
+        renderTask = renderPageToCanvasWithTask(page, canvas, options);
         await renderTask.promise;
       } finally {
         renderTask = undefined;
@@ -156,7 +157,7 @@ export async function renderPdfPages(
           return;
         }
 
-        const renderTask = renderPageToCanvasWithTask(page, canvas);
+        const renderTask = renderPageToCanvasWithTask(page, canvas, options);
         renderTasks.add(renderTask);
 
         try {
@@ -306,7 +307,7 @@ export async function renderPdfPages(
             return;
           }
 
-          const renderTask = renderPageToCanvasWithTask(page, canvas);
+          const renderTask = renderPageToCanvasWithTask(page, canvas, options);
           windowRenderTasks.add(renderTask);
           windowRenderingPages.add(pageNumber);
           try {
@@ -473,6 +474,10 @@ interface PdfRenderOptions {
   pageLabel?: string;
   onRenderError?: (error: unknown) => void;
   signal?: AbortSignal;
+  preview?: {
+    maxCanvasPixels: number;
+    maxDevicePixelRatio: number;
+  };
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
@@ -500,26 +505,37 @@ function createDocumentOptions(pdfSrc: string, options: PdfRenderOptions): Param
   };
 }
 
-function renderPageToCanvasWithTask(page: PDFPageProxy, canvas: HTMLCanvasElement): ReturnType<PDFPageProxy['render']> {
+function renderPageToCanvasWithTask(
+  page: PDFPageProxy,
+  canvas: HTMLCanvasElement,
+  options: PdfRenderOptions = {},
+): ReturnType<PDFPageProxy['render']> {
   const viewport = page.getViewport({ scale: 1 });
-  const outputScale = Math.max(1, globalThis.devicePixelRatio || 1);
+  const dimensions = calculatePdfCanvasDimensions(
+    viewport.width,
+    viewport.height,
+    globalThis.devicePixelRatio,
+    options.preview,
+  );
   const context = canvas.getContext('2d');
 
   if (!context) {
     throw new Error('Could not create a 2D context for the PDF canvas.');
   }
 
-  canvas.width = Math.floor(viewport.width * outputScale);
-  canvas.height = Math.floor(viewport.height * outputScale);
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
   canvas.dataset.pdfWidth = viewport.width.toString();
   canvas.dataset.pdfHeight = viewport.height.toString();
-  canvas.style.width = `${viewport.width}px`;
-  canvas.style.height = `${viewport.height}px`;
+  canvas.style.width = `${dimensions.cssWidth}px`;
+  canvas.style.height = `${dimensions.cssHeight}px`;
 
   return page.render({
     canvas,
     canvasContext: context,
-    ...(outputScale === 1 ? {} : { transform: [outputScale, 0, 0, outputScale, 0, 0] }),
+    ...(dimensions.outputScale === 1
+      ? {}
+      : { transform: [dimensions.outputScale, 0, 0, dimensions.outputScale, 0, 0] }),
     viewport,
   });
 }
