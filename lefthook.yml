@@ -4,6 +4,9 @@ pre-commit:
   parallel: false
 
   commands:
+    environment-paths:
+      run: node .github/scripts/check-environment-paths.mjs
+
     format:
       glob: "*.{ts,tsx,js,jsx,json,jsonc,md,html,css}"
       run: npx --no -- oxfmt --config ./oxfmt.config.ts --write {staged_files}

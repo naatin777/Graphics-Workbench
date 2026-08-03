@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
+
+import { findEnvironmentSpecificPaths } from './environment-paths.mjs';
 
 /** @typedef {{ valid: true } | { valid: false, reason: string }} ValidationResult */
 
@@ -12,6 +15,15 @@ const DEPENDABOT_LOGIN = 'dependabot[bot]';
  * @returns {ValidationResult}
  */
 export function validatePrDescription(body, options = {}) {
+  const pathFindings = findEnvironmentSpecificPaths(body);
+  if (pathFindings.length > 0) {
+    const pathFinding = pathFindings[0];
+    return {
+      valid: false,
+      reason: `PR body must not contain environment-specific absolute paths (line ${pathFinding.line}).`,
+    };
+  }
+
   if (options.authorLogin === DEPENDABOT_LOGIN) {
     return { valid: true };
   }
@@ -53,7 +65,9 @@ export function validatePrDescription(body, options = {}) {
 const isDirectExecution = process.argv.length > 1 && fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '');
 
 if (isDirectExecution) {
-  const result = validatePrDescription(process.env.PR_BODY ?? '', {
+  const bodyFile = process.env.PR_BODY_FILE ?? '';
+  const body = bodyFile === '' ? (process.env.PR_BODY ?? '') : readFileSync(bodyFile, 'utf8');
+  const result = validatePrDescription(body, {
     authorLogin: process.env.PR_AUTHOR ?? '',
   });
   if ('reason' in result) {

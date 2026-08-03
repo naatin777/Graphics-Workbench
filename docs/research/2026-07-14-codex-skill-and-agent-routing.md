@@ -31,8 +31,8 @@
 
 Manual helper result:
 
-- Manual path: `/var/folders/6w/_991xjnj7490zfhl9n2pvr0c0000gn/T/openai-docs-cache/codex-manual.md`
-- Outline path: `/var/folders/6w/_991xjnj7490zfhl9n2pvr0c0000gn/T/openai-docs-cache/codex-manual.outline.md`
+- Manual path: `$TMPDIR/openai-docs-cache/codex-manual.md`
+- Outline path: `$TMPDIR/openai-docs-cache/codex-manual.outline.md`
 - Status: `local manual was already current`
 
 ## 確認できたこと
