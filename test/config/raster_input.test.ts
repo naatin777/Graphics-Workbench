@@ -16,10 +16,8 @@ suite('Raster入力pixel上限設定', () => {
     });
   });
 
-  test('正の整数のカスタム値を返す', async () => {
-    await withWorkspaceSettings({ 'graphics-workbench.raster.maxInputPixels': 100 }, async () => {
-      assert.strictEqual(getMaxInputPixels(getExtensionConfiguration()), 100);
-    });
+  test('正の整数のカスタム値を返す', () => {
+    assert.strictEqual(getMaxInputPixels(fakeConfiguration({ 'raster.maxInputPixels': 100 })), 100);
   });
 
   test('最大値は1,000,000,000に制限される', () => {
