@@ -10,6 +10,51 @@ import {
 } from '../../src/operations/lifecycle/cleanup_conversion_artifacts.js';
 
 suite('変換artifactのライフサイクル', () => {
+  test('cleanup結果はrootごとの成功数と失敗対象を返す', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    const lines: string[] = [];
+
+    try {
+      await writeFixture(path.join(rootPath, 'result.pdf'));
+
+      const result = await cleanupConversionArtifacts([{ rootPath, workspacePath }], {
+        appendLine: (line) => lines.push(line),
+      });
+
+      assert.deepEqual(result, { attempted: 1, succeeded: 1, failures: [] });
+      assert.deepEqual(lines, []);
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
+  test('cleanup失敗は結果とOutput Channelの両方へ記録する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-outside-'));
+    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    const lines: string[] = [];
+
+    try {
+      await mkdir(path.dirname(rootPath), { recursive: true });
+      await symlink(outsidePath, rootPath);
+
+      const result = await cleanupConversionArtifacts([{ rootPath, workspacePath }], {
+        appendLine: (line) => lines.push(line),
+      });
+
+      assert.equal(result.attempted, 1);
+      assert.equal(result.succeeded, 0);
+      assert.equal(result.failures.length, 1);
+      assert.equal(result.failures[0]?.rootPath, rootPath);
+      assert.match(lines[0] ?? '', /\[cleanup\] failed/iu);
+      assert.match(lines[1] ?? '', /1\/1 artifact roots failed/iu);
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+      await rm(outsidePath, { recursive: true, force: true });
+    }
+  });
+
   test('外側cleanupでもrollback失敗に必要なrecovery backupだけを保持する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
     const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
