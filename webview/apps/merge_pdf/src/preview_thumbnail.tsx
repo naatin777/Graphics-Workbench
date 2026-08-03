@@ -24,6 +24,7 @@ export function PreviewThumbnail(props: {
 
   onMount(() => {
     let started = false;
+    const abortController = new AbortController();
 
     const renderPreview = async (): Promise<void> => {
       if (started || !canvas) {
@@ -34,9 +35,15 @@ export function PreviewThumbnail(props: {
       setStatus('loading');
 
       try {
-        await renderFirstPdfPage(props.source.pdfSrc, canvas, props.options);
+        await renderFirstPdfPage(props.source.pdfSrc, canvas, {
+          ...props.options,
+          signal: abortController.signal,
+        });
         setStatus('ready');
       } catch (error: unknown) {
+        if (abortController.signal.aborted) {
+          return;
+        }
         const message = error instanceof Error ? error.message : String(error);
         setStatus('error');
         props.onError();
@@ -44,25 +51,30 @@ export function PreviewThumbnail(props: {
       }
     };
 
-    if (typeof IntersectionObserver === 'undefined' || !frame) {
+    const observer =
+      typeof IntersectionObserver === 'undefined'
+        ? undefined
+        : new IntersectionObserver(
+            (entries) => {
+              if (entries.some((entry) => entry.isIntersecting)) {
+                observer?.disconnect();
+                void renderPreview();
+              }
+            },
+            { rootMargin: '120px' },
+          );
+
+    onCleanup(() => {
+      abortController.abort();
+      observer?.disconnect();
+    });
+
+    if (observer === undefined || frame === undefined) {
       void renderPreview();
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          observer.disconnect();
-          void renderPreview();
-        }
-      },
-      { rootMargin: '120px' },
-    );
-
     observer.observe(frame);
-    onCleanup(() => {
-      observer.disconnect();
-    });
   });
 
   return (

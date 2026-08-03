@@ -74,6 +74,7 @@ type RenderPreviewOptions = {
     setRenderError: (value: string) => void;
     setRenderController: (value: PdfRenderController) => void;
   };
+  signal: AbortSignal;
 };
 
 function cancel(): void {
@@ -86,13 +87,20 @@ async function renderPreview(options: RenderPreviewOptions): Promise<void> {
     const controller = await renderPdfPages(
       options.payload.pdfSrc,
       options.pdf.pages,
-      renderOptions(options.payload, options.pdf.preview, options.state.setRenderError),
+      renderOptions(options.payload, options.pdf.preview, options.state.setRenderError, options.signal),
     );
+    if (options.signal.aborted) {
+      await controller.dispose();
+      return;
+    }
     options.state.setRenderController(controller);
     await controller.firstPageReady;
     applyPreviewZoom(options.pdf.pages, options.pdf.zoom());
     updatePreviewPageSize(options);
   } catch (error: unknown) {
+    if (options.signal.aborted) {
+      return;
+    }
     options.state.setRenderError(error instanceof Error ? error.message : String(error));
     throw error instanceof Error ? error : new Error(String(error));
   }
@@ -102,6 +110,7 @@ function renderOptions(
   payload: CropInitPayload,
   pdfPreview: HTMLElement | undefined,
   setRenderError: (value: string) => void,
+  signal: AbortSignal,
 ): Parameters<typeof renderPdfPages>[2] {
   return {
     ...(pdfPreview !== undefined && { root: pdfPreview }),
@@ -118,7 +127,11 @@ function renderOptions(
       ? { wasmUrl: payload.resources.wasmUrl }
       : {}),
     pageLabel: payload.labels.header.pageLabel,
+    signal,
     onRenderError: (error: unknown) => {
+      if (signal.aborted) {
+        return;
+      }
       const message = error instanceof Error ? error.message : String(error);
       setRenderError(message);
       vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
@@ -208,6 +221,7 @@ export function App(): JSX.Element {
   let pdfPreview: HTMLElement | undefined;
   let renderPromise: Promise<void> | undefined;
   let renderController: PdfRenderController | undefined;
+  let renderAbortController: AbortController | undefined;
 
   onMount(() => {
     const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>): void => {
@@ -221,8 +235,11 @@ export function App(): JSX.Element {
         return;
       }
 
+      renderAbortController?.abort();
       void renderController?.dispose();
       renderController = undefined;
+      const abortController = new AbortController();
+      renderAbortController = abortController;
 
       const initialPage = event.data.payload.initialPage;
       const totalPages = event.data.payload.pageCount;
@@ -262,6 +279,7 @@ export function App(): JSX.Element {
             renderController = controller;
           },
         },
+        signal: abortController.signal,
       });
     };
 
@@ -269,6 +287,7 @@ export function App(): JSX.Element {
     vscode.sendMessage({ type: 'ready' });
     onCleanup(() => {
       window.removeEventListener('message', handleMessage);
+      renderAbortController?.abort();
       void renderController?.dispose();
     });
   });

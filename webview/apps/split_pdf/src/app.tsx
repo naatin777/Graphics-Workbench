@@ -51,6 +51,7 @@ export function App(): JSX.Element {
   let renderController: PdfRenderController | undefined;
   let draggedRowId: number | undefined;
   let previewGeneration = 0;
+  let previewAbortController: AbortController | undefined;
 
   const setInputRef = (rowId: number, kind: InputKind, element: HTMLInputElement): void => {
     const refs = rowRefs.get(rowId) ?? {};
@@ -328,7 +329,7 @@ export function App(): JSX.Element {
     updateZoom(zoomPercent() + (event.deltaY < 0 ? 5 : -5), event.target, event.clientX, event.clientY);
   };
 
-  const startPreview = async (payload: InitPayload, generation: number): Promise<void> => {
+  const startPreview = async (payload: InitPayload, generation: number, signal: AbortSignal): Promise<void> => {
     if (!pdfPages) {
       return;
     }
@@ -349,7 +350,11 @@ export function App(): JSX.Element {
           : {}),
         ...(pdfPreview === undefined ? {} : { root: pdfPreview }),
         pageLabel: labels().pages.label,
+        signal,
         onRenderError: (error: unknown) => {
+          if (signal.aborted) {
+            return;
+          }
           const message = error instanceof Error ? error.message : String(error);
           setRenderError(message);
           setPreviewReady(false);
@@ -368,6 +373,9 @@ export function App(): JSX.Element {
       applyPreviewZoom(pdfPages, zoomPercent() / 100);
       updatePreviewVisibility();
     } catch (error: unknown) {
+      if (signal.aborted) {
+        return;
+      }
       const message = error instanceof Error ? error.message : String(error);
       setRenderError(message);
       setPreviewReady(false);
@@ -403,9 +411,12 @@ export function App(): JSX.Element {
       setRenderError('');
       setPreviewReady(false);
       previewGeneration += 1;
+      previewAbortController?.abort();
       void renderController?.dispose();
       renderController = undefined;
-      void startPreview(event.data.payload, previewGeneration);
+      const abortController = new AbortController();
+      previewAbortController = abortController;
+      void startPreview(event.data.payload, previewGeneration, abortController.signal);
     };
 
     window.addEventListener('message', handleMessage);
@@ -414,6 +425,7 @@ export function App(): JSX.Element {
     onCleanup(() => {
       window.removeEventListener('message', handleMessage);
       previewGeneration += 1;
+      previewAbortController?.abort();
       void renderController?.dispose();
     });
   });

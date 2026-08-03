@@ -179,7 +179,29 @@ describe('Crop PDF Webview', () => {
 
     expect(document.activeElement).toBe(left);
   });
+
+  test('disposes the preview by aborting its render signal', () => {
+    const renderOptions = renderPdfPages.mock.calls[0]?.[2];
+    const signal = getAbortSignal(renderOptions);
+
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal?.aborted).toBe(false);
+
+    dispose?.();
+    dispose = undefined;
+
+    expect(signal?.aborted).toBe(true);
+  });
 });
+
+function getAbortSignal(value: unknown): AbortSignal | undefined {
+  if (typeof value !== 'object' || value === null) {
+    return undefined;
+  }
+
+  const signal = Reflect.get(value, 'signal');
+  return signal instanceof AbortSignal ? signal : undefined;
+}
 
 function findNumberInput(label: string): HTMLInputElement {
   const field = [...document.querySelectorAll('label.field')].find(
