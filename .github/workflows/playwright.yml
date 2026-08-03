@@ -6,12 +6,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      update_snapshots:
-        description: Generate Linux canonical Playwright snapshot artifacts
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -108,54 +102,8 @@ jobs:
         run: cp "graphics-workbench-${{ matrix.label }}.vsix" graphics-workbench.vsix
         shell: bash
 
-      - if: matrix.snapshot_enabled == true
-        name: Check for snapshot update flag
-        id: snapshot_flag
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          REPOSITORY: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
-          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message || '' }}
-          TITLE_MESSAGE: ${{ github.event.pull_request.title || '' }}
-          UPDATE_SNAPSHOTS_INPUT: ${{ inputs.update_snapshots || false }}
-        run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "update_snapshots=$UPDATE_SNAPSHOTS_INPUT" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            HEAD_MESSAGE="$(gh api "repos/$REPOSITORY/commits/$HEAD_SHA" --jq '.commit.message')"
-          else
-            HEAD_MESSAGE="$HEAD_COMMIT_MESSAGE"
-          fi
-          if [[ "$TITLE_MESSAGE" == *"[update-snapshots]"* ]] || [[ "$HEAD_MESSAGE" == *"[update-snapshots]"* ]]; then
-            echo "update_snapshots=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "update_snapshots=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - if: matrix.snapshot_enabled == true && steps.snapshot_flag.outputs.update_snapshots == 'true'
-        name: Remove Linux snapshots before regeneration
-        shell: bash
-        run: |
-          find test/playwright/electron -type f \
-            -path '*/__snapshots__/*' \
-            -name '*-linux.png' \
-            -delete
-
       - name: Run Playwright against packaged VSIX
-        if: matrix.snapshot_enabled != true || steps.snapshot_flag.outputs.update_snapshots != 'true'
         run: ${{ matrix.test_command }}
-        shell: bash
-        env:
-          PLAYWRIGHT_VISUAL_SNAPSHOTS: ${{ matrix.visual_snapshots }}
-
-      - name: Run Playwright against packaged VSIX (update snapshots)
-        if: matrix.snapshot_enabled == true && steps.snapshot_flag.outputs.update_snapshots == 'true'
-        run: ${{ matrix.test_command }} -- --update-snapshots
         shell: bash
         env:
           PLAYWRIGHT_VISUAL_SNAPSHOTS: ${{ matrix.visual_snapshots }}
@@ -169,17 +117,6 @@ jobs:
             test-results/
           if-no-files-found: ignore
 
-      - if: success() && matrix.snapshot_enabled == true
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-screenshots-linux
-          path: |
-            test/playwright/electron/**/__snapshots__/*-linux.png
-            test-results/
-            playwright-report/
-          if-no-files-found: ignore
-          retention-days: 7
-
       - if: failure() && matrix.snapshot_enabled == true
         uses: actions/upload-artifact@v7
         with:
@@ -189,128 +126,3 @@ jobs:
             test-results/**/*-diff.png
           if-no-files-found: ignore
           retention-days: 7
-
-  commit-snapshots:
-    name: Commit regenerated Linux snapshots
-    if: >
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    needs: playwright
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
-
-      - name: Check for snapshot update flag
-        id: snapshot_flag
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          TITLE_MESSAGE: ${{ github.event.pull_request.title || '' }}
-        run: |
-          HEAD_MESSAGE="$(gh api "repos/$REPOSITORY/commits/$HEAD_SHA" --jq '.commit.message')"
-          if [[ "$TITLE_MESSAGE" == *"[update-snapshots]"* ]] || [[ "$HEAD_MESSAGE" == *"[update-snapshots]"* ]]; then
-            echo "update_snapshots=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "update_snapshots=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - if: steps.snapshot_flag.outputs.update_snapshots == 'true'
-        uses: actions/download-artifact@v7
-        with:
-          name: playwright-screenshots-linux
-          path: snapshots
-
-      - if: steps.snapshot_flag.outputs.update_snapshots == 'true'
-        name: Commit regenerated snapshots to the PR branch
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          TITLE_MESSAGE: ${{ github.event.pull_request.title || '' }}
-        run: |
-          set -euo pipefail
-          SNAPSHOT_COUNT="$(find snapshots -name '*-linux.png' 2>/dev/null | wc -l | tr -d ' ')"
-          if [ "$SNAPSHOT_COUNT" = "0" ]; then
-            echo 'no regenerated Linux snapshots found'
-            exit 0
-          fi
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          find snapshots -name '*-linux.png' -exec cp {} test/playwright/electron/__snapshots__/ \;
-          git add test/playwright/electron/__snapshots__/*-linux.png
-
-          if git diff --cached --quiet; then
-            echo 'snapshots unchanged'
-          else
-            git commit -m 'test(playwright): update Linux snapshots'
-            git push origin "HEAD:${HEAD_REF}"
-          fi
-
-          CLEAN_TITLE="${TITLE_MESSAGE/'[update-snapshots]'/}"
-          CLEAN_TITLE="$(echo "${CLEAN_TITLE}" | xargs)"
-          if [ "${CLEAN_TITLE}" != "${TITLE_MESSAGE}" ]; then
-            gh pr edit "${PR_NUMBER}" --title "${CLEAN_TITLE}"
-          fi
-
-  comment-screenshots:
-    name: Link Linux screenshot artifact on PR
-    if: >
-      always() &&
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    needs: playwright
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      pull-requests: write
-    steps:
-      - uses: actions/download-artifact@v7
-        continue-on-error: true
-        with:
-          name: playwright-screenshots-linux
-          path: screenshots
-
-      - name: Link Linux screenshot artifact from PR
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          if [ ! -d screenshots ]; then
-            echo 'screenshot artifact directory is unavailable'
-            exit 0
-          fi
-          SCREENSHOT_FILE="$(find screenshots -name '*-linux.png' -print -quit)"
-          if [ -z "${SCREENSHOT_FILE}" ]; then
-            echo 'no Linux screenshot files found'
-            exit 0
-          fi
-          RUN_URL="https://github.com/${REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          COMMENT_BODY="$(printf '%s\n\n%s\n\n%s\n' \
-            '<!-- playwright-screenshots -->' \
-            '## Playwright screenshots' \
-            "[Open the Playwright Actions run](${RUN_URL}) and download the \`playwright-screenshots-linux\` artifact (retained for 7 days).")"
-          EXISTING_ID="$(gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --jq '.[] | select(.body | contains("<!-- playwright-screenshots -->")) | .id' | head -n 1)"
-          if [ -n "${EXISTING_ID}" ]; then
-            gh api -X PATCH "repos/${REPOSITORY}/issues/comments/${EXISTING_ID}" -f body="${COMMENT_BODY}" > /dev/null
-          else
-            gh api -X POST "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" -f body="${COMMENT_BODY}" > /dev/null
-          fi
-          {
-            echo '### Playwright screenshots'
-            echo
-            echo "- [Open the Actions run](${RUN_URL})"
-            echo '- Artifact: `playwright-screenshots-linux` (retained for 7 days)'
-          } >> "${GITHUB_STEP_SUMMARY}"
