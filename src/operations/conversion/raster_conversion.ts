@@ -32,7 +32,7 @@ import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import sharp from 'sharp';
 
 type RasterEncoder = (
@@ -142,7 +142,7 @@ export async function executeRasterConversionBatch(
   await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
   options.runtime.signal?.throwIfAborted();
 
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: options.definition.operationName,

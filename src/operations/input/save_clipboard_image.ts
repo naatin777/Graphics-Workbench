@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -14,7 +13,7 @@ import {
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { convertToPdfFiles, type ConvertToPdfFilesOptions } from '../conversion/convert_to_pdf.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 
 export interface ClipboardImageData {
   type: { ext: string };
@@ -47,7 +46,7 @@ export async function saveClipboardImage(
   runtime: ConversionExecutionContext,
   testOverrides: SaveClipboardImageTestOverrides = {},
 ): Promise<SavedClipboardImage> {
-  const runId = request.runId ?? randomUUID();
+  const runId = request.runId ?? createRunId();
   const artifact: ConversionArtifactRoot = {
     rootPath: clipboardStagingRoot(request.workspacePath, runId),
     workspacePath: request.workspacePath,

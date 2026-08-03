@@ -39,7 +39,7 @@ import {
   type RsvgToolScratchOptions,
 } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { OperationCancelledError } from '../lifecycle/operation_cancelled_error.js';
 import type { DrawioBackend, MermaidBackend, SvgToPdfBackend } from './tools/index.js';
 
@@ -158,7 +158,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
   const platform = options.platform ?? process.platform;
   const scratchOptions: RsvgToolScratchOptions = { platform };
   if (runtime?.outputChannel !== undefined) {

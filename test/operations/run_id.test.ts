@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict';
 
-import { asRunId, isSafePathSegment } from '../../src/operations/lifecycle/run_id.js';
+import { asRunId, createRunId, isSafePathSegment } from '../../src/operations/lifecycle/run_id.js';
 import { safeName } from '../../src/operations/pdf/pdf_utils.js';
 
 suite('内部path segment', () => {
   test('生成用のrunIdだけを受け入れる', () => {
     assert.equal(isSafePathSegment('test-run_1.2'), true);
     assert.equal(asRunId('test-run_1.2'), 'test-run_1.2');
+  });
+
+  test('operation共通のrunIdを安全なpath segmentとして生成する', () => {
+    const runId = createRunId();
+
+    assert.equal(isSafePathSegment(runId), true);
+    assert.match(runId, /^\d+-[0-9a-f-]{36}$/u);
   });
 
   test('dot、separator、Windows予約名、長すぎるsegmentを拒否する', () => {

@@ -18,7 +18,7 @@ import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
-import { createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { validateGeneratedPdf } from './convert_to_pdf.js';
 
 export interface DrawioPdfJob {
@@ -53,7 +53,7 @@ export async function convertDrawioToPdfFiles(
 
   await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
 
-  const runId = options.runId ?? `${Date.now()}-${crypto.randomUUID()}`;
+  const runId = options.runId ?? createRunId();
 
   return runStagedConversionBatch({
     jobs: options.jobs,
