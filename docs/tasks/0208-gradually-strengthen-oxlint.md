@@ -284,6 +284,19 @@ mainの現行コード219ファイルに対する初回測定では、14,208件�
 
 既存違反を修正または理由付きoverrideした上で、通常lintでerrorとして監視する。
 
+## Phase 40 — Project contracts
+
+汎用的なstyle ruleでは表現できない、Graphics Workbench固有の境界を独自pluginでerrorとして監視する。
+
+- `project/no-webview-api-bypass`: Webview appはraw `acquireVsCodeApi()`や`postMessage()`を直接使わず、app-localの`vscode.sendMessage` wrapperを経由する。API wrapper自身だけを例外にする
+- `project/require-webview-listener-cleanup`: Webview appの`window` message listenerは、同じhandlerで`removeEventListener`されることを要求する
+- `project/require-process-envelope`: process protocolのrequest/start/success/failure型は`type`・`protocolVersion`・`requestId`を持つ
+- `project/no-pdf-bytes-in-process-ipc`: PDF process protocolへ`pdfBytes`・`bytes`・`buffer`・`content`・`data`を追加せず、pathとmetadataだけを渡す
+- `project/no-secret-output-log`: secret-like identifierやjob JSON pathを`OutputChannel.appendLine`へ補間しない
+- `project/no-direct-child-process`: `child_process`への直接アクセスをexternal-tool adapterとprocess runnerへ限定する。test・script・Webviewの実行補助コードは既存用途として許可する
+
+これらは実行時のrollbackやprocess-tree cleanupの正しさを静的解析で代替するものではない。path境界、staging、cancellation、cleanupの実装契約は既存helperと外部挙動テストで検証し、lintは新しい違反の混入を早期に止める境界チェックとして使う。
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -340,6 +353,7 @@ mainの現行コード219ファイルに対する初回測定では、14,208件�
 - Phase 35の不要な戻り値とiterator callback参照の制限を通常lintでerrorとして強制できる
 - Phase 36のimportと型宣言の重複・表記の制限を通常lintでerrorとして強制できる
 - Phase 37のswitchスコープ、二択制御、global/DOM API選択の制限を通常lintでerrorとして強制できる
+- Phase 40のWebview API、listener cleanup、process protocol、IPC payload、ログ、child_process境界を通常lintでerrorとして強制できる
 - 既存の型チェック、format、テスト、buildを壊さない
 - 次に強化する候補と既存違反をtaskへ記録する
 

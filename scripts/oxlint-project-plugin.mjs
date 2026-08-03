@@ -239,6 +239,368 @@ const noFixedE2EWait = {
   },
 };
 
+function normalizeFilename(filename) {
+  return filename.replaceAll('\\', '/');
+}
+
+function getContextFilename(context) {
+  if (typeof context.filename === 'string') {
+    return normalizeFilename(context.filename);
+  }
+
+  if (typeof context.getFilename === 'function') {
+    return normalizeFilename(context.getFilename());
+  }
+
+  return '';
+}
+
+function isWebviewAppSourceFile(filename) {
+  return /(?:^|\/)webview\/apps\/[^/]+\/src\/.+\.(?:ts|tsx)$/u.test(normalizeFilename(filename));
+}
+
+function isProcessProtocolFile(filename) {
+  return /(?:^|\/)src\/operations\/[^/]+\/[^/]*process_protocol\.ts$/u.test(normalizeFilename(filename));
+}
+
+function isAllowedChildProcessFile(filename) {
+  const normalized = normalizeFilename(filename);
+  if (normalized === '.vscode-test.mjs' || normalized.endsWith('/.vscode-test.mjs')) {
+    return true;
+  }
+
+  if (/(?:^|\/)(?:scripts|test|webview)\//u.test(normalized)) {
+    return true;
+  }
+
+  return (
+    /(?:^|\/)src\/operations\/external_tools\/[^/]+\.ts$/u.test(normalized) ||
+    normalized.endsWith('/src/operations/conversion/tools/run_mermaid_cli.ts') ||
+    normalized.endsWith('/src/operations/pdf/run_crop_pdf_process.ts')
+  );
+}
+
+function getStaticPropertyName(node) {
+  if (node?.type === 'Identifier') {
+    return node.name;
+  }
+
+  if (node?.type === 'Literal' && typeof node.value === 'string') {
+    return node.value;
+  }
+
+  return undefined;
+}
+
+function getMemberPropertyName(node) {
+  return node?.type === 'MemberExpression' ? getStaticPropertyName(node.property) : undefined;
+}
+
+function isWindowEventCall(node, methodName) {
+  return (
+    node?.type === 'CallExpression' &&
+    node.callee?.type === 'MemberExpression' &&
+    node.callee.object?.type === 'Identifier' &&
+    node.callee.object.name === 'window' &&
+    getMemberPropertyName(node.callee) === methodName &&
+    getStaticPropertyName(node.arguments[0]) === 'message'
+  );
+}
+
+function getEventListenerKey(node) {
+  return node?.type === 'Identifier' ? `identifier:${node.name}` : undefined;
+}
+
+const requireWebviewListenerCleanup = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      missingCleanup:
+        'Every window message listener in a Webview app must be removed with the same handler during cleanup.',
+    },
+  },
+
+  create(context) {
+    if (!isWebviewAppSourceFile(getContextFilename(context))) {
+      return {};
+    }
+
+    const listeners = new Map();
+    const removedListeners = new Set();
+
+    return {
+      CallExpression(node) {
+        if (isWindowEventCall(node, 'addEventListener')) {
+          const key = getEventListenerKey(node.arguments[1]);
+          if (key === undefined) {
+            context.report({ node, messageId: 'missingCleanup' });
+            return;
+          }
+
+          listeners.set(key, node);
+          return;
+        }
+
+        if (isWindowEventCall(node, 'removeEventListener')) {
+          const key = getEventListenerKey(node.arguments[1]);
+          if (key !== undefined) {
+            removedListeners.add(key);
+          }
+        }
+      },
+      'Program:exit'() {
+        for (const [key, node] of listeners) {
+          if (!removedListeners.has(key)) {
+            context.report({ node, messageId: 'missingCleanup' });
+          }
+        }
+      },
+    };
+  },
+};
+
+const noWebviewApiBypass = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      bypass: 'Use the app-local vscode.sendMessage wrapper instead of the raw VS Code Webview API.',
+    },
+  },
+
+  create(context) {
+    const filename = getContextFilename(context);
+    if (!isWebviewAppSourceFile(filename) || filename.endsWith('/vscode.ts')) {
+      return {};
+    }
+
+    return {
+      Identifier(node) {
+        if (node.name === 'acquireVsCodeApi') {
+          context.report({ node, messageId: 'bypass' });
+        }
+      },
+      MemberExpression(node) {
+        if (getMemberPropertyName(node) === 'postMessage') {
+          context.report({ node, messageId: 'bypass' });
+        }
+      },
+    };
+  },
+};
+
+const PROCESS_ENVELOPE_FIELDS = ['type', 'protocolVersion', 'requestId'];
+const PROCESS_DECLARATION_SUFFIX = /(?:ProcessRequest|ProcessStarted|ProcessSuccess|ProcessFailure)$/u;
+
+function collectTypeMemberNames(node, names = new Set()) {
+  if (node?.type === 'TSInterfaceDeclaration') {
+    for (const member of node.body.body) {
+      const name = getStaticPropertyName(member.key);
+      if (name !== undefined) {
+        names.add(name);
+      }
+    }
+    return names;
+  }
+
+  if (node?.type === 'TSTypeAliasDeclaration') {
+    return collectTypeMemberNames(node.typeAnnotation, names);
+  }
+
+  if (node?.type === 'TSTypeLiteral') {
+    for (const member of node.members) {
+      const name = getStaticPropertyName(member.key);
+      if (name !== undefined) {
+        names.add(name);
+      }
+    }
+    return names;
+  }
+
+  if (node?.type === 'TSIntersectionType' || node?.type === 'TSUnionType') {
+    for (const type of node.types) {
+      collectTypeMemberNames(type, names);
+    }
+  }
+
+  return names;
+}
+
+function getMissingProcessEnvelopeFields(node) {
+  const names = collectTypeMemberNames(node);
+  return PROCESS_ENVELOPE_FIELDS.filter((field) => !names.has(field));
+}
+
+const requireProcessEnvelope = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      missingEnvelope:
+        'Process protocol types must include type, protocolVersion, and requestId so messages can be correlated and versioned.',
+    },
+  },
+
+  create(context) {
+    if (!isProcessProtocolFile(getContextFilename(context))) {
+      return {};
+    }
+
+    function checkDeclaration(node) {
+      if (!PROCESS_DECLARATION_SUFFIX.test(node.id.name)) {
+        return;
+      }
+
+      const missing = getMissingProcessEnvelopeFields(node);
+      if (missing.length > 0) {
+        context.report({ node, messageId: 'missingEnvelope' });
+      }
+    }
+
+    return {
+      TSInterfaceDeclaration: checkDeclaration,
+      TSTypeAliasDeclaration: checkDeclaration,
+    };
+  },
+};
+
+const FORBIDDEN_PROCESS_PAYLOAD_FIELDS = new Set(['buffer', 'bytes', 'content', 'data', 'pdfBytes']);
+
+function isForbiddenProcessPayloadField(node) {
+  return FORBIDDEN_PROCESS_PAYLOAD_FIELDS.has(getStaticPropertyName(node.key));
+}
+
+const noPdfBytesInProcessIpc = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      rawBytes: 'PDF process IPC must pass file paths and metadata, never PDF bytes or buffer-like payloads.',
+    },
+  },
+
+  create(context) {
+    if (!isProcessProtocolFile(getContextFilename(context))) {
+      return {};
+    }
+
+    return {
+      Property(node) {
+        if (isForbiddenProcessPayloadField(node)) {
+          context.report({ node, messageId: 'rawBytes' });
+        }
+      },
+      TSPropertySignature(node) {
+        if (isForbiddenProcessPayloadField(node)) {
+          context.report({ node, messageId: 'rawBytes' });
+        }
+      },
+    };
+  },
+};
+
+const SENSITIVE_IDENTIFIER = /access[-_]?key|api[-_]?key|credential|job[-_]?json|password|private[-_]?key|secret|token/iu;
+
+function isSensitiveName(name) {
+  const match = name.match(SENSITIVE_IDENTIFIER);
+  if (match === null || match.index === undefined) {
+    return false;
+  }
+
+  const nextCharacter = name[match.index + match[0].length];
+  return nextCharacter === undefined || /[A-Z_-]/u.test(nextCharacter);
+}
+
+function hasSensitiveIdentifier(node, visited = new Set()) {
+  if (node === null || typeof node !== 'object' || visited.has(node)) {
+    return false;
+  }
+  visited.add(node);
+
+  if (node.type === 'Identifier' && isSensitiveName(node.name)) {
+    return true;
+  }
+
+  if (node.type === 'MemberExpression' && isSensitiveName(getMemberPropertyName(node) ?? '')) {
+    return true;
+  }
+
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'parent' || key === 'loc' || key === 'range' || key === 'tokens' || key === 'comments') {
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      if (value.some((child) => hasSensitiveIdentifier(child, visited))) {
+        return true;
+      }
+    } else if (hasSensitiveIdentifier(value, visited)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+const noSecretOutputLog = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      secret: 'Do not write secret-like values or job JSON paths directly to an OutputChannel.',
+    },
+  },
+
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (getMemberPropertyName(node.callee) !== 'appendLine') {
+          return;
+        }
+
+        if (hasSensitiveIdentifier(node.arguments[0])) {
+          context.report({ node, messageId: 'secret' });
+        }
+      },
+    };
+  },
+};
+
+const noDirectChildProcess = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      boundary:
+        'Direct child_process access is restricted to the shared external-tool and process-runner adapters.',
+    },
+  },
+
+  create(context) {
+    if (isAllowedChildProcessFile(getContextFilename(context))) {
+      return {};
+    }
+
+    function isChildProcessSource(node) {
+      return node?.type === 'Literal' && (node.value === 'child_process' || node.value === 'node:child_process');
+    }
+
+    return {
+      ImportDeclaration(node) {
+        if (isChildProcessSource(node.source)) {
+          context.report({ node, messageId: 'boundary' });
+        }
+      },
+      CallExpression(node) {
+        if (node.callee?.type === 'Identifier' && node.callee.name === 'require' && isChildProcessSource(node.arguments[0])) {
+          context.report({ node, messageId: 'boundary' });
+        }
+      },
+    };
+  },
+};
+
 export default {
   meta: {
     name: 'project',
@@ -249,7 +611,23 @@ export default {
     'max-flat-type-members': maxFlatTypeMembers,
     'forbid-raster-input-limit-bypass': forbidRasterInputLimitBypass,
     'no-fixed-e2e-wait': noFixedE2EWait,
+    'no-webview-api-bypass': noWebviewApiBypass,
+    'require-webview-listener-cleanup': requireWebviewListenerCleanup,
+    'require-process-envelope': requireProcessEnvelope,
+    'no-pdf-bytes-in-process-ipc': noPdfBytesInProcessIpc,
+    'no-secret-output-log': noSecretOutputLog,
+    'no-direct-child-process': noDirectChildProcess,
   },
 };
 
-export { findCandidateGroups, isFixedE2EWaitCall, splitIdentifierIntoTokens };
+export {
+  findCandidateGroups,
+  getMissingProcessEnvelopeFields,
+  getStaticPropertyName,
+  hasSensitiveIdentifier,
+  isAllowedChildProcessFile,
+  isFixedE2EWaitCall,
+  isProcessProtocolFile,
+  isWebviewAppSourceFile,
+  splitIdentifierIntoTokens,
+};

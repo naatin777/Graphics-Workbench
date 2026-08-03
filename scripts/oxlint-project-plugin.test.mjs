@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { findCandidateGroups, isFixedE2EWaitCall, splitIdentifierIntoTokens } from './oxlint-project-plugin.mjs';
+import {
+  findCandidateGroups,
+  getMissingProcessEnvelopeFields,
+  getStaticPropertyName,
+  hasSensitiveIdentifier,
+  isAllowedChildProcessFile,
+  isFixedE2EWaitCall,
+  isProcessProtocolFile,
+  isWebviewAppSourceFile,
+  splitIdentifierIntoTokens,
+} from './oxlint-project-plugin.mjs';
 
 function property(name) {
   return {
@@ -55,4 +65,51 @@ void test('identifies fixed Playwright waits', () => {
     }),
     false,
   );
+});
+
+void test('limits Webview API rules to app source files and keeps the wrapper allowed', () => {
+  assert.equal(isWebviewAppSourceFile('/workspace/webview/apps/crop_pdf/src/app.tsx'), true);
+  assert.equal(isWebviewAppSourceFile('/workspace/webview/apps/crop_pdf/src/vscode.ts'), true);
+  assert.equal(isWebviewAppSourceFile('/workspace/webview/shared/vscode.ts'), false);
+});
+
+void test('recognizes static AST property names', () => {
+  assert.equal(getStaticPropertyName({ name: 'requestId', type: 'Identifier' }), 'requestId');
+  assert.equal(getStaticPropertyName({ type: 'Literal', value: 'protocolVersion' }), 'protocolVersion');
+  assert.equal(getStaticPropertyName({ type: 'Literal', value: 1 }), undefined);
+});
+
+void test('requires process envelope fields on protocol declarations', () => {
+  assert.deepStrictEqual(
+    getMissingProcessEnvelopeFields({
+      id: { name: 'CropPdfProcessSuccess' },
+      type: 'TSInterfaceDeclaration',
+      body: {
+        body: [
+          property('type'),
+          property('protocolVersion'),
+          property('requestId'),
+        ],
+      },
+    }),
+    [],
+  );
+  assert.deepStrictEqual(
+    getMissingProcessEnvelopeFields({
+      id: { name: 'CropPdfProcessFailure' },
+      type: 'TSInterfaceDeclaration',
+      body: { body: [property('type')] },
+    }),
+    ['protocolVersion', 'requestId'],
+  );
+});
+
+void test('identifies sensitive values and child-process boundaries', () => {
+  assert.equal(hasSensitiveIdentifier({ name: 'jobJsonPath', type: 'Identifier' }), true);
+  assert.equal(hasSensitiveIdentifier({ name: 'requestId', type: 'Identifier' }), false);
+  assert.equal(hasSensitiveIdentifier({ name: 'tokenize', type: 'Identifier' }), false);
+  assert.equal(isProcessProtocolFile('/workspace/src/operations/pdf/crop_pdf_process_protocol.ts'), true);
+  assert.equal(isProcessProtocolFile('/workspace/src/operations/pdf/crop_pdf_core.ts'), false);
+  assert.equal(isAllowedChildProcessFile('/workspace/src/operations/external_tools/run_external_tool.ts'), true);
+  assert.equal(isAllowedChildProcessFile('/workspace/src/commands/open_file.ts'), false);
 });
