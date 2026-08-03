@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 39（21ルール一括error化）Done
+Status: In progress — Phase 41（Readability）Done
 
 ## Objective
 
@@ -296,6 +296,26 @@ mainの現行コード219ファイルに対する初回測定では、14,208件�
 - `project/no-direct-child-process`: `child_process`への直接アクセスをexternal-tool adapterとprocess runnerへ限定する。test・script・Webviewの実行補助コードは既存用途として許可する
 
 これらは実行時のrollbackやprocess-tree cleanupの正しさを静的解析で代替するものではない。path境界、staging、cancellation、cleanupの実装契約は既存helperと外部挙動テストで検証し、lintは新しい違反の混入を早期に止める境界チェックとして使う。
+
+## Phase 41 — Readability
+
+人間が読んだときの意図を明確にする方向で、現行違反がほぼ0のルールをerrorへ強化した。
+
+対象ルール:
+
+- `eslint/no-else-return` — `return`後の不要な`else`を禁止
+- `eslint/no-lonely-if` — `else { if }`を`else if`へ統一
+- `eslint/no-useless-catch` — throw以外の処理がないcatchを禁止
+- `eslint/object-shorthand` — `{ x: x }`を`{ x }`へ統一
+- `typescript/no-this-alias` — `const self = this`を禁止しarrow functionへ寄せる
+- `typescript/default-param-last` — default parameterを末尾へ強制。既存1件（`copy_file_with_abort.ts`）をパラメータ順を変えず本体の`flags ?? 0`へ変更
+- `typescript/prefer-readonly` — 再代入されないpropertyを`readonly`へ
+- `unicorn/prefer-optional-catch-binding` — 未使用のcatch bindingを`catch {}`へ
+- `unicorn/consistent-function-scoping` — 親スコープを参照しない関数の巻き上げ。既存1件（`scripts/oxlint-project-plugin.mjs`の`isChildProcessSource`）をmodule scopeへ移動
+
+oxlintが未サポートのため採用しない候補: `eslint/consistent-return`、`eslint/no-mixed-operators`、`unicorn/no-useless-else`（config解析でrejectされた）。
+
+`eslint/prefer-destructuring`は違反が40件以上と多いためPhase 39の方針どおり一括有効化せず、別phaseで小さく解消してからerror化する。
 
 ## Baseline
 

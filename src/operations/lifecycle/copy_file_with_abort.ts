@@ -9,10 +9,11 @@ export type AbortableCopyFile = (
 ) => Promise<void>;
 
 /** Copies a file through abort-aware streams so cancellation can stop large staging transfers. */
-export const copyFileWithAbort: AbortableCopyFile = async (source, destination, flags = 0, signal) => {
+export const copyFileWithAbort: AbortableCopyFile = async (source, destination, flags, signal) => {
   signal?.throwIfAborted();
 
-  const destinationFlags = (flags & constants.COPYFILE_EXCL) === constants.COPYFILE_EXCL ? 'wx' : 'w';
+  const resolvedFlags = flags ?? 0;
+  const destinationFlags = (resolvedFlags & constants.COPYFILE_EXCL) === constants.COPYFILE_EXCL ? 'wx' : 'w';
 
   await pipeline(
     createReadStream(source, { signal }),
