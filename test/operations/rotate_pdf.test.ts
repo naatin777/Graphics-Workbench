@@ -154,7 +154,7 @@ suite('rotatePdf protocol guard', () => {
     fileName: 'source.pdf',
     pageCount: 3,
     pdfSrc: 'vscode-resource://source.pdf',
-    resources: { workerSrc: '', cMapUrl: '', standardFontDataUrl: '', wasmUrl: '' },
+    resources: {},
     preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
     labels,
   };

@@ -532,6 +532,10 @@
           "when": "false"
         },
         {
+          "command": "graphics-workbench.convertToGifSeparately",
+          "when": "false"
+        },
+        {
           "command": "graphics-workbench.mergePdf.configure",
           "when": "false"
         },
