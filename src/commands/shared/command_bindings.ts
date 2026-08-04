@@ -6,7 +6,7 @@ import type { CommandId } from '../../generated/extension_manifest.js';
  * 各adapterはbindingのmodule/exportNameをlazy loadし、固定された引数へ変換して呼び出す。
  * 新しい呼び出し形が必要な場合だけadapterを追加し、自由なコード文字列は受け付けない。
  */
-export type CommandAdapter = 'file' | 'fileWithContext' | 'fileWithOptions' | 'extensionCommand';
+type CommandAdapter = 'file' | 'fileWithContext' | 'fileWithOptions' | 'extensionCommand';
 
 export interface CommandBinding {
   /** package.json の contributes.commands に存在するpublic command ID。 */
