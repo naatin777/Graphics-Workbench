@@ -7,8 +7,8 @@ import { initializeUndoHistory, undoLastConversionCommand } from './commands/lif
 import { cleanupStaleSecurePdfStagingRoots } from './operations/lifecycle/secure_staging.js';
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
-import { getExtensionConfiguration } from './generated-extension-config.js';
-import { publicCommandIds, type CommandId } from './generated-extension-meta.js';
+import { getExtensionConfiguration } from './config/extension_configuration.js';
+import { publicCommandIds, type CommandId } from './generated/extension_manifest.js';
 import { configureExternalToolTimeouts } from './config/external_tools/external_tool_settings.js';
 import { getMaxConcurrentHeavyProcesses } from './config/performance.js';
 import {

@@ -9,7 +9,7 @@ import {
   isSameSourceFormat,
   sourceFormatForPath,
 } from '../../application/policy/source_format.js';
-import { getDefaultConfiguration } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';

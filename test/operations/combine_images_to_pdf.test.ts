@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
-import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import { readGhostscriptExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { combineImagesToPdf } from '../../src/operations/conversion/combine_images_to_pdf.js';
 import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';

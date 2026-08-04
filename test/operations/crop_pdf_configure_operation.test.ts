@@ -20,7 +20,7 @@ import { PDFDocument, type PDFPage } from 'pdf-lib';
 import sharp from 'sharp';
 
 import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
-import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import { resolveOutputPath } from '../../src/config/output/resolve_output_path.js';
 import { cropPdfWithConfiguredBox, type CropBox } from '../../src/operations/pdf/crop_pdf_configure.js';
 import { asRunId } from '../../src/operations/lifecycle/run_id.js';

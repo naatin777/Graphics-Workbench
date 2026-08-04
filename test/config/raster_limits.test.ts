@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { assertAnimationPixelLimit, getMaxAnimationPixels } from '../../src/config/raster_limits.js';
-import { getDefaultConfiguration } from '../../src/generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('ラスターアニメーションpixel上限設定', () => {

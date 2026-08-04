@@ -9,7 +9,7 @@ import {
   isSupportedImageInputPath,
 } from '../../application/policy/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { getDefaultConfiguration } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { isAbortError } from '../../application/error_utils.js';
 
 import {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
-import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
-import { getDefaultConfiguration } from '../../src/generated-extension-meta.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
+import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { getMaxInputPixels } from '../../src/config/raster_input.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';

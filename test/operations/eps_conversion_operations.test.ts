@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
-import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,

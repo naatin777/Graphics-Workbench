@@ -1,4 +1,4 @@
-import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import {
   readDrawioExecutablePath,
   readGhostscriptExecutablePath,
