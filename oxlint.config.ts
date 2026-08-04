@@ -247,6 +247,15 @@ export default defineConfig({
     'typescript/prefer-find': 'error',
     'typescript/prefer-includes': 'error',
     'eslint/prefer-destructuring': 'error',
+    'typescript/prefer-optional-chain': 'error',
+    'eslint/no-useless-escape': 'error',
+    'eslint/no-redeclare': 'error',
+    'eslint/no-sequences': 'error',
+    'eslint/no-control-regex': 'error',
+    'promise/no-nesting': 'error',
+    'promise/param-names': 'error',
+    'unicorn/no-thenable': 'error',
+
     'unicorn/prefer-dom-node-text-content': 'error',
     'unicorn/prefer-global-this': 'error',
 
