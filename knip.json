@@ -10,6 +10,9 @@
     "scripts/*.mjs",
     "src/operations/conversion/tools/mermaid_runner.ts",
     "src/operations/pdf/crop_pdf_runner.ts",
+    "src/commands/pdf/*.ts",
+    "src/commands/conversion/*.ts",
+    "src/commands/lifecycle/*.ts",
     ".vscode-test.mjs"
   ],
   "project": ["src/**/*.ts", "test/**/*.ts", "webview/**/*.{ts,tsx}", "scripts/*.mjs"],

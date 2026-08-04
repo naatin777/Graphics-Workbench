@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PUBLIC_COMMAND_IDS } from '../src/extension.js';
+import { publicCommandIds } from '../src/generated/extension_manifest.js';
 import { requireValue } from './helpers/required.js';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -129,7 +129,7 @@ suite('package.jsonの変換メニュー定義', () => {
         .filter((command): command is string => command !== undefined),
     );
 
-    assert.deepStrictEqual(new Set(PUBLIC_COMMAND_IDS), manifestCommandIds);
+    assert.deepStrictEqual(new Set(publicCommandIds), manifestCommandIds);
 
     for (const menuCommandId of menuCommandIds) {
       assert.ok(manifestCommandIds.has(menuCommandId), `${menuCommandId} is not a public command`);

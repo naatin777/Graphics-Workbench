@@ -6,7 +6,6 @@
 // Mocked:
 // - vscode.window.showWarningMessageの戻り値
 // - vscode.window.createStatusBarItem
-// - vscode.commands.registerCommand
 // - ExtensionContext.globalState相当のkey-value storage
 //
 // Not tested:
@@ -32,7 +31,6 @@ suite('Safe Modeダイアログの判断', () => {
     storage = new MemoryState();
     showWarningMessageStub = sandbox.stub(vscode.window, 'showWarningMessage');
     sandbox.stub(vscode.window, 'createStatusBarItem').returns(new FakeStatusBarItem());
-    sandbox.stub(vscode.commands, 'registerCommand').returns(new FakeDisposable());
     initializeSafeMode(createExtensionContext(storage));
   });
 
@@ -142,9 +140,5 @@ class FakeStatusBarItem implements vscode.StatusBarItem {
 
   hide(): void {}
 
-  dispose(): void {}
-}
-
-class FakeDisposable {
   dispose(): void {}
 }
