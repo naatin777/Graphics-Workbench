@@ -1,6 +1,6 @@
-import type { Configuration } from '../../generated/extension_manifest.js';
+import type { externalToolTimeoutConfigurationKeys, Configuration } from '../../generated/extension_manifest.js';
 
-export type ExternalToolId = 'qpdf' | 'drawio' | 'ghostscript' | 'pdftocairo' | 'rsvg-convert' | 'mermaid';
+export type ExternalToolId = keyof typeof externalToolTimeoutConfigurationKeys;
 
 export type ExternalToolTimeouts = Readonly<Record<ExternalToolId, number | undefined>>;
 
@@ -9,7 +9,7 @@ const defaultTimeouts: ExternalToolTimeouts = {
   drawio: undefined,
   ghostscript: undefined,
   pdftocairo: undefined,
-  'rsvg-convert': undefined,
+  rsvgConvert: undefined,
   mermaid: undefined,
 };
 
@@ -21,7 +21,7 @@ export function readExternalToolTimeouts(configuration: Configuration): External
     drawio: timeoutMilliseconds(configuration.externalTools.drawio.timeoutSeconds()),
     ghostscript: timeoutMilliseconds(configuration.externalTools.ghostscript.timeoutSeconds()),
     pdftocairo: timeoutMilliseconds(configuration.externalTools.pdftocairo.timeoutSeconds()),
-    'rsvg-convert': timeoutMilliseconds(configuration.externalTools.rsvgConvert.timeoutSeconds()),
+    rsvgConvert: timeoutMilliseconds(configuration.externalTools.rsvgConvert.timeoutSeconds()),
     mermaid: timeoutMilliseconds(configuration.externalTools.mermaid.timeoutSeconds()),
   };
 }

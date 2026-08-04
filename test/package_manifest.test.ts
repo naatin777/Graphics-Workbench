@@ -3,7 +3,12 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { publicCommandIds } from '../src/generated/extension_manifest.js';
+import {
+  commandContributions,
+  publicCommandIds,
+  submenuContributions,
+  type SubmenuId,
+} from '../src/generated/extension_manifest.js';
 import { requireValue } from './helpers/required.js';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -133,6 +138,28 @@ suite('package.jsonの変換メニュー定義', () => {
 
     for (const menuCommandId of menuCommandIds) {
       assert.ok(manifestCommandIds.has(menuCommandId), `${menuCommandId} is not a public command`);
+    }
+  });
+
+  test('commandContributionsとsubmenuContributionsがmanifestと一致する', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+    const manifestCommandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
+
+    assert.deepStrictEqual(new Set(Object.keys(commandContributions)), manifestCommandIds);
+    for (const command of packageJson.contributes.commands) {
+      const contribution = (commandContributions as Record<string, { titleKey: string }>)[command.command];
+      assert.ok(contribution, `${command.command} is missing a contribution`);
+      assert.strictEqual(contribution.titleKey, command.title?.slice(1, -1));
+    }
+
+    const manifestSubmenuIds = new Set((packageJson.contributes.submenus ?? []).map((submenu) => submenu.id));
+    assert.deepStrictEqual(new Set(Object.keys(submenuContributions)), manifestSubmenuIds);
+    const submenuContributionsByKey: Readonly<Record<SubmenuId, { labelKey: string }>> = submenuContributions;
+    for (const submenu of packageJson.contributes.submenus ?? []) {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- runtime manifest key to generated SubmenuId
+      const contribution = submenuContributionsByKey[submenu.id as SubmenuId];
+      assert.ok(contribution, `${submenu.id} is missing a contribution`);
+      assert.strictEqual(contribution.labelKey, submenu.label?.slice(1, -1));
     }
   });
 
