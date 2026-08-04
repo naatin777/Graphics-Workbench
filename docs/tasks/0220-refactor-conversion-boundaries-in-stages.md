@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 5（AVIF planner切り出し）Done、次はTIFF planner移行
+Status: In progress — Phase 6（TIFF planner移行）Done、次はsimple raster command shell
 
 ## Objective
 
@@ -73,12 +73,18 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - AVIF effort設定、PDFページ展開、出力path、同一形式拒否を直接テストで固定した
 - PNG/JPEGと共有できるraster source経路は既存の共通plannerへ寄せ、AVIF固有のencoder設定はcommand側へ残した
 
-## Phase 6以降 — plannerを形式ごとに移行する
+## Phase 6 — TIFF plannerの境界を作る（完了）
 
-1. TIFFを個別に移行する
-2. 共通性が実証された後にsimple raster command shellを導入する
-3. WebP/GIFはanimation output modeだけを共有する
-4. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
+- `planTiffConversionJobs`とPDF page plannerを`convert_to_tiff.ts`から分離した
+- TIFF commandはplannerを呼び出すcomposition rootとして維持した
+- TIFFのPDFページ展開、出力path、同一形式拒否を直接テストで固定した
+- PNG/JPEG/AVIFと共有できるraster source経路は既存の共通plannerへ寄せた
+
+## Phase 7以降 — plannerを形式ごとに移行する
+
+1. 共通性が実証されたsimple raster command shellを導入する
+2. WebP/GIFはanimation output modeだけを共有する
+3. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
 
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
