@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 52（0違反の型・Unicornルール群）Done
+Status: In progress — Phase 53（0違反のESLint・型・Unicornルール群）Done
 
 ## Objective
 
@@ -424,6 +424,14 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `unicorn/prefer-at`
 
 `promise/prefer-await-to-callbacks`（18件）は解消コストが大きいため保留。
+
+## Phase 53 — 0違反のESLint・型・Unicornルール群
+
+既存違反が0件のルール群を、挙動変更なしでerrorへ強化した。
+
+- `eslint/no-extra-boolean-cast` / `no-useless-rename` / `prefer-object-spread`
+- `typescript/no-base-to-string`
+- `unicorn/prefer-reflect-apply` / `no-array-method-this-argument` / `prefer-string-starts-ends-with`
 
 ## Baseline
 
