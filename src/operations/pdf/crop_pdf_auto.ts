@@ -6,10 +6,7 @@ import { PDFDocument, type PDFPage } from 'pdf-lib';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { safeName, validateJobPaths } from './pdf_utils.js';
 
-import {
-  type CommittedConversionOutput,
-  type PreparedConversionOutput,
-} from '../lifecycle/commit_conversion_outputs.js';
+import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import {
   createAsciiInputScratch,
