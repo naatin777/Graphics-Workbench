@@ -35,4 +35,24 @@ suite('Crop PDF Webviewプロトコル', () => {
       false,
     );
   });
+
+  test('共有envelopeの余分なキーと空のtypeを拒否する', () => {
+    assert.equal(isCropConfigureMessage({ type: 'ready', requestId: 'request-1' }), false);
+    assert.equal(
+      isCropConfigureMessage({ type: 'previewLoadFailed', payload: { message: 'failed', code: 'E_FAIL' } }),
+      false,
+    );
+    assert.equal(
+      isCropConfigureMessage({
+        type: 'apply',
+        payload: {
+          cropBox: { left: 0, bottom: 0, right: 100, top: 80 },
+          target: { type: 'all' },
+          sourcePath: '/not-allowed',
+        },
+      }),
+      false,
+    );
+    assert.equal(isCropConfigureMessage({ type: '' }), false);
+  });
 });
