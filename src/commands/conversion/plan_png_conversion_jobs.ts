@@ -6,19 +6,14 @@ import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 
-import {
-  isEditableDrawioImagePath,
-  isNativeDrawioPath,
-  isRasterImagePath,
-  logicalSourcePathForOutputTemplate,
-} from '../../application/policy/source_format.js';
+import { isEditableDrawioImagePath, isNativeDrawioPath } from '../../application/policy/source_format.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 import type { ConvertToPngJob } from '../../operations/conversion/convert_to_png.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
-import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
+import { planRasterSourceConversionJobs } from './plan_raster_source_conversion_jobs.js';
 
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -65,38 +60,15 @@ export async function planPngConversionJobs(
     return [{ sourcePath, workspacePath: workspace.uri.fsPath, outputPath }];
   }
 
-  const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
   const outputTemplate = outputTemplateForSource(sourcePath, configuration);
-  if (isRasterImagePath(sourcePath)) {
-    return createRasterFrameJobs({
-      sourcePath,
-      workspacePath: workspace.uri.fsPath,
-      workspaceName: workspace.name,
-      outputTemplate,
-      allowedExtensions: ['.png'],
-      maxInputPixels,
-      createJob: (job) => job,
-    });
-  }
-  const outputPath = resolveOutputPath(
+  return planRasterSourceConversionJobs({
+    sourcePath,
+    workspacePath: workspace.uri.fsPath,
+    workspaceName: workspace.name,
     outputTemplate,
-    {
-      sourcePath: logicalSourcePathForOutputTemplate(sourcePath),
-      workspacePath: workspace.uri.fsPath,
-      workspaceName: workspace.name,
-      ...(page !== undefined && { page }),
-    },
-    { allowedExtensions: ['.png'] },
-  );
-
-  return [
-    {
-      sourcePath,
-      workspacePath: workspace.uri.fsPath,
-      outputPath,
-      ...(page !== undefined && { page: Number(page) }),
-    },
-  ];
+    allowedExtensions: ['.png'],
+    maxInputPixels,
+  });
 }
 
 async function planPdfToPngJobs(

@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — In progress — Phase 3（JPEG planner切り出し）Done、次はPNG/JPEG raster source plannerの共通境界
+- [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — In progress — Phase 4（PNG/JPEG raster source planner共通化）Done、次はAVIF/TIFF planner移行
 
 ## On hold
 
