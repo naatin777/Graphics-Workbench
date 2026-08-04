@@ -1,6 +1,6 @@
 # 0217: 入力制限・タイムアウト方針を確定する
 
-Status: Implemented
+Status: Implemented（CIでExtension Host全テスト成功、最終検証完了）
 
 ## Objective
 
@@ -29,8 +29,10 @@ Status: Implemented
 
 ## Verification
 
-- `npm run check` / `check:nls` / `typecheck:test`: pass
-- 既存テスト（キャンセル時のプロセス終了、staging cleanup、atomic commit）で安全性を担保
+- `npm run check` / `check:nls` / `check:unused` / `typecheck:test` / `test:scripts`: pass
+- **CI（PR #116）: Extension Host coverage がLinux / macOS / Windowsで pass**。`run_external_tool` の既定値（`undefined`）でタイムアウトが無効になること、新規テスト（timeoutなし / `timeoutMs 0` / SIGTERM無視プロセスの強制終了）を含む全テストがCIで検証済み
+- 追加テスト: `runExternalTool`「timeout未指定でも正常終了」「`timeoutMs 0`でタイマーなし」「SIGTERM無視プロセスを終了猶予後に強制終了」、config「既定値は`undefined`」
+- 安全性（キャンセル時のプロセス・子孫プロセス停止、staging cleanup、atomic commit）は既存テストで担保
 
 ## Completion conditions
 
