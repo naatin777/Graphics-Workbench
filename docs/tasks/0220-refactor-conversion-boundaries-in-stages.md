@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 8（WebP/GIF animation mode planner共通化）Done、次はWebview境界移行
+Status: In progress — Phase 9（Webview protocol envelope契約）Done、次はRotate移行
 
 ## Objective
 
@@ -93,9 +93,15 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - WebP/GIF commandの形式固有PDF planner、output mode定義、encoderは各command / operation側に残した
 - `preserve` / `auto` / `split`の既存挙動と、非animation rasterのfirst/all frame挙動を維持した
 
+## Phase 9 — Webview protocol envelope契約を作る（完了）
+
+- Webview messageのtop-level `type` / `payload` envelopeを`webview_protocol.ts`へ分離した
+- payloadなしcontrol message、payload付きmessage、error messageのruntime validation境界を直接テストで固定した
+- 既存Webview appの通信形式と挙動は変更せず、次のRotate移行で利用できる共通契約だけを追加した
+
 ## Phase 9以降 — 境界を形式ごとに移行する
 
-1. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
+1. WebviewはRotate → Reorder → Crop/Split/Mergeの順で移行する
 
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
@@ -118,3 +124,6 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - `npm run compile`: passed（simple raster command shell切り出し後）
 - `npm run compile:test`: passed（simple raster command shell切り出し後）
 - `npm test`: 520 passing / 6 pending（Extension Host、macOS arm64、Phase 4時点、2026-08-04）
+- `npm run check:all`: passed（Phase 9 envelope追加後）
+- `npm run compile`: passed（Phase 9 envelope追加後）
+- `npm run compile:test`: passed（Phase 9 envelope追加後）
