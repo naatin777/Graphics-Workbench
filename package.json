@@ -86,7 +86,7 @@
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
     "jsdom": "^30.0.1",
-    "knip": "^6.29.0",
+    "knip": "^6.31.0",
     "lefthook": "2.1.10",
     "mocha": "^11.3.0",
     "ovsx": "^1.0.2",
