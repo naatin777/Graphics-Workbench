@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 58（0違反のESLint・型・Unicornルール群（4））Done
+Status: In progress — Phase 59（バグ検出ルール群）Done
 
 ## Objective
 
@@ -473,6 +473,17 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `eslint/no-unused-labels` / `no-unused-private-class-members` / `use-isnan` / `valid-typeof` / `default-case-last` / `operator-assignment` / `logical-assignment-operators`
 - `typescript/prefer-for-of` / `prefer-namespace-keyword` / `prefer-ts-expect-error`
 - `unicorn/prefer-object-from-entries`
+
+## Phase 59 — バグ検出ルール群（方針転換後）
+
+Phase 58で決定した「バグ・型安全・セキュリティ・依存整合を検出する規則だけを追加する」方針に従い、バグ検出ルールのみerror化した。
+
+- `eslint/no-fallthrough` — switchの意図しないfallthroughを検出
+- `eslint/no-invalid-regexp` — 不正な正規表現を検出
+- `eslint/no-dupe-else-if` — 重複したelse if条件を検出
+- `eslint/no-misleading-character-class` — Unicodeで壊れる文字クラスを検出
+
+`promise/prefer-await-to-callbacks`（18件）は低レベルIPC（`process.send`/`child.send`）やcallback契約の型インターフェースが多く、await化すると逆に複雑化するため、方針に沿って有効化しない。
 
 ## Baseline
 
