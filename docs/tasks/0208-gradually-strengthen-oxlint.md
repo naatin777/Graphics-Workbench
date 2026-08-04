@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 49（import type・computed key・DOM dataset）Done
+Status: In progress — Phase 50（0違反の型・Unicorn・Promiseルール群（2））Done
 
 ## Objective
 
@@ -396,6 +396,16 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `typescript/no-import-type-side-effects`: type-only import16件を`import { type X }`から`import type { X }`へ（auto-fix + 確認）
 - `eslint/no-useless-computed-key`: 8件（`package_manifest.test.ts`の`['key']`を`key`へ）をauto-fixで解消
 - `unicorn/prefer-dom-node-dataset`: `getAttribute('data-pdf-page')`を`dataset.pdfPage`へ5件。`Element.dataset`不在のため、rotate/reorder webviewで`instanceof HTMLElement`・`closest<HTMLElement>`・`querySelectorAll<HTMLElement>`を型指定
+
+## Phase 50 — 0違反の型・Unicorn・Promiseルール群（2）
+
+既存違反が0件のルール群を、挙動変更なしでerrorへ強化した。
+
+- `typescript/no-confusing-non-null-assertion` / `no-duplicate-type-constituents`
+- `unicorn/prefer-array-some`
+- `promise/no-return-in-finally`
+
+`eslint/require-await`（212件・command handlerの正当なnon-await asyncが多い）と`unicorn/prefer-string-raw`（55件）は、解消コストが大きいため保留。
 
 ## Baseline
 
