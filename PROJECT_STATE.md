@@ -9,6 +9,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 ## Current priority
 
 - Extension Hostをpre-package testの唯一のruntimeとして維持する
+- 変換commandの境界を段階的に整理し、planner・lifecycle・operationを分離する
 - 次の作業は `docs/tasks/README.md` で管理する
 
 ## Implemented
@@ -31,7 +32,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0208: oxlintの制限を段階的に強化する](docs/tasks/0208-gradually-strengthen-oxlint.md) — Phase 59（バグ検出ルール群）Done
+- [0220: 変換commandの境界を段階的に整理する](docs/tasks/0220-refactor-conversion-boundaries-in-stages.md) — Phase 2（PNG planner切り出し）Done、次はJPEG planner移行
 
 ## Non-goals
 
