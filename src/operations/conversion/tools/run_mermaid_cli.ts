@@ -6,8 +6,7 @@ import { OperationCancelledError } from '../../lifecycle/operation_cancelled_err
 import { getExternalToolTimeoutMs } from '../../../config/external_tools/external_tool_settings.js';
 import { sharedHeavyProcessLimiter } from '../../external_tools/heavy_process_limiter.js';
 import { terminateProcessTree } from '../../external_tools/run_external_tool.js';
-
-type MermaidOutputFormat = 'svg' | 'png' | 'pdf';
+import { type MermaidOutputFormat, isMermaidRunnerFailure, isMermaidRunnerSuccess } from './mermaid_runner_protocol.js';
 
 export interface MermaidCliRunRequest {
   sourcePath: string;
@@ -16,15 +15,6 @@ export interface MermaidCliRunRequest {
   puppeteerConfig: Record<string, unknown>;
   backgroundColor?: string;
   theme?: string;
-}
-
-interface MermaidRunnerSuccess {
-  ok: true;
-}
-
-interface MermaidRunnerFailure {
-  ok: false;
-  error: string;
 }
 
 const CHILD_TERMINATION_WATCHDOG_MS = 5_000;
@@ -105,9 +95,9 @@ export async function runMermaidCliWithSignal(
         signal?.addEventListener('abort', abort, { once: true });
 
         child.on('message', (message: unknown) => {
-          if (isSuccessMessage(message)) {
+          if (isMermaidRunnerSuccess(message)) {
             finish();
-          } else if (isFailureMessage(message)) {
+          } else if (isMermaidRunnerFailure(message)) {
             finish(new Error(message.error));
           }
         });
@@ -136,22 +126,4 @@ export async function runMermaidCliWithSignal(
       }),
     signal,
   );
-}
-
-function isSuccessMessage(value: unknown): value is MermaidRunnerSuccess {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const candidate = value as { ok?: unknown };
-  return candidate.ok === true;
-}
-
-function isFailureMessage(value: unknown): value is MermaidRunnerFailure {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const candidate = value as { ok?: unknown; error?: unknown };
-  return candidate.ok === false && typeof candidate.error === 'string';
 }
