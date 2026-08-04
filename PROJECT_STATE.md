@@ -31,7 +31,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- なし（作業がないためCurrent Taskを空にする）
+- [0218: 途中移行・互換残骸を監査して削除する](docs/tasks/0218-audit-remove-migration-compat-leftovers.md) — `convertPngToPdf`内部alias・wrapper・旧NLSを削除し、canonicalへ統合。Integration Testと再発防止ルールを更新
 
 ## Non-goals
 
