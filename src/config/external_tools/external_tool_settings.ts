@@ -5,12 +5,12 @@ export type ExternalToolId = 'qpdf' | 'drawio' | 'ghostscript' | 'pdftocairo' | 
 export type ExternalToolTimeouts = Readonly<Record<ExternalToolId, number | undefined>>;
 
 const defaultTimeouts: ExternalToolTimeouts = {
-  qpdf: 120_000,
-  drawio: 300_000,
-  ghostscript: 300_000,
-  pdftocairo: 120_000,
-  'rsvg-convert': 120_000,
-  mermaid: 120_000,
+  qpdf: undefined,
+  drawio: undefined,
+  ghostscript: undefined,
+  pdftocairo: undefined,
+  'rsvg-convert': undefined,
+  mermaid: undefined,
 };
 
 let configuredTimeouts: ExternalToolTimeouts = defaultTimeouts;

@@ -22,7 +22,6 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
-import { confirmLargeOperation } from '../lifecycle/large_operation_warning.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
@@ -59,10 +58,6 @@ export async function splitPdfAllPagesCommand(
       async (progress, token) => {
         return withCancellationSignal(token, async (signal) => {
           progress.report({ message: userMessage('message.progress.preparePdfSplit') });
-          await confirmLargeOperation({
-            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
-            signal,
-          });
           const runtime: ConversionExecutionContext = {
             signal,
             ...createProgressReporters(progress),
@@ -326,11 +321,6 @@ async function applyConfiguredSplit(params: {
           }
 
           progress.report({ message: userMessage('message.progress.preparePdfSplit') });
-          await confirmLargeOperation({
-            sourcePaths: [sourcePath],
-            pdfPageCount: pageCount,
-            signal: abortController.signal,
-          });
           const runtime: ConversionExecutionContext = {
             signal: abortController.signal,
             ...(outputChannel !== undefined && { outputChannel }),

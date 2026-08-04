@@ -23,7 +23,6 @@ import { inspectCropPdfMetadata } from '../../operations/pdf/run_crop_pdf_metada
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
-import { confirmLargeOperation } from '../lifecycle/large_operation_warning.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -250,11 +249,6 @@ async function applyConfiguredCrop(params: {
           token,
           async (signal) => {
             progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
-            await confirmLargeOperation({
-              sourcePaths: [sourcePath],
-              pdfPageCount: crop.pageGeometry.length,
-              signal,
-            });
             const runtime: ConversionExecutionContext = {
               signal,
               ...createProgressReporters(progress),

@@ -126,3 +126,11 @@ Open **View → Output → Graphics Workbench** to see relevant command inputs, 
 Safe Mode is enabled by default and asks before an existing output is overwritten. Choose **Keep Both**, **Do Not Overwrite**, or **Overwrite**. Undo is available for the latest completed conversion, merge, crop, split, or clipboard paste and only reverts outputs that have not changed since they were created. Undo is kept in memory and is not available after the extension restarts.
 
 Normal staging files are removed after a conversion, cancellation, failure, or successful Undo. An overwrite backup is kept only while it is needed by the current Undo record. Password-protected PDF encryption/decryption uses a per-user OS temporary directory, passes qpdf secrets through a private job-json file instead of process arguments, and never copies the source PDF into the workspace staging directory. The extension records the temporary root's PID and start time and removes abandoned PDF roots on the next activation; an active root is preserved for Undo until its normal retention policy expires. Diagnostic ASCII scratch files are managed separately and may be retained after an external-tool failure.
+
+## Input size and processing time
+
+Graphics Workbench does not impose a fixed limit on input file size or PDF page count.
+
+The range of inputs that can be processed, the processing time, and the required resources depend on the input contents, the operation, the external tools used, and your computer's performance. Very large inputs can take a long time or fail with memory, disk, or external-tool errors.
+
+You can cancel a running operation. Cancelling terminates the external processes that are still running and does not leave partial output at the final output path.

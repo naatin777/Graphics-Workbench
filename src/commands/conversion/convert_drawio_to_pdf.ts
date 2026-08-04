@@ -91,7 +91,6 @@ async function runDrawioPdfCommand(
       operationName: options.operationName,
       ...(options.outputChannel !== undefined && { outputChannel: options.outputChannel }),
       resolveConflicts: resolveOutputConflicts,
-      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: {
         progressTitle: userMessage(
           options.outputMode === 'page-pdfs'
