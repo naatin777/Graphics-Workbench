@@ -174,7 +174,7 @@ suite('PDF結合コマンド', () => {
 
     const sandbox = createSandbox();
     const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
     );
 
     try {
@@ -212,7 +212,7 @@ suite('PDF結合コマンド', () => {
 
     const sandbox = createSandbox();
     const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
     );
 
     try {
@@ -247,7 +247,7 @@ suite('PDF結合コマンド', () => {
 
     const sandbox = createSandbox();
     const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
     );
 
     try {
@@ -280,7 +280,7 @@ suite('PDF結合コマンド', () => {
 
     const sandbox = createSandbox();
     const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
     );
 
     try {
@@ -319,7 +319,7 @@ suite('PDF結合コマンド', () => {
 
     const sandbox = createSandbox();
     const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-') + '-',
+      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
     );
 
     try {
