@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 42（`prefer-destructuring`解消→error化）
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 45（no-unsafe-member-access）Done
 
 ## On hold
 
