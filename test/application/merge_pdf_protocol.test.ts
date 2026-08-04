@@ -49,6 +49,8 @@ suite('Merge PDF Webviewプロトコル', () => {
       }),
       true,
     );
+    assert.equal(isMergePdfWebviewToHostMessage({ type: 'ready', requestId: 'request-1' }), false);
+    assert.equal(isMergePdfWebviewToHostMessage({ type: '' }), false);
   });
 
   test('ファイルシステムパスと未サポートのペイロードフィールドを拒否する', () => {
@@ -86,6 +88,13 @@ suite('Merge PDF Webviewプロトコル', () => {
       isMergePdfWebviewToHostMessage({
         type: 'apply',
         payload: { sourceIds: ['source-1', 'source-2'], paths: ['/workspace/first.pdf'] },
+      }),
+      false,
+    );
+    assert.equal(
+      isMergePdfWebviewToHostMessage({
+        type: 'previewLoadFailed',
+        payload: { message: 'preview failed', code: 'E_FAIL' },
       }),
       false,
     );

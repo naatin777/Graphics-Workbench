@@ -32,7 +32,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0220: 変換commandの境界を段階的に整理する](docs/tasks/0220-refactor-conversion-boundaries-in-stages.md) — Phase 13（Split Webview protocol移行）Done、次はMerge移行
+- [0220: 変換commandの境界を段階的に整理する](docs/tasks/0220-refactor-conversion-boundaries-in-stages.md) — Phase 14（Merge Webview protocol移行）Done、残りのprotocol境界を棚卸し中
 
 ## Non-goals
 
