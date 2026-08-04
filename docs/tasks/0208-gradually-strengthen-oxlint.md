@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 42（prefer-destructuring）Done
+Status: In progress — Phase 43（0違反の型安全・正確性ルール群）Done
 
 ## Objective
 
@@ -330,6 +330,21 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
   - assignment destructuring: `({ width, height } = metadata)`、`({ scratch } = preparedInput)`
 - auto-fix（`lint:fix`）で40件を機械変換し、型キャストを落とす箇所は`in`型ガードが既に型を狭めていたため意味を保てた。残り32件は`[0]`＋undefined判定・指定index・assignment形式でfixerが安全に変換できないため手動対応。
 - 意味的に等価であることをtypecheck（src/test/webview×2）、lint、check:all、webview vitest、Extension Host test（514 passing）で確認した。
+
+## Phase 43 — 0違反の型安全・正確性ルール群
+
+既存違反が0件のルール群を、挙動変更なしでerrorへ強化した（Phase 33/34と同じ方針）。
+
+- `typescript/prefer-optional-chain` — `a && a.b`をoptional chainingへ
+- `eslint/no-useless-escape` — 不要なエスケープを禁止
+- `eslint/no-redeclare` — 同一スコープの再宣言を禁止
+- `eslint/no-sequences` — comma operatorによる副作用式の並置を禁止
+- `eslint/no-control-regex` — control characterの正規表現を禁止
+- `promise/no-nesting` — Promise内の入れ子Promiseを禁止
+- `promise/param-names` — Promise executorの引数名を`resolve`/`reject`へ強制
+- `unicorn/no-thenable` — thenableオブジェクトの作成を禁止
+
+`typescript/no-unsafe-member-access`は現行違反が多数あるため、Phase 42で保留したまま`off`を維持する。Phase 42でerror化した`prefer-destructuring`の違反5件がlintスコープ外の`scripts/check-nls.mjs`・`scripts/oxlint-project-plugin.mjs`に残る点は、lintスコープの拡張時に解消する。
 
 ## Baseline
 
