@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 2（PNG planner切り出し）Done、次はJPEG planner移行
+Status: In progress — Phase 3（JPEG planner切り出し）Done、次はPNG/JPEG raster source plannerの共通境界
 
 ## Objective
 
@@ -52,7 +52,14 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - PNG commandはplannerを呼び出すcomposition rootとして維持した
 - JPEG、AVIF、TIFFとはまだ共有していない
 
-## Phase 3以降 — plannerを形式ごとに移行する
+## Phase 3 — JPEG plannerの境界を作る（完了）
+
+- `planJpegConversionJobs`とPDF page plannerを`convert_to_jpeg.ts`から分離した
+- JPEG commandはplannerを呼び出すcomposition rootとして維持した
+- JPEG plannerのPDFページ展開・出力path・同一形式拒否を直接テストで固定した
+- PNG/JPEGのplannerはまだ共有していない
+
+## Phase 4以降 — plannerを形式ごとに移行する
 
 1. JPEGで同じplannerを利用し、具体例から共通機構を確定する
 2. PNG/JPEGへraster source plannerを導入する
