@@ -179,8 +179,7 @@ function assertRsvgToolPaths(executable: string, args: string[], paths: FixedFix
   assert.strictEqual(args[0], '--format=pdf');
   assert.strictEqual(args[1], '--output');
 
-  const inputPath = args[3];
-  const outputPath = args[2];
+  const [, , outputPath, inputPath] = args;
   assert.ok(inputPath);
   assert.ok(outputPath);
   assert.strictEqual(path.basename(inputPath), 'input.svg');
@@ -197,7 +196,7 @@ function assertRsvgToolPaths(executable: string, args: string[], paths: FixedFix
 }
 
 function outputPathFromArgs(args: string[]): string {
-  const outputPath = args[2];
+  const [, , outputPath] = args;
   assert.ok(outputPath);
   return outputPath;
 }

@@ -35,7 +35,7 @@ export function calculateRgbaDifference(expected: DecodedImage, actual: DecodedI
     return { differentPixelRatio: 1, meanChannelDifference: 255 };
   }
 
-  const channels = expected.channels;
+  const { channels } = expected;
   let differentPixels = 0;
   let totalDifference = 0;
   const pixelCount = expected.width * expected.height;

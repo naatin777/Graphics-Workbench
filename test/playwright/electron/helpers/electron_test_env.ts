@@ -121,7 +121,7 @@ export async function setupElectronTest(
   const extraSettings = options.extraSettings ?? {};
   const copyFixtures = options.copyFixtures ?? true;
   const pdfFixtureFileName = options.pdfFixtureFileName ?? cropConfigureFixture.fileName;
-  const prepared = options.prepared;
+  const { prepared } = options;
   const contentSize = {
     width: options.viewportWidth ?? defaultElectronContentSize.width,
     height: defaultElectronContentSize.height,

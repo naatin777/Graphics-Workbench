@@ -59,7 +59,7 @@ async function convertToDrawioWithDefaults(
       throw new Error('No files were selected.');
     }
     const configuration = getCommandConfiguration(dependencies);
-    const first = sourceUris[0];
+    const [first] = sourceUris;
     if (first === undefined) {
       throw new Error('No files were selected.');
     }

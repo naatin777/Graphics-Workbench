@@ -2,11 +2,11 @@
 
 ## Current Task
 
-- なし
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 42（`prefer-destructuring`解消→error化）
 
 ## On hold
 
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — On hold — 0211の安定性・幅別検証を先行
+- なし
 
 ## Task boundaries
 

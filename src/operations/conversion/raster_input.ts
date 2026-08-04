@@ -43,7 +43,7 @@ export async function readRasterAnimationMetadata(
   try {
     const metadata = await image.metadata();
     const pages = metadata.pages ?? 1;
-    const width = metadata.width;
+    const { width } = metadata;
     const pageHeight = metadata.pageHeight ?? metadata.height;
     if (
       !Number.isInteger(pages) ||

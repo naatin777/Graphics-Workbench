@@ -85,7 +85,7 @@ function startHangingDescendant(): void {
 
 function readRequestId(value: unknown): string {
   if (typeof value === 'object' && value !== null && 'requestId' in value) {
-    const requestId = (value as { requestId?: unknown }).requestId;
+    const { requestId } = value;
     if (typeof requestId === 'string' && requestId !== '') {
       return requestId;
     }

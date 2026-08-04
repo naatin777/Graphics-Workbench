@@ -35,7 +35,7 @@ export function isWebviewUri(value: unknown): value is string {
   }
 
   try {
-    const protocol = new URL(value).protocol;
+    const { protocol } = new URL(value);
     return protocol === 'vscode-resource:' || protocol === 'vscode-webview-resource:' || protocol === 'https:';
   } catch {
     return false;

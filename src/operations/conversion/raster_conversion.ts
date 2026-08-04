@@ -191,7 +191,7 @@ async function writeSourceAsRaster(
   paths: RasterStagePaths,
   context: RasterStageContext,
 ): Promise<void> {
-  const sourcePath = job.sourcePath;
+  const { sourcePath } = job;
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath)) {

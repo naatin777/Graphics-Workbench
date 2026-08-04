@@ -51,7 +51,7 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
     ...runtime,
     signal: abortController.signal,
   };
-  const signal = abortController.signal;
+  const { signal } = abortController;
 
   try {
     return await withStagingCleanup(

@@ -38,7 +38,7 @@ export function App(): JSX.Element {
         return;
       }
 
-      const payload = message.payload;
+      const { payload } = message;
       setLabels({ ...defaultLabels, ...payload.labels });
       setFileName(payload.fileName);
       setPageCount(payload.pageCount);

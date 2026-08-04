@@ -65,12 +65,12 @@ export function parseCropPdfProcessRequest(value: unknown): CropPdfProcessReques
     throw new Error('Invalid Crop Configure runner request ID.');
   }
 
-  const cropBox = value.cropBox;
+  const { cropBox } = value;
   if (!isCropBox(cropBox)) {
     throw new Error('Invalid Crop Configure runner crop box.');
   }
 
-  const target = value.target;
+  const { target } = value;
   if (!isCropTarget(target)) {
     throw new Error('Invalid Crop Configure runner target.');
   }

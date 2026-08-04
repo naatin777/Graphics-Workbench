@@ -459,8 +459,7 @@ async function writeRasterImageAsPdf({
       throw new Error(`Could not determine image dimensions: ${sourcePath}`);
     }
 
-    width = metadata.width;
-    height = metadata.height;
+    ({ width, height } = metadata);
   } catch (error) {
     signal?.throwIfAborted();
     if (isRasterInputPixelLimitError(error)) {

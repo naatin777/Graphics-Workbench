@@ -53,8 +53,8 @@ function isPackageManifest(value: unknown): value is PackageManifest {
     return false;
   }
 
-  const commands = value.contributes.commands;
-  const configuration = value.contributes.configuration;
+  const { commands } = value.contributes;
+  const { configuration } = value.contributes;
   return (
     Array.isArray(commands) &&
     commands.every((command) => isManifestCommand(command)) &&
@@ -139,8 +139,7 @@ function conversionPairFromKey(key: string, namespace: ConversionNamespace): Con
   if (match === null) {
     return undefined;
   }
-  const sourceName = match[1];
-  const targetName = match[2];
+  const [, sourceName, targetName] = match;
   if (sourceName === undefined || targetName === undefined) {
     return undefined;
   }
@@ -152,7 +151,7 @@ function conversionPairFromKey(key: string, namespace: ConversionNamespace): Con
 }
 
 function renderConversionPairs(packageJson: PackageManifest): string {
-  const properties = packageJson.contributes.configuration.properties;
+  const { properties } = packageJson.contributes.configuration;
   const flatPairs: ConversionPair[] = [];
   const pluralPairs: ConversionPair[] = [];
   const extensionPrefix = `${packageJson.name}.`;

@@ -193,7 +193,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
-    const properties = packageJson.contributes.configuration.properties;
+    const { properties } = packageJson.contributes.configuration;
 
     assert.ok(commandIds.has('graphics-workbench.convertDrawioToPdf'));
     assert.ok(commandIds.has('graphics-workbench.convertDrawioToPdfDirectly'));
@@ -207,7 +207,7 @@ suite('package.jsonの変換メニュー定義', () => {
 
   test('入力形式別の変換コンテキストメニュー設定を公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
-    const properties = packageJson.contributes.configuration.properties;
+    const { properties } = packageJson.contributes.configuration;
 
     for (const setting of Object.values(CONVERSION_CONTEXT_MENU_SETTINGS)) {
       assert.deepStrictEqual(properties[setting.property], {
@@ -612,7 +612,7 @@ suite('package.jsonの変換メニュー定義', () => {
 
   test('WebPとAVIFのeffort設定を公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
-    const properties = packageJson.contributes.configuration.properties;
+    const { properties } = packageJson.contributes.configuration;
 
     assert.deepStrictEqual(properties['graphics-workbench.convertToWebp.effort'], {
       type: 'integer',
@@ -648,7 +648,7 @@ suite('package.jsonの変換メニュー定義', () => {
 
   test('LaTeX挿入用の出力先とsnippet候補設定を公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
-    const properties = packageJson.contributes.configuration.properties;
+    const { properties } = packageJson.contributes.configuration;
 
     assert.deepStrictEqual(properties['graphics-workbench.outputPath.clipboardImage'], {
       type: 'string',
@@ -692,10 +692,10 @@ function isPackageJson(value: unknown): value is PackageJson {
     return false;
   }
 
-  const devEngines = value.devEngines;
-  const engines = value.engines;
-  const contributes = value.contributes;
-  const configuration = contributes.configuration;
+  const { devEngines } = value;
+  const { engines } = value;
+  const { contributes } = value;
+  const { configuration } = contributes;
 
   return (
     isRecord(devEngines.packageManager) &&

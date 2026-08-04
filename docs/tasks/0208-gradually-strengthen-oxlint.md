@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 41（Readability）Done
+Status: In progress — Phase 42（prefer-destructuring）Done
 
 ## Objective
 
@@ -316,6 +316,20 @@ mainの現行コード219ファイルに対する初回測定では、14,208件�
 oxlintが未サポートのため採用しない候補: `eslint/consistent-return`、`eslint/no-mixed-operators`、`unicorn/no-useless-else`（config解析でrejectされた）。
 
 `eslint/prefer-destructuring`は違反が40件以上と多いためPhase 39の方針どおり一括有効化せず、別phaseで小さく解消してからerror化する。
+
+## Phase 42 — prefer-destructuring
+
+`eslint/prefer-destructuring`をerrorへ強化した。Phase 41で「違反40件以上を別phaseで小さく解消してからerror化」と先送りしていた候補。
+
+- 現行違反は77件（src 27 / test 27 / webview 12 / scripts 11）。
+- `const x = obj.prop`を`const { x } = obj`へ、`const x = arr[i]`を配列destructuringへ置き換えた。主に以下の形。
+  - 配列先頭: `const [sourceUri] = sourceUris`（`[0]`＋undefined判定の組）
+  - 配列指定index: `const [, , outputPath, inputPath] = args`（テストのCLI引数位置）、regex matchは`const [, sourceName, targetName] = match`
+  - rest: `const [firstEntry, ...restEntries] = entries`
+  - splice/pop相当: `const [movedSource] = next.splice(fromIndex, 1)`、`const [lastEntry] = entries.slice(-1)`
+  - assignment destructuring: `({ width, height } = metadata)`、`({ scratch } = preparedInput)`
+- auto-fix（`lint:fix`）で40件を機械変換し、型キャストを落とす箇所は`in`型ガードが既に型を狭めていたため意味を保てた。残り32件は`[0]`＋undefined判定・指定index・assignment形式でfixerが安全に変換できないため手動対応。
+- 意味的に等価であることをtypecheck（src/test/webview×2）、lint、check:all、webview vitest、Extension Host test（514 passing）で確認した。
 
 ## Baseline
 

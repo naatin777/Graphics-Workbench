@@ -165,7 +165,7 @@ async function resolveOutputPaths(
   const resolved: ResolvedOutput[] = [];
 
   for (const output of outputs) {
-    let outputPath = output.outputPath;
+    let { outputPath } = output;
     const groupPath = output.keepBothGroup ? groupPaths.get(normalizePath(output.keepBothGroup.basePath)) : undefined;
 
     if (groupPath !== undefined) {

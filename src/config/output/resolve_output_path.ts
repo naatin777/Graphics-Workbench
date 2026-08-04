@@ -78,7 +78,7 @@ function currentOutputPathPlatform(): OutputPathPlatform {
 }
 
 function validateOutputPath(outputPath: string, platform: OutputPathPlatform, pathApi: typeof path.posix): void {
-  const root = pathApi.parse(outputPath).root;
+  const { root } = pathApi.parse(outputPath);
   const relativePath = outputPath.slice(root.length);
   const separatorPattern = platform === 'win32' ? /[\\/]+/ : /\/+/;
   const components = relativePath.split(separatorPattern).filter((component) => component !== '');

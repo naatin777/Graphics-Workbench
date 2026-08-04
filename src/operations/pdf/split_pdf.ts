@@ -150,8 +150,8 @@ async function splitPdfPageGroups(params: {
   signal: AbortSignal | undefined;
 }): Promise<PreparedConversionOutput[]> {
   const { job, index, runId, signal } = params;
-  const pageGroups = job.pageGroups;
-  const outputPathForGroup = job.outputPathForGroup;
+  const { pageGroups } = job;
+  const { outputPathForGroup } = job;
 
   if (!pageGroups || !outputPathForGroup) {
     throw new Error('Page groups and outputPathForGroup are required.');
