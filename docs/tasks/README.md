@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 57（export-from・DOM API・数学APIルール群）Done
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 58（0違反のESLint・型・Unicornルール群（4））Done
 
 ## On hold
 

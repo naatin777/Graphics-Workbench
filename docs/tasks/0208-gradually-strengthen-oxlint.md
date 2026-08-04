@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 57（export-from・DOM API・数学APIルール群）Done
+Status: In progress — Phase 58（0違反のESLint・型・Unicornルール群（4））Done
 
 ## Objective
 
@@ -466,6 +466,14 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `unicorn/prefer-export-from`: `create_raster_frame_jobs.ts`の`readRasterAnimationMetadata`を直接re-export化。ローカル利用＋re-exportが必要な`raster_conversion.ts`の`CommittedConversionOutput`とpdfjs wrapperは理由付き行単位抑制
 - `unicorn/prefer-modern-dom-apis`: reorder webviewの`container.insertBefore(figure, target)`を`target.before(figure)`へ
 
+## Phase 58 — 0違反のESLint・型・Unicornルール群（4）
+
+既存違反が0件のルール群を、挙動変更なしでerrorへ強化した。
+
+- `eslint/no-unused-labels` / `no-unused-private-class-members` / `use-isnan` / `valid-typeof` / `default-case-last` / `operator-assignment` / `logical-assignment-operators`
+- `typescript/prefer-for-of` / `prefer-namespace-keyword` / `prefer-ts-expect-error`
+- `unicorn/prefer-object-from-entries`
+
 ## Baseline
 
 - `npm run lint` は変更前に成功
@@ -528,4 +536,6 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 
 ## Follow-up
 
-次のphaseでは、対象ディレクトリまたはルール単位で残る型安全ルールの既存違反を小さく解消し、段階的にerrorへ移す。違反が多いルールを一括有効化しない。
+次のphaseでは、バグ・型安全・セキュリティ・依存整合を検出するルールだけを、既存違反を小さく解消してerrorへ移す。0違反のスタイル規則（`prefer-*`系の慣用API強制）は一括有効化しない。
+
+方針（Phase 58後の決定）: Phase 42–58で機械的に積んだ0違反スタイル規則のうち、摩擦を生んだ`prefer-destructuring`（疎destructuring強制）と`prefer-spread`（`no-misused-spread`との衝突）は、revertせず現状維持とする。ただし今後は、`use-isnan`/`no-unsafe-*`/`no-eval`/`import/no-cycle`等のように**実際のバグ・型安全・セキュリティ・依存整合を検出する規則だけ**を追加する。
