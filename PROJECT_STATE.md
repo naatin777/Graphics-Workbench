@@ -31,7 +31,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0219: command登録と生成metadataの正本を整理する](docs/tasks/0219-consolidate-command-registration-and-generated-metadata.md) — command binding正本化・data-driven登録・pure manifest/config adapter分離・metadata生成・manifest検証（PR #119–#122、#119–#121はマージ済み）
+- なし
 
 ## Non-goals
 

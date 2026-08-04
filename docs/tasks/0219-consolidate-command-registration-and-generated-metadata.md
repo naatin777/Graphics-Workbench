@@ -1,6 +1,6 @@
 # 0219: command登録と生成metadataの正本を整理する
 
-Status: Implemented
+Status: Done
 
 ## Objective
 
@@ -70,3 +70,4 @@ src/extension.ts                         # activation orchestration
 - `npm run test:scripts`: 27 pass（pure import・stale file・generator unit test含む）
 - `npm test`: 514 passing / 6 pending
 - PR #119–#121は全CI green確認後マージ
+- PR #122も全CI green（12 checks）確認後マージし、`main`へ統合完了
