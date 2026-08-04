@@ -32,7 +32,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0220: 変換commandの境界を段階的に整理する](docs/tasks/0220-refactor-conversion-boundaries-in-stages.md) — Phase 7（simple raster command shell）Done、次はWebP/GIF animation mode
+- [0220: 変換commandの境界を段階的に整理する](docs/tasks/0220-refactor-conversion-boundaries-in-stages.md) — Phase 8（WebP/GIF animation mode planner共通化）Done、次はWebview境界移行
 
 ## Non-goals
 

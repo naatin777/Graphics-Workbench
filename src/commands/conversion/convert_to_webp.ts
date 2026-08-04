@@ -9,7 +9,6 @@ import { getDefaultConfiguration, type Configuration } from '../../generated/ext
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
-  isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
 import {
@@ -17,7 +16,7 @@ import {
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
-import { assertAnimationPixelLimit, getMaxAnimationPixels } from '../../config/raster_limits.js';
+import { getMaxAnimationPixels } from '../../config/raster_limits.js';
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
@@ -29,7 +28,7 @@ import {
   type WebpOutputOptions,
 } from '../../operations/conversion/convert_to_webp.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
-import { createRasterFrameJobs, readRasterAnimationMetadata } from './create_raster_frame_jobs.js';
+import { planAnimationRasterSourceJobs } from './plan_animation_raster_source_jobs.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
@@ -158,45 +157,19 @@ async function planWebpConversionJobs(
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
   const outputTemplate = outputTemplateForSource(sourcePath, configuration, defaultConfiguration, outputMode);
-  if (isRasterImagePath(sourcePath)) {
-    const animation = extension === '.gif' ? await readRasterAnimationMetadata(sourcePath, maxInputPixels) : undefined;
-    if (animation !== undefined && outputMode !== 'split') {
-      assertAnimationPixelLimit(
-        animation.width ?? 0,
-        animation.pageHeight,
-        animation.pages,
-        maxAnimationPixels,
-        sourcePath,
-      );
-      return [
-        {
-          sourcePath,
-          workspacePath: workspace.uri.fsPath,
-          outputPath: resolveOutputPath(
-            outputTemplate,
-            {
-              sourcePath: logicalSourcePathForOutputTemplate(sourcePath),
-              workspacePath: workspace.uri.fsPath,
-              workspaceName: workspace.name,
-            },
-            { allowedExtensions: ['.webp'] },
-          ),
-          animation,
-        },
-      ];
-    }
-
-    return createRasterFrameJobs({
-      sourcePath,
-      workspacePath: workspace.uri.fsPath,
-      workspaceName: workspace.name,
-      outputTemplate,
-      allowedExtensions: ['.webp'],
-      maxInputPixels,
-      maxAnimationPixels,
-      frameMode: outputMode === 'split' ? 'all' : 'first',
-      createJob: (job) => job,
-    });
+  const rasterJobs = await planAnimationRasterSourceJobs({
+    sourcePath,
+    workspacePath: workspace.uri.fsPath,
+    workspaceName: workspace.name,
+    outputTemplate,
+    allowedExtensions: ['.webp'],
+    maxInputPixels,
+    maxAnimationPixels,
+    animatedInputExtension: '.gif',
+    ...(outputMode !== undefined && { outputMode }),
+  });
+  if (rasterJobs !== undefined) {
+    return rasterJobs;
   }
   const outputPath = resolveOutputPath(
     outputTemplate,
