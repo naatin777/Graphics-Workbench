@@ -2,11 +2,11 @@
 
 ## Current Task
 
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 59（バグ検出ルール群）Done
+- [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — In progress — Phase 2（PNG planner切り出し）Done、次はJPEG planner移行
 
 ## On hold
 
-- なし
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — Phase 59（バグ検出ルール群）Done、次phaseは保留
 
 ## Task boundaries
 
