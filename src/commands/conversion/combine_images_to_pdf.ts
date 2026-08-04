@@ -175,7 +175,7 @@ async function resolveCombineOutputPath(
   configuredTemplate: string,
   defaultOutputTemplate: string,
 ): Promise<string | undefined> {
-  const sourceUri = sourceUris[0];
+  const [sourceUri] = sourceUris;
   if (sourceUri === undefined) {
     throw new Error('combineImagesToPdf requires at least one source file.');
   }
@@ -216,7 +216,7 @@ function requireSingleWorkspace(sourceUris: vscode.Uri[]): vscode.WorkspaceFolde
     }
   }
 
-  const firstSource = sourceUris[0];
+  const [firstSource] = sourceUris;
   if (firstSource === undefined) {
     throw new Error('combineImagesToPdf requires at least one source file.');
   }

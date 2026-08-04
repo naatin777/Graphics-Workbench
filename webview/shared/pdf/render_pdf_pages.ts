@@ -348,7 +348,7 @@ export async function renderPdfPages(
         return;
       }
 
-      const root = options.root;
+      const { root } = options;
       const scrollTop = root?.scrollTop ?? 0;
       const viewportHeight = root?.clientHeight ?? estimatedPageHeight * MAX_RENDERED_PAGES;
       const pageWindowRange = calculatePageWindow(document.numPages, scrollTop, viewportHeight, estimatedPageHeight);
@@ -425,7 +425,7 @@ function attachRenderSignal(controller: PdfRenderController, signal: AbortSignal
   }
 
   let disposed = false;
-  const dispose = controller.dispose;
+  const { dispose } = controller;
   const abort = (): void => {
     void dispose();
   };

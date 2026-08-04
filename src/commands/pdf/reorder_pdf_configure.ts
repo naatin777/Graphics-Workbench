@@ -241,7 +241,7 @@ function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri 
     throw new Error('reorderPdf.configure requires exactly one PDF file.');
   }
 
-  const inputUri = candidates[0];
+  const [inputUri] = candidates;
 
   if (!inputUri) {
     throw new Error('reorderPdf.configure requires exactly one PDF file.');

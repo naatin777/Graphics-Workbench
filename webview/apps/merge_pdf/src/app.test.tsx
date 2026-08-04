@@ -77,9 +77,9 @@ describe('Merge PDF Webview', () => {
 
   test('reorders files with drag and drop and sends the displayed order', () => {
     const cards = document.querySelectorAll<HTMLElement>('.source-card');
-    const firstCard = cards[0];
+    const [firstCard] = cards;
     const firstHandle = firstCard?.querySelector<HTMLButtonElement>('.button--handle');
-    const targetCard = cards[2];
+    const [, , targetCard] = cards;
 
     if (!firstCard || !firstHandle || !targetCard) {
       throw new Error('Merge source cards were not rendered.');

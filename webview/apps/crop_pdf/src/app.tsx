@@ -173,7 +173,7 @@ function initialPageGeometry(payload: CropInitPayload): {
   pageSize: PageSize;
   cropBox: CropBoxState;
 } {
-  const geometry = payload.pageGeometry[0];
+  const [geometry] = payload.pageGeometry;
   if (!geometry) {
     return {
       pageSize: { x: 0, y: 0, width: 0, height: 0 },
@@ -242,7 +242,7 @@ export function App(): JSX.Element {
       const abortController = new AbortController();
       renderAbortController = abortController;
 
-      const initialPage = event.data.payload.initialPage;
+      const { initialPage } = event.data.payload;
       const totalPages = event.data.payload.pageCount;
       const initialGeometry = initialPageGeometry(event.data.payload);
 

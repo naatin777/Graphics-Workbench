@@ -246,6 +246,7 @@ export default defineConfig({
     'unicorn/prefer-set-has': 'error',
     'typescript/prefer-find': 'error',
     'typescript/prefer-includes': 'error',
+    'eslint/prefer-destructuring': 'error',
     'unicorn/prefer-dom-node-text-content': 'error',
     'unicorn/prefer-global-this': 'error',
 

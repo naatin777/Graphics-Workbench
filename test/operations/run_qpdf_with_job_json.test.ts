@@ -20,7 +20,7 @@ suite('qpdf job-json runner', () => {
       runTool: async (options) => {
         assert.equal(options.args.length, 1);
         assert.ok(!options.args.some((argument) => argument.includes(password)));
-        const argument = options.args[0];
+        const [argument] = options.args;
         if (argument === undefined) {
           assert.fail('job-json argument is missing');
         }

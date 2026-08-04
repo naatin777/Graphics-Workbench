@@ -43,7 +43,7 @@ export async function runCropPdfProcess(
   options: RunCropPdfProcessOptions = {},
 ): Promise<void> {
   const requestId = options.requestId ?? randomUUID();
-  const outputChannel = options.outputChannel;
+  const { outputChannel } = options;
   const log = (event: string, details = ''): void => {
     const suffix = details === '' ? '' : ` ${details}`;
     outputChannel?.appendLine(`[crop-process] ${event} requestId=${requestId}${suffix}`);

@@ -207,7 +207,7 @@ function parseCliArguments() {
 
 if (process.argv.length > 1 && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const values = parseCliArguments();
-  const target = values.target;
+  const { target } = values;
   if (values['check-install'] === true) {
     const installed = verifySharpInstall(target);
     process.stdout.write(`Installed sharp packages for ${target}: ${installed.join(', ')}\n`);

@@ -47,7 +47,7 @@ suite('LaTeXクリップボード画像挿入', () => {
 
         assert.ok(edits);
         assert.strictEqual(edits.length, 1);
-        const edit = edits[0];
+        const [edit] = edits;
         assert.ok(edit);
         assert.ok(showInputBox.calledOnce);
         assert.ok(edit.insertText instanceof vscode.SnippetString);
@@ -102,7 +102,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         assert.ok(edits);
         assert.strictEqual(edits.length, 1);
         assert.ok(await readFile(path.join(directory, 'pasted.png')));
-        const edit = edits[0];
+        const [edit] = edits;
         assert.ok(edit);
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         assert.ok(normalizeSnippetValue(edit.insertText.value).includes('pasted.png'));
@@ -170,7 +170,7 @@ suite('LaTeXクリップボード画像挿入', () => {
 
         assert.ok(edits);
         assert.strictEqual(edits.length, 1);
-        const edit = edits[0];
+        const [edit] = edits;
         assert.ok(edit);
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         const snippet = normalizeSnippetValue(edit.insertText.value);
@@ -255,7 +255,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         assert.ok(edits);
         assert.strictEqual(await readFile(existingImagePath, 'utf8'), 'existing clipboard image');
         assert.ok(await readFile(path.join(directory, 'pasted-1.png')));
-        const edit = edits[0];
+        const [edit] = edits;
         assert.ok(edit);
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         assert.ok(normalizeSnippetValue(edit.insertText.value).includes('pasted-1.png'));

@@ -23,7 +23,7 @@ export function App(): JSX.Element {
         return;
       }
 
-      const payload = event.data.payload;
+      const { payload } = event.data;
       setSources(payload.sources.slice());
       setPdfOptions({
         preview: payload.preview,
@@ -59,7 +59,7 @@ export function App(): JSX.Element {
     }
 
     const next = current.slice();
-    const movedSource = next.splice(fromIndex, 1)[0];
+    const [movedSource] = next.splice(fromIndex, 1);
 
     if (!movedSource) {
       return;
@@ -79,7 +79,7 @@ export function App(): JSX.Element {
     }
 
     const next = current.slice();
-    const movedSource = next.splice(fromIndex, 1)[0];
+    const [movedSource] = next.splice(fromIndex, 1);
 
     if (!movedSource) {
       return;

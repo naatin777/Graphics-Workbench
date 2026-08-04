@@ -386,7 +386,7 @@ function selectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
 }
 
 async function workspaceForSources(sourceUris: vscode.Uri[]): Promise<vscode.WorkspaceFolder> {
-  const firstSourceUri = sourceUris[0];
+  const [firstSourceUri] = sourceUris;
 
   if (!firstSourceUri) {
     throw new Error('Select at least two PDF files.');

@@ -28,8 +28,7 @@ export async function openMergePdfConfigure(vscodeWindow: Page, fileNames: strin
     await expect(entry).toBeVisible();
   }
 
-  const firstEntry = entries[0];
-  const restEntries = entries.slice(1);
+  const [firstEntry, ...restEntries] = entries;
   if (!firstEntry) {
     throw new Error('Expected at least one explorer entry.');
   }
@@ -42,7 +41,7 @@ export async function openMergePdfConfigure(vscodeWindow: Page, fileNames: strin
   }
   await vscodeWindow.keyboard.up(modifierKey);
 
-  const lastEntry = entries.slice(-1)[0];
+  const [lastEntry] = entries.slice(-1);
   if (!lastEntry) {
     throw new Error('Expected at least one explorer entry.');
   }

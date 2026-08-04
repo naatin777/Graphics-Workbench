@@ -326,7 +326,7 @@ function validateCropBoxForTarget(cropBox: CropBox, target: CropTarget, pageGeom
 }
 
 function initialCropBoxForPages(pageGeometry: PdfPageGeometry[]): CropBox {
-  const firstPage = pageGeometry[0];
+  const [firstPage] = pageGeometry;
   if (firstPage === undefined) {
     return { left: 0, bottom: 0, right: 0, top: 0 };
   }
@@ -366,7 +366,7 @@ function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri 
     throw new Error('cropPdf.configure requires exactly one PDF file.');
   }
 
-  const inputUri = candidates[0];
+  const [inputUri] = candidates;
 
   if (!inputUri) {
     throw new Error('cropPdf.configure requires exactly one PDF file.');

@@ -4,7 +4,7 @@ import sharp from 'sharp';
 
 export async function waitForWebviewFontsReady(body: Locator): Promise<void> {
   await body.evaluate(async (element) => {
-    const fonts = element.ownerDocument.fonts;
+    const { fonts } = element.ownerDocument;
     if (fonts.ready !== undefined) {
       await fonts.ready;
     }

@@ -109,7 +109,7 @@ function calculatePixelDifference(
   let comparedPixels = 0;
   let differentPixels = 0;
   let totalDifference = 0;
-  const channels = expected.info.channels;
+  const { channels } = expected.info;
 
   for (let expectedY = 0; expectedY < expected.info.height; expectedY += 1) {
     for (let expectedX = 0; expectedX < expected.info.width; expectedX += 1) {

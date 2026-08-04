@@ -139,7 +139,7 @@ describe('Split PDF Webview', () => {
 
     const pages = findInput('Pages 1');
     setInput(pages, '1-2');
-    const allPagesButton = document.querySelectorAll<HTMLButtonElement>('.segmented__button')[1];
+    const [, allPagesButton] = document.querySelectorAll<HTMLButtonElement>('.segmented__button');
     allPagesButton?.click();
     expect(allPagesButton?.getAttribute('aria-pressed')).toBe('true');
 

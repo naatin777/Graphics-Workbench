@@ -236,7 +236,7 @@ async function readLogFiles(directory: string): Promise<string[]> {
 }
 
 async function terminateElectronProcess(electronProcess: ReturnType<ElectronApplication['process']>): Promise<void> {
-  const pid = electronProcess.pid;
+  const { pid } = electronProcess;
 
   if (pid === undefined) {
     return;

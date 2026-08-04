@@ -49,7 +49,7 @@ export async function convertEpsToPdf(options: EpsToPdfOptions): Promise<EpsToPd
   options.signal?.throwIfAborted();
 
   const platform = options.platform ?? process.platform;
-  const timeout = options.timeout;
+  const { timeout } = options;
 
   await mkdir(options.stagingDirectory, { recursive: true });
 

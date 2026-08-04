@@ -150,7 +150,7 @@ async function convertPdf(params: {
       signal,
       outputChannel,
     });
-    scratch = preparedInput.scratch;
+    ({ scratch } = preparedInput);
     const document = await cropDocument({
       sourcePath: job.sourcePath,
       copiedSourcePath,

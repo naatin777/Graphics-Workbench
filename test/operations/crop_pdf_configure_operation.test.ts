@@ -50,7 +50,7 @@ suite('PDF configure crop処理', () => {
     const renderDirectory = await createTemporaryRenderDirectory(temporaryDirectories);
     const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, '入力 PDF');
     const outputPath = path.join(workspacePath, '出力 PDF', 'q a-all-crop.pdf');
-    const cropBox = cropConfigureFixture.cropBox;
+    const { cropBox } = cropConfigureFixture;
     const logs = new RecordingOutputChannel();
     const before = await captureWorkspaceSnapshot(workspacePath);
 
@@ -115,7 +115,7 @@ suite('PDF configure crop処理', () => {
     const renderDirectory = await createTemporaryRenderDirectory(temporaryDirectories);
     const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, '選択元');
     const outputPath = path.join(workspacePath, '選択結果', 'q a-selected-crop.pdf');
-    const cropBox = cropConfigureFixture.cropBox;
+    const { cropBox } = cropConfigureFixture;
     const before = await captureWorkspaceSnapshot(workspacePath);
 
     await cropPdfWithConfiguredBox({
@@ -461,7 +461,7 @@ function calculatePixelDifference(
   let comparedPixels = 0;
   let differentPixels = 0;
   let totalDifference = 0;
-  const channels = expected.info.channels;
+  const { channels } = expected.info;
 
   for (let expectedY = 0; expectedY < expected.info.height; expectedY += 1) {
     for (let expectedX = 0; expectedX < expected.info.width; expectedX += 1) {
