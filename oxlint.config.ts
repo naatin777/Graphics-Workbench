@@ -316,7 +316,7 @@ export default defineConfig({
     'typescript/no-unsafe-argument': 'error',
     'typescript/no-unsafe-assignment': 'off',
     'typescript/no-unsafe-call': 'off',
-    'typescript/no-unsafe-member-access': 'off',
+    'typescript/no-unsafe-member-access': 'error',
     'typescript/no-unsafe-return': 'off',
     'typescript/no-unsafe-type-assertion': 'error',
     'typescript/no-unnecessary-condition': 'off',
@@ -358,6 +358,8 @@ export default defineConfig({
       rules: {
         // @vscode/test-cli re-exports defineConfig through a .cjs→.mjs chain; oxlint's import resolution reports a false positive.
         'import/named': 'off',
+        // The JSON settings and parsed process.env values in this test harness are untyped JS.
+        'typescript/no-unsafe-member-access': 'off',
       },
     },
     {
@@ -397,6 +399,7 @@ export default defineConfig({
       rules: {
         // This strip-types build script's local type declarations are not resolved by single-file type-aware lint.
         'typescript/no-unsafe-argument': 'off',
+        'typescript/no-unsafe-member-access': 'off',
       },
     },
     {
@@ -476,6 +479,7 @@ export default defineConfig({
         'promise/prefer-await-to-then': 'off',
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unsafe-argument': 'off',
+        'typescript/no-unsafe-member-access': 'off',
         'typescript/no-unnecessary-condition': 'off',
 
         /*
