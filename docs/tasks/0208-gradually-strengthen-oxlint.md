@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 43（0違反の型安全・正確性ルール群）Done
+Status: In progress — Phase 44（正確性・Unicode・Promiseルール群）Done
 
 ## Objective
 
@@ -345,6 +345,14 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `unicorn/no-thenable` — thenableオブジェクトの作成を禁止
 
 `typescript/no-unsafe-member-access`は現行違反が多数あるため、Phase 42で保留したまま`off`を維持する。Phase 42でerror化した`prefer-destructuring`の違反5件がlintスコープ外の`scripts/check-nls.mjs`・`scripts/oxlint-project-plugin.mjs`に残る点は、lintスコープの拡張時に解消する。
+
+## Phase 44 — 正確性・Unicode・Promiseルール群
+
+既存違反を小解消してerror化した。
+
+- 0違反でerror化: `eslint/no-return-assign`、`no-unsafe-negation`、`no-constant-binary-expression`、`no-self-compare`、`no-unmodified-loop-condition`、`unicorn/prefer-array-flat`、`unicorn/prefer-array-index-of`、`typescript/prefer-function-type`、`typescript/consistent-generic-constructors`、`promise/valid-params`
+- 違反を解消してerror化: `unicorn/prefer-spread` — 既存5件のうち配列コピー3件（`payload.sources.slice()` / `current.slice()`）を`[...]`へ。文字列の`Array.from`2件は`[...string]`が`typescript/no-misused-spread`（emojiをcode pointに分解）に抵触するため、理由付き行単位抑制を残す
+- `typescript/no-unsafe-member-access`は違反115件で保留し`off`維持
 
 ## Baseline
 
