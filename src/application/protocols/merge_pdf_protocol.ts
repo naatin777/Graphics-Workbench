@@ -7,6 +7,11 @@ import {
   isWebviewUri,
 } from './protocol_utils.js';
 import { isPdfPreviewSettings, type PdfPreviewSettings } from './pdf_preview_protocol.js';
+import {
+  isWebviewErrorMessage,
+  isWebviewMessageWithPayload,
+  isWebviewMessageWithoutPayload,
+} from './webview_protocol.js';
 
 export interface MergePdfSource {
   sourceId: string;
@@ -74,39 +79,26 @@ export type MergePdfWebviewToHost =
     };
 
 export function isMergePdfHostToWebviewMessage(value: unknown): value is MergePdfHostToWebview {
-  if (!isRecord(value) || typeof value.type !== 'string' || !isRecord(value.payload)) {
-    return false;
-  }
+  return isWebviewErrorMessage(value) || isWebviewMessageWithPayload(value, 'init', isMergePdfInitPayload);
+}
 
-  if (value.type === 'error') {
-    return (
-      hasExactKeys(value, ['type', 'payload']) &&
-      hasExactKeys(value.payload, ['message']) &&
-      isString(value.payload.message)
-    );
-  }
-
-  if (value.type !== 'init') {
+function isMergePdfInitPayload(value: unknown): value is Extract<MergePdfHostToWebview, { type: 'init' }>['payload'] {
+  if (!isRecord(value)) {
     return false;
   }
 
   return (
-    hasExactKeys(value, ['type', 'payload']) &&
-    hasExactKeys(
-      value.payload,
-      ['sources', 'preview', 'labels'],
-      ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl'],
-    ) &&
-    Array.isArray(value.payload.sources) &&
-    value.payload.sources.length >= 2 &&
-    value.payload.sources.every(isMergePdfSource) &&
-    new Set(value.payload.sources.map((source) => source.sourceId)).size === value.payload.sources.length &&
-    isOptionalWebviewUri(value.payload.workerSrc) &&
-    isOptionalWebviewUri(value.payload.cMapUrl) &&
-    isOptionalWebviewUri(value.payload.standardFontDataUrl) &&
-    isOptionalWebviewUri(value.payload.wasmUrl) &&
-    isPdfPreviewSettings(value.payload.preview) &&
-    isMergePdfLabels(value.payload.labels)
+    hasExactKeys(value, ['sources', 'preview', 'labels'], ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl']) &&
+    Array.isArray(value.sources) &&
+    value.sources.length >= 2 &&
+    value.sources.every(isMergePdfSource) &&
+    new Set(value.sources.map((source) => source.sourceId)).size === value.sources.length &&
+    isOptionalWebviewUri(value.workerSrc) &&
+    isOptionalWebviewUri(value.cMapUrl) &&
+    isOptionalWebviewUri(value.standardFontDataUrl) &&
+    isOptionalWebviewUri(value.wasmUrl) &&
+    isPdfPreviewSettings(value.preview) &&
+    isMergePdfLabels(value.labels)
   );
 }
 
@@ -139,32 +131,25 @@ function isMergePdfLabels(value: unknown): value is MergePdfLabels {
 }
 
 export function isMergePdfWebviewToHostMessage(value: unknown): value is MergePdfWebviewToHost {
-  if (!isRecord(value) || typeof value.type !== 'string') {
-    return false;
-  }
-
-  if (value.type === 'ready' || value.type === 'cancel') {
-    return hasExactKeys(value, ['type']);
-  }
-
-  if (value.type === 'previewLoadFailed') {
-    return (
-      hasExactKeys(value, ['type', 'payload']) &&
-      isRecord(value.payload) &&
-      hasExactKeys(value.payload, ['message']) &&
-      isString(value.payload.message)
-    );
-  }
-
-  if (value.type !== 'apply' || !hasExactKeys(value, ['type', 'payload']) || !isRecord(value.payload)) {
-    return false;
-  }
-
   return (
-    hasExactKeys(value.payload, ['sourceIds']) &&
-    Array.isArray(value.payload.sourceIds) &&
-    value.payload.sourceIds.length > 0 &&
-    value.payload.sourceIds.every(isNonEmptyString)
+    isWebviewMessageWithoutPayload(value, 'ready') ||
+    isWebviewMessageWithoutPayload(value, 'cancel') ||
+    isWebviewMessageWithPayload(value, 'previewLoadFailed', isMergePdfMessagePayload) ||
+    isWebviewMessageWithPayload(value, 'apply', isMergePdfApplyPayload)
+  );
+}
+
+function isMergePdfMessagePayload(value: unknown): value is { message: string } {
+  return isRecord(value) && hasExactKeys(value, ['message']) && isString(value.message);
+}
+
+function isMergePdfApplyPayload(value: unknown): value is Extract<MergePdfWebviewToHost, { type: 'apply' }>['payload'] {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ['sourceIds']) &&
+    Array.isArray(value.sourceIds) &&
+    value.sourceIds.length > 0 &&
+    value.sourceIds.every(isNonEmptyString)
   );
 }
 
