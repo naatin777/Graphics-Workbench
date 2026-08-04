@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 6（TIFF planner移行）Done、次はsimple raster command shell
+Status: In progress — Phase 7（simple raster command shell）Done、次はWebP/GIF animation mode
 
 ## Objective
 
@@ -80,11 +80,17 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - TIFFのPDFページ展開、出力path、同一形式拒否を直接テストで固定した
 - PNG/JPEG/AVIFと共有できるraster source経路は既存の共通plannerへ寄せた
 
-## Phase 7以降 — plannerを形式ごとに移行する
+## Phase 7 — simple raster command shellを導入する（完了）
 
-1. 共通性が実証されたsimple raster command shellを導入する
-2. WebP/GIFはanimation output modeだけを共有する
-3. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
+- selected URI、configuration、max input pixels、prepare、planner、executor、lifecycle、error通知を`runSimpleRasterConversionCommand`へ集約した
+- PNG/JPEG/AVIF/TIFF commandを共通shell経由へ移行した
+- format固有planner、encoder、AVIF effort、外部tool設定は各command / operation側に残した
+- WebP/GIFのanimation output modeは変更していない
+
+## Phase 8以降 — plannerを形式ごとに移行する
+
+1. WebP/GIFはanimation output modeだけを共有する
+2. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
 
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
@@ -103,7 +109,7 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - `docs/tasks/0210-investigate-conversion-spec-and-compat.md`: planner共通化は入力形式・出力path・operationを混同しない後続課題
 - `src/commands/lifecycle/run_output_conversion.ts`: progress、cancellation、Undo、notification、Output Channelの既存標準経路
 - `npm run check:all`: 静的検証と生成metadata/NLS/unused/script検証
-- `npm run check:all`: passed（AVIF planner切り出し後）
-- `npm run compile`: passed（AVIF planner切り出し後）
-- `npm run compile:test`: passed（AVIF planner切り出し後）
+- `npm run check:all`: passed（simple raster command shell切り出し後）
+- `npm run compile`: passed（simple raster command shell切り出し後）
+- `npm run compile:test`: passed（simple raster command shell切り出し後）
 - `npm test`: 520 passing / 6 pending（Extension Host、macOS arm64、Phase 4時点、2026-08-04）
