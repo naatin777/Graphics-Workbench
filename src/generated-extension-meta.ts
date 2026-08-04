@@ -120,6 +120,8 @@ type ConfigurationKey =
   | 'contextMenu.encryptPdf.enabled'
   | 'contextMenu.decryptPdf.enabled'
   | 'contextMenu.rotatePdf.enabled'
+  | 'contextMenu.reorderPdf.enabled'
+  | 'outputPath.reorderPdf'
   | 'outputPath.rotatePdf'
   | 'outputPath.compressPdf'
   | 'outputPath.linearizePdf'
@@ -667,6 +669,12 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'contextMenu.rotatePdf.enabled': {
     types: ['boolean'],
   },
+  'contextMenu.reorderPdf.enabled': {
+    types: ['boolean'],
+  },
+  'outputPath.reorderPdf': {
+    types: ['string'],
+  },
   'outputPath.rotatePdf': {
     types: ['string'],
   },
@@ -802,6 +810,8 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'contextMenu.encryptPdf.enabled': 'boolean',
   'contextMenu.decryptPdf.enabled': 'boolean',
   'contextMenu.rotatePdf.enabled': 'boolean',
+  'contextMenu.reorderPdf.enabled': 'boolean',
+  'outputPath.reorderPdf': 'string',
   'outputPath.rotatePdf': 'string',
   'outputPath.compressPdf': 'string',
   'outputPath.linearizePdf': 'string',
@@ -937,6 +947,7 @@ export const publicCommandIds = [
   'graphics-workbench.decryptPdf',
   'graphics-workbench.rotatePdf.rotate',
   'graphics-workbench.rotatePdf.configure',
+  'graphics-workbench.reorderPdf.configure',
 ] as const;
 
 export type CommandId = (typeof publicCommandIds)[number] | 'graphics-workbench.convertPngToPdf';
@@ -1480,6 +1491,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.convertImagesToSinglePdf',
         '',
       ),
+      reorderPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.reorderPdf',
+        '${fileDirname}/${fileBasenameNoExtension}-reordered.pdf',
+      ),
       rotatePdf: defineConfiguration<string>(
         configurationReader,
         'outputPath.rotatePdf',
@@ -1562,6 +1578,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       rotatePdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.rotatePdf.enabled', true),
+      },
+      reorderPdf: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.reorderPdf.enabled', true),
       },
     },
   } as const;

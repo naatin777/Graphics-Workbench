@@ -55,6 +55,13 @@ export function defineWebviewConfig(config: WebviewBuildConfig): UserConfig {
           'protocols',
           'rotate_pdf_protocol.ts',
         ),
+        '@graphics-workbench-reorder-pdf-protocol': resolve(
+          projectRoot,
+          'src',
+          'application',
+          'protocols',
+          'reorder_pdf_protocol.ts',
+        ),
       },
     },
 
