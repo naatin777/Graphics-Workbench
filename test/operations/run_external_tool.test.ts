@@ -177,21 +177,23 @@ suite('外部tool runner — 実行失敗', () => {
 });
 
 suite('外部tool runner — タイムアウト', () => {
-  test('stdoutとstderrの合計出力を上限で停止する', async () => {
-    await assert.rejects(
-      runExternalTool({
-        toolName: 'output-flood-tool',
-        executable: process.execPath,
-        args: [
-          '-e',
-          `process.stdout.write('x'.repeat(6 * 1024 * 1024));
-           process.stderr.write('y'.repeat(6 * 1024 * 1024));
-           setTimeout(() => {}, 30000);`,
-        ],
-        timeoutMs: 3000,
-      }),
-      /output limit/,
-    );
+  test('大量出力でも処理は停止せず、保持する末尾だけに制限する', async () => {
+    const result = await runExternalTool({
+      toolName: 'output-flood-tool',
+      executable: process.execPath,
+      args: [
+        '-e',
+        `process.stdout.write('x'.repeat(2 * 1024 * 1024));
+         process.stderr.write('y'.repeat(2 * 1024 * 1024));
+         process.exit(0);`,
+      ],
+    });
+
+    // The tool is not killed for flooding stdout/stderr; only a bounded tail is retained.
+    assert.ok(result.stdout.length <= 300 * 1024, 'stdout should be bounded to the retained tail');
+    assert.ok(result.stderr.length <= 300 * 1024, 'stderr should be bounded to the retained tail');
+    assert.ok(result.stdout.endsWith('x'), 'stdout tail should preserve the end of the output');
+    assert.ok(result.stderr.endsWith('y'), 'stderr tail should preserve the end of the output');
   });
 
   test('timeoutMsを過ぎるとchild processを終了してrejectする', async () => {
@@ -312,8 +314,8 @@ suite('外部tool runner — Cancellation', () => {
 
   test('AbortSignalで外部toolの子孫プロセスも停止する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-tree-cancel-'));
-    const sentinelPath = path.join(workspacePath, 'sentinel.txt');
     const startedPath = path.join(workspacePath, 'started.txt');
+    const heartbeatPath = path.join(workspacePath, 'heartbeat.txt');
 
     try {
       const controller = new AbortController();
@@ -321,23 +323,33 @@ suite('外部tool runner — Cancellation', () => {
         const { spawn } = require('node:child_process');
         const fs = require('node:fs');
         fs.writeFileSync(process.env.GW_STARTED_PATH, 'started');
-        spawn(process.execPath, ['-e', "setTimeout(() => require('node:fs').writeFileSync(process.env.GW_SENTINEL_PATH, 'done'), 30000)"], { stdio: 'ignore', env: process.env });
+        const child = spawn(process.execPath, ['-e', "const fs = require('node:fs'); const beat = () => fs.appendFileSync(process.env.GW_HEARTBEAT_PATH, '.'); beat(); setInterval(beat, 50);"], { stdio: 'ignore', env: process.env });
         setTimeout(() => {}, 30000);
       `;
       const promise = runExternalTool({
         toolName: 'tree-tool',
         executable: process.execPath,
         args: ['-e', treeScript],
-        env: { ...process.env, GW_STARTED_PATH: startedPath, GW_SENTINEL_PATH: sentinelPath },
+        env: { ...process.env, GW_STARTED_PATH: startedPath, GW_HEARTBEAT_PATH: heartbeatPath },
         signal: controller.signal,
       });
 
-      await waitForFile(startedPath, 5000);
+      // The descendant heartbeat must grow while the tree is alive.
+      await waitForFile(heartbeatPath, 5000);
+      const beforeAbort = (await readFile(heartbeatPath)).length;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const stillGrowing = (await readFile(heartbeatPath)).length;
+      assert.ok(stillGrowing > beforeAbort, 'descendant heartbeat should grow before abort');
+
       controller.abort();
       await assert.rejects(promise);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      await assert.rejects(import('node:fs/promises').then((fs) => fs.stat(sentinelPath)));
+      // After abort the descendant heartbeat must stop growing, which proves the
+      // descendant process was actually terminated (not merely scheduled to die).
+      const afterAbort = (await readFile(heartbeatPath)).length;
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const later = (await readFile(heartbeatPath)).length;
+      assert.strictEqual(later, afterAbort, 'descendant heartbeat should stop after abort');
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }

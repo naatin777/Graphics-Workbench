@@ -5,7 +5,10 @@ import { getExternalToolTimeoutMs, type ExternalToolId } from '../../config/exte
 import { sharedHeavyProcessLimiter } from './heavy_process_limiter.js';
 import type { LineOutputChannel } from './external_tool_ascii_scratch.js';
 
-const MAX_BUFFER = 10 * 1024 * 1024;
+// Only the trailing portion of captured stdout/stderr is retained in memory.
+// Overflowing this bound does not terminate the tool; verbose diagnostics are
+// intentionally dropped rather than accumulated without limit.
+const MAX_RETAINED_OUTPUT = 256 * 1024;
 const TERMINATION_GRACE_MS = 250;
 const TERMINATION_WATCHDOG_MS = 5_000;
 const TOOL_ID_BY_NAME: Readonly<Record<string, ExternalToolId>> = {
@@ -61,9 +64,14 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
         let terminationWatchdog: NodeJS.Timeout | undefined;
         let terminationReason: Error | undefined;
         let settled = false;
-        let stdout = '';
-        let stderr = '';
-        let outputBytes = 0;
+
+        const appendBounded = (accumulator: { current: string }, chunk: string): void => {
+          const next = accumulator.current + chunk;
+          const length = Buffer.byteLength(next);
+          accumulator.current = length > MAX_RETAINED_OUTPUT ? next.slice(length - MAX_RETAINED_OUTPUT) : next;
+        };
+        const stdoutAccumulator = { current: '' };
+        const stderrAccumulator = { current: '' };
 
         const cleanup = (): void => {
           if (timer !== undefined) {
@@ -81,7 +89,9 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
           }
           settled = true;
           cleanup();
-          options.outputChannel?.appendLine(`[${options.toolName}] failure: ${stderr.trim() || error.message}`);
+          options.outputChannel?.appendLine(
+            `[${options.toolName}] failure: ${stderrAccumulator.current.trim() || error.message}`,
+          );
           reject(error);
         };
 
@@ -115,25 +125,13 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
           if (terminationReason !== undefined) {
             return;
           }
-          const chunkBytes = Buffer.byteLength(chunk);
-          if (outputBytes + chunkBytes > MAX_BUFFER) {
-            requestTermination(new Error(`${options.toolName} exceeded the ${MAX_BUFFER} byte output limit`));
-            return;
-          }
-          outputBytes += chunkBytes;
-          stdout += chunk;
+          appendBounded(stdoutAccumulator, chunk);
         });
         runningChild.stderr.on('data', (chunk: string) => {
           if (terminationReason !== undefined) {
             return;
           }
-          const chunkBytes = Buffer.byteLength(chunk);
-          if (outputBytes + chunkBytes > MAX_BUFFER) {
-            requestTermination(new Error(`${options.toolName} exceeded the ${MAX_BUFFER} byte output limit`));
-            return;
-          }
-          outputBytes += chunkBytes;
-          stderr += chunk;
+          appendBounded(stderrAccumulator, chunk);
         });
         runningChild.on('error', (error) => {
           finishFailure(terminationReason ?? error);
@@ -154,7 +152,7 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
           if (!settled) {
             settled = true;
             cleanup();
-            resolve({ stdout, stderr });
+            resolve({ stdout: stdoutAccumulator.current, stderr: stderrAccumulator.current });
           }
         });
 

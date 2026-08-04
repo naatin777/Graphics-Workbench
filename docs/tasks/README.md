@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0217: 入力制限・タイムアウト方針を確定する](0217-finalize-input-limit-and-timeout-policy.md) — Implemented — `confirmLargeOperation`削除、外部ツールtimeout既定0、ADR-0028・AGENTS.md・README反映
+- なし（作業がない場合はCurrent Taskを空にする）
 
 ## On hold
 
@@ -72,6 +72,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0217: 入力制限・タイムアウト方針を確定する](0217-finalize-input-limit-and-timeout-policy.md) — Done — `confirmLargeOperation`削除、外部ツールtimeout既定0/`undefined`、ADR-0028・AGENTS.md・README反映、CI検証済み
 - [0216: PDF回転とページ並び替えを追加する](0216-add-pdf-rotate-and-reorder.md) — Done — rotate quick pick / configure webview、reorder configure webviewを追加（PR #111-113）
 - [0215: Playwrightのpixel matchingを廃止し目視レビューへ移行する](0215-drop-playwright-pixel-matching.md) — Done — `toMatchSnapshot` / `__snapshots__` / `PLAYWRIGHT_VISUAL_SNAPSHOTS` / Docker visual runnerを削除し、`visual:capture`（OS非依存）＋目視レビューへ移行。ADR-0027新設・ADR-0024/0025置き換え
 - [0214: 6 target VSIXをネイティブランナーで生成・検証・公開する](0214-native-runner-platform-vsix-release.md) — Done — 5 targetをネイティブランナーで生成しsharpを実実行検証、win32-arm64はcross維持、`--skip-duplicate`とPAT未設定ガード、ADR-0026新設・ADR-0023置き換え

@@ -85,3 +85,15 @@
 - Reversibility: ADR-0021を置き換え、設定migrationを別taskとして扱う。
 
 ---
+
+### 重いpdf-lib処理をExtension Host外へ隔離する
+
+- Area: performance / cancellation
+- Type: Architecture
+- Concrete problem: 並び替え・回転・分割・結合は`readFile`で入力全体を読み込み、`PDFDocument.load` / `copyPages` / `save`の同期区間ではキャンセルが反映されない。大きな入力ではExtension Hostのイベントループが塞がり、キャンセルやOOM時のcleanupが遅れる。
+- Evidence: `src/operations/pdf/reorder_pdf.ts`、`rotate_pdf.ts`、`split_pdf.ts`、`merge_pdf.ts`。
+- Trigger: PDF・画像のpdf-lib/Sharp同期処理が原因の障害報告が再現したとき、またはキャンセル保証を「best effort」から強保証へ上げる必要が出たとき。
+- Why not now: Worker Thread / 子プロセスへの隔離は配布物パッケージ、プロセスライフサイクル、staging/Undo契約をまたぐ大規模変更。現状は外部プロセス（Ghostscript/qpdf等）がキャンセルを強保証し、pdf-lib系はbest effortと明記（ADR-0028）。
+- Related files: `src/operations/pdf/*.ts`、`src/operations/lifecycle/run_staged_conversion_batch.ts`。
+- Expected test impact: pdf-lib系操作のキャンセル・OOM・staging/Undoの全suite。
+- Reversibility: 操作単位で1つずつ隔離できる。
