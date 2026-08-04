@@ -536,4 +536,6 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 
 ## Follow-up
 
-次のphaseでは、対象ディレクトリまたはルール単位で残る型安全ルールの既存違反を小さく解消し、段階的にerrorへ移す。違反が多いルールを一括有効化しない。
+次のphaseでは、バグ・型安全・セキュリティ・依存整合を検出するルールだけを、既存違反を小さく解消してerrorへ移す。0違反のスタイル規則（`prefer-*`系の慣用API強制）は一括有効化しない。
+
+方針（Phase 58後の決定）: Phase 42–58で機械的に積んだ0違反スタイル規則のうち、摩擦を生んだ`prefer-destructuring`（疎destructuring強制）と`prefer-spread`（`no-misused-spread`との衝突）は、revertせず現状維持とする。ただし今後は、`use-isnan`/`no-unsafe-*`/`no-eval`/`import/no-cycle`等のように**実際のバグ・型安全・セキュリティ・依存整合を検出する規則だけ**を追加する。
