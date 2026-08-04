@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 44（正確性・Unicode・Promiseルール群）Done
+Status: In progress — Phase 45（no-unsafe-member-access）Done
 
 ## Objective
 
@@ -353,6 +353,14 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - 0違反でerror化: `eslint/no-return-assign`、`no-unsafe-negation`、`no-constant-binary-expression`、`no-self-compare`、`no-unmodified-loop-condition`、`unicorn/prefer-array-flat`、`unicorn/prefer-array-index-of`、`typescript/prefer-function-type`、`typescript/consistent-generic-constructors`、`promise/valid-params`
 - 違反を解消してerror化: `unicorn/prefer-spread` — 既存5件のうち配列コピー3件（`payload.sources.slice()` / `current.slice()`）を`[...]`へ。文字列の`Array.from`2件は`[...string]`が`typescript/no-misused-spread`（emojiをcode pointに分解）に抵触するため、理由付き行単位抑制を残す
 - `typescript/no-unsafe-member-access`は違反115件で保留し`off`維持
+
+## Phase 45 — no-unsafe-member-access
+
+`typescript/no-unsafe-member-access`をproductionでerror化した。
+
+- 現行違反115件の内訳: production（src / webview本体）は**0件**。残りは全テスト（webview 104 / Extension Host 5）と、type-aware不能なスクリプト3件・`.vscode-test.mjs` 3件
+- テスト（Phase 7/9の`no-unsafe-*`と同じ方針）と、既存overrideの`scripts/generate-extension-meta.ts`・`.vscode-test.mjs`へ`off`を追加
+- productionの`any`境界は既に型ガード済みのため、コード変更なしでerror化できた
 
 ## Baseline
 
