@@ -1,29 +1,15 @@
 import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 
-type MermaidOutputFormat = 'svg' | 'png' | 'pdf';
-type MermaidOutputFilePath = `${string}.svg` | `${string}.png` | `${string}.pdf`;
-
-interface MermaidRunnerRequest {
-  sourcePath: string;
-  outputPath: MermaidOutputFilePath;
-  outputFormat: MermaidOutputFormat;
-  puppeteerConfig: Record<string, unknown>;
-  backgroundColor?: string;
-  theme?: string;
-}
+import {
+  type MermaidRunnerFailure,
+  type MermaidRunnerRequest,
+  type MermaidRunnerSuccess,
+  parseMermaidRunnerRequest,
+} from './mermaid_runner_protocol.js';
 
 type MermaidCliParseOptions = NonNullable<Parameters<typeof runMermaidCli>[2]>;
 type MermaidCliParseMmdOptions = NonNullable<MermaidCliParseOptions['parseMMDOptions']>;
 type MermaidCliConfig = NonNullable<MermaidCliParseMmdOptions['mermaidConfig']>;
-
-interface MermaidRunnerSuccess {
-  ok: true;
-}
-
-interface MermaidRunnerFailure {
-  ok: false;
-  error: string;
-}
 
 process.on('message', (message: unknown) => {
   void runRequest(message);
@@ -64,46 +50,5 @@ function createRenderOptions(request: MermaidRunnerRequest): Pick<MermaidCliPars
 }
 
 function parseRunnerRequest(value: unknown): MermaidRunnerRequest {
-  if (!isRunnerRequest(value)) {
-    throw new Error('Invalid Mermaid runner request payload.');
-  }
-
-  return value;
-}
-
-function isRunnerRequest(value: unknown): value is MermaidRunnerRequest {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const candidate = value as {
-    sourcePath?: unknown;
-    outputPath?: unknown;
-    outputFormat?: unknown;
-    puppeteerConfig?: unknown;
-    backgroundColor?: unknown;
-    theme?: unknown;
-  };
-
-  return (
-    typeof candidate.sourcePath === 'string' &&
-    typeof candidate.outputPath === 'string' &&
-    isOutputFilePath(candidate.outputPath) &&
-    isMermaidOutputFormat(candidate.outputFormat) &&
-    isPuppeteerConfig(candidate.puppeteerConfig) &&
-    (candidate.backgroundColor === undefined || typeof candidate.backgroundColor === 'string') &&
-    (candidate.theme === undefined || typeof candidate.theme === 'string')
-  );
-}
-
-function isOutputFilePath(value: string): value is MermaidOutputFilePath {
-  return value.endsWith('.svg') || value.endsWith('.png') || value.endsWith('.pdf');
-}
-
-function isMermaidOutputFormat(value: unknown): value is MermaidOutputFormat {
-  return value === 'svg' || value === 'png' || value === 'pdf';
-}
-
-function isPuppeteerConfig(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return parseMermaidRunnerRequest(value);
 }
