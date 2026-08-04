@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 4（PNG/JPEG raster source planner共通化）Done、次はAVIF/TIFF planner移行
+Status: In progress — Phase 5（AVIF planner切り出し）Done、次はTIFF planner移行
 
 ## Objective
 
@@ -66,9 +66,16 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - PNG/JPEG commandの既存raster source経路を共通planner経由へ移行した
 - 共通plannerのraster入力→page job契約を直接テストで固定した
 
-## Phase 5以降 — plannerを形式ごとに移行する
+## Phase 5 — AVIF plannerの境界を作る（完了）
 
-1. AVIF/TIFFを個別に移行する（AVIF effortは形式固有のまま保持）
+- `planAvifConversionJobs`とPDF page plannerを`convert_to_avif.ts`から分離した
+- AVIF commandはplannerを呼び出すcomposition rootとして維持した
+- AVIF effort設定、PDFページ展開、出力path、同一形式拒否を直接テストで固定した
+- PNG/JPEGと共有できるraster source経路は既存の共通plannerへ寄せ、AVIF固有のencoder設定はcommand側へ残した
+
+## Phase 6以降 — plannerを形式ごとに移行する
+
+1. TIFFを個別に移行する
 2. 共通性が実証された後にsimple raster command shellを導入する
 3. WebP/GIFはanimation output modeだけを共有する
 4. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
@@ -90,4 +97,7 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - `docs/tasks/0210-investigate-conversion-spec-and-compat.md`: planner共通化は入力形式・出力path・operationを混同しない後続課題
 - `src/commands/lifecycle/run_output_conversion.ts`: progress、cancellation、Undo、notification、Output Channelの既存標準経路
 - `npm run check:all`: 静的検証と生成metadata/NLS/unused/script検証
-- `npm test`: 520 passing / 6 pending（Extension Host、macOS arm64、2026-08-04）
+- `npm run check:all`: passed（AVIF planner切り出し後）
+- `npm run compile`: passed（AVIF planner切り出し後）
+- `npm run compile:test`: passed（AVIF planner切り出し後）
+- `npm test`: 520 passing / 6 pending（Extension Host、macOS arm64、Phase 4時点、2026-08-04）
