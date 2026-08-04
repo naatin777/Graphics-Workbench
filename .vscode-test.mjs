@@ -13,6 +13,9 @@ const testWorkspaceDirectory = path.join(repositoryDirectory, 'test', 'workspace
 
 mkdirSync(testWorkspaceDirectory, { recursive: true });
 for (const entry of readdirSync(testWorkspaceDirectory)) {
+  if (entry === '.gitkeep') {
+    continue;
+  }
   rmSync(path.join(testWorkspaceDirectory, entry), { recursive: true, force: true });
 }
 
