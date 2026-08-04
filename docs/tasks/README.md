@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 55（0違反のESLintルール群＋prefer-template）Done
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 56（0違反のESLint・型・Unicornルール群（3））Done
 
 ## On hold
 
