@@ -32,7 +32,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0220: 変換commandの境界を段階的に整理する](docs/tasks/0220-refactor-conversion-boundaries-in-stages.md) — Phase 2（PNG planner切り出し）Done、次はJPEG planner移行
+- [0220: 変換commandの境界を段階的に整理する](docs/tasks/0220-refactor-conversion-boundaries-in-stages.md) — Phase 3（JPEG planner切り出し）Done、次はPNG/JPEG raster source plannerの共通境界
 
 ## Non-goals
 
