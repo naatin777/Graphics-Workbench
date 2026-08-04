@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 47（セキュリティ・型注釈・Unicornルール群）Done
+Status: In progress — Phase 48（0違反の型・Unicorn・Promiseルール群）Done
 
 ## Objective
 
@@ -377,6 +377,17 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 
 - 0違反でerror化（16ルール）: `eslint/no-implied-eval` / `no-new-func` / `no-new-wrappers` / `no-obj-calls`、`typescript/no-namespace` / `ban-ts-comment` / `no-var-requires` / `prefer-as-const`、`unicorn/prefer-array-flat-map` / `prefer-regexp-test` / `require-array-join-separator` / `prefer-native-coercion-functions` / `prefer-string-slice`、`promise/no-promise-in-callback`、`import/no-absolute-path`（`no-unmodified-loop-condition`はPhase 44で既にerror化）
 - 違反を解消してerror化: `typescript/no-inferrable-types` — テストのFakeChildProcessで`signalCode: null = null`の冗長型注釈を`signalCode = null`へ（初期化子から`null`型を推論）
+
+## Phase 48 — 0違反の型・Unicorn・Promiseルール群
+
+既存違反が0件のルール群を、挙動変更なしでerrorへ強化した（Phase 43と同じ方針）。
+
+- `typescript/no-unnecessary-template-expression` / `adjacent-overload-signatures` / `no-unused-expressions` / `prefer-return-this-type`
+- `unicorn/no-new-buffer` / `prefer-blob-reading-methods` / `prefer-set-size` / `prefer-date-now` / `prefer-number-properties` / `prefer-negative-index` / `no-console-spaces` / `throw-new-error` / `no-unreadable-iife` / `no-unnecessary-await`
+- `promise/no-multiple-resolved` / `no-callback-in-promise`
+- `import/export`
+
+`eslint/no-bitwise`は既存4件がすべて正当なflags/permissionマスク演算（`COPYFILE_EXCL`判定・`mode & 0o777`）のため、一括error化せず保留。`typescript/no-import-type-side-effects`（16件）・`eslint/no-useless-computed-key`（8件）・`unicorn/prefer-dom-node-dataset`（5件）は次Phaseで小解消する。
 
 ## Baseline
 
