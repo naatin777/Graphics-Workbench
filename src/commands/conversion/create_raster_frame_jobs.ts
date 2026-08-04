@@ -4,7 +4,6 @@ import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   destroyRasterInput,
   openRasterInput,
-  readRasterAnimationMetadata,
   type RasterAnimationMetadata,
 } from '../../operations/conversion/raster_input.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
@@ -17,7 +16,7 @@ export interface RasterFrameJob {
   animation?: RasterAnimationMetadata;
 }
 
-export { readRasterAnimationMetadata };
+export { readRasterAnimationMetadata } from '../../operations/conversion/raster_input.js';
 
 export async function createRasterFrameJobs(options: {
   sourcePath: string;

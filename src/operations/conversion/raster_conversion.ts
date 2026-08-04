@@ -17,6 +17,7 @@ import {
   rasterInputPixelLimitMessage,
   type RasterAnimationMetadata,
 } from './raster_input.js';
+// oxlint-disable-next-line unicorn/prefer-export-from -- CommittedConversionOutput is used locally and re-exported.
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 
 export type { CommittedConversionOutput };

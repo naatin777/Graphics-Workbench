@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 56（0違反のESLint・型・Unicornルール群（3））Done
+Status: In progress — Phase 57（export-from・DOM API・数学APIルール群）Done
 
 ## Objective
 
@@ -457,6 +457,14 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `unicorn/prefer-array-find`
 
 `promise/avoid-new`（34件・正当な`new Promise`が多い）は保留。
+
+## Phase 57 — export-from・DOM API・数学APIルール群
+
+既存違反5件を解消してerror化した。
+
+- 0違反でerror化（6ルール）: `eslint/prefer-exponentiation-operator` / `prefer-object-has-own` / `prefer-regex-literals`、`unicorn/prefer-math-trunc` / `prefer-modern-math-apis` / `prefer-string-trim-start-end`
+- `unicorn/prefer-export-from`: `create_raster_frame_jobs.ts`の`readRasterAnimationMetadata`を直接re-export化。ローカル利用＋re-exportが必要な`raster_conversion.ts`の`CommittedConversionOutput`とpdfjs wrapperは理由付き行単位抑制
+- `unicorn/prefer-modern-dom-apis`: reorder webviewの`container.insertBefore(figure, target)`を`target.before(figure)`へ
 
 ## Baseline
 
