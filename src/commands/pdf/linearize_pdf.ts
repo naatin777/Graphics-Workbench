@@ -3,14 +3,11 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { linearizePdfFiles, type LinearizePdfJob } from '../../operations/pdf/linearize_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
-import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
+import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 
@@ -31,43 +28,20 @@ export async function linearizePdfCommand(
     const outputTemplate = configuration.outputPath.linearizePdf();
     const jobs = sourceUris.map((sourceUri) => planLinearizePdfJob(sourceUri, outputTemplate));
     const qpdfPath = configuration.execPath.qpdf();
-    const outputs = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: userMessage('message.progress.linearizePdf.title', jobs.length),
-        cancellable: true,
+    await runConversionLifecycle({
+      operationName: 'linearize-pdf',
+      ...(outputChannel !== undefined && { outputChannel }),
+      resolveConflicts: resolveOutputConflicts,
+      messages: {
+        progressTitle: userMessage('message.progress.linearizePdf.title', jobs.length),
+        prepareMessage: userMessage('message.progress.prepareLinearizePdf'),
+        successMessage: (count) => userMessage('message.linearizePdf.success', count),
+        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+        cancelledMessage: userMessage('message.linearizePdf.cancelled'),
+        failedMessage: (reason) => userMessage('message.linearizePdf.failed', reason),
       },
-      async (progress, token) => {
-        return withCancellationSignal(token, async (signal) => {
-          progress.report({ message: userMessage('message.progress.prepareLinearizePdf') });
-          const runtime: ConversionExecutionContext = {
-            signal,
-            ...createProgressReporters(progress),
-            ...(outputChannel !== undefined && { outputChannel }),
-            resolveConflicts: resolveOutputConflicts,
-          };
-          return linearizePdfFiles({ jobs, qpdfPath, runtime });
-        });
-      },
-    );
-
-    const successMessage = userMessage('message.linearizePdf.success', jobs.length);
-    let undoId: string;
-
-    try {
-      undoId = await recordConversionForUndo(outputs, outputChannel);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-      return;
-    }
-
-    const undoAction = userMessage('message.action.undo');
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
+      run: async (runtime) => linearizePdfFiles({ jobs, qpdfPath, runtime }),
+    });
   } catch (error) {
     if (isAbortError(error)) {
       await vscode.window.showInformationMessage(userMessage('message.linearizePdf.cancelled'));

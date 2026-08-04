@@ -5,14 +5,11 @@ import * as vscode from 'vscode';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { localeMap } from '../../locale_map.js';
-import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { compressPdfFiles, type CompressPdfJob, type GhostscriptQuality } from '../../operations/pdf/compress_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
-import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
+import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 
@@ -47,48 +44,20 @@ export async function compressPdfCommand(
 
     const jobs = sourceUris.map((sourceUri) => planCompressPdfJob(sourceUri, outputTemplate));
     const ghostscriptPath = readGhostscriptExecutablePath(configuration);
-    const outputs = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: userMessage('message.progress.compressPdf.title', jobs.length),
-        cancellable: true,
+    await runConversionLifecycle({
+      operationName: 'compress-pdf',
+      ...(outputChannel !== undefined && { outputChannel }),
+      resolveConflicts: resolveOutputConflicts,
+      messages: {
+        progressTitle: userMessage('message.progress.compressPdf.title', jobs.length),
+        prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
+        successMessage: (count) => userMessage('message.compressPdf.success', count),
+        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+        cancelledMessage: userMessage('message.compressPdf.cancelled'),
+        failedMessage: (reason) => userMessage('message.compressPdf.failed', reason),
       },
-      async (progress, token) => {
-        return withCancellationSignal(token, async (signal) => {
-          progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
-          const runtime: ConversionExecutionContext = {
-            signal,
-            ...createProgressReporters(progress),
-            ...(outputChannel !== undefined && { outputChannel }),
-            resolveConflicts: resolveOutputConflicts,
-          };
-          return compressPdfFiles({
-            jobs,
-            quality,
-            ghostscriptPath,
-            runtime,
-          });
-        });
-      },
-    );
-
-    const successMessage = userMessage('message.compressPdf.success', jobs.length);
-    let undoId: string;
-
-    try {
-      undoId = await recordConversionForUndo(outputs, outputChannel);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-      return;
-    }
-
-    const undoAction = userMessage('message.action.undo');
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
+      run: async (runtime) => compressPdfFiles({ jobs, quality, ghostscriptPath, runtime }),
+    });
   } catch (error) {
     if (isAbortError(error)) {
       await vscode.window.showInformationMessage(userMessage('message.compressPdf.cancelled'));
