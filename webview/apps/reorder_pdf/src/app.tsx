@@ -187,9 +187,9 @@ export function App(): JSX.Element {
     }
 
     if (direction < 0) {
-      container.insertBefore(figure, target);
+      target.before(figure);
     } else {
-      container.insertBefore(target, figure);
+      figure.before(target);
     }
     syncPositions();
   }
