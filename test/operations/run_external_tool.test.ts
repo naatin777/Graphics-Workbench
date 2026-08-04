@@ -288,6 +288,28 @@ suite('外部tool runner — Cancellation', () => {
     assert.ok(!lines.some((line) => line.includes('super-secret-token')), 'secret must not leak in cancellation log');
   });
 
+  test('SIGTERMを無視するプロセスは終了猶予後に強制終了する', async () => {
+    const controller = new AbortController();
+
+    const promise = runExternalTool({
+      toolName: 'stubborn-tool',
+      executable: process.execPath,
+      args: ['-e', "process.on('SIGTERM', () => {}); setTimeout(() => {}, 30000);"],
+      signal: controller.signal,
+    });
+
+    // Let the child start and install its SIGTERM handler before aborting.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    controller.abort();
+
+    // The child ignores SIGTERM, so runExternalTool must force-kill it after the
+    // termination grace period and reject.
+    await assert.rejects(promise, (error: unknown) => {
+      assert.ok(error instanceof Error);
+      return error.name === 'AbortError' || error.name === 'Canceled';
+    });
+  });
+
   test('AbortSignalで外部toolの子孫プロセスも停止する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-tree-cancel-'));
     const sentinelPath = path.join(workspacePath, 'sentinel.txt');
