@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — In progress — Phase 7（simple raster command shell）Done、次はWebP/GIF animation mode
+- [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — In progress — Phase 8（WebP/GIF animation mode planner共通化）Done、次はWebview境界移行
 
 ## On hold
 

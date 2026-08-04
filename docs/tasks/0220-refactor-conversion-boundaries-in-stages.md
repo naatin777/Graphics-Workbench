@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 7（simple raster command shell）Done、次はWebP/GIF animation mode
+Status: In progress — Phase 8（WebP/GIF animation mode planner共通化）Done、次はWebview境界移行
 
 ## Objective
 
@@ -87,10 +87,15 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - format固有planner、encoder、AVIF effort、外部tool設定は各command / operation側に残した
 - WebP/GIFのanimation output modeは変更していない
 
-## Phase 8以降 — plannerを形式ごとに移行する
+## Phase 8 — WebP/GIF animation mode plannerを共通化する（完了）
 
-1. WebP/GIFはanimation output modeだけを共有する
-2. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
+- animated inputの保持、split時のframe展開、animation pixel limit、output template展開を`planAnimationRasterSourceJobs`へ集約した
+- WebP/GIF commandの形式固有PDF planner、output mode定義、encoderは各command / operation側に残した
+- `preserve` / `auto` / `split`の既存挙動と、非animation rasterのfirst/all frame挙動を維持した
+
+## Phase 9以降 — 境界を形式ごとに移行する
+
+1. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
 
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
