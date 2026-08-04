@@ -92,7 +92,7 @@ function registerCommand(
       context.subscriptions.push(
         vscode.commands.registerCommand(binding.id, async (...args: unknown[]) => {
           const command = await resolveCommand(binding, outputChannel);
-          return command(...args, dependencies);
+          return args.length === 0 ? command(undefined, dependencies) : command(...args, dependencies);
         }),
       );
       break;
