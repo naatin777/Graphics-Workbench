@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 3（JPEG planner切り出し）Done、次はPNG/JPEG raster source plannerの共通境界
+Status: In progress — Phase 4（PNG/JPEG raster source planner共通化）Done、次はAVIF/TIFF planner移行
 
 ## Objective
 
@@ -59,14 +59,19 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - JPEG plannerのPDFページ展開・出力path・同一形式拒否を直接テストで固定した
 - PNG/JPEGのplannerはまだ共有していない
 
-## Phase 4以降 — plannerを形式ごとに移行する
+## Phase 4 — PNG/JPEG raster source plannerの共通境界を作る（完了）
 
-1. JPEGで同じplannerを利用し、具体例から共通機構を確定する
-2. PNG/JPEGへraster source plannerを導入する
-3. AVIF/TIFFを個別に移行する（AVIF effortは形式固有のまま保持）
-4. 共通性が実証された後にsimple raster command shellを導入する
-5. WebP/GIFはanimation output modeだけを共有する
-6. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
+- PNG/JPEGのPDF以外のsource→job変換を`planRasterSourceConversionJobs`へ分離した
+- Native Draw.io経路、same-format判定、PDF planner、形式ごとのoutput templateは各plannerへ残した
+- PNG/JPEG commandの既存raster source経路を共通planner経由へ移行した
+- 共通plannerのraster入力→page job契約を直接テストで固定した
+
+## Phase 5以降 — plannerを形式ごとに移行する
+
+1. AVIF/TIFFを個別に移行する（AVIF effortは形式固有のまま保持）
+2. 共通性が実証された後にsimple raster command shellを導入する
+3. WebP/GIFはanimation output modeだけを共有する
+4. Webviewはprotocol envelope → reducer → Rotate → Reorder → Crop/Split/Mergeの順で移行する
 
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
@@ -85,4 +90,4 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - `docs/tasks/0210-investigate-conversion-spec-and-compat.md`: planner共通化は入力形式・出力path・operationを混同しない後続課題
 - `src/commands/lifecycle/run_output_conversion.ts`: progress、cancellation、Undo、notification、Output Channelの既存標準経路
 - `npm run check:all`: 静的検証と生成metadata/NLS/unused/script検証
-- `npm test`: 517 passing / 6 pending（Extension Host、macOS arm64、2026-08-04）
+- `npm test`: 520 passing / 6 pending（Extension Host、macOS arm64、2026-08-04）

@@ -6,19 +6,15 @@ import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 
-import {
-  isEditableDrawioImagePath,
-  isRasterImagePath,
-  logicalSourcePathForOutputTemplate,
-} from '../../application/policy/source_format.js';
+import { isEditableDrawioImagePath } from '../../application/policy/source_format.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import type { ConvertToJpegJob } from '../../operations/conversion/convert_to_jpeg.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
-import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
+import { planRasterSourceConversionJobs } from './plan_raster_source_conversion_jobs.js';
 
 import { assertFileScheme } from '../shared/command_utils.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -51,38 +47,15 @@ export async function planJpegConversionJobs(
     return createPdfJobs(sourcePath, workspace, configuration, runtime);
   }
 
-  const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
   const outputTemplate = outputTemplateForSource(sourcePath, configuration, defaultConfiguration);
-  if (isRasterImagePath(sourcePath)) {
-    return createRasterFrameJobs({
-      sourcePath,
-      workspacePath: workspace.uri.fsPath,
-      workspaceName: workspace.name,
-      outputTemplate,
-      allowedExtensions: ['.jpg', '.jpeg'],
-      maxInputPixels,
-      createJob: (job) => job,
-    });
-  }
-  const outputPath = resolveOutputPath(
+  return planRasterSourceConversionJobs({
+    sourcePath,
+    workspacePath: workspace.uri.fsPath,
+    workspaceName: workspace.name,
     outputTemplate,
-    {
-      sourcePath: logicalSourcePathForOutputTemplate(sourcePath),
-      workspacePath: workspace.uri.fsPath,
-      workspaceName: workspace.name,
-      ...(page !== undefined && { page }),
-    },
-    { allowedExtensions: ['.jpg', '.jpeg'] },
-  );
-
-  return [
-    {
-      sourcePath,
-      workspacePath: workspace.uri.fsPath,
-      outputPath,
-      ...(page !== undefined && { page: Number(page) }),
-    },
-  ];
+    allowedExtensions: ['.jpg', '.jpeg'],
+    maxInputPixels,
+  });
 }
 
 async function createPdfJobs(
