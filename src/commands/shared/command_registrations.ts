@@ -8,6 +8,8 @@ const loadedCommandModules = new Set<string>();
 
 type LoadedCommand = (...args: unknown[]) => Promise<unknown>;
 
+export type CommandResolver = (binding: CommandBinding, outputChannel: LineOutputChannel) => Promise<LoadedCommand>;
+
 function isCommandModule(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -59,12 +61,13 @@ function registerCommand(
   binding: CommandBinding,
   dependencies: CommandDependencies,
   outputChannel: LineOutputChannel,
+  resolve: CommandResolver,
 ): void {
   switch (binding.adapter) {
     case 'file': {
       context.subscriptions.push(
         vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
-          const command = await resolveCommand(binding, outputChannel);
+          const command = await resolve(binding, outputChannel);
           return command(uri, uris, dependencies);
         }),
       );
@@ -73,7 +76,7 @@ function registerCommand(
     case 'fileWithContext': {
       context.subscriptions.push(
         vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
-          const command = await resolveCommand(binding, outputChannel);
+          const command = await resolve(binding, outputChannel);
           return command(context, uri, uris, dependencies);
         }),
       );
@@ -82,7 +85,7 @@ function registerCommand(
     case 'fileWithOptions': {
       context.subscriptions.push(
         vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
-          const command = await resolveCommand(binding, outputChannel);
+          const command = await resolve(binding, outputChannel);
           return command(uri, uris, dependencies, binding.options);
         }),
       );
@@ -91,7 +94,7 @@ function registerCommand(
     case 'extensionCommand': {
       context.subscriptions.push(
         vscode.commands.registerCommand(binding.id, async (...args: unknown[]) => {
-          const command = await resolveCommand(binding, outputChannel);
+          const command = await resolve(binding, outputChannel);
           return args.length === 0 ? command(undefined, dependencies) : command(...args, dependencies);
         }),
       );
@@ -105,7 +108,16 @@ export function registerCommands(
   dependencies: CommandDependencies,
   outputChannel: LineOutputChannel,
 ): void {
+  registerCommandBindings(context, dependencies, outputChannel, resolveCommand);
+}
+
+export function registerCommandBindings(
+  context: vscode.ExtensionContext,
+  dependencies: CommandDependencies,
+  outputChannel: LineOutputChannel,
+  resolve: CommandResolver,
+): void {
   for (const binding of commandBindings) {
-    registerCommand(context, binding, dependencies, outputChannel);
+    registerCommand(context, binding, dependencies, outputChannel, resolve);
   }
 }
