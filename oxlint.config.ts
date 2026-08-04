@@ -247,6 +247,12 @@ export default defineConfig({
     'typescript/prefer-find': 'error',
     'typescript/prefer-includes': 'error',
     'eslint/prefer-destructuring': 'error',
+    'eslint/no-unreachable': 'error',
+    'typescript/no-invalid-void-type': 'error',
+    'typescript/no-non-null-asserted-optional-chain': 'error',
+    'typescript/no-unnecessary-qualifier': 'error',
+    'unicorn/prefer-at': 'error',
+
     'eslint/no-import-assign': 'error',
     'typescript/no-misused-new': 'error',
     'typescript/prefer-enum-initializers': 'error',
