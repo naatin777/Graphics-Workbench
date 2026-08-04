@@ -259,6 +259,11 @@
         "command": "graphics-workbench.decryptPdf",
         "title": "%command.decryptPdf%",
         "category": "Graphics Workbench"
+      },
+      {
+        "command": "graphics-workbench.rotatePdf.rotate",
+        "title": "%command.rotatePdf.rotate%",
+        "category": "Graphics Workbench"
       }
     ],
     "menus": {
@@ -277,6 +282,11 @@
           "submenu": "graphics-workbench.mergePdf",
           "group": "graphics-workbench",
           "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.mergePdf.enabled"
+        },
+        {
+          "submenu": "graphics-workbench.rotatePdf",
+          "group": "graphics-workbench",
+          "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.rotatePdf.enabled"
         },
         {
           "submenu": "graphics-workbench.convert",
@@ -348,6 +358,13 @@
           "command": "graphics-workbench.mergePdf.configure",
           "group": "graphics-workbench.mergePdf",
           "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.mergePdf.enabled"
+        }
+      ],
+      "graphics-workbench.rotatePdf": [
+        {
+          "command": "graphics-workbench.rotatePdf.rotate",
+          "group": "graphics-workbench.rotatePdf",
+          "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.rotatePdf.enabled"
         }
       ],
       "graphics-workbench.convert": [
@@ -520,6 +537,10 @@
       {
         "id": "graphics-workbench.mergePdf",
         "label": "%submenu.mergePdf%"
+      },
+      {
+        "id": "graphics-workbench.rotatePdf",
+        "label": "%submenu.rotatePdf%"
       },
       {
         "id": "graphics-workbench.convert",
@@ -1256,6 +1277,16 @@
           "type": "boolean",
           "default": true,
           "description": "%config.contextMenu.decryptPdf.enabled%"
+        },
+        "graphics-workbench.contextMenu.rotatePdf.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.contextMenu.rotatePdf.enabled%"
+        },
+        "graphics-workbench.outputPath.rotatePdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-rotated.pdf",
+          "description": "%config.outputPath.rotatePdf%"
         },
         "graphics-workbench.outputPath.compressPdf": {
           "type": "string",

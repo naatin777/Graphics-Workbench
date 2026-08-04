@@ -85,6 +85,14 @@ function registerCommands(
     );
     return decryptPdfCommand(uri, uris, dependencies);
   });
+  registerFileCommand(context, 'graphics-workbench.rotatePdf.rotate', async (uri, uris) => {
+    const { rotatePdfCommand } = await loadCommandModule(
+      outputChannel,
+      './commands/pdf/rotate_pdf.js',
+      async () => import('./commands/pdf/rotate_pdf.js'),
+    );
+    return rotatePdfCommand(uri, uris, dependencies);
+  });
   registerFileCommand(context, 'graphics-workbench.cropPdf.auto', async (uri, uris) => {
     const { cropPdfAutoCommand } = await loadCommandModule(
       outputChannel,
