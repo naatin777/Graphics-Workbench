@@ -20,9 +20,6 @@ const latexDocumentSelector: vscode.DocumentSelector = [{ language: 'latex' }, {
 
 export const PUBLIC_COMMAND_IDS = publicCommandIds;
 
-export const INTERNAL_COMMAND_IDS = ['graphics-workbench.convertPngToPdf'] as const;
-export const REGISTERED_COMMAND_IDS = [...PUBLIC_COMMAND_IDS, ...INTERNAL_COMMAND_IDS] as const;
-
 type FileCommandHandler = (uri?: vscode.Uri, uris?: vscode.Uri[]) => Promise<void>;
 
 function registerFileCommand(context: vscode.ExtensionContext, id: CommandId, handler: FileCommandHandler): void {
@@ -308,14 +305,6 @@ function registerCommands(
       async () => import('./commands/conversion/combine_images_to_pdf.js'),
     );
     return combineImagesToPdfCommand(uri, uris, dependencies);
-  });
-  registerFileCommand(context, 'graphics-workbench.convertPngToPdf', async (uri, uris) => {
-    const { convertPngToPdfInternalCommand } = await loadCommandModule(
-      outputChannel,
-      './commands/conversion/convert_to_pdf.js',
-      async () => import('./commands/conversion/convert_to_pdf.js'),
-    );
-    return convertPngToPdfInternalCommand(uri, uris, dependencies);
   });
   context.subscriptions.push(
     vscode.commands.registerCommand('graphics-workbench.undoLastConversion', async (expectedId?: string) =>

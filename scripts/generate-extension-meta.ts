@@ -451,8 +451,6 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
     }
   }
 
-  const internalCommandIds = ['graphics-workbench.convertPngToPdf'];
-
   const configurationKeys = configurationEntries.map(
     ([fullKey]) => `  | ${quote(fullKey.slice(extensionPrefix.length))}`,
   );
@@ -478,9 +476,7 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     `export const publicCommandIds = [\n${commandIdList.join('\n')}\n] as const;\n\n` +
-    `export type CommandId = (typeof publicCommandIds)[number]${internalCommandIds
-      .map((commandId) => ` | ${quote(commandId)}`)
-      .join('')};\n\n` +
+    `export type CommandId = (typeof publicCommandIds)[number];\n\n` +
     renderConversionPairs(packageJson) +
     '\n' +
     `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +
