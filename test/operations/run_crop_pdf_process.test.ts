@@ -566,7 +566,7 @@ class FakeChildProcess extends EventEmitter {
   readonly sentMessages: unknown[] = [];
   readonly pid = 12345;
   exitCode: number | null = null;
-  signalCode: null = null;
+  signalCode = null;
   disposed = false;
 
   terminate(): void {
