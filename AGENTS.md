@@ -64,3 +64,9 @@
   5. 該当ADRの更新
 - 制御処理（外部ツールの起動確認、通信、キャンセル後の終了猶予）の短いタイムアウトは、本処理のタイムアウトと混同しない。
 - セキュリティガード（decompression bomb対策のピクセル上限、パス検証など）は任意の入力制限と混同して削除しない。
+
+## 途中移行・互換残骸
+
+- v1移行で削除すると正式決定した旧command IDや旧settingを、内部aliasやfallbackとして復活させない。
+- 一時的なcommand alias、setting fallback、compatibility wrapperを追加する場合は、追加時点でcanonical置き換え先、具体的利用者、public/internal、削除条件、削除予定version、canonical経路のテスト、削除時に消す一覧を明記する。「念のため」「移行中だから」だけでは追加しない。
+- 旧API専用のwrapper・NLS・テストが残ったままにするのは避け、canonical経路へ統合する。command IDとpair-specific outputPath設定キー（`outputPath.convertPngToPdf`等）の粒度は混同しない。

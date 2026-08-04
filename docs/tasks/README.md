@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- なし（作業がない場合はCurrent Taskを空にする）
+- [0218: 途中移行・互換残骸を監査して削除する](0218-audit-remove-migration-compat-leftovers.md) — Implemented — `convertPngToPdf`内部alias・wrapper・旧NLSを削除し、canonicalへ統合。Integration Testと再発防止ルールを更新
 
 ## On hold
 

@@ -931,7 +931,7 @@ export const publicCommandIds = [
   'graphics-workbench.reorderPdf.configure',
 ] as const;
 
-export type CommandId = (typeof publicCommandIds)[number] | 'graphics-workbench.convertPngToPdf';
+export type CommandId = (typeof publicCommandIds)[number];
 
 export const conversionPairs = {
   flat: [

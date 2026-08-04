@@ -7,6 +7,14 @@ import * as vscode from 'vscode';
 
 import { operationPdfInputDirectory, operationPngInputPath } from '../helpers/fixture_paths.js';
 
+const LEGACY_TO_PDF_COMMANDS = [
+  'graphics-workbench.convertPngToPdf',
+  'graphics-workbench.convertJpegToPdf',
+  'graphics-workbench.convertWebpToPdf',
+  'graphics-workbench.convertAvifToPdf',
+  'graphics-workbench.convertSvgToPdf',
+] as const;
+
 suite('Extension activation smoke', () => {
   test('拡張機能をactivateすると代表commandが利用可能になる', async () => {
     const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
@@ -22,13 +30,17 @@ suite('Extension activation smoke', () => {
       'graphics-workbench.splitPdf.allPages',
       'graphics-workbench.mergePdf.configure',
       'graphics-workbench.splitPdf.configure',
-      'graphics-workbench.convertPngToPdf',
+      'graphics-workbench.convertToPdf',
       'graphics-workbench.convertDrawioToPdf',
       'graphics-workbench.convertDrawioToPdfDirectly',
     ]) {
       assert.ok(commands.includes(command), `Expected command to be registered: ${command}`);
     }
     assert.ok(!commands.includes('graphics-workbench.cropPdf.manual'));
+
+    for (const legacyCommand of LEGACY_TO_PDF_COMMANDS) {
+      assert.ok(!commands.includes(legacyCommand), `Legacy command should not be registered: ${legacyCommand}`);
+    }
   });
 
   test('PNGからPDFへの変換コマンドを実行してファイル変換できる', async () => {
@@ -47,7 +59,7 @@ suite('Extension activation smoke', () => {
       const outputPath = path.join(temporaryDirectory, 'source.pdf');
       await copyFile(operationPngInputPath, sourcePath);
 
-      await vscode.commands.executeCommand('graphics-workbench.convertPngToPdf', vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
 
       const { PDFDocument } = await import('pdf-lib');
       const pdf = await PDFDocument.load(await readFile(outputPath));

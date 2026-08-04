@@ -34,7 +34,6 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
 
-const pngExtensions = ['.png'] as const;
 const pdfImageExtensions = [
   '.png',
   '.jpg',
@@ -54,63 +53,20 @@ const pdfImageExtensions = [
   '.dio.svg',
 ] as const;
 
-export async function convertPngToPdfInternalCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
-): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
-  await convertSelectedSourcesToPdf(
-    uri,
-    uris,
-    {
-      supportedExtensions: pngExtensions,
-      titleKey: 'message.progress.convertPngToPdf.title',
-      successKey: 'message.convertPngToPdf.success',
-      failedKey: 'message.convertPngToPdf.failed',
-      cancelledKey: 'message.convertPngToPdf.cancelled',
-      operationName: 'convert-png-to-pdf',
-      ...(outputChannel !== undefined && { outputChannel }),
-    },
-    dependencies,
-  );
-}
-
 export async function convertToPdfCommand(
   uri?: vscode.Uri,
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
-  await convertSelectedSourcesToPdf(
-    uri,
-    uris,
-    {
-      supportedExtensions: pdfImageExtensions,
-      titleKey: 'message.progress.convertToPdf.title',
-      successKey: 'message.convertToPdf.success',
-      failedKey: 'message.convertToPdf.failed',
-      cancelledKey: 'message.convertToPdf.cancelled',
-      operationName: 'convert-to-pdf',
-      ...(outputChannel !== undefined && { outputChannel }),
-    },
-    dependencies,
-  );
+  await convertSelectedSourcesToPdf(uri, uris, dependencies, outputChannel);
 }
 
 async function convertSelectedSourcesToPdf(
   uri: vscode.Uri | undefined,
   uris: vscode.Uri[] | undefined,
-  messages: {
-    supportedExtensions: readonly string[];
-    titleKey: 'message.progress.convertPngToPdf.title' | 'message.progress.convertToPdf.title';
-    successKey: 'message.convertPngToPdf.success' | 'message.convertToPdf.success';
-    failedKey: 'message.convertPngToPdf.failed' | 'message.convertToPdf.failed';
-    cancelledKey: 'message.convertPngToPdf.cancelled' | 'message.convertToPdf.cancelled';
-    operationName: string;
-    outputChannel?: LineOutputChannel;
-  },
   dependencies?: CommandDependencies,
+  outputChannel?: LineOutputChannel,
 ): Promise<void> {
   try {
     const sourceUris = selectedUris(uri, uris);
@@ -137,46 +93,46 @@ async function convertSelectedSourcesToPdf(
           sourceUri,
           outputTemplateForSource(sourceUri, outputTemplate, configuration, defaultConfiguration),
           logicalSourcePathForOutputTemplate(sourceUri.fsPath),
-          messages.supportedExtensions,
+          pdfImageExtensions,
         ),
       ),
     );
     const jobs = plannedJobs.flat();
     await runConversionLifecycle({
-      operationName: messages.operationName,
-      ...(messages.outputChannel !== undefined && { outputChannel: messages.outputChannel }),
+      operationName: 'convert-to-pdf',
+      ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
       messages: {
-        progressTitle: userMessage(messages.titleKey, jobs.length),
+        progressTitle: userMessage('message.progress.convertToPdf.title', jobs.length),
         prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
-        successMessage: (count) => userMessage(messages.successKey, count),
+        successMessage: (count) => userMessage('message.convertToPdf.success', count),
         undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-        cancelledMessage: userMessage(messages.cancelledKey),
-        failedMessage: (reason) => userMessage(messages.failedKey, reason),
+        cancelledMessage: userMessage('message.convertToPdf.cancelled'),
+        failedMessage: (reason) => userMessage('message.convertToPdf.failed', reason),
       },
       run: async (runtime) =>
         convertToPdfFiles({
           jobs,
           maxInputPixels,
-          supportedExtensions: messages.supportedExtensions,
+          supportedExtensions: pdfImageExtensions,
           tools: {
             svgToPdfTools,
             mermaidTools,
             drawioTools,
             ghostscriptPath,
           },
-          operationName: messages.operationName,
+          operationName: 'convert-to-pdf',
           runtime,
         }),
     });
   } catch (error) {
     if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage(messages.cancelledKey));
+      await vscode.window.showInformationMessage(userMessage('message.convertToPdf.cancelled'));
       return;
     }
 
     const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage(messages.failedKey, message));
+    await vscode.window.showErrorMessage(userMessage('message.convertToPdf.failed', message));
   }
 }
 
