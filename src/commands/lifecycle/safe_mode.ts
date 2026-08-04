@@ -25,13 +25,12 @@ export function initializeSafeMode(context: SafeModeContext): void {
   updateStatusBar();
   statusBarItem.show();
 
-  context.subscriptions.push(
-    statusBarItem,
-    vscode.commands.registerCommand('graphics-workbench.toggleSafeMode', async () => {
-      await requireSafeModeState().toggle();
-      updateStatusBar();
-    }),
-  );
+  context.subscriptions.push(statusBarItem);
+}
+
+export async function toggleSafeModeCommand(): Promise<void> {
+  await requireSafeModeState().toggle();
+  updateStatusBar();
 }
 
 export async function resolveOutputConflicts(conflicts: string[]): Promise<OutputConflictDecision> {

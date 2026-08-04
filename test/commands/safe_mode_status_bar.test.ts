@@ -1,13 +1,12 @@
 // Test target:
 // - Safe Mode初期化時にstatus bar itemを作成すること
 // - status bar itemのtext、command、tooltip、show()呼び出しが設定されること
-// - toggle command実行時に状態とstatus bar textが更新されること
+// - toggleSafeModeCommand実行時に状態とstatus bar textが更新されること
 // - globalStateに保存済みの状態からstatus bar textを復元すること
-// - ExtensionContext.subscriptionsへstatus bar itemとcommand disposableを登録すること
+// - ExtensionContext.subscriptionsへstatus bar itemを登録すること
 //
 // Mocked:
 // - vscode.window.createStatusBarItem
-// - vscode.commands.registerCommand
 // - ExtensionContext.globalState相当のkey-value storage
 //
 // Not tested:
@@ -22,13 +21,12 @@ import assert from 'node:assert/strict';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { initializeSafeMode } from '../../src/commands/lifecycle/safe_mode.js';
+import { initializeSafeMode, toggleSafeModeCommand } from '../../src/commands/lifecycle/safe_mode.js';
 
 suite('Safe Modeステータスバー', () => {
   let sandbox: sinon.SinonSandbox;
   let storage: MemoryState;
   let statusBarItem: FakeStatusBarItem;
-  let registeredCommand: (() => Promise<void>) | undefined;
   let subscriptions: vscode.Disposable[];
 
   setup(() => {
@@ -36,18 +34,8 @@ suite('Safe Modeステータスバー', () => {
     storage = new MemoryState();
     statusBarItem = new FakeStatusBarItem();
     subscriptions = [];
-    registeredCommand = undefined;
 
     sandbox.stub(vscode.window, 'createStatusBarItem').returns(statusBarItem);
-    sandbox
-      .stub(vscode.commands, 'registerCommand')
-      .callsFake((command: string, callback: (...args: never[]) => unknown) => {
-        assert.strictEqual(command, 'graphics-workbench.toggleSafeMode');
-        registeredCommand = async (): Promise<void> => {
-          return void (await callback());
-        };
-        return new FakeDisposable();
-      });
   });
 
   teardown(() => {
@@ -63,15 +51,15 @@ suite('Safe Modeステータスバー', () => {
     assert.strictEqual(statusBarItem.showCallCount, 1);
   });
 
-  test('切り替えコマンド実行時に表示文言と永続化状態を更新する', async () => {
+  test('toggleコマンド実行時に表示文言と永続化状態を更新する', async () => {
     initializeSafeMode(createExtensionContext(storage, subscriptions));
 
-    await registeredCommand?.();
+    await toggleSafeModeCommand();
 
     assert.strictEqual(statusBarItem.text, '$(shield) Safe Mode: OFF');
     assert.strictEqual(storage.get('safeMode.enabled'), false);
 
-    await registeredCommand?.();
+    await toggleSafeModeCommand();
 
     assert.strictEqual(statusBarItem.text, '$(shield) Safe Mode: ON');
     assert.strictEqual(storage.get('safeMode.enabled'), true);
@@ -85,12 +73,11 @@ suite('Safe Modeステータスバー', () => {
     assert.strictEqual(statusBarItem.text, '$(shield) Safe Mode: OFF');
   });
 
-  test('ステータスバー項目とコマンドのdisposableをsubscriptionsに登録する', () => {
+  test('ステータスバー項目をsubscriptionsに登録する', () => {
     initializeSafeMode(createExtensionContext(storage, subscriptions));
 
-    assert.strictEqual(subscriptions.length, 2);
+    assert.strictEqual(subscriptions.length, 1);
     assert.strictEqual(subscriptions[0], statusBarItem);
-    assert.ok(subscriptions[1] instanceof FakeDisposable);
   });
 });
 
@@ -136,9 +123,5 @@ class FakeStatusBarItem implements vscode.StatusBarItem {
 
   hide(): void {}
 
-  dispose(): void {}
-}
-
-class FakeDisposable {
   dispose(): void {}
 }
