@@ -186,6 +186,7 @@ async function listFiles(directoryPath: string): Promise<string[]> {
       return entry.isDirectory() ? listFiles(entryPath) : [entryPath];
     }),
   );
+  // oxlint-disable-next-line typescript/no-unsafe-call -- strip-types script types are not resolved by type-aware lint
   return paths
     .flat()
     .filter((entryPath) => !entryPath.endsWith('.json'))

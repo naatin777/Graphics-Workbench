@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 45（no-unsafe-member-access）Done
+Status: In progress — Phase 46（no-unsafe-call）Done
 
 ## Objective
 
@@ -361,6 +361,15 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - 現行違反115件の内訳: production（src / webview本体）は**0件**。残りは全テスト（webview 104 / Extension Host 5）と、type-aware不能なスクリプト3件・`.vscode-test.mjs` 3件
 - テスト（Phase 7/9の`no-unsafe-*`と同じ方針）と、既存overrideの`scripts/generate-extension-meta.ts`・`.vscode-test.mjs`へ`off`を追加
 - productionの`any`境界は既に型ガード済みのため、コード変更なしでerror化できた
+
+## Phase 46 — no-unsafe-call
+
+`typescript/no-unsafe-call`をproductionでerror化した。
+
+- 現行違反809件の内訳: production（src / webview本体）は**0件**。残りは全テスト（802件）と、type-aware不能なスクリプト7箇所
+- テスト（Phase 7/9/45と同じ方針）と既存overrideの`scripts/generate-extension-meta.ts`へ`off`を追加
+- スクリプト7箇所のうち4箇所は`generate-extension-meta.ts`（override）、3箇所（`verify-vsix.mjs`・`render-coverage-report.mjs`・`generate-test-output.ts`）は`toSorted()`のJSDoc/strip-types型未解決による`any`誤検知のため、`no-unsafe-return`と併記した理由付き行単位抑制を適用
+- productionは既に`any`境界を型ガード済みのためコード変更なしでerror化できた
 
 ## Baseline
 
