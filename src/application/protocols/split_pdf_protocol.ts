@@ -8,6 +8,11 @@ import {
   isWebviewUri,
 } from './protocol_utils.js';
 import { isPdfPreviewSettings, type PdfPreviewSettings } from './pdf_preview_protocol.js';
+import {
+  isWebviewErrorMessage,
+  isWebviewMessageWithPayload,
+  isWebviewMessageWithoutPayload,
+} from './webview_protocol.js';
 
 export interface SplitPdfLabels {
   header: {
@@ -172,28 +177,16 @@ export type SplitPdfWebviewToHost =
     };
 
 export function isSplitPdfHostToWebviewMessage(value: unknown): value is SplitPdfHostToWebview {
-  if (!isRecord(value) || typeof value.type !== 'string' || !isRecord(value.payload)) {
-    return false;
-  }
-
-  if (value.type === 'error') {
-    return (
-      hasExactKeys(value, ['type', 'payload']) &&
-      hasExactKeys(value.payload, ['message']) &&
-      isString(value.payload.message)
-    );
-  }
-
-  if (value.type !== 'init') {
-    return false;
-  }
-
-  return isSplitPdfInitPayload(value.payload);
+  return isWebviewErrorMessage(value) || isWebviewMessageWithPayload(value, 'init', isSplitPdfInitPayload);
 }
 
-function isSplitPdfInitPayload(payload: Record<string, unknown>): boolean {
+function isSplitPdfInitPayload(value: unknown): value is Extract<SplitPdfHostToWebview, { type: 'init' }>['payload'] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
   return (
-    hasExactKeys(payload, [
+    hasExactKeys(value, [
       'sourceId',
       'fileName',
       'pageCount',
@@ -203,14 +196,14 @@ function isSplitPdfInitPayload(payload: Record<string, unknown>): boolean {
       'preview',
       'labels',
     ]) &&
-    isNonEmptyString(payload.sourceId) &&
-    isNonEmptyString(payload.fileName) &&
-    isPositiveInteger(payload.pageCount) &&
-    isWebviewUri(payload.pdfSrc) &&
-    isNonEmptyString(payload.outputPathTemplate) &&
-    isSplitPdfResources(payload.resources) &&
-    isPdfPreviewSettings(payload.preview) &&
-    isSplitPdfLabels(payload.labels)
+    isNonEmptyString(value.sourceId) &&
+    isNonEmptyString(value.fileName) &&
+    isPositiveInteger(value.pageCount) &&
+    isWebviewUri(value.pdfSrc) &&
+    isNonEmptyString(value.outputPathTemplate) &&
+    isSplitPdfResources(value.resources) &&
+    isPdfPreviewSettings(value.preview) &&
+    isSplitPdfLabels(value.labels)
   );
 }
 
@@ -226,32 +219,25 @@ function isSplitPdfResources(value: unknown): boolean {
 }
 
 export function isSplitPdfWebviewToHostMessage(value: unknown): value is SplitPdfWebviewToHost {
-  if (!isRecord(value) || typeof value.type !== 'string') {
-    return false;
-  }
-
-  if (value.type === 'ready' || value.type === 'cancel') {
-    return hasExactKeys(value, ['type']);
-  }
-
-  if (value.type === 'previewLoadFailed') {
-    return (
-      hasExactKeys(value, ['type', 'payload']) &&
-      isRecord(value.payload) &&
-      hasExactKeys(value.payload, ['message']) &&
-      isString(value.payload.message)
-    );
-  }
-
-  if (value.type !== 'apply' || !hasExactKeys(value, ['type', 'payload']) || !isRecord(value.payload)) {
-    return false;
-  }
-
   return (
-    hasExactKeys(value.payload, ['rows']) &&
-    Array.isArray(value.payload.rows) &&
-    value.payload.rows.length > 0 &&
-    value.payload.rows.every(isSplitPdfPageGroupRow)
+    isWebviewMessageWithoutPayload(value, 'ready') ||
+    isWebviewMessageWithoutPayload(value, 'cancel') ||
+    isWebviewMessageWithPayload(value, 'previewLoadFailed', isSplitPdfMessagePayload) ||
+    isWebviewMessageWithPayload(value, 'apply', isSplitPdfApplyPayload)
+  );
+}
+
+function isSplitPdfMessagePayload(value: unknown): value is { message: string } {
+  return isRecord(value) && hasExactKeys(value, ['message']) && isString(value.message);
+}
+
+function isSplitPdfApplyPayload(value: unknown): value is Extract<SplitPdfWebviewToHost, { type: 'apply' }>['payload'] {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ['rows']) &&
+    Array.isArray(value.rows) &&
+    value.rows.length > 0 &&
+    value.rows.every(isSplitPdfPageGroupRow)
   );
 }
 

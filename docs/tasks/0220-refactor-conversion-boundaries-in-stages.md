@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 12（Crop Webview protocol移行）Done、次はSplit/Merge移行
+Status: In progress — Phase 13（Split Webview protocol移行）Done、次はMerge移行
 
 ## Objective
 
@@ -117,9 +117,15 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - Crop box、target、preview error payloadの余分なキーを拒否し、既存の座標・ページ検証を維持した
 - CropのWebview UI state、preview、operation、command lifecycleは変更していない
 
-## Phase 13以降 — 境界を形式ごとに移行する
+## Phase 13 — Split Webview protocolを移行する（完了）
 
-1. WebviewはSplit/Mergeの順で移行する
+- SplitのHost/Webview message guardを共有envelope helper経由へ移行した
+- Splitのinit payload、ページgroup、preview errorの既存検証を維持し、余分なenvelope・payloadキーを拒否した
+- Splitのページ式解析、Webview UI、preview、operation、command lifecycleは変更していない
+
+## Phase 14以降 — 境界を形式ごとに移行する
+
+1. WebviewはMergeを移行する
 
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
@@ -156,3 +162,7 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - `npm run compile`: passed（Phase 12 Crop移行後）
 - `npm run compile:test`: passed（Phase 12 Crop移行後）
 - Targeted Extension Host run（`Crop PDF Webviewプロトコル`）: test hostが`SIGABRT`でテスト実行前に終了（既知のlocal runtime制約）
+- `npm run check:all`: passed（Phase 13 Split移行後）
+- `npm run compile`: passed（Phase 13 Split移行後）
+- `npm run compile:test`: passed（Phase 13 Split移行後）
+- Targeted Extension Host run（`定義されたプロトコルの型のみを受け付ける`）: test hostが`SIGABRT`でテスト実行前に終了（既知のlocal runtime制約）
