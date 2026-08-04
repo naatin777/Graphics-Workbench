@@ -1,3 +1,4 @@
+import { hasExactKeys, isNonEmptyString, isRecord } from '../../application/protocols/protocol_utils.js';
 import type { CropPdfFileRequest } from './crop_pdf_core.js';
 
 export const CROP_PDF_PROCESS_PROTOCOL_VERSION = 1;
@@ -39,19 +40,23 @@ export function createCropPdfProcessRequest(request: CropPdfFileRequest, request
 }
 
 export function isCropPdfProcessMessage(value: unknown): value is CropPdfProcessMessage {
-  if (!isRecord(value) || value.protocolVersion !== CROP_PDF_PROCESS_PROTOCOL_VERSION) {
-    return false;
-  }
-
-  if (typeof value.requestId !== 'string' || value.requestId === '') {
+  if (
+    !isRecord(value) ||
+    value.protocolVersion !== CROP_PDF_PROCESS_PROTOCOL_VERSION ||
+    !isNonEmptyString(value.requestId)
+  ) {
     return false;
   }
 
   if (value.type === 'started' || value.type === 'success') {
-    return true;
+    return hasExactKeys(value, ['type', 'protocolVersion', 'requestId']);
   }
 
-  return value.type === 'failure' && typeof value.error === 'string' && value.error !== '';
+  return (
+    value.type === 'failure' &&
+    hasExactKeys(value, ['type', 'protocolVersion', 'requestId', 'error']) &&
+    isNonEmptyString(value.error)
+  );
 }
 
 export function parseCropPdfProcessRequest(value: unknown): CropPdfProcessRequest {
@@ -61,8 +66,21 @@ export function parseCropPdfProcessRequest(value: unknown): CropPdfProcessReques
   if (value.protocolVersion !== CROP_PDF_PROCESS_PROTOCOL_VERSION) {
     throw new Error('Unsupported Crop Configure runner protocol.');
   }
-  if (typeof value.requestId !== 'string' || value.requestId === '') {
+  if (!isNonEmptyString(value.requestId)) {
     throw new Error('Invalid Crop Configure runner request ID.');
+  }
+  if (
+    !hasExactKeys(value, [
+      'type',
+      'protocolVersion',
+      'requestId',
+      'sourcePath',
+      'stagedOutputPath',
+      'cropBox',
+      'target',
+    ])
+  ) {
+    throw new Error('Invalid Crop Configure runner request.');
   }
 
   const { cropBox } = value;
@@ -75,12 +93,7 @@ export function parseCropPdfProcessRequest(value: unknown): CropPdfProcessReques
     throw new Error('Invalid Crop Configure runner target.');
   }
 
-  if (
-    typeof value.sourcePath !== 'string' ||
-    value.sourcePath === '' ||
-    typeof value.stagedOutputPath !== 'string' ||
-    value.stagedOutputPath === ''
-  ) {
+  if (!isNonEmptyString(value.sourcePath) || !isNonEmptyString(value.stagedOutputPath)) {
     throw new Error('Invalid Crop Configure runner paths.');
   }
 
@@ -95,16 +108,10 @@ export function parseCropPdfProcessRequest(value: unknown): CropPdfProcessReques
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function isCropBox(value: unknown): value is CropPdfProcessRequest['cropBox'] {
-  if (!isRecord(value)) {
-    return false;
-  }
-
   return (
+    isRecord(value) &&
+    hasExactKeys(value, ['left', 'bottom', 'right', 'top']) &&
     typeof value.left === 'number' &&
     Number.isFinite(value.left) &&
     typeof value.bottom === 'number' &&
@@ -122,7 +129,9 @@ function isCropTarget(value: unknown): value is CropPdfProcessRequest['target'] 
   }
 
   return (
-    value.type === 'all' ||
-    (Array.isArray(value.pages) && value.pages.every((page) => Number.isInteger(page) && page > 0))
+    (value.type === 'all' && hasExactKeys(value, ['type'])) ||
+    (hasExactKeys(value, ['type', 'pages']) &&
+      Array.isArray(value.pages) &&
+      value.pages.every((page) => Number.isInteger(page) && page > 0))
   );
 }
