@@ -1,4 +1,4 @@
-import { getExtensionConfiguration } from '../generated-extension-config.js';
+import { getExtensionConfiguration } from '../config/extension_configuration.js';
 
 export interface TemplateContext {
   path: string;

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,8 +33,7 @@ type ObjectType = { name: string; schema: JsonSchema };
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packageJsonPath = path.join(repositoryRoot, 'package.json');
-const metadataOutputPath = path.join(repositoryRoot, 'src/generated-extension-meta.ts');
-const configurationOutputPath = path.join(repositoryRoot, 'src/generated-extension-config.ts');
+const metadataOutputPath = path.join(repositoryRoot, 'src/generated/extension_manifest.ts');
 const checkOnly = process.argv.includes('--check');
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -408,22 +407,7 @@ ${members.join('\n')}
 `;
 }
 
-function renderConfigurationModule(extensionName: string): string {
-  return `import * as vscode from 'vscode';
-
-import { createConfiguration, type Configuration } from './generated-extension-meta.js';
-
-export function getExtensionConfiguration(): Configuration {
-  return createConfiguration({
-    get(key: string): unknown {
-      return vscode.workspace.getConfiguration(${quote(extensionName)}).get<unknown>(key);
-    },
-  });
-}
-`;
-}
-
-function generate(packageJson: PackageManifest): { metadata: string; configuration: string } {
+function generate(packageJson: PackageManifest): string {
   const extensionPrefix = `${packageJson.name}.`;
   const configurationTree = new Map<string, ConfigNode>();
   const objectTypes: ObjectType[] = [];
@@ -494,8 +478,7 @@ function generate(packageJson: PackageManifest): { metadata: string; configurati
     `  },\n` +
     `};\n\n` +
     `export const getDefaultConfiguration: GetConfiguration = () => createConfiguration(defaultConfigurationReader);\n`;
-
-  return { metadata, configuration: renderConfigurationModule(packageJson.name) };
+  return metadata;
 }
 
 function readPackageManifest(): PackageManifest {
@@ -521,13 +504,12 @@ function checkGeneratedFile(filePath: string, expected: string): boolean {
 
 const generated = generate(readPackageManifest());
 if (checkOnly) {
-  const metadataIsCurrent = checkGeneratedFile(metadataOutputPath, generated.metadata);
-  const configurationIsCurrent = checkGeneratedFile(configurationOutputPath, generated.configuration);
-  if (!metadataIsCurrent || !configurationIsCurrent) {
+  const metadataIsCurrent = checkGeneratedFile(metadataOutputPath, generated);
+  if (!metadataIsCurrent) {
     process.stderr.write('Generated extension metadata is out of date. Run npm run generate:extension-meta.\n');
     process.exitCode = 1;
   }
 } else {
-  writeFileSync(metadataOutputPath, generated.metadata);
-  writeFileSync(configurationOutputPath, generated.configuration);
+  mkdirSync(path.dirname(metadataOutputPath), { recursive: true });
+  writeFileSync(metadataOutputPath, generated);
 }

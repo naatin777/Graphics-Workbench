@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { logicalSourcePathForOutputTemplate } from '../../application/policy/source_format.js';
-import { getDefaultConfiguration } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';

@@ -6,7 +6,7 @@ import { Parser } from 'xml2js';
 import sharp from 'sharp';
 
 import { isMermaidPath } from '../../application/policy/source_format.js';
-import { getDefaultConfiguration } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';

@@ -5,7 +5,7 @@ import {
   type RasterJob,
 } from './raster_conversion.js';
 import { openRasterInput } from './raster_input.js';
-import { getDefaultConfiguration } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { DrawioBackend } from './tools/drawio_tools.js';
 import type { GhostscriptBackend } from './tools/ghostscript_tools.js';

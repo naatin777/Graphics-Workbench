@@ -1,4 +1,4 @@
-import type { Configuration } from '../../generated-extension-meta.js';
+import type { Configuration } from '../../generated/extension_manifest.js';
 
 export function readDrawioExecutablePath(configuration: Configuration): string {
   return configuration.execPath.drawio();

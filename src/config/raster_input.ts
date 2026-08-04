@@ -1,4 +1,4 @@
-import { getDefaultConfiguration, type Configuration } from '../generated-extension-meta.js';
+import { getDefaultConfiguration, type Configuration } from '../generated/extension_manifest.js';
 
 const MAX_CONFIGURED_INPUT_PIXELS = 1_000_000_000;
 

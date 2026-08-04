@@ -410,6 +410,10 @@ export default defineConfig({
       rules: restrictedImports(corePaths, corePatterns),
     },
     {
+      files: ['src/config/extension_configuration.ts'],
+      rules: restrictedImports(extensionOnly, corePatterns),
+    },
+    {
       files: ['src/commands/**/*.ts', 'src/presentation/**/*.ts', 'src/extension.ts'],
       rules: restrictedImports(extensionOnly, [
         {

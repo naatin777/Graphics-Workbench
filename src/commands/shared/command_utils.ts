@@ -3,8 +3,8 @@ import type * as vscode from 'vscode';
 import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { configureExternalToolTimeouts } from '../../config/external_tools/external_tool_settings.js';
 import { getMaxConcurrentHeavyProcesses } from '../../config/performance.js';
-import { getExtensionConfiguration } from '../../generated-extension-config.js';
-import type { Configuration } from '../../generated-extension-meta.js';
+import { getExtensionConfiguration } from '../../config/extension_configuration.js';
+import type { Configuration } from '../../generated/extension_manifest.js';
 import {
   sharedConversionJobLimiter,
   sharedHeavyProcessLimiter,

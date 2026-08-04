@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 import sharp from 'sharp';
 
 import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
-import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 
 const execFileAsync = promisify(execFile);
 

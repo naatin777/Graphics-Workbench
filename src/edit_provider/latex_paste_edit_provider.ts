@@ -2,8 +2,8 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { getExtensionConfiguration } from '../generated-extension-config.js';
-import type { GetConfiguration } from '../generated-extension-meta.js';
+import { getExtensionConfiguration } from '../config/extension_configuration.js';
+import type { GetConfiguration } from '../generated/extension_manifest.js';
 import { withCancellationSignal } from '../commands/lifecycle/progress_cancellation.js';
 import { resolveOutputConflicts } from '../commands/lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../commands/lifecycle/undo_last_conversion.js';

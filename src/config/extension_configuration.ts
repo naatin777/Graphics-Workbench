@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { createConfiguration, type Configuration } from './generated-extension-meta.js';
+import { createConfiguration, type Configuration } from '../generated/extension_manifest.js';
 
 export function getExtensionConfiguration(): Configuration {
   return createConfiguration({

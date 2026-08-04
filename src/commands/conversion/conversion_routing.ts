@@ -1,4 +1,4 @@
-import { conversionPairs, getDefaultConfiguration, type Configuration } from '../../generated-extension-meta.js';
+import { conversionPairs, getDefaultConfiguration, type Configuration } from '../../generated/extension_manifest.js';
 import { type SourceFormat, sourceFormatForPath } from '../../application/policy/source_format.js';
 import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 

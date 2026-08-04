@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { getDefaultConfiguration } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {

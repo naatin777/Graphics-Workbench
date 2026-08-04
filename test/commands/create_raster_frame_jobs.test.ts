@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { createRasterFrameJobs } from '../../src/commands/conversion/create_raster_frame_jobs.js';
-import { getDefaultConfiguration } from '../../src/generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 const fixturePath = operationPngInputPath;

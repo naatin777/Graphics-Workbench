@@ -10,7 +10,7 @@ import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert
 import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
-import { getExtensionConfiguration } from '../../src/generated-extension-config.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import { testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertPdfMatches, assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';

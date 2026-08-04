@@ -1,4 +1,4 @@
-import type { Configuration } from '../../generated-extension-meta.js';
+import type { Configuration } from '../../generated/extension_manifest.js';
 
 export type ExternalToolId = 'qpdf' | 'drawio' | 'ghostscript' | 'pdftocairo' | 'rsvg-convert' | 'mermaid';
 

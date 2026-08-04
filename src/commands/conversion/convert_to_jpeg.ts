@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
-import { getDefaultConfiguration, type Configuration } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration, type Configuration } from '../../generated/extension_manifest.js';
 
 import {
   isEditableDrawioImagePath,

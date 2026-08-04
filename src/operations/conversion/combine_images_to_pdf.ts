@@ -13,7 +13,7 @@ import {
   type CommittedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import { writeSourceAsPdf, type WriteSourceAsPdfOptions } from './convert_to_pdf.js';
-import { getDefaultConfiguration } from '../../generated-extension-meta.js';
+import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
