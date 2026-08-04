@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { statSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-import { type ElectronApplication, type JSHandle, type Page, type TestInfo } from '@playwright/test';
+import type { ElectronApplication, JSHandle, Page, TestInfo } from '@playwright/test';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 
 import { cropConfigureFixture } from '../../../helpers/crop_configure_fixture.js';

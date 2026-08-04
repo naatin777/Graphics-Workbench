@@ -9,7 +9,7 @@ const renderPdfPages = vi.hoisted(() =>
     if (container instanceof Element) {
       for (let page = 1; page <= 4; page += 1) {
         const figure = document.createElement('figure');
-        figure.setAttribute('data-pdf-page', String(page));
+        figure.dataset.pdfPage = String(page);
         const canvas = document.createElement('canvas');
         figure.append(canvas);
         container.append(figure);

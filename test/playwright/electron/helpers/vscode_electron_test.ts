@@ -3,7 +3,7 @@ import { access, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 
-import { type ElectronApplication, type Page, type TestInfo } from '@playwright/test';
+import type { ElectronApplication, Page, TestInfo } from '@playwright/test';
 
 import { testVscodeSettingsPath } from '../../../helpers/fixture_paths.js';
 

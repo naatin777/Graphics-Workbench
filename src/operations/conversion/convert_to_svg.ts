@@ -17,10 +17,7 @@ import { validateJobPaths } from '../pdf/pdf_utils.js';
 import { errorMessage } from './raster_conversion.js';
 import { isAbortError } from '../../application/error_utils.js';
 
-import {
-  type CommittedConversionOutput,
-  type PreparedConversionOutput,
-} from '../lifecycle/commit_conversion_outputs.js';
+import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import type { DrawioBackend, MermaidBackend, PdftocairoBackend, RunPdfToSvg } from './tools/index.js';

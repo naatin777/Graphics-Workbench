@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 48（0違反の型・Unicorn・Promiseルール群）Done
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 49（import type・computed key・DOM dataset）Done
 
 ## On hold
 

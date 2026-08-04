@@ -17,10 +17,7 @@ import {
   rasterInputPixelLimitMessage,
   type RasterAnimationMetadata,
 } from './raster_input.js';
-import {
-  type CommittedConversionOutput,
-  type PreparedConversionOutput,
-} from '../lifecycle/commit_conversion_outputs.js';
+import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 
 export type { CommittedConversionOutput };
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';

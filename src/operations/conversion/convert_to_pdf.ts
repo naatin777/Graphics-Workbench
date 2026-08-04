@@ -26,10 +26,7 @@ import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/inp
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { validateJobPaths } from '../pdf/pdf_utils.js';
 
-import {
-  type CommittedConversionOutput,
-  type PreparedConversionOutput,
-} from '../lifecycle/commit_conversion_outputs.js';
+import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';

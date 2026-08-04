@@ -3,10 +3,7 @@ import path from 'node:path';
 
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import {
-  type CommittedConversionOutput,
-  type PreparedConversionOutput,
-} from '../lifecycle/commit_conversion_outputs.js';
+import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';

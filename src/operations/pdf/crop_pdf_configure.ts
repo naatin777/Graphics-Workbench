@@ -16,7 +16,7 @@ import {
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runCropPdfProcess } from './run_crop_pdf_process.js';
-import { type CropBox, type CropTarget } from './crop_pdf_core.js';
+import type { CropBox, CropTarget } from './crop_pdf_core.js';
 
 export type { CropBox } from './crop_pdf_core.js';
 

@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 48（0違反の型・Unicorn・Promiseルール群）Done
+Status: In progress — Phase 49（import type・computed key・DOM dataset）Done
 
 ## Objective
 
@@ -388,6 +388,14 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `import/export`
 
 `eslint/no-bitwise`は既存4件がすべて正当なflags/permissionマスク演算（`COPYFILE_EXCL`判定・`mode & 0o777`）のため、一括error化せず保留。`typescript/no-import-type-side-effects`（16件）・`eslint/no-useless-computed-key`（8件）・`unicorn/prefer-dom-node-dataset`（5件）は次Phaseで小解消する。
+
+## Phase 49 — import type・computed key・DOM dataset
+
+既存違反29件を解消してerror化した。
+
+- `typescript/no-import-type-side-effects`: type-only import16件を`import { type X }`から`import type { X }`へ（auto-fix + 確認）
+- `eslint/no-useless-computed-key`: 8件（`package_manifest.test.ts`の`['key']`を`key`へ）をauto-fixで解消
+- `unicorn/prefer-dom-node-dataset`: `getAttribute('data-pdf-page')`を`dataset.pdfPage`へ5件。`Element.dataset`不在のため、rotate/reorder webviewで`instanceof HTMLElement`・`closest<HTMLElement>`・`querySelectorAll<HTMLElement>`を型指定
 
 ## Baseline
 

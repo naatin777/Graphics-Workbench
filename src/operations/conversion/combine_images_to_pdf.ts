@@ -18,10 +18,7 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { destroyRasterInput, openRasterInput } from './raster_input.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
-import {
-  type RsvgToolScratchOptions,
-  type RunRsvgConvert,
-} from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
+import type { RsvgToolScratchOptions, RunRsvgConvert } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import type { SvgToPdfBackend } from './tools/index.js';
 
 interface CombineImagesJob {

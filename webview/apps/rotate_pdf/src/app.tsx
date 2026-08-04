@@ -54,17 +54,17 @@ export function App(): JSX.Element {
     };
 
     const onPageClick = (event: MouseEvent): void => {
-      if (!(event.target instanceof Element)) {
+      if (!(event.target instanceof HTMLElement)) {
         return;
       }
 
-      const figure = event.target.closest('[data-pdf-page]');
+      const figure = event.target.closest<HTMLElement>('[data-pdf-page]');
 
       if (!figure) {
         return;
       }
 
-      const page = Number(figure.getAttribute('data-pdf-page'));
+      const page = Number(figure.dataset.pdfPage);
 
       if (Number.isInteger(page) && page >= 1) {
         togglePage(page);
@@ -172,8 +172,8 @@ export function App(): JSX.Element {
     if (!container) {
       return;
     }
-    for (const figure of container.querySelectorAll('[data-pdf-page]')) {
-      const page = Number(figure.getAttribute('data-pdf-page'));
+    for (const figure of container.querySelectorAll<HTMLElement>('[data-pdf-page]')) {
+      const page = Number(figure.dataset.pdfPage);
       figure.classList.toggle('pdf-page--selected', selectedPages.has(page));
     }
   }

@@ -229,7 +229,7 @@ suite('package.jsonの変換メニュー定義', () => {
         .map((entry) => [entry.command, entry]),
     );
     const expectedSettingsByCommand: Record<string, string[]> = {
-      ['graphics-workbench.convertToPdf']: [
+      'graphics-workbench.convertToPdf': [
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
@@ -237,7 +237,7 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      ['graphics-workbench.convertToPng']: [
+      'graphics-workbench.convertToPng': [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
@@ -246,7 +246,7 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      ['graphics-workbench.convertToJpeg']: [
+      'graphics-workbench.convertToJpeg': [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
@@ -255,7 +255,7 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      ['graphics-workbench.convertToWebp']: [
+      'graphics-workbench.convertToWebp': [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
@@ -264,7 +264,7 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      ['graphics-workbench.convertToAvif']: [
+      'graphics-workbench.convertToAvif': [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
@@ -273,13 +273,13 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      ['graphics-workbench.convertToSvg']: [
+      'graphics-workbench.convertToSvg': [
         CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      ['graphics-workbench.convertDrawioToPdf']: [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
-      ['graphics-workbench.convertDrawioToPdfDirectly']: [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
+      'graphics-workbench.convertDrawioToPdf': [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
+      'graphics-workbench.convertDrawioToPdfDirectly': [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
       [COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND]: [
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,

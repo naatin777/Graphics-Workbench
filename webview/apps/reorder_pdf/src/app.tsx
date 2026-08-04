@@ -213,8 +213,8 @@ export function App(): JSX.Element {
     if (!container) {
       return;
     }
-    const order = [...container.querySelectorAll('[data-pdf-page]')].map((figure) =>
-      Number(figure.getAttribute('data-pdf-page')),
+    const order = [...container.querySelectorAll<HTMLElement>('[data-pdf-page]')].map((figure) =>
+      Number(figure.dataset.pdfPage),
     );
 
     if (order.length === 0) {
