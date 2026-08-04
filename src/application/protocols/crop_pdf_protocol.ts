@@ -1,4 +1,6 @@
+import { hasExactKeys, isRecord, isString } from './protocol_utils.js';
 import type { PdfPreviewSettings } from './pdf_preview_protocol.js';
+import { isWebviewMessageWithPayload, isWebviewMessageWithoutPayload } from './webview_protocol.js';
 
 export interface CropBox {
   left: number;
@@ -110,68 +112,53 @@ export type CropConfigureWebviewToHost =
       payload: { message: string };
     };
 
-function readProperty(object: object, key: string): unknown {
-  return Reflect.get(object, key) as unknown;
+export function isCropConfigureMessage(value: unknown): value is CropConfigureWebviewToHost {
+  return (
+    isWebviewMessageWithoutPayload(value, 'ready') ||
+    isWebviewMessageWithoutPayload(value, 'cancel') ||
+    isWebviewMessageWithPayload(value, 'previewLoadFailed', isCropMessagePayload) ||
+    isWebviewMessageWithPayload(value, 'apply', isCropApplyPayload)
+  );
 }
 
-export function isCropConfigureMessage(value: unknown): value is CropConfigureWebviewToHost {
-  if (typeof value !== 'object' || value === null || !('type' in value)) {
-    return false;
-  }
+function isCropMessagePayload(value: unknown): value is { message: string } {
+  return isRecord(value) && hasExactKeys(value, ['message']) && isString(value.message);
+}
 
-  if (value.type === 'ready' || value.type === 'cancel') {
-    return true;
-  }
-
-  if (value.type === 'previewLoadFailed') {
-    return (
-      'payload' in value &&
-      typeof value.payload === 'object' &&
-      value.payload !== null &&
-      'message' in value.payload &&
-      typeof value.payload.message === 'string'
-    );
-  }
-
-  if (value.type !== 'apply' || !('payload' in value)) {
-    return false;
-  }
-
-  if (typeof value.payload !== 'object' || value.payload === null) {
-    return false;
-  }
-
+function isCropApplyPayload(
+  value: unknown,
+): value is Extract<CropConfigureWebviewToHost, { type: 'apply' }>['payload'] {
   return (
-    'cropBox' in value.payload &&
-    isCropBox(value.payload.cropBox) &&
-    'target' in value.payload &&
-    isCropTarget(value.payload.target)
+    isRecord(value) &&
+    hasExactKeys(value, ['cropBox', 'target']) &&
+    isCropBox(value.cropBox) &&
+    isCropTarget(value.target)
   );
 }
 
 function isCropBox(value: unknown): value is CropBox {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  return ['left', 'bottom', 'right', 'top'].every((key) => {
-    const coordinate = readProperty(value, key);
-    return typeof coordinate === 'number' && Number.isFinite(coordinate);
-  });
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ['left', 'bottom', 'right', 'top']) &&
+    ['left', 'bottom', 'right', 'top'].every((key) => {
+      const coordinate = value[key];
+      return typeof coordinate === 'number' && Number.isFinite(coordinate);
+    })
+  );
 }
 
 function isCropTarget(value: unknown): value is CropTarget {
-  if (typeof value !== 'object' || value === null || !('type' in value)) {
+  if (!isRecord(value) || typeof value.type !== 'string') {
     return false;
   }
 
   if (value.type === 'all') {
-    return true;
+    return hasExactKeys(value, ['type']);
   }
 
   return (
     value.type === 'selected' &&
-    'pages' in value &&
+    hasExactKeys(value, ['type', 'pages']) &&
     Array.isArray(value.pages) &&
     value.pages.every((page) => Number.isInteger(page) && page > 0)
   );
