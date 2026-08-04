@@ -92,6 +92,7 @@ function validateOutputPath(outputPath: string, platform: OutputPathPlatform, pa
       continue;
     }
 
+    // oxlint-disable-next-line unicorn/prefer-spread -- String spread trips typescript/no-misused-spread; Array.from iterates code points identically.
     const controlCharacter = Array.from(component).find((character) => {
       const characterCode = character.codePointAt(0) ?? 0;
       return characterCode >= 1 && characterCode <= 31;

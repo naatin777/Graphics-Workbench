@@ -24,7 +24,7 @@ export function App(): JSX.Element {
       }
 
       const { payload } = event.data;
-      setSources(payload.sources.slice());
+      setSources([...payload.sources]);
       setPdfOptions({
         preview: payload.preview,
         ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
@@ -58,7 +58,7 @@ export function App(): JSX.Element {
       return;
     }
 
-    const next = current.slice();
+    const next = [...current];
     const [movedSource] = next.splice(fromIndex, 1);
 
     if (!movedSource) {
@@ -78,7 +78,7 @@ export function App(): JSX.Element {
       return;
     }
 
-    const next = current.slice();
+    const next = [...current];
     const [movedSource] = next.splice(fromIndex, 1);
 
     if (!movedSource) {

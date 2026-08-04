@@ -300,6 +300,7 @@ function safeName(value: string): string {
 }
 
 function safePageName(value: string | undefined, page: number): string {
+  // oxlint-disable-next-line unicorn/prefer-spread -- String spread trips typescript/no-misused-spread; Array.from iterates code points identically.
   const normalized = Array.from(value ?? String(page))
     .map((character) => ((character.codePointAt(0) ?? 0) <= 31 ? '_' : character))
     .join('')
