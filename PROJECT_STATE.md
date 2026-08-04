@@ -33,7 +33,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0215: Playwrightのpixel matchingを廃止し目視レビューへ移行する](docs/tasks/0215-drop-playwright-pixel-matching.md) — `toMatchSnapshot` / `__snapshots__` / `PLAYWRIGHT_VISUAL_SNAPSHOTS` / Docker visual runnerを削除し、`visual:capture`（OS非依存）＋目視レビューへ移行。ADR-0027新設・ADR-0024/0025置き換え
+- [0217: 入力制限・タイムアウト方針を確定する](docs/tasks/0217-finalize-input-limit-and-timeout-policy.md) — `confirmLargeOperation`削除、外部ツールtimeout既定0、ADR-0028・AGENTS.md・README反映
 
 ## Non-goals
 
@@ -60,6 +60,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - GitHub ActionsのPRでは3 OSともpackaged Playwrightを実行する。Linuxはfull 33 cases、macOS / Windowsはwide packaged conversion smoke 3 casesで、macOS / Windowsではpixel比較を行わない。
 - Playwright基準画像はCIで再生成せず、ローカルの`docker/playwright-visual`で再生成して目視確認し、通常のcommitでGit管理する。CIは基準画像の比較（verify）だけを行う（ADR-0025）。
 - Playwrightスクリーンショットはpixel比較せず、`npm run visual:capture`で`artifacts/visual-review/`へ生成し人間が目視確認する。承認した画像のみreferenceとしてGit管理する（ADR-0027、ADR-0024/0025は置き換え済み）。
+- 入力ファイルサイズ・PDFページ数にアプリケーション共通の固定上限を設けず、本処理に共通実行タイムアウトを設けない。停止はユーザーのキャンセルで行い、セキュリティガードと制御タイムアウトは維持する（ADR-0028）。
 - releaseの6 target VSIXは、可能な限り対象と同一OS・CPUのGitHub-hosted runnerで生成し、`sharp`を実実行検証する。Windows ARM64は`windows-11-arm`がPublic previewのためcross-package生成・内容検証のみとする（ADR-0026）。
 - Linux visualのローカル再現には、Playwright・npm・lockfileを固定し、外部変換toolのpath/versionをbuild時にverifyする`docker/playwright-visual/Dockerfile`を使う。Docker imageは`linux/amd64`と`linux/arm64`を対象に全33 casesを実行できるが、GitHub Actions runnerへDocker実行を組み込まない。
 - required platform、quality priority、不可逆な変更はmaintainerが決める。

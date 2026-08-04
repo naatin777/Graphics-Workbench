@@ -82,7 +82,6 @@ export async function convertToWebpCommand(
       operationName: 'convert-to-webp',
       ...(outputChannel !== undefined && { outputChannel }),
       resolveConflicts: resolveOutputConflicts,
-      sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
       messages: createOutputConversionMessages('WebP', sourceUris.length),
       run: async (runtime) => {
         const plannedJobs = await Promise.all(

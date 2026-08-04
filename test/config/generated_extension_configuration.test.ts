@@ -45,8 +45,7 @@ suite('生成された設定スキーマ検証', () => {
     assert.strictEqual(configuration.preview.maxCanvasPixels(), 40_000_000);
     assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
     assert.strictEqual(configuration.performance.maxConcurrentHeavyProcesses(), 2);
-    assert.strictEqual(configuration.externalTools.qpdf.timeoutSeconds(), 120);
-    assert.strictEqual(configuration.largeOperationWarnings.enabled(), true);
+    assert.strictEqual(configuration.externalTools.qpdf.timeoutSeconds(), 0);
   });
 
   test('新しい数値設定の範囲を拒否する', () => {

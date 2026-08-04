@@ -2,7 +2,6 @@ import type * as vscode from 'vscode';
 
 import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { configureExternalToolTimeouts } from '../../config/external_tools/external_tool_settings.js';
-import { configureLargeOperationWarningSettings } from '../../config/large_operation_warnings.js';
 import { getMaxConcurrentHeavyProcesses } from '../../config/performance.js';
 import { getExtensionConfiguration } from '../../generated-extension-config.js';
 import type { Configuration } from '../../generated-extension-meta.js';
@@ -33,7 +32,6 @@ export function getCommandConfiguration(dependencies?: CommandDependencies): Con
   const getConfiguration = dependencies?.getConfiguration ?? getExtensionConfiguration;
   const configuration = getConfiguration();
   configureExternalToolTimeouts(configuration);
-  configureLargeOperationWarningSettings(configuration);
   const concurrency = getMaxConcurrentHeavyProcesses(configuration);
   sharedHeavyProcessLimiter.setConcurrency(concurrency);
   sharedConversionJobLimiter.setConcurrency(concurrency);

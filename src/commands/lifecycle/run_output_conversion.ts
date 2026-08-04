@@ -9,7 +9,6 @@ import { createProgressReporters } from './progress_reporting.js';
 import { recordConversionForUndo } from './undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError, errorMessage } from '../shared/command_utils.js';
-import { confirmLargeOperation } from './large_operation_warning.js';
 
 export interface ConversionCommandMessages {
   progressTitle: string;
@@ -52,8 +51,6 @@ export async function runConversionLifecycle(options: {
   messages: ConversionCommandMessages;
   outputChannel?: LineOutputChannel;
   resolveConflicts?: ConversionExecutionContext['resolveConflicts'];
-  sourcePaths?: readonly string[];
-  pdfPageCount?: number;
   run: (runtime: ConversionExecutionContext) => Promise<CommittedConversionOutput[]>;
 }): Promise<void> {
   try {
@@ -66,13 +63,6 @@ export async function runConversionLifecycle(options: {
       async (progress, token) =>
         withCancellationSignal(token, async (signal) => {
           progress.report({ message: options.messages.prepareMessage });
-          if (options.sourcePaths !== undefined) {
-            await confirmLargeOperation({
-              sourcePaths: options.sourcePaths,
-              ...(options.pdfPageCount === undefined ? {} : { pdfPageCount: options.pdfPageCount }),
-              signal,
-            });
-          }
           const runtimeOptions: ConversionExecutionContext = {
             signal,
             ...createProgressReporters(progress),

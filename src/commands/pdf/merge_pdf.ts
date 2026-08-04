@@ -17,7 +17,6 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
-import { confirmLargeOperation } from '../lifecycle/large_operation_warning.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
@@ -58,10 +57,6 @@ export async function mergePdfSelectedFilesCommand(
       },
       async (_progress, token) => {
         return withCancellationSignal(token, async (signal) => {
-          await confirmLargeOperation({
-            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
-            signal,
-          });
           const runtime: ConversionExecutionContext = {
             signal,
             ...createProgressReporters(_progress),
@@ -254,11 +249,6 @@ async function applyConfiguredMerge(params: {
           if (token.isCancellationRequested) {
             abortController.abort();
           }
-
-          await confirmLargeOperation({
-            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
-            signal: abortController.signal,
-          });
 
           const runtime: ConversionExecutionContext = {
             signal: abortController.signal,
