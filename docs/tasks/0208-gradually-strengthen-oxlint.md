@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 53（0違反のESLint・型・Unicornルール群）Done
+Status: In progress — Phase 54（0違反のESLint・型ルール群）Done
 
 ## Objective
 
@@ -432,6 +432,13 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `eslint/no-extra-boolean-cast` / `no-useless-rename` / `prefer-object-spread`
 - `typescript/no-base-to-string`
 - `unicorn/prefer-reflect-apply` / `no-array-method-this-argument` / `prefer-string-starts-ends-with`
+
+## Phase 54 — 0違反のESLint・型ルール群
+
+既存違反を小解消してerror化した。
+
+- 0違反でerror化（7ルール）: `eslint/no-ex-assign` / `no-dupe-class-members` / `no-inner-declarations` / `no-multi-str` / `no-shadow-restricted-names` / `no-unneeded-ternary`、`typescript/no-loss-of-precision`
+- `typescript/no-loop-func`: テストの`assertLogSequence`が同期`findIndex`callbackでloop変数を捕捉する1件を、同期実行で安全なことを理由付き行単位抑制で解消してerror化
 
 ## Baseline
 

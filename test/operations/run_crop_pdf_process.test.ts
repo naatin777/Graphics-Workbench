@@ -640,6 +640,7 @@ function createFixtureLauncher(behavior: string, pidFile?: string): (runnerPath:
 function assertLogSequence(lines: readonly string[], events: readonly string[]): void {
   let lastIndex = -1;
   for (const event of events) {
+    // oxlint-disable-next-line typescript/no-loop-func -- findIndex runs synchronously in this iteration, so the closure is safe.
     const index = lines.findIndex((line, candidateIndex) => candidateIndex > lastIndex && line.includes(event));
     assert.notStrictEqual(index, -1, `Expected log event after index ${lastIndex}: ${event}\n${lines.join('\n')}`);
     lastIndex = index;
