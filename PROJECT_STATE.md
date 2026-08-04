@@ -31,7 +31,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0208: oxlintの制限を段階的に強化する](docs/tasks/0208-gradually-strengthen-oxlint.md) — Phase 49（import type・computed key・DOM dataset）Done
+- [0208: oxlintの制限を段階的に強化する](docs/tasks/0208-gradually-strengthen-oxlint.md) — Phase 50（0違反の型・Unicorn・Promiseルール群（2））Done
 
 ## Non-goals
 
