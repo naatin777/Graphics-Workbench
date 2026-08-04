@@ -190,4 +190,15 @@ suite('rotatePdf protocol guard', () => {
       false,
     );
   });
+
+  test('共有envelopeのtop-level追加キーを拒否する', () => {
+    assert.strictEqual(
+      isRotatePdfWebviewToHostMessage({
+        type: 'apply',
+        payload: { angle: 90, pageIndices: [1] },
+        requestId: 'request-1',
+      }),
+      false,
+    );
+  });
 });

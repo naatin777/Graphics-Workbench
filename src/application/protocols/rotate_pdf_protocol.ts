@@ -8,6 +8,11 @@ import {
   isWebviewUri,
 } from './protocol_utils.js';
 import { isPdfPreviewSettings, type PdfPreviewSettings } from './pdf_preview_protocol.js';
+import {
+  isWebviewErrorMessage,
+  isWebviewMessageWithPayload,
+  isWebviewMessageWithoutPayload,
+} from './webview_protocol.js';
 
 export const PDF_ROTATION_ANGLES = [90, 180, 270] as const;
 export type PdfRotationAngle = (typeof PDF_ROTATION_ANGLES)[number];
@@ -82,35 +87,23 @@ export type RotatePdfWebviewToHost =
     };
 
 export function isRotatePdfHostToWebviewMessage(value: unknown): value is RotatePdfHostToWebview {
-  if (!isRecord(value) || typeof value.type !== 'string' || !isRecord(value.payload)) {
-    return false;
-  }
-
-  if (value.type === 'error') {
-    return (
-      hasExactKeys(value, ['type', 'payload']) &&
-      hasExactKeys(value.payload, ['message']) &&
-      isString(value.payload.message)
-    );
-  }
-
-  if (value.type !== 'init') {
-    return false;
-  }
-
-  return isRotatePdfInitPayload(value.payload);
+  return isWebviewErrorMessage(value) || isWebviewMessageWithPayload(value, 'init', isRotatePdfInitPayload);
 }
 
-function isRotatePdfInitPayload(payload: Record<string, unknown>): boolean {
+function isRotatePdfInitPayload(value: unknown): value is Extract<RotatePdfHostToWebview, { type: 'init' }>['payload'] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
   return (
-    hasExactKeys(payload, ['sourceId', 'fileName', 'pageCount', 'pdfSrc', 'resources', 'preview', 'labels']) &&
-    isNonEmptyString(payload.sourceId) &&
-    isNonEmptyString(payload.fileName) &&
-    isPositiveInteger(payload.pageCount) &&
-    isWebviewUri(payload.pdfSrc) &&
-    isRotatePdfResources(payload.resources) &&
-    isPdfPreviewSettings(payload.preview) &&
-    isRotatePdfLabels(payload.labels)
+    hasExactKeys(value, ['sourceId', 'fileName', 'pageCount', 'pdfSrc', 'resources', 'preview', 'labels']) &&
+    isNonEmptyString(value.sourceId) &&
+    isNonEmptyString(value.fileName) &&
+    isPositiveInteger(value.pageCount) &&
+    isWebviewUri(value.pdfSrc) &&
+    isRotatePdfResources(value.resources) &&
+    isPdfPreviewSettings(value.preview) &&
+    isRotatePdfLabels(value.labels)
   );
 }
 
@@ -126,37 +119,31 @@ function isRotatePdfResources(value: unknown): boolean {
 }
 
 export function isRotatePdfWebviewToHostMessage(value: unknown): value is RotatePdfWebviewToHost {
-  if (!isRecord(value) || typeof value.type !== 'string') {
-    return false;
-  }
-
-  if (value.type === 'ready' || value.type === 'cancel') {
-    return hasExactKeys(value, ['type']);
-  }
-
-  if (value.type === 'previewLoadFailed') {
-    return (
-      hasExactKeys(value, ['type', 'payload']) &&
-      isRecord(value.payload) &&
-      hasExactKeys(value.payload, ['message']) &&
-      isString(value.payload.message)
-    );
-  }
-
-  if (value.type !== 'apply' || !hasExactKeys(value, ['type', 'payload']) || !isRecord(value.payload)) {
-    return false;
-  }
-
-  return isRotatePdfApplyPayload(value.payload);
+  return (
+    isWebviewMessageWithoutPayload(value, 'ready') ||
+    isWebviewMessageWithoutPayload(value, 'cancel') ||
+    isWebviewMessageWithPayload(value, 'previewLoadFailed', isRotatePdfMessagePayload) ||
+    isWebviewMessageWithPayload(value, 'apply', isRotatePdfApplyPayload)
+  );
 }
 
-function isRotatePdfApplyPayload(payload: Record<string, unknown>): boolean {
+function isRotatePdfMessagePayload(value: unknown): value is { message: string } {
+  return isRecord(value) && hasExactKeys(value, ['message']) && isString(value.message);
+}
+
+function isRotatePdfApplyPayload(
+  value: unknown,
+): value is Extract<RotatePdfWebviewToHost, { type: 'apply' }>['payload'] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
   return (
-    hasExactKeys(payload, ['angle', 'pageIndices']) &&
-    PDF_ROTATION_ANGLES.some((angle) => angle === payload.angle) &&
-    Array.isArray(payload.pageIndices) &&
-    payload.pageIndices.length > 0 &&
-    payload.pageIndices.every(isPositiveInteger)
+    hasExactKeys(value, ['angle', 'pageIndices']) &&
+    PDF_ROTATION_ANGLES.some((angle) => angle === value.angle) &&
+    Array.isArray(value.pageIndices) &&
+    value.pageIndices.length > 0 &&
+    value.pageIndices.every(isPositiveInteger)
   );
 }
 
