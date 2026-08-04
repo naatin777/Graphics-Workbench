@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 46（no-unsafe-call）Done
+- [0208: oxlintの制限を段階的に強化する](0208-gradually-strengthen-oxlint.md) — In progress — Phase 47（セキュリティ・型注釈・Unicornルール群）Done
 
 ## On hold
 

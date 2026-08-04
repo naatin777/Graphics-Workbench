@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 46（no-unsafe-call）Done
+Status: In progress — Phase 47（セキュリティ・型注釈・Unicornルール群）Done
 
 ## Objective
 
@@ -370,6 +370,13 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - テスト（Phase 7/9/45と同じ方針）と既存overrideの`scripts/generate-extension-meta.ts`へ`off`を追加
 - スクリプト7箇所のうち4箇所は`generate-extension-meta.ts`（override）、3箇所（`verify-vsix.mjs`・`render-coverage-report.mjs`・`generate-test-output.ts`）は`toSorted()`のJSDoc/strip-types型未解決による`any`誤検知のため、`no-unsafe-return`と併記した理由付き行単位抑制を適用
 - productionは既に`any`境界を型ガード済みのためコード変更なしでerror化できた
+
+## Phase 47 — セキュリティ・型注釈・Unicornルール群
+
+既存違反を小解消してerror化した。
+
+- 0違反でerror化（16ルール）: `eslint/no-implied-eval` / `no-new-func` / `no-new-wrappers` / `no-obj-calls`、`typescript/no-namespace` / `ban-ts-comment` / `no-var-requires` / `prefer-as-const`、`unicorn/prefer-array-flat-map` / `prefer-regexp-test` / `require-array-join-separator` / `prefer-native-coercion-functions` / `prefer-string-slice`、`promise/no-promise-in-callback`、`import/no-absolute-path`（`no-unmodified-loop-condition`はPhase 44で既にerror化）
+- 違反を解消してerror化: `typescript/no-inferrable-types` — テストのFakeChildProcessで`signalCode: null = null`の冗長型注釈を`signalCode = null`へ（初期化子から`null`型を推論）
 
 ## Baseline
 
