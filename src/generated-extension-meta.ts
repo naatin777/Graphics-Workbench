@@ -936,6 +936,7 @@ export const publicCommandIds = [
   'graphics-workbench.encryptPdf',
   'graphics-workbench.decryptPdf',
   'graphics-workbench.rotatePdf.rotate',
+  'graphics-workbench.rotatePdf.configure',
 ] as const;
 
 export type CommandId = (typeof publicCommandIds)[number] | 'graphics-workbench.convertPngToPdf';

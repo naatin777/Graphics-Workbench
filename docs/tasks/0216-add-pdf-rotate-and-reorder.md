@@ -1,6 +1,6 @@
 # 0216: PDF回転とページ並び替えを追加する
 
-Status: In progress — Branch 1（rotate quick pick）Implemented
+Status: In progress — Branch 1（rotate quick pick）・Branch 2（rotate configure webview）Implemented
 
 ## Objective
 
@@ -25,6 +25,17 @@ PDFページの回転（QuickPick方式とConfigure Webview方式）と、ペー
 - `src/generated-extension-meta.ts` — 再生成
 - `docs/specs/product/rotate-pdf.md` / `docs/specs/internal/rotate-pdf.md`
 - `test/operations/rotate_pdf.test.ts`
+
+## Changes (Branch 2)
+
+- `src/application/protocols/rotate_pdf_protocol.ts` — init / applyプロトコルとランタイムguard
+- `webview/apps/rotate_pdf/` — SolidJS app（ページサムネイル選択 + 90/180/270ラジオ + select all + Apply）
+- `src/commands/pdf/rotate_pdf_configure.ts` — `rotatePdf.configure`（Webview起動 → apply → `rotatePdfFiles`）
+- `src/extension.ts` — `graphics-workbench.rotatePdf.configure`登録
+- `package.json` / NLS — configureコマンド、webviewラベル、`compile:webview:rotate_pdf` / `test:webview:rotate_pdf`
+- `docs/specs/product/rotate-pdf-configure.md` / `docs/specs/internal/rotate-pdf-configure-protocol.md`
+- `test/operations/rotate_pdf.test.ts` — protocol guardテスト追加
+- `webview/apps/rotate_pdf/src/app.test.tsx` — vitest 3件
 
 ## Verification
 
