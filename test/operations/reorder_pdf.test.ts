@@ -147,6 +147,17 @@ suite('reorderPdf protocol guard', () => {
       false,
     );
   });
+
+  test('共有envelopeのtop-level追加キーを拒否する', () => {
+    assert.strictEqual(
+      isReorderPdfWebviewToHostMessage({
+        type: 'apply',
+        payload: { order: [2, 1] },
+        requestId: 'request-1',
+      }),
+      false,
+    );
+  });
 });
 
 async function writePdf(filePath: string, pageCount: number): Promise<void> {

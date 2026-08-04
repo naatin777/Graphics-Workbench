@@ -8,6 +8,11 @@ import {
   isWebviewUri,
 } from './protocol_utils.js';
 import { isPdfPreviewSettings, type PdfPreviewSettings } from './pdf_preview_protocol.js';
+import {
+  isWebviewErrorMessage,
+  isWebviewMessageWithPayload,
+  isWebviewMessageWithoutPayload,
+} from './webview_protocol.js';
 
 export interface ReorderPdfLabels {
   header: {
@@ -76,35 +81,25 @@ export type ReorderPdfWebviewToHost =
     };
 
 export function isReorderPdfHostToWebviewMessage(value: unknown): value is ReorderPdfHostToWebview {
-  if (!isRecord(value) || typeof value.type !== 'string' || !isRecord(value.payload)) {
-    return false;
-  }
-
-  if (value.type === 'error') {
-    return (
-      hasExactKeys(value, ['type', 'payload']) &&
-      hasExactKeys(value.payload, ['message']) &&
-      isString(value.payload.message)
-    );
-  }
-
-  if (value.type !== 'init') {
-    return false;
-  }
-
-  return isReorderPdfInitPayload(value.payload);
+  return isWebviewErrorMessage(value) || isWebviewMessageWithPayload(value, 'init', isReorderPdfInitPayload);
 }
 
-function isReorderPdfInitPayload(payload: Record<string, unknown>): boolean {
+function isReorderPdfInitPayload(
+  value: unknown,
+): value is Extract<ReorderPdfHostToWebview, { type: 'init' }>['payload'] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
   return (
-    hasExactKeys(payload, ['sourceId', 'fileName', 'pageCount', 'pdfSrc', 'resources', 'preview', 'labels']) &&
-    isNonEmptyString(payload.sourceId) &&
-    isNonEmptyString(payload.fileName) &&
-    isPositiveInteger(payload.pageCount) &&
-    isWebviewUri(payload.pdfSrc) &&
-    isReorderPdfResources(payload.resources) &&
-    isPdfPreviewSettings(payload.preview) &&
-    isReorderPdfLabels(payload.labels)
+    hasExactKeys(value, ['sourceId', 'fileName', 'pageCount', 'pdfSrc', 'resources', 'preview', 'labels']) &&
+    isNonEmptyString(value.sourceId) &&
+    isNonEmptyString(value.fileName) &&
+    isPositiveInteger(value.pageCount) &&
+    isWebviewUri(value.pdfSrc) &&
+    isReorderPdfResources(value.resources) &&
+    isPdfPreviewSettings(value.preview) &&
+    isReorderPdfLabels(value.labels)
   );
 }
 
@@ -120,32 +115,30 @@ function isReorderPdfResources(value: unknown): boolean {
 }
 
 export function isReorderPdfWebviewToHostMessage(value: unknown): value is ReorderPdfWebviewToHost {
-  if (!isRecord(value) || typeof value.type !== 'string') {
-    return false;
-  }
+  return (
+    isWebviewMessageWithoutPayload(value, 'ready') ||
+    isWebviewMessageWithoutPayload(value, 'cancel') ||
+    isWebviewMessageWithPayload(value, 'previewLoadFailed', isReorderPdfMessagePayload) ||
+    isWebviewMessageWithPayload(value, 'apply', isReorderPdfApplyPayload)
+  );
+}
 
-  if (value.type === 'ready' || value.type === 'cancel') {
-    return hasExactKeys(value, ['type']);
-  }
+function isReorderPdfMessagePayload(value: unknown): value is { message: string } {
+  return isRecord(value) && hasExactKeys(value, ['message']) && isString(value.message);
+}
 
-  if (value.type === 'previewLoadFailed') {
-    return (
-      hasExactKeys(value, ['type', 'payload']) &&
-      isRecord(value.payload) &&
-      hasExactKeys(value.payload, ['message']) &&
-      isString(value.payload.message)
-    );
-  }
-
-  if (value.type !== 'apply' || !hasExactKeys(value, ['type', 'payload']) || !isRecord(value.payload)) {
+function isReorderPdfApplyPayload(
+  value: unknown,
+): value is Extract<ReorderPdfWebviewToHost, { type: 'apply' }>['payload'] {
+  if (!isRecord(value)) {
     return false;
   }
 
   return (
-    hasExactKeys(value.payload, ['order']) &&
-    Array.isArray(value.payload.order) &&
-    value.payload.order.length > 0 &&
-    value.payload.order.every(isPositiveInteger)
+    hasExactKeys(value, ['order']) &&
+    Array.isArray(value.order) &&
+    value.order.length > 0 &&
+    value.order.every(isPositiveInteger)
   );
 }
 
