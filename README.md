@@ -133,4 +133,4 @@ Graphics Workbench does not impose a fixed limit on input file size or PDF page 
 
 The range of inputs that can be processed, the processing time, and the required resources depend on the input contents, the operation, the external tools used, and your computer's performance. Very large inputs can take a long time or fail with memory, disk, or external-tool errors.
 
-You can cancel a running operation. Cancelling terminates the external processes that are still running and does not leave partial output at the final output path.
+You can cancel a running operation where possible. External processes (Ghostscript, qpdf, Poppler, etc.) are terminated, but depending on the processing method it may take some time for the cancellation to take effect.

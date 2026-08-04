@@ -18,8 +18,6 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - Draw.io to PDF conversion
 - Mermaid theme/backgroundColor settings
 - LaTeX insertion templates (settings)
-- Input preflight validation (all operations) with deep PDF/SVG inspection
-- Preflight warning confirmation dialog (errors checked before warnings)
 - Insert LaTeX code (PDF, clipboard image)
 - ConversionRuntime consistently used across all operations
 - Menu conditions aligned with implementation format support
@@ -33,7 +31,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## In progress
 
-- [0217: 入力制限・タイムアウト方針を確定する](docs/tasks/0217-finalize-input-limit-and-timeout-policy.md) — `confirmLargeOperation`削除、外部ツールtimeout既定0、ADR-0028・AGENTS.md・README反映
+- なし（作業がないためCurrent Taskを空にする）
 
 ## Non-goals
 
@@ -58,11 +56,9 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - Browser Playwrightは廃止し、実VS Codeを必要とする配布物E2Eはpackage済みVSIXのElectron Playwrightで確認する。
 - PRのPackaged Electron E2Eは、Linuxがwide+narrow full UI / responsive / pixel snapshotのowner、macOS / Windowsがwide packaged conversion smokeのownerとなる。release前は3 OSすべてで全wide+narrow suiteを実行し、pixel gateではなく各OSのscreenshot artifactを目視確認する。
 - GitHub ActionsのPRでは3 OSともpackaged Playwrightを実行する。Linuxはfull 33 cases、macOS / Windowsはwide packaged conversion smoke 3 casesで、macOS / Windowsではpixel比較を行わない。
-- Playwright基準画像はCIで再生成せず、ローカルの`docker/playwright-visual`で再生成して目視確認し、通常のcommitでGit管理する。CIは基準画像の比較（verify）だけを行う（ADR-0025）。
 - Playwrightスクリーンショットはpixel比較せず、`npm run visual:capture`で`artifacts/visual-review/`へ生成し人間が目視確認する。承認した画像のみreferenceとしてGit管理する（ADR-0027、ADR-0024/0025は置き換え済み）。
 - 入力ファイルサイズ・PDFページ数にアプリケーション共通の固定上限を設けず、本処理に共通実行タイムアウトを設けない。停止はユーザーのキャンセルで行い、セキュリティガードと制御タイムアウトは維持する（ADR-0028）。
 - releaseの6 target VSIXは、可能な限り対象と同一OS・CPUのGitHub-hosted runnerで生成し、`sharp`を実実行検証する。Windows ARM64は`windows-11-arm`がPublic previewのためcross-package生成・内容検証のみとする（ADR-0026）。
-- Linux visualのローカル再現には、Playwright・npm・lockfileを固定し、外部変換toolのpath/versionをbuild時にverifyする`docker/playwright-visual/Dockerfile`を使う。Docker imageは`linux/amd64`と`linux/arm64`を対象に全33 casesを実行できるが、GitHub Actions runnerへDocker実行を組み込まない。
 - required platform、quality priority、不可逆な変更はmaintainerが決める。
 - Selection Gateが決まるまで、大規模なproduction architecture変更を開始しない。
 - 作業中は `docs/tasks/README.md` からリンクされた1つのtaskに限定する。作業がない場合はCurrent Taskを空にする。
