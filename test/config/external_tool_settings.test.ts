@@ -8,9 +8,9 @@ import {
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('外部ツールタイムアウト設定', () => {
-  test('既存の既定値を秒からミリ秒へ変換する', () => {
-    assert.strictEqual(defaultExternalToolTimeouts().qpdf, 120_000);
-    assert.strictEqual(defaultExternalToolTimeouts().drawio, 300_000);
+  test('既定値はタイムアウトなし（0を秒からミリ秒へ変換しない）', () => {
+    assert.strictEqual(defaultExternalToolTimeouts().qpdf, undefined);
+    assert.strictEqual(defaultExternalToolTimeouts().drawio, undefined);
     assert.strictEqual(timeoutMilliseconds(0), undefined);
     assert.strictEqual(timeoutMilliseconds(86_400), 86_400_000);
   });

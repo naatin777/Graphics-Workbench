@@ -33,6 +33,27 @@ suite('外部tool runner — 正常実行', () => {
     assert.strictEqual(result.stderr, 'warn');
   });
 
+  test('timeoutを指定しなくても正常終了する', async () => {
+    const result = await runExternalTool({
+      toolName: 'fixture-tool',
+      executable: process.execPath,
+      args: ['-e', 'setTimeout(() => process.exit(0), 400)'],
+    });
+
+    assert.strictEqual(result.stdout, '');
+  });
+
+  test('timeoutMs 0でタイマーが作られず正常終了する', async () => {
+    const result = await runExternalTool({
+      toolName: 'fixture-tool',
+      executable: process.execPath,
+      args: ['-e', 'setTimeout(() => process.exit(0), 400)'],
+      timeoutMs: 0,
+    });
+
+    assert.strictEqual(result.stdout, '');
+  });
+
   test('tool名と実行情報をOutput Channelへ記録する', async () => {
     const lines: string[] = [];
     await runExternalTool({
