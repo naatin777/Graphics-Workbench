@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 15（Crop child process protocol境界）Done、残りは単独契約の棚卸し
+Status: Complete — Phase 16（Mermaid runner protocol境界）Done
 
 ## Objective
 
@@ -135,9 +135,11 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - Crop runner requestとcrop box / targetの余分なキーを拒否し、protocol version、request ID、path、座標、ページ検証を維持した
 - child processの起動、キャンセル、termination watchdog、staging lifecycleは変更していない
 
-## Phase 16以降 — 残りのprotocol境界を棚卸しする
+## Phase 16 — Mermaid runner protocol境界を厳格化する（完了）
 
-1. Mermaid runnerのような単独response contractは形式固有のまま維持し、共通化の重複が見つかった場合だけ別taskで扱う
+- Mermaid runnerのrequest / success / failure response contractを形式固有のprotocol moduleへ切り出した
+- requestとresponseの余分なキーを拒否する検証を追加し、Mermaidの出力形式、Puppeteer設定、render options、cancel、timeout、failure処理は維持した
+- 単独response contractをWebview向け共通envelopeへ統合せず、形式固有の境界として扱った
 
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
@@ -187,3 +189,7 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - `npm run compile:test`: passed（Phase 15 Crop child process protocol厳格化後）
 - Compiled protocol smoke: passed（extra message/request keyを拒否）
 - Targeted Extension Host run（`IPC protocol envelope`）: test hostが`SIGABRT`でテスト実行前に終了（既知のlocal runtime制約）
+- `npm run check:all`: passed（Phase 16 Mermaid runner protocol厳格化後）
+- `npm run compile`: passed（Phase 16 Mermaid runner protocol厳格化後）
+- `npm run compile:test`: passed（Phase 16 Mermaid runner protocol厳格化後）
+- `mocha --ui tdd out/test/operations/mermaid_runner_protocol.test.js`: 4 passing
