@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: In progress — Phase 14（Merge Webview protocol移行）Done、残りのprotocol境界を棚卸し中
+Status: In progress — Phase 15（Crop child process protocol境界）Done、残りは単独契約の棚卸し
 
 ## Objective
 
@@ -129,9 +129,15 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - Mergeのsource、init payload、preview error、apply source IDの既存検証を維持し、余分なenvelope・payloadキーを拒否した
 - MergeのWebview UI、preview、operation、command lifecycleは変更していない
 
-## Phase 15以降 — 残りのprotocol境界を棚卸しする
+## Phase 15 — Crop child process protocol境界を厳格化する（完了）
 
-1. `src/application/protocols`に残るmessage guardを確認し、同じenvelope契約を適用できるものだけを移行する
+- Crop runnerのstarted / success / failure messageを必須キーのexact envelopeとして検証するようにした
+- Crop runner requestとcrop box / targetの余分なキーを拒否し、protocol version、request ID、path、座標、ページ検証を維持した
+- child processの起動、キャンセル、termination watchdog、staging lifecycleは変更していない
+
+## Phase 16以降 — 残りのprotocol境界を棚卸しする
+
+1. Mermaid runnerのような単独response contractは形式固有のまま維持し、共通化の重複が見つかった場合だけ別taskで扱う
 
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
@@ -176,3 +182,8 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - `npm run compile`: passed（Phase 14 Merge移行後）
 - `npm run compile:test`: passed（Phase 14 Merge移行後）
 - Targeted Extension Host run（`Merge PDF Webviewプロトコル`）: test hostが`SIGABRT`でテスト実行前に終了（既知のlocal runtime制約）
+- `npm run check:all`: passed（Phase 15 Crop child process protocol厳格化後）
+- `npm run compile`: passed（Phase 15 Crop child process protocol厳格化後）
+- `npm run compile:test`: passed（Phase 15 Crop child process protocol厳格化後）
+- Compiled protocol smoke: passed（extra message/request keyを拒否）
+- Targeted Extension Host run（`IPC protocol envelope`）: test hostが`SIGABRT`でテスト実行前に終了（既知のlocal runtime制約）

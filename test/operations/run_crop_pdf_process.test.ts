@@ -14,6 +14,10 @@ import {
   runCropPdfProcess,
   type CropProcessChild,
 } from '../../src/operations/pdf/run_crop_pdf_process.js';
+import {
+  isCropPdfProcessMessage,
+  parseCropPdfProcessRequest,
+} from '../../src/operations/pdf/crop_pdf_process_protocol.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { RecordingOutputChannel } from '../helpers/recording_output_channel.js';
 import { assertWorkspaceChangesSince, captureWorkspaceSnapshot } from '../helpers/workspace_snapshot.js';
@@ -24,6 +28,40 @@ const fixtureRunnerPath = path.join(
 );
 
 suite('Crop PDF child process', () => {
+  test('IPC protocol envelopeは余分なmessage・requestキーを拒否する', () => {
+    assert.equal(isCropPdfProcessMessage({ type: 'started', protocolVersion: 1, requestId: 'request-1' }), true);
+    assert.equal(
+      isCropPdfProcessMessage({ type: 'started', protocolVersion: 1, requestId: 'request-1', extra: true }),
+      false,
+    );
+    assert.equal(
+      isCropPdfProcessMessage({ type: 'failure', protocolVersion: 1, requestId: 'request-1', error: 'failed' }),
+      true,
+    );
+    assert.equal(
+      isCropPdfProcessMessage({
+        type: 'failure',
+        protocolVersion: 1,
+        requestId: 'request-1',
+        error: 'failed',
+        secret: 'not-allowed',
+      }),
+      false,
+    );
+
+    assert.throws(
+      () =>
+        parseCropPdfProcessRequest({
+          type: 'crop-pdf',
+          protocolVersion: 1,
+          requestId: 'request-1',
+          ...createTestRequest('/workspace', '/workspace/staging/result.pdf'),
+          extra: true,
+        }),
+      /Invalid Crop Configure runner request\./u,
+    );
+  });
+
   suite('Real child process・real filesystem・real pdf-lib', () => {
     test('multilingual-text.pdfをstaging/result.pdfへ全ページCropすると、CropBoxだけを更新し隣接ファイルを変更しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
