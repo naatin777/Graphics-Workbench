@@ -227,12 +227,21 @@ suite('PDFページグループ分割', () => {
       false,
     );
     assert.equal(isSplitPdfWebviewToHostMessage({ type: 'ready' }), true);
+    assert.equal(isSplitPdfWebviewToHostMessage({ type: 'ready', requestId: 'request-1' }), false);
+    assert.equal(isSplitPdfWebviewToHostMessage({ type: '' }), false);
     assert.equal(
       isSplitPdfWebviewToHostMessage({
         type: 'previewLoadFailed',
         payload: { message: 'preview failed' },
       }),
       true,
+    );
+    assert.equal(
+      isSplitPdfWebviewToHostMessage({
+        type: 'previewLoadFailed',
+        payload: { message: 'preview failed', code: 'E_FAIL' },
+      }),
+      false,
     );
     assert.equal(
       isSplitPdfHostToWebviewMessage({
@@ -259,6 +268,13 @@ suite('PDFページグループ分割', () => {
       isSplitPdfWebviewToHostMessage({
         type: 'apply',
         payload: { rows: [{ pages: [], outputName: 'group.pdf' }] },
+      }),
+      false,
+    );
+    assert.equal(
+      isSplitPdfWebviewToHostMessage({
+        type: 'apply',
+        payload: { rows: [{ pages: [1], outputName: 'group.pdf' }], sourcePath: '/not-allowed' },
       }),
       false,
     );
