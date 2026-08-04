@@ -160,7 +160,7 @@ async function runPdfToEps(options: {
     '-dBATCH',
     '-sDEVICE=eps2write',
     '-dEPSCrop',
-    ...(options.page === undefined ? [] : ['-dFirstPage=' + options.page, '-dLastPage=' + options.page]),
+    ...(options.page === undefined ? [] : [`-dFirstPage=${options.page}`, `-dLastPage=${options.page}`]),
     `-sOutputFile=${outputPath}`,
     inputPath,
   ];

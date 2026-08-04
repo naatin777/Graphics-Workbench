@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 54（0違反のESLint・型ルール群）Done
+Status: In progress — Phase 55（0違反のESLintルール群＋prefer-template）Done
 
 ## Objective
 
@@ -439,6 +439,14 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 
 - 0違反でerror化（7ルール）: `eslint/no-ex-assign` / `no-dupe-class-members` / `no-inner-declarations` / `no-multi-str` / `no-shadow-restricted-names` / `no-unneeded-ternary`、`typescript/no-loss-of-precision`
 - `typescript/no-loop-func`: テストの`assertLogSequence`が同期`findIndex`callbackでloop変数を捕捉する1件を、同期実行で安全なことを理由付き行単位抑制で解消してerror化
+
+## Phase 55 — 0違反のESLintルール群＋prefer-template
+
+既存違反を小解消してerror化した。
+
+- 0違反でerror化（17ルール）: `no-array-constructor` / `no-caller` / `no-compare-neg-zero` / `no-cond-assign` / `no-eval` / `no-extra-label` / `no-global-assign` / `no-iterator` / `no-labels` / `no-multi-assign` / `no-useless-call` / `no-useless-concat` / `prefer-arrow-callback` / `prefer-numeric-literals` / `prefer-rest-params` / `prefer-spread` / `require-yield`
+- `eslint/prefer-template`: 9件を解消してerror化。EPSの`-dFirstPage=`引数・merge testのmkdtemp prefix・resolve_output_path testの意図的な`${workspaceFolder}`リテラル（`\${...}`エスケープで維持）をtemplate literalへ。generatorのmetadata構築は意図的な連結のためblock disable
+- `scripts/oxlint-project-plugin.mjs`の1件はlintスコープ外（lint file listに含まれない）のため対象外
 
 ## Baseline
 
