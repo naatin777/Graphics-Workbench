@@ -6,6 +6,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { operationPdfInputDirectory, operationPngInputPath } from '../helpers/fixture_paths.js';
+import { extensionIdentity } from '../../src/generated/extension_manifest.js';
 
 const LEGACY_TO_PDF_COMMANDS = [
   'graphics-workbench.convertPngToPdf',
@@ -17,7 +18,7 @@ const LEGACY_TO_PDF_COMMANDS = [
 
 suite('Extension activation smoke', () => {
   test('拡張機能をactivateすると代表commandが利用可能になる', async () => {
-    const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
+    const extension = vscode.extensions.getExtension(extensionIdentity.id);
 
     assert.ok(extension);
     await extension.activate();

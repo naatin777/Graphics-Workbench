@@ -8,6 +8,7 @@ import { cleanupStaleSecurePdfStagingRoots } from './operations/lifecycle/secure
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
 import { getExtensionConfiguration } from './config/extension_configuration.js';
+import { extensionIdentity } from './generated/extension_manifest.js';
 import { configureExternalToolTimeouts } from './config/external_tools/external_tool_settings.js';
 import { getMaxConcurrentHeavyProcesses } from './config/performance.js';
 import {
@@ -29,7 +30,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const activatedAt = Date.now();
   await cleanupStaleSecurePdfStagingRoots();
   initializeSafeMode(context);
-  const outputChannel = vscode.window.createOutputChannel('Graphics Workbench');
+  const outputChannel = vscode.window.createOutputChannel(extensionIdentity.displayName);
   initializeUndoHistory({ workspaceState: context.workspaceState, outputChannel });
   const dependencies = { getConfiguration: getExtensionConfiguration, outputChannel } satisfies CommandDependencies;
   context.subscriptions.push(outputChannel);

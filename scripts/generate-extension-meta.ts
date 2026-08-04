@@ -14,15 +14,19 @@ type JsonSchema = {
   minimum?: number;
   maximum?: number;
 };
-type ManifestCommand = { command: string };
-type ManifestMenu = { command: string; group?: string; when?: string };
-type PackageManifest = {
+type ManifestCommand = { command: string; title?: string; category?: string };
+type ManifestMenu = { command?: string; submenu?: string; group?: string; when?: string };
+export type PackageManifest = {
   name: string;
+  publisher?: string;
+  displayName?: string;
+  version?: string;
+  repository?: { type?: string; url?: string };
   contributes: {
     commands: ManifestCommand[];
     configuration: { properties: Record<string, JsonSchema> };
     menus?: Record<string, ManifestMenu[]>;
-    submenus?: { id: string }[];
+    submenus?: { id: string; label?: string }[];
   };
 };
 type ConfigNode =
@@ -407,7 +411,154 @@ ${members.join('\n')}
 `;
 }
 
-function generate(packageJson: PackageManifest): string {
+export function renderExtensionIdentity(packageJson: PackageManifest): string {
+  return (
+    `export const extensionIdentity = {\n` +
+    `  name: ${quote(packageJson.name)},\n` +
+    `  publisher: ${quote(packageJson.publisher ?? '')},\n` +
+    `  id: ${quote(`${packageJson.publisher}.${packageJson.name}`)},\n` +
+    `  displayName: ${quote(packageJson.displayName ?? '')},\n` +
+    `  version: ${quote(packageJson.version ?? '')},\n` +
+    `  repository: { type: ${quote(packageJson.repository?.type ?? 'git')}, url: ${quote(packageJson.repository?.url ?? '')} },\n` +
+    `  configurationNamespace: ${quote(packageJson.name)},\n` +
+    `} as const;\n`
+  );
+}
+
+function nlsKey(label: string | undefined, description: string): string {
+  if (label === undefined || !label.startsWith('%') || !label.endsWith('%')) {
+    throw new Error(`${description} must use a %...% NLS reference`);
+  }
+  return label.slice(1, -1);
+}
+
+export function renderCommandContributions(packageJson: PackageManifest): string {
+  const entries = packageJson.contributes.commands.map((command) => {
+    const titleKey = nlsKey(command.title, `Command ${command.command}`);
+    const category = command.category === undefined ? '' : `\n    category: ${quote(command.category)},`;
+    return `  ${quote(command.command)}: {\n    titleKey: ${quote(titleKey)},${category}\n  },`;
+  });
+  const commandIds = packageJson.contributes.commands.map(({ command }) => command);
+  const commandIdList = commandIds.map((command) => `  ${quote(command)},`);
+
+  return (
+    `export const commandContributions = {\n${entries.join('\n')}\n} as const;\n\n` +
+    `export const publicCommandIds = [\n${commandIdList.join('\n')}\n] as const;\n\n` +
+    `export type CommandId = (typeof publicCommandIds)[number];\n`
+  );
+}
+
+export function renderSubmenuContributions(packageJson: PackageManifest): string {
+  const submenus = packageJson.contributes.submenus ?? [];
+  const entries = submenus.map((submenu) => {
+    const labelKey = nlsKey(submenu.label, `Submenu ${submenu.id}`);
+    return `  ${quote(submenu.id)}: { labelKey: ${quote(labelKey)} },`;
+  });
+  return (
+    `export const submenuContributions = {\n${entries.join('\n')}\n} as const;\n\n` +
+    `export type SubmenuId = keyof typeof submenuContributions;\n`
+  );
+}
+
+export function renderExternalToolTimeoutKeys(packageJson: PackageManifest, extensionPrefix: string): string {
+  const keys = Object.keys(packageJson.contributes.configuration.properties)
+    .map((fullKey) => fullKey.slice(extensionPrefix.length))
+    .filter((key) => /^externalTools\.[A-Za-z]+\.timeoutSeconds$/u.test(key))
+    .toSorted();
+  const entries = keys.map((key) => {
+    const tool = key.slice('externalTools.'.length, -'.timeoutSeconds'.length);
+    return `  ${tool}: ${quote(key)},`;
+  });
+  return `export const externalToolTimeoutConfigurationKeys = {\n${entries.join('\n')}\n} as const;\n`;
+}
+
+function assertExtensionIdentity(packageJson: PackageManifest): void {
+  if (
+    packageJson.publisher === undefined ||
+    packageJson.displayName === undefined ||
+    packageJson.version === undefined
+  ) {
+    throw new Error('package.json must define publisher, displayName, and version for the extension identity');
+  }
+  if (packageJson.repository?.url === undefined) {
+    throw new Error('package.json must define repository.url for the extension identity');
+  }
+}
+
+function assertNoDuplicateIds(ids: readonly unknown[], description: string): void {
+  if (new Set(ids).size !== ids.length) {
+    throw new Error(`${description} contains duplicate IDs`);
+  }
+}
+
+function validateMenus(
+  packageJson: PackageManifest,
+  configurationProperties: Record<string, JsonSchema>,
+  extensionPrefix: string,
+): void {
+  const commandIds = new Set(packageJson.contributes.commands.map(({ command }) => command));
+  const submenuIds = new Set((packageJson.contributes.submenus ?? []).map(({ id }) => id));
+  for (const [menuId, entries] of Object.entries(packageJson.contributes.menus ?? {})) {
+    const seenTargets = new Set<string>();
+    for (const entry of entries) {
+      if (entry.command !== undefined && !commandIds.has(entry.command)) {
+        throw new Error(`Menu ${menuId} references undefined command ${entry.command}`);
+      }
+      if (entry.submenu !== undefined && !submenuIds.has(entry.submenu)) {
+        throw new Error(`Menu ${menuId} references undefined submenu ${entry.submenu}`);
+      }
+      const target = entry.command ?? entry.submenu;
+      if (target !== undefined) {
+        const signature = `${entry.when ?? ''}:${target}`;
+        if (seenTargets.has(signature)) {
+          throw new Error(`Menu ${menuId} contains a duplicate entry for ${target}`);
+        }
+        seenTargets.add(signature);
+      }
+      validateWhenClause(entry.when, menuId, configurationProperties, extensionPrefix);
+    }
+  }
+}
+
+export function validateManifest(packageJson: PackageManifest, extensionPrefix: string): void {
+  assertExtensionIdentity(packageJson);
+
+  const commandIds = packageJson.contributes.commands.map(({ command }) => command);
+  assertNoDuplicateIds(commandIds, 'contributes.commands');
+
+  const submenuIds = (packageJson.contributes.submenus ?? []).map(({ id }) => id);
+  assertNoDuplicateIds(submenuIds, 'contributes.submenus');
+  for (const submenuId of submenuIds) {
+    if (!submenuId.startsWith(extensionPrefix)) {
+      throw new Error(`Submenu ID is outside the extension namespace: ${submenuId}`);
+    }
+  }
+
+  validateMenus(packageJson, packageJson.contributes.configuration.properties, extensionPrefix);
+}
+
+function validateWhenClause(
+  when: string | undefined,
+  menuId: string,
+  configurationProperties: Record<string, JsonSchema>,
+  extensionPrefix: string,
+): void {
+  if (when === undefined) {
+    return;
+  }
+  const configReferences = when.match(/config\.([A-Za-z0-9._-]+)/gu) ?? [];
+  for (const reference of configReferences) {
+    const key = reference.slice('config.'.length);
+    if (!key.startsWith(extensionPrefix)) {
+      throw new Error(`Menu ${menuId} when clause references config outside the namespace: ${key}`);
+    }
+    if (!Object.hasOwn(configurationProperties, key)) {
+      throw new Error(`Menu ${menuId} when clause references undefined config key ${key}`);
+    }
+  }
+}
+
+export function generate(packageJson: PackageManifest): string {
   const extensionPrefix = `${packageJson.name}.`;
   const configurationTree = new Map<string, ConfigNode>();
   const objectTypes: ObjectType[] = [];
@@ -434,13 +585,15 @@ function generate(packageJson: PackageManifest): string {
       throw new Error(`Command ID is outside the extension namespace: ${command}`);
     }
   }
+  validateManifest(packageJson, extensionPrefix);
 
   const configurationKeys = configurationEntries.map(
     ([fullKey]) => `  | ${quote(fullKey.slice(extensionPrefix.length))}`,
   );
-  const commandIdList = commandIds.map((command) => `  ${quote(command)},`);
   const metadata =
     `// This file is generated by scripts/generate-extension-meta.ts.\n// Do not edit it directly; change package.json and regenerate it.\n\n` +
+    renderExtensionIdentity(packageJson) +
+    '\n' +
     `type ConfigurationKey =\n${configurationKeys.join('\n')};\n\n` +
     `export type ConfigurationReader = {\n  get(key: string): unknown;\n};\n\n` +
     `type ConfigurationGetter<Value> = () => Value;\n\n` +
@@ -459,8 +612,12 @@ function generate(packageJson: PackageManifest): string {
     `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    assertConfigurationValue(key, value, defaultValue);\n    return value;\n  };\n` +
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
-    `export const publicCommandIds = [\n${commandIdList.join('\n')}\n] as const;\n\n` +
-    `export type CommandId = (typeof publicCommandIds)[number];\n\n` +
+    renderCommandContributions(packageJson) +
+    '\n' +
+    renderSubmenuContributions(packageJson) +
+    '\n' +
+    renderExternalToolTimeoutKeys(packageJson, extensionPrefix) +
+    '\n' +
     renderConversionPairs(packageJson) +
     '\n' +
     `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +
@@ -502,14 +659,16 @@ function checkGeneratedFile(filePath: string, expected: string): boolean {
   return current === expected;
 }
 
-const generated = generate(readPackageManifest());
-if (checkOnly) {
-  const metadataIsCurrent = checkGeneratedFile(metadataOutputPath, generated);
-  if (!metadataIsCurrent) {
-    process.stderr.write('Generated extension metadata is out of date. Run npm run generate:extension-meta.\n');
-    process.exitCode = 1;
+if (process.argv.length > 1 && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  const generated = generate(readPackageManifest());
+  if (checkOnly) {
+    const metadataIsCurrent = checkGeneratedFile(metadataOutputPath, generated);
+    if (!metadataIsCurrent) {
+      process.stderr.write('Generated extension metadata is out of date. Run npm run generate:extension-meta.\n');
+      process.exitCode = 1;
+    }
+  } else {
+    mkdirSync(path.dirname(metadataOutputPath), { recursive: true });
+    writeFileSync(metadataOutputPath, generated);
   }
-} else {
-  mkdirSync(path.dirname(metadataOutputPath), { recursive: true });
-  writeFileSync(metadataOutputPath, generated);
 }

@@ -53,7 +53,7 @@
     "check:environment-paths": "node .github/scripts/check-environment-paths.mjs",
     "check:nls": "node scripts/check-nls.mjs",
     "check:unused": "knip",
-    "test:scripts": "node --test .github/scripts/*.test.mjs scripts/*.test.mjs",
+    "test:scripts": "node --experimental-strip-types --test .github/scripts/*.test.mjs scripts/*.test.mjs",
     "generate:test-output": "node --experimental-strip-types scripts/generate-test-output.ts",
     "check:all": "npm run check && npm run check:environment-paths && npm run check:extension-meta && npm run check:nls && npm run check:unused && npm run test:scripts",
     "check:fix": "npm run lint:fix && npm run format:fix",
@@ -552,10 +552,6 @@
         },
         {
           "command": "graphics-workbench.convertToGifSeparately",
-          "when": "false"
-        },
-        {
-          "command": "graphics-workbench.mergePdf.configure",
           "when": "false"
         },
         {

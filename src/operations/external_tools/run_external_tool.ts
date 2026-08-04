@@ -16,7 +16,7 @@ const TOOL_ID_BY_NAME: Readonly<Record<string, ExternalToolId>> = {
   drawio: 'drawio',
   ghostscript: 'ghostscript',
   pdftocairo: 'pdftocairo',
-  'rsvg-convert': 'rsvg-convert',
+  'rsvg-convert': 'rsvgConvert',
   mermaid: 'mermaid',
 };
 
