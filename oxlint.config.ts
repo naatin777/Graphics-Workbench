@@ -247,6 +247,13 @@ export default defineConfig({
     'typescript/prefer-find': 'error',
     'typescript/prefer-includes': 'error',
     'eslint/prefer-destructuring': 'error',
+    'eslint/no-import-assign': 'error',
+    'typescript/no-misused-new': 'error',
+    'typescript/prefer-enum-initializers': 'error',
+    'unicorn/no-unnecessary-array-flat-depth': 'error',
+    'unicorn/prefer-dom-node-append': 'error',
+    'unicorn/prefer-dom-node-remove': 'error',
+
     'typescript/no-confusing-non-null-assertion': 'error',
     'typescript/no-duplicate-type-constituents': 'error',
     'unicorn/prefer-array-some': 'error',
