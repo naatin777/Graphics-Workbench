@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0218: 途中移行・互換残骸を監査して削除する](0218-audit-remove-migration-compat-leftovers.md) — Implemented — `convertPngToPdf`内部alias・wrapper・旧NLSを削除し、canonicalへ統合。Integration Testと再発防止ルールを更新
+- [0219: command登録と生成metadataの正本を整理する](0219-consolidate-command-registration-and-generated-metadata.md) — Implemented — command binding正本化・data-driven登録・pure manifest/config adapter分離・metadata生成・manifest検証。PR #119–#122（#119–#121はマージ済み）
 
 ## On hold
 
@@ -72,6 +72,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0218: 途中移行・互換残骸を監査して削除する](0218-audit-remove-migration-compat-leftovers.md) — Done — `convertPngToPdf`内部alias・wrapper・旧NLSを削除し、canonicalへ統合。Integration Testと再発防止ルールを更新（PR #118）
 - [0217: 入力制限・タイムアウト方針を確定する](0217-finalize-input-limit-and-timeout-policy.md) — Done — `confirmLargeOperation`削除、外部ツールtimeout既定0/`undefined`、ADR-0028・AGENTS.md・README反映、CI検証済み
 - [0216: PDF回転とページ並び替えを追加する](0216-add-pdf-rotate-and-reorder.md) — Done — rotate quick pick / configure webview、reorder configure webviewを追加（PR #111-113）
 - [0215: Playwrightのpixel matchingを廃止し目視レビューへ移行する](0215-drop-playwright-pixel-matching.md) — Done — `toMatchSnapshot` / `__snapshots__` / `PLAYWRIGHT_VISUAL_SNAPSHOTS` / Docker visual runnerを削除し、`visual:capture`（OS非依存）＋目視レビューへ移行。ADR-0027新設・ADR-0024/0025置き換え

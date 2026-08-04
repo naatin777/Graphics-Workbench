@@ -70,3 +70,10 @@
 - v1移行で削除すると正式決定した旧command IDや旧settingを、内部aliasやfallbackとして復活させない。
 - 一時的なcommand alias、setting fallback、compatibility wrapperを追加する場合は、追加時点でcanonical置き換え先、具体的利用者、public/internal、削除条件、削除予定version、canonical経路のテスト、削除時に消す一覧を明記する。「念のため」「移行中だから」だけでは追加しない。
 - 旧API専用のwrapper・NLS・テストが残ったままにするのは避け、canonical経路へ統合する。command IDとpair-specific outputPath設定キー（`outputPath.convertPngToPdf`等）の粒度は混同しない。
+
+## command登録と生成metadataの正本
+
+- package.json由来のcommand ID、configuration schema、Extension identity、submenu metadataは、`src/generated/extension_manifest.ts`へ手書きしない（`npm run generate:extension-meta`で再生成する）。
+- public commandの実装bindingは`src/commands/shared/command_bindings.ts`を正本とし、`extension.ts`へ個別登録を追加しない。commandを追加する場合はbindingへ登録し、`package.json`の`contributes.commands`と一致させる。
+- generator内へlegacy command IDを直接記述しない。
+- 旧command aliasや一時的なinternal commandは「念のため」残さない。
