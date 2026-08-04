@@ -1,6 +1,6 @@
 # 0208: oxlintの制限を段階的に強化する
 
-Status: In progress — Phase 51（0違反の型・Unicorn・importルール群）Done
+Status: In progress — Phase 52（0違反の型・Unicornルール群）Done
 
 ## Objective
 
@@ -414,6 +414,16 @@ oxlintが未サポートのため採用しない候補: `eslint/consistent-retur
 - `eslint/no-import-assign`
 - `typescript/no-misused-new` / `prefer-enum-initializers`
 - `unicorn/no-unnecessary-array-flat-depth` / `prefer-dom-node-append` / `prefer-dom-node-remove`
+
+## Phase 52 — 0違反の型・Unicornルール群
+
+既存違反が0件のルール群を、挙動変更なしでerrorへ強化した。
+
+- `eslint/no-unreachable`
+- `typescript/no-invalid-void-type` / `no-non-null-asserted-optional-chain` / `no-unnecessary-qualifier`
+- `unicorn/prefer-at`
+
+`promise/prefer-await-to-callbacks`（18件）は解消コストが大きいため保留。
 
 ## Baseline
 
