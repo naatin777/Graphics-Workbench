@@ -247,6 +247,11 @@ export default defineConfig({
     'typescript/prefer-find': 'error',
     'typescript/prefer-includes': 'error',
     'eslint/prefer-destructuring': 'error',
+    'eslint/no-fallthrough': 'error',
+    'eslint/no-invalid-regexp': 'error',
+    'eslint/no-dupe-else-if': 'error',
+    'eslint/no-misleading-character-class': 'error',
+
     'eslint/no-unused-labels': 'error',
     'eslint/no-unused-private-class-members': 'error',
     'eslint/use-isnan': 'error',
