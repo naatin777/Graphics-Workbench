@@ -1,7 +1,5 @@
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
 import {
@@ -22,6 +20,7 @@ import type { ConversionExecutionContext } from '../../operations/lifecycle/conv
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import { readPdfPageCount } from '../shared/read_pdf_page_count.js';
 import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
@@ -144,8 +143,7 @@ async function runSplitPdfConfigureCommand(
   }
 
   await assertExistingPathInWorkspace(inputUri.fsPath, workspaceFolder.uri.fsPath);
-  const pdf = await PDFDocument.load(await readFile(inputUri.fsPath));
-  const pageCount = pdf.getPageCount();
+  const pageCount = await readPdfPageCount(inputUri.fsPath, userMessage('message.progress.splitPdf.title', 1));
 
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
