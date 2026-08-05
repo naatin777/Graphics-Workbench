@@ -78,31 +78,53 @@ const corePaths = [
   ...extensionOnly,
 ];
 
+/*
+ * oxlint's no-restricted-imports patterns support `regex` (Rust-Regex). These
+ * match any number of `../` segments, so a fixed import depth can never bypass
+ * the boundary by nesting deeper.
+ */
 const corePatterns = [
   {
-    group: ['../commands/*', '../../commands/*'],
+    regex: '^(?:\\.\\./)+commands/',
     message: 'Core code must not import command/UI code.',
   },
   {
-    group: ['../presentation/*', '../../presentation/*'],
+    regex: '^(?:\\.\\./)+presentation/',
     message: 'Core code must not import Webview presentation code.',
   },
   {
-    group: ['@webview-shared/*', '../../presentation/*', '../../../presentation/*'],
+    regex: '^(?:\\.\\./)+webview/',
+    message: 'Core code must not import Webview modules.',
+  },
+  {
+    group: ['@webview-shared/*'],
     message: 'Core code must not import Webview modules.',
   },
 ];
 
 const frontendPatterns = [
   {
-    group: ['../../src/*', '../../../src/*', '../../../../src/*'],
+    regex: '^(?:\\.\\./)+src/',
     message: 'Webview frontend must not import extension runtime modules.',
   },
 ];
 
+const webviewPatterns = [
+  {
+    regex: '^(?:\\.\\./)+webview/',
+    message: 'Extension runtime must not import Webview frontend.',
+  },
+  {
+    group: ['@webview-shared/*'],
+    message: 'Extension runtime must not import Webview modules.',
+  },
+];
+
+type RestrictedImportPattern = { group?: string[]; regex?: string; message: string };
+
 const restrictedImports = (
   paths: { name: string; message: string }[],
-  patterns: { group: string[]; message: string }[] = frontendPatterns,
+  patterns: RestrictedImportPattern[] = frontendPatterns,
 ): NonNullable<OxlintOverride['rules']> => ({
   'no-restricted-imports': [
     'error',
@@ -116,31 +138,39 @@ const restrictedImports = (
 const appOverrides: OxlintOverride[] = [
   {
     files: ['webview/apps/*/src/**/*.ts', 'webview/apps/*/src/**/*.tsx'],
-    rules: restrictedImports(browserOnly, [
-      ...frontendPatterns,
-      {
-        group: ['../*/src/*', '../../*/src/*'],
-        message: 'Webview frontend must not import another app.',
-      },
-    ]),
+    rules: {
+      ...restrictedImports(browserOnly, [
+        ...frontendPatterns,
+        {
+          group: ['../*/src/*', '../../*/src/*'],
+          message: 'Webview frontend must not import another app.',
+        },
+      ]),
+      // Covers node built-in subpaths such as `node:fs/promises` that the
+      // exact-match `paths` above do not.
+      'import/no-nodejs-modules': 'error',
+    },
   },
   {
     files: ['webview/shared/**/*.ts'],
-    rules: restrictedImports(browserOnly, [
-      {
-        group: ['../apps/*', '../../apps/*'],
-        message: 'webview/shared must not import app-specific modules.',
-      },
-      {
-        group: ['../src/*', '../../src/*', '../../../src/*'],
-        message: 'webview/shared must not import extension runtime.',
-      },
-    ]),
+    rules: {
+      ...restrictedImports(browserOnly, [
+        {
+          group: ['../apps/*', '../../apps/*'],
+          message: 'webview/shared must not import app-specific modules.',
+        },
+        {
+          regex: '^(?:\\.\\./)+src/',
+          message: 'webview/shared must not import extension runtime.',
+        },
+      ]),
+      'import/no-nodejs-modules': 'error',
+    },
   },
 ];
 
 export default defineConfig({
-  plugins: ['eslint', 'typescript', 'unicorn', 'oxc', 'import', 'node', 'promise'],
+  plugins: ['eslint', 'typescript', 'unicorn', 'oxc', 'import', 'node', 'promise', 'vitest'],
 
   categories: {
     correctness: 'error',
@@ -468,6 +498,36 @@ export default defineConfig({
     'promise/prefer-await-to-then': 'error',
 
     /*
+     * Vitest plugin rules.
+     *
+     * Only no-focused-tests / no-disabled-tests / no-standalone-expect are
+     * intentionally enabled (in the test override below). The plugin's other
+     * default rules would also fire on the mocha- and Playwright-based tests
+     * under test/ (which use `assert` and their own `expect`), so every other
+     * rule is explicitly disabled instead of being activated by category.
+     */
+    'vitest/no-focused-tests': 'off',
+    'vitest/no-disabled-tests': 'off',
+    'vitest/no-standalone-expect': 'off',
+    'vitest/expect-expect': 'off',
+    'vitest/no-conditional-expect': 'off',
+    'vitest/no-conditional-tests': 'off',
+    'vitest/valid-expect': 'off',
+    'vitest/valid-expect-in-promise': 'off',
+    'vitest/valid-describe-callback': 'off',
+    'vitest/valid-title': 'off',
+    'vitest/prefer-snapshot-hint': 'off',
+    'vitest/require-awaited-expect-poll': 'off',
+    'vitest/require-mock-type-parameters': 'off',
+    'vitest/require-to-throw-message': 'off',
+    'vitest/require-local-test-context-for-concurrent-snapshots': 'off',
+    'vitest/hoisted-apis-on-top': 'off',
+    'vitest/warn-todo': 'off',
+    'vitest/no-commented-out-tests': 'off',
+    'vitest/require-test-timeout': 'off',
+    'vitest/no-conditional-in-test': 'off',
+
+    /*
      * Project-specific rules
      */
     'project/max-conditional-spreads-per-object': 'error',
@@ -602,6 +662,15 @@ export default defineConfig({
       },
     },
     {
+      /*
+       * Conservative default for every src file: extension runtime can import
+       * the VS Code API but must not reach Webview frontend code. Layers below
+       * refine (core forbids `vscode`; generated is excluded).
+       */
+      files: ['src/**/*.ts'],
+      rules: restrictedImports(extensionOnly, webviewPatterns),
+    },
+    {
       files: ['src/application/**/*.ts', 'src/operations/**/*.ts', 'src/config/**/*.ts'],
       rules: restrictedImports(corePaths, corePatterns),
     },
@@ -611,12 +680,22 @@ export default defineConfig({
     },
     {
       files: ['src/commands/**/*.ts', 'src/presentation/**/*.ts', 'src/extension.ts'],
-      rules: restrictedImports(extensionOnly, [
-        {
-          group: ['../../webview/apps/*', '../../../webview/apps/*', '@webview-shared/*'],
-          message: 'Extension runtime must not import Webview frontend.',
-        },
-      ]),
+      rules: restrictedImports(extensionOnly, webviewPatterns),
+    },
+    {
+      files: ['src/edit_provider/**/*.ts'],
+      rules: restrictedImports(extensionOnly, webviewPatterns),
+    },
+    {
+      files: ['src/security/**/*.ts'],
+      rules: restrictedImports(corePaths, webviewPatterns),
+    },
+    {
+      files: ['src/generated/**/*.ts'],
+      rules: {
+        // Generated manifest is not boundary code; keep it free of the import rules.
+        'no-restricted-imports': 'off',
+      },
     },
 
     ...appOverrides,
@@ -646,7 +725,10 @@ export default defineConfig({
         'typescript/no-explicit-any': 'off',
         'typescript/no-empty-function': 'off',
         'typescript/explicit-function-return-type': 'off',
-        'typescript/no-floating-promises': 'off',
+        'typescript/no-floating-promises': 'error',
+        'vitest/no-focused-tests': 'error',
+        'vitest/no-disabled-tests': 'warn',
+        'vitest/no-standalone-expect': 'error',
         'promise/prefer-await-to-then': 'off',
         'typescript/no-unsafe-assignment': 'off',
         'typescript/no-unsafe-argument': 'off',
