@@ -154,9 +154,19 @@ const forbidRasterInputLimitBypass = {
   },
 
   create(context) {
+    const sharpAliases = new Set();
+
     return {
+      VariableDeclarator(node) {
+        if (node.id?.type === 'Identifier' && node.init?.type === 'Identifier' && node.init.name === 'sharp') {
+          sharpAliases.add(node.id.name);
+        }
+      },
       CallExpression(node) {
-        if (node.callee.type !== 'Identifier' || node.callee.name !== 'sharp') {
+        if (
+          node.callee.type !== 'Identifier' ||
+          (node.callee.name !== 'sharp' && !sharpAliases.has(node.callee.name))
+        ) {
           return;
         }
 
@@ -588,6 +598,11 @@ const noDirectChildProcess = {
 
     return {
       ImportDeclaration(node) {
+        if (isChildProcessSource(node.source)) {
+          context.report({ node, messageId: 'boundary' });
+        }
+      },
+      ImportExpression(node) {
         if (isChildProcessSource(node.source)) {
           context.report({ node, messageId: 'boundary' });
         }
