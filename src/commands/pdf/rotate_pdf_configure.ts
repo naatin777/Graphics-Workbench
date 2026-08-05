@@ -24,6 +24,7 @@ import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
+import { reportConfigureApplyError } from '../shared/report_configure_error.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
 
@@ -152,6 +153,15 @@ async function runRotatePdfConfigureCommand(
           angle: message.payload.angle,
           pageIndices: message.payload.pageIndices,
           panel,
+          ...(outputChannel !== undefined && { outputChannel }),
+        });
+      } catch (error) {
+        await reportConfigureApplyError({
+          operationName: 'rotate-pdf-configure',
+          error,
+          panel,
+          cancelledMessage: userMessage('message.rotatePdf.cancelled'),
+          failedMessage: (reason) => userMessage('message.rotatePdf.failed', reason),
           ...(outputChannel !== undefined && { outputChannel }),
         });
       } finally {
