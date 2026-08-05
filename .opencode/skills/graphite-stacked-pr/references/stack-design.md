@@ -2,6 +2,12 @@
 
 How to split a non-trivial change into reviewable, safely mergeable stacked PRs. Read this before proposing a stack; the goal is reviewability and safety, not "making a stack".
 
+## Start from trunk unless there is a real dependency
+
+The default for a new user request is a single independent PR directly under trunk. A stack exists only when each link has a concrete dependency reason: the child cannot be implemented or reviewed without the parent. `gt create` parents onto the current branch, so starting work on a leftover branch silently stacks unrelated tasks. Before creating a branch, confirm the current branch and its Graphite parent, and return to trunk for an independent task.
+
+Independent PRs must not be piled onto the same stack across separate requests. If the stack has grown with PRs that lack a per-link dependency reason, split them onto trunk instead of adding more branches.
+
 ## What makes a good branch
 
 A good branch in a stack:
@@ -90,6 +96,16 @@ Better: each branch is coherent against its parent; add the abstraction in the b
 
 Bad: a branch whose purpose is only explained by a later branch.
 Better: each branch is independently explainable.
+
+### Stacking independent user requests vertically
+
+Bad: separate user requests are each started with `gt create` on whatever branch is checked out, so PR #172→#173→#174→#175… grow into one stack with no dependency links.
+Better: start each new request from trunk as an independent PR (`gt sync` back to trunk, then `gt create`); stack only PRs with a real prerequisite link.
+
+### Verifying landing by source commit SHA after squash merge
+
+Bad: check `git merge-base --is-ancestor <source-commit> origin/main` for a squash-merged PR. The squash merge creates a new commit, so the source commit is never an ancestor of main even when the change landed correctly — this false-positives on every normal merge.
+Better: check by PR number against the merge commit (e.g. `npm run check:prs-landed -- <PR-number>...`), which fetches `merge_commit_sha` and verifies it is an ancestor of main. This also catches a merge into `graphite-base/*` that was mistaken for landing on main.
 
 ### Rename, format, and behavior change in the same PR
 
