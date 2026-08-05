@@ -15,7 +15,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 ## Implemented
 
 - PDF crop / split / merge
-- PDF to/from PNG/JPEG/WebP/AVIF/SVG/GIF/TIFF/EPS/Raw conversion
+- PDF to/from PNG/JPEG/WebP/AVIF/SVG/GIF/TIFF/EPS conversion
 - Draw.io to PDF conversion
 - Mermaid theme/backgroundColor settings
 - LaTeX insertion templates (settings)

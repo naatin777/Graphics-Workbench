@@ -6,18 +6,17 @@
 
 ## 公開command
 
-| Command ID                         | 表示名 | 出力形式           |
-| ---------------------------------- | ------ | ------------------ |
-| `graphics-workbench.convertToPdf`  | PDF    | PDF                |
-| `graphics-workbench.convertToPng`  | PNG    | PNG                |
-| `graphics-workbench.convertToJpeg` | JPEG   | JPEG               |
-| `graphics-workbench.convertToWebp` | WebP   | WebP               |
-| `graphics-workbench.convertToAvif` | AVIF   | AVIF               |
-| `graphics-workbench.convertToGif`  | GIF    | GIF                |
-| `graphics-workbench.convertToTiff` | TIFF   | TIFF               |
-| `graphics-workbench.convertToEps`  | EPS    | EPS                |
-| `graphics-workbench.convertToRaw`  | Raw    | Raw + JSON sidecar |
-| `graphics-workbench.convertToSvg`  | SVG    | SVG                |
+| Command ID                         | 表示名 | 出力形式 |
+| ---------------------------------- | ------ | -------- |
+| `graphics-workbench.convertToPdf`  | PDF    | PDF      |
+| `graphics-workbench.convertToPng`  | PNG    | PNG      |
+| `graphics-workbench.convertToJpeg` | JPEG   | JPEG     |
+| `graphics-workbench.convertToWebp` | WebP   | WebP     |
+| `graphics-workbench.convertToAvif` | AVIF   | AVIF     |
+| `graphics-workbench.convertToGif`  | GIF    | GIF      |
+| `graphics-workbench.convertToTiff` | TIFF   | TIFF     |
+| `graphics-workbench.convertToEps`  | EPS    | EPS      |
+| `graphics-workbench.convertToSvg`  | SVG    | SVG      |
 
 Command PaletteとExplorerの`変換`サブメニューでは、出力形式基準commandを表示する。
 
@@ -44,7 +43,7 @@ PDFを画像またはSVGへ変換する場合はページごとに出力を作�
 
 editable Draw.io画像から画像へ変換する場合は、数式を保持するためPDFを経由する。中間結果は利用者向けの出力名へ現れない。
 
-GIF、TIFF、EPS、Rawは入力と出力の両方に対応する。通常のGIF/TIFF入力は先頭page/frameだけを扱い、GIF/WebPのanimation preserve commandとsplit commandだけが全frameを扱う。Raw出力は`.raw`と`.raw.json`を1つのcommit単位として扱う。EPSの変換経路、Ghostscript実行、生成PDF検証は[EPS変換の内部契約](../internal/eps-conversion.md)で定義する。
+GIF、TIFF、EPSは入力と出力の両方に対応する。通常のGIF/TIFF入力は先頭page/frameだけを扱い、GIF/WebPのanimation preserve commandとsplit commandだけが全frameを扱う。EPSの変換経路、Ghostscript実行、生成PDF検証は[EPS変換の内部契約](../internal/eps-conversion.md)で定義する。
 
 ## 設定と入力名
 

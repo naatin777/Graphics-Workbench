@@ -13,14 +13,22 @@ PDF の分割、トリミング、PDF・画像・SVG・Mermaid・Draw.io ファ�
 
 ### PDF 操作
 
-- **PDF の余白トリミング**: 選択した PDF ファイルの余白をトリミングします。
-- **PDF の分割**: PDF をページごとに単一ページ PDF として分割します。
-- **PDF の結合**: 複数選択した PDF ファイルを 1 つの PDF に結合します。
+- **PDF の余白トリミング**: 選択した PDF ファイルの余白をトリミングします。自動トリミングと設定付きトリミングが利用できます。
+- **PDF の分割**: PDF をページごとに単一ページ PDF として分割します。全ページ分割と設定付き分割が利用できます。
+- **PDF の結合**: 複数選択した PDF ファイルを 1 つの PDF に結合します。選択ファイルの結合と設定付き結合が利用できます。
+- **PDF の回転**: PDF のページを90° / 180° / 270°で回転します。クイック回転とページ選択付きの設定が利用できます。
+- **PDF の並び替え**: PDF のページ順をインタラクティブに変更します。
+- **PDF の圧縮**: PDF を再圧縮してサイズを削減します。
+- **PDF のリニアライズ**: Web 表示に適したPDFへ線形化します。
+- **PDF の暗号化 / 復号化**: PDF にパスワードを設定、または解除します。
 
 ### 変換
 
 - **出力形式を選ぶ変換**: Explorer の右クリックメニューでは `変換 > PDF` / `変換 > PNG` / `変換 > JPEG` / `変換 > WebP` / `変換 > AVIF` / `変換 > GIF` / `変換 > TIFF` / `変換 > EPS` / `変換 > SVG` のように、出力形式を選んで変換します。
 - **PDF / 画像 / SVG / Mermaid / editable Draw.io の変換**: 対応入力を、選択した出力形式へまとめて変換します。
+- **複数画像を1つのPDFへ結合**: 複数選択した画像を1つのPDFへ結合します。
+- **アニメーション保持 / フレーム分割**: アニメーションGIFとWebPの相互変換で、アニメーションを保持するかフレームを分割して出力できます。
+- **Draw.ioファイルの作成**: 図版をネイティブ `.drawio` または editable `.drawio.png` / `.drawio.svg` へ変換します。
 - **混在選択**: 同じ出力形式へ変換できる複数形式のファイルを、1回の操作で変換できます。
 - **安全規則**: 入力と出力が同じ形式の変換は拒否します。通常のGIF/TIFF変換は先頭page/frameだけを使用し、複数frameが必要な場合はanimation preserve/split commandを使用します。
 - **ネイティブDraw.ioのPDF変換**: `.drawio` / `.dio` をページごとのPDF、または全ページを含む1つのPDFへ変換できます。
@@ -32,26 +40,37 @@ PDF の分割、トリミング、PDF・画像・SVG・Mermaid・Draw.io ファ�
 
 ## コマンド一覧
 
-| 機能                            | 入力                                                                                                       | 出力                        | 主な用途                                | 必要な外部ツール                                         |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------- | --------------------------------------- | -------------------------------------------------------- |
-| PDF の余白トリミング            | `.pdf`                                                                                                     | `.pdf`                      | 図版 PDF の余白を削除                   | Ghostscript                                              |
-| PDF の分割                      | `.pdf`                                                                                                     | `.pdf`                      | PDF をページごとに分割                  | 不要                                                     |
-| PDF へ変換                      | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                         | `.pdf`                      | ラスター画像を PDF に変換               | 不要                                                     |
-| PDF へ変換                      | `.svg`, `.mmd`, `.mermaid`, editable Draw.io 画像                                                          | `.pdf`                      | 図版ファイルを PDF に変換               | 入力形式により異なります                                 |
-| Draw.ioをページごとのPDFへ変換  | `.drawio`, `.dio`, editable Draw.io 画像                                                                   | ページごとのPDF             | Draw.ioの各ページを個別に出力           | Draw.io Desktop                                          |
-| Draw.ioを1つのPDFへ変換         | `.drawio`, `.dio`, editable Draw.io 画像                                                                   | 1つのPDF                    | Draw.ioの全ページをまとめて出力         | Draw.io Desktop                                          |
-| PNG へ変換                      | `.pdf`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像 | `.png`                      | 図版ファイルを PNG に変換               | PDF入力ではPoppler                                       |
-| JPEG へ変換                     | `.pdf`, `.png`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像          | `.jpeg`                     | 図版ファイルを JPEG に変換              | PDF入力ではPoppler                                       |
-| WebP へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像  | `.webp`                     | 図版ファイルを WebP に変換              | PDF入力ではPoppler                                       |
-| AVIF へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像  | `.avif`                     | 図版ファイルを AVIF に変換              | PDF入力ではPoppler                                       |
-| GIF へ変換                      | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像 | `.gif`                      | 図版ファイルを GIF に変換               | PDF入力ではPoppler                                       |
-| TIFF へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.svg`, Mermaid, editable Draw.io 画像          | `.tiff`                     | 図版ファイルを TIFF に変換              | PDF入力ではPoppler                                       |
-| EPS へ変換                      | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid                | `.eps`                      | 図版ファイルを EPS に変換               | PDF入力ではPoppler、非PDFではGhostscript                 |
-| SVG へ変換                      | `.pdf`, `.eps`, `.mmd`, `.mermaid`, editable Draw.io 画像                                                  | `.svg`                      | 図版ファイルを SVG に変換               | PDF入力はPoppler、MermaidはChrome、editable画像はDraw.io |
-| PDF の LaTeX 挿入               | `.pdf`                                                                                                     | LaTeX コード                | `figure` / `includegraphics` を自動生成 | 不要                                                     |
-| クリップボード画像の LaTeX 挿入 | クリップボード画像                                                                                         | 画像ファイル + LaTeX コード | スクリーンショット等を LaTeX に貼り付け | 出力形式により異なります                                 |
+| 機能                            | 入力                                                                                                               | 出力                                    | 主な用途                                                 | 必要な外部ツール                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------- |
+| PDF の余白トリミング            | `.pdf`                                                                                                             | `.pdf`                                  | 図版 PDF の余白を削除（自動 / 設定付き）                 | Ghostscript                                              |
+| PDF の分割                      | `.pdf`                                                                                                             | `.pdf`                                  | PDF をページごとに分割（全ページ / 設定付き）            | 不要                                                     |
+| PDF の結合                      | `.pdf`（複数）                                                                                                     | `.pdf`                                  | PDF を1つに結合（選択 / 設定付き）                       | 不要                                                     |
+| PDF の回転                      | `.pdf`                                                                                                             | `.pdf`                                  | 90° / 180° / 270°でページを回転（クイック / ページ選択） | 不要                                                     |
+| PDF の並び替え                  | `.pdf`                                                                                                             | `.pdf`                                  | ページ順をインタラクティブに変更                         | 不要                                                     |
+| PDF の圧縮                      | `.pdf`                                                                                                             | `.pdf`                                  | PDF を再圧縮してサイズ削減                               | 不要                                                     |
+| PDF のリニアライズ              | `.pdf`                                                                                                             | `.pdf`                                  | Web 表示用に線形化                                       | qpdf                                                     |
+| PDF の暗号化                    | `.pdf`                                                                                                             | `.pdf`                                  | パスワードで保護                                         | qpdf                                                     |
+| PDF の復号化                    | `.pdf`                                                                                                             | `.pdf`                                  | パスワードを解除                                         | qpdf                                                     |
+| PDF へ変換                      | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                                 | `.pdf`                                  | ラスター画像を PDF に変換                                | 不要                                                     |
+| PDF へ変換                      | `.svg`, `.mmd`, `.mermaid`, editable Draw.io 画像                                                                  | `.pdf`                                  | 図版ファイルを PDF に変換                                | 入力形式により異なります                                 |
+| 画像を1つのPDFへ結合            | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                                 | `.pdf`                                  | 複数画像を1つのPDFへ結合                                 | 不要                                                     |
+| Draw.ioをページごとのPDFへ変換  | `.drawio`, `.dio`, editable Draw.io 画像                                                                           | ページごとのPDF                         | Draw.ioの各ページを個別に出力                            | Draw.io Desktop                                          |
+| Draw.ioを1つのPDFへ変換         | `.drawio`, `.dio`, editable Draw.io 画像                                                                           | 1つのPDF                                | Draw.ioの全ページをまとめて出力                          | Draw.io Desktop                                          |
+| PNG へ変換                      | `.pdf`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像         | `.png`                                  | 図版ファイルを PNG に変換                                | PDF入力ではPoppler                                       |
+| JPEG へ変換                     | `.pdf`, `.png`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像                  | `.jpeg`                                 | 図版ファイルを JPEG に変換                               | PDF入力ではPoppler                                       |
+| WebP へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像          | `.webp`                                 | 図版ファイルを WebP に変換                               | PDF入力ではPoppler                                       |
+| WebP へ変換（アニメーション）   | `.gif`                                                                                                             | `.webp`                                 | アニメーション保持またはフレーム分割                     | 不要                                                     |
+| AVIF へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像          | `.avif`                                 | 図版ファイルを AVIF に変換                               | PDF入力ではPoppler                                       |
+| GIF へ変換                      | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像         | `.gif`                                  | 図版ファイルを GIF に変換                                | PDF入力ではPoppler                                       |
+| GIF へ変換（アニメーション）    | `.webp`                                                                                                            | `.gif`                                  | アニメーション保持またはフレーム分割                     | 不要                                                     |
+| TIFF へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.svg`, Mermaid, editable Draw.io 画像                  | `.tiff`                                 | 図版ファイルを TIFF に変換                               | PDF入力ではPoppler                                       |
+| EPS へ変換                      | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像 | `.eps`                                  | 図版ファイルを EPS に変換                                | PDF入力ではPoppler、非PDFではGhostscript                 |
+| SVG へ変換                      | `.pdf`, `.eps`, `.mmd`, `.mermaid`, editable Draw.io 画像                                                          | `.svg`                                  | 図版ファイルを SVG に変換                                | PDF入力はPoppler、MermaidはChrome、editable画像はDraw.io |
+| Draw.ioファイルの作成           | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.eps`, `.svg`, `.mmd`, `.mermaid`     | `.drawio`, `.drawio.png`, `.drawio.svg` | 図版からDraw.ioファイルを作成                            | Draw.io Desktop                                          |
+| PDF の LaTeX 挿入               | `.pdf`                                                                                                             | LaTeX コード                            | `figure` / `includegraphics` を自動生成                  | 不要                                                     |
+| クリップボード画像の LaTeX 挿入 | クリップボード画像                                                                                                 | 画像ファイル + LaTeX コード             | スクリーンショット等を LaTeX に貼り付け                  | 出力形式により異なります                                 |
 
-GIF/TIFF入力は先頭page/frameだけを使用します。複数frameが必要な場合はanimation preserve/split commandを使用してください。EPSの出力にも対応しています。同じ形式への変換は拒否します。
+GIF/TIFF入力は先頭page/frameだけを使用します。複数frameが必要な場合はanimation preserve/split commandを使用してください。EPSの出力にも対応しています。ネイティブ `.drawio` / `.dio` はEPS入力にできません。同じ形式への変換は拒否します。
 
 ## インストール方法
 

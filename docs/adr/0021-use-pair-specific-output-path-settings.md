@@ -20,7 +20,7 @@ command IDとoutput path設定の命名を分離する。
 - 単一出力（templateに`${page}`を含まない）は`outputPath.convertXToY`を使う。
 - 複数出力（templateに`${page}`を含む）は`outputPaths` objectの`convertXToY` entryを使う。
 - `outputPath.convertToY`と、`outputPaths` object内の`convertToY` entryは使用しない。
-- 専用commandに閉じた`convertImagesToSinglePdf`、`convertToRaw`、`convertToDrawio`、`convertDrawioToPdfDirectly`などの設定は専用commandの設定として維持する。
+- 専用commandに閉じた`convertImagesToSinglePdf`、`convertToDrawio`、`convertDrawioToPdfDirectly`などの設定は専用commandの設定として維持する。
 
 ## 理由
 
