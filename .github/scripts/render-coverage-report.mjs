@@ -225,7 +225,7 @@ function sourceLink(filePath) {
  * @returns {string}
  */
 function coverageCell(file) {
-  return file ? `${file.percent.toFixed(1)}% · ${file.uncovered}行` : '—';
+  return file ? `${file.percent.toFixed(1)}% · ${file.uncovered} lines` : '—';
 }
 
 /**
@@ -335,11 +335,12 @@ function renderExtensionCoverage(output, reports) {
 
   output.push(
     '',
-    '#### 改善優先度が高いExtension Hostファイル',
+    '<details>',
+    '<summary><strong>High-priority Extension Host files</strong></summary>',
     '',
-    '未coverage行数の最大値が多い順です。各セルは `coverage率 · 未coverage行数` を示します。',
+    'Sorted by the highest number of uncovered lines. Each cell shows `coverage % · uncovered lines`.',
     '',
-    '| ファイル | Linux | macOS | Windows |',
+    '| File | Linux | macOS | Windows |',
     '|---|---:|---:|---:|',
   );
 
@@ -349,18 +350,20 @@ function renderExtensionCoverage(output, reports) {
     );
   }
 
+  output.push('', '</details>');
+
   const uncoveredFiles = collectCrossPlatformUncoveredFiles(reports);
   output.push(
     '',
     '<details>',
-    `<summary><strong>完全に未実行のExtension Hostファイル (${uncoveredFiles.length})</strong></summary>`,
+    `<summary><strong>Fully uncovered Extension Host files (${uncoveredFiles.length})</strong></summary>`,
     '',
   );
 
   if (uncoveredFiles.length === 0) {
-    output.push('完全に未実行のファイルはありません。');
+    output.push('There are no fully uncovered files.');
   } else {
-    output.push('| ファイル | Linux | macOS | Windows |', '|---|---:|---:|---:|');
+    output.push('| File | Linux | macOS | Windows |', '|---|---:|---:|---:|');
     for (const file of uncoveredFiles) {
       output.push(
         `| ${sourceLink(file.path)} | ${coverageCell(file.byOs.get('Linux'))} | ${coverageCell(file.byOs.get('macOS'))} | ${coverageCell(file.byOs.get('Windows'))} |`,
@@ -372,7 +375,7 @@ function renderExtensionCoverage(output, reports) {
     '',
     '</details>',
     '',
-    '> Windowsは現在`includeAll`を無効化しているため、未読み込みファイルは母集団に含まれず `—` と表示されます。',
+    '> Windows currently has `includeAll` disabled, so files that are not loaded are excluded from the population and shown as `—`.',
   );
 }
 
@@ -385,15 +388,21 @@ function renderWebviewCoverage(output, summary) {
     '',
     '### Webview (Vitest / Linux)',
     '',
-    'Crop PDF・Merge PDF・Split PDFのVitest coverageを行単位で統合し、共有コードの重複を除いています。',
+    '<details>',
+    '<summary><strong>Webview summary</strong></summary>',
+    '',
+    'Line-level Vitest coverage for Crop PDF, Merge PDF, and Split PDF is merged with shared code deduplicated.',
     '',
     '| Line coverage | covered / total | Source files | 0% files |',
     '|---:|---:|---:|---:|',
     `| ${summary.percent.toFixed(1)}% | ${summary.covered}/${summary.total} | ${summary.files.size} | ${summary.uncoveredFiles} |`,
     '',
-    '#### 改善優先度が高いWebviewファイル',
+    '</details>',
     '',
-    '| ファイル | Coverage | 未coverage行数 |',
+    '<details>',
+    '<summary><strong>High-priority Webview files</strong></summary>',
+    '',
+    '| File | Coverage | Uncovered lines |',
     '|---|---:|---:|',
   );
 
@@ -401,18 +410,20 @@ function renderWebviewCoverage(output, summary) {
     output.push(`| ${sourceLink(filePath)} | ${file.percent.toFixed(1)}% | ${file.uncovered} |`);
   }
 
+  output.push('', '</details>');
+
   const uncoveredFiles = collectUncoveredFiles(summary);
   output.push(
     '',
     '<details>',
-    `<summary><strong>完全に未実行のWebviewファイル (${uncoveredFiles.length})</strong></summary>`,
+    `<summary><strong>Fully uncovered Webview files (${uncoveredFiles.length})</strong></summary>`,
     '',
   );
 
   if (uncoveredFiles.length === 0) {
-    output.push('完全に未実行のファイルはありません。');
+    output.push('There are no fully uncovered files.');
   } else {
-    output.push('| ファイル | 対象行数 |', '|---|---:|');
+    output.push('| File | Lines |', '|---|---:|');
     for (const [filePath, file] of uncoveredFiles) {
       output.push(`| ${sourceLink(filePath)} | ${file.total} |`);
     }
@@ -433,15 +444,15 @@ function renderReport(extensionReports, webviewSummary) {
 
   output.push(
     '',
-    '> Playwright ElectronはLinux・macOS・WindowsでE2Eテストとして実行しますが、coverageの集計対象には含めません。',
+    '> Playwright Electron runs as E2E tests on Linux, macOS, and Windows but is not included in coverage aggregation.',
   );
 
   const runUrl = actionsRunUrl();
   output.push(
     '',
     runUrl !== undefined && runUrl !== ''
-      ? `[行ごとのHTMLレポートはActions artifactsから確認できます。](${runUrl})`
-      : '行ごとのHTMLレポートはActions artifactsから確認できます。',
+      ? `[Line-level HTML reports are available from the Actions artifacts.](${runUrl})`
+      : 'Line-level HTML reports are available from the Actions artifacts.',
     '',
     '<!-- graphics-workbench-coverage-report -->',
   );
