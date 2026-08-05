@@ -9,6 +9,35 @@ import type { LineOutputChannel } from './external_tool_ascii_scratch.js';
 // Overflowing this bound does not terminate the tool; verbose diagnostics are
 // intentionally dropped rather than accumulated without limit.
 const MAX_RETAINED_OUTPUT = 256 * 1024;
+
+// The tail is kept as raw bytes and decoded once at read time so that the
+// trim stays on byte boundaries. A multi-byte UTF-8 sequence cut at the trim
+// boundary decodes as U+FFFD, which is acceptable for diagnostics.
+type OutputAccumulator = { buffers: Buffer[]; bytes: number };
+
+const createOutputAccumulator = (): OutputAccumulator => ({ buffers: [], bytes: 0 });
+
+const appendBounded = (accumulator: OutputAccumulator, chunk: Buffer): void => {
+  accumulator.buffers.push(chunk);
+  accumulator.bytes += chunk.byteLength;
+  while (accumulator.bytes > MAX_RETAINED_OUTPUT) {
+    const head = accumulator.buffers.shift();
+    if (head === undefined) {
+      break;
+    }
+    const excess = accumulator.bytes - MAX_RETAINED_OUTPUT;
+    if (head.byteLength <= excess) {
+      accumulator.bytes -= head.byteLength;
+      continue;
+    }
+    accumulator.buffers.unshift(head.subarray(excess));
+    accumulator.bytes -= excess;
+    break;
+  }
+};
+
+const decodeOutput = (accumulator: OutputAccumulator): string => Buffer.concat(accumulator.buffers).toString('utf8');
+
 const TERMINATION_GRACE_MS = 250;
 const TERMINATION_WATCHDOG_MS = 5_000;
 const TOOL_ID_BY_NAME: Readonly<Record<string, ExternalToolId>> = {
@@ -65,13 +94,8 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
         let terminationReason: Error | undefined;
         let settled = false;
 
-        const appendBounded = (accumulator: { current: string }, chunk: string): void => {
-          const next = accumulator.current + chunk;
-          const length = Buffer.byteLength(next);
-          accumulator.current = length > MAX_RETAINED_OUTPUT ? next.slice(length - MAX_RETAINED_OUTPUT) : next;
-        };
-        const stdoutAccumulator = { current: '' };
-        const stderrAccumulator = { current: '' };
+        const stdoutAccumulator = createOutputAccumulator();
+        const stderrAccumulator = createOutputAccumulator();
 
         const cleanup = (): void => {
           if (timer !== undefined) {
@@ -90,7 +114,7 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
           settled = true;
           cleanup();
           options.outputChannel?.appendLine(
-            `[${options.toolName}] failure: ${stderrAccumulator.current.trim() || error.message}`,
+            `[${options.toolName}] failure: ${decodeOutput(stderrAccumulator).trim() || error.message}`,
           );
           reject(error);
         };
@@ -119,15 +143,13 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
           windowsHide: true,
           stdio: ['ignore', 'pipe', 'pipe'],
         }));
-        runningChild.stdout.setEncoding('utf8');
-        runningChild.stderr.setEncoding('utf8');
-        runningChild.stdout.on('data', (chunk: string) => {
+        runningChild.stdout.on('data', (chunk: Buffer) => {
           if (terminationReason !== undefined) {
             return;
           }
           appendBounded(stdoutAccumulator, chunk);
         });
-        runningChild.stderr.on('data', (chunk: string) => {
+        runningChild.stderr.on('data', (chunk: Buffer) => {
           if (terminationReason !== undefined) {
             return;
           }
@@ -152,7 +174,7 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
           if (!settled) {
             settled = true;
             cleanup();
-            resolve({ stdout: stdoutAccumulator.current, stderr: stderrAccumulator.current });
+            resolve({ stdout: decodeOutput(stdoutAccumulator), stderr: decodeOutput(stderrAccumulator) });
           }
         });
 

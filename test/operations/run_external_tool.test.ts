@@ -196,6 +196,29 @@ suite('外部tool runner — タイムアウト', () => {
     assert.ok(result.stderr.endsWith('y'), 'stderr tail should preserve the end of the output');
   });
 
+  test('非ASCIIの大量出力でもバイト単位で末尾を保持する', async () => {
+    const result = await runExternalTool({
+      toolName: 'output-flood-multibyte-tool',
+      executable: process.execPath,
+      args: [
+        '-e',
+        `process.stdout.write('日本語'.repeat(2 * 1024 * 1024) + 'STDOUT_TAIL');
+         process.stderr.write('😀'.repeat(2 * 1024 * 1024) + 'STDERR_TAIL');`,
+      ],
+    });
+
+    // Multi-byte characters must not be truncated to an empty or short tail (a
+    // UTF-16 slice index is not a byte index), and the retained tail must decode.
+    assert.ok(Buffer.byteLength(result.stdout) <= 300 * 1024, 'stdout should be bounded to the retained tail');
+    assert.ok(Buffer.byteLength(result.stderr) <= 300 * 1024, 'stderr should be bounded to the retained tail');
+    assert.ok(Buffer.byteLength(result.stdout) >= 250 * 1024, 'stdout tail should honor the retention cap');
+    assert.ok(Buffer.byteLength(result.stderr) >= 250 * 1024, 'stderr tail should honor the retention cap');
+    assert.ok(result.stdout.endsWith('STDOUT_TAIL'), 'stdout tail should preserve the end of the output');
+    assert.ok(result.stderr.endsWith('STDERR_TAIL'), 'stderr tail should preserve the end of the output');
+    assert.ok(result.stdout.includes('日本語'), 'stdout tail should decode multi-byte characters');
+    assert.ok(result.stderr.includes('😀'), 'stderr tail should decode multi-byte characters');
+  });
+
   test('timeoutMsを過ぎるとchild processを終了してrejectする', async () => {
     const startedPath = path.join(
       await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-timeout-')),
