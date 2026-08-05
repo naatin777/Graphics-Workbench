@@ -1,14 +1,3 @@
-:root {
-  --rotate-border: color-mix(in srgb, currentColor 25%, transparent);
-  --rotate-accent: var(--vscode-button-background, #0e639c);
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
   padding: 0;
@@ -42,19 +31,42 @@ body {
   overflow-wrap: anywhere;
 }
 
-.rotate__body {
+.split-pane {
   display: flex;
   flex: 1;
-  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.split-pane__left {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.split-pane__divider {
+  flex: 0 0 4px;
+  cursor: col-resize;
+  background: var(--gw-border);
+}
+
+.split-pane__divider:hover,
+.split-pane__divider[data-active='true'] {
+  background: var(--vscode-focusBorder);
+}
+
+.split-pane__right {
+  flex: 0 0 260px;
+  min-width: 0;
   min-height: 0;
 }
 
 .rotate__preview {
-  flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-width: 0;
-  border: 1px solid var(--rotate-border);
+  border: 1px solid var(--gw-border);
 }
 
 .rotate__preview-toolbar {
@@ -62,7 +74,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 6px 8px;
-  border-bottom: 1px solid var(--rotate-border);
+  border-bottom: 1px solid var(--gw-border);
 }
 
 .rotate__pages {
@@ -81,40 +93,31 @@ body {
 }
 
 .rotate__pages .pdf-page.pdf-page--selected {
-  border-color: var(--rotate-accent);
-  outline: 2px solid var(--rotate-accent);
+  border-color: var(--vscode-button-background);
+  outline: 2px solid var(--vscode-button-background);
   outline-offset: 1px;
 }
 
 .rotate__panel {
-  width: 260px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 8px;
-  border: 1px solid var(--rotate-border);
+  height: 100%;
 }
 
-.rotate__angle fieldset {
-  border: 1px solid var(--rotate-border);
-  padding: 8px;
+.rotate__angle {
+  border: 0;
+  margin: 0;
+  padding: 0;
 }
 
-.rotate__angle-options {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.rotate__angle-options label {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 6px;
-  border: 1px solid var(--rotate-border);
-  cursor: pointer;
+.rotate__angle legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
 }
 
 .rotate__selection {
@@ -128,13 +131,8 @@ body {
   margin-top: auto;
 }
 
-.rotate__actions button {
+.rotate__actions .gw-button {
   flex: 1;
-}
-
-.rotate__actions .rotate__apply {
-  background: var(--rotate-accent);
-  color: var(--vscode-button-foreground);
 }
 
 [role='alert'] {

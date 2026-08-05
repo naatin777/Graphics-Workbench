@@ -5,6 +5,10 @@ import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/re
 
 import type { SplitPdfPageGroupRow } from '@graphics-workbench-split-pdf-protocol';
 
+import { Button } from '../../../shared/ui/Button';
+import { PageNavigator, scrollPageIntoView } from '../../../shared/ui/PageNavigator';
+import { useCurrentPage } from '../../../shared/ui/use_current_page';
+
 import { GroupRow } from './group_row';
 import { formatLabel, pageFailureMessage } from './helpers';
 import { defaultLabels } from './labels';
@@ -43,7 +47,6 @@ export function App(): JSX.Element {
   const [applyError, setApplyError] = createSignal('');
   const [renderError, setRenderError] = createSignal('');
   const [previewReady, setPreviewReady] = createSignal(false);
-  const [focusedPagesLabel, setFocusedPagesLabel] = createSignal('');
 
   const rowRefs = new Map<number, RowRefs>();
   let pdfPreview: HTMLElement | undefined;
@@ -52,6 +55,27 @@ export function App(): JSX.Element {
   let draggedRowId: number | undefined;
   let previewGeneration = 0;
   let previewAbortController: AbortController | undefined;
+
+  const { currentPage, recompute: recomputeCurrentPage } = useCurrentPage({
+    scrollContainer: () => pdfPreview,
+    getPageElements: () => (pdfPages ? [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')] : []),
+  });
+
+  const goToPreviousPage = (): void => {
+    const target = pdfPages?.querySelector<HTMLElement>(`[data-pdf-page="${Math.max(currentPage() - 1, 1)}"]`);
+    if (target) {
+      scrollPageIntoView(target);
+    }
+  };
+
+  const goToNextPage = (): void => {
+    const target = pdfPages?.querySelector<HTMLElement>(
+      `[data-pdf-page="${Math.min(currentPage() + 1, pageCount())}"]`,
+    );
+    if (target) {
+      scrollPageIntoView(target);
+    }
+  };
 
   const setInputRef = (rowId: number, kind: InputKind, element: HTMLInputElement): void => {
     const refs = rowRefs.get(rowId) ?? {};
@@ -289,7 +313,6 @@ export function App(): JSX.Element {
     const focusedRow = rows.find((row) => row.id === focusedRowId());
     const parsedPages = focusedRow ? parsePages(focusedRow.pages, pageCount()) : undefined;
     const focusedPages = new Set(parsedPages?.ok === true ? parsedPages.pages : []);
-    setFocusedPagesLabel(parsedPages?.ok === true ? parsedPages.pages.join(', ') : '');
 
     for (const frame of pdfPages.querySelectorAll<HTMLElement>('[data-pdf-page]')) {
       const pageNumber = Number(frame.dataset.pdfPage);
@@ -318,6 +341,9 @@ export function App(): JSX.Element {
     setZoomPercent(nextZoom);
     applyPreviewZoom(pdfPages, nextZoom / 100);
     restorePreviewZoomAnchor(pdfPreview, anchor);
+    requestAnimationFrame(() => {
+      recomputeCurrentPage();
+    });
   };
 
   const zoomWithWheel = (event: WheelEvent): void => {
@@ -373,6 +399,9 @@ export function App(): JSX.Element {
       setPreviewReady(true);
       applyPreviewZoom(pdfPages, zoomPercent() / 100);
       updatePreviewVisibility();
+      requestAnimationFrame(() => {
+        recomputeCurrentPage();
+      });
     } catch (error: unknown) {
       if (signal.aborted) {
         return;
@@ -389,6 +418,21 @@ export function App(): JSX.Element {
     pageCount();
     previewMode();
     updatePreviewVisibility();
+    requestAnimationFrame(() => {
+      recomputeCurrentPage();
+    });
+  });
+
+  // Sync the current-page outline onto the rendered page elements.
+  createEffect(() => {
+    const current = currentPage();
+    for (const page of pdfPages?.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]') ?? []) {
+      if (page.dataset.pdfPage === String(current)) {
+        page.dataset.current = 'true';
+      } else {
+        delete page.dataset.current;
+      }
+    }
   });
 
   onMount(() => {
@@ -475,9 +519,12 @@ export function App(): JSX.Element {
                   {labels().preview.renderError}: {renderError()}
                 </p>
               </Show>
-              <footer class='pdf-preview__footer'>
-                {labels().pages.title}: {focusedPagesLabel() || '—'}
-              </footer>
+              <PageNavigator
+                currentPage={currentPage()}
+                pageCount={pageCount()}
+                onPrevious={goToPreviousPage}
+                onNext={goToNextPage}
+              />
             </section>
           }
           right={
@@ -555,10 +602,9 @@ export function App(): JSX.Element {
                 </p>
               </Show>
 
-              <div class='actions'>
-                <button
-                  class='button button--primary'
-                  type='button'
+              <div class='actions gw-actions'>
+                <Button
+                  variant='primary'
                   disabled={((): boolean => {
                     const result = validateRows();
                     return 'message' in result;
@@ -566,14 +612,13 @@ export function App(): JSX.Element {
                   onClick={apply}
                 >
                   {labels().actions.apply}
-                </button>
-                <button
-                  class='button'
-                  type='button'
+                </Button>
+                <Button
+                  variant='secondary'
                   onClick={cancel}
                 >
                   {labels().actions.cancel}
-                </button>
+                </Button>
               </div>
             </section>
           }

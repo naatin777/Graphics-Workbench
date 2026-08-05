@@ -8,6 +8,10 @@ import {
   type RotatePdfLabels,
 } from '@graphics-workbench-rotate-pdf-protocol';
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
+import { SplitPane } from '@webview-shared/split_pane';
+import { Button } from '@webview-shared/ui/Button';
+import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNavigator';
+import { useCurrentPage } from '@webview-shared/ui/use_current_page';
 
 import { vscode } from './vscode';
 import { defaultLabels } from './labels';
@@ -30,9 +34,20 @@ export function App(): JSX.Element {
   let previewController: AbortController | undefined;
   let previewGeneration = 0;
 
+  const { currentPage, recompute } = useCurrentPage({
+    scrollContainer: () => pdfPages,
+    getPageElements: () =>
+      pdfPages === undefined ? [] : [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')],
+  });
+
   createEffect(() => {
     selectedPages();
     syncSelectionClasses();
+  });
+
+  createEffect(() => {
+    currentPage();
+    syncCurrentPageOutline();
   });
 
   onMount(() => {
@@ -181,6 +196,8 @@ export function App(): JSX.Element {
 
       setPreviewReady(true);
       syncSelectionClasses();
+      recompute();
+      syncCurrentPageOutline();
     } catch (error) {
       if (controller.signal.aborted || generation !== previewGeneration) {
         return;
@@ -227,6 +244,32 @@ export function App(): JSX.Element {
     }
   }
 
+  function syncCurrentPageOutline(): void {
+    const container = pdfPages;
+    if (!container) {
+      return;
+    }
+    const current = currentPage();
+    for (const figure of container.querySelectorAll<HTMLElement>('.pdf-page')) {
+      if (Number(figure.dataset.pdfPage) === current) {
+        figure.dataset.current = 'true';
+      } else {
+        delete figure.dataset.current;
+      }
+    }
+  }
+
+  function scrollToPage(page: number): void {
+    const container = pdfPages;
+    if (!container) {
+      return;
+    }
+    const figure = container.querySelector<HTMLElement>(`.pdf-page[data-pdf-page="${page}"]`);
+    if (figure) {
+      scrollPageIntoView(figure);
+    }
+  }
+
   function apply(): void {
     const selection = selectedPages();
     if (selection.size === 0) {
@@ -246,78 +289,94 @@ export function App(): JSX.Element {
         <p class='rotate__file'>{fileName()}</p>
       </header>
 
-      <div class='rotate__body'>
-        <section class='rotate__preview'>
-          <div class='rotate__preview-toolbar'>
-            <span>{labels().preview.title}</span>
-            <button
-              type='button'
-              onClick={toggleSelectAll}
-              aria-label={labels().rotation.selectAllAriaLabel}
-            >
-              {labels().rotation.selectAll}
-            </button>
-          </div>
-          <div
-            ref={(element) => {
-              pdfPages = element;
-            }}
-            class='rotate__pages'
+      <SplitPane
+        left={
+          <section
+            class='rotate__preview'
             aria-label={labels().preview.ariaLabel}
-          />
-        </section>
-
-        <section class='rotate__panel'>
-          <fieldset class='rotate__angle'>
-            <legend>{labels().rotation.title}</legend>
-            <div
-              class='rotate__angle-options'
-              role='radiogroup'
-              aria-label={labels().rotation.angleLabel}
-            >
-              <For each={PDF_ROTATION_ANGLES}>
-                {(value) => (
-                  <label>
-                    <input
-                      type='radio'
-                      name='rotate-angle'
-                      value={value}
-                      checked={angle() === value}
-                      onChange={() => {
-                        setAngle(value);
-                      }}
-                    />
-                    <span>{value}°</span>
-                  </label>
-                )}
-              </For>
+          >
+            <div class='rotate__preview-toolbar'>
+              <span>{labels().preview.title}</span>
+              <button
+                type='button'
+                class='gw-button gw-button--secondary gw-button--small'
+                onClick={toggleSelectAll}
+                aria-label={labels().rotation.selectAllAriaLabel}
+              >
+                {labels().rotation.selectAll}
+              </button>
             </div>
-          </fieldset>
+            <div
+              ref={(element) => {
+                pdfPages = element;
+              }}
+              class='rotate__pages'
+              aria-label={labels().preview.ariaLabel}
+            />
+            <PageNavigator
+              currentPage={currentPage()}
+              pageCount={pageCount()}
+              onPrevious={() => {
+                scrollToPage(currentPage() - 1);
+              }}
+              onNext={() => {
+                scrollToPage(currentPage() + 1);
+              }}
+            />
+          </section>
+        }
+        right={
+          <section class='rotate__panel'>
+            <fieldset class='rotate__angle'>
+              <legend>{labels().rotation.title}</legend>
+              <div
+                class='gw-radio-group'
+                role='radiogroup'
+                aria-label={labels().rotation.angleLabel}
+              >
+                <For each={PDF_ROTATION_ANGLES}>
+                  {(value) => (
+                    <label class='gw-radio-option'>
+                      <input
+                        type='radio'
+                        name='rotate-angle'
+                        value={value}
+                        checked={angle() === value}
+                        onChange={() => {
+                          setAngle(value);
+                        }}
+                      />
+                      <span>{value}°</span>
+                    </label>
+                  )}
+                </For>
+              </div>
+            </fieldset>
 
-          <p class='rotate__selection'>
-            {labels().preview.description} {selectedPages().size}/{pageCount()}
-          </p>
+            <p class='rotate__selection'>
+              {labels().preview.description} {selectedPages().size}/{pageCount()}
+            </p>
 
-          {applyError() !== '' && <p role='alert'>{applyError()}</p>}
+            {applyError() !== '' && <p role='alert'>{applyError()}</p>}
 
-          <div class='rotate__actions'>
-            <button
-              type='button'
-              class='rotate__apply'
-              disabled={!previewReady()}
-              onClick={apply}
-            >
-              {labels().actions.apply}
-            </button>
-            <button
-              type='button'
-              onClick={cancel}
-            >
-              {labels().actions.cancel}
-            </button>
-          </div>
-        </section>
-      </div>
+            <div class='rotate__actions'>
+              <Button
+                variant='primary'
+                disabled={!previewReady()}
+                onClick={apply}
+              >
+                {labels().actions.apply}
+              </Button>
+              <Button
+                variant='secondary'
+                onClick={cancel}
+              >
+                {labels().actions.cancel}
+              </Button>
+            </div>
+          </section>
+        }
+      />
     </div>
   );
 }

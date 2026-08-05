@@ -1,3 +1,6 @@
+import '@vscode/codicons/dist/codicon.css';
+import '@webview-shared/ui/ui.css';
+
 import './styles.css';
 
 import { render } from 'solid-js/web';

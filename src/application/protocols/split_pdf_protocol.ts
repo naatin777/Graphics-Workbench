@@ -21,7 +21,6 @@ export interface SplitPdfLabels {
   };
   preview: {
     title: string;
-    description: string;
     ariaLabel: string;
     renderError: string;
     applyError: string;
@@ -248,7 +247,7 @@ function isSplitPdfLabels(value: unknown): value is SplitPdfLabels {
 
   const groups = [
     ['header', ['title', 'description']],
-    ['preview', ['title', 'description', 'ariaLabel', 'renderError', 'applyError', 'allPages', 'focusedPages', 'zoom']],
+    ['preview', ['title', 'ariaLabel', 'renderError', 'applyError', 'allPages', 'focusedPages', 'zoom']],
     ['groups', ['title', 'label', 'add', 'remove', 'drag', 'outputOrder']],
     ['pages', ['title', 'label', 'placeholder']],
     ['output', ['name', 'namePlaceholder', 'path']],

@@ -22,11 +22,9 @@ export interface MergePdfSource {
 export interface MergePdfLabels {
   header: {
     title: string;
-    description: string;
   };
   sources: {
     list: string;
-    listDescription: string;
     count: string;
   };
   controls: {
@@ -108,8 +106,8 @@ function isMergePdfLabels(value: unknown): value is MergePdfLabels {
   }
 
   const groups = [
-    ['header', ['title', 'description']],
-    ['sources', ['list', 'listDescription', 'count']],
+    ['header', ['title']],
+    ['sources', ['list', 'count']],
     ['controls', ['actions', 'dragHandle', 'moveUp', 'moveDown', 'removeSource']],
     ['preview', ['title', 'ariaLabel', 'loading', 'renderError']],
     ['actions', ['apply', 'cancel']],

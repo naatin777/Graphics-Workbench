@@ -1,5 +1,7 @@
 import { For, Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
+import { Button } from '@webview-shared/ui/Button';
+
 import type { ExtensionToWebviewMessage, MergePdfSource } from './messages';
 import { defaultLabels } from './labels';
 import { SourceCard } from './source_card';
@@ -153,7 +155,6 @@ export function App(): JSX.Element {
   return (
     <main class='app'>
       <h1 class='sr-only'>{labels().header.title}</h1>
-      <p class='sr-only'>{labels().header.description}</p>
 
       <div class='workspace'>
         <SplitPane
@@ -165,9 +166,7 @@ export function App(): JSX.Element {
               <div class='panel__header'>
                 <div>
                   <h2 id='source-list-title'>{labels().sources.list}</h2>
-                  <p>{labels().sources.listDescription}</p>
                 </div>
-                <span class='source-count'>{sources().length}</span>
               </div>
 
               <Show when={hostError()}>
@@ -216,22 +215,20 @@ export function App(): JSX.Element {
                 {sources().length} {labels().sources.count}
               </p>
               <p class='action-panel__hint'>{labels().preview.title}</p>
-              <div class='actions'>
-                <button
-                  class='button button--primary'
-                  type='button'
+              <div class='actions gw-actions'>
+                <Button
+                  variant='primary'
                   disabled={sources().length < 2}
                   onClick={apply}
                 >
                   {labels().actions.apply}
-                </button>
-                <button
-                  class='button'
-                  type='button'
+                </Button>
+                <Button
+                  variant='secondary'
                   onClick={cancel}
                 >
                   {labels().actions.cancel}
-                </button>
+                </Button>
               </div>
             </aside>
           }

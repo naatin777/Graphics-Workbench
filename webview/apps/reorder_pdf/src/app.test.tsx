@@ -8,6 +8,39 @@ const renderBehavior = vi.hoisted(() => ({
   fail: false,
   disposeCount: 0,
 }));
+
+class MockIntersectionObserver {
+  readonly root: Element | Document | null;
+  readonly rootMargin: string;
+  readonly thresholds: readonly number[];
+  readonly callback: IntersectionObserverCallback;
+
+  constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+    this.callback = callback;
+    this.root = options?.root ?? null;
+    this.rootMargin = options?.rootMargin ?? '0px';
+    this.thresholds = Array.isArray(options?.threshold)
+      ? options.threshold
+      : options?.threshold !== undefined
+        ? [options.threshold]
+        : [];
+  }
+
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+}
+
+vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+let scrollTop = 0;
+HTMLElement.prototype.scrollIntoView = function scrollIntoViewMock(this: HTMLElement): void {
+  const pageNumber = Number(this.dataset.pdfPage);
+  scrollTop = Math.max(0, (pageNumber - 1) * 100 - 150);
+  this.closest('.reorder__pages')?.dispatchEvent(new Event('scroll'));
+};
 const renderPdfPages = vi.hoisted(() =>
   vi.fn<(...args: unknown[]) => Promise<unknown>>(async (_pdfSrc: unknown, container: unknown) => {
     if (renderBehavior.fail) {
@@ -45,7 +78,6 @@ const labels: ReorderPdfLabels = {
   },
   preview: {
     title: 'PDF Preview',
-    description: 'Pages in the output order.',
     ariaLabel: 'PDF page preview',
     renderError: 'Could not display the PDF',
     applyError: 'Failed to apply the reorder.',
@@ -91,6 +123,36 @@ async function flushPromises(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+async function flushFrames(): Promise<void> {
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  await flushPromises();
+}
+
+function mockPageGeometry(): void {
+  const container = document.querySelector<HTMLElement>('.reorder__pages');
+  if (!container) {
+    throw new Error('Missing .reorder__pages container');
+  }
+  container.getBoundingClientRect = () => mockRect({ top: 0, left: 0, width: 400, height: 400 });
+  pageFigures().forEach((figure, index) => {
+    figure.getBoundingClientRect = () => mockRect({ top: index * 100 - scrollTop, left: 0, width: 200, height: 100 });
+  });
+}
+
+function mockRect(rect: { top: number; left: number; width: number; height: number }): DOMRect {
+  return {
+    top: rect.top,
+    left: rect.left,
+    right: rect.left + rect.width,
+    bottom: rect.top + rect.height,
+    width: rect.width,
+    height: rect.height,
+    x: rect.left,
+    y: rect.top,
+    toJSON: () => ({}),
+  };
+}
+
 function clickButton(text: string): void {
   const button = [...document.querySelectorAll('button')].find((candidate) => candidate.textContent === text);
   expect(button).toBeDefined();
@@ -128,6 +190,7 @@ beforeEach(async () => {
   renderPdfPages.mockClear();
   renderBehavior.fail = false;
   renderBehavior.disposeCount = 0;
+  scrollTop = 0;
   document.body.innerHTML = '<div id="root"></div>';
 });
 
@@ -164,6 +227,58 @@ test('各pageへcontrolが1組だけ追加され、positionラベルが付く', 
     expect(figure.querySelectorAll('.reorder-page__move-down')).toHaveLength(1);
     expect(position?.textContent).toBe(String(index + 1));
   }
+});
+
+test('各pageの↑/↓ボタンはgw-toolbar-buttonのCodiconボタンで、aria-labelを維持する', async () => {
+  await mountAndInit();
+
+  const { up, down } = controlsFor(0);
+  expect(up?.className).toContain('gw-toolbar-button');
+  expect(down?.className).toContain('gw-toolbar-button');
+  expect(up?.getAttribute('aria-label')).toBe('Move page up');
+  expect(down?.getAttribute('aria-label')).toBe('Move page down');
+  expect(up?.querySelector('.codicon.codicon-chevron-up')).not.toBeNull();
+  expect(down?.querySelector('.codicon.codicon-chevron-down')).not.toBeNull();
+});
+
+test('Preview下部にページ総数のPageNavigatorが表示される', async () => {
+  await mountAndInit();
+
+  const navigator = document.querySelector('.page-navigator');
+  expect(navigator).not.toBeNull();
+  expect(document.querySelector('.page-navigator__position')?.textContent).toContain('/ 4');
+  expect(document.querySelectorAll('.page-navigator .codicon-chevron-left')).toHaveLength(1);
+  expect(document.querySelectorAll('.page-navigator .codicon-chevron-right')).toHaveLength(1);
+});
+
+test('現在ページにdata-currentが付き、PageNavigatorの位置に反映される', async () => {
+  await mountAndInit();
+
+  mockPageGeometry();
+  document.querySelector<HTMLElement>('.reorder__pages')?.dispatchEvent(new Event('scroll'));
+  await flushFrames();
+
+  const current = document.querySelector<HTMLElement>('.pdf-page[data-current="true"]');
+  expect(current?.dataset.pdfPage).toBe('2');
+  expect(document.querySelector('.page-navigator__position')?.textContent).toBe('2 / 4');
+  expect(document.querySelectorAll('.pdf-page[data-current="true"]')).toHaveLength(1);
+});
+
+test('PageNavigatorの次へで現在ページの次のページへスクロールする', async () => {
+  await mountAndInit();
+
+  mockPageGeometry();
+  document.querySelector<HTMLElement>('.reorder__pages')?.dispatchEvent(new Event('scroll'));
+  await flushFrames();
+  expect(document.querySelector<HTMLElement>('.pdf-page[data-current="true"]')?.dataset.pdfPage).toBe('2');
+
+  const next = document.querySelector<HTMLButtonElement>('.page-navigator button[aria-label="Next page"]');
+  expect(next).not.toBeNull();
+  next?.click();
+  await flushFrames();
+
+  expect(document.querySelector<HTMLElement>('.pdf-page[data-current="true"]')?.dataset.pdfPage).toBe('3');
+  expect(document.querySelector('.page-navigator__position')?.textContent).toBe('3 / 4');
 });
 
 test('ページを上へ移動してApplyで新しい順序を送信する', async () => {

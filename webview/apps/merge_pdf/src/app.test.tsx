@@ -14,11 +14,9 @@ vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderFirstPdfPage }));
 const labels: MergePdfLabels = {
   header: {
     title: 'Merge PDFs',
-    description: 'Arrange the PDF files, then merge them in the displayed order.',
   },
   sources: {
     list: 'PDF files',
-    listDescription: 'Drag files to change their order.',
     count: 'files selected',
   },
   controls: {
@@ -86,10 +84,10 @@ describe('Merge PDF Webview', () => {
     }
 
     expect(
-      [...firstCard.querySelectorAll<HTMLButtonElement>('.source-card__controls .button')].map((button) =>
-        button.textContent?.trim(),
+      [...firstCard.querySelectorAll<HTMLButtonElement>('.source-card__controls button')].map(
+        (button) => button.querySelector('.codicon')?.className.replace('codicon ', '') ?? '',
       ),
-    ).toEqual(['⠿', '↑', '↓', '×']);
+    ).toEqual(['codicon-gripper', 'codicon-chevron-up', 'codicon-chevron-down', 'codicon-close']);
 
     const dataTransfer: DragDataTransfer = {
       effectAllowed: '',
@@ -104,7 +102,7 @@ describe('Merge PDF Webview', () => {
     expect(sourceNames()).toEqual(['two.pdf', 'one.pdf', 'three.pdf']);
 
     document.querySelector<HTMLButtonElement>('button[aria-label="Remove from list: three.pdf"]')?.click();
-    document.querySelector<HTMLButtonElement>('button.button--primary')?.click();
+    document.querySelector<HTMLButtonElement>('button.gw-button--primary')?.click();
 
     expect(sendMessage).toHaveBeenLastCalledWith({
       type: 'apply',

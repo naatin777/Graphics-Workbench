@@ -7,7 +7,7 @@ export const defaultLabels: RotatePdfLabels = {
   },
   preview: {
     title: 'PDF Preview',
-    description: 'Pages selected for rotation.',
+    description: 'Selected pages',
     ariaLabel: 'PDF page preview',
     renderError: 'Failed to render the PDF preview.',
     applyError: 'Failed to apply the rotation.',

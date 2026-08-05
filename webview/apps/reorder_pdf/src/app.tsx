@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import {
   isReorderPdfHostToWebviewMessage,
@@ -6,12 +6,29 @@ import {
   type ReorderPdfLabels,
 } from '@graphics-workbench-reorder-pdf-protocol';
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
+import { SplitPane } from '@webview-shared/split_pane';
+import { Button } from '@webview-shared/ui/Button';
+import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNavigator';
+import { useCurrentPage } from '@webview-shared/ui/use_current_page';
 
 import { vscode } from './vscode';
 import { defaultLabels } from './labels';
 
 function cancel(): void {
   vscode.sendMessage({ type: 'cancel' });
+}
+
+function createToolbarButton(className: string, label: string, icon: string): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `gw-toolbar-button ${className}`;
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  const iconSpan = document.createElement('span');
+  iconSpan.className = `codicon ${icon}`;
+  iconSpan.setAttribute('aria-hidden', 'true');
+  button.append(iconSpan);
+  return button;
 }
 
 export function App(): JSX.Element {
@@ -25,6 +42,27 @@ export function App(): JSX.Element {
   let renderController: PdfRenderController | undefined;
   let previewController: AbortController | undefined;
   let previewGeneration = 0;
+
+  const { currentPage, recompute } = useCurrentPage({
+    scrollContainer: () => pdfPages,
+    getPageElements: () =>
+      pdfPages === undefined ? [] : [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')],
+  });
+
+  createEffect(() => {
+    const container = pdfPages;
+    const current = currentPage();
+    if (container === undefined) {
+      return;
+    }
+    for (const figure of container.querySelectorAll<HTMLElement>('.pdf-page')) {
+      if (Number(figure.dataset.pdfPage) === current) {
+        figure.dataset.current = 'true';
+      } else {
+        delete figure.dataset.current;
+      }
+    }
+  });
 
   onMount(() => {
     const onMessage = (event: MessageEvent): void => {
@@ -138,6 +176,7 @@ export function App(): JSX.Element {
       }
 
       ensureControls();
+      recompute();
       setPreviewReady(true);
     } catch (error) {
       if (controller.signal.aborted || generation !== previewGeneration) {
@@ -162,16 +201,8 @@ export function App(): JSX.Element {
       controls.className = 'reorder-page__controls';
       const position = document.createElement('span');
       position.className = 'reorder-page__position';
-      const up = document.createElement('button');
-      up.type = 'button';
-      up.className = 'reorder-page__move-up';
-      up.setAttribute('aria-label', labels().order.moveUp);
-      up.textContent = '↑';
-      const down = document.createElement('button');
-      down.type = 'button';
-      down.className = 'reorder-page__move-down';
-      down.setAttribute('aria-label', labels().order.moveDown);
-      down.textContent = '↓';
+      const up = createToolbarButton('reorder-page__move-up', labels().order.moveUp, 'codicon-chevron-up');
+      const down = createToolbarButton('reorder-page__move-down', labels().order.moveDown, 'codicon-chevron-down');
       controls.append(position, up, down);
       figure.append(controls);
     }
@@ -198,6 +229,7 @@ export function App(): JSX.Element {
       figure.before(target);
     }
     syncPositions();
+    recompute();
   }
 
   function syncPositions(): void {
@@ -211,6 +243,17 @@ export function App(): JSX.Element {
       if (label) {
         label.textContent = String(position + 1);
       }
+    }
+  }
+
+  function scrollToPdfPage(pageNumber: number): void {
+    const container = pdfPages;
+    if (!container) {
+      return;
+    }
+    const figure = container.querySelector<HTMLElement>(`.pdf-page[data-pdf-page="${pageNumber}"]`);
+    if (figure) {
+      scrollPageIntoView(figure);
     }
   }
 
@@ -240,45 +283,57 @@ export function App(): JSX.Element {
         <p class='reorder__file'>{fileName()}</p>
       </header>
 
-      <div class='reorder__body'>
-        <section class='reorder__preview'>
-          <div class='reorder__preview-toolbar'>
-            <span>{labels().preview.title}</span>
-          </div>
-          <div
-            ref={(element) => {
-              pdfPages = element;
-            }}
-            class='reorder__pages'
-            aria-label={labels().preview.ariaLabel}
-          />
-        </section>
+      <SplitPane
+        left={
+          <section class='reorder__preview'>
+            <div class='reorder__preview-toolbar'>
+              <span>{labels().preview.title}</span>
+            </div>
+            <div
+              ref={(element) => {
+                pdfPages = element;
+              }}
+              class='reorder__pages'
+              aria-label={labels().preview.ariaLabel}
+            />
+            <PageNavigator
+              currentPage={currentPage()}
+              pageCount={pageCount()}
+              onPrevious={() => {
+                scrollToPdfPage(currentPage() - 1);
+              }}
+              onNext={() => {
+                scrollToPdfPage(currentPage() + 1);
+              }}
+            />
+          </section>
+        }
+        right={
+          <section class='reorder__panel'>
+            <p class='reorder__selection'>
+              {pageCount()} {labels().order.positionLabel}
+            </p>
 
-        <section class='reorder__panel'>
-          <p class='reorder__selection'>
-            {labels().preview.description} {pageCount()} {labels().order.positionLabel}
-          </p>
+            {applyError() !== '' && <p role='alert'>{applyError()}</p>}
 
-          {applyError() !== '' && <p role='alert'>{applyError()}</p>}
-
-          <div class='reorder__actions'>
-            <button
-              type='button'
-              class='reorder__apply'
-              disabled={!previewReady()}
-              onClick={apply}
-            >
-              {labels().actions.apply}
-            </button>
-            <button
-              type='button'
-              onClick={cancel}
-            >
-              {labels().actions.cancel}
-            </button>
-          </div>
-        </section>
-      </div>
+            <div class='reorder__actions'>
+              <Button
+                variant='primary'
+                disabled={!previewReady()}
+                onClick={apply}
+              >
+                {labels().actions.apply}
+              </Button>
+              <Button
+                variant='secondary'
+                onClick={cancel}
+              >
+                {labels().actions.cancel}
+              </Button>
+            </div>
+          </section>
+        }
+      />
     </div>
   );
 }
