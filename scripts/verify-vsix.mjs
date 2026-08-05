@@ -36,8 +36,6 @@ const NATIVE_PACKAGE_PREFIX = 'node_modules/@img/';
  * @returns {string[]}
  */
 function sortStrings(values) {
-  // TypeScript's JavaScript checker currently reports toSorted as any for JavaScript arrays.
-  // oxlint-disable-next-line typescript/no-unsafe-return, typescript/no-unsafe-call -- JSDoc arrays resolve to any for toSorted
   return values.toSorted();
 }
 

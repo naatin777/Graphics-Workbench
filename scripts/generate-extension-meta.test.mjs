@@ -176,7 +176,7 @@ void test('validateManifest rejects menu references to undefined commands', () =
   const manifest = createManifest({
     contributes: {
       ...createManifest().contributes,
-      menus: { 'commandPalette': [{ command: 'graphics-workbench.missingCommand', when: 'false' }] },
+      menus: { commandPalette: [{ command: 'graphics-workbench.missingCommand', when: 'false' }] },
     },
   });
 

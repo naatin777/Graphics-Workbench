@@ -1,18 +1,17 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const AGGREGATE_WEBVIEW_SCRIPTS = ['test:webview:coverage'];
+const AGGREGATE_WEBVIEW_SCRIPTS = new Set(['test:webview:coverage']);
 
 const appsDirectory = path.join(repositoryRoot, 'webview', 'apps');
 const expectedAppNames = readdirSync(appsDirectory, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
-  .sort();
+  .toSorted();
 
 function packageJsonScripts() {
   return JSON.parse(readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8')).scripts;
@@ -26,10 +25,7 @@ void test('webview appごとにvitest設定とtest fileがある', () => {
   assert.ok(expectedAppNames.length >= 5, 'webview apps must exist');
   for (const appName of expectedAppNames) {
     const appRoot = path.join(appsDirectory, appName);
-    assert.ok(
-      readdirSync(appRoot).includes('vitest.config.ts'),
-      `${appName} must define a vitest.config.ts`,
-    );
+    assert.ok(readdirSync(appRoot).includes('vitest.config.ts'), `${appName} must define a vitest.config.ts`);
     const testFiles = readdirSync(path.join(appRoot, 'src')).filter((name) => name.endsWith('.test.tsx'));
     assert.ok(testFiles.length > 0, `${appName} must have at least one webview test file`);
   }
@@ -44,7 +40,7 @@ void test('package.jsonのtest:webviewスクリプトがwebview app一覧と一�
   }
 
   for (const scriptName of Object.keys(scripts)) {
-    if (scriptName.startsWith('test:webview:') && !AGGREGATE_WEBVIEW_SCRIPTS.includes(scriptName)) {
+    if (scriptName.startsWith('test:webview:') && !AGGREGATE_WEBVIEW_SCRIPTS.has(scriptName)) {
       assert.ok(
         expectedPerAppScripts.includes(scriptName),
         `${scriptName} does not match a webview app under webview/apps`,

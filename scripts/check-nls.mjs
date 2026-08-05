@@ -12,8 +12,6 @@ import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/
  * @returns {string[]}
  */
 function sortStrings(values) {
-  // TypeScript's JavaScript checker currently reports toSorted as any for JavaScript arrays.
-  // oxlint-disable-next-line typescript/no-unsafe-return -- preserve non-mutating string ordering
   return values.toSorted();
 }
 
@@ -128,7 +126,6 @@ function scanCallArguments(scanner) {
   for (;;) {
     const token = scanner.scan();
     if (token === SyntaxKind.EndOfFile) {
-      // oxlint-disable-next-line unicorn/no-useless-undefined -- distinguish an incomplete call from a closed call.
       return undefined;
     }
 
@@ -253,7 +250,7 @@ function run(root) {
   }
 }
 
-const scriptPath = process.argv[1];
+const [, scriptPath] = process.argv;
 if (scriptPath && import.meta.url === pathToFileURL(path.resolve(scriptPath)).href) {
   run(process.cwd());
 }

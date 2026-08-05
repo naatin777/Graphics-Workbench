@@ -502,14 +502,7 @@ export default defineConfig({
       },
     },
     {
-      files: [
-        'src/**/*.ts',
-        'webview/apps/**/*.ts',
-        'webview/apps/**/*.tsx',
-        'webview/shared/**/*.ts',
-        'scripts/**/*.mjs',
-        '.github/scripts/**/*.mjs',
-      ],
+      files: ['src/**/*.ts', 'webview/apps/**/*.ts', 'webview/apps/**/*.tsx', 'webview/shared/**/*.ts'],
       rules: {
         'typescript/no-unsafe-assignment': 'error',
         'typescript/no-unnecessary-condition': 'error',
@@ -522,6 +515,30 @@ export default defineConfig({
         'unicorn/no-await-expression-member': 'error',
         'unicorn/no-useless-undefined': 'error',
         'unicorn/no-nested-ternary': 'error',
+      },
+    },
+    {
+      // .mjs scripts are plain JS that do not belong to a TS program, so
+      // type-aware rules cannot resolve them (single-file lint errors while
+      // directory lint silently skips them). Treat them as untyped JS.
+      files: ['scripts/**/*.mjs', '.github/scripts/**/*.mjs'],
+      rules: {
+        'typescript/no-unsafe-assignment': 'off',
+        'typescript/no-unsafe-call': 'off',
+        'typescript/no-unsafe-member-access': 'off',
+        'typescript/no-unsafe-argument': 'off',
+        'typescript/no-unsafe-return': 'off',
+        'typescript/no-unnecessary-condition': 'off',
+        'typescript/strict-boolean-expressions': 'off',
+        'typescript/no-confusing-void-expression': 'off',
+        'typescript/promise-function-async': 'off',
+        'typescript/strict-void-return': 'off',
+        'typescript/no-non-null-assertion': 'off',
+        'typescript/prefer-nullish-coalescing': 'off',
+        'typescript/prefer-optional-chain': 'off',
+        'unicorn/no-useless-undefined': 'off',
+        'unicorn/no-nested-ternary': 'off',
+        'unicorn/prefer-string-replace-all': 'off',
       },
     },
     {
@@ -548,6 +565,14 @@ export default defineConfig({
         'unicorn/no-useless-undefined': 'off',
         'unicorn/no-nested-ternary': 'off',
         'unicorn/prefer-string-replace-all': 'off',
+        // oxlint-lint-coverage: remaining rules that fire on the untyped visitor API
+        // now that this file is included in the default lint targets.
+        'typescript/no-unsafe-call': 'off',
+        'typescript/no-unsafe-member-access': 'off',
+        'typescript/prefer-nullish-coalescing': 'off',
+        'typescript/prefer-optional-chain': 'off',
+        'eslint/prefer-destructuring': 'off',
+        'eslint/prefer-template': 'off',
       },
     },
     {
@@ -559,6 +584,21 @@ export default defineConfig({
         'max-params': 'off',
         'eslint/max-classes-per-file': 'off',
         'eslint/no-unreachable-loop': 'off',
+      },
+    },
+    {
+      // oxlint-lint-coverage: scripts' Node test files exercise untyped Node/CLI
+      // APIs (execFileSync, JSON.parse, test context) the same way `test/**` does.
+      files: ['scripts/**/*.test.mjs'],
+      rules: {
+        'typescript/no-unsafe-assignment': 'off',
+        'typescript/no-unsafe-call': 'off',
+        'typescript/no-unsafe-member-access': 'off',
+        'typescript/no-unsafe-argument': 'off',
+        'typescript/no-unsafe-return': 'off',
+        'typescript/strict-boolean-expressions': 'off',
+        'typescript/no-confusing-void-expression': 'off',
+        'unicorn/no-useless-undefined': 'off',
       },
     },
     {
