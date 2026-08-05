@@ -56,8 +56,8 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - extension manifestのNode制約は置かず、repositoryの開発・install用Node制約は`devEngines.runtime`で管理する。
 - CIのnpm cacheは、npm 12.0.1への更新後に`actions/cache`で復元し、`setup-node`の自動cacheは使わない。
 - Browser Playwrightは廃止し、実VS Codeを必要とする配布物E2Eはpackage済みVSIXのElectron Playwrightで確認する。
-- PRのPackaged Electron E2Eは、Linuxがwide+narrow full UI / responsive / pixel snapshotのowner、macOS / Windowsがwide packaged conversion smokeのownerとなる。release前は3 OSすべてで全wide+narrow suiteを実行し、pixel gateではなく各OSのscreenshot artifactを目視確認する。
-- GitHub ActionsのPRでは3 OSともpackaged Playwrightを実行する。Linuxはfull 33 cases、macOS / Windowsはwide packaged conversion smoke 3 casesで、macOS / Windowsではpixel比較を行わない。
+- PRのPackaged Electron E2Eは、3 OSすべてがwide packaged conversion smokeのownerとなる。full wide+narrow suiteはローカル（`/verify-e2e`・pre-push変更検知）とrelease前の3 OSで実行し、pixel gateではなく各OSのscreenshot artifactを目視確認する。
+- GitHub ActionsのPRでは3 OSともpackaged Playwright smoke 3 casesを実行し、pixel比較は行わない。full wide+narrow suite（37 cases）はローカルとreleaseで実行する。
 - Playwrightスクリーンショットはpixel比較せず、`npm run visual:capture`で`artifacts/visual-review/`へ生成し人間が目視確認する。承認した画像のみreferenceとしてGit管理する（ADR-0027、ADR-0024/0025は置き換え済み）。
 - 入力ファイルサイズ・PDFページ数にアプリケーション共通の固定上限を設けず、本処理に共通実行タイムアウトを設けない。停止はユーザーのキャンセルで行い、セキュリティガードと制御タイムアウトは維持する（ADR-0028）。
 - releaseの6 target VSIXは、可能な限り対象と同一OS・CPUのGitHub-hosted runnerで生成し、`sharp`を実実行検証する。Windows ARM64は`windows-11-arm`がPublic previewのためcross-package生成・内容検証のみとする（ADR-0026）。

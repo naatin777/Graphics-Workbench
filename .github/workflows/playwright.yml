@@ -25,7 +25,7 @@ jobs:
         include:
           - os: ubuntu-latest
             label: Linux
-            test_command: xvfb-run npm run test:playwright:vsix
+            test_command: xvfb-run npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts
             artifact_suffix: linux
           - os: macos-latest
             label: macOS
