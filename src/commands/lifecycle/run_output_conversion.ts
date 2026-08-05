@@ -53,8 +53,10 @@ export async function runConversionLifecycle(options: {
   resolveConflicts?: ConversionExecutionContext['resolveConflicts'];
   run: (runtime: ConversionExecutionContext) => Promise<CommittedConversionOutput[]>;
 }): Promise<void> {
+  let outputs: CommittedConversionOutput[];
+
   try {
-    const outputs = await vscode.window.withProgress(
+    outputs = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
         title: options.messages.progressTitle,
@@ -76,23 +78,6 @@ export async function runConversionLifecycle(options: {
           return options.run(runtimeOptions);
         }),
     );
-    const successMessage = options.messages.successMessage(outputs.length);
-    let undoId: string;
-
-    try {
-      undoId = await recordConversionForUndo(outputs, options.outputChannel);
-    } catch (error) {
-      const reason = errorMessage(error);
-      options.outputChannel?.appendLine(`[${options.operationName}] Undo record failed: ${reason}`);
-      await vscode.window.showWarningMessage(options.messages.undoUnavailableMessage(successMessage, reason));
-      return;
-    }
-
-    const undoAction = userMessage('message.action.undo');
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
   } catch (error) {
     if (isAbortError(error)) {
       options.outputChannel?.appendLine(`[${options.operationName}] cancellation requested`);
@@ -103,5 +88,29 @@ export async function runConversionLifecycle(options: {
     const reason = errorMessage(error);
     options.outputChannel?.appendLine(`[${options.operationName}] failure: ${reason}`);
     await vscode.window.showErrorMessage(options.messages.failedMessage(reason));
+    return;
+  }
+
+  const successMessage = options.messages.successMessage(outputs.length);
+  let undoId: string;
+
+  try {
+    undoId = await recordConversionForUndo(outputs, options.outputChannel);
+  } catch (error) {
+    const reason = errorMessage(error);
+    options.outputChannel?.appendLine(`[${options.operationName}] Undo record failed: ${reason}`);
+    await vscode.window.showWarningMessage(options.messages.undoUnavailableMessage(successMessage, reason));
+    return;
+  }
+
+  const undoAction = userMessage('message.action.undo');
+  try {
+    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
+    if (selectedAction === undoAction) {
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
+    }
+  } catch (error) {
+    // The conversion already succeeded; a UI failure here must not be reported as a conversion failure.
+    options.outputChannel?.appendLine(`[${options.operationName}] success notification failed: ${errorMessage(error)}`);
   }
 }
