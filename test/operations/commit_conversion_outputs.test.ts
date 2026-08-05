@@ -10,7 +10,19 @@
 // - 変換処理そのもの
 
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import {
+  access,
+  chmod,
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rename,
+  rm,
+  stat,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -156,6 +168,35 @@ suite('変換結果の反映処理', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'new');
   });
 
+  test('上書き前に既存ファイルのmodeとmtimeを記録する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
+    const outputPath = path.join(workspacePath, 'sample.pdf');
+    const originalMtime = new Date(2005, 5, 15, 12, 34, 56, 789);
+
+    try {
+      await writeFixture(stagedOutputPath, 'new');
+      await writeFixture(outputPath, 'old');
+      await utimes(outputPath, originalMtime, originalMtime);
+      if (process.platform !== 'win32') {
+        await chmod(outputPath, 0o640);
+      }
+
+      const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+        resolveConflicts: async () => 'overwrite',
+      });
+
+      const metadata = committed[0]?.previousFileMetadata;
+      assert.ok(metadata);
+      assert.strictEqual(metadata.mtimeMs, originalMtime.getTime());
+      if (process.platform !== 'win32') {
+        assert.strictEqual(metadata.mode, 0o640);
+      }
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
   test('1件目の成功後に2件目のcopyが失敗すると両方を元へ戻す', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-commit-test-'));
     const outputs = await Promise.all(
@@ -167,6 +208,8 @@ suite('変換結果の反映処理', () => {
         return { stagedOutputPath, outputPath, workspacePath };
       }),
     );
+    const originalMtime = new Date(2005, 5, 15, 12, 34, 56, 789);
+    await utimes(outputs[0]?.outputPath ?? '', originalMtime, originalMtime);
     let copyCount = 0;
 
     await assert.rejects(
@@ -185,6 +228,8 @@ suite('変換結果の反映処理', () => {
 
     assert.strictEqual(await readFile(outputs[0]?.outputPath ?? '', 'utf8'), 'old-first');
     assert.strictEqual(await readFile(outputs[1]?.outputPath ?? '', 'utf8'), 'old-second');
+    const restored = await stat(outputs[0]?.outputPath ?? '');
+    assert.strictEqual(restored.mtimeMs, originalMtime.getTime());
   });
 
   test('overwrite中の現在出力のcopy失敗でもbackupから復元する', async () => {
