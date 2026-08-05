@@ -18,6 +18,7 @@ const renderPdfPages = vi.hoisted(() =>
       container.replaceChildren();
       for (let page = 1; page <= 4; page += 1) {
         const figure = document.createElement('figure');
+        figure.className = 'pdf-page';
         figure.dataset.pdfPage = String(page);
         const canvas = document.createElement('canvas');
         figure.append(canvas);
@@ -127,13 +128,13 @@ function selectionText(): string {
 }
 
 function selectedPages(): string[] {
-  return [...document.querySelectorAll<HTMLElement>('[data-pdf-page].pdf-page--selected')].map(
+  return [...document.querySelectorAll<HTMLElement>('.pdf-page.pdf-page--selected')].map(
     (figure) => figure.dataset.pdfPage ?? '',
   );
 }
 
 function pageFigures(): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>('[data-pdf-page]')];
+  return [...document.querySelectorAll<HTMLElement>('.pdf-page')];
 }
 
 function selectAllButton(): HTMLButtonElement | undefined {
@@ -164,7 +165,7 @@ test('3つの回転角度ラジオを表示し、Applyで選択ページと角�
   expect(radios).toHaveLength(3);
   expect([...radios].map((radio) => radio.value)).toEqual(['90', '180', '270']);
 
-  const pages = document.querySelectorAll('[data-pdf-page]');
+  const pages = document.querySelectorAll('.pdf-page');
   expect(pages).toHaveLength(4);
 
   pages[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));

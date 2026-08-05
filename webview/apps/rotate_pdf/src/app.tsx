@@ -219,7 +219,7 @@ export function App(): JSX.Element {
     if (!container) {
       return;
     }
-    for (const figure of container.querySelectorAll<HTMLElement>('[data-pdf-page]')) {
+    for (const figure of container.querySelectorAll<HTMLElement>('.pdf-page')) {
       const page = Number(figure.dataset.pdfPage);
       const selected = selectedPages().has(page);
       figure.classList.toggle('pdf-page--selected', selected);

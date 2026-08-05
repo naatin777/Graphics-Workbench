@@ -17,6 +17,7 @@ const renderPdfPages = vi.hoisted(() =>
       container.replaceChildren();
       for (let page = 1; page <= 4; page += 1) {
         const figure = document.createElement('figure');
+        figure.className = 'pdf-page';
         figure.dataset.pdfPage = String(page);
         const canvas = document.createElement('canvas');
         figure.append(canvas);
@@ -97,7 +98,7 @@ function clickButton(text: string): void {
 }
 
 function pageFigures(): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>('[data-pdf-page]')];
+  return [...document.querySelectorAll<HTMLElement>('.pdf-page')];
 }
 
 function orderFromDom(): number[] {

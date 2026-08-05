@@ -100,29 +100,9 @@ test('Rotate Configureで選択pageにborder/outlineが表示される', async (
     await expect(pages).not.toHaveCount(0);
     const firstPage = pages.first();
 
-    const selectedBorderColor = await firstPage.evaluate(() => {
-      const documentElement = Reflect.get(globalThis, 'document');
-      const getComputedStyleValue = Reflect.get(globalThis, 'getComputedStyle');
-      if (
-        typeof documentElement !== 'object' ||
-        documentElement === null ||
-        typeof getComputedStyleValue !== 'function'
-      ) {
-        return '';
-      }
-      const querySelector = Reflect.get(documentElement, 'querySelector');
-      if (typeof querySelector !== 'function') {
-        return '';
-      }
-      const pageElement = querySelector.call(documentElement, '.rotate__pages [data-pdf-page]');
-      const style = getComputedStyleValue.call(globalThis, pageElement);
-      const borderColor = typeof style === 'object' && style !== null ? Reflect.get(style, 'borderColor') : '';
-      return typeof borderColor === 'string' ? borderColor : '';
-    });
-
-    expect(selectedBorderColor).not.toBe('transparent');
-    expect(selectedBorderColor).not.toBe('rgba(0, 0, 0, 0)');
-    expect(selectedBorderColor).not.toBe('');
+    await expect
+      .poll(() => firstPage.evaluate((element) => element.classList.contains('pdf-page--selected')))
+      .toBe(false);
 
     await firstPage.click();
     await expect
@@ -146,6 +126,7 @@ test('Rotate Configureで選択pageにborder/outlineが表示される', async (
       };
     });
     expect(selectedStyle.borderColor).not.toBe('transparent');
+    expect(selectedStyle.borderColor).not.toBe('rgba(0, 0, 0, 0)');
     expect(selectedStyle.outline).not.toBe('none');
 
     await expect(frame.getByText(/\d+\/\d+/u)).toBeVisible();
