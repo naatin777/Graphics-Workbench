@@ -1,9 +1,9 @@
 ---
 name: graphite-stacked-pr
-description: Use when working with the Graphite CLI (gt), stacked PRs, upstack/downstack branches, restacking, splitting large changes across multiple PRs, or repairing a Graphite stack. Use ONLY for Graphite-specific workflows (gt create/modify/submit/sync/restack/continue/abort/undo/track/split/move/reorder/fold/pop/absorb/log/info); do NOT use for plain git operations, single-commit work, or GitHub operations unrelated to stacked PRs.
+description: Use when starting any new coding task that may create a branch, and when working with the Graphite CLI (gt), stacked PRs, upstack/downstack branches, restacking, splitting large changes across multiple PRs, or repairing a Graphite stack. Load BEFORE creating a branch to decide the parent (trunk vs. an existing PR branch); do not start a task on the current branch and only later consult this skill. Use for gt workflows (gt create/modify/submit/sync/restack/continue/abort/undo/track/split/move/reorder/fold/pop/absorb/log/info) and for branch-start decisions; do NOT use for plain git operations, single-commit work, or GitHub operations unrelated to stacked PRs.
 compatibility: Graphite CLI 1.8.x (verified against 1.8.6)
 metadata:
-  version: '0.1.0'
+  version: '0.2.0'
 ---
 
 # Graphite Stacked PR (gt)
@@ -108,6 +108,41 @@ If a stack would exceed ~5 branches, reconsider whether:
 - migration phases can be separated,
 - too much transient context is being held for review,
 - CI/restack cost is too high.
+
+## Branch start rules
+
+The most common failure is not a wrong gt command but **starting every new task on the current branch**, so unrelated PRs pile up vertically and `gt create` silently parents each new branch onto the previous one. Enforce the default: a new user request starts from **trunk as an independent PR**.
+
+- A new user request must start from trunk unless it explicitly depends on an existing unmerged PR.
+- Before starting work, confirm the current branch and its Graphite parent: `git status --short`, `gt log short`, `gt trunk`, `gt sync`.
+- Never use the current branch as an implicit parent via `gt create`. `gt create` parents onto the current branch; that is only correct when the dependency reason is real.
+- When making a stack, explain in one sentence why each PR cannot be implemented or reviewed without its immediate predecessor.
+- Any PR that cannot state that dependency reason is an independent PR directly under trunk.
+- After a stack is merged, run `gt sync` and return to trunk before starting the next task.
+
+Standard start procedure:
+
+```bash
+git status --short
+gt log short
+gt trunk
+gt sync
+```
+
+Independent task (default):
+
+```bash
+gt create <branch> -m "<commit message>"
+```
+
+Truly dependent task (only when a real dependency exists):
+
+```bash
+gt checkout <intended-parent>
+gt create <child> -m "<commit message>"
+```
+
+Symptoms of the wrong pattern: the same stack keeps gaining unrelated PRs across separate user requests, PRs are merged into `graphite-base/*` and mistaken for landing on main, or the stack exceeds ~5 branches without a per-link dependency reason. If the stack already shows this pattern, do not keep adding more branches; split the independent PRs onto trunk and keep only genuinely dependent links stacked.
 
 ## Stack planning
 
@@ -245,6 +280,23 @@ git status --short
 - If `gt merge` fails or stops on a conflict, do not continue merging manually from GitHub; diagnose and resolve before retrying.
 - Always run `gt sync` after merging to clean up merged branches and restack the remaining stack, then verify with `gt log short` and `git status --short`.
 - Before an Agent runs `gt merge` or `gt sync` (remote updates or history changes), present the target and obtain explicit user approval.
+
+### Verifying landing after merge
+
+Do not treat `merged: true` or a `graphite-base/*` merge as completion. This repository squash-merges, so the original branch commit SHAs never become ancestors of main; an ancestor check on the source commit falsely flags normal merges as missing.
+
+Verify by PR number against the merge commit:
+
+```bash
+npm run check:prs-landed -- <PR-number>...
+```
+
+The script fetches each PR's `merge_commit_sha` from the GitHub API and checks whether it is an ancestor of `origin/main` (or `--ref <tag>`). It fails when a PR is open or when a merged PR's merge commit is absent from main. This distinguishes:
+
+- normal squash merge → the squash commit exists on main,
+- merged into a Graphite base only → the merge commit is not on main.
+
+`graphite-base/*` branches are a normal Graphite artifact after partial stack merges; the problem is only when a merge into `graphite-base/*` is treated as landing on main. After `gt merge`, run `gt sync` and then `npm run check:prs-landed -- <PR-number>...` for the merged PRs.
 
 Editing the same file across multiple stacked PRs is allowed; each PR just needs a coherent diff against its parent branch.
 
