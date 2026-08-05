@@ -86,6 +86,7 @@
     "@types/vscode": "^1.105.0",
     "@types/xml2js": "^0.4.14",
     "@vitest/coverage-v8": "^4.1.10",
+    "@vscode/codicons": "^0.0.45",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",

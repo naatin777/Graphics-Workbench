@@ -24,7 +24,12 @@
     "@types/vscode",
     "@types/xml2js",
     "@vscode/test-electron",
-    "@vscode/vsce"
+    "@vscode/vsce",
+    "@vscode/codicons"
   ],
-  "ignoreFiles": ["webview/apps/crop_pdf/src/pdf/pdfjs.ts", "webview/shared/pdf/render_first_page.ts"]
+  "ignoreFiles": [
+    "webview/apps/crop_pdf/src/pdf/pdfjs.ts",
+    "webview/shared/pdf/render_first_page.ts",
+    "webview/shared/ui/**"
+  ]
 }

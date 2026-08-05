@@ -8,6 +8,7 @@ import { createSignal, onCleanup, type JSX } from 'solid-js';
  */
 export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX.Element {
   const [leftWidth, setLeftWidth] = createSignal<number | undefined>(undefined);
+  const [active, setActive] = createSignal(false);
   let containerRef: HTMLDivElement | undefined;
   let dragHandlers: (() => void) | undefined;
 
@@ -23,6 +24,7 @@ export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX
     }
 
     event.preventDefault();
+    setActive(true);
     const containerRect = container.getBoundingClientRect();
     const minimumRightWidth = 240;
     const onPointerMove = (moveEvent: PointerEvent): void => {
@@ -32,6 +34,7 @@ export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX
     };
     const onPointerUp = (): void => {
       dragHandlers = undefined;
+      setActive(false);
       globalThis.removeEventListener('pointermove', onPointerMove);
       globalThis.removeEventListener('pointerup', onPointerUp);
     };
@@ -57,6 +60,7 @@ export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX
         class='split-pane__divider'
         role='separator'
         aria-orientation='vertical'
+        data-active={active()}
         onPointerDown={startDrag}
       />
       <div class='split-pane__right'>{props.right}</div>
