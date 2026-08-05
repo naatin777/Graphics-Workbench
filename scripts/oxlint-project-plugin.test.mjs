@@ -85,11 +85,7 @@ void test('requires process envelope fields on protocol declarations', () => {
       id: { name: 'CropPdfProcessSuccess' },
       type: 'TSInterfaceDeclaration',
       body: {
-        body: [
-          property('type'),
-          property('protocolVersion'),
-          property('requestId'),
-        ],
+        body: [property('type'), property('protocolVersion'), property('requestId')],
       },
     }),
     [],

@@ -16,6 +16,10 @@ import { execFileSync } from 'node:child_process';
 const repositoryRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
 const defaultRef = 'origin/main';
 
+/**
+ * @param {string[]} args
+ * @returns {{ prNumbers: string[]; fetch: boolean; ref: string }}
+ */
 function parseArgs(args) {
   const prNumbers = [];
   let ref = defaultRef;
@@ -25,10 +29,10 @@ function parseArgs(args) {
     const arg = args[index];
     if (arg === '--ref') {
       index += 1;
-      ref = args[index];
-      if (ref === undefined) {
+      if (index >= args.length) {
         throw new Error('--ref requires a branch or tag name.');
       }
+      ref = args[index];
     } else if (arg === '--no-fetch') {
       fetch = false;
     } else if (arg.startsWith('-')) {
@@ -67,7 +71,9 @@ function main() {
   const { prNumbers, fetch, ref } = parseArgs(process.argv.slice(2));
 
   if (prNumbers.length === 0) {
-    process.stderr.write('Usage: node scripts/check-prs-landed.mjs <pr-number>... [--ref <branch-or-tag>] [--no-fetch]\n');
+    process.stderr.write(
+      'Usage: node scripts/check-prs-landed.mjs <pr-number>... [--ref <branch-or-tag>] [--no-fetch]\n',
+    );
     process.exit(2);
   }
 

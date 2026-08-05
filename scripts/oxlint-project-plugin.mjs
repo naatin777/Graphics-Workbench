@@ -500,7 +500,8 @@ const noPdfBytesInProcessIpc = {
   },
 };
 
-const SENSITIVE_IDENTIFIER = /access[-_]?key|api[-_]?key|credential|job[-_]?json|password|private[-_]?key|secret|token/iu;
+const SENSITIVE_IDENTIFIER =
+  /access[-_]?key|api[-_]?key|credential|job[-_]?json|password|private[-_]?key|secret|token/iu;
 
 function isSensitiveName(name) {
   const match = name.match(SENSITIVE_IDENTIFIER);
@@ -576,8 +577,7 @@ const noDirectChildProcess = {
     type: 'problem',
     schema: [],
     messages: {
-      boundary:
-        'Direct child_process access is restricted to the shared external-tool and process-runner adapters.',
+      boundary: 'Direct child_process access is restricted to the shared external-tool and process-runner adapters.',
     },
   },
 
@@ -593,7 +593,11 @@ const noDirectChildProcess = {
         }
       },
       CallExpression(node) {
-        if (node.callee?.type === 'Identifier' && node.callee.name === 'require' && isChildProcessSource(node.arguments[0])) {
+        if (
+          node.callee?.type === 'Identifier' &&
+          node.callee.name === 'require' &&
+          isChildProcessSource(node.arguments[0])
+        ) {
           context.report({ node, messageId: 'boundary' });
         }
       },

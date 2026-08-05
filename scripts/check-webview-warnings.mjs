@@ -13,11 +13,11 @@ for (const app of apps) {
     encoding: 'utf8',
   });
   if (result.status !== 0) {
-    process.stderr.write(`[check-webview-warnings] ${app} build failed.\n${result.stdout ?? ''}${result.stderr ?? ''}`);
+    process.stderr.write(`[check-webview-warnings] ${app} build failed.\n${result.stdout}${result.stderr}`);
     process.exit(result.status ?? 1);
   }
 
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  const output = `${result.stdout}\n${result.stderr}`;
   const matches = output.split('\n').filter((line) => knownCssWarning.test(line));
   if (matches.length > 0) {
     failed = true;

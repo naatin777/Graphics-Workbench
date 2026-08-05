@@ -29,8 +29,6 @@ const PRIORITY_FILE_LIMIT = 15;
  * @returns {T[]}
  */
 function sortCopy(values, compare) {
-  // TypeScript's JavaScript checker currently reports toSorted as any for JSDoc-defined arrays.
-  // oxlint-disable-next-line typescript/no-unsafe-return, typescript/no-unsafe-call -- JSDoc arrays resolve to any for toSorted
   return values.toSorted(compare);
 }
 
@@ -309,7 +307,6 @@ function actionsRunUrl() {
     runId === undefined ||
     runId === ''
   ) {
-    // oxlint-disable-next-line unicorn/no-useless-undefined -- preserve the optional URL contract.
     return undefined;
   }
   return `${server}/${repository}/actions/runs/${runId}`;
