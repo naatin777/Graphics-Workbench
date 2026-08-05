@@ -106,7 +106,7 @@ release package jobは各native runnerで次を実行する。
 ### PR static gate
 
 - check: lint / format / four typechecks
-- pull request description: `## Verification` sectionはPR templateで案内し、CIで強制しない。PR本文のローカルパス漏洩は、push前のpre-commit `environment-paths`とtemplateのPrivacy checklistで防ぐ（PR作成後のCI検知は漏洩を防げないため実施しない）
+- pull request description: `## Verification` sectionはPR templateで案内し、CIで強制しない。PR本文のローカルパス漏洩は、templateのPrivacy checklistで防ぐ（PR作成後のCI検知は漏洩を防げないため実施しない）
 
 ### PR behavior gate
 
