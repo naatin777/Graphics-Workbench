@@ -36,7 +36,6 @@ export interface CropPdfLabels {
   };
   preview: {
     title: string;
-    description: string;
     ariaLabel: string;
     zoomLabel: string;
     zoomOut: string;
@@ -47,7 +46,6 @@ export interface CropPdfLabels {
   cropBox: {
     settingsLabel: string;
     title: string;
-    description: string;
     left: string;
     bottom: string;
     right: string;
@@ -55,9 +53,9 @@ export interface CropPdfLabels {
     currentPageSize: string;
   };
   targetPages: {
-    title: string;
+    applyTo: string;
     all: string;
-    selected: string;
+    pages: string;
     inputLabel: string;
     placeholder: string;
   };

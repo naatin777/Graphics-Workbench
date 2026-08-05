@@ -16,9 +16,9 @@ export interface ButtonProps {
  */
 export function Button(props: ButtonProps): JSX.Element {
   const classes = (): string => {
-    const parts = ['gw-button'];
+    const parts = ['gw-button', 'button'];
     if (props.variant === 'primary') {
-      parts.push('gw-button--primary');
+      parts.push('gw-button--primary', 'button--primary');
     } else if (props.variant === 'secondary') {
       parts.push('gw-button--secondary');
     }

@@ -81,14 +81,16 @@ export function useCurrentPage(options: {
       return;
     }
 
-    observer = new IntersectionObserver(
-      () => {
-        scheduleCompute();
-      },
-      { root: container, threshold: [0, 0.25, 0.5, 0.75, 1] },
-    );
-    for (const page of options.getPageElements()) {
-      observer.observe(page);
+    if (typeof IntersectionObserver === 'function') {
+      observer = new IntersectionObserver(
+        () => {
+          scheduleCompute();
+        },
+        { root: container, threshold: [0, 0.25, 0.5, 0.75, 1] },
+      );
+      for (const page of options.getPageElements()) {
+        observer.observe(page);
+      }
     }
 
     compute();

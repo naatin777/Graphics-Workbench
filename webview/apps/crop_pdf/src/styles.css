@@ -54,14 +54,16 @@ textarea {
 }
 
 .split-pane__divider {
-  flex: 0 0 6px;
-  margin: 0 8px 0 4px;
+  flex: 0 0 4px;
+  margin: 0 4px 0 4px;
   cursor: col-resize;
-  background: var(--vscode-panel-border);
+  background: transparent;
+  border-right: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, transparent));
 }
 
-.split-pane__divider:hover {
-  background: var(--vscode-focusBorder);
+.split-pane__divider:hover,
+.split-pane__divider[data-active='true'] {
+  background: var(--vscode-sash-hoverBorder, var(--vscode-focusBorder));
 }
 
 .split-pane__right {
@@ -72,11 +74,11 @@ textarea {
 
 .pdf-preview {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
 }
 
@@ -93,13 +95,9 @@ textarea {
 
 .pdf-preview__toolbar h2 {
   margin: 0 0 4px;
-  font-size: 1rem;
-}
-
-.pdf-preview__toolbar p {
-  display: none;
-  margin: 0;
-  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
 }
 
 .pdf-preview__pages {
@@ -108,26 +106,42 @@ textarea {
   justify-items: center;
   min-width: 0;
   padding: 12px 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
-.pdf-preview__footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  padding: 8px 12px;
+.zoom {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.zoom__value {
+  min-width: 4ch;
   text-align: center;
-  color: var(--vscode-descriptionForeground);
-  background: var(--vscode-editor-background);
-  border-top: 1px solid var(--vscode-panel-border);
+  font-size: 12px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
 }
 
 .pdf-page {
+  position: relative;
   display: grid;
   justify-items: center;
   max-width: 100%;
   width: max-content;
   margin: 0;
   outline: 1px solid transparent;
+}
+
+.pdf-page[data-current='true'] {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 3px;
+}
+
+body.vscode-high-contrast .pdf-page[data-current='true'],
+body.vscode-high-contrast-light .pdf-page[data-current='true'] {
+  outline-width: 2px;
 }
 
 .pdf-preview--fit .pdf-page {
@@ -211,16 +225,23 @@ textarea {
 
 .input {
   width: 100%;
-  padding: 6px 8px;
+  padding: 4px 6px;
   color: var(--vscode-input-foreground);
   background: var(--vscode-input-background);
   border: 1px solid var(--vscode-input-border);
-  border-radius: 2px;
+  border-radius: 4px;
   outline: none;
+  line-height: 17px;
 }
 
-.input:focus {
+.input:hover:not(:disabled) {
+  border-color: var(--vscode-inputOption-hoverBorder, var(--vscode-input-border, transparent));
+}
+
+.input:focus-visible {
   border-color: var(--vscode-focusBorder);
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .input::placeholder {
@@ -228,19 +249,24 @@ textarea {
 }
 
 .input:disabled {
-  opacity: 0.7;
+  color: var(--vscode-disabledForeground);
+  opacity: 0.4;
+  cursor: default;
 }
 
 .target {
   display: grid;
-  gap: 8px;
+  gap: 2px;
   padding: 0;
   border: 0;
+  margin: 0;
 }
 
 .target legend {
   margin-bottom: 4px;
   padding: 0;
+  font-size: 12px;
+  line-height: 16px;
   font-weight: 600;
 }
 
@@ -248,6 +274,19 @@ textarea {
   display: flex;
   gap: 8px;
   align-items: center;
+  min-height: 24px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.target__option input[type='radio'] {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.target__option input[type='radio']:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
 }
 
 .actions {
@@ -257,16 +296,31 @@ textarea {
 }
 
 .button {
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
   color: var(--vscode-button-secondaryForeground);
   background: var(--vscode-button-secondaryBackground);
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 2px;
+  border: 1px solid var(--vscode-button-secondaryBorder, var(--vscode-button-border, transparent));
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 16px;
   cursor: pointer;
 }
 
-.button:hover {
+.button:hover:not(:disabled) {
   background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
 }
 
 .button--primary {
@@ -274,7 +328,7 @@ textarea {
   background: var(--vscode-button-background);
 }
 
-.button--primary:hover {
+.button--primary:hover:not(:disabled) {
   background: var(--vscode-button-hoverBackground);
 }
 

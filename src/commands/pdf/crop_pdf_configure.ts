@@ -393,7 +393,6 @@ function cropPdfLabels(): CropPdfLabels {
     },
     preview: {
       title: localeMap('webview.cropPdf.preview'),
-      description: localeMap('webview.cropPdf.previewDescription'),
       ariaLabel: localeMap('webview.cropPdf.previewAriaLabel'),
       zoomLabel: localeMap('webview.cropPdf.previewZoom'),
       zoomOut: localeMap('webview.cropPdf.zoomOut'),
@@ -404,7 +403,6 @@ function cropPdfLabels(): CropPdfLabels {
     cropBox: {
       settingsLabel: localeMap('webview.cropPdf.cropSettings'),
       title: localeMap('webview.cropPdf.cropBox'),
-      description: localeMap('webview.cropPdf.cropBoxDescription'),
       left: localeMap('webview.cropPdf.left'),
       bottom: localeMap('webview.cropPdf.bottom'),
       right: localeMap('webview.cropPdf.right'),
@@ -412,9 +410,9 @@ function cropPdfLabels(): CropPdfLabels {
       currentPageSize: localeMap('webview.cropPdf.currentPageSize'),
     },
     targetPages: {
-      title: localeMap('webview.cropPdf.targetPages'),
+      applyTo: localeMap('webview.cropPdf.applyTo'),
       all: localeMap('webview.cropPdf.allPages'),
-      selected: localeMap('webview.cropPdf.selectedPages'),
+      pages: localeMap('webview.cropPdf.pages'),
       inputLabel: localeMap('webview.cropPdf.pagesInput'),
       placeholder: localeMap('webview.cropPdf.pagesPlaceholder'),
     },
