@@ -32,3 +32,10 @@ pre-push:
 
     build:
       run: npm run build
+
+    # Playwright E2E runs only when the packaged test suite (or its config)
+    # changed. It packages the current runner VSIX and runs the wide packaged
+    # conversion smoke; the full wide+narrow suite is a local/release concern.
+    playwright-smoke:
+      glob: "{test/playwright/**,playwright.config.mjs}"
+      run: npm run package:vsix && npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts
