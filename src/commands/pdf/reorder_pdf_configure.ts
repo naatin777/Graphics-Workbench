@@ -9,7 +9,7 @@ import {
   type ReorderPdfHostToWebview,
   type ReorderPdfLabels,
 } from '../../application/protocols/reorder_pdf_protocol.js';
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
 import { reorderPdfFiles } from '../../operations/pdf/reorder_pdf.js';
@@ -71,7 +71,7 @@ async function runReorderPdfConfigureCommand(
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
   }
 
-  const outputPath = resolveOutputPath(getCommandConfiguration(dependencies).outputPath.reorderPdf(), {
+  const outputPath = resolvePdfOutputPath(getCommandConfiguration(dependencies).outputPath.reorderPdf(), {
     workspacePath: workspaceFolder.uri.fsPath,
     workspaceName: workspaceFolder.name,
     sourcePath: inputUri.fsPath,

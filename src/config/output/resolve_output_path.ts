@@ -41,6 +41,10 @@ export function resolveOutputPath(
   return outputPath;
 }
 
+export function resolvePdfOutputPath(templatePath: string, context: OutputPathContext): string {
+  return resolveOutputPath(templatePath, context, { allowedExtensions: ['.pdf'] });
+}
+
 function validateOutputExtension(outputPath: string, allowedExtensions: readonly string[] | undefined): void {
   if (allowedExtensions === undefined) {
     return;
