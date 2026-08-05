@@ -714,7 +714,13 @@ export default defineConfig({
       },
     },
     {
-      files: ['test/**/*.ts', 'src/**/*.test.ts', 'webview/**/*.test.ts', 'webview/**/*.test.tsx'],
+      files: [
+        'test/**/*.ts',
+        'src/**/*.test.ts',
+        'webview/**/*.test.ts',
+        'webview/**/*.test.tsx',
+        'scripts/*.test.mjs',
+      ],
       rules: {
         'no-console': 'off',
         complexity: 'off',
