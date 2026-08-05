@@ -9,22 +9,23 @@ import {
   type PdfRotationAngle,
   type RotatePdfHostToWebview,
   type RotatePdfLabels,
+  type RotatePdfWebviewToHost,
 } from '../../application/protocols/rotate_pdf_protocol.js';
+import type { PdfPreviewSettings } from '../../application/protocols/pdf_preview_protocol.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
 import { rotatePdfFiles } from '../../operations/pdf/rotate_pdf.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
-import { reportConfigureApplyError } from '../shared/report_configure_error.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
 
@@ -72,7 +73,8 @@ async function runRotatePdfConfigureCommand(
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
   }
 
-  const outputPath = resolvePdfOutputPath(getCommandConfiguration(dependencies).outputPath.rotatePdf(), {
+  const configuration = getCommandConfiguration(dependencies);
+  const outputPath = resolvePdfOutputPath(configuration.outputPath.rotatePdf(), {
     workspacePath: workspaceFolder.uri.fsPath,
     workspaceName: workspaceFolder.name,
     sourcePath: inputUri.fsPath,
@@ -80,16 +82,74 @@ async function runRotatePdfConfigureCommand(
 
   const panelTitle = localeMap('submenu.rotatePdf');
   const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'rotate_pdf');
-  const panel = vscode.window.createWebviewPanel(
-    'graphics-workbench.rotatePdf.configure',
-    panelTitle,
-    vscode.ViewColumn.Active,
-    {
-      enableScripts: true,
+  startPdfConfigureSession({
+    panel: {
+      id: 'graphics-workbench.rotatePdf.configure',
+      title: panelTitle,
+      appRoot,
       localResourceRoots: [appRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
     },
-  );
-  const initMessage: RotatePdfHostToWebview = {
+    webview: {
+      title: panelTitle,
+      appName: 'rotate_pdf',
+      extensionUri: context.extensionUri,
+      locale: vscode.env.language,
+    },
+    message: {
+      isWebviewToHostMessage: isRotatePdfWebviewToHostMessage,
+      isApplyMessage: isRotateApplyMessage,
+      buildInitMessage: (panel) =>
+        buildRotatePdfInitMessage({
+          panel,
+          appRoot,
+          inputUri,
+          pageCount,
+          preview: readPdfPreviewSettings(configuration),
+        }),
+      runApply: async (message, { panel, signal }) => {
+        await applyConfiguredRotation({
+          inputUri,
+          workspacePath: workspaceFolder.uri.fsPath,
+          outputPath,
+          pageCount,
+          angle: message.payload.angle,
+          pageIndices: message.payload.pageIndices,
+          panel,
+          signal,
+          ...(outputChannel !== undefined && { outputChannel }),
+        });
+      },
+      onPreviewLoadFailed: (message, channel) => {
+        if (message.type === 'previewLoadFailed') {
+          channel?.appendLine(`[rotate-pdf-configure] preview failure: ${message.payload.message}`);
+        }
+      },
+    },
+    error: {
+      operationName: 'rotate-pdf-configure',
+      cancelledMessage: userMessage('message.rotatePdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.rotatePdf.failed', reason),
+    },
+    ...(outputChannel !== undefined && { outputChannel }),
+  });
+}
+
+function isRotateApplyMessage(
+  message: RotatePdfWebviewToHost,
+): message is Extract<RotatePdfWebviewToHost, { type: 'apply' }> {
+  return message.type === 'apply';
+}
+
+function buildRotatePdfInitMessage(params: {
+  panel: vscode.WebviewPanel;
+  appRoot: vscode.Uri;
+  inputUri: vscode.Uri;
+  pageCount: number;
+  preview: PdfPreviewSettings;
+}): RotatePdfHostToWebview {
+  const { panel, appRoot, inputUri, pageCount, preview } = params;
+
+  return {
     type: 'init',
     payload: {
       sourceId: 'source-1',
@@ -102,73 +162,10 @@ async function runRotatePdfConfigureCommand(
         standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
         wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
       },
-      preview: readPdfPreviewSettings(getCommandConfiguration(dependencies)),
+      preview,
       labels: rotatePdfLabels(),
     },
   };
-
-  panel.webview.html = getWebviewHtml({
-    webview: panel.webview,
-    extensionUri: context.extensionUri,
-    title: panelTitle,
-    appName: 'rotate_pdf',
-    locale: vscode.env.language,
-  });
-
-  let isApplying = false;
-  panel.webview.onDidReceiveMessage((message: unknown) => {
-    if (!isRotatePdfWebviewToHostMessage(message)) {
-      return;
-    }
-
-    if (message.type === 'ready') {
-      // VS Code Webview.postMessage has no browser targetOrigin parameter.
-      // oxlint-disable-next-line unicorn/require-post-message-target-origin
-      void panel.webview.postMessage(initMessage);
-      return;
-    }
-
-    if (message.type === 'cancel') {
-      panel.dispose();
-      return;
-    }
-
-    if (message.type === 'previewLoadFailed') {
-      outputChannel?.appendLine(`[rotate-pdf-configure] preview failure: ${message.payload.message}`);
-      return;
-    }
-
-    if (isApplying) {
-      return;
-    }
-
-    isApplying = true;
-    void (async (): Promise<void> => {
-      try {
-        await applyConfiguredRotation({
-          inputUri,
-          workspacePath: workspaceFolder.uri.fsPath,
-          outputPath,
-          pageCount,
-          angle: message.payload.angle,
-          pageIndices: message.payload.pageIndices,
-          panel,
-          ...(outputChannel !== undefined && { outputChannel }),
-        });
-      } catch (error) {
-        await reportConfigureApplyError({
-          operationName: 'rotate-pdf-configure',
-          error,
-          panel,
-          cancelledMessage: userMessage('message.rotatePdf.cancelled'),
-          failedMessage: (reason) => userMessage('message.rotatePdf.failed', reason),
-          ...(outputChannel !== undefined && { outputChannel }),
-        });
-      } finally {
-        isApplying = false;
-      }
-    })();
-  });
 }
 
 async function applyConfiguredRotation(params: {
@@ -179,9 +176,10 @@ async function applyConfiguredRotation(params: {
   angle: PdfRotationAngle;
   pageIndices: number[];
   panel: vscode.WebviewPanel;
+  signal: AbortSignal;
   outputChannel?: LineOutputChannel;
 }): Promise<void> {
-  const { inputUri, workspacePath, outputPath, pageCount, angle, pageIndices, panel, outputChannel } = params;
+  const { inputUri, workspacePath, outputPath, pageCount, angle, pageIndices, panel, signal, outputChannel } = params;
 
   for (const page of pageIndices) {
     if (!Number.isInteger(page) || page < 1 || page > pageCount) {
@@ -189,10 +187,7 @@ async function applyConfiguredRotation(params: {
     }
   }
 
-  const abortController = new AbortController();
-  panel.onDidDispose(() => {
-    abortController.abort();
-  });
+  signal.throwIfAborted();
 
   const outputs = await vscode.window.withProgress(
     {
@@ -201,27 +196,31 @@ async function applyConfiguredRotation(params: {
       cancellable: true,
     },
     async (progress, token) => {
-      return withCancellationSignal(token, async (signal) => {
-        progress.report({ message: userMessage('message.progress.prepareRotatePdf') });
-        const runtime: ConversionExecutionContext = {
-          signal,
-          ...createProgressReporters(progress),
-          ...(outputChannel !== undefined && { outputChannel }),
-          resolveConflicts: resolveOutputConflicts,
-        };
-        return rotatePdfFiles({
-          jobs: [
-            {
-              sourcePath: inputUri.fsPath,
-              workspacePath,
-              outputPath,
-              angle,
-              pageIndices: pageIndices.map((page) => page - 1),
-            },
-          ],
-          runtime,
-        });
-      });
+      return withCancellationSignal(
+        token,
+        async (applySignal) => {
+          progress.report({ message: userMessage('message.progress.prepareRotatePdf') });
+          const runtime: ConversionExecutionContext = {
+            signal: applySignal,
+            ...createProgressReporters(progress),
+            ...(outputChannel !== undefined && { outputChannel }),
+            resolveConflicts: resolveOutputConflicts,
+          };
+          return rotatePdfFiles({
+            jobs: [
+              {
+                sourcePath: inputUri.fsPath,
+                workspacePath,
+                outputPath,
+                angle,
+                pageIndices: pageIndices.map((page) => page - 1),
+              },
+            ],
+            runtime,
+          });
+        },
+        signal,
+      );
     },
   );
 
