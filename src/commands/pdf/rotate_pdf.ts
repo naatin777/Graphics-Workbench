@@ -3,7 +3,6 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
-import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import {
   PDF_ROTATION_ANGLES,
   rotatePdfFiles,
@@ -12,10 +11,8 @@ import {
 } from '../../operations/pdf/rotate_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
-import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
+import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
 
@@ -41,43 +38,20 @@ export async function rotatePdfCommand(
     const configuration = getCommandConfiguration(dependencies);
     const outputTemplate = configuration.outputPath.rotatePdf();
     const jobs = sourceUris.map((sourceUri) => planRotatePdfJob(sourceUri, outputTemplate, angle));
-    const outputs = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: userMessage('message.progress.rotatePdf.title', jobs.length),
-        cancellable: true,
+    await runConversionLifecycle({
+      operationName: 'rotate-pdf',
+      ...(outputChannel !== undefined && { outputChannel }),
+      resolveConflicts: resolveOutputConflicts,
+      messages: {
+        progressTitle: userMessage('message.progress.rotatePdf.title', jobs.length),
+        prepareMessage: userMessage('message.progress.prepareRotatePdf'),
+        successMessage: (count) => userMessage('message.rotatePdf.success', count),
+        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+        cancelledMessage: userMessage('message.rotatePdf.cancelled'),
+        failedMessage: (reason) => userMessage('message.rotatePdf.failed', reason),
       },
-      async (progress, token) => {
-        return withCancellationSignal(token, async (signal) => {
-          progress.report({ message: userMessage('message.progress.prepareRotatePdf') });
-          const runtime: ConversionExecutionContext = {
-            signal,
-            ...createProgressReporters(progress),
-            ...(outputChannel !== undefined && { outputChannel }),
-            resolveConflicts: resolveOutputConflicts,
-          };
-          return rotatePdfFiles({ jobs, runtime });
-        });
-      },
-    );
-
-    const successMessage = userMessage('message.rotatePdf.success', jobs.length);
-    let undoId: string;
-
-    try {
-      undoId = await recordConversionForUndo(outputs, outputChannel);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-      return;
-    }
-
-    const undoAction = userMessage('message.action.undo');
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
+      run: async (runtime) => rotatePdfFiles({ jobs, runtime }),
+    });
   } catch (error) {
     if (isAbortError(error)) {
       await vscode.window.showInformationMessage(userMessage('message.rotatePdf.cancelled'));
