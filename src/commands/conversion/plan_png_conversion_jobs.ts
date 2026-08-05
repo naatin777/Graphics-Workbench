@@ -1,7 +1,5 @@
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
@@ -9,14 +7,13 @@ import type { Configuration } from '../../generated/extension_manifest.js';
 import { isEditableDrawioImagePath, isNativeDrawioPath } from '../../application/policy/source_format.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 import type { ConvertToPngJob } from '../../operations/conversion/convert_to_png.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { planRasterSourceConversionJobs } from './plan_raster_source_conversion_jobs.js';
+import { planPdfPageConversionJobs } from './plan_pdf_page_conversion_jobs.js';
 
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import { userMessage } from '../shared/user_messages.js';
 import { assertFileScheme } from '../shared/command_utils.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.png';
@@ -43,7 +40,7 @@ export async function planPngConversionJobs(
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return planPdfToPngJobs(sourcePath, workspace, configuration, runtime);
+    return createPdfJobs(sourcePath, workspace, configuration, runtime);
   }
 
   if (isNativeDrawioPath(sourcePath)) {
@@ -71,47 +68,22 @@ export async function planPngConversionJobs(
   });
 }
 
-async function planPdfToPngJobs(
+async function createPdfJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
   runtime?: ConversionExecutionContext,
 ): Promise<ConvertToPngJob[]> {
-  runtime?.signal?.throwIfAborted();
-  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
-  const document = await PDFDocument.load(await readFile(sourcePath));
-  const pageCount = document.getPageCount();
-
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${sourcePath}`);
-  }
-
   const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToPng', defaultPdfOutputPath);
-  assertPageTemplateForSplitOutput(outputTemplate, pageCount);
-
-  const jobs: ConvertToPngJob[] = [];
-
-  for (let index = 0; index < pageCount; index += 1) {
-    runtime?.signal?.throwIfAborted();
-    const page = index + 1;
-    jobs.push({
-      sourcePath,
-      workspacePath: workspace.uri.fsPath,
-      outputPath: resolveOutputPath(
-        outputTemplate,
-        {
-          sourcePath,
-          workspacePath: workspace.uri.fsPath,
-          workspaceName: workspace.name,
-          page: formatOutputPage(page, pageCount),
-        },
-        { allowedExtensions: ['.png'] },
-      ),
-      page,
-    });
-  }
-
-  return jobs;
+  return planPdfPageConversionJobs({
+    sourcePath,
+    workspacePath: workspace.uri.fsPath,
+    workspaceName: workspace.name,
+    outputTemplate,
+    allowedExtensions: ['.png'],
+    runtime,
+    createJob: (page, outputPath) => ({ sourcePath, workspacePath: workspace.uri.fsPath, outputPath, page }),
+  });
 }
 
 function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {

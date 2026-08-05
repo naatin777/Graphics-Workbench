@@ -87,17 +87,18 @@ async function convertSelectedSourcesToPdf(
     const mermaidTools = readMermaidPuppeteerOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const ghostscriptPath = readGhostscriptExecutablePath(configuration);
-    const plannedJobs = await Promise.all(
-      sourceUris.map(async (sourceUri) =>
-        planToPdfConversionJobs(
+    const plannedJobs: ConvertToPdfJob[] = [];
+    for (const sourceUri of sourceUris) {
+      plannedJobs.push(
+        ...(await planToPdfConversionJobs(
           sourceUri,
           outputTemplateForSource(sourceUri, outputTemplate, configuration, defaultConfiguration),
           logicalSourcePathForOutputTemplate(sourceUri.fsPath),
           pdfImageExtensions,
-        ),
-      ),
-    );
-    const jobs = plannedJobs.flat();
+        )),
+      );
+    }
+    const jobs = plannedJobs;
     await runConversionLifecycle({
       operationName: 'convert-to-pdf',
       ...(outputChannel !== undefined && { outputChannel }),

@@ -18,31 +18,29 @@ export interface RasterFrameJob {
 
 export { readRasterAnimationMetadata } from '../../operations/conversion/raster_input.js';
 
-export async function createRasterFrameJobs(options: {
+export interface RasterFrameJobSource {
   sourcePath: string;
   workspacePath: string;
   workspaceName: string;
   outputTemplate: string;
   allowedExtensions: readonly string[];
-  maxInputPixels: number;
-  maxAnimationPixels?: number;
-  frameMode?: 'first' | 'all';
+  frameMode?: 'first' | 'all' | undefined;
+  maxAnimationPixels?: number | undefined;
   createJob: (job: RasterFrameJob) => RasterFrameJob;
-}): Promise<RasterFrameJob[]> {
-  await assertExistingPathInWorkspace(options.sourcePath, options.workspacePath);
-  const image = openRasterInput(options.sourcePath, options.maxInputPixels);
-  let pages: number;
-  let width = 0;
-  let pageHeight = 0;
+}
 
-  try {
-    const metadata = await image.metadata();
-    pages = metadata.pages ?? 1;
-    ({ width } = metadata);
-    pageHeight = metadata.pageHeight ?? metadata.height;
-  } finally {
-    await destroyRasterInput(image);
-  }
+export interface RasterFrameAnalysis {
+  pages: number;
+  width: number;
+  pageHeight: number;
+}
+
+/** Pure: 既知のframe metadataからjobを生成する。ファイル読み込みを伴わない。 */
+export function createRasterFrameJobsFromMetadata(
+  options: RasterFrameJobSource,
+  analysis: RasterFrameAnalysis,
+): RasterFrameJob[] {
+  const { pages, width, pageHeight } = analysis;
 
   if (!Number.isInteger(pages) || pages < 1) {
     throw new Error(`Could not determine image frame count: ${options.sourcePath}`);
@@ -73,4 +71,45 @@ export async function createRasterFrameJobs(options: {
       page,
     });
   });
+}
+
+export async function createRasterFrameJobs(options: {
+  sourcePath: string;
+  workspacePath: string;
+  workspaceName: string;
+  outputTemplate: string;
+  allowedExtensions: readonly string[];
+  maxInputPixels: number;
+  maxAnimationPixels?: number;
+  frameMode?: 'first' | 'all';
+  createJob: (job: RasterFrameJob) => RasterFrameJob;
+}): Promise<RasterFrameJob[]> {
+  await assertExistingPathInWorkspace(options.sourcePath, options.workspacePath);
+  const image = openRasterInput(options.sourcePath, options.maxInputPixels);
+  let pages: number;
+  let width = 0;
+  let pageHeight = 0;
+
+  try {
+    const metadata = await image.metadata();
+    pages = metadata.pages ?? 1;
+    ({ width } = metadata);
+    pageHeight = metadata.pageHeight ?? metadata.height;
+  } finally {
+    await destroyRasterInput(image);
+  }
+
+  return createRasterFrameJobsFromMetadata(
+    {
+      sourcePath: options.sourcePath,
+      workspacePath: options.workspacePath,
+      workspaceName: options.workspaceName,
+      outputTemplate: options.outputTemplate,
+      allowedExtensions: options.allowedExtensions,
+      frameMode: options.frameMode,
+      maxAnimationPixels: options.maxAnimationPixels,
+      createJob: options.createJob,
+    },
+    { pages, width, pageHeight },
+  );
 }

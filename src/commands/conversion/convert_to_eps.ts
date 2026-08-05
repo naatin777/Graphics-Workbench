@@ -40,8 +40,10 @@ export async function convertToEpsCommand(
       throw new Error('No files were selected.');
     }
     const configuration = getCommandConfiguration(dependencies);
-    const plannedJobs = await Promise.all(sourceUris.map(async (sourceUri) => createEpsJobs(sourceUri, configuration)));
-    const jobs = plannedJobs.flat();
+    const jobs: ConvertToEpsJob[] = [];
+    for (const sourceUri of sourceUris) {
+      jobs.push(...(await createEpsJobs(sourceUri, configuration)));
+    }
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     await runConversionLifecycle({
       operationName: 'convert-to-eps',

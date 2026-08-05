@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — In progress — Phase 8（WebP/GIF animation mode planner共通化）Done、次はWebview境界移行
+- なし
 
 ## On hold
 
@@ -72,6 +72,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — Done — Phase 16（Webview / Crop child process / Mermaid runner protocol境界）＋Phase 17（レビュー指摘反映: hasExactKeysのown property化、planning逐次化、PDFページplanner共通化、AVIF共通planner移行、WebP/GIF shell・planner分離、error通知一元化）
 - [0219: command登録と生成metadataの正本を整理する](0219-consolidate-command-registration-and-generated-metadata.md) — Done — command binding正本化・data-driven登録・pure manifest/config adapter分離・metadata生成・manifest検証（PR #119–#122、全CI green・マージ済み）
 - [0218: 途中移行・互換残骸を監査して削除する](0218-audit-remove-migration-compat-leftovers.md) — Done — `convertPngToPdf`内部alias・wrapper・旧NLSを削除し、canonicalへ統合。Integration Testと再発防止ルールを更新（PR #118）
 - [0217: 入力制限・タイムアウト方針を確定する](0217-finalize-input-limit-and-timeout-policy.md) — Done — `confirmLargeOperation`削除、外部ツールtimeout既定0/`undefined`、ADR-0028・AGENTS.md・README反映、CI検証済み
