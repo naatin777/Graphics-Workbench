@@ -6,7 +6,7 @@ export function hasExactKeys(
   const allowedKeys = new Set([...requiredKeys, ...optionalKeys]);
   const keys = Object.keys(value);
 
-  return requiredKeys.every((key) => key in value) && keys.every((key) => allowedKeys.has(key));
+  return requiredKeys.every((key) => Object.hasOwn(value, key)) && keys.every((key) => allowedKeys.has(key));
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

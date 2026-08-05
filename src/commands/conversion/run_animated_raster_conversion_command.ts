@@ -14,27 +14,30 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxAnimationPixels } from '../../config/raster_limits.js';
 
-export interface SimpleRasterConversionContext<Prepared> {
+export interface AnimatedRasterConversionContext<Prepared> {
   configuration: Configuration;
   maxInputPixels: number;
+  maxAnimationPixels: number;
   prepared: Prepared;
   runtime: ConversionExecutionContext;
 }
 
-export interface SimpleRasterConversionCommandOptions<Job, Prepared> {
+export interface AnimatedRasterConversionCommandOptions<Job, Prepared> {
   uri?: vscode.Uri | undefined;
   uris?: vscode.Uri[] | undefined;
   dependencies?: CommandDependencies | undefined;
   operationName: string;
   outputLabel: OutputConversionFormat;
-  prepare: (configuration: Configuration, maxInputPixels: number) => Prepared;
-  plan: (sourceUri: vscode.Uri, context: SimpleRasterConversionContext<Prepared>) => Promise<Job[]>;
-  execute: (jobs: Job[], context: SimpleRasterConversionContext<Prepared>) => Promise<CommittedConversionOutput[]>;
+  outputMode?: 'auto' | 'preserve' | 'split';
+  prepare: (configuration: Configuration) => Prepared;
+  plan: (sourceUri: vscode.Uri, context: AnimatedRasterConversionContext<Prepared>) => Promise<Job[]>;
+  execute: (jobs: Job[], context: AnimatedRasterConversionContext<Prepared>) => Promise<CommittedConversionOutput[]>;
 }
 
-export async function runSimpleRasterConversionCommand<Job, Prepared>(
-  options: SimpleRasterConversionCommandOptions<Job, Prepared>,
+export async function runAnimatedRasterConversionCommand<Job, Prepared>(
+  options: AnimatedRasterConversionCommandOptions<Job, Prepared>,
 ): Promise<void> {
   const sourceUris = selectedUris(options.uri, options.uris);
   if (sourceUris.length === 0) {
@@ -53,8 +56,9 @@ export async function runSimpleRasterConversionCommand<Job, Prepared>(
     run: async (runtime) => {
       const configuration = getCommandConfiguration(options.dependencies);
       const maxInputPixels = getMaxInputPixels(configuration);
-      const prepared = options.prepare(configuration, maxInputPixels);
-      const context = { configuration, maxInputPixels, prepared, runtime };
+      const maxAnimationPixels = getMaxAnimationPixels(configuration);
+      const prepared = options.prepare(configuration);
+      const context = { configuration, maxInputPixels, maxAnimationPixels, prepared, runtime };
       const plannedJobs: Job[] = [];
       for (const sourceUri of sourceUris) {
         runtime.signal?.throwIfAborted();

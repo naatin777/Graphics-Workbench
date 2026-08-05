@@ -68,10 +68,11 @@ export async function convertToSvgCommand(
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('SVG', sourceUris.length),
       run: async (runtime) => {
-        const plannedJobs = await Promise.all(
-          sourceUris.map(async (sourceUri) => planSvgConversionJobs(sourceUri, configuration, runtime)),
-        );
-        const jobs = plannedJobs.flat();
+        const jobs: ConvertToSvgJob[] = [];
+        for (const sourceUri of sourceUris) {
+          runtime.signal?.throwIfAborted();
+          jobs.push(...(await planSvgConversionJobs(sourceUri, configuration, runtime)));
+        }
         return convertToSvgFiles({
           jobs,
           maxInputPixels,

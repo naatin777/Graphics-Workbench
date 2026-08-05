@@ -29,10 +29,11 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - Mermaid CLIの子プロセス実行とキャンセル・タイムアウト
 - PDF変換のJob planningをProgress表示内へ移動（解析中表示とキャンセル対応）
 - 外部実行パス設定のmachine scope化とuntrustedWorkspaces宣言
+- 変換commandの境界整理（planner・lifecycle・operation分離、Webview / Crop child process / Mermaid runner protocol境界、PDFページplanner共通化、simple / animated raster command shell、review指摘反映）
 
 ## In progress
 
-- [0220: 変換commandの境界を段階的に整理する](docs/tasks/0220-refactor-conversion-boundaries-in-stages.md) — Phase 16（Mermaid runner protocol境界）Done
+- なし
 
 ## Non-goals
 

@@ -1,6 +1,6 @@
 # 0220: 変換commandの境界を段階的に整理する
 
-Status: Complete — Phase 16（Mermaid runner protocol境界）Done
+Status: Complete — Phase 17（レビュー指摘の反映）Done
 
 ## Objective
 
@@ -141,6 +141,17 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - requestとresponseの余分なキーを拒否する検証を追加し、Mermaidの出力形式、Puppeteer設定、render options、cancel、timeout、failure処理は維持した
 - 単独response contractをWebview向け共通envelopeへ統合せず、形式固有の境界として扱った
 
+## Phase 17 — レビュー指摘の反映（完了）
+
+- `hasExactKeys`を`key in value`から`Object.hasOwn`へ変更し、prototypeから継承された必須キーの通過を拒否した（Webview / Crop child process / Mermaid runnerのprotocol境界を一致させた）
+- 複数sourceのplanningを`Promise.all`から逐次実行へ変更し、複数PDF選択時にPDF全体を同時にメモリへ読み込む問題を解消した（simple raster shell、WebP、GIF、SVG、EPS、PDF）
+- PDFページ展開を`planPdfPageConversionJobs`（fs/pdf-lib読み込み）と純粋な`planPdfPageJobs`（page count→jobs）へ分離し、PNG/JPEG/AVIF/TIFF/WebP/GIFの重複を削除した
+- AVIFのraster source経路を`planRasterSourceConversionJobs`へ寄せ、形式固有の再実装を削除した
+- WebP/GIFを`convert_to_webp.ts` / `convert_to_gif.ts`（composition root）、`plan_webp_conversion_jobs.ts` / `plan_gif_conversion_jobs.ts`、`run_animated_raster_conversion_command.ts`（animation専用shell）へ分離した
+- raster frame job生成を純粋な`createRasterFrameJobsFromMetadata`へ分離した
+- simple raster shellとanimation shellのconfiguration / prepareを`runConversionLifecycle`内部へ移し、error通知とOutput Channel記録の責務を一箇所に統一した
+- 純粋planner（`planPdfPageJobs`、`createRasterFrameJobsFromMetadata`）のテストを追加し、Extension Hostなしの`mocha --ui tdd`で直接実行できることを確認した
+
 旧plannerと新plannerの移行時は、fixture上でjob、エラー、fallback、template展開を正規化して比較する。productionで二重実行はしない。
 
 ## Completion criteria
@@ -193,3 +204,7 @@ production codeを変更せず、次の入力→出力契約をfixture matrixで
 - `npm run compile`: passed（Phase 16 Mermaid runner protocol厳格化後）
 - `npm run compile:test`: passed（Phase 16 Mermaid runner protocol厳格化後）
 - `mocha --ui tdd out/test/operations/mermaid_runner_protocol.test.js`: 4 passing
+- `mocha --ui tdd out/test/commands/plan_pdf_page_jobs.test.js out/test/commands/create_raster_frame_jobs_from_metadata.test.js`: 6 passing（Extension Hostなし）
+- `mocha --ui tdd out/test/application/webview_protocol.test.js`: 5 passing（継承された必須キー拒否を含む、Extension Hostなし）
+- `npm run check:all`: passed（Phase 17レビュー反映後）
+- `npm test`: 544 passing / 6 pending（Extension Host、macOS arm64、2026-08-05）

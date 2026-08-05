@@ -50,6 +50,13 @@ suite('共有Webview protocol envelope', () => {
     assert.equal(isWebviewErrorMessage({ type: 'error', payload: { message: 42 } }), false);
   });
 
+  test('継承された必須キーを拒否する', () => {
+    const message = Object.create({ type: 'ready' });
+
+    assert.strictEqual(isWebviewMessageWithoutPayload(message, 'ready'), false);
+    assert.strictEqual(isWebviewEnvelope(message), false);
+  });
+
   test('envelope以外の値と空のtypeを拒否する', () => {
     assert.equal(isWebviewEnvelope(null), false);
     assert.equal(isWebviewEnvelope([]), false);
