@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { localeMap } from '../../locale_map.js';
 import { compressPdfFiles, type CompressPdfJob, type GhostscriptQuality } from '../../operations/pdf/compress_pdf.js';
@@ -89,7 +89,7 @@ function planCompressPdfJob(sourceUri: vscode.Uri, outputTemplate: string): Comp
   return {
     sourcePath,
     workspacePath: workspace.uri.fsPath,
-    outputPath: resolveOutputPath(outputTemplate, {
+    outputPath: resolvePdfOutputPath(outputTemplate, {
       workspacePath: workspace.uri.fsPath,
       workspaceName: workspace.name,
       sourcePath,

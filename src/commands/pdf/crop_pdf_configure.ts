@@ -9,7 +9,7 @@ import {
   type CropTarget,
   isCropConfigureMessage,
 } from '../../application/protocols/crop_pdf_protocol.js';
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
 import { OperationCancelledError } from '../../operations/lifecycle/operation_cancelled_error.js';
@@ -231,7 +231,7 @@ async function applyConfiguredCrop(params: {
     const { inputUri, workspaceFolder, outputTemplate, crop, panel, operationSignal, onCompleted, outputChannel } =
       params;
     const sourcePath = inputUri.fsPath;
-    const outputPath = resolveOutputPath(outputTemplate, {
+    const outputPath = resolvePdfOutputPath(outputTemplate, {
       workspacePath: workspaceFolder.uri.fsPath,
       workspaceName: workspaceFolder.name,
       sourcePath,

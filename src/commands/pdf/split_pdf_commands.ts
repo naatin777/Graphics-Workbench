@@ -10,7 +10,7 @@ import {
   type SplitPdfLabels,
   type SplitPdfPageGroupRow,
 } from '../../application/protocols/split_pdf_protocol.js';
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { localeMap } from '../../locale_map.js';
@@ -118,7 +118,7 @@ function planSplitPdfJob(sourceUri: vscode.Uri, outputTemplate: string): SplitPd
     sourcePath,
     workspacePath: workspace.uri.fsPath,
     outputPathForPage: (page) =>
-      resolveOutputPath(outputTemplate, {
+      resolvePdfOutputPath(outputTemplate, {
         workspacePath: workspace.uri.fsPath,
         workspaceName: workspace.name,
         sourcePath,
@@ -295,7 +295,7 @@ async function applyConfiguredSplit(params: {
     };
 
     for (const row of rows) {
-      const outputPath = resolveOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
+      const outputPath = resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
       await assertWritablePathInWorkspace(outputPath, workspacePath);
     }
 
@@ -339,7 +339,7 @@ async function applyConfiguredSplit(params: {
                     throw new Error(`No output name was supplied for group ${groupIndex}.`);
                   }
 
-                  return resolveOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
+                  return resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
                 },
               },
             ],
@@ -454,7 +454,7 @@ function createOutputPathPreviewTemplate(
   workspaceFolder: vscode.WorkspaceFolder,
 ): string {
   const marker = '__GRAPHICS_WORKBENCH_OUTPUT_NAME__';
-  const outputPath = resolveOutputPath(outputTemplate, {
+  const outputPath = resolvePdfOutputPath(outputTemplate, {
     workspacePath: workspaceFolder.uri.fsPath,
     workspaceName: workspaceFolder.name,
     sourcePath: inputUri.fsPath,

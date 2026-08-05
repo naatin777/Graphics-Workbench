@@ -19,7 +19,7 @@ import {
   readPuppeteerExecutablePath,
 } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   convertToPdfFiles,
   validateSvgToPdfOptions,
@@ -248,15 +248,11 @@ async function planToPdfConversionJobs(
     return [
       {
         sourcePath: sourceUri.fsPath,
-        outputPath: resolveOutputPath(
-          outputTemplate,
-          {
-            sourcePath: templateSourcePath,
-            workspacePath: workspace.uri.fsPath,
-            workspaceName: workspace.name,
-          },
-          { allowedExtensions: ['.pdf'] },
-        ),
+        outputPath: resolvePdfOutputPath(outputTemplate, {
+          sourcePath: templateSourcePath,
+          workspacePath: workspace.uri.fsPath,
+          workspaceName: workspace.name,
+        }),
         workspacePath: workspace.uri.fsPath,
       },
     ];
@@ -266,7 +262,7 @@ async function planToPdfConversionJobs(
     {
       sourcePath: sourceUri.fsPath,
       workspacePath: workspace.uri.fsPath,
-      outputPath: resolveOutputPath(outputTemplate, {
+      outputPath: resolvePdfOutputPath(outputTemplate, {
         sourcePath: templateSourcePath,
         workspacePath: workspace.uri.fsPath,
         workspaceName: workspace.name,

@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { localeMap } from '../../locale_map.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { encryptPdfFiles, type EncryptPdfJob } from '../../operations/pdf/encrypt_pdf.js';
@@ -135,7 +135,7 @@ function planEncryptPdfJob(sourceUri: vscode.Uri, outputTemplate: string): Encry
   return {
     sourcePath,
     workspacePath: workspace.uri.fsPath,
-    outputPath: resolveOutputPath(outputTemplate, {
+    outputPath: resolvePdfOutputPath(outputTemplate, {
       workspacePath: workspace.uri.fsPath,
       workspaceName: workspace.name,
       sourcePath,
