@@ -1,4 +1,4 @@
-import { createSignal, For, onCleanup, onMount, type JSX } from 'solid-js';
+import { createEffect, createSignal, For, onCleanup, onMount, type JSX } from 'solid-js';
 
 import {
   isRotatePdfHostToWebviewMessage,
@@ -23,11 +23,17 @@ export function App(): JSX.Element {
   const [angle, setAngle] = createSignal<PdfRotationAngle>(90);
   const [applyError, setApplyError] = createSignal('');
   const [previewReady, setPreviewReady] = createSignal(false);
+  const [selectedPages, setSelectedPages] = createSignal<ReadonlySet<number>>(new Set());
 
-  const selectedPages = new Set<number>();
   let pdfPages: HTMLDivElement | undefined;
   let renderController: PdfRenderController | undefined;
+  let previewController: AbortController | undefined;
   let previewGeneration = 0;
+
+  createEffect(() => {
+    selectedPages();
+    syncSelectionClasses();
+  });
 
   onMount(() => {
     const onMessage = (event: MessageEvent): void => {
@@ -48,6 +54,7 @@ export function App(): JSX.Element {
       setPageCount(payload.pageCount);
       setApplyError('');
       setPreviewReady(false);
+      setSelectedPages(new Set<number>());
       const generation = previewGeneration + 1;
       previewGeneration = generation;
       void startPreview(payload, generation);
@@ -71,15 +78,41 @@ export function App(): JSX.Element {
       }
     };
 
+    const onPageKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      if (!(event.target instanceof HTMLElement)) {
+        return;
+      }
+
+      const figure = event.target.closest<HTMLElement>('[data-pdf-page]');
+
+      if (!figure) {
+        return;
+      }
+
+      const page = Number(figure.dataset.pdfPage);
+
+      if (Number.isInteger(page) && page >= 1) {
+        event.preventDefault();
+        togglePage(page);
+      }
+    };
+
     window.addEventListener('message', onMessage);
     pdfPages?.addEventListener('click', onPageClick);
+    pdfPages?.addEventListener('keydown', onPageKeyDown);
     onCleanup(() => {
       window.removeEventListener('message', onMessage);
       pdfPages?.removeEventListener('click', onPageClick);
+      pdfPages?.removeEventListener('keydown', onPageKeyDown);
     });
   });
 
   onCleanup(() => {
+    previewController?.abort();
     void renderController?.dispose();
   });
 
@@ -87,6 +120,10 @@ export function App(): JSX.Element {
     payload: Extract<RotatePdfHostToWebview, { type: 'init' }>['payload'],
     generation: number,
   ): Promise<void> {
+    previewController?.abort();
+    const controller = new AbortController();
+    previewController = controller;
+
     if (renderController !== undefined) {
       await renderController.dispose();
       renderController = undefined;
@@ -96,7 +133,6 @@ export function App(): JSX.Element {
       return;
     }
 
-    const signal = new AbortController();
     const currentLabels = labels();
 
     try {
@@ -115,10 +151,18 @@ export function App(): JSX.Element {
           ? { wasmUrl: payload.resources.wasmUrl }
           : {}),
         root: pdfPages,
-        pageLabel: currentLabels.preview.ariaLabel,
-        signal: signal.signal,
+        page: {
+          label: currentLabels.preview.ariaLabel,
+          onCreated: (pageFrame, pageNumber) => {
+            pageFrame.setAttribute('role', 'checkbox');
+            pageFrame.setAttribute('tabindex', '0');
+            pageFrame.setAttribute('aria-checked', String(selectedPages().has(pageNumber)));
+            pageFrame.setAttribute('aria-label', `${currentLabels.rotation.pageToggle} ${pageNumber}`);
+          },
+        },
+        signal: controller.signal,
         onRenderError: (error) => {
-          if (signal.signal.aborted) {
+          if (controller.signal.aborted) {
             return;
           }
           vscode.sendMessage({
@@ -130,14 +174,14 @@ export function App(): JSX.Element {
 
       await renderController.firstPageReady;
 
-      if (generation !== previewGeneration) {
+      if (generation !== previewGeneration || controller.signal.aborted) {
         return;
       }
 
       setPreviewReady(true);
       syncSelectionClasses();
     } catch (error) {
-      if (signal.signal.aborted || generation !== previewGeneration) {
+      if (controller.signal.aborted || generation !== previewGeneration) {
         return;
       }
       const message = error instanceof Error ? error.message : String(error);
@@ -147,24 +191,26 @@ export function App(): JSX.Element {
   }
 
   function togglePage(page: number): void {
-    if (selectedPages.has(page)) {
-      selectedPages.delete(page);
+    const next = new Set(selectedPages());
+    if (next.has(page)) {
+      next.delete(page);
     } else {
-      selectedPages.add(page);
+      next.add(page);
     }
-    syncSelectionClasses();
+    setSelectedPages(next);
   }
 
   function toggleSelectAll(): void {
     const count = pageCount();
-    const next = selectedPages.size < count;
-    selectedPages.clear();
-    if (next) {
+    const next = new Set(selectedPages());
+    if (next.size < count) {
       for (let page = 1; page <= count; page += 1) {
-        selectedPages.add(page);
+        next.add(page);
       }
+    } else {
+      next.clear();
     }
-    syncSelectionClasses();
+    setSelectedPages(next);
   }
 
   function syncSelectionClasses(): void {
@@ -174,19 +220,20 @@ export function App(): JSX.Element {
     }
     for (const figure of container.querySelectorAll<HTMLElement>('[data-pdf-page]')) {
       const page = Number(figure.dataset.pdfPage);
-      figure.classList.toggle('pdf-page--selected', selectedPages.has(page));
+      const selected = selectedPages().has(page);
+      figure.classList.toggle('pdf-page--selected', selected);
+      figure.setAttribute('aria-checked', String(selected));
     }
   }
 
   function apply(): void {
-    if (selectedPages.size === 0) {
+    const selection = selectedPages();
+    if (selection.size === 0) {
       setApplyError(labels().validation.pagesRequired);
       return;
     }
     setApplyError('');
-    const pageIndices = Array.from({ length: pageCount() }, (_, index) => index + 1).filter((page) =>
-      selectedPages.has(page),
-    );
+    const pageIndices = [...selection].sort((left, right) => left - right);
     vscode.sendMessage({ type: 'apply', payload: { angle: angle(), pageIndices } });
   }
 
@@ -247,7 +294,7 @@ export function App(): JSX.Element {
           </fieldset>
 
           <p class='rotate__selection'>
-            {labels().preview.description} {selectedPages.size}/{pageCount()}
+            {labels().preview.description} {selectedPages().size}/{pageCount()}
           </p>
 
           {applyError() !== '' && <p role='alert'>{applyError()}</p>}

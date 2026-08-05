@@ -113,16 +113,7 @@ export async function renderPdfPages(
   const pageFrames: HTMLElement[] = [];
 
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-    const pageFrame = container.ownerDocument.createElement('figure');
-    pageFrame.className = 'pdf-page';
-    pageFrame.dataset.pdfPage = pageNumber.toString();
-
-    const canvas = container.ownerDocument.createElement('canvas');
-    canvas.dataset.pdfPage = pageNumber.toString();
-    canvas.className = 'pdf-page__canvas';
-    canvas.setAttribute('aria-label', `${options.pageLabel ?? 'Page'} ${pageNumber}`);
-    pageFrame.append(canvas);
-
+    const pageFrame = createPdfPageFrame(container, pageNumber, options);
     container.append(pageFrame);
     pageFrames.push(pageFrame);
   }
@@ -265,18 +256,7 @@ export async function renderPdfPages(
       bottomSpacer.style.height = `${Math.max(0, document.numPages - windowEnd) * stride}px`;
     };
 
-    const createPageFrame = (pageNumber: number): HTMLElement => {
-      const pageFrame = container.ownerDocument.createElement('figure');
-      pageFrame.className = 'pdf-page';
-      pageFrame.dataset.pdfPage = pageNumber.toString();
-
-      const canvas = container.ownerDocument.createElement('canvas');
-      canvas.dataset.pdfPage = pageNumber.toString();
-      canvas.className = 'pdf-page__canvas';
-      canvas.setAttribute('aria-label', `${options.pageLabel ?? 'Page'} ${pageNumber}`);
-      pageFrame.append(canvas);
-      return pageFrame;
-    };
+    const createPageFrame = (pageNumber: number): HTMLElement => createPdfPageFrame(container, pageNumber, options);
 
     const renderWindowPage = async (pageNumber: number): Promise<void> => {
       const existing = windowRenderPromises.get(pageNumber);
@@ -419,6 +399,20 @@ export async function renderPdfPages(
   }
 }
 
+function createPdfPageFrame(container: HTMLElement, pageNumber: number, options: PdfRenderOptions): HTMLElement {
+  const pageFrame = container.ownerDocument.createElement('figure');
+  pageFrame.className = 'pdf-page';
+  pageFrame.dataset.pdfPage = pageNumber.toString();
+
+  const canvas = container.ownerDocument.createElement('canvas');
+  canvas.dataset.pdfPage = pageNumber.toString();
+  canvas.className = 'pdf-page__canvas';
+  canvas.setAttribute('aria-label', `${options.page?.label ?? 'Page'} ${pageNumber}`);
+  pageFrame.append(canvas);
+  options.page?.onCreated?.(pageFrame, pageNumber);
+  return pageFrame;
+}
+
 function attachRenderSignal(controller: PdfRenderController, signal: AbortSignal | undefined): PdfRenderController {
   if (signal === undefined) {
     return controller;
@@ -471,7 +465,10 @@ interface PdfRenderOptions {
   standardFontDataUrl?: string;
   wasmUrl?: string;
   root?: Element;
-  pageLabel?: string;
+  page?: {
+    label?: string;
+    onCreated?: (pageFrame: HTMLElement, pageNumber: number) => void;
+  };
   onRenderError?: (error: unknown) => void;
   signal?: AbortSignal;
   preview?: {

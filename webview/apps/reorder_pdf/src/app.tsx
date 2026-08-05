@@ -23,6 +23,7 @@ export function App(): JSX.Element {
 
   let pdfPages: HTMLDivElement | undefined;
   let renderController: PdfRenderController | undefined;
+  let previewController: AbortController | undefined;
   let previewGeneration = 0;
 
   onMount(() => {
@@ -77,6 +78,7 @@ export function App(): JSX.Element {
   });
 
   onCleanup(() => {
+    previewController?.abort();
     void renderController?.dispose();
   });
 
@@ -84,6 +86,10 @@ export function App(): JSX.Element {
     payload: Extract<ReorderPdfHostToWebview, { type: 'init' }>['payload'],
     generation: number,
   ): Promise<void> {
+    previewController?.abort();
+    const controller = new AbortController();
+    previewController = controller;
+
     if (renderController !== undefined) {
       await renderController.dispose();
       renderController = undefined;
@@ -93,7 +99,6 @@ export function App(): JSX.Element {
       return;
     }
 
-    const signal = new AbortController();
     const currentLabels = labels();
 
     try {
@@ -112,10 +117,10 @@ export function App(): JSX.Element {
           ? { wasmUrl: payload.resources.wasmUrl }
           : {}),
         root: pdfPages,
-        pageLabel: currentLabels.preview.ariaLabel,
-        signal: signal.signal,
+        page: { label: currentLabels.preview.ariaLabel },
+        signal: controller.signal,
         onRenderError: (error) => {
-          if (signal.signal.aborted) {
+          if (controller.signal.aborted) {
             return;
           }
           vscode.sendMessage({
@@ -127,14 +132,14 @@ export function App(): JSX.Element {
 
       await renderController.firstPageReady;
 
-      if (generation !== previewGeneration) {
+      if (generation !== previewGeneration || controller.signal.aborted) {
         return;
       }
 
       ensureControls();
       setPreviewReady(true);
     } catch (error) {
-      if (signal.signal.aborted || generation !== previewGeneration) {
+      if (controller.signal.aborted || generation !== previewGeneration) {
         return;
       }
       const message = error instanceof Error ? error.message : String(error);

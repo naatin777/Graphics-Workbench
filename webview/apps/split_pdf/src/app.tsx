@@ -350,7 +350,7 @@ export function App(): JSX.Element {
           ? { wasmUrl: payload.resources.wasmUrl }
           : {}),
         ...(pdfPreview === undefined ? {} : { root: pdfPreview }),
-        pageLabel: labels().pages.label,
+        page: { label: labels().pages.label },
         signal,
         onRenderError: (error: unknown) => {
           if (signal.aborted) {
