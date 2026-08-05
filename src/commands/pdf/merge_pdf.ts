@@ -15,11 +15,10 @@ import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
-import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
+import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
 
@@ -49,47 +48,26 @@ export async function mergePdfSelectedFilesCommand(
       return;
     }
 
-    const outputs = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: userMessage('message.progress.mergePdf.title', sourceUris.length),
-        cancellable: true,
+    await runConversionLifecycle({
+      operationName: 'merge-pdf',
+      ...(outputChannel !== undefined && { outputChannel }),
+      resolveConflicts: resolveOutputConflicts,
+      messages: {
+        progressTitle: userMessage('message.progress.mergePdf.title', sourceUris.length),
+        prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
+        successMessage: () => userMessage('message.mergePdf.success', sourceUris.length),
+        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+        cancelledMessage: userMessage('message.mergePdf.cancelled'),
+        failedMessage: (reason) => userMessage('message.mergePdf.failed', reason),
       },
-      async (_progress, token) => {
-        return withCancellationSignal(token, async (signal) => {
-          const runtime: ConversionExecutionContext = {
-            signal,
-            ...createProgressReporters(_progress),
-            ...(outputChannel !== undefined && { outputChannel }),
-            resolveConflicts: resolveOutputConflicts,
-          };
-          return mergePdf({
-            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
-            outputPath: outputUri.fsPath,
-            workspacePath: workspace.uri.fsPath,
-            runtime,
-          });
-        });
-      },
-    );
-
-    const successMessage = userMessage('message.mergePdf.success', sourceUris.length);
-    let undoId: string;
-
-    try {
-      undoId = await recordConversionForUndo(outputs, outputChannel);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-      return;
-    }
-
-    const undoAction = userMessage('message.action.undo');
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
+      run: async (runtime) =>
+        mergePdf({
+          sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
+          outputPath: outputUri.fsPath,
+          workspacePath: workspace.uri.fsPath,
+          runtime,
+        }),
+    });
   } catch (error) {
     if (isAbortError(error)) {
       await vscode.window.showInformationMessage(userMessage('message.mergePdf.cancelled'));
