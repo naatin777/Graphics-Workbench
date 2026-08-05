@@ -144,16 +144,8 @@ jobs:
       - run: npm ci
         shell: bash
 
-      - name: Run Crop PDF Webview tests with coverage
-        run: npm run test:webview:crop_pdf -- --coverage
-        shell: bash
-
-      - name: Run Merge PDF Webview tests with coverage
-        run: npm run test:webview:merge_pdf -- --coverage
-        shell: bash
-
-      - name: Run Split PDF Webview tests with coverage
-        run: npm run test:webview:split_pdf -- --coverage
+      - name: Run Webview tests with coverage
+        run: npm run test:webview:coverage
         shell: bash
 
       - if: always()

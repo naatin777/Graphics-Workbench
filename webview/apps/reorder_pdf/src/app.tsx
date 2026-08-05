@@ -71,6 +71,7 @@ export function App(): JSX.Element {
 
     window.addEventListener('message', onMessage);
     pdfPages?.addEventListener('click', onControlClick);
+    vscode.sendMessage({ type: 'ready' });
     onCleanup(() => {
       window.removeEventListener('message', onMessage);
       pdfPages?.removeEventListener('click', onControlClick);
@@ -153,7 +154,7 @@ export function App(): JSX.Element {
     if (!container) {
       return;
     }
-    for (const figure of container.querySelectorAll('[data-pdf-page]')) {
+    for (const figure of container.querySelectorAll('.pdf-page')) {
       if (figure.querySelector('.reorder-page__controls')) {
         continue;
       }
@@ -182,7 +183,7 @@ export function App(): JSX.Element {
     if (!container) {
       return;
     }
-    const figures = [...container.querySelectorAll('[data-pdf-page]')];
+    const figures = [...container.querySelectorAll('.pdf-page')];
     const index = figures.indexOf(figure);
     const targetIndex = index + direction;
     const target = figures[targetIndex];
@@ -204,7 +205,7 @@ export function App(): JSX.Element {
     if (!container) {
       return;
     }
-    const figures = [...container.querySelectorAll('[data-pdf-page]')];
+    const figures = [...container.querySelectorAll('.pdf-page')];
     for (const [position, figure] of figures.entries()) {
       const label = figure.querySelector('.reorder-page__position');
       if (label) {
@@ -218,7 +219,7 @@ export function App(): JSX.Element {
     if (!container) {
       return;
     }
-    const order = [...container.querySelectorAll<HTMLElement>('[data-pdf-page]')].map((figure) =>
+    const order = [...container.querySelectorAll<HTMLElement>('.pdf-page')].map((figure) =>
       Number(figure.dataset.pdfPage),
     );
 

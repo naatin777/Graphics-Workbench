@@ -158,13 +158,7 @@ jobs:
             - run: npm ci
               shell: bash
 
-            - run: npm run test:webview:crop_pdf -- --coverage
-              shell: bash
-
-            - run: npm run test:webview:merge_pdf -- --coverage
-              shell: bash
-
-            - run: npm run test:webview:split_pdf -- --coverage
+            - run: npm run test:webview:coverage
               shell: bash
 
     package:
