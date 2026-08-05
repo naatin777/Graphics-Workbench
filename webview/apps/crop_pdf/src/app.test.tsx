@@ -20,7 +20,6 @@ const labels: CropPdfLabels = {
   },
   preview: {
     title: 'Preview',
-    description: 'Zoom does not change crop values in PDF points.',
     ariaLabel: 'PDF preview',
     zoomLabel: 'Preview zoom',
     zoomOut: 'Zoom out',
@@ -31,19 +30,18 @@ const labels: CropPdfLabels = {
   cropBox: {
     settingsLabel: 'Crop settings',
     title: 'Crop box',
-    description: 'Set the area to keep in PDF points.',
     left: 'Left',
     bottom: 'Bottom',
     right: 'Right',
     top: 'Top',
-    currentPageSize: 'Current page size',
+    currentPageSize: 'Page size',
   },
   targetPages: {
-    title: 'Target pages',
+    applyTo: 'Apply to',
     all: 'All pages',
-    selected: 'Selected pages',
+    pages: 'Pages',
     inputLabel: 'Pages',
-    placeholder: 'Example: 1, 3, 5',
+    placeholder: '1, 3–5',
   },
   validation: {
     cropBoxNumber: '{0} must be a number.',

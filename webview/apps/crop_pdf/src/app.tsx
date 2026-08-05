@@ -1,7 +1,11 @@
-import { createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '../../../shared/pdf/render_pdf_pages';
 import { SplitPane } from '../../../shared/split_pane';
+import { Button } from '../../../shared/ui/Button';
+import { PageNavigator, scrollPageIntoView } from '../../../shared/ui/PageNavigator';
+import { ToolbarButton } from '../../../shared/ui/ToolbarButton';
+import { useCurrentPage } from '../../../shared/ui/use_current_page';
 
 import { parseCropBox, parseTarget } from './crop_input';
 import type { CropPdfLabels, ExtensionToWebviewMessage, WebviewToExtensionMessage } from './messages';
@@ -17,7 +21,6 @@ const defaultLabels: CropPdfLabels = {
   },
   preview: {
     title: 'Preview',
-    description: 'Zoom does not change crop values in PDF user space points.',
     ariaLabel: 'PDF preview',
     zoomLabel: 'Preview zoom',
     zoomOut: 'Zoom out',
@@ -28,19 +31,18 @@ const defaultLabels: CropPdfLabels = {
   cropBox: {
     settingsLabel: 'Crop settings',
     title: 'Crop box',
-    description: 'Set the area to keep in PDF user space points.',
     left: 'Left',
     bottom: 'Bottom',
     right: 'Right',
     top: 'Top',
-    currentPageSize: 'Current page size',
+    currentPageSize: 'Page size',
   },
   targetPages: {
-    title: 'Target pages',
+    applyTo: 'Apply to',
     all: 'All pages',
-    selected: 'Selected pages',
+    pages: 'Pages',
     inputLabel: 'Pages',
-    placeholder: 'Example: 1, 3, 5',
+    placeholder: '1, 3–5',
   },
   validation: {
     cropBoxNumber: '{0} must be a number.',
@@ -224,6 +226,48 @@ export function App(): JSX.Element {
   let renderController: PdfRenderController | undefined;
   let renderAbortController: AbortController | undefined;
 
+  const { currentPage, recompute: recomputeCurrentPage } = useCurrentPage({
+    scrollContainer: () => pdfPreview,
+    getPageElements: () => (pdfPages ? [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')] : []),
+  });
+
+  const goToPreviousPage = (): void => {
+    const target = pdfPages?.querySelector<HTMLElement>(`[data-pdf-page="${Math.max(currentPage() - 1, 1)}"]`);
+    if (target) {
+      scrollPageIntoView(target);
+    }
+  };
+
+  const goToNextPage = (): void => {
+    const target = pdfPages?.querySelector<HTMLElement>(
+      `[data-pdf-page="${Math.min(currentPage() + 1, pageCount())}"]`,
+    );
+    if (target) {
+      scrollPageIntoView(target);
+    }
+  };
+
+  // Re-evaluate the current page after the PDF renders or the page count changes.
+  createEffect(() => {
+    void pageCount();
+    void renderError();
+    requestAnimationFrame(() => {
+      recomputeCurrentPage();
+    });
+  });
+
+  // Sync the current-page outline onto the rendered page elements.
+  createEffect(() => {
+    const current = currentPage();
+    for (const page of pdfPages?.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]') ?? []) {
+      if (page.dataset.pdfPage === String(current)) {
+        page.dataset.current = 'true';
+      } else {
+        delete page.dataset.current;
+      }
+    }
+  });
+
   onMount(() => {
     const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>): void => {
       if (!pdfPages) {
@@ -354,6 +398,9 @@ export function App(): JSX.Element {
     setPreviewZoom(nextZoom);
     applyPreviewZoom(pdfPages, nextZoom);
     restorePreviewZoomAnchor(pdfPreview, anchor);
+    requestAnimationFrame(() => {
+      recomputeCurrentPage();
+    });
   };
 
   const zoomOut = (): void => {
@@ -395,29 +442,22 @@ export function App(): JSX.Element {
               <div class='pdf-preview__toolbar'>
                 <div>
                   <h2>{labels().preview.title}</h2>
-                  <p>{labels().preview.description}</p>
                 </div>
                 <div
                   class='zoom'
                   aria-label={labels().preview.zoomLabel}
                 >
-                  <button
-                    class='button'
-                    type='button'
-                    aria-label={labels().preview.zoomOut}
+                  <ToolbarButton
+                    icon='codicon-zoom-out'
+                    label={labels().preview.zoomOut}
                     onClick={zoomOut}
-                  >
-                    −
-                  </button>
+                  />
                   <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
-                  <button
-                    class='button'
-                    type='button'
-                    aria-label={labels().preview.zoomIn}
+                  <ToolbarButton
+                    icon='codicon-zoom-in'
+                    label={labels().preview.zoomIn}
                     onClick={zoomIn}
-                  >
-                    +
-                  </button>
+                  />
                 </div>
               </div>
               <div
@@ -426,10 +466,12 @@ export function App(): JSX.Element {
                 }}
                 class='pdf-preview__pages'
               />
-              <footer class='pdf-preview__footer'>
-                {labels().targetPages.title}:{' '}
-                {targetType() === 'all' ? labels().targetPages.all : selectedPages() || '—'}
-              </footer>
+              <PageNavigator
+                currentPage={currentPage()}
+                pageCount={pageCount()}
+                onPrevious={goToPreviousPage}
+                onNext={goToNextPage}
+              />
               {renderError() ? (
                 <p
                   class='pdf-preview__error'
@@ -448,13 +490,12 @@ export function App(): JSX.Element {
             >
               <div class='panel__group'>
                 <h2>{labels().cropBox.title}</h2>
-                <p>{labels().cropBox.description}</p>
 
                 <div class='crop-grid'>
                   <label class='field'>
                     <span class='field__label'>{labels().cropBox.left}</span>
                     <input
-                      class='input'
+                      class='input gw-input'
                       disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
@@ -468,7 +509,7 @@ export function App(): JSX.Element {
                   <label class='field'>
                     <span class='field__label'>{labels().cropBox.bottom}</span>
                     <input
-                      class='input'
+                      class='input gw-input'
                       disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
@@ -482,7 +523,7 @@ export function App(): JSX.Element {
                   <label class='field'>
                     <span class='field__label'>{labels().cropBox.right}</span>
                     <input
-                      class='input'
+                      class='input gw-input'
                       disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
@@ -496,7 +537,7 @@ export function App(): JSX.Element {
                   <label class='field'>
                     <span class='field__label'>{labels().cropBox.top}</span>
                     <input
-                      class='input'
+                      class='input gw-input'
                       disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
@@ -509,15 +550,14 @@ export function App(): JSX.Element {
                 </div>
 
                 <p class='panel__hint'>
-                  {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt ({pageSize().x},{' '}
-                  {pageSize().y})
+                  {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt
                 </p>
               </div>
 
-              <fieldset class='target'>
-                <legend>{labels().targetPages.title}</legend>
+              <fieldset class='target gw-radio-group'>
+                <legend>{labels().targetPages.applyTo}</legend>
 
-                <label class='target__option'>
+                <label class='gw-radio-option'>
                   <input
                     checked={targetType() === 'all'}
                     disabled={isApplying()}
@@ -530,7 +570,7 @@ export function App(): JSX.Element {
                   {labels().targetPages.all}
                 </label>
 
-                <label class='target__option'>
+                <label class='gw-radio-option'>
                   <input
                     checked={targetType() === 'selected'}
                     disabled={isApplying()}
@@ -540,13 +580,13 @@ export function App(): JSX.Element {
                       setTargetType('selected');
                     }}
                   />
-                  {labels().targetPages.selected}
+                  {labels().targetPages.pages}
                 </label>
 
                 <label class='field'>
                   <span class='field__label'>{labels().targetPages.inputLabel}</span>
                   <input
-                    class='input'
+                    class='input gw-input'
                     disabled={isApplying() || targetType() !== 'selected'}
                     placeholder={labels().targetPages.placeholder}
                     type='text'
@@ -567,24 +607,22 @@ export function App(): JSX.Element {
                 </p>
               ) : undefined}
 
-              <div class='actions'>
-                <button
-                  class='button button--primary'
+              <div class='actions gw-actions'>
+                <Button
+                  variant='primary'
                   disabled={isApplying()}
-                  type='button'
                   onClick={() => {
                     void applyCrop();
                   }}
                 >
                   {isApplying() ? labels().actions.processing : labels().actions.apply}
-                </button>
-                <button
-                  class='button'
-                  type='button'
+                </Button>
+                <Button
+                  variant='secondary'
                   onClick={cancel}
                 >
                   {labels().actions.cancel}
-                </button>
+                </Button>
               </div>
             </section>
           }
