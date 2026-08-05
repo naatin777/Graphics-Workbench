@@ -4,7 +4,7 @@ import { logicalSourcePathForOutputTemplate } from '../../application/policy/sou
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
@@ -181,7 +181,7 @@ async function resolveCombineOutputPath(
   }
 
   if (configuredTemplate !== '') {
-    return resolveOutputPath(configuredTemplate, {
+    return resolvePdfOutputPath(configuredTemplate, {
       sourcePath: logicalSourcePathForOutputTemplate(sourceUri.fsPath),
       workspacePath: workspaceFolder.uri.fsPath,
       workspaceName: workspaceFolder.name,
@@ -189,7 +189,7 @@ async function resolveCombineOutputPath(
   }
 
   if (sourceUris.length === 1) {
-    return resolveOutputPath(defaultOutputTemplate, {
+    return resolvePdfOutputPath(defaultOutputTemplate, {
       sourcePath: logicalSourcePathForOutputTemplate(sourceUri.fsPath),
       workspacePath: workspaceFolder.uri.fsPath,
       workspaceName: workspaceFolder.name,

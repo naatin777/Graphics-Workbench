@@ -10,7 +10,7 @@ import {
   type RotatePdfHostToWebview,
   type RotatePdfLabels,
 } from '../../application/protocols/rotate_pdf_protocol.js';
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
 import { rotatePdfFiles } from '../../operations/pdf/rotate_pdf.js';
@@ -72,7 +72,7 @@ async function runRotatePdfConfigureCommand(
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
   }
 
-  const outputPath = resolveOutputPath(getCommandConfiguration(dependencies).outputPath.rotatePdf(), {
+  const outputPath = resolvePdfOutputPath(getCommandConfiguration(dependencies).outputPath.rotatePdf(), {
     workspacePath: workspaceFolder.uri.fsPath,
     workspaceName: workspaceFolder.name,
     sourcePath: inputUri.fsPath,

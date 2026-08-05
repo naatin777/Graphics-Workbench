@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { linearizePdfFiles, type LinearizePdfJob } from '../../operations/pdf/linearize_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -73,7 +73,7 @@ function planLinearizePdfJob(sourceUri: vscode.Uri, outputTemplate: string): Lin
   return {
     sourcePath,
     workspacePath: workspace.uri.fsPath,
-    outputPath: resolveOutputPath(outputTemplate, {
+    outputPath: resolvePdfOutputPath(outputTemplate, {
       workspacePath: workspace.uri.fsPath,
       workspaceName: workspace.name,
       sourcePath,
