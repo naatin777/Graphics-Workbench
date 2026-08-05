@@ -24,10 +24,34 @@ async function runRequest(message: unknown): Promise<void> {
       quiet: true,
       ...createRenderOptions(request),
     });
-    process.send?.({ ok: true } satisfies MermaidRunnerSuccess);
+    sendResult({ ok: true } satisfies MermaidRunnerSuccess);
   } catch (error) {
     const failureMessage = error instanceof Error ? error.message : String(error);
-    process.send?.({ ok: false, error: failureMessage } satisfies MermaidRunnerFailure);
+    sendResult({ ok: false, error: failureMessage } satisfies MermaidRunnerFailure);
+  }
+}
+
+function sendResult(message: MermaidRunnerSuccess | MermaidRunnerFailure): void {
+  if (process.send === undefined) {
+    return;
+  }
+
+  try {
+    process.send(message, (error) => {
+      if (error !== null) {
+        process.exitCode = 1;
+        process.exit();
+        return;
+      }
+
+      if (process.connected) {
+        process.disconnect();
+      }
+      process.exit(0);
+    });
+  } catch {
+    process.exitCode = 1;
+    process.exit();
   }
 }
 
