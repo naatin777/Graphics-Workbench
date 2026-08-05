@@ -1,0 +1,416 @@
+/*
+ * Graphics Workbench shared Webview UI.
+ *
+ * Alias VS Code theme variables by meaning and provide the small controls that
+ * all PDF Configure screens share: text buttons, toolbar buttons, inputs,
+ * selects, radio groups, dividers, the page navigator and the preview page
+ * current-page outline. Screens keep their own layout CSS and import this file
+ * first so the aliases and base control styles apply everywhere.
+ */
+
+:root {
+  --gw-background: var(--vscode-editor-background);
+  --gw-foreground: var(--vscode-editor-foreground);
+  --gw-description-foreground: var(--vscode-descriptionForeground);
+
+  --gw-control-background: var(--vscode-input-background);
+  --gw-control-foreground: var(--vscode-input-foreground);
+  --gw-control-border: var(--vscode-input-border, transparent);
+
+  --gw-primary-background: var(--vscode-button-background);
+  --gw-primary-foreground: var(--vscode-button-foreground);
+  --gw-primary-hover-background: var(--vscode-button-hoverBackground);
+
+  --gw-secondary-background: var(--vscode-button-secondaryBackground);
+  --gw-secondary-foreground: var(--vscode-button-secondaryForeground);
+  --gw-secondary-hover-background: var(--vscode-button-secondaryHoverBackground);
+
+  --gw-border: var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+
+  --gw-focus-border: var(--vscode-focusBorder);
+
+  --gw-radius: 4px;
+  --gw-icon-size: 16px;
+  --gw-toolbar-button-size: 24px;
+}
+
+/*
+ * Text button (VS Code button).
+ */
+.gw-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: auto;
+  min-width: 0;
+  padding: 4px 8px;
+
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 4px;
+
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+.gw-button--primary {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+.gw-button--primary:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.gw-button--secondary {
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+
+  border-color: var(--vscode-button-secondaryBorder, var(--vscode-button-border, transparent));
+}
+
+.gw-button--secondary:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.gw-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.gw-button:focus {
+  outline: none;
+}
+
+.gw-button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.gw-button--small {
+  padding: 3px 6px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+/*
+ * Toolbar button (VS Code action bar). 24px outer, 16px Codicon inner.
+ */
+.gw-toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  padding: 3px;
+
+  border: 0;
+  border-radius: var(--vscode-cornerRadius-medium, 4px);
+
+  color: var(--vscode-icon-foreground);
+  background: transparent;
+
+  cursor: pointer;
+}
+
+.gw-toolbar-button:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.gw-toolbar-button:active:not(:disabled) {
+  background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+}
+
+.gw-toolbar-button:disabled {
+  color: var(--vscode-disabledForeground);
+  opacity: 0.6;
+  cursor: default;
+}
+
+.gw-toolbar-button .codicon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.gw-toolbar-button:focus {
+  outline: none;
+}
+
+.gw-toolbar-button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+/*
+ * Input (VS Code input box).
+ */
+.gw-input {
+  display: block;
+  box-sizing: border-box;
+
+  width: 100%;
+  min-width: 0;
+  padding: 4px 6px;
+
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 4px;
+  outline: none;
+
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 17px;
+}
+
+.gw-input:hover:not(:disabled) {
+  border-color: var(--vscode-inputOption-hoverBorder, var(--vscode-input-border, transparent));
+}
+
+.gw-input:focus-visible {
+  border-color: var(--vscode-focusBorder);
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.gw-input::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+}
+
+.gw-input:disabled {
+  color: var(--vscode-disabledForeground);
+  opacity: 0.4;
+  cursor: default;
+}
+
+/*
+ * Select (VS Code dropdown).
+ */
+.gw-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 100px;
+  min-height: 24px;
+
+  padding: 2px 23px 2px 8px;
+
+  color: var(--vscode-dropdown-foreground);
+  background: var(--vscode-dropdown-background);
+  border: 1px solid var(--vscode-dropdown-border, transparent);
+  border-radius: var(--vscode-cornerRadius-small, 2px);
+
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+
+  cursor: pointer;
+}
+
+.gw-select:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+/*
+ * Radio group (native controls, fieldset + legend).
+ */
+.gw-radio-group {
+  display: grid;
+  gap: 2px;
+
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gw-radio-group legend {
+  margin-bottom: 4px;
+  padding: 0;
+
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+.gw-radio-option {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  gap: 8px;
+
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.gw-radio-option input[type='radio'] {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.gw-radio-option input[type='radio']:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+/*
+ * Form layout: simple vertical stack, not cards.
+ */
+.gw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gw-field {
+  min-width: 0;
+}
+
+.gw-field-label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+.gw-field-message {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.gw-field-message[data-severity='error'] {
+  color: var(--vscode-inputValidation-errorForeground);
+  background: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  padding: 4px 6px;
+}
+
+/*
+ * Action row: primary on the right.
+ */
+.gw-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+/*
+ * Divider.
+ */
+.gw-divider {
+  height: 1px;
+  border: 0;
+  margin: 4px 0;
+
+  background: var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+}
+
+/*
+ * Preview panel and page navigator.
+ */
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+
+  border-right: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+}
+
+.preview-scroll-area {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.page-navigator {
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 32px;
+  padding: 4px 8px;
+
+  border-top: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-editor-background);
+
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.page-navigator__position {
+  min-width: 52px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Preview page current-page outline. Never use border so page dimensions and
+ * layout do not shift.
+ */
+.preview-page {
+  position: relative;
+}
+
+.preview-page[data-current='true'] {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 3px;
+}
+
+body.vscode-high-contrast .preview-page[data-current='true'],
+body.vscode-high-contrast-light .preview-page[data-current='true'] {
+  outline-width: 2px;
+}
+
+/*
+ * Resizable sash. Visible resting border is 1px (on the preview panel); the
+ * 4px sash is transparent and only highlights while hovered or active.
+ */
+.gw-sash {
+  position: absolute;
+  z-index: 10;
+
+  top: 0;
+  right: -2px;
+
+  width: 4px;
+  height: 100%;
+
+  cursor: ew-resize;
+  touch-action: none;
+  background: transparent;
+}
+
+.gw-sash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+  background: transparent;
+}
+
+.gw-sash:hover::before,
+.gw-sash[data-active='true']::before {
+  background: var(--vscode-sash-hoverBorder);
+}
