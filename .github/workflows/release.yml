@@ -5,6 +5,9 @@ on:
         tags:
             - 'v*.*.*'
 
+permissions:
+    contents: read
+
 jobs:
     check:
         name: Release static checks

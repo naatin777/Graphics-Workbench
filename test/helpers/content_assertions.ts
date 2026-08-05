@@ -135,7 +135,7 @@ function svgStructureSignature(serialized: string): {
   }
 
   const labels = [...serialized.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/giu)]
-    .map((match) => match[1]?.replaceAll(/<[^>]+>/gu, '').trim())
+    .map((match) => (match[1] === undefined ? undefined : stripSvgTags(match[1]).trim()))
     .filter((label): label is string => label !== undefined && label !== '')
     .toSorted();
   const dataAttributes: Record<string, string[]> = {};
@@ -146,4 +146,14 @@ function svgStructureSignature(serialized: string): {
   }
 
   return { elementCounts, labels, dataAttributes };
+}
+
+function stripSvgTags(value: string): string {
+  let stripped = value;
+  let previous = '';
+  while (previous !== stripped) {
+    previous = stripped;
+    stripped = stripped.replaceAll(/<[^>]+>/gu, '');
+  }
+  return stripped;
 }
