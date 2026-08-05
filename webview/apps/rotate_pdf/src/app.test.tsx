@@ -158,6 +158,8 @@ test('3つの回転角度ラジオを表示し、Applyで選択ページと角�
   expect(isRotatePdfHostToWebviewMessage(initMessage)).toBe(true);
   await mountAndInit();
 
+  expect(sendMessage).toHaveBeenCalledWith({ type: 'ready' });
+
   const radios = document.querySelectorAll<HTMLInputElement>('input[name="rotate-angle"]');
   expect(radios).toHaveLength(3);
   expect([...radios].map((radio) => radio.value)).toEqual(['90', '180', '270']);

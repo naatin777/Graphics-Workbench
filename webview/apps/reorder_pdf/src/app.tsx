@@ -71,6 +71,7 @@ export function App(): JSX.Element {
 
     window.addEventListener('message', onMessage);
     pdfPages?.addEventListener('click', onControlClick);
+    vscode.sendMessage({ type: 'ready' });
     onCleanup(() => {
       window.removeEventListener('message', onMessage);
       pdfPages?.removeEventListener('click', onControlClick);

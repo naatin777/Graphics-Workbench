@@ -140,6 +140,8 @@ test('Applyで初期ページ順を送信する', async () => {
   expect(isReorderPdfHostToWebviewMessage(initMessage)).toBe(true);
   await mountAndInit();
 
+  expect(sendMessage).toHaveBeenCalledWith({ type: 'ready' });
+
   clickButton('Apply');
 
   expect(sendMessage).toHaveBeenLastCalledWith({

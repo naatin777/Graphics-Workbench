@@ -104,6 +104,7 @@ export function App(): JSX.Element {
     window.addEventListener('message', onMessage);
     pdfPages?.addEventListener('click', onPageClick);
     pdfPages?.addEventListener('keydown', onPageKeyDown);
+    vscode.sendMessage({ type: 'ready' });
     onCleanup(() => {
       window.removeEventListener('message', onMessage);
       pdfPages?.removeEventListener('click', onPageClick);
