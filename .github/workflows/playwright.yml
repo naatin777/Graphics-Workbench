@@ -38,31 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '22.23.1'
-          package-manager-cache: false
-
-      - run: npm install -g npm@12.0.1
-        shell: bash
-
-      - id: npm_cache
-        name: Locate npm cache
-        run: echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
-        shell: bash
-
-      - uses: actions/cache@v6
-        with:
-          path: ${{ steps.npm_cache.outputs.dir }}
-          key: npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-${{ runner.arch }}-node-22.23.1-npm-12.0.1-
-
-      - run: node --version && npm --version
-        shell: bash
-
-      - run: npm ci
-        shell: bash
+      - uses: ./.github/actions/setup
 
       - name: Build extension and Webview
         run: npm run build
