@@ -4,6 +4,7 @@ import path from 'node:path';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from './cleanup_conversion_artifacts.js';
+import { restoreFileMetadata, type PreviousFileMetadata } from './commit_conversion_outputs.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import { hashFile } from '../input/file_content_hash.js';
 
@@ -11,6 +12,7 @@ export interface ConversionOutput {
   outputPath: string;
   workspacePath: string;
   previousFilePath?: string;
+  previousFileMetadata?: PreviousFileMetadata;
   stagingRootPath?: string;
   stagingWorkspacePath?: string | undefined;
 }
@@ -83,6 +85,7 @@ export async function undoConversionOutputs(
           output.stagingWorkspacePath ?? output.workspacePath,
         );
         await copyFile(output.previousFilePath, output.outputPath);
+        await restoreFileMetadata(output.outputPath, output.previousFileMetadata);
       } else {
         await rm(output.outputPath);
       }

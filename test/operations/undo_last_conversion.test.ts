@@ -11,7 +11,7 @@
 // - crop処理
 
 import assert from 'node:assert/strict';
-import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, rm, stat, symlink, utimes, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -26,6 +26,7 @@ import {
   createConversionUndoRecord,
   undoConversionOutputs,
 } from '../../src/operations/lifecycle/undo_last_conversion.js';
+import { commitStagedOutputs } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
 
 suite('直前変換の取り消し処理', () => {
   let sandbox: SinonSandbox;
@@ -222,6 +223,40 @@ suite('直前変換の取り消し処理', () => {
 
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
     await assert.doesNotReject(access(previousFilePath));
+  });
+
+  test('上書きした出力を取り消すと元の内容とmode/mtimeを復元する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'run', 'result.pdf');
+    const outputPath = path.join(workspacePath, 'output.pdf');
+    const originalMtime = new Date(2005, 5, 15, 12, 34, 56, 789);
+
+    try {
+      await writeFixture(stagedOutputPath, 'new');
+      await writeFixture(outputPath, 'original');
+      await utimes(outputPath, originalMtime, originalMtime);
+      if (process.platform !== 'win32') {
+        await chmod(outputPath, 0o640);
+      }
+
+      const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
+        resolveConflicts: async () => 'overwrite',
+      });
+      assert.ok(committed[0]?.previousFileMetadata);
+      const record = await createConversionUndoRecord(committed);
+
+      await undoConversionOutputs(record);
+
+      const restored = await stat(outputPath);
+      assert.strictEqual(restored.mtimeMs, originalMtime.getTime());
+      assert.strictEqual(restored.atimeMs, committed[0]?.previousFileMetadata?.atimeMs);
+      if (process.platform !== 'win32') {
+        assert.strictEqual(restored.mode & 0o7777, 0o640);
+      }
+      assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
   });
 
   test('変換後に出力が変更されている場合は上書き前のファイルを復元しない', async () => {

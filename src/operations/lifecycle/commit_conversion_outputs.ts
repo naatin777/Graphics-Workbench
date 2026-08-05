@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs';
-import { access, mkdir, open, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, open, rename, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -33,8 +33,15 @@ export interface CommittedConversionOutput {
   outputPath: string;
   workspacePath: string;
   previousFilePath?: string;
+  previousFileMetadata?: PreviousFileMetadata;
   stagingRootPath?: string;
   stagingWorkspacePath?: string | undefined;
+}
+
+export interface PreviousFileMetadata {
+  mode: number;
+  atimeMs: number;
+  mtimeMs: number;
 }
 
 export interface CommitConversionOutputsOptions {
@@ -49,6 +56,7 @@ export interface CommitConversionOutputsOptions {
 
 interface ResolvedOutput extends PreparedConversionOutput {
   previousFilePath?: string;
+  previousFileMetadata?: PreviousFileMetadata;
   existedBeforeCommit: boolean;
   contentHashBeforeConflict?: string;
   createdOutputIdentity?: FileIdentity;
@@ -266,8 +274,10 @@ async function createBackups(
     const previousFilePath = `${output.stagedOutputPath}.previous`;
     await assertWritablePathInWorkspace(previousFilePath, stagingBoundary(output));
     await mkdir(path.dirname(previousFilePath), { recursive: true });
+    const previousFileMetadata = await readFileMetadata(output.outputPath);
     await copyFileImpl(output.outputPath, previousFilePath, fsConstants.COPYFILE_EXCL, signal);
     output.previousFilePath = previousFilePath;
+    output.previousFileMetadata = previousFileMetadata;
   }
 }
 
@@ -330,24 +340,30 @@ async function commitResolvedOutputs(
     throw error instanceof Error ? error : new Error(String(error));
   }
 
-  return committed.map(({ outputPath, workspacePath, previousFilePath, stagingRootPath, stagingWorkspacePath }) => {
-    const result: CommittedConversionOutput = { outputPath, workspacePath };
+  return committed.map(
+    ({ outputPath, workspacePath, previousFilePath, previousFileMetadata, stagingRootPath, stagingWorkspacePath }) => {
+      const result: CommittedConversionOutput = { outputPath, workspacePath };
 
-    if (previousFilePath !== undefined) {
-      result.previousFilePath = previousFilePath;
-    }
+      if (previousFilePath !== undefined) {
+        result.previousFilePath = previousFilePath;
+      }
 
-    if (stagingRootPath !== undefined) {
-      result.stagingRootPath = stagingRootPath;
-    }
-    if (stagingWorkspacePath !== undefined) {
-      result.stagingWorkspacePath = stagingWorkspacePath;
-    }
+      if (previousFileMetadata !== undefined) {
+        result.previousFileMetadata = previousFileMetadata;
+      }
 
-    options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] committed output: ${outputPath}`);
+      if (stagingRootPath !== undefined) {
+        result.stagingRootPath = stagingRootPath;
+      }
+      if (stagingWorkspacePath !== undefined) {
+        result.stagingWorkspacePath = stagingWorkspacePath;
+      }
 
-    return result;
-  });
+      options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] committed output: ${outputPath}`);
+
+      return result;
+    },
+  );
 }
 
 function toArtifactRoots(outputs: PreparedConversionOutput[]): ConversionArtifactRoot[] {
@@ -392,6 +408,7 @@ async function rollbackCommittedOutputs(
         }
 
         await copyFileImpl(output.previousFilePath, output.outputPath);
+        await restoreFileMetadata(output.outputPath, output.previousFileMetadata);
       } else if (output.createdOutputIdentity !== undefined) {
         const currentIdentity = await readFileIdentity(output.outputPath);
 
@@ -620,6 +637,24 @@ async function readFileIdentity(filePath: string): Promise<FileIdentity> {
 
 function sameFileIdentity(first: FileIdentity, second: FileIdentity): boolean {
   return first.dev === second.dev && first.ino === second.ino;
+}
+
+async function readFileMetadata(filePath: string): Promise<PreviousFileMetadata> {
+  const fileStat = await stat(filePath);
+  return {
+    mode: fileStat.mode & 0o7777,
+    atimeMs: Math.trunc(fileStat.atimeMs),
+    mtimeMs: Math.trunc(fileStat.mtimeMs),
+  };
+}
+
+export async function restoreFileMetadata(filePath: string, metadata: PreviousFileMetadata | undefined): Promise<void> {
+  if (metadata === undefined) {
+    return;
+  }
+
+  await chmod(filePath, metadata.mode);
+  await utimes(filePath, new Date(metadata.atimeMs), new Date(metadata.mtimeMs));
 }
 
 function isWindowsRenameConflict(error: unknown): boolean {
