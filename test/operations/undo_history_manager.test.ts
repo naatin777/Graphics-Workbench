@@ -110,6 +110,58 @@ suite('Undo履歴のライフサイクル管理', () => {
     }
   });
 
+  test('再起動後の新しいrecordで期限内の孤立マニフェスト記録を保持する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    const storage = new MemoryManifestStorage();
+    let currentTime = 0;
+
+    try {
+      const first = await makeRecordFixture(workspacePath, 'first');
+      const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+      await manager.record([first]);
+
+      currentTime = 500;
+      const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+      await restarted.initialize();
+
+      const second = await makeRecordFixture(workspacePath, 'second');
+      await restarted.record([second]);
+
+      await assert.doesNotReject(access(first.previousFilePath));
+      await assert.doesNotReject(access(second.previousFilePath));
+      assert.strictEqual(readManifestEntries(storage).length, 2);
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
+  test('再起動後に期限切れになった孤立マニフェスト記録は次のrecordで削除する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    const storage = new MemoryManifestStorage();
+    let currentTime = 0;
+
+    try {
+      const first = await makeRecordFixture(workspacePath, 'first');
+      const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+      await manager.record([first]);
+
+      currentTime = 500;
+      const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+      await restarted.initialize();
+      assert.strictEqual(readManifestEntries(storage).length, 1);
+
+      currentTime = 2000;
+      const second = await makeRecordFixture(workspacePath, 'second');
+      await restarted.record([second]);
+
+      await assert.rejects(access(first.previousFilePath));
+      await assert.doesNotReject(access(second.previousFilePath));
+      assert.strictEqual(readManifestEntries(storage).length, 1);
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
   test('Undo成功後にrecordをマニフェストからも除去し、バックアップを削除する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();

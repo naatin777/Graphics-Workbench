@@ -50,9 +50,14 @@ export interface UndoHistoryManagerOptions {
  * backup roots removed. A manifest is persisted into workspaceState so that
  * orphaned backups from previous sessions (whose in-memory history is gone after
  * a restart) can be cleaned on the next activation.
+ *
+ * On restart the in-memory history is gone, so within-retention manifest entries
+ * are kept as orphan candidates: they stay in the manifest on every persist and
+ * are cleaned only once their retention expires.
  */
 export class UndoHistoryManager {
   readonly #records: ConversionUndoRecord[] = [];
+  #orphanedEntries: UndoManifestEntry[] = [];
   readonly #maxRecords: number;
   readonly #retentionMs: number;
   readonly #storage: UndoManifestStorage | undefined;
@@ -115,18 +120,21 @@ export class UndoHistoryManager {
       const now = this.#now();
       const staleEntries = manifest.entries.filter((entry) => now - entry.createdAt > this.#retentionMs);
 
-      if (staleEntries.length === 0) {
-        return;
+      if (staleEntries.length > 0) {
+        for (const entry of staleEntries) {
+          await cleanupConversionArtifacts(toManifestArtifactRoots(entry), outputChannel);
+        }
+
+        await this.#writeManifest({
+          version: MANIFEST_VERSION,
+          entries: manifest.entries.filter((entry) => !staleEntries.includes(entry)),
+        });
       }
 
-      for (const entry of staleEntries) {
-        await cleanupConversionArtifacts(toManifestArtifactRoots(entry), outputChannel);
-      }
-
-      await this.#writeManifest({
-        version: MANIFEST_VERSION,
-        entries: manifest.entries.filter((entry) => !staleEntries.includes(entry)),
-      });
+      const recordIds = new Set(this.#records.map((record) => record.id));
+      this.#orphanedEntries = manifest.entries.filter(
+        (entry) => !staleEntries.includes(entry) && !recordIds.has(entry.id),
+      );
     });
   }
 
@@ -161,28 +169,43 @@ export class UndoHistoryManager {
     }
 
     try {
+      await this.#expireOrphans(outputChannel);
       await this.#writeManifest({
         version: MANIFEST_VERSION,
-        entries: this.#records.map((record) => ({
-          id: record.id,
-          createdAt: record.createdAt,
-          roots: record.outputs.flatMap((output) =>
-            output.stagingRootPath !== undefined && output.stagingRootPath !== ''
-              ? [
-                  {
-                    workspacePath: output.stagingWorkspacePath ?? output.workspacePath,
-                    rootPath: output.stagingRootPath,
-                  },
-                ]
-              : [],
-          ),
-        })),
+        entries: [
+          ...this.#records.map((record) => ({
+            id: record.id,
+            createdAt: record.createdAt,
+            roots: record.outputs.flatMap((output) =>
+              output.stagingRootPath !== undefined && output.stagingRootPath !== ''
+                ? [
+                    {
+                      workspacePath: output.stagingWorkspacePath ?? output.workspacePath,
+                      rootPath: output.stagingRootPath,
+                    },
+                  ]
+                : [],
+            ),
+          })),
+          ...this.#orphanedEntries,
+        ],
       });
     } catch (error) {
       outputChannel?.appendLine(
         `[undo] manifest persist failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  async #expireOrphans(outputChannel?: LineOutputChannel): Promise<void> {
+    const now = this.#now();
+    const expired = this.#orphanedEntries.filter((entry) => now - entry.createdAt > this.#retentionMs);
+
+    for (const entry of expired) {
+      await cleanupConversionArtifacts(toManifestArtifactRoots(entry), outputChannel);
+    }
+
+    this.#orphanedEntries = this.#orphanedEntries.filter((entry) => !expired.includes(entry));
   }
 
   async #writeManifest(manifest: UndoManifest): Promise<void> {
