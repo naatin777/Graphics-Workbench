@@ -19,6 +19,17 @@
 
 - gt（Graphite）の`gt submit --no-edit`は、PR titleをcommit messageの1行目から取るが、PR本文は自動入力されない（空になり、GitHubのPRテンプレートが適用される）。
 - PR本文が必要な場合は、`gt submit`（対話）または`gt submit --edit-description`で説明を入力するか、submit後に`gh pr edit <PR番号> --body "..."`で入力する。commit messageのbodyはPR本文へ反映されない。
+- stack完了はGitHub APIの`merged: true`だけを正本にしない。`npm run check:prs-landed -- <PR番号>...`で、各PRの`merge_commit_sha`が`origin/main`のancestorかを確認する。このリポジトリはsquash mergeを使うため元commit SHAは`main`に入らず、merge commitで判定する。Graphite base branch（`graphite-base/*`など）へのmergeは製品完了と誤認しない。`--ref <tag>`でrelease tagを、`--no-fetch`でfetchを省略できる。
+
+## ブランチ開始規則
+
+- 新しいユーザー依頼は、既存の未マージPRへの明示的な依存がない限り、**trunk（main）から独立したブランチで開始する**。
+- 作業を開始する前に現在のブランチとGraphiteの親を確認する。`git status --short`、`gt log short`、`gt trunk`、`gt sync`を実行してからtrunkへ戻る。
+- 現在のブランチを暗黙の親として`gt create`してはならない。
+- スタックを作る場合は、各PRについて「直前のPRが無いと実装・レビューできない」という依存理由を1文で説明できる場合に限る。
+- 依存理由を説明できないPRは、trunk直下の独立PRにする。
+- 独立タスクの開始: `gt create <branch> -m "<commit message>"`（trunk上で実行）。
+- 既存PRに本当に依存する場合だけ: `gt checkout <intended-parent>` → `gt create <child> -m "<commit message>"`。
 
 ## 実装
 
