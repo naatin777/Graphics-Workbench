@@ -7,7 +7,7 @@ import {
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { executeTiffConversion } from '../../operations/conversion/convert_to_tiff.js';
 import { planTiffConversionJobs } from './plan_tiff_conversion_jobs.js';
-import { runSimpleRasterConversionCommand } from './run_simple_raster_conversion_command.js';
+import { runSimpleRasterConversionCommand } from './run_raster_conversion_command.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { readDrawioOptions } from '../shared/command_utils.js';
 

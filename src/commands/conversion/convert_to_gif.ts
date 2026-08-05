@@ -7,7 +7,7 @@ import {
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { executeGifConversion } from '../../operations/conversion/convert_to_gif.js';
 import { planGifConversionJobs } from './plan_gif_conversion_jobs.js';
-import { runAnimatedRasterConversionCommand } from './run_animated_raster_conversion_command.js';
+import { runAnimatedRasterConversionCommand } from './run_raster_conversion_command.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { readDrawioOptions } from '../shared/command_utils.js';
@@ -28,7 +28,6 @@ export async function convertToGifCommand(
     dependencies,
     operationName: 'convert-to-gif',
     outputLabel: 'GIF',
-    ...(options?.outputMode !== undefined && { outputMode: options.outputMode }),
     prepare: (configuration) => ({
       pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
       ghostscriptTools: {

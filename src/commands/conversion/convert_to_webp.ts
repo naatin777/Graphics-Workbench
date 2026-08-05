@@ -9,7 +9,7 @@ import {
 import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
 import { executeWebpConversion, type WebpOutputOptions } from '../../operations/conversion/convert_to_webp.js';
 import { planWebpConversionJobs } from './plan_webp_conversion_jobs.js';
-import { runAnimatedRasterConversionCommand } from './run_animated_raster_conversion_command.js';
+import { runAnimatedRasterConversionCommand } from './run_raster_conversion_command.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { readDrawioOptions } from '../shared/command_utils.js';
@@ -30,7 +30,6 @@ export async function convertToWebpCommand(
     dependencies,
     operationName: 'convert-to-webp',
     outputLabel: 'WebP',
-    ...(options?.outputMode !== undefined && { outputMode: options.outputMode }),
     prepare: (configuration) => ({
       defaultConfiguration: getDefaultConfiguration(),
       mermaidTools: readMermaidPuppeteerOptions(configuration),
