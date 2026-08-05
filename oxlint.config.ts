@@ -237,7 +237,9 @@ export default defineConfig({
       },
     ],
     'unicorn/prefer-string-replace-all': 'error',
-    'unicorn/no-array-sort': 'error',
+    // 新しく作った配列をソートする場合は `[...iterable].sort()` を許す。
+    // WebviewはES2022 libのため `toSorted()` が型ライブラリに存在しない。
+    'unicorn/no-array-sort': ['error', { allowAfterSpread: true }],
     'unicorn/no-object-as-default-parameter': 'error',
     'unicorn/no-array-for-each': 'error',
     'unicorn/no-array-callback-reference': 'error',

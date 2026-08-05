@@ -74,7 +74,7 @@ body {
   align-content: start;
 }
 
-.reorder__pages :global(.pdf-page) {
+.reorder__pages .pdf-page {
   position: relative;
 }
 

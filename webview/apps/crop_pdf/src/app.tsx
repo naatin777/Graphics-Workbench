@@ -127,7 +127,7 @@ function renderOptions(
     ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
       ? { wasmUrl: payload.resources.wasmUrl }
       : {}),
-    pageLabel: payload.labels.header.pageLabel,
+    page: { label: payload.labels.header.pageLabel },
     signal,
     onRenderError: (error: unknown) => {
       if (signal.aborted) {

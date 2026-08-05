@@ -75,12 +75,12 @@ body {
   align-content: start;
 }
 
-.rotate__pages :global(.pdf-page) {
+.rotate__pages .pdf-page {
   border: 2px solid transparent;
   cursor: pointer;
 }
 
-.rotate__pages :global(.pdf-page.pdf-page--selected) {
+.rotate__pages .pdf-page.pdf-page--selected {
   border-color: var(--rotate-accent);
   outline: 2px solid var(--rotate-accent);
   outline-offset: 1px;
