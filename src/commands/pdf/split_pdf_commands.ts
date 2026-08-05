@@ -435,7 +435,6 @@ function splitPdfLabels(): SplitPdfLabels {
     },
     preview: {
       title: localeMap('webview.splitPdf.preview'),
-      description: localeMap('webview.splitPdf.previewDescription'),
       ariaLabel: localeMap('webview.splitPdf.previewAriaLabel'),
       renderError: localeMap('webview.splitPdf.previewRenderError'),
       applyError: localeMap('webview.splitPdf.previewApplyError'),

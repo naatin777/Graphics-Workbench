@@ -7,7 +7,6 @@ export const defaultLabels: SplitPdfLabels = {
   },
   preview: {
     title: 'Preview',
-    description: 'Preview the selected pages.',
     ariaLabel: 'PDF preview',
     renderError: 'Could not display the PDF',
     applyError: 'PDF preview must render before applying.',

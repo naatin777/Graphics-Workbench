@@ -7,7 +7,6 @@ export const defaultLabels: ReorderPdfLabels = {
   },
   preview: {
     title: 'PDF Preview',
-    description: 'Pages in the output order.',
     ariaLabel: 'PDF page preview',
     renderError: 'Failed to render the PDF preview.',
     applyError: 'Failed to apply the reorder.',

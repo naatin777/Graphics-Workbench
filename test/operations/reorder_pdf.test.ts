@@ -109,7 +109,6 @@ suite('reorderPdf protocol guard', () => {
     header: { title: 'Reorder PDF', description: 'description' },
     preview: {
       title: 'Preview',
-      description: 'description',
       ariaLabel: 'preview',
       renderError: 'error',
       applyError: 'error',

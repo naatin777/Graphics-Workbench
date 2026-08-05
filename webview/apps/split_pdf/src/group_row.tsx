@@ -2,6 +2,8 @@ import type { Accessor, JSX } from 'solid-js';
 
 import type { SplitPdfLabels } from '@graphics-workbench-split-pdf-protocol';
 
+import { ToolbarButton } from '../../../shared/ui/ToolbarButton';
+
 import type { InputKind, Row } from './types';
 
 export function GroupRow(props: {
@@ -42,51 +44,40 @@ export function GroupRow(props: {
     >
       <div class='group-row__header'>
         <span class='group-row__number'>{props.index() + 1}</span>
-        <button
-          aria-label={`${props.labels.groups.drag} ${props.index() + 1}`}
-          class='drag-handle'
-          draggable='true'
-          type='button'
+        <ToolbarButton
+          className='drag-handle'
+          draggable={true}
+          icon='codicon-gripper'
+          label={`${props.labels.groups.drag} ${props.index() + 1}`}
           onDragEnd={props.handlers.drag.onDragEnd}
           onDragStart={(event) => {
             props.handlers.drag.onDragStart(event, props.row.id);
           }}
-        >
-          ::
-        </button>
+        />
         <div class='group-row__actions'>
-          <button
-            aria-label={`${props.labels.actions.moveUp} ${props.index() + 1}`}
-            class='button button--small'
+          <ToolbarButton
             disabled={props.index() === 0}
-            type='button'
+            icon='codicon-chevron-up'
+            label={`${props.labels.actions.moveUp} ${props.index() + 1}`}
             onClick={() => {
               props.handlers.row.onMove(props.row.id, -1);
             }}
-          >
-            {props.labels.actions.moveUp}
-          </button>
-          <button
-            aria-label={`${props.labels.actions.moveDown} ${props.index() + 1}`}
-            class='button button--small'
+          />
+          <ToolbarButton
             disabled={props.index() === props.rowCount - 1}
-            type='button'
+            icon='codicon-chevron-down'
+            label={`${props.labels.actions.moveDown} ${props.index() + 1}`}
             onClick={() => {
               props.handlers.row.onMove(props.row.id, 1);
             }}
-          >
-            {props.labels.actions.moveDown}
-          </button>
-          <button
-            aria-label={`${props.labels.groups.remove} ${props.index() + 1}`}
-            class='button button--small'
-            type='button'
+          />
+          <ToolbarButton
+            icon='codicon-close'
+            label={`${props.labels.groups.remove} ${props.index() + 1}`}
             onClick={() => {
               props.handlers.row.onRemove(props.row.id);
             }}
-          >
-            {props.labels.groups.remove}
-          </button>
+          />
         </div>
       </div>
 
@@ -98,7 +89,7 @@ export function GroupRow(props: {
               props.handlers.fields.setInputRef(props.row.id, 'pages', element);
             }}
             aria-label={`${props.labels.pages.title} ${props.index() + 1}`}
-            class='input'
+            class='input gw-input'
             placeholder={props.labels.pages.placeholder}
             type='text'
             value={props.row.pages}
@@ -120,7 +111,7 @@ export function GroupRow(props: {
               props.handlers.fields.setInputRef(props.row.id, 'outputName', element);
             }}
             aria-label={`${props.labels.output.name} ${props.index() + 1}`}
-            class='input'
+            class='input gw-input'
             placeholder={props.labels.output.namePlaceholder}
             type='text'
             value={props.row.outputName}

@@ -293,11 +293,9 @@ function mergePdfLabels(): MergePdfLabels {
   return {
     header: {
       title: localeMap('webview.mergePdf.title'),
-      description: localeMap('webview.mergePdf.description'),
     },
     sources: {
       list: localeMap('webview.mergePdf.sourceList'),
-      listDescription: localeMap('webview.mergePdf.sourceListDescription'),
       count: localeMap('webview.mergePdf.sourceCount'),
     },
     controls: {

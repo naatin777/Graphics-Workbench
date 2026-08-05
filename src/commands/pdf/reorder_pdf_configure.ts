@@ -277,7 +277,6 @@ function reorderPdfLabels(): ReorderPdfLabels {
     },
     preview: {
       title: localeMap('webview.reorderPdf.preview'),
-      description: localeMap('webview.reorderPdf.previewDescription'),
       ariaLabel: localeMap('webview.reorderPdf.previewAriaLabel'),
       renderError: localeMap('webview.reorderPdf.previewRenderError'),
       applyError: localeMap('webview.reorderPdf.previewApplyError'),

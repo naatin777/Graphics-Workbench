@@ -21,8 +21,8 @@ suite('Merge PDF Webviewプロトコル', () => {
           wasmUrl: 'vscode-resource://wasm/',
           preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
           labels: {
-            header: { title: 'Merge PDFs', description: 'Arrange files.' },
-            sources: { list: 'PDF files', listDescription: 'Drag files.', count: 'files selected' },
+            header: { title: 'Merge PDFs' },
+            sources: { list: 'PDF files', count: 'files selected' },
             controls: {
               actions: 'Actions',
               dragHandle: 'Drag to reorder',
@@ -63,8 +63,8 @@ suite('Merge PDF Webviewプロトコル', () => {
             { sourceId: 'source-2', fileName: 'second.pdf', pdfSrc: 'vscode-resource://second.pdf' },
           ],
           labels: {
-            header: { title: 'Merge PDFs', description: 'Arrange files.' },
-            sources: { list: 'PDF files', listDescription: 'Drag files.', count: 'files selected' },
+            header: { title: 'Merge PDFs' },
+            sources: { list: 'PDF files', count: 'files selected' },
             controls: {
               actions: 'Actions',
               dragHandle: 'Drag to reorder',

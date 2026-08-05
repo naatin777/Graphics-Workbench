@@ -59,14 +59,16 @@ input:focus-visible {
 }
 
 .split-pane__divider {
-  flex: 0 0 6px;
-  margin: 0 8px 0 4px;
+  flex: 0 0 4px;
+  margin: 0 4px 0 4px;
   cursor: col-resize;
-  background: var(--vscode-panel-border, #454545);
+  background: transparent;
+  border-right: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, transparent));
 }
 
-.split-pane__divider:hover {
-  background: var(--vscode-focusBorder, #007fd4);
+.split-pane__divider:hover,
+.split-pane__divider[data-active='true'] {
+  background: var(--vscode-sash-hoverBorder, var(--vscode-focusBorder, #007fd4));
 }
 
 .split-pane__right {
@@ -81,7 +83,7 @@ input:focus-visible {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
 }
 
@@ -98,24 +100,9 @@ input:focus-visible {
 
 .pdf-preview__toolbar h2 {
   margin: 0 0 4px;
-  font-size: 1rem;
-}
-
-.pdf-preview__toolbar p {
-  display: none;
-  margin: 0;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-}
-
-.pdf-preview__footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  padding: 8px 12px;
-  text-align: center;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-  background: var(--vscode-editor-background, #1e1e1e);
-  border-top: 1px solid var(--vscode-panel-border, #454545);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
 }
 
 .preview-tools {
@@ -182,11 +169,14 @@ input:focus-visible {
   align-content: start;
   justify-items: center;
   min-width: 0;
-  min-height: 100%;
+  min-height: 0;
   padding: 12px 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .pdf-page {
+  position: relative;
   display: grid;
   justify-items: center;
   max-width: 100%;
@@ -202,6 +192,21 @@ input:focus-visible {
 .pdf-page--focused {
   outline: 2px solid var(--vscode-focusBorder, #007fd4);
   outline-offset: 4px;
+}
+
+.pdf-page[data-current='true'] {
+  outline: 1px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: 3px;
+}
+
+.pdf-page--focused[data-current='true'] {
+  outline: 2px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: 4px;
+}
+
+body.vscode-high-contrast .pdf-page[data-current='true'],
+body.vscode-high-contrast-light .pdf-page[data-current='true'] {
+  outline-width: 2px;
 }
 
 .pdf-preview canvas {
@@ -281,12 +286,7 @@ input:focus-visible {
 }
 
 .drag-handle {
-  padding: 3px 6px;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-  background: transparent;
-  border: 1px solid transparent;
   cursor: grab;
-  letter-spacing: 2px;
 }
 
 .drag-handle:active {
@@ -318,28 +318,46 @@ input:focus-visible {
 .input {
   width: 100%;
   min-width: 0;
-  padding: 6px 8px;
+  padding: 4px 6px;
   color: var(--vscode-input-foreground, #cccccc);
   background: var(--vscode-input-background, #3c3c3c);
   border: 1px solid var(--vscode-input-border, #616161);
-  border-radius: 2px;
+  border-radius: 4px;
   outline: none;
+  line-height: 17px;
 }
 
-.input:focus {
+.input:hover:not(:disabled) {
+  border-color: var(--vscode-inputOption-hoverBorder, var(--vscode-input-border, #616161));
+}
+
+.input:focus-visible {
   border-color: var(--vscode-focusBorder, #007fd4);
+  outline: 1px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: -1px;
 }
 
 .input::placeholder {
   color: var(--vscode-input-placeholderForeground, #9d9d9d);
 }
 
+.input:disabled {
+  color: var(--vscode-disabledForeground);
+  opacity: 0.4;
+  cursor: default;
+}
+
 .button {
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
   color: var(--vscode-button-secondaryForeground, #cccccc);
   background: var(--vscode-button-secondaryBackground, #3a3d41);
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 2px;
+  border: 1px solid var(--vscode-button-secondaryBorder, var(--vscode-button-border, transparent));
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 16px;
   cursor: pointer;
 }
 
@@ -349,12 +367,12 @@ input:focus-visible {
 
 .button:disabled {
   cursor: default;
-  opacity: 0.55;
+  opacity: 0.4;
 }
 
-.button--small {
-  padding: 3px 7px;
-  font-size: 0.9em;
+.button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: 2px;
 }
 
 .button--primary {

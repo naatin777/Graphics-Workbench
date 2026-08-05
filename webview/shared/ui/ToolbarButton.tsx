@@ -6,6 +6,9 @@ export interface ToolbarButtonProps {
   disabled?: boolean;
   onClick?: () => void;
   className?: string;
+  draggable?: boolean;
+  onDragStart?: (event: DragEvent) => void;
+  onDragEnd?: () => void;
 }
 
 /**
@@ -28,7 +31,10 @@ export function ToolbarButton(props: ToolbarButtonProps): JSX.Element {
       aria-label={props.label}
       title={props.label}
       disabled={props.disabled}
+      draggable={props.draggable}
       onClick={props.onClick}
+      onDragStart={props.onDragStart}
+      onDragEnd={props.onDragEnd}
     >
       <span
         class={`codicon ${props.icon}`}

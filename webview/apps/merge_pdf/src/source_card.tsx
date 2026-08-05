@@ -45,7 +45,7 @@ export function SourceCard(props: {
 
         <div class='source-card__controls'>
           <button
-            class='button button--handle'
+            class='gw-toolbar-button button--handle'
             type='button'
             draggable={true}
             aria-label={props.labels.controls.dragHandle}
@@ -55,10 +55,13 @@ export function SourceCard(props: {
             }}
             onDragEnd={props.handlers.onDragEnd}
           >
-            <span aria-hidden='true'>⠿</span>
+            <span
+              class='codicon codicon-gripper'
+              aria-hidden='true'
+            />
           </button>
           <button
-            class='button button--icon'
+            class='gw-toolbar-button'
             type='button'
             disabled={props.index() === 0}
             aria-label={props.labels.controls.moveUp}
@@ -67,10 +70,13 @@ export function SourceCard(props: {
               props.handlers.onMove(props.source.sourceId, -1);
             }}
           >
-            <span aria-hidden='true'>↑</span>
+            <span
+              class='codicon codicon-chevron-up'
+              aria-hidden='true'
+            />
           </button>
           <button
-            class='button button--icon'
+            class='gw-toolbar-button'
             type='button'
             disabled={props.index() === props.sourceCount - 1}
             aria-label={props.labels.controls.moveDown}
@@ -79,10 +85,13 @@ export function SourceCard(props: {
               props.handlers.onMove(props.source.sourceId, 1);
             }}
           >
-            <span aria-hidden='true'>↓</span>
+            <span
+              class='codicon codicon-chevron-down'
+              aria-hidden='true'
+            />
           </button>
           <button
-            class='button button--icon button--danger'
+            class='gw-toolbar-button button--danger'
             type='button'
             aria-label={`${props.labels.controls.removeSource}: ${props.source.fileName}`}
             title={props.labels.controls.removeSource}
@@ -90,7 +99,10 @@ export function SourceCard(props: {
               props.handlers.onRemove(props.source.sourceId);
             }}
           >
-            <span aria-hidden='true'>×</span>
+            <span
+              class='codicon codicon-close'
+              aria-hidden='true'
+            />
           </button>
         </div>
       </div>

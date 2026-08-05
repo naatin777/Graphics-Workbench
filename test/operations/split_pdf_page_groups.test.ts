@@ -146,7 +146,6 @@ suite('PDFページグループ分割', () => {
       },
       preview: {
         title: 'Preview',
-        description: 'Preview the source PDF.',
         ariaLabel: 'PDF preview',
         renderError: 'Could not render the PDF.',
         applyError: 'Preview must finish before applying.',

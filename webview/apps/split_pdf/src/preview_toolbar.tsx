@@ -14,7 +14,6 @@ export function PreviewToolbar(props: {
     <div class='pdf-preview__toolbar'>
       <div>
         <h2>{props.labels.preview.title}</h2>
-        <p>{props.labels.preview.description}</p>
       </div>
       <div class='preview-tools'>
         <div

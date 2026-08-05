@@ -372,13 +372,16 @@
   position: relative;
 }
 
-.preview-page[data-current='true'] {
+.preview-page[data-current='true'],
+.pdf-page[data-current='true'] {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: 3px;
 }
 
 body.vscode-high-contrast .preview-page[data-current='true'],
-body.vscode-high-contrast-light .preview-page[data-current='true'] {
+body.vscode-high-contrast-light .preview-page[data-current='true'],
+body.vscode-high-contrast .pdf-page[data-current='true'],
+body.vscode-high-contrast-light .pdf-page[data-current='true'] {
   outline-width: 2px;
 }
 

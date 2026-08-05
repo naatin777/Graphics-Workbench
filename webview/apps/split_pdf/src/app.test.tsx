@@ -18,7 +18,6 @@ const labels: SplitPdfLabels = {
   },
   preview: {
     title: 'Preview',
-    description: 'Preview the selected pages.',
     ariaLabel: 'PDF preview',
     renderError: 'Could not display the PDF',
     applyError: 'PDF preview must render before applying.',
@@ -87,7 +86,23 @@ describe('Split PDF Webview', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>';
     sendMessage.mockReset();
-    renderPdfPages.mockResolvedValue({ firstPageReady: Promise.resolve(), dispose: vi.fn<() => void>() });
+    renderPdfPages.mockImplementation(async (_src: unknown, container: unknown) => {
+      if (!(container instanceof HTMLElement)) {
+        throw new Error('Preview container was not rendered.');
+      }
+      for (let pageNumber = 1; pageNumber <= 4; pageNumber += 1) {
+        const frame = document.createElement('figure');
+        frame.className = 'pdf-page';
+        frame.dataset.pdfPage = pageNumber.toString();
+        const canvas = document.createElement('canvas');
+        canvas.dataset.pdfPage = pageNumber.toString();
+        canvas.dataset.pdfWidth = '600';
+        canvas.dataset.pdfHeight = '800';
+        frame.append(canvas);
+        container.append(frame);
+      }
+      return { firstPageReady: Promise.resolve(), dispose: vi.fn<() => void>() };
+    });
     const root = document.querySelector('#root');
 
     if (!root) {
@@ -157,6 +172,80 @@ describe('Split PDF Webview', () => {
     });
   });
 
+  test('tracks the current page and scrolls via the page navigator', async () => {
+    await flushPromises();
+    await nextFrame();
+
+    const pages = [...document.querySelectorAll<HTMLElement>('.pdf-page')];
+    expect(pages).toHaveLength(4);
+    const [page1, page2] = pages;
+    if (!page1 || !page2) {
+      throw new Error('Preview pages were not rendered.');
+    }
+
+    const preview = document.querySelector<HTMLElement>('.pdf-preview');
+    if (!preview) {
+      throw new Error('PDF preview was not rendered.');
+    }
+    mockLayout(preview, { top: 0, bottom: 100, width: 800 });
+    mockLayout(page1, { top: 0, bottom: 80, width: 100 });
+    mockLayout(page2, { top: 80, bottom: 160, width: 100 });
+
+    setInput(findInput('Pages 1'), '1-2');
+    await flushPromises();
+    await nextFrame();
+
+    expect(page1.dataset.current).toBe('true');
+    expect(page2.dataset.current).toBeUndefined();
+    expect(document.querySelector('.page-navigator__position')?.textContent).toBe('1 / 4');
+
+    const scrollIntoView = vi.fn();
+    page2.scrollIntoView = scrollIntoView;
+    const previous = document.querySelector<HTMLButtonElement>('button[aria-label="Previous page"]');
+    const next = document.querySelector<HTMLButtonElement>('button[aria-label="Next page"]');
+    if (!previous || !next) {
+      throw new Error('Page navigator buttons were not rendered.');
+    }
+
+    expect(previous.disabled).toBe(true);
+    expect(next.disabled).toBe(false);
+    next.click();
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  test('switching preview mode re-derives the current page from visible pages', async () => {
+    await flushPromises();
+    await nextFrame();
+
+    const pages = [...document.querySelectorAll<HTMLElement>('.pdf-page')];
+    const [page1, page2, page3, page4] = pages;
+    if (!page1 || !page2 || !page3 || !page4) {
+      throw new Error('Preview pages were not rendered.');
+    }
+    const preview = document.querySelector<HTMLElement>('.pdf-preview');
+    if (!preview) {
+      throw new Error('PDF preview was not rendered.');
+    }
+    mockLayout(preview, { top: 0, bottom: 100, width: 800 });
+    mockLayout(page1, { top: 0, bottom: 80, width: 100 });
+    mockLayout(page2, { top: 80, bottom: 160, width: 100 });
+    mockLayout(page3, { top: 160, bottom: 240, width: 100 });
+    mockLayout(page4, { top: 240, bottom: 320, width: 100 });
+
+    setInput(findInput('Pages 1'), '2-3');
+    await flushPromises();
+    await nextFrame();
+    expect(document.querySelector('.page-navigator__position')?.textContent).toBe('2 / 4');
+    expect(page2.dataset.current).toBe('true');
+
+    document.querySelector<HTMLButtonElement>('.segmented__button[aria-pressed="false"]')?.click();
+    await flushPromises();
+    await nextFrame();
+    expect(document.querySelector('.page-navigator__position')?.textContent).toBe('1 / 4');
+    expect(page1.dataset.current).toBe('true');
+    expect(page2.dataset.current).toBeUndefined();
+  });
+
   test('dragging the split divider resizes the preview pane', async () => {
     await flushPromises();
 
@@ -216,4 +305,24 @@ function dispatchEnter(input: HTMLInputElement): void {
 async function flushPromises(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
+}
+
+async function nextFrame(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+
+function mockLayout(element: HTMLElement, layout: { top: number; bottom: number; width: number }): void {
+  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+    top: layout.top,
+    bottom: layout.bottom,
+    left: 0,
+    right: layout.width,
+    x: 0,
+    y: layout.top,
+    width: layout.width,
+    height: layout.bottom - layout.top,
+    toJSON: () => ({}),
+  });
 }

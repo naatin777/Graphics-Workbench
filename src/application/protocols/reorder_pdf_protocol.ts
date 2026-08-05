@@ -21,7 +21,6 @@ export interface ReorderPdfLabels {
   };
   preview: {
     title: string;
-    description: string;
     ariaLabel: string;
     renderError: string;
     applyError: string;
@@ -149,7 +148,7 @@ function isReorderPdfLabels(value: unknown): value is ReorderPdfLabels {
 
   const groups = [
     ['header', ['title', 'description']],
-    ['preview', ['title', 'description', 'ariaLabel', 'renderError', 'applyError']],
+    ['preview', ['title', 'ariaLabel', 'renderError', 'applyError']],
     ['order', ['title', 'moveUp', 'moveDown', 'positionLabel']],
     ['validation', ['orderRequired', 'orderInvalid']],
     ['actions', ['apply', 'cancel']],
