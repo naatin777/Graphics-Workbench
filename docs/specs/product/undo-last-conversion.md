@@ -21,8 +21,10 @@
 ## 履歴の範囲
 
 - 取り消し履歴はextensionのセッション中だけ保持する。
-- extension restart後の履歴復元は行わない。
-- 履歴の保持数に機能上の固定上限は設けないが、backupは履歴が参照する間だけ保持する。
+- 履歴は最大10件まで保持し、作成時刻から24時間を超えたrecordは保持しない。上限またはretention期限を超えたrecordは、参照していたstaged backupごと破棄する。
+- extension restart後の履歴復元は行わない。Undo操作自体はrestart後には復元されない。
+- `workspaceState`のmanifest（`graphics-workbench.undoHistory`）はUndoの復元用ではなく、前回セッションから残ったstaged backupの孤立掃除用に保持する。manifestにはセッション内のrecord（最大10件・24時間以内）だけを書き、次回activation時にretention期限を過ぎたentryのbackupを掃除してentryを削除する。
+- cleanup失敗時は出力の取り消し結果は成功として扱う。ただし失敗は通知またはOutputへ記録する。
 
 ## 対象外
 

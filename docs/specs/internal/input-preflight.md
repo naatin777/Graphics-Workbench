@@ -33,12 +33,6 @@
 - SVG、Mermaid、Draw.io、EPSは各rendererまたは外部toolが処理する。
 - backend errorは入力pathとoperation contextを保ったまま上位へ伝播する。
 
-### Raw入力
-
-- sidecarのschemaはRaw readerが検証する。
-- sidecarから計算した期待byte長とRaw fileの実byte長は`openRasterInput`で比較する。
-- sidecarのworkspace境界だけは、readerを呼び出す前のsecurity guardとして確認する。
-
 ### output lifecycle
 
 - 変換はstaging内で行う。
