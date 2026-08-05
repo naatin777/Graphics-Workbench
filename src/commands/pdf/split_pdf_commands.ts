@@ -9,19 +9,23 @@ import {
   type SplitPdfHostToWebview,
   type SplitPdfLabels,
   type SplitPdfPageGroupRow,
+  type SplitPdfWebviewToHost,
 } from '../../application/protocols/split_pdf_protocol.js';
+import type { PdfPreviewSettings } from '../../application/protocols/pdf_preview_protocol.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { localeMap } from '../../locale_map.js';
 import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfJob } from '../../operations/pdf/split_pdf.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
-import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
+import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
+import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -154,19 +158,78 @@ async function runSplitPdfConfigureCommand(
   }
 
   const outputPathTemplate = createOutputPathPreviewTemplate(outputTemplate, inputUri, workspaceFolder);
-
+  const configuration = getCommandConfiguration(dependencies);
   const panelTitle = localeMap('submenu.splitPdf');
   const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'split_pdf');
-  const panel = vscode.window.createWebviewPanel(
-    'graphics-workbench.splitPdf.configure',
-    panelTitle,
-    vscode.ViewColumn.Active,
-    {
-      enableScripts: true,
+  startPdfConfigureSession({
+    panel: {
+      id: 'graphics-workbench.splitPdf.configure',
+      title: panelTitle,
+      appRoot,
       localResourceRoots: [appRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
     },
-  );
-  const initMessage: SplitPdfHostToWebview = {
+    webview: {
+      title: panelTitle,
+      appName: 'split_pdf',
+      extensionUri: context.extensionUri,
+      locale: vscode.env.language,
+    },
+    message: {
+      isWebviewToHostMessage: isSplitPdfWebviewToHostMessage,
+      isApplyMessage: isSplitApplyMessage,
+      buildInitMessage: (panel) =>
+        buildSplitPdfInitMessage({
+          panel,
+          appRoot,
+          inputUri,
+          pageCount,
+          outputPathTemplate,
+          preview: readPdfPreviewSettings(configuration),
+        }),
+      runApply: async (message, { panel, signal }) => {
+        await applyConfiguredSplit({
+          inputUri,
+          workspaceFolder,
+          outputTemplate,
+          pageCount,
+          rows: message.payload.rows,
+          panel,
+          signal,
+          ...(outputChannel !== undefined && { outputChannel }),
+        });
+      },
+      onPreviewLoadFailed: (message, channel) => {
+        if (message.type === 'previewLoadFailed') {
+          channel?.appendLine(`[split-pdf-configure] preview failure: ${message.payload.message}`);
+        }
+      },
+    },
+    error: {
+      operationName: 'split-pdf-configure',
+      cancelledMessage: userMessage('message.splitPdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.splitPdf.failed', reason),
+    },
+    ...(outputChannel !== undefined && { outputChannel }),
+  });
+}
+
+function isSplitApplyMessage(
+  message: SplitPdfWebviewToHost,
+): message is Extract<SplitPdfWebviewToHost, { type: 'apply' }> {
+  return message.type === 'apply';
+}
+
+function buildSplitPdfInitMessage(params: {
+  panel: vscode.WebviewPanel;
+  appRoot: vscode.Uri;
+  inputUri: vscode.Uri;
+  pageCount: number;
+  outputPathTemplate: string;
+  preview: PdfPreviewSettings;
+}): SplitPdfHostToWebview {
+  const { panel, appRoot, inputUri, pageCount, outputPathTemplate, preview } = params;
+
+  return {
     type: 'init',
     payload: {
       sourceId: 'source-1',
@@ -180,63 +243,10 @@ async function runSplitPdfConfigureCommand(
         standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
         wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
       },
-      preview: readPdfPreviewSettings(getCommandConfiguration(dependencies)),
+      preview,
       labels: splitPdfLabels(),
     },
   };
-
-  panel.webview.html = getWebviewHtml({
-    webview: panel.webview,
-    extensionUri: context.extensionUri,
-    title: panelTitle,
-    appName: 'split_pdf',
-    locale: vscode.env.language,
-  });
-
-  let isApplying = false;
-  panel.webview.onDidReceiveMessage((message: unknown) => {
-    if (!isSplitPdfWebviewToHostMessage(message)) {
-      return;
-    }
-
-    if (message.type === 'ready') {
-      // VS Code Webview.postMessage has no browser targetOrigin parameter.
-      // oxlint-disable-next-line unicorn/require-post-message-target-origin
-      void panel.webview.postMessage(initMessage);
-      return;
-    }
-
-    if (message.type === 'cancel') {
-      panel.dispose();
-      return;
-    }
-
-    if (message.type === 'previewLoadFailed') {
-      outputChannel?.appendLine(`[split-pdf-configure] preview failure: ${message.payload.message}`);
-      return;
-    }
-
-    if (isApplying) {
-      return;
-    }
-
-    isApplying = true;
-    void (async (): Promise<void> => {
-      try {
-        await applyConfiguredSplit({
-          inputUri,
-          workspaceFolder,
-          outputTemplate,
-          pageCount,
-          rows: message.payload.rows,
-          panel,
-          ...(outputChannel !== undefined && { outputChannel }),
-        });
-      } finally {
-        isApplying = false;
-      }
-    })();
-  });
 }
 
 async function applyConfiguredSplit(params: {
@@ -246,59 +256,45 @@ async function applyConfiguredSplit(params: {
   pageCount: number;
   rows: SplitPdfPageGroupRow[];
   panel: vscode.WebviewPanel;
+  signal: AbortSignal;
   outputChannel?: LineOutputChannel;
 }): Promise<void> {
-  const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, panel, outputChannel } = params;
-  const abortController = new AbortController();
-  const panelState = { disposed: false };
-  const panelDisposeSubscription = panel.onDidDispose(() => {
-    panelState.disposed = true;
-    abortController.abort();
-  });
+  const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, panel, signal, outputChannel } = params;
 
-  try {
-    validateConfiguredRows(rows, pageCount);
-    if (!outputTemplate.includes('${page}')) {
-      throw new Error('outputPath.splitPdf must contain ${page} for splitPdf.configure.');
-    }
+  validateConfiguredRows(rows, pageCount);
+  if (!outputTemplate.includes('${page}')) {
+    throw new Error('outputPath.splitPdf must contain ${page} for splitPdf.configure.');
+  }
 
-    const sourcePath = inputUri.fsPath;
-    const workspacePath = workspaceFolder.uri.fsPath;
-    const outputContext = {
-      workspacePath,
-      workspaceName: workspaceFolder.name,
-      sourcePath,
-    };
+  const sourcePath = inputUri.fsPath;
+  const workspacePath = workspaceFolder.uri.fsPath;
+  const outputContext = {
+    workspacePath,
+    workspaceName: workspaceFolder.name,
+    sourcePath,
+  };
 
-    for (const row of rows) {
-      const outputPath = resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
-      await assertWritablePathInWorkspace(outputPath, workspacePath);
-    }
+  for (const row of rows) {
+    const outputPath = resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
+    await assertWritablePathInWorkspace(outputPath, workspacePath);
+  }
 
-    abortController.signal.throwIfAborted();
-    if (panelState.disposed) {
-      return;
-    }
+  signal.throwIfAborted();
 
-    const outputs = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: userMessage('message.progress.splitPdf.title', 1),
-        cancellable: true,
-      },
-      async (progress, token) => {
-        const cancellationSubscription = token.onCancellationRequested(() => {
-          abortController.abort();
-        });
-
-        try {
-          if (token.isCancellationRequested) {
-            abortController.abort();
-          }
-
+  const outputs = await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: userMessage('message.progress.splitPdf.title', 1),
+      cancellable: true,
+    },
+    async (progress, token) => {
+      return withCancellationSignal(
+        token,
+        async (applySignal) => {
           progress.report({ message: userMessage('message.progress.preparePdfSplit') });
           const runtime: ConversionExecutionContext = {
-            signal: abortController.signal,
+            signal: applySignal,
+            ...createProgressReporters(progress),
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
           };
@@ -321,44 +317,32 @@ async function applyConfiguredSplit(params: {
             ],
             runtime,
           });
-        } finally {
-          cancellationSubscription.dispose();
-        }
-      },
-    );
+        },
+        signal,
+      );
+    },
+  );
 
-    const successMessage = userMessage('message.splitPdf.success', outputs.length);
-    let undoId: string;
+  const successMessage = userMessage('message.splitPdf.success', outputs.length);
+  let undoId: string;
 
-    try {
-      undoId = await recordConversionForUndo(outputs, outputChannel);
-    } catch (error) {
-      panel.dispose();
-      const message = error instanceof Error ? error.message : String(error);
-      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-      return;
-    }
-
-    const undoAction = userMessage('message.action.undo');
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
-
-    panel.dispose();
+  try {
+    undoId = await recordConversionForUndo(outputs, outputChannel);
   } catch (error) {
+    panel.dispose();
     const message = error instanceof Error ? error.message : String(error);
-    outputChannel?.appendLine(`[split-pdf-configure] failure: ${message}`);
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.splitPdf.cancelled'));
-      return;
-    }
-
-    await vscode.window.showErrorMessage(userMessage('message.splitPdf.failed', message));
-  } finally {
-    panelDisposeSubscription.dispose();
+    await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
+    return;
   }
+
+  const undoAction = userMessage('message.action.undo');
+  const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
+
+  if (selectedAction === undoAction) {
+    await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
+  }
+
+  panel.dispose();
 }
 
 function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri {

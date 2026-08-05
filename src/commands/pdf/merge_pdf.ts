@@ -6,17 +6,21 @@ import {
   isMergePdfWebviewToHostMessage,
   type MergePdfHostToWebview,
   type MergePdfLabels,
+  type MergePdfWebviewToHost,
 } from '../../application/protocols/merge_pdf_protocol.js';
+import type { PdfPreviewSettings } from '../../application/protocols/pdf_preview_protocol.js';
 import { localeMap } from '../../locale_map.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { mergePdf } from '../../operations/pdf/merge_pdf.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
-import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
+import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
+import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
+import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -95,88 +99,53 @@ export async function mergePdfConfigureCommand(
     }
 
     const workspace = await workspaceForSources(sourceUris);
+    const configuration = getCommandConfiguration(dependencies);
     const panelTitle = localeMap('submenu.mergePdf');
     const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'merge_pdf');
     const sourceById = new Map(sourceUris.map((sourceUri, index) => [`source-${index + 1}`, sourceUri]));
-    const panel = vscode.window.createWebviewPanel(
-      'graphics-workbench.mergePdf.configure',
-      panelTitle,
-      vscode.ViewColumn.Active,
-      {
-        enableScripts: true,
+    startPdfConfigureSession({
+      panel: {
+        id: 'graphics-workbench.mergePdf.configure',
+        title: panelTitle,
+        appRoot,
         localResourceRoots: [
           appRoot,
           ...sourceUris.map((sourceUri) => vscode.Uri.file(path.dirname(sourceUri.fsPath))),
         ],
       },
-    );
-
-    panel.webview.html = getWebviewHtml({
-      webview: panel.webview,
-      extensionUri: context.extensionUri,
-      title: panelTitle,
-      appName: 'merge_pdf',
-      locale: vscode.env.language,
-    });
-
-    const initMessage: MergePdfHostToWebview = {
-      type: 'init',
-      payload: {
-        sources: sourceUris.map((sourceUri, index) => ({
-          sourceId: `source-${index + 1}`,
-          fileName: path.basename(sourceUri.fsPath),
-          pdfSrc: panel.webview.asWebviewUri(sourceUri).toString(),
-        })),
-        workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(appRoot, 'pdf.worker.mjs')).toString(),
-        cMapUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'cmaps'),
-        standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
-        wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
-        preview: readPdfPreviewSettings(getCommandConfiguration(dependencies)),
-        labels: mergePdfLabels(),
+      webview: {
+        title: panelTitle,
+        appName: 'merge_pdf',
+        extensionUri: context.extensionUri,
+        locale: vscode.env.language,
       },
-    };
-    let isApplying = false;
-
-    panel.webview.onDidReceiveMessage((message: unknown) => {
-      if (!isMergePdfWebviewToHostMessage(message)) {
-        return;
-      }
-
-      if (message.type === 'ready') {
-        // VS Code Webview.postMessage has no browser targetOrigin parameter.
-        // oxlint-disable-next-line unicorn/require-post-message-target-origin
-        void panel.webview.postMessage(initMessage);
-        return;
-      }
-
-      if (message.type === 'cancel') {
-        panel.dispose();
-        return;
-      }
-
-      if (message.type === 'previewLoadFailed') {
-        outputChannel?.appendLine(`[merge-pdf-configure] preview failure: ${message.payload.message}`);
-        return;
-      }
-
-      if (isApplying) {
-        return;
-      }
-
-      isApplying = true;
-      void (async (): Promise<void> => {
-        try {
+      message: {
+        isWebviewToHostMessage: isMergePdfWebviewToHostMessage,
+        isApplyMessage: isMergeApplyMessage,
+        buildInitMessage: (panel) =>
+          buildMergePdfInitMessage({ panel, appRoot, sourceUris, preview: readPdfPreviewSettings(configuration) }),
+        runApply: async (message, { panel, signal }) => {
           await applyConfiguredMerge({
             sourceById,
             sourceIds: message.payload.sourceIds,
             workspace,
             panel,
+            signal,
             ...(outputChannel !== undefined && { outputChannel }),
           });
-        } finally {
-          isApplying = false;
-        }
-      })();
+        },
+        onPreviewLoadFailed: (message, channel) => {
+          if (message.type === 'previewLoadFailed') {
+            channel?.appendLine(`[merge-pdf-configure] preview failure: ${message.payload.message}`);
+          }
+        },
+      },
+      error: {
+        operationName: 'merge-pdf-configure',
+        cancelledMessage: userMessage('message.mergePdf.cancelled'),
+        failedMessage: (reason) => userMessage('message.mergePdf.failed', reason),
+      },
+      ...(outputChannel !== undefined && { outputChannel }),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -185,51 +154,74 @@ export async function mergePdfConfigureCommand(
   }
 }
 
+function isMergeApplyMessage(
+  message: MergePdfWebviewToHost,
+): message is Extract<MergePdfWebviewToHost, { type: 'apply' }> {
+  return message.type === 'apply';
+}
+
+function buildMergePdfInitMessage(params: {
+  panel: vscode.WebviewPanel;
+  appRoot: vscode.Uri;
+  sourceUris: vscode.Uri[];
+  preview: PdfPreviewSettings;
+}): MergePdfHostToWebview {
+  const { panel, appRoot, sourceUris, preview } = params;
+
+  return {
+    type: 'init',
+    payload: {
+      sources: sourceUris.map((sourceUri, index) => ({
+        sourceId: `source-${index + 1}`,
+        fileName: path.basename(sourceUri.fsPath),
+        pdfSrc: panel.webview.asWebviewUri(sourceUri).toString(),
+      })),
+      workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(appRoot, 'pdf.worker.mjs')).toString(),
+      cMapUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'cmaps'),
+      standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
+      wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
+      preview,
+      labels: mergePdfLabels(),
+    },
+  };
+}
+
 async function applyConfiguredMerge(params: {
   sourceById: ReadonlyMap<string, vscode.Uri>;
   sourceIds: string[];
   workspace: vscode.WorkspaceFolder;
   panel: vscode.WebviewPanel;
+  signal: AbortSignal;
   outputChannel?: LineOutputChannel;
 }): Promise<void> {
-  const { sourceById, sourceIds, workspace, panel, outputChannel } = params;
-  const abortController = new AbortController();
-  const panelState = { disposed: false };
-  const panelDisposeSubscription = panel.onDidDispose(() => {
-    panelState.disposed = true;
-    abortController.abort();
+  const { sourceById, sourceIds, workspace, panel, signal, outputChannel } = params;
+
+  const sourceUris = resolveConfiguredSources(sourceById, sourceIds);
+  const outputUri = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.file(path.join(workspace.uri.fsPath, 'merged.pdf')),
+    filters: { PDF: ['pdf'] },
+    saveLabel: 'Merge',
   });
 
-  try {
-    const sourceUris = resolveConfiguredSources(sourceById, sourceIds);
-    const outputUri = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(path.join(workspace.uri.fsPath, 'merged.pdf')),
-      filters: { PDF: ['pdf'] },
-      saveLabel: 'Merge',
-    });
+  if (!outputUri) {
+    return;
+  }
 
-    if (!outputUri || panelState.disposed) {
-      return;
-    }
+  signal.throwIfAborted();
 
-    const outputs = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: userMessage('message.progress.mergePdf.title', sourceUris.length),
-        cancellable: true,
-      },
-      async (_progress, token) => {
-        const cancellationSubscription = token.onCancellationRequested(() => {
-          abortController.abort();
-        });
-
-        try {
-          if (token.isCancellationRequested) {
-            abortController.abort();
-          }
-
+  const outputs = await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: userMessage('message.progress.mergePdf.title', sourceUris.length),
+      cancellable: true,
+    },
+    async (progress, token) => {
+      return withCancellationSignal(
+        token,
+        async (applySignal) => {
           const runtime: ConversionExecutionContext = {
-            signal: abortController.signal,
+            signal: applySignal,
+            ...createProgressReporters(progress),
             ...(outputChannel !== undefined && { outputChannel }),
             resolveConflicts: resolveOutputConflicts,
           };
@@ -239,44 +231,32 @@ async function applyConfiguredMerge(params: {
             workspacePath: workspace.uri.fsPath,
             runtime,
           });
-        } finally {
-          cancellationSubscription.dispose();
-        }
-      },
-    );
+        },
+        signal,
+      );
+    },
+  );
 
-    const successMessage = userMessage('message.mergePdf.success', sourceUris.length);
-    let undoId: string;
+  const successMessage = userMessage('message.mergePdf.success', sourceUris.length);
+  let undoId: string;
 
-    try {
-      undoId = await recordConversionForUndo(outputs, outputChannel);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-      panel.dispose();
-      return;
-    }
-
-    const undoAction = userMessage('message.action.undo');
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
-
-    panel.dispose();
+  try {
+    undoId = await recordConversionForUndo(outputs, outputChannel);
   } catch (error) {
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.mergePdf.cancelled'));
-      return;
-    }
-
     const message = error instanceof Error ? error.message : String(error);
-    outputChannel?.appendLine(`[merge-pdf-configure] failure: ${message}`);
-    await vscode.window.showErrorMessage(userMessage('message.mergePdf.failed', message));
-  } finally {
-    panelDisposeSubscription.dispose();
+    await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
+    panel.dispose();
+    return;
   }
+
+  const undoAction = userMessage('message.action.undo');
+  const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
+
+  if (selectedAction === undoAction) {
+    await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
+  }
+
+  panel.dispose();
 }
 
 function resolveConfiguredSources(sourceById: ReadonlyMap<string, vscode.Uri>, sourceIds: string[]): vscode.Uri[] {
