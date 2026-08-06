@@ -81,4 +81,38 @@ suite('runConversionLifecycleの成功後phase分離', () => {
       await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
+
+  test('Reveal in Explorer選択時に出力先をExplorerで表示する', async () => {
+    const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
+    const sandbox = createSandbox();
+    const temporaryDirectory = await mkdtemp(
+      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-lifecycle-phase-reveal-'),
+    );
+
+    try {
+      const sourcePath = path.join(temporaryDirectory, 'source.jpeg');
+      await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
+
+      sandbox
+        .stub(vscode.window, 'showInformationMessage')
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- showInformationMessage returns the clicked string item; sinon types it as MessageItem.
+        .resolves(localeMap('message.action.revealInExplorer') as unknown as vscode.MessageItem);
+      const executeCommand = sandbox.stub(vscode.commands, 'executeCommand');
+      executeCommand.callThrough();
+
+      await convertToPngCommand(vscode.Uri.file(sourcePath));
+
+      const revealCall = executeCommand.getCalls().find((call) => call.args[0] === 'revealInExplorer');
+      assert.ok(revealCall, 'revealInExplorerが呼ばれること');
+      const uri: vscode.Uri = revealCall.args[1];
+      assert.strictEqual(uri.scheme, 'file');
+      assert.strictEqual(uri.fsPath, path.join(temporaryDirectory, 'source.png'));
+
+      executeCommand.restore();
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
+    } finally {
+      sandbox.restore();
+      await rm(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
 });
