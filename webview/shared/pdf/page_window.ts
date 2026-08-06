@@ -21,3 +21,17 @@ export function calculatePageWindow(
 }
 
 export const MAX_RENDERED_PAGES = WINDOW_SIZE;
+
+export function insertPageFrameInOrder(container: HTMLElement, pageFrame: HTMLElement): void {
+  const pageNumber = Number(pageFrame.dataset.pdfPage);
+  for (const child of container.children) {
+    if (!(child instanceof HTMLElement)) {
+      continue;
+    }
+    if (Number(child.dataset.pdfPage) > pageNumber) {
+      child.before(pageFrame);
+      return;
+    }
+  }
+  container.append(pageFrame);
+}

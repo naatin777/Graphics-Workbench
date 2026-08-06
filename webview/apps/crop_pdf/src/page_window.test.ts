@@ -1,4 +1,4 @@
-import { calculatePageWindow } from '../../../shared/pdf/page_window';
+import { calculatePageWindow, insertPageFrameInOrder } from '../../../shared/pdf/page_window';
 
 describe('PDF preview page window', () => {
   test('keeps the rendered page count bounded for a large document', () => {
@@ -11,5 +11,26 @@ describe('PDF preview page window', () => {
 
   test('keeps the first page in the initial window', () => {
     expect(calculatePageWindow(10_000, 0, 900, 800)).toEqual({ start: 1, end: 24 });
+  });
+
+  test('keeps DOM order by page number after scrolling back to earlier pages', () => {
+    const container = document.createElement('div');
+    const createFrame = (pageNumber: number): HTMLElement => {
+      const frame = document.createElement('figure');
+      frame.dataset.pdfPage = pageNumber.toString();
+      return frame;
+    };
+
+    for (let pageNumber = 10; pageNumber <= 24; pageNumber += 1) {
+      insertPageFrameInOrder(container, createFrame(pageNumber));
+    }
+    for (let pageNumber = 1; pageNumber <= 9; pageNumber += 1) {
+      insertPageFrameInOrder(container, createFrame(pageNumber));
+    }
+
+    const order = [...container.children]
+      .filter((child): child is HTMLElement => child instanceof HTMLElement)
+      .map((child) => Number(child.dataset.pdfPage));
+    expect(order).toEqual(Array.from({ length: 24 }, (_, index) => index + 1));
   });
 });
