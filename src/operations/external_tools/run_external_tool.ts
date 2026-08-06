@@ -201,23 +201,35 @@ function createAbortError(): Error {
   return error;
 }
 
-export function terminateProcessTree(child: ChildProcess | undefined): void {
+// Declared as a structural subset so unit tests can pass a fake child.
+export function terminateProcessTree(
+  child: Pick<ChildProcess, 'pid' | 'exitCode' | 'signalCode' | 'kill'> | undefined,
+): void {
   const pid = child?.pid;
   if (child === undefined || pid === undefined) {
     return;
   }
 
   if (process.platform === 'win32') {
-    child.kill();
-    setTimeout(() => {
-      if (child.exitCode === null && child.signalCode === null) {
-        const taskkill = spawn('taskkill', ['/pid', String(pid), '/t', '/f'], {
-          windowsHide: true,
-          stdio: 'ignore',
-        });
-        taskkill.unref();
-      }
-    }, TERMINATION_GRACE_MS);
+    // taskkill /t /f terminates the whole tree (parent plus descendants) from
+    // the start; killing only the parent first lets Draw.io/Chromium children
+    // survive when the parent exits before the grace timer elapses. child.kill()
+    // remains as a fallback when taskkill cannot run or fails.
+    if (child.exitCode === null && child.signalCode === null) {
+      const taskkill = spawn('taskkill', ['/pid', String(pid), '/t', '/f'], {
+        windowsHide: true,
+        stdio: 'ignore',
+      });
+      taskkill.on('error', () => {
+        child.kill();
+      });
+      taskkill.on('exit', (code) => {
+        if (code !== 0) {
+          child.kill();
+        }
+      });
+      taskkill.unref();
+    }
     return;
   }
 
