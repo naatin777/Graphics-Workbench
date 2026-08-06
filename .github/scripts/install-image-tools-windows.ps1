@@ -91,17 +91,32 @@ $settings = [ordered]@{
 # not by the Extension Host suite (whose Draw.io oracle tests skip without it).
 if ($env:INSTALL_DRAWIO -eq '1') {
 	$drawioVersion = '31.1.5'
-	$drawioZip = Join-Path $env:RUNNER_TEMP 'drawio.zip'
-	$drawioRoot = Join-Path $env:RUNNER_TEMP 'drawio'
-	$drawioUrl = "https://github.com/jgraph/drawio-desktop/releases/download/v$drawioVersion/draw.io-$drawioVersion-windows.zip"
+	$drawioInstaller = Join-Path $env:RUNNER_TEMP 'draw.io-installer.exe'
+	$drawioUrl = "https://github.com/jgraph/drawio-desktop/releases/download/v$drawioVersion/draw.io-$drawioVersion-windows-installer.exe"
 
-	Write-Host 'Downloading Draw.io...'
-	Invoke-WebRequest $drawioUrl -OutFile $drawioZip
-	Expand-Archive $drawioZip -DestinationPath $drawioRoot -Force
+	Write-Host 'Downloading Draw.io installer...'
+	Invoke-WebRequest $drawioUrl -OutFile $drawioInstaller
+	$process = Start-Process -Wait -FilePath $drawioInstaller -ArgumentList '/S' -PassThru
+	if ($process.ExitCode -ne 0) {
+		throw "Draw.io installer failed with exit code $($process.ExitCode)"
+	}
 
-	$drawio = Get-ChildItem -Path $drawioRoot -Recurse -Filter 'draw*.exe' | Select-Object -First 1
+	$drawio = $null
+	foreach ($candidate in @(
+		(Join-Path $env:ProgramFiles 'draw.io\draw.io.exe'),
+		(Join-Path ${env:ProgramFiles(x86)} 'draw.io\draw.io.exe'),
+		(Join-Path $env:LOCALAPPDATA 'Programs\draw.io\draw.io.exe')
+	)) {
+		if (Test-Path $candidate) { $drawio = Get-Item $candidate; break }
+	}
 	if (-not $drawio) {
-		throw 'draw.io.exe not found after extracting the Draw.io zip'
+		$drawio = Get-ChildItem -Path $env:ProgramFiles -Recurse -Filter 'draw.io.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+	}
+	if (-not $drawio) {
+		$drawio = Get-ChildItem -Path $env:LOCALAPPDATA -Recurse -Filter 'draw.io.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+	}
+	if (-not $drawio) {
+		throw 'draw.io.exe not found after installing Draw.io'
 	}
 	$settings['graphics-workbench.execPath.drawio'] = $drawio.FullName
 }
