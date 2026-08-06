@@ -295,5 +295,6 @@ function reorderPdfLabels(): ReorderPdfLabels {
       apply: localeMap('webview.reorderPdf.apply'),
       cancel: localeMap('webview.reorderPdf.cancel'),
     },
+    tooManyPages: localeMap('webview.reorderPdf.tooManyPages'),
   };
 }

@@ -36,6 +36,7 @@ export function App(): JSX.Element {
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [applyError, setApplyError] = createSignal('');
+  const [tooManyPages, setTooManyPages] = createSignal(false);
   const [previewReady, setPreviewReady] = createSignal(false);
 
   let pdfPages: HTMLDivElement | undefined;
@@ -82,6 +83,7 @@ export function App(): JSX.Element {
       setFileName(payload.fileName);
       setPageCount(payload.pageCount);
       setApplyError('');
+      setTooManyPages(payload.pageCount > 32);
       setPreviewReady(false);
       const generation = previewGeneration + 1;
       previewGeneration = generation;
@@ -314,12 +316,13 @@ export function App(): JSX.Element {
               {pageCount()} {labels().order.positionLabel}
             </p>
 
+            {tooManyPages() && <p role='alert'>{labels().tooManyPages}</p>}
             {applyError() !== '' && <p role='alert'>{applyError()}</p>}
 
             <div class='reorder__actions'>
               <Button
                 variant='primary'
-                disabled={!previewReady()}
+                disabled={!previewReady() || tooManyPages()}
                 onClick={apply}
               >
                 {labels().actions.apply}
