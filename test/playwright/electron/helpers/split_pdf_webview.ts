@@ -31,7 +31,7 @@ export async function openSplitPdfConfigure(vscodeWindow: Page, fileName: string
   await splitPdfMenu.hover();
   await vscodeWindow.keyboard.press('ArrowRight');
 
-  const configureMenu = vscodeWindow.getByRole('menuitem', { name: 'Configure split' });
+  const configureMenu = vscodeWindow.getByRole('menuitem', { name: 'Choose Pages' });
   await expect(configureMenu).toBeVisible();
   await configureMenu.hover();
   await expect(configureMenu).toBeFocused();

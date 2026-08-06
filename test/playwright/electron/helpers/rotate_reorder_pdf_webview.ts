@@ -70,12 +70,12 @@ async function openConfigureWebview(
 }
 
 export async function openRotatePdfConfigure(vscodeWindow: Page, fileName: string): Promise<RotatePdfWebview> {
-  const frame = await openConfigureWebview(vscodeWindow, fileName, 'Rotate PDF', 'Rotate PDF...', /^Rotate PDF$/);
+  const frame = await openConfigureWebview(vscodeWindow, fileName, 'Rotate PDF', 'Choose Pages', /^Rotate PDF$/);
   return { frame, pages: frame.locator('.rotate__pages .pdf-page') };
 }
 
 export async function openReorderPdfConfigure(vscodeWindow: Page, fileName: string): Promise<ReorderPdfWebview> {
-  const frame = await openConfigureWebview(vscodeWindow, fileName, 'Reorder PDF', 'Reorder PDF...', /^Reorder PDF$/);
+  const frame = await openConfigureWebview(vscodeWindow, fileName, 'Reorder PDF', 'Reorder PDF Pages', /^Reorder PDF$/);
   return { frame, pages: frame.locator('.reorder__pages .pdf-page') };
 }
 

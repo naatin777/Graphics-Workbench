@@ -52,7 +52,7 @@ export async function openMergePdfConfigure(vscodeWindow: Page, fileNames: strin
   await mergePdfMenu.hover();
   await vscodeWindow.keyboard.press('ArrowRight');
 
-  const configureMenu = vscodeWindow.getByRole('menuitem', { name: 'Configure merge' });
+  const configureMenu = vscodeWindow.getByRole('menuitem', { name: 'Review Order' });
   await expect(configureMenu).toBeVisible();
   await configureMenu.hover();
   await expect(configureMenu).toBeFocused();
