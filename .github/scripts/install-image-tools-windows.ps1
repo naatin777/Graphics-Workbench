@@ -84,7 +84,7 @@ $settings = [ordered]@{
 	'graphics-workbench.execPath.pdftocairo' = $pdftocairo.FullName
 	'graphics-workbench.execPath.rsvgConvert' = $rsvgConvert
 	'graphics-workbench.execPath.qpdf' = $qpdf.FullName
-	'graphics-workbench.puppeteer.executablePath' = $chrome
+	'graphics-workbench.execPath.chrome' = $chrome
 }
 
 # Draw.io CLI is only needed by the packaged Playwright Draw.io -> PDF smoke,

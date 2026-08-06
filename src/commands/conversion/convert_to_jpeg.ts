@@ -5,7 +5,7 @@ import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
+import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executeJpegConversion } from '../../operations/conversion/convert_to_jpeg.js';
 import { planJpegConversionJobs } from './plan_jpeg_conversion_jobs.js';
 import { runSimpleRasterConversionCommand } from './run_raster_conversion_command.js';
@@ -26,7 +26,7 @@ export async function convertToJpegCommand(
     outputLabel: 'JPEG',
     prepare: (configuration) => ({
       defaultConfiguration: getDefaultConfiguration(),
-      mermaidTools: readMermaidPuppeteerOptions(configuration),
+      mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: readDrawioOptions(configuration),
       pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
       ghostscriptTools: {

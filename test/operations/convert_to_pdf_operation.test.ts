@@ -13,15 +13,12 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import sharp from 'sharp';
 import { PDFDocument } from 'pdf-lib';
 
-import {
-  convertToPdfFiles,
-  createSvgPuppeteerLaunchOptions,
-  validateSvgToPdfOptions,
-} from '../../src/operations/conversion/convert_to_pdf.js';
+import { convertToPdfFiles, validateSvgToPdfOptions } from '../../src/operations/conversion/convert_to_pdf.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
@@ -169,30 +166,63 @@ suite('PDF変換operation（PNG入力）', () => {
     }
   });
 
-  test('Firefox選択時は実行ファイルの指定を必須にする', () => {
+  test('Chrome backendはheadless印刷のCLI引数でSVGをPDFへ変換する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-svg-chrome-'));
+    const sourcePath = path.join(workspacePath, 'source.svg');
+    const outputPath = path.join(workspacePath, 'output.pdf');
+    const calls: { executable: string; args: string[] }[] = [];
+
+    try {
+      await writeFile(
+        sourcePath,
+        '<svg xmlns="http://www.w3.org/2000/svg" width="31" height="19"><rect width="31" height="19" /></svg>',
+      );
+
+      await convertToPdfFiles({
+        jobs: [{ sourcePath, outputPath, workspacePath }],
+        supportedExtensions: ['.svg'],
+        operationName: 'convert-svg-to-pdf',
+        tools: {
+          svgToPdfTools: {
+            engine: 'chrome',
+            rsvgConvertPath: 'rsvg-convert',
+            chromePath: '/opt/google-chrome',
+            runChrome: async (executable, args) => {
+              calls.push({ executable, args });
+              const pdf = await PDFDocument.create();
+              pdf.addPage([7, 11]);
+              const outputArgument = args.find((argument) => argument.startsWith('--print-to-pdf='));
+              assert.ok(outputArgument);
+              await writeFile(outputArgument.slice('--print-to-pdf='.length), await pdf.save());
+            },
+          },
+        },
+      });
+
+      const [call] = calls;
+      assert.strictEqual(calls.length, 1);
+      assert.strictEqual(call?.executable, '/opt/google-chrome');
+      assert.deepStrictEqual(call?.args.slice(0, 2), ['--headless', '--no-pdf-header-footer']);
+      assert.match(call?.args[2] ?? '', /^--print-to-pdf=.+result\.pdf$/u);
+      assert.strictEqual(call?.args[3], pathToFileURL(sourcePath).href);
+
+      const document = await PDFDocument.load(await readFile(outputPath));
+      assert.deepStrictEqual(document.getPage(0).getSize(), { width: 31, height: 19 });
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
+  test('Chrome方式ではChrome実行ファイルの指定を必須にする', () => {
     assert.throws(
       () =>
         validateSvgToPdfOptions({
-          engine: 'puppeteer',
+          engine: 'chrome',
           rsvgConvertPath: 'rsvg-convert',
-          puppeteerBrowser: 'firefox',
-          puppeteerBrowserChannel: 'chrome',
+          chromePath: '',
         }),
-      /puppeteer\.executablePath must be set/,
+      /Chrome executable is not configured/,
     );
-  });
-
-  test('FirefoxのPuppeteer起動には指定された実行ファイルを使う', () => {
-    const options = createSvgPuppeteerLaunchOptions({
-      engine: 'puppeteer',
-      rsvgConvertPath: 'rsvg-convert',
-      puppeteerBrowser: 'firefox',
-      puppeteerBrowserChannel: 'chrome',
-      puppeteerExecutablePath: '/opt/firefox/firefox',
-    });
-
-    assert.strictEqual(options.executablePath, '/opt/firefox/firefox');
-    assert.strictEqual('channel' in options, false);
   });
 });
 

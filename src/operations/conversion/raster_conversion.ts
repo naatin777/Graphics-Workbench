@@ -25,7 +25,6 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import type { DrawioBackend, GhostscriptBackend, MermaidBackend, PdftocairoBackend } from './tools/index.js';
 import { convertEpsToPdf, type EpsToPdfOptions } from './eps_to_pdf.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import { createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
@@ -341,7 +340,7 @@ async function writeMermaidAsRaster(request: RasterRenderRequest, context: Raste
         sourcePath: request.sourcePath,
         outputPath: asPngOutputPath(pngPath),
         outputFormat: 'png',
-        puppeteerConfig: createMermaidPuppeteerConfig(context.mermaidTools),
+        chromePath: context.mermaidTools.chromePath,
         theme: context.mermaidTools.theme,
         backgroundColor: context.mermaidTools.backgroundColor,
       },

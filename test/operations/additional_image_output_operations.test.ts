@@ -60,7 +60,7 @@ async function convertImage(
     jobs: [job],
     pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
     ghostscriptTools: { ghostscriptPath: 'gs' },
-    mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
+    mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
     drawioTools: { drawioPath: 'drawio' },
     runtime,
     runId: `${inputFormat}-${outputFormat}`,

@@ -6,7 +6,7 @@ import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
+import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executeAvifConversion, type AvifOutputOptions } from '../../operations/conversion/convert_to_avif.js';
 import { planAvifConversionJobs } from './plan_avif_conversion_jobs.js';
 import { runSimpleRasterConversionCommand } from './run_raster_conversion_command.js';
@@ -27,7 +27,7 @@ export async function convertToAvifCommand(
     outputLabel: 'AVIF',
     prepare: (configuration) => ({
       defaultConfiguration: getDefaultConfiguration(),
-      mermaidTools: readMermaidPuppeteerOptions(configuration),
+      mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: readDrawioOptions(configuration),
       avif: readAvifOutputOptions(configuration),
       pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },

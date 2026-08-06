@@ -2,8 +2,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument, type PDFPage } from 'pdf-lib';
-import { launch, type Browser, type LaunchOptions, type Page } from 'puppeteer-core';
 import sharp from 'sharp';
+import { pathToFileURL } from 'node:url';
 import { errorMessage, isAbortError } from '../../application/error_utils.js';
 
 import {
@@ -28,9 +28,7 @@ import { validateJobPaths } from '../pdf/pdf_utils.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
-import { sharedHeavyProcessLimiter } from '../external_tools/heavy_process_limiter.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import {
   runRsvgConvertWithAsciiScratch,
@@ -38,34 +36,15 @@ import {
 } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
-import { OperationCancelledError } from '../lifecycle/operation_cancelled_error.js';
 import type { DrawioBackend, MermaidBackend, SvgToPdfBackend } from './tools/index.js';
 
 const defaultSupportedImageExtensions = ['.png'] as const;
 const svgExtension = '.svg';
 
 export function validateSvgToPdfOptions(options: SvgToPdfBackend): void {
-  if (
-    options.engine === 'puppeteer' &&
-    options.puppeteerBrowser === 'firefox' &&
-    (options.puppeteerExecutablePath === undefined || options.puppeteerExecutablePath === '')
-  ) {
-    throw new Error('puppeteer.executablePath must be set when puppeteer.browser is firefox.');
+  if (options.engine === 'chrome' && options.chromePath === '') {
+    throw new Error('Chrome executable is not configured. Set graphics-workbench.execPath.chrome.');
   }
-}
-
-export function createSvgPuppeteerLaunchOptions(options: SvgToPdfBackend): LaunchOptions {
-  validateSvgToPdfOptions(options);
-  const executablePath = options.puppeteerExecutablePath;
-
-  return {
-    headless: true,
-    env: puppeteerLaunchEnv(),
-    browser: options.puppeteerBrowser,
-    ...(executablePath !== undefined && executablePath !== ''
-      ? { executablePath }
-      : { channel: options.puppeteerBrowserChannel }),
-  };
 }
 
 export interface ConvertToPdfJob {
@@ -365,7 +344,7 @@ async function writeMermaidAsPdf(
         sourcePath,
         outputPath: asPdfOutputPath(outputPath),
         outputFormat: 'pdf',
-        puppeteerConfig: createMermaidPuppeteerConfig(mermaid),
+        chromePath: mermaid?.chromePath ?? '',
         theme: mermaid?.theme ?? 'default',
         backgroundColor: mermaid?.backgroundColor ?? 'white',
       },
@@ -516,12 +495,12 @@ async function writeSvgAsPdf({
   scratchOptions,
 }: WriteSvgAsPdfOptions): Promise<void> {
   const options = svgToPdf ?? {
-    engine: 'puppeteer',
+    engine: 'chrome',
     rsvgConvertPath: 'rsvg-convert',
-    puppeteerBrowser: 'chrome',
-    puppeteerBrowserChannel: 'chrome',
+    chromePath: '',
   };
   const size = await readSvgSize(sourcePath);
+  validateSvgToPdfOptions(options);
 
   signal?.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
@@ -530,7 +509,7 @@ async function writeSvgAsPdf({
 
   await (options.engine === 'rsvg-convert'
     ? writeSvgAsPdfWithRsvgConvert(sourcePath, outputPath, options, scratchOptions, signal)
-    : writeSvgAsPdfWithPuppeteer(sourcePath, outputPath, size, options, signal));
+    : writeSvgAsPdfWithChrome(sourcePath, outputPath, options, signal));
 
   signal?.throwIfAborted();
   await normalizePdfPageSize(outputPath, size.width, size.height);
@@ -574,128 +553,27 @@ async function executeRsvgConvert(executable: string, args: string[], signal?: A
   });
 }
 
-async function writeSvgAsPdfWithPuppeteer(
+async function writeSvgAsPdfWithChrome(
   sourcePath: string,
   outputPath: string,
-  size: { width: number; height: number },
   options: SvgToPdfBackend,
   signal?: AbortSignal,
 ): Promise<void> {
-  const rawSvg = await readFile(sourcePath, 'utf8');
-  const svg = rawSvg.replace(/^<\?xml[^>]*\?>/i, '').trim();
   signal?.throwIfAborted();
-
-  let browser: Browser | undefined;
-  let page: Page | undefined;
-  let rejectAbort: ((error: Error) => void) | undefined;
-  let renderingAborted = false;
-  const abortPromise =
-    signal === undefined
-      ? undefined
-      : new Promise<never>((_resolve, reject) => {
-          rejectAbort = reject;
-        });
-  const abort = (): void => {
-    renderingAborted = true;
-    rejectAbort?.(new OperationCancelledError('SVG PDF rendering was cancelled.'));
-    void closePage(page);
-    void closeBrowser(browser);
-  };
-  const isRenderingAborted = (): boolean => renderingAborted || signal?.aborted === true;
-
-  try {
-    signal?.addEventListener('abort', abort, { once: true });
-    const render = (async (): Promise<void> => {
-      try {
-        browser = await launch(createSvgPuppeteerLaunchOptions(options));
-        if (isRenderingAborted()) {
-          throw new OperationCancelledError('SVG PDF rendering was cancelled.');
-        }
-
-        page = await browser.newPage();
-        if (isRenderingAborted()) {
-          throw new OperationCancelledError('SVG PDF rendering was cancelled.');
-        }
-        await page.setJavaScriptEnabled(false);
-        await page.setRequestInterception(true);
-        page.on('request', (request) => {
-          // The SVG is injected as inline content. No network or subframe navigation
-          // is required, including requests created from foreignObject content.
-          void (async (): Promise<void> => {
-            try {
-              await request.abort();
-            } catch {
-              // The request may already be aborted by Puppeteer during page teardown.
-            }
-          })();
-        });
-        await page.setContent(svgPageHtml(svg, size), { waitUntil: 'load' });
-        signal?.throwIfAborted();
-        await page.pdf({
-          path: outputPath,
-          width: `${size.width / 72}in`,
-          height: `${size.height / 72}in`,
-          margin: { top: '0', right: '0', bottom: '0', left: '0' },
-          printBackground: true,
-          preferCSSPageSize: false,
-        });
-      } finally {
-        // The outer race may have returned before launch/newPage completed. Keep
-        // cleanup here so late-arriving handles are closed as well.
-        await closePage(page);
-        await closeBrowser(browser);
-      }
-    })();
-    await sharedHeavyProcessLimiter.run(
-      async () => (abortPromise === undefined ? render : Promise.race([render, abortPromise])),
-      signal,
-    );
-  } finally {
-    signal?.removeEventListener('abort', abort);
-    await closePage(page);
-    await closeBrowser(browser);
-  }
+  await (options.runChrome ?? executeChrome)(
+    options.chromePath,
+    ['--headless', '--no-pdf-header-footer', `--print-to-pdf=${outputPath}`, pathToFileURL(sourcePath).href],
+    signal,
+  );
 }
 
-async function closeBrowser(browser: Browser | undefined): Promise<void> {
-  try {
-    await browser?.close();
-  } catch {
-    // Browser cleanup is best effort after PDF generation or cancellation.
-  }
-}
-
-async function closePage(page: Page | undefined): Promise<void> {
-  try {
-    await page?.close();
-  } catch {
-    // Page cleanup is best effort after cancellation.
-  }
-}
-
-function puppeteerLaunchEnv(): NodeJS.ProcessEnv {
-  const env = { ...process.env };
-  delete env.ELECTRON_RUN_AS_NODE;
-  return env;
-}
-
-function svgPageHtml(svg: string, size: { width: number; height: number }): string {
-  return [
-    '<!doctype html>',
-    '<html>',
-    '<head>',
-    '<meta charset="utf-8">',
-    '<style>',
-    '@page { margin: 0; }',
-    `html, body { margin: 0; width: ${size.width}px; height: ${size.height}px; overflow: hidden; }`,
-    'svg { display: block; width: 100%; height: 100%; }',
-    '</style>',
-    '</head>',
-    '<body>',
-    svg,
-    '</body>',
-    '</html>',
-  ].join('');
+async function executeChrome(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
+  await runExternalTool({
+    toolName: 'chrome',
+    executable,
+    args,
+    ...(signal === undefined ? {} : { signal }),
+  });
 }
 
 export async function validateGeneratedPdf(outputPath: string): Promise<void> {

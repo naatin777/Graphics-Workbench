@@ -48,7 +48,7 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは既に `convertDr
 
 1. 各入力画像を既存の経路で単ページPDFへ変換する
    - ラスター画像: `writeRasterImageAsPdf`（sharp + pdf-lib）
-   - SVG: `writeSvgAsPdf`（rsvg-convert または Puppeteer）
+   - SVG: `writeSvgAsPdf`（rsvg-convert またはChrome headless CLI）
    - EPS: `writeEpsAsPdf`（Ghostscript pdfwrite → pdf-lib copy）
 2. 生成された中間PDFを pdf-lib の `copyPages` で1つの `PDFDocument` にマージする
 3. 結合PDFを staging へ保存し、commit する

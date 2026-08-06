@@ -72,7 +72,6 @@
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.16.0",
     "pdf-lib": "^1.17.1",
-    "puppeteer-core": "^25.4.0",
     "sharp": "^0.35.3",
     "xml2js": "^0.6.2"
   },
@@ -625,6 +624,12 @@
           "scope": "machine",
           "description": "%config.execPath.rsvgConvert%"
         },
+        "graphics-workbench.execPath.chrome": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "%config.execPath.chrome%"
+        },
         "graphics-workbench.execPath.qpdf": {
           "type": "string",
           "default": "qpdf",
@@ -721,10 +726,10 @@
         "graphics-workbench.convertToPdf.svg.engine": {
           "type": "string",
           "enum": [
-            "puppeteer",
+            "chrome",
             "rsvg-convert"
           ],
-          "default": "puppeteer",
+          "default": "chrome",
           "description": "%config.convertToPdf.svg.engine%"
         },
         "graphics-workbench.mermaid.theme": {
@@ -765,21 +770,6 @@
             "type": "string"
           },
           "description": "%config.insertLatex.imageTemplate%"
-        },
-        "graphics-workbench.puppeteer.executablePath": {
-          "type": "string",
-          "default": "",
-          "scope": "machine",
-          "description": "%config.puppeteer.executablePath%"
-        },
-        "graphics-workbench.puppeteer.browser": {
-          "type": "string",
-          "enum": [
-            "chrome",
-            "firefox"
-          ],
-          "default": "chrome",
-          "description": "%config.puppeteer.browser%"
         },
         "graphics-workbench.convertToWebp.effort": {
           "type": "integer",

@@ -164,11 +164,13 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
             return;
           }
           if (code !== 0) {
-            finishFailure(
+            const error = Object.assign(
               new Error(
                 `${options.toolName} failed (exited with code ${code ?? 'unknown'}, signal ${signal ?? 'none'})`,
               ),
+              { stderr: decodeOutput(stderrAccumulator) },
             );
+            finishFailure(error);
             return;
           }
           if (!settled) {

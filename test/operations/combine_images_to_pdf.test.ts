@@ -190,8 +190,7 @@ suite('画像→1PDF結合', () => {
       const svgToPdfTools: SvgToPdfBackend = {
         engine: 'rsvg-convert',
         rsvgConvertPath: 'configured-rsvg-convert',
-        puppeteerBrowser: 'chrome',
-        puppeteerBrowserChannel: 'chrome',
+        chromePath: '',
         runRsvgConvert: async (executable, args) => {
           calls.push([executable, ...args]);
           const outputArgumentIndex = args.indexOf('--output') + 1;
@@ -437,8 +436,7 @@ function createStubSvgToPdfOptions(): SvgToPdfBackend {
   return {
     engine: 'rsvg-convert',
     rsvgConvertPath: 'configured-rsvg-convert',
-    puppeteerBrowser: 'chrome',
-    puppeteerBrowserChannel: 'chrome',
+    chromePath: '',
     runRsvgConvert: async (_executable, args) => {
       const outputArgumentIndex = args.indexOf('--output') + 1;
       const outputPath = args[outputArgumentIndex];

@@ -33,8 +33,8 @@ stagingの寿命とactivation時のcleanupは、[Safe Mode internal contract](sa
 
 - 形式ごとの変換処理はformat-specific moduleに閉じ込める。
 - Draw.ioから画像への変換は、数式を保持するためPDF中間artifactを経由する既存経路を使用する。
-- Mermaid入力の変換は`@mermaid-js/mermaid-cli`をdependency boundaryとし、SVG・PNG・PDFの直接出力と、既存画像変換経路へ渡す処理を分ける。
-- Mermaid CLIが使用するbrowserの解決はMermaid processing moduleが担当し、ユーザーへ別CLIのinstallを要求しない。
+- Mermaid入力の変換は`@mermaid-js/mermaid-cli`の同梱`mmdc` entrypointを外部processとして実行し、SVG・PNG・PDFの直接出力と、既存画像変換経路へ渡す処理を分ける。
+- Mermaid CLIとSVG→PDFのChrome backendは`execPath.chrome`を共有し、Chrome実行は共通external tool runnerを通す。ユーザーへ`mmdc`の別途installは要求しない。
 
 ## Shared operation contracts
 

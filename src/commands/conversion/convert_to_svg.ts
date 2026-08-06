@@ -16,7 +16,7 @@ import {
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
-import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
+import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
@@ -55,7 +55,7 @@ export async function convertToSvgCommand(
 
     const configuration = getCommandConfiguration(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
-    const mermaidTools = readMermaidPuppeteerOptions(configuration);
+    const mermaidTools = readMermaidCliOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
     const ghostscriptTools = {

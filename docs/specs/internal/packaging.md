@@ -85,7 +85,7 @@ CIのnpm download cacheは各jobで`actions/cache@v4`を使って有効化する
 install scriptの承認は`package.json`の`allowScripts`で管理する。現在のdependency treeを`npm ci`後の`npm install-scripts ls`で列挙し、install scriptを持つpackageは`@vscode/vsce-sign`、`keytar`、`lefthook`、`puppeteer`の4つ(すべてbuild・package・testで実行不要と実測)。`sharp`はprebuilt binary(`@img/sharp-*` optionalDependencies)を使いinstall scriptを持たないため承認対象外。承認は次の基準とする。
 
 - `lefthook: true` — direct devDependency。localのgit hook installのみ。build/package/testに影響しない。version付きapproval(`lefthook@2.1.10: true`)はnpm 12.0.1のlockfile identityと一致せず承認されないため、dependencyをexact pin(`lefthook: "2.1.10"`)してname承認とする。
-- `puppeteer@25.3.0: false` — mermaid-cli経由のtransitive。postinstallはChromium download。extensionはpuppeteer-coreでsystem Chrome(channel)またはuser executablePathを使うためbundled Chromeは不要。versionをpinしてdeny。
+- `puppeteer@25.3.0: false` — mermaid-cli経由のtransitive。postinstallはChromium download。extensionはmmdcとChromeのdirect CLI実行にsystem Chromeまたは`execPath.chrome`を使うためbundled Chromeは不要。versionをpinしてdeny。
 - `keytar: false` — `@vscode/vsce`経由のtransitive・optional・dev。native credential storage bindingのbuild。packagingはmarketplace認証を使わないため不要。
 - `@vscode/vsce-sign: false` — `@vscode/vsce`経由のtransitive。VSIX署名用postinstall。`vsce package`は署名なしで動作するため不要。
 

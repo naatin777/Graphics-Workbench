@@ -192,8 +192,7 @@ function svgToPdfOptions(options: CombineImagesToPdfOptions): SvgToPdfBackend {
   return {
     engine: 'rsvg-convert',
     rsvgConvertPath: options.tools?.rsvgConvertPath ?? 'rsvg-convert',
-    puppeteerBrowser: 'chrome',
-    puppeteerBrowserChannel: 'chrome',
+    chromePath: '',
     ...(options.tools?.runRsvgConvert !== undefined && { runRsvgConvert: options.tools.runRsvgConvert }),
   };
 }

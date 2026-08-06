@@ -20,7 +20,7 @@ command層で`AbortController`を作成し、VS Codeの`CancellationToken`から
 - 外部toolの診断scratchは通常のoperation stagingと分離して管理する。
 - 外部toolは共通runnerのtool別既定timeoutを使用し、cancel/timeout時は通常終了要求、短い猶予、プロセスツリー強制終了の順で停止する。
 - Unixでは外部toolを専用process groupで起動し、Windowsでは`taskkill /t /f`をfallbackとして使用する。
-- PuppeteerのSVG PDF処理はsignal発火時にrender待機と並行してpage/browserのcloseを開始し、終了後のbrowser cleanupを必ず行う。
+- mmdcとChromeのheadless PDF処理は外部toolとして実行し、signal発火時にprocess treeの終了を要求する。
 
 ## Clipboard Paste transaction
 

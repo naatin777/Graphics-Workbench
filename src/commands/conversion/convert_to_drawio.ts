@@ -8,7 +8,7 @@ import {
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
-import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
+import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/conversion/convert_to_drawio.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
@@ -105,7 +105,7 @@ async function convertToDrawioWithDefaults(
             drawioPath,
             ghostscriptPath: readGhostscriptExecutablePath(configuration),
             pdftocairoPath: readPdftocairoExecutablePath(configuration),
-            mermaidTools: readMermaidPuppeteerOptions(configuration),
+            mermaidTools: readMermaidCliOptions(configuration),
           },
           maxInputPixels: getMaxInputPixels(configuration),
           runtime,

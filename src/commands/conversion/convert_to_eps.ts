@@ -13,7 +13,7 @@ import {
 } from '../../application/policy/source_format.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
-import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
+import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
@@ -57,7 +57,7 @@ export async function convertToEpsCommand(
           tools: {
             ghostscriptPath: readGhostscriptExecutablePath(configuration),
             svgToPdfTools,
-            mermaidTools: readMermaidPuppeteerOptions(configuration),
+            mermaidTools: readMermaidCliOptions(configuration),
           },
           maxInputPixels: getMaxInputPixels(configuration),
           platform: process.platform,

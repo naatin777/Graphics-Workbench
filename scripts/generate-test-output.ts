@@ -1,9 +1,9 @@
 import { execFile } from 'node:child_process';
-import { mkdir, readdir, readFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { run as runMermaidCli } from '@mermaid-js/mermaid-cli';
 import sharp, { type Sharp } from 'sharp';
 
 const execFileAsync = promisify(execFile);
@@ -96,21 +96,39 @@ async function generateEpsOutputs(): Promise<void> {
 }
 
 async function generateMermaidOutputs(): Promise<void> {
-  for (const inputPath of await listFiles(path.join(inputDirectory, 'mermaid'))) {
-    const outputDataDirectory = path.join(outputDirectory, 'mermaid', sourceName(inputPath));
-    await mkdir(outputDataDirectory, { recursive: true });
+  const configDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-mermaid-fixtures-'));
+  const mermaidConfigPath = path.join(configDirectory, 'mermaid-config.json');
+  const chromeConfigPath = path.join(configDirectory, 'chrome-config.json');
 
-    for (const outputFormat of ['png', 'svg', 'pdf'] as const) {
-      await runMermaidCli(inputPath, path.join(outputDataDirectory, `expected.${outputFormat}`), {
-        outputFormat,
-        puppeteerConfig: { headless: true, channel: 'chrome' },
-        quiet: true,
-        parseMMDOptions: {
-          backgroundColor: 'white',
-          mermaidConfig: { theme: 'default' },
-        },
-      });
+  try {
+    await writeFile(mermaidConfigPath, JSON.stringify({ theme: 'default' }), 'utf8');
+    await writeFile(chromeConfigPath, JSON.stringify({ headless: true, channel: 'chrome' }), 'utf8');
+
+    for (const inputPath of await listFiles(path.join(inputDirectory, 'mermaid'))) {
+      const outputDataDirectory = path.join(outputDirectory, 'mermaid', sourceName(inputPath));
+      await mkdir(outputDataDirectory, { recursive: true });
+
+      for (const outputFormat of ['png', 'svg', 'pdf'] as const) {
+        await execFileAsync(process.execPath, [
+          path.join(repositoryDirectory, 'node_modules', '@mermaid-js', 'mermaid-cli', 'src', 'cli.js'),
+          '--input',
+          inputPath,
+          '--output',
+          path.join(outputDataDirectory, `expected.${outputFormat}`),
+          '--outputFormat',
+          outputFormat,
+          '--backgroundColor',
+          'white',
+          '--configFile',
+          mermaidConfigPath,
+          '--puppeteerConfigFile',
+          chromeConfigPath,
+          '--quiet',
+        ]);
+      }
     }
+  } finally {
+    await rm(configDirectory, { recursive: true, force: true });
   }
 }
 

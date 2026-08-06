@@ -3,7 +3,7 @@
 // - 利用可能 / 未導入(ENOENT) / パス設定無効 / タイムアウト / 非ゼロ終了 を区別すること
 // - 複数ツールのうち一部だけ利用可能な場合、それぞれ独立して判定されること
 // - 組み込み機能（画像変換・PDF結合/分割/並び替え）は常に利用可能であること
-// - Firefox指定時にブラウザ実行パス未設定なら不足と判定すること
+// - Chrome実行パスを設定した場合にその値を確認すること
 //
 // Mocked:
 // - なし。probe関数を注入して外部ツール実行を模擬する
@@ -147,27 +147,13 @@ suite('環境チェック（機能単位の状態判定）', () => {
     assert.strictEqual(map.get(FEATURE_MERMAID)?.status, 'available');
   });
 
-  test('Firefox指定時にブラウザ実行パスが未設定なら不足と判定される', async () => {
-    const entries = await checkWithProbe(async () => {}, {
-      'puppeteer.browser': 'firefox',
-      'puppeteer.executablePath': '',
-    });
-
-    const map = entryMap(entries);
-    assert.strictEqual(map.get(FEATURE_MERMAID)?.status, 'unavailable');
-    assert.strictEqual(
-      map.get(FEATURE_MERMAID)?.detail,
-      userMessage('message.environmentCheck.browserFirefoxNeedsPath'),
-    );
-  });
-
   test('設定済みのブラウザ実行パスを使う場合はプローブ対象になる', async () => {
     const probed: string[] = [];
     const entries = await checkWithProbe(
       async (params) => {
         probed.push(params.toolName);
       },
-      { 'puppeteer.executablePath': '/opt/custom-chrome' },
+      { 'execPath.chrome': '/opt/custom-chrome' },
     );
 
     const map = entryMap(entries);
@@ -176,13 +162,13 @@ suite('環境チェック（機能単位の状態判定）', () => {
   });
 
   test('rsvg-convertエンジン指定時のみSVG変換チェックを追加する', async () => {
-    const puppeteerProbed: string[] = [];
-    const puppeteerEntries = await checkWithProbe(async (params) => {
-      puppeteerProbed.push(params.toolName);
+    const chromeProbed: string[] = [];
+    const chromeEntries = await checkWithProbe(async (params) => {
+      chromeProbed.push(params.toolName);
     });
 
-    assert.ok(!entryMap(puppeteerEntries).has(FEATURE_SVG_TO_PDF));
-    assert.ok(!puppeteerProbed.includes(TOOL_RSVG));
+    assert.ok(!entryMap(chromeEntries).has(FEATURE_SVG_TO_PDF));
+    assert.ok(!chromeProbed.includes(TOOL_RSVG));
 
     const rsvgProbed: string[] = [];
     const rsvgEntries = await checkWithProbe(
