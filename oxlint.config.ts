@@ -550,6 +550,10 @@ export default defineConfig({
         'import/named': 'off',
         // The JSON settings and parsed process.env values in this test harness are untyped JS.
         'typescript/no-unsafe-member-access': 'off',
+        'typescript/no-unsafe-call': 'off',
+        'typescript/no-unsafe-argument': 'off',
+        'typescript/no-unsafe-assignment': 'off',
+        'typescript/no-unsafe-return': 'off',
       },
     },
     {

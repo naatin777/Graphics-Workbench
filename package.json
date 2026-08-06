@@ -55,7 +55,7 @@
     "check:webview-warnings": "node scripts/check-webview-warnings.mjs",
     "check:unused": "knip",
     "check:prs-landed": "node scripts/check-prs-landed.mjs",
-    "test:scripts": "node --experimental-strip-types --test .github/scripts/*.test.mjs scripts/*.test.mjs",
+    "test:scripts": "npm run compile:test && node --experimental-strip-types --test .github/scripts/*.test.mjs scripts/*.test.mjs && node --experimental-test-module-mocks --test out/test/operations/terminate_process_tree.test.js",
     "generate:test-output": "node --experimental-strip-types scripts/generate-test-output.ts",
     "check:all": "npm run check && npm run check:extension-meta && npm run check:nls && npm run check:unused && npm run check:webview-warnings && npm run test:scripts",
     "check:fix": "npm run lint:fix && npm run format:fix",
