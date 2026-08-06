@@ -50,6 +50,7 @@ Taskは小さな作業手順やPR単位ではなく、達成する成果また�
 
 ### Implementation
 
+- [0222: Configure画面の共通実行サマリーを導入する](0222-add-configure-execution-summary.md) — Not Started
 - [0221: README用の操作スクリーンショットを追加する](0221-add-readme-screenshots.md) — Not Started
 
 ### Migration and conditional maintenance
