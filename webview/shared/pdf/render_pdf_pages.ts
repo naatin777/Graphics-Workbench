@@ -11,13 +11,10 @@ import {
   shouldUseWindowedRendering,
 } from './page_window';
 import { calculatePdfCanvasDimensions } from './canvas_limits';
-// Vite turns this worker query into an asset URL even though the source module has no default export.
-// oxlint-disable-next-line import/default
-import pdfJsWorkerUrl from './pdfjs_worker?worker&url';
 
 type PdfJs = typeof pdfjsModule;
 
-let pdfJsWorkerPromise: Promise<Worker> | undefined;
+const sharedPdfJsAssetsPath = '../pdfjs';
 const PAGE_GAP_PX = 12;
 
 export interface PdfRenderController {
@@ -31,12 +28,7 @@ export async function renderFirstPdfPage(
   options: PdfRenderOptions = {},
 ): Promise<void> {
   throwIfAborted(options.signal);
-  const pdfjs = await loadPdfJs();
-
-  const workerSrc = options.resources?.workerSrc;
-  if (workerSrc !== undefined && workerSrc !== '') {
-    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
-  }
+  const pdfjs = await loadPdfJs(options.resources?.workerSrc);
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
   let renderTask: ReturnType<PDFPageProxy['render']> | undefined;
@@ -79,12 +71,7 @@ export async function renderPdfPages(
   options: PdfRenderOptions = {},
 ): Promise<PdfRenderController> {
   throwIfAborted(options.signal);
-  const pdfjs = await loadPdfJs();
-
-  const workerSrc = options.resources?.workerSrc;
-  if (workerSrc !== undefined && workerSrc !== '') {
-    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
-  }
+  const pdfjs = await loadPdfJs(options.resources?.workerSrc);
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
   const abortLoading = (): void => {
@@ -445,24 +432,9 @@ function attachRenderSignal(controller: PdfRenderController, signal: AbortSignal
   };
 }
 
-async function loadPdfJs(): Promise<PdfJs> {
-  pdfjsModule.GlobalWorkerOptions.workerSrc = 'pdf.worker.mjs';
-  pdfjsModule.GlobalWorkerOptions.workerPort ??= await loadPdfJsWorker();
+async function loadPdfJs(workerSrc?: string): Promise<PdfJs> {
+  pdfjsModule.GlobalWorkerOptions.workerSrc = nonEmptyOrDefault(workerSrc, `${sharedPdfJsAssetsPath}/pdf.worker.mjs`);
   return pdfjsModule;
-}
-
-async function loadPdfJsWorker(): Promise<Worker> {
-  pdfJsWorkerPromise ??= (async (): Promise<Worker> => {
-    const response = await fetch(pdfJsWorkerUrl);
-    if (!response.ok) {
-      throw new Error(`Could not load the PDF.js worker: ${response.status}.`);
-    }
-
-    const workerBlobUrl = URL.createObjectURL(await response.blob());
-    return new Worker(workerBlobUrl, { type: 'module' });
-  })();
-
-  return pdfJsWorkerPromise;
 }
 
 interface PdfRenderOptions {
@@ -504,12 +476,14 @@ function createDocumentOptions(pdfSrc: string, options: PdfRenderOptions): Param
     url: pdfSrc,
     cMapPacked: true,
     useWorkerFetch: false,
-    ...(resources?.cMapUrl !== undefined && resources.cMapUrl !== '' ? { cMapUrl: resources.cMapUrl } : {}),
-    ...(resources?.standardFontDataUrl !== undefined && resources.standardFontDataUrl !== ''
-      ? { standardFontDataUrl: resources.standardFontDataUrl }
-      : {}),
-    ...(resources?.wasmUrl !== undefined && resources.wasmUrl !== '' ? { wasmUrl: resources.wasmUrl } : {}),
+    cMapUrl: nonEmptyOrDefault(resources?.cMapUrl, `${sharedPdfJsAssetsPath}/cmaps/`),
+    standardFontDataUrl: nonEmptyOrDefault(resources?.standardFontDataUrl, `${sharedPdfJsAssetsPath}/standard_fonts/`),
+    wasmUrl: nonEmptyOrDefault(resources?.wasmUrl, `${sharedPdfJsAssetsPath}/wasm/`),
   };
+}
+
+function nonEmptyOrDefault(value: string | undefined, fallback: string): string {
+  return value === undefined || value === '' ? fallback : value;
 }
 
 function renderPageToCanvasWithTask(
