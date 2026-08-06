@@ -4,7 +4,7 @@ import './install_map_get_or_insert_computed';
 import * as pdfjsModule from 'pdfjs-dist';
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 
-import { calculatePageWindow, MAX_RENDERED_PAGES } from './page_window';
+import { calculatePageWindow, insertPageFrameInOrder, MAX_RENDERED_PAGES } from './page_window';
 import { calculatePdfCanvasDimensions } from './canvas_limits';
 // Vite turns this worker query into an asset URL even though the source module has no default export.
 // oxlint-disable-next-line import/default
@@ -351,7 +351,7 @@ export async function renderPdfPages(
         if (!windowPageFrames.has(pageNumber)) {
           const pageFrame = createPageFrame(pageNumber);
           windowPageFrames.set(pageNumber, pageFrame);
-          pageWindow.append(pageFrame);
+          insertPageFrameInOrder(pageWindow, pageFrame);
         }
       }
 
