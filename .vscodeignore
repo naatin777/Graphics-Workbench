@@ -96,6 +96,37 @@ node_modules/@fortawesome/fontawesome-free/svgs-full/**
 **/node_modules/d3-*/**
 **/node_modules/dagre-d3-es/**
 **/node_modules/roughjs/**
+
+# Mermaid's browser ESM chunks also inline these transitive runtime modules.
+# Keep only the package entry points that Mermaid CLI resolves directly.
+node_modules/xml2js/lib/xml2js.bc.js
+**/node_modules/es-toolkit/**
+**/node_modules/dayjs/**
+**/node_modules/dompurify/**
+**/node_modules/lodash-es/**
+**/node_modules/khroma/**
+**/node_modules/marked/**
+**/node_modules/@upsetjs/**
+**/node_modules/@iconify/utils/**
+**/node_modules/@iconify/types/**
+**/node_modules/browserslist/**
+**/node_modules/caniuse-lite/**
+**/node_modules/update-browserslist-db/**
+**/node_modules/baseline-browser-mapping/**
+**/node_modules/electron-to-chromium/**
+
+# Mermaid CLI injects only this stylesheet; its JavaScript helpers and fallback
+# font formats are not needed by the Chromium-based renderer.
+node_modules/katex/dist/katex.js
+node_modules/katex/dist/katex.mjs
+node_modules/katex/dist/katex.min.js
+node_modules/katex/dist/katex.min.css
+node_modules/katex/dist/katex-swap.css
+node_modules/katex/dist/katex-swap.min.css
+node_modules/katex/dist/contrib/**
+node_modules/katex/src/**
+node_modules/katex/dist/fonts/**/*.ttf
+node_modules/katex/dist/fonts/**/*.woff
 .github/**
 .dockerignore
 docker/**
