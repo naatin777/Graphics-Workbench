@@ -97,8 +97,7 @@ suite('runConversionLifecycleの成功後phase分離', () => {
         .stub(vscode.window, 'showInformationMessage')
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- showInformationMessage returns the clicked string item; sinon types it as MessageItem.
         .resolves(localeMap('message.action.revealInExplorer') as unknown as vscode.MessageItem);
-      const executeCommand = sandbox.stub(vscode.commands, 'executeCommand');
-      executeCommand.callThrough();
+      const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').resolves(undefined);
 
       await convertToPngCommand(vscode.Uri.file(sourcePath));
 
