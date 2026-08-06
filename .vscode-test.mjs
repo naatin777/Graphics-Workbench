@@ -10,6 +10,22 @@ const userDataDirectory = path.resolve(repositoryDirectory, configuredUserDataDi
 const settingsSourcePath = path.join(repositoryDirectory, 'test', 'vscode-settings', 'settings.json');
 const settingsTargetPath = path.join(userDataDirectory, 'User', 'settings.json');
 const testWorkspaceDirectory = path.join(repositoryDirectory, 'test', 'workspace');
+// node:test suites (e.g. terminate_process_tree.test.ts) use module mocks and a
+// top-level dynamic import; they crash the Mocha extension host runner, so run
+// them under node --test (test:scripts) instead.
+const extensionHostTestFiles = collectTestFiles(repositoryDirectory, 'out/test');
+
+function collectTestFiles(rootDirectory, directory, files = []) {
+  for (const entry of readdirSync(path.join(rootDirectory, directory), { withFileTypes: true })) {
+    const relative = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      collectTestFiles(rootDirectory, relative, files);
+    } else if (entry.isFile() && entry.name.endsWith('.test.js') && entry.name !== 'terminate_process_tree.test.js') {
+      files.push(relative);
+    }
+  }
+  return files;
+}
 
 mkdirSync(testWorkspaceDirectory, { recursive: true });
 for (const entry of readdirSync(testWorkspaceDirectory)) {
@@ -57,7 +73,7 @@ function resolveExecutable(command) {
 export default defineConfig({
   tests: [
     {
-      files: 'out/test/**/*.test.js',
+      files: extensionHostTestFiles,
       version: '1.128.0',
       extensionDevelopmentPath: '.',
       srcDir: 'src',
