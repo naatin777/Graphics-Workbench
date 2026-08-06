@@ -106,9 +106,6 @@ suite('runConversionLifecycleの成功後phase分離', () => {
       const uri: vscode.Uri = revealCall.args[1];
       assert.strictEqual(uri.scheme, 'file');
       assert.strictEqual(uri.fsPath, path.join(temporaryDirectory, 'source.png'));
-
-      executeCommand.restore();
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
     } finally {
       sandbox.restore();
       await rm(temporaryDirectory, { recursive: true, force: true });
