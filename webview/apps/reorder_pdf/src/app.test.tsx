@@ -7,6 +7,7 @@ const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderBehavior = vi.hoisted(() => ({
   fail: false,
   disposeCount: 0,
+  pages: 4,
 }));
 
 class MockIntersectionObserver {
@@ -48,7 +49,7 @@ const renderPdfPages = vi.hoisted(() =>
     }
     if (container instanceof Element) {
       container.replaceChildren();
-      for (let page = 1; page <= 4; page += 1) {
+      for (let page = 1; page <= renderBehavior.pages; page += 1) {
         const figure = document.createElement('figure');
         figure.className = 'pdf-page';
         figure.dataset.pdfPage = String(page);
@@ -96,7 +97,6 @@ const labels: ReorderPdfLabels = {
     apply: 'Apply',
     cancel: 'Cancel',
   },
-  tooManyPages: 'Reorder is limited to 32 pages.',
 };
 
 const initMessage = {
@@ -191,6 +191,7 @@ beforeEach(async () => {
   renderPdfPages.mockClear();
   renderBehavior.fail = false;
   renderBehavior.disposeCount = 0;
+  renderBehavior.pages = 4;
   scrollTop = 0;
   document.body.innerHTML = '<div id="root"></div>';
 });
@@ -215,24 +216,93 @@ test('Applyで初期ページ順を送信する', async () => {
   });
 });
 
-test('33ページ以上ではApplyを無効化してtooManyPagesを表示する', async () => {
-  const tooManyPagesMessage = {
+test('33ページ以上のPDFで制限メッセージなしでApplyを有効化し、全ページを送信する', async () => {
+  const largeMessage = {
     ...initMessage,
     payload: { ...initMessage.payload, pageCount: 33 },
   } as const;
-  expect(isReorderPdfHostToWebviewMessage(tooManyPagesMessage)).toBe(true);
+  expect(isReorderPdfHostToWebviewMessage(largeMessage)).toBe(true);
+  renderBehavior.pages = 33;
 
   disposeApp = render(() => <App />, document.querySelector('#root')!);
-  globalThis.dispatchEvent(new MessageEvent('message', { data: tooManyPagesMessage }));
+  globalThis.dispatchEvent(new MessageEvent('message', { data: largeMessage }));
   await flushPromises();
 
-  expect(document.querySelector('[role="alert"]')?.textContent).toBe('Reorder is limited to 32 pages.');
+  expect(document.querySelector('[role="alert"]')).toBeNull();
 
   const applyButton = [...document.querySelectorAll('button')].find((candidate) => candidate.textContent === 'Apply');
-  expect(applyButton?.hasAttribute('disabled')).toBe(true);
+  expect(applyButton?.hasAttribute('disabled')).toBe(false);
 
-  applyButton?.click();
-  expect(sendMessage).not.toHaveBeenCalledWith({ type: 'apply', payload: { order: [1, 2, 3, 4] } });
+  expect(pageFigures()).toHaveLength(33);
+  expect(orderFromDom()).toEqual(Array.from({ length: 33 }, (_, index) => index + 1));
+
+  clickButton('Apply');
+
+  expect(sendMessage).toHaveBeenLastCalledWith({
+    type: 'apply',
+    payload: { order: Array.from({ length: 33 }, (_, index) => index + 1) },
+  });
+});
+
+test('33ページ以上のPDFで1ページ移動しても全ページを重複・欠落なく送信する', async () => {
+  const largeMessage = {
+    ...initMessage,
+    payload: { ...initMessage.payload, pageCount: 33 },
+  } as const;
+  renderBehavior.pages = 33;
+
+  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  globalThis.dispatchEvent(new MessageEvent('message', { data: largeMessage }));
+  await flushPromises();
+
+  const { up } = controlsFor(2);
+  up?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  await flushPromises();
+
+  expect(orderFromDom()).toEqual([1, 3, 2, ...Array.from({ length: 30 }, (_, index) => index + 4)]);
+
+  clickButton('Apply');
+
+  const sent = sendMessage.mock.calls.at(-1)?.[0];
+  expect(sent).toEqual({
+    type: 'apply',
+    payload: { order: [1, 3, 2, ...Array.from({ length: 30 }, (_, index) => index + 4)] },
+  });
+  const order = extractOrder(sent);
+  expect(order).toHaveLength(33);
+  expect(new Set(order).size).toBe(33);
+  expect([...order].sort((a, b) => a - b)).toEqual(Array.from({ length: 33 }, (_, index) => index + 1));
+});
+
+function extractOrder(message: unknown): number[] {
+  if (
+    typeof message === 'object' &&
+    message !== null &&
+    'payload' in message &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'order' in message.payload &&
+    Array.isArray(message.payload.order)
+  ) {
+    return message.payload.order;
+  }
+  throw new Error('apply message did not contain an order array.');
+}
+
+test('33ページ以上のPDFで全ページ分のフレームをDOMに作成する', async () => {
+  const largeMessage = {
+    ...initMessage,
+    payload: { ...initMessage.payload, pageCount: 33 },
+  } as const;
+  renderBehavior.pages = 33;
+
+  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  globalThis.dispatchEvent(new MessageEvent('message', { data: largeMessage }));
+  await flushPromises();
+
+  expect(pageFigures()).toHaveLength(33);
+  const canvasCount = [...document.querySelectorAll('canvas')].length;
+  expect(canvasCount).toBe(33);
 });
 
 test('各pageへcontrolが1組だけ追加され、positionラベルが付く', async () => {
@@ -393,4 +463,21 @@ test('preview再描画で古いcontrollerをdisposeする', async () => {
   globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
   await flushPromises();
   expect(renderBehavior.disposeCount).toBe(1);
+});
+
+test('renderPdfPagesにvirtualize: falseを渡して全ページをDOMへマウントする', async () => {
+  renderBehavior.pages = 40;
+  const largeMessage = {
+    ...initMessage,
+    payload: { ...initMessage.payload, pageCount: 40 },
+  } as const;
+
+  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  globalThis.dispatchEvent(new MessageEvent('message', { data: largeMessage }));
+  await flushPromises();
+
+  const renderOptions = renderPdfPages.mock.calls[0]?.[2];
+  expect(renderOptions).toEqual(expect.objectContaining({ virtualize: false }));
+  expect(pageFigures()).toHaveLength(40);
+  expect(orderFromDom()).toEqual(Array.from({ length: 40 }, (_, index) => index + 1));
 });
