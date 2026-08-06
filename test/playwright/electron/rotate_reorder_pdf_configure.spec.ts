@@ -193,11 +193,11 @@ test('Reorder Configureのcontrolが対応page内に配置され、複数pageで
       })
       .toBe(true);
 
-    await frame.locator('.reorder-page__move-up').first().click();
+    await frame.locator('.reorder-page__move-down').first().click();
     await expect
       .poll(async () => {
         const order = await pages.evaluateAll((elements) => elements.map((element) => element.dataset.pdfPage));
-        return JSON.stringify(order) !== JSON.stringify(['1', '2', '3', '4']);
+        return order.length >= 2 && order[0] === '2' && order[1] === '1';
       })
       .toBe(true);
   });

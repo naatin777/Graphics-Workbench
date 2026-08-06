@@ -25,4 +25,5 @@ export const defaultLabels: ReorderPdfLabels = {
     apply: 'Apply',
     cancel: 'Cancel',
   },
+  tooManyPages: 'Reorder is limited to 32 pages.',
 };

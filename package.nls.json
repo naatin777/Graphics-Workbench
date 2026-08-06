@@ -356,5 +356,6 @@
   "webview.reorderPdf.orderRequiredError": "The page order cannot be empty.",
   "webview.reorderPdf.orderInvalid": "The page order is invalid.",
   "webview.reorderPdf.apply": "Apply",
-  "webview.reorderPdf.cancel": "Cancel"
+  "webview.reorderPdf.cancel": "Cancel",
+  "webview.reorderPdf.tooManyPages": "Reorder is limited to 32 pages."
 }

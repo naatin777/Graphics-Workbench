@@ -356,5 +356,6 @@
   "webview.reorderPdf.orderRequiredError": "ページ順が空です。",
   "webview.reorderPdf.orderInvalid": "ページ順が不正です。",
   "webview.reorderPdf.apply": "適用",
-  "webview.reorderPdf.cancel": "キャンセル"
+  "webview.reorderPdf.cancel": "キャンセル",
+  "webview.reorderPdf.tooManyPages": "並べ替えは32ページまでです。"
 }

@@ -96,6 +96,7 @@ const labels: ReorderPdfLabels = {
     apply: 'Apply',
     cancel: 'Cancel',
   },
+  tooManyPages: 'Reorder is limited to 32 pages.',
 };
 
 const initMessage = {
@@ -212,6 +213,26 @@ test('Applyで初期ページ順を送信する', async () => {
     type: 'apply',
     payload: { order: [1, 2, 3, 4] },
   });
+});
+
+test('33ページ以上ではApplyを無効化してtooManyPagesを表示する', async () => {
+  const tooManyPagesMessage = {
+    ...initMessage,
+    payload: { ...initMessage.payload, pageCount: 33 },
+  } as const;
+  expect(isReorderPdfHostToWebviewMessage(tooManyPagesMessage)).toBe(true);
+
+  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  globalThis.dispatchEvent(new MessageEvent('message', { data: tooManyPagesMessage }));
+  await flushPromises();
+
+  expect(document.querySelector('[role="alert"]')?.textContent).toBe('Reorder is limited to 32 pages.');
+
+  const applyButton = [...document.querySelectorAll('button')].find((candidate) => candidate.textContent === 'Apply');
+  expect(applyButton?.hasAttribute('disabled')).toBe(true);
+
+  applyButton?.click();
+  expect(sendMessage).not.toHaveBeenCalledWith({ type: 'apply', payload: { order: [1, 2, 3, 4] } });
 });
 
 test('各pageへcontrolが1組だけ追加され、positionラベルが付く', async () => {

@@ -39,6 +39,7 @@ export interface ReorderPdfLabels {
     apply: string;
     cancel: string;
   };
+  tooManyPages: string;
 }
 
 export type ReorderPdfHostToWebview =
@@ -154,17 +155,15 @@ function isReorderPdfLabels(value: unknown): value is ReorderPdfLabels {
     ['actions', ['apply', 'cancel']],
   ] as const;
 
-  if (
-    !hasExactKeys(
-      value,
-      groups.map(([group]) => group),
-    )
-  ) {
+  if (!hasExactKeys(value, [...groups.map(([group]) => group), 'tooManyPages'])) {
     return false;
   }
 
-  return groups.every(([groupName, keys]) => {
-    const group = value[groupName];
-    return isRecord(group) && hasExactKeys(group, keys) && keys.every((key) => isString(group[key]));
-  });
+  return (
+    isString(value.tooManyPages) &&
+    groups.every(([groupName, keys]) => {
+      const group = value[groupName];
+      return isRecord(group) && hasExactKeys(group, keys) && keys.every((key) => isString(group[key]));
+    })
+  );
 }
