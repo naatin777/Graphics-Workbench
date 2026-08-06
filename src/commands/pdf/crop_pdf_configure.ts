@@ -17,6 +17,7 @@ import type { ConversionExecutionContext } from '../../operations/lifecycle/conv
 import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
+import { getPdfJsAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { inspectCropPdfMetadata } from '../../operations/pdf/run_crop_pdf_metadata.js';
 
@@ -80,6 +81,7 @@ async function runCropPdfConfigureCommand(
   );
   const configuration = getCommandConfiguration(dependencies);
   const outputTemplate = configuration.outputPath.cropPdf();
+  const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
   const initMessage: CropConfigureHostToWebview = {
     type: 'init',
     payload: {
@@ -107,6 +109,7 @@ async function runCropPdfConfigureCommand(
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'crop_pdf'),
+        pdfJsAssetsRoot,
         vscode.Uri.file(path.dirname(inputUri.fsPath)),
       ],
     },
@@ -133,15 +136,15 @@ async function runCropPdfConfigureCommand(
   });
   initMessage.payload.pdfSrc = panel.webview.asWebviewUri(inputUri).toString();
   initMessage.payload.resources.workerSrc = panel.webview
-    .asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'crop_pdf', 'pdf.worker.mjs'))
+    .asWebviewUri(vscode.Uri.joinPath(pdfJsAssetsRoot, 'pdf.worker.mjs'))
     .toString();
-  initMessage.payload.resources.cMapUrl = toWebviewDirectoryUri(panel.webview, context.extensionUri, 'cmaps');
+  initMessage.payload.resources.cMapUrl = toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'cmaps');
   initMessage.payload.resources.standardFontDataUrl = toWebviewDirectoryUri(
     panel.webview,
-    context.extensionUri,
+    pdfJsAssetsRoot,
     'standard_fonts',
   );
-  initMessage.payload.resources.wasmUrl = toWebviewDirectoryUri(panel.webview, context.extensionUri, 'wasm');
+  initMessage.payload.resources.wasmUrl = toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'wasm');
 
   panel.onDidDispose(() => {
     if (operationState === 'running') {
@@ -207,8 +210,8 @@ async function runCropPdfConfigureCommand(
   });
 }
 
-function toWebviewDirectoryUri(webview: vscode.Webview, extensionUri: vscode.Uri, directoryName: string): string {
-  const uri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'webview', 'crop_pdf', directoryName));
+function toWebviewDirectoryUri(webview: vscode.Webview, assetsRoot: vscode.Uri, directoryName: string): string {
+  const uri = webview.asWebviewUri(vscode.Uri.joinPath(assetsRoot, directoryName));
 
   return `${uri.toString()}/`;
 }

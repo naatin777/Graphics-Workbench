@@ -29,6 +29,7 @@ import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
+import { getPdfJsAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 const defaultSplitPdfTemplate = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
 
@@ -159,12 +160,13 @@ async function runSplitPdfConfigureCommand(
   const configuration = getCommandConfiguration(dependencies);
   const panelTitle = localeMap('submenu.splitPdf');
   const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'split_pdf');
+  const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
   startPdfConfigureSession({
     panel: {
       id: 'graphics-workbench.splitPdf.configure',
       title: panelTitle,
       appRoot,
-      localResourceRoots: [appRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
+      localResourceRoots: [appRoot, pdfJsAssetsRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
     },
     webview: {
       title: panelTitle,
@@ -178,7 +180,7 @@ async function runSplitPdfConfigureCommand(
       buildInitMessage: (panel) =>
         buildSplitPdfInitMessage({
           panel,
-          appRoot,
+          pdfJsAssetsRoot,
           inputUri,
           pageCount,
           outputPathTemplate,
@@ -219,13 +221,13 @@ function isSplitApplyMessage(
 
 function buildSplitPdfInitMessage(params: {
   panel: vscode.WebviewPanel;
-  appRoot: vscode.Uri;
+  pdfJsAssetsRoot: vscode.Uri;
   inputUri: vscode.Uri;
   pageCount: number;
   outputPathTemplate: string;
   preview: PdfPreviewSettings;
 }): SplitPdfHostToWebview {
-  const { panel, appRoot, inputUri, pageCount, outputPathTemplate, preview } = params;
+  const { panel, pdfJsAssetsRoot, inputUri, pageCount, outputPathTemplate, preview } = params;
 
   return {
     type: 'init',
@@ -236,10 +238,10 @@ function buildSplitPdfInitMessage(params: {
       pdfSrc: panel.webview.asWebviewUri(inputUri).toString(),
       outputPathTemplate,
       resources: {
-        workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(appRoot, 'pdf.worker.mjs')).toString(),
-        cMapUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'cmaps'),
-        standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
-        wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
+        workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(pdfJsAssetsRoot, 'pdf.worker.mjs')).toString(),
+        cMapUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'cmaps'),
+        standardFontDataUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'standard_fonts'),
+        wasmUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'wasm'),
       },
       preview,
       labels: splitPdfLabels(),

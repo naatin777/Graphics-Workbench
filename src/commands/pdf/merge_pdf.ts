@@ -25,6 +25,7 @@ import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
+import { getPdfJsAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function mergePdfSelectedFilesCommand(
   uri?: vscode.Uri,
@@ -102,6 +103,7 @@ export async function mergePdfConfigureCommand(
     const configuration = getCommandConfiguration(dependencies);
     const panelTitle = localeMap('submenu.mergePdf');
     const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'merge_pdf');
+    const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
     const sourceById = new Map(sourceUris.map((sourceUri, index) => [`source-${index + 1}`, sourceUri]));
     startPdfConfigureSession({
       panel: {
@@ -110,6 +112,7 @@ export async function mergePdfConfigureCommand(
         appRoot,
         localResourceRoots: [
           appRoot,
+          pdfJsAssetsRoot,
           ...sourceUris.map((sourceUri) => vscode.Uri.file(path.dirname(sourceUri.fsPath))),
         ],
       },
@@ -123,7 +126,12 @@ export async function mergePdfConfigureCommand(
         isWebviewToHostMessage: isMergePdfWebviewToHostMessage,
         isApplyMessage: isMergeApplyMessage,
         buildInitMessage: (panel) =>
-          buildMergePdfInitMessage({ panel, appRoot, sourceUris, preview: readPdfPreviewSettings(configuration) }),
+          buildMergePdfInitMessage({
+            panel,
+            pdfJsAssetsRoot,
+            sourceUris,
+            preview: readPdfPreviewSettings(configuration),
+          }),
         runApply: async (message, { panel, signal }) => {
           await applyConfiguredMerge({
             sourceById,
@@ -162,11 +170,11 @@ function isMergeApplyMessage(
 
 function buildMergePdfInitMessage(params: {
   panel: vscode.WebviewPanel;
-  appRoot: vscode.Uri;
+  pdfJsAssetsRoot: vscode.Uri;
   sourceUris: vscode.Uri[];
   preview: PdfPreviewSettings;
 }): MergePdfHostToWebview {
-  const { panel, appRoot, sourceUris, preview } = params;
+  const { panel, pdfJsAssetsRoot, sourceUris, preview } = params;
 
   return {
     type: 'init',
@@ -176,10 +184,10 @@ function buildMergePdfInitMessage(params: {
         fileName: path.basename(sourceUri.fsPath),
         pdfSrc: panel.webview.asWebviewUri(sourceUri).toString(),
       })),
-      workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(appRoot, 'pdf.worker.mjs')).toString(),
-      cMapUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'cmaps'),
-      standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
-      wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
+      workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(pdfJsAssetsRoot, 'pdf.worker.mjs')).toString(),
+      cMapUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'cmaps'),
+      standardFontDataUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'standard_fonts'),
+      wasmUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'wasm'),
       preview,
       labels: mergePdfLabels(),
     },

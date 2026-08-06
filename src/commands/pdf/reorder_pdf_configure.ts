@@ -26,6 +26,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
+import { getPdfJsAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function reorderPdfConfigureCommand(
   context: vscode.ExtensionContext,
@@ -79,12 +80,13 @@ async function runReorderPdfConfigureCommand(
 
   const panelTitle = localeMap('submenu.reorderPdf');
   const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'reorder_pdf');
+  const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
   startPdfConfigureSession({
     panel: {
       id: 'graphics-workbench.reorderPdf.configure',
       title: panelTitle,
       appRoot,
-      localResourceRoots: [appRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
+      localResourceRoots: [appRoot, pdfJsAssetsRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
     },
     webview: {
       title: panelTitle,
@@ -98,7 +100,7 @@ async function runReorderPdfConfigureCommand(
       buildInitMessage: (panel) =>
         buildReorderPdfInitMessage({
           panel,
-          appRoot,
+          pdfJsAssetsRoot,
           inputUri,
           pageCount,
           preview: readPdfPreviewSettings(configuration),
@@ -138,12 +140,12 @@ function isReorderApplyMessage(
 
 function buildReorderPdfInitMessage(params: {
   panel: vscode.WebviewPanel;
-  appRoot: vscode.Uri;
+  pdfJsAssetsRoot: vscode.Uri;
   inputUri: vscode.Uri;
   pageCount: number;
   preview: PdfPreviewSettings;
 }): ReorderPdfHostToWebview {
-  const { panel, appRoot, inputUri, pageCount, preview } = params;
+  const { panel, pdfJsAssetsRoot, inputUri, pageCount, preview } = params;
 
   return {
     type: 'init',
@@ -153,10 +155,10 @@ function buildReorderPdfInitMessage(params: {
       pageCount,
       pdfSrc: panel.webview.asWebviewUri(inputUri).toString(),
       resources: {
-        workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(appRoot, 'pdf.worker.mjs')).toString(),
-        cMapUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'cmaps'),
-        standardFontDataUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'standard_fonts'),
-        wasmUrl: toWebviewDirectoryUri(panel.webview, appRoot, 'wasm'),
+        workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(pdfJsAssetsRoot, 'pdf.worker.mjs')).toString(),
+        cMapUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'cmaps'),
+        standardFontDataUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'standard_fonts'),
+        wasmUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'wasm'),
       },
       preview,
       labels: reorderPdfLabels(),
