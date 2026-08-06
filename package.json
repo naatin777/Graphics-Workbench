@@ -128,6 +128,11 @@
         "category": "Graphics Workbench"
       },
       {
+        "command": "graphics-workbench.checkEnvironment",
+        "title": "%command.checkEnvironment%",
+        "category": "Graphics Workbench"
+      },
+      {
         "command": "graphics-workbench.cropPdf.configure",
         "title": "%command.cropPdf.configure%",
         "category": "Graphics Workbench"
