@@ -1,4 +1,4 @@
-import { cpSync, copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,7 +18,12 @@ export function defineWebviewConfig(config: WebviewBuildConfig): UserConfig {
   const appRoot = resolve(webviewRoot, 'apps', config.appName);
   const outDir = resolve(projectRoot, 'media', 'webview', config.appName);
   const pdfJsAssetsRoot = resolve(projectRoot, 'media', 'webview', 'pdfjs');
-  const plugins = [solid(), ...(config.copyPdfWorker === false ? [] : [copyPdfJsAssetsPlugin(pdfJsAssetsRoot)])];
+  const sharedWebviewAssetsRoot = resolve(projectRoot, 'media', 'webview', 'shared');
+  const plugins = [
+    solid(),
+    copyCodiconAssetPlugin(outDir, sharedWebviewAssetsRoot),
+    ...(config.copyPdfWorker === false ? [] : [copyPdfJsAssetsPlugin(pdfJsAssetsRoot)]),
+  ];
 
   return defineConfig({
     root: appRoot,
@@ -99,12 +104,35 @@ function isCssAsset(names: readonly string[], originalFileNames: readonly string
   return [...names, ...originalFileNames].some((fileName) => fileName.endsWith('.css'));
 }
 
+function copyCodiconAssetPlugin(outDir: string, sharedAssetsRoot: string): Plugin {
+  return {
+    name: 'share-codicon-asset',
+    apply: 'build',
+    closeBundle() {
+      const cssPath = resolve(outDir, 'index.css');
+      const css = readFileSync(cssPath, 'utf8');
+      const assetName = css.match(/assets\/(codicon-[^)"']+\.ttf)/u)?.[1];
+
+      if (assetName === undefined) {
+        throw new Error(`Codicon font asset not found in ${cssPath}`);
+      }
+
+      const appFontPath = resolve(outDir, 'assets', assetName);
+      const sharedFontPath = resolve(sharedAssetsRoot, 'codicon.ttf');
+      mkdirSync(sharedAssetsRoot, { recursive: true });
+      copyFileSync(appFontPath, sharedFontPath);
+      writeFileSync(cssPath, css.replaceAll(`assets/${assetName}`, '../shared/codicon.ttf'));
+      rmSync(appFontPath);
+    },
+  };
+}
+
 function copyPdfJsAssetsPlugin(assetsRoot: string): Plugin {
   return {
     name: 'copy-pdfjs-assets',
     apply: 'build',
     closeBundle() {
-      const workerSource = resolve(projectRoot, 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.mjs');
+      const workerSource = resolve(projectRoot, 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.min.mjs');
 
       const workerTarget = resolve(assetsRoot, 'pdf.worker.mjs');
 

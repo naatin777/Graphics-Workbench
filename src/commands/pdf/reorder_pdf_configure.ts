@@ -26,7 +26,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
-import { getPdfJsAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
+import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function reorderPdfConfigureCommand(
   context: vscode.ExtensionContext,
@@ -81,12 +81,18 @@ async function runReorderPdfConfigureCommand(
   const panelTitle = localeMap('submenu.reorderPdf');
   const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'reorder_pdf');
   const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
+  const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
   startPdfConfigureSession({
     panel: {
       id: 'graphics-workbench.reorderPdf.configure',
       title: panelTitle,
       appRoot,
-      localResourceRoots: [appRoot, pdfJsAssetsRoot, vscode.Uri.file(path.dirname(inputUri.fsPath))],
+      localResourceRoots: [
+        appRoot,
+        pdfJsAssetsRoot,
+        webviewSharedAssetsRoot,
+        vscode.Uri.file(path.dirname(inputUri.fsPath)),
+      ],
     },
     webview: {
       title: panelTitle,

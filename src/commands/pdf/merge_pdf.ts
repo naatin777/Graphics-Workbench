@@ -25,7 +25,7 @@ import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
-import { getPdfJsAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
+import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function mergePdfSelectedFilesCommand(
   uri?: vscode.Uri,
@@ -104,6 +104,7 @@ export async function mergePdfConfigureCommand(
     const panelTitle = localeMap('submenu.mergePdf');
     const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'merge_pdf');
     const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
+    const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
     const sourceById = new Map(sourceUris.map((sourceUri, index) => [`source-${index + 1}`, sourceUri]));
     startPdfConfigureSession({
       panel: {
@@ -113,6 +114,7 @@ export async function mergePdfConfigureCommand(
         localResourceRoots: [
           appRoot,
           pdfJsAssetsRoot,
+          webviewSharedAssetsRoot,
           ...sourceUris.map((sourceUri) => vscode.Uri.file(path.dirname(sourceUri.fsPath))),
         ],
       },

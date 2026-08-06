@@ -17,7 +17,7 @@ import type { ConversionExecutionContext } from '../../operations/lifecycle/conv
 import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
-import { getPdfJsAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
+import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { inspectCropPdfMetadata } from '../../operations/pdf/run_crop_pdf_metadata.js';
 
@@ -82,6 +82,7 @@ async function runCropPdfConfigureCommand(
   const configuration = getCommandConfiguration(dependencies);
   const outputTemplate = configuration.outputPath.cropPdf();
   const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
+  const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
   const initMessage: CropConfigureHostToWebview = {
     type: 'init',
     payload: {
@@ -110,6 +111,7 @@ async function runCropPdfConfigureCommand(
       localResourceRoots: [
         vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'crop_pdf'),
         pdfJsAssetsRoot,
+        webviewSharedAssetsRoot,
         vscode.Uri.file(path.dirname(inputUri.fsPath)),
       ],
     },

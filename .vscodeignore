@@ -26,6 +26,61 @@ vsc-extension-quickstart.md
 **/*.ts
 **/.vscode-test.*
 
+# The packaged extension executes the CommonJS entry point of pdf-lib. Its
+# browser/ESM/TypeScript distributions duplicate the same implementation and
+# are not reached by Node's package main field.
+node_modules/pdf-lib/dist/**
+node_modules/pdf-lib/es/**
+node_modules/pdf-lib/src/**
+node_modules/pdf-lib/ts3.4/**
+node_modules/@pdf-lib/standard-fonts/dist/**
+node_modules/@pdf-lib/standard-fonts/es/**
+node_modules/@pdf-lib/upng/dist/**
+node_modules/@pdf-lib/upng/UPNG.js
+node_modules/@pdf-lib/upng/yarn.lock
+node_modules/pako/dist/**
+
+# These are hoisted only for Mermaid's source-only D3 dependency or Puppeteer's
+# optional browser-install CLI. Mermaid ships self-contained ESM chunks and
+# this extension only launches already-installed browsers.
+node_modules/commander/**
+node_modules/iconv-lite/**
+node_modules/rw/**
+node_modules/delaunator/**
+node_modules/internmap/**
+node_modules/tslib/**
+node_modules/@puppeteer/browsers/node_modules/**
+node_modules/modern-tar/**
+node_modules/y18n/**
+node_modules/get-caller-file/**
+
+# These are browser bundles or generated protocol descriptions. Puppeteer
+# loads its Node implementation directly; the protocol files are type/build
+# inputs rather than runtime modules.
+**/node_modules/puppeteer-core/lib/es5-iife/**
+**/node_modules/chromium-bidi/lib/iife/**
+**/node_modules/devtools-protocol/json/**
+**/node_modules/devtools-protocol/pdl/**
+**/node_modules/devtools-protocol/types/**
+
+# Chromium BiDi uses Zod v3. The package also ships an unrelated v4 tree.
+**/node_modules/zod/v4/**
+**/node_modules/zod/v4-mini/**
+
+# sharp is loaded through its ESM export; the CommonJS build, native build
+# sources, and install helper are not needed in an installed extension.
+node_modules/sharp/dist/**/*.cjs
+node_modules/sharp/src/**
+node_modules/sharp/install/**
+
+# The test compilation emits a duplicate out/src tree; the extension entry
+# points at out/extension.js and never loads this copy.
+out/src/**
+
+# Package documentation is not used at runtime. License files remain.
+**/node_modules/**/README*
+**/node_modules/**/CHANGELOG*
+
 # Mermaid CLI loads the ESM bundles below. The core and minified builds are
 # alternate distributions and are not reached by its runtime imports.
 node_modules/mermaid/dist/chunks/mermaid.core/**
@@ -51,6 +106,10 @@ node_modules/@fortawesome/fontawesome-free/sprites/**
 node_modules/@fortawesome/fontawesome-free/sprites-full/**
 node_modules/@fortawesome/fontawesome-free/svgs/**
 node_modules/@fortawesome/fontawesome-free/svgs-full/**
+node_modules/@fortawesome/fontawesome-free/css/*.min.css
+node_modules/@fortawesome/fontawesome-free/css/svg*.css
+node_modules/@fortawesome/fontawesome-free/css/v4-*.css
+node_modules/@fortawesome/fontawesome-free/css/v5-*.css
 
 # The Mermaid CLI loads ZenUML's self-contained ESM bundle in the browser.
 # @zenuml/core and its Node/UI dependency subtree are not imported by that
@@ -125,6 +184,9 @@ node_modules/katex/dist/katex-swap.css
 node_modules/katex/dist/katex-swap.min.css
 node_modules/katex/dist/contrib/**
 node_modules/katex/src/**
+node_modules/katex/cli.js
+node_modules/katex/node_modules/**
+node_modules/katex/dist/README.md
 node_modules/katex/dist/fonts/**/*.ttf
 node_modules/katex/dist/fonts/**/*.woff
 .github/**
