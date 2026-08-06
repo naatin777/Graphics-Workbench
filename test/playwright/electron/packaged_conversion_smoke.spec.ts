@@ -260,7 +260,6 @@ test('package済みVSIXからDraw.io CLIでDraw.ioをPDFへ変換できる', asy
 
     const directPdfMenu = env.app.window.getByRole('menuitem', {
       name: 'Convert all Draw.io pages to one PDF',
-      exact: true,
     });
     await expect(directPdfMenu).toBeVisible();
     await directPdfMenu.hover();
