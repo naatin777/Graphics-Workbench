@@ -13,6 +13,7 @@
     "src/commands/pdf/*.ts",
     "src/commands/conversion/*.ts",
     "src/commands/lifecycle/*.ts",
+    "src/commands/shared/environment_check.ts",
     ".vscode-test.mjs"
   ],
   "project": ["src/**/*.ts", "test/**/*.ts", "webview/**/*.{ts,tsx}", "scripts/*.mjs"],

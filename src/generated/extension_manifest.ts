@@ -917,6 +917,10 @@ export const commandContributions = {
     titleKey: 'command.toggleSafeMode',
     category: 'Graphics Workbench',
   },
+  'graphics-workbench.checkEnvironment': {
+    titleKey: 'command.checkEnvironment',
+    category: 'Graphics Workbench',
+  },
   'graphics-workbench.cropPdf.configure': {
     titleKey: 'command.cropPdf.configure',
     category: 'Graphics Workbench',
@@ -1047,6 +1051,7 @@ export const publicCommandIds = [
   'graphics-workbench.cropPdf.auto',
   'graphics-workbench.undoLastConversion',
   'graphics-workbench.toggleSafeMode',
+  'graphics-workbench.checkEnvironment',
   'graphics-workbench.cropPdf.configure',
   'graphics-workbench.splitPdf.allPages',
   'graphics-workbench.splitPdf.configure',

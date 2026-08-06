@@ -118,6 +118,8 @@ Unsupported environments (Alpine Linux / musl, ARM32, and other environments wit
 
 Some features need external tools in addition to the VS Code extension. Install what you need for the features you use. Executable paths can be set in VS Code settings (`graphics-workbench.execPath.*`).
 
+Run **Graphics Workbench: Check Environment** from the command palette to see per-feature availability and open the related settings by picking an item. A missing tool does not fail the whole check.
+
 | Tool                     | Purpose                                            | Required by                                                             | Notes                                                                                         |
 | ------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | Ghostscript              | PDF margin detection                               | PDF cropping                                                            | When the setting is empty, resolves `gs` on macOS/Linux and `gswin64c` on Windows from `PATH` |

@@ -234,4 +234,10 @@ export const commandBindings = [
     exportName: 'toggleSafeModeCommand',
     adapter: 'extensionCommand',
   },
+  {
+    id: 'graphics-workbench.checkEnvironment',
+    module: '../shared/environment_check.js',
+    exportName: 'checkEnvironmentCommand',
+    adapter: 'extensionCommand',
+  },
 ] as const satisfies readonly CommandBinding[];
