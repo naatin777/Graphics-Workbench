@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -17,8 +17,7 @@ suite('変換結果rollbackの外部変更保護', () => {
     try {
       await mkdir(stagingRootPath, { recursive: true });
       await writeFile(firstStagedPath, 'generated first');
-      await writeFile(secondStagedPath, 'generated second');
-      let outputCopyCount = 0;
+      await mkdir(secondStagedPath);
 
       await assert.rejects(
         commitStagedOutputs(
@@ -37,17 +36,12 @@ suite('変換結果rollbackの外部変更保護', () => {
             },
           ],
           {
-            copyFile: async (source, destination, flags) => {
-              await copyFile(source, destination, flags);
-              outputCopyCount += 1;
-
-              if (outputCopyCount === 1) {
+            rm: async (filePath, options) => {
+              if (filePath === secondOutputPath) {
                 await writeFile(firstOutputPath, 'external edit');
               }
 
-              if (outputCopyCount === 2) {
-                throw new Error('injected second output failure');
-              }
+              return rm(filePath, options);
             },
           },
         ),

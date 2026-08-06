@@ -1,6 +1,7 @@
-import { constants as fsConstants } from 'node:fs';
-import { access, chmod, mkdir, open, rename, rm, stat, utimes, writeFile } from 'node:fs/promises';
+import { constants as fsConstants, createReadStream } from 'node:fs';
+import { access, chmod, mkdir, open, rename, rm, stat, utimes, writeFile, type FileHandle } from 'node:fs/promises';
 import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
@@ -60,6 +61,7 @@ interface ResolvedOutput extends PreparedConversionOutput {
   existedBeforeCommit: boolean;
   contentHashBeforeConflict?: string;
   createdOutputIdentity?: FileIdentity;
+  ownedOutputHandle?: FileHandle | undefined;
   copyCompleted?: boolean;
 }
 
@@ -304,7 +306,9 @@ async function commitResolvedOutputs(
           throw new Error(`Output changed before overwrite: ${output.outputPath}`);
         }
       } else {
-        output.createdOutputIdentity = await createOwnedOutputPlaceholder(output.outputPath);
+        const ownedOutput = await createOwnedOutputHandle(output.outputPath);
+        output.createdOutputIdentity = ownedOutput.identity;
+        output.ownedOutputHandle = ownedOutput.handle;
       }
 
       rollbackCandidates.push(output);
@@ -314,6 +318,7 @@ async function commitResolvedOutputs(
       options.signal?.throwIfAborted();
     }
   } catch (error) {
+    await closeOwnedOutputHandles(outputs);
     const rollbackErrors = await rollbackCommittedOutputs(rollbackCandidates, options);
 
     if (rollbackErrors.length > 0) {
@@ -338,6 +343,8 @@ async function commitResolvedOutputs(
     }
 
     throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    await closeOwnedOutputHandles(outputs);
   }
 
   return committed.map(
@@ -439,7 +446,15 @@ async function copyPreparedOutput(
   copyFileImpl: AbortableCopyFile,
 ): Promise<void> {
   if (output.previousFilePath === undefined) {
-    await copyFileImpl(output.stagedOutputPath, output.outputPath, undefined, options.signal);
+    const handle = output.ownedOutputHandle;
+
+    if (handle === undefined) {
+      throw new Error(`No owned output handle for new output: ${output.outputPath}`);
+    }
+
+    await pipeline(createReadStream(output.stagedOutputPath, { signal: options.signal }), handle.createWriteStream(), {
+      signal: options.signal,
+    });
     return;
   }
 
@@ -619,15 +634,36 @@ async function assertConflictOutputsUnchanged(outputs: ResolvedOutput[]): Promis
   );
 }
 
-async function createOwnedOutputPlaceholder(outputPath: string): Promise<FileIdentity> {
+async function createOwnedOutputHandle(outputPath: string): Promise<{ handle: FileHandle; identity: FileIdentity }> {
   const handle = await open(outputPath, 'wx');
 
   try {
     const outputStat = await handle.stat();
-    return { dev: outputStat.dev, ino: outputStat.ino };
-  } finally {
+    return { handle, identity: { dev: outputStat.dev, ino: outputStat.ino } };
+  } catch (error) {
     await handle.close();
+    throw asError(error);
   }
+}
+
+async function closeOwnedOutputHandles(outputs: ResolvedOutput[]): Promise<void> {
+  await Promise.all(
+    outputs.map(async (output) => {
+      const handle = output.ownedOutputHandle;
+
+      if (handle === undefined) {
+        return;
+      }
+
+      output.ownedOutputHandle = undefined;
+
+      try {
+        await handle.close();
+      } catch {
+        // Best-effort close so rollback can still remove the output.
+      }
+    }),
+  );
 }
 
 async function readFileIdentity(filePath: string): Promise<FileIdentity> {

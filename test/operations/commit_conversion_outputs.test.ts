@@ -260,19 +260,10 @@ suite('変換結果の反映処理', () => {
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
     const outputPath = path.join(workspacePath, 'new.pdf');
-    await writeFixture(stagedOutputPath, 'new');
+    await mkdir(stagingRootPath, { recursive: true });
+    await mkdir(stagedOutputPath);
 
-    await assert.rejects(
-      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], {
-        copyFile: async (source, destination, flags) => {
-          await copyFile(source, destination, flags);
-          if (destination === outputPath) {
-            throw new Error('injected new output copy failure');
-          }
-        },
-      }),
-      /injected new output copy failure/,
-    );
+    await assert.rejects(commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }]));
 
     await assert.rejects(readFile(outputPath));
   });
@@ -418,20 +409,11 @@ suite('変換結果の反映処理', () => {
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     const unrelatedPath = path.join(workspacePath, 'unrelated.txt');
-    await writeFixture(stagedOutputPath, 'new');
+    await mkdir(path.dirname(stagedOutputPath), { recursive: true });
+    await mkdir(stagedOutputPath);
     await writeFixture(unrelatedPath, 'keep');
 
-    await assert.rejects(
-      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
-        copyFile: async (source, destination, flags) => {
-          await copyFile(source, destination, flags);
-          if (destination === outputPath) {
-            throw new Error('injected failure');
-          }
-        },
-      }),
-      /injected failure/,
-    );
+    await assert.rejects(commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }]));
 
     assert.strictEqual(await readFile(unrelatedPath, 'utf8'), 'keep');
     await rm(workspacePath, { recursive: true, force: true });
