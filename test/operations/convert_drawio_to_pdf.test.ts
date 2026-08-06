@@ -37,8 +37,9 @@ suite('Draw.io PDF変換', () => {
         runtime: { resolveConflicts: async () => 'overwrite' },
         runDrawio: async (_executable, args) => {
           calls.push(args);
-          assert.notStrictEqual(args[0], sourcePath);
-          await writeFile(requireValue(args[0]), `${originalSource}\n<!-- mutated staged source -->`);
+          const stagedSourcePath = requireValue(args.at(-1));
+          assert.notStrictEqual(stagedSourcePath, sourcePath);
+          await writeFile(stagedSourcePath, `${originalSource}\n<!-- mutated staged source -->`);
           await writePdfPages(requireValue(args[args.indexOf('-o') + 1]), 3);
         },
       });
@@ -52,14 +53,9 @@ suite('Draw.io PDF変換', () => {
         ],
       );
       assert.deepStrictEqual(calls[0], [
-        path.join(
-          workspacePath,
-          '.graphics-workbench',
-          'convert-drawio-to-pdf',
-          'split-test',
-          '1-q_a',
-          'source.drawio',
-        ),
+        '-x',
+        '-f',
+        'pdf',
         '-o',
         path.join(
           workspacePath,
@@ -69,12 +65,17 @@ suite('Draw.io PDF変換', () => {
           '1-q_a',
           'all-pages.pdf',
         ),
-        '-x',
-        '-f',
-        'pdf',
         '-t',
         '-a',
         '--crop',
+        path.join(
+          workspacePath,
+          '.graphics-workbench',
+          'convert-drawio-to-pdf',
+          'split-test',
+          '1-q_a',
+          'source.drawio',
+        ),
       ]);
       assert.strictEqual(
         await PDFDocument.load(await readFile(requireValue(outputs[0]).outputPath)).then((pdf) => pdf.getPageCount()),

@@ -107,7 +107,7 @@ async function stageDrawioJob(options: {
 
   await runDrawioCommand(
     drawioPath,
-    [conversionInputPath, '-o', allPagesPdfPath, '-x', '-f', 'pdf', '-t', '-a', '--crop'],
+    ['-x', '-f', 'pdf', '-o', allPagesPdfPath, '-t', '-a', '--crop', conversionInputPath],
     runtime,
     runDrawio,
   );
