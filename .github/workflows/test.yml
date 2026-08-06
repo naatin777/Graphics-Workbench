@@ -118,7 +118,6 @@ jobs:
     permissions:
       contents: read
       actions: read
-      pull-requests: write
 
     steps:
       - uses: actions/checkout@v7
@@ -144,41 +143,3 @@ jobs:
       - name: Add coverage to job summary
         run: cat coverage-report.md >> "$GITHUB_STEP_SUMMARY"
         shell: bash
-
-      - if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        name: Update pull request coverage comment
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const fs = require('node:fs');
-            const body = fs.readFileSync('coverage-report.md', 'utf8');
-            const marker = '<!-- graphics-workbench-coverage-report -->';
-            const legacyMarkers = [
-              '<!-- octocov:Linux -->',
-              '<!-- octocov:macOS -->',
-              '<!-- octocov:Windows -->',
-            ];
-            const { owner, repo } = context.repo;
-            const issue_number = context.issue.number;
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number,
-              per_page: 100,
-            });
-
-            for (const comment of comments) {
-              if (legacyMarkers.some((legacyMarker) => comment.body?.includes(legacyMarker))) {
-                await github.rest.issues.deleteComment({ owner, repo, comment_id: comment.id });
-              }
-            }
-
-            const existing = comments.filter((comment) => comment.body?.includes(marker));
-            if (existing.length === 0) {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body });
-            } else {
-              await github.rest.issues.updateComment({ owner, repo, comment_id: existing[0].id, body });
-              for (const duplicate of existing.slice(1)) {
-                await github.rest.issues.deleteComment({ owner, repo, comment_id: duplicate.id });
-              }
-            }
