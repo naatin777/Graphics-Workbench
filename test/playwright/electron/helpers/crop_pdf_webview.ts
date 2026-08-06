@@ -30,7 +30,7 @@ export async function openCropPdfConfigure(vscodeWindow: Page, fileName: string)
   await cropPdfMenu.hover();
   await vscodeWindow.keyboard.press('ArrowRight');
 
-  const configureMenu = vscodeWindow.getByRole('menuitem', { name: 'Configure crop' });
+  const configureMenu = vscodeWindow.getByRole('menuitem', { name: 'Adjust Margins' });
   await expect(configureMenu).toBeVisible();
   await configureMenu.hover();
   await expect(configureMenu).toBeFocused();
@@ -84,7 +84,7 @@ export async function convertPngToJpeg(vscodeWindow: Page, fileName: string): Pr
   await expect(convertMenu).toBeVisible();
   await convertMenu.hover();
 
-  const jpegMenu = vscodeWindow.getByRole('menuitem', { name: 'JPEG' });
+  const jpegMenu = vscodeWindow.getByRole('menuitem', { name: 'Convert Selected Files to JPEG' });
   await expect(jpegMenu).toBeVisible();
   await jpegMenu.hover();
   await expect(jpegMenu).toBeFocused();
@@ -106,7 +106,7 @@ export async function convertPdfToJpeg(vscodeWindow: Page, fileName: string): Pr
   await expect(convertMenu).toBeVisible();
   await convertMenu.hover();
 
-  const jpegMenu = vscodeWindow.getByRole('menuitem', { name: 'JPEG' });
+  const jpegMenu = vscodeWindow.getByRole('menuitem', { name: 'Convert Selected Files to JPEG' });
   await expect(jpegMenu).toBeVisible();
   await jpegMenu.hover();
   await expect(jpegMenu).toBeFocused();

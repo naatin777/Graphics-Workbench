@@ -598,7 +598,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(!gif?.when?.includes('.webp'), 'Standard GIF should not match .webp');
   });
 
-  test('日本語の変換メニューには出力形式のラベルを使う', async () => {
+  test('日本語の変換メニューには行動ベースのラベルを使う', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const jaMessages = await readJson<Record<string, string>>('package.nls.ja.json');
     const convertToPdf = packageJson.contributes.commands.find(
@@ -607,13 +607,13 @@ suite('package.jsonの変換メニュー定義', () => {
 
     assert.strictEqual(convertToPdf?.title, '%command.convertToPdf%');
     assert.strictEqual(jaMessages['submenu.convert'], '変換');
-    assert.strictEqual(jaMessages['command.convertToPdf'], 'PDF');
-    assert.strictEqual(jaMessages['command.convertToPng'], 'PNG');
-    assert.strictEqual(jaMessages['command.convertToJpeg'], 'JPEG');
-    assert.strictEqual(jaMessages['command.convertToWebp'], 'WebP');
-    assert.strictEqual(jaMessages['command.convertToAvif'], 'AVIF');
-    assert.strictEqual(jaMessages['command.convertToSvg'], 'SVG');
-    assert.strictEqual(jaMessages['command.convertToGif'], 'GIF');
+    assert.strictEqual(jaMessages['command.convertToPdf'], '選択したファイルをPDFに変換');
+    assert.strictEqual(jaMessages['command.convertToPng'], '選択したファイルをPNGに変換');
+    assert.strictEqual(jaMessages['command.convertToJpeg'], '選択したファイルをJPEGに変換');
+    assert.strictEqual(jaMessages['command.convertToWebp'], '選択したファイルをWebPに変換');
+    assert.strictEqual(jaMessages['command.convertToAvif'], '選択したファイルをAVIFに変換');
+    assert.strictEqual(jaMessages['command.convertToSvg'], '選択したファイルをSVGに変換');
+    assert.strictEqual(jaMessages['command.convertToGif'], '選択したファイルをGIFに変換');
     assert.strictEqual(jaMessages['command.convertToGifPreserveAnimation'], 'GIF: アニメーションを保持');
     assert.strictEqual(jaMessages['command.convertToGifSeparately'], 'GIF: フレーム分割');
     assert.strictEqual(jaMessages['command.convertToWebpPreserveAnimation'], 'WebP: アニメーションを保持');
