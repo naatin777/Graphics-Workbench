@@ -19,6 +19,7 @@
 
 - gt（Graphite）の`gt submit --no-edit`は、PR titleをcommit messageの1行目から取るが、PR本文は自動入力されない（空になり、GitHubのPRテンプレートが適用される）。
 - PR本文が必要な場合は、`gt submit`（対話）または`gt submit --edit-description`で説明を入力するか、submit後に`gh pr edit <PR番号> --body "..."`で入力する。commit messageのbodyはPR本文へ反映されない。
+- `git commit`や`git push`で`--no-verify`（`-n`）を使ってhook（pre-commit / pre-push / commitlint）を無効化しない。hookで失敗した場合は、無効化せずに原因を修正する。
 - stack完了はGitHub APIの`merged: true`だけを正本にしない。`npm run check:prs-landed -- <PR番号>...`で、各PRの`merge_commit_sha`が`origin/main`のancestorかを確認する。このリポジトリはsquash mergeを使うため元commit SHAは`main`に入らず、merge commitで判定する。Graphite base branch（`graphite-base/*`など）へのmergeは製品完了と誤認しない。`--ref <tag>`でrelease tagを、`--no-fetch`でfetchを省略できる。
 
 ## ブランチ開始規則
