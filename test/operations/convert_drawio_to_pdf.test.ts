@@ -6,6 +6,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
+import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { requireValue } from '../helpers/required.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 
@@ -36,8 +37,9 @@ suite('Draw.io PDF変換', () => {
         runtime: { resolveConflicts: async () => 'overwrite' },
         runDrawio: async (_executable, args) => {
           calls.push(args);
-          assert.notStrictEqual(args[0], sourcePath);
-          await writeFile(requireValue(args[0]), `${originalSource}\n<!-- mutated staged source -->`);
+          const stagedSourcePath = requireValue(args.at(-1));
+          assert.notStrictEqual(stagedSourcePath, sourcePath);
+          await writeFile(stagedSourcePath, `${originalSource}\n<!-- mutated staged source -->`);
           await writePdfPages(requireValue(args[args.indexOf('-o') + 1]), 3);
         },
       });
@@ -51,14 +53,9 @@ suite('Draw.io PDF変換', () => {
         ],
       );
       assert.deepStrictEqual(calls[0], [
-        path.join(
-          workspacePath,
-          '.graphics-workbench',
-          'convert-drawio-to-pdf',
-          'split-test',
-          '1-q_a',
-          'source.drawio',
-        ),
+        '-x',
+        '-f',
+        'pdf',
         '-o',
         path.join(
           workspacePath,
@@ -68,12 +65,17 @@ suite('Draw.io PDF変換', () => {
           '1-q_a',
           'all-pages.pdf',
         ),
-        '-x',
-        '-f',
-        'pdf',
         '-t',
         '-a',
         '--crop',
+        path.join(
+          workspacePath,
+          '.graphics-workbench',
+          'convert-drawio-to-pdf',
+          'split-test',
+          '1-q_a',
+          'source.drawio',
+        ),
       ]);
       assert.strictEqual(
         await PDFDocument.load(await readFile(requireValue(outputs[0]).outputPath)).then((pdf) => pdf.getPageCount()),
@@ -154,6 +156,46 @@ suite('Draw.io PDF変換', () => {
         outputs.map(({ outputPath }) => outputPath),
         [path.join(workspacePath, '_CON.pdf'), path.join(workspacePath, '_con-2.pdf')],
       );
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
+  test('設定されたDraw.io CLIを実際に起動して全ページを1つのPDFへ変換する', async function realDrawioCliConversion() {
+    const { drawioTools } = readConfiguredConversionTools();
+    const { drawioPath } = drawioTools;
+    if (drawioPath === '') {
+      this.skip();
+      return;
+    }
+
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-pdf-real-'));
+
+    try {
+      const sourcePath = path.join(workspacePath, 'source.drawio');
+      const outputPath = path.join(workspacePath, 'all-pages.pdf');
+      await copyFile(drawioFixturePath, sourcePath);
+
+      const outputs = await convertDrawioToPdfFiles({
+        jobs: [
+          {
+            sourcePath,
+            outputTemplate: '${fileDirname}/all-pages.pdf',
+            workspacePath,
+            workspaceName: path.basename(workspacePath),
+          },
+        ],
+        drawioPath,
+        outputMode: 'single-pdf',
+        runId: 'real-cli-test',
+        runtime: { resolveConflicts: async () => 'overwrite' },
+      });
+
+      assert.deepStrictEqual(
+        outputs.map(({ outputPath: actualPath }) => actualPath),
+        [outputPath],
+      );
+      assert.strictEqual(await PDFDocument.load(await readFile(outputPath)).then((pdf) => pdf.getPageCount()), 3);
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }

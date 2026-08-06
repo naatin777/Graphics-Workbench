@@ -45,13 +45,13 @@ The non-Playwright totals below describe the 2026-07-16 audit commit. The curren
 
 0212実装後のPlaywright Electron allocationは、上記の古い監査commitの総数とは別に次を正本とする。
 
-| Current packaged Electron scope   | Files | Cases | Allocation                                                                             |
-| --------------------------------- | ----- | ----- | -------------------------------------------------------------------------------------- |
-| Wide (`vscode-electron`)          | 4     | 18    | Linux full UI / responsive suite + 3 packaged conversion smoke                         |
-| Narrow (`vscode-electron-narrow`) | 3     | 15    | Linux UI / responsive suite; semantic assertions。packaged conversion smoke is ignored |
-| macOS / Windows CI                | 1     | 3     | wide `packaged_conversion_smoke.spec.ts` only                                          |
-| Total configured spec files       | 4     | 33    | Linux 33 cases across wide / narrow; macOS / Windows 3 cases each                      |
-| Visual review capture             | 1     | 3     | `visual_review_capture.spec.ts`（wide only、`visual:capture`専用、通常E2Eから分離）    |
+| Current packaged Electron scope   | Files | Cases | Allocation                                                                                                                                 |
+| --------------------------------- | ----- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Wide (`vscode-electron`)          | 4     | 21    | Linux full UI / responsive suite + 4 packaged conversion smoke（Crop / PNG→JPEG / PDF→JPEG / Draw.io→PDF）                                 |
+| Narrow (`vscode-electron-narrow`) | 3     | 17    | Linux UI / responsive suite; semantic assertions。packaged conversion smokeとvisual captureはignored                                       |
+| macOS / Windows CI                | 1     | 4     | wide `packaged_conversion_smoke.spec.ts` only                                                                                              |
+| Total configured spec files       | 4     | 38    | Linux 38 cases across wide / narrow; macOS / Windows 4 cases each                                                                          |
+| Visual review capture             | 1     | 3     | `visual_review_capture.spec.ts`（`visual:capture`専用、通常E2Eから分離。画面ごとに1回起動し、wide/narrowと全テーマを同一セッションで撮影） |
 
 `test`の対象はExtension Host、`test:webview`の対象はJSDOM component、`test:playwright:vsix`の対象はinstalled VSIX Electron E2Eである。単一のaggregate scriptを「all」と呼ばず、runtimeごとのEvidenceを分離する。実際の3 OS結果はGitHub Actionsで確認する。
 

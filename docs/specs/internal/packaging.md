@@ -53,7 +53,7 @@ Windowsを含む全platformでshell command stringを組み立てず、argument 
 
 ## packaged smoke
 
-各targetのVSIXは同じrunnerの実VS Code Electronへinstallする。PRではLinuxがCrop / Merge / Splitのwide+narrow full responsive suiteを実行し、macOS / Windowsはwide packaged conversion smokeを実行する。release前はLinux / macOS / Windowsの全wide+narrow suiteを実行し、`visual:capture`で生成した各OSのscreenshotを目視確認する。全OSでCrop Configureの小さいApply、PNG→JPEG、PDF→JPEGのsuccessful packaged conversion smokeを確認する。PDF→JPEG smokeはconfigured `pdftocairo`、Unicode / space path、WindowsのASCII scratch、Sharp encode、staging / commit、success notificationまで確認する。PNG→JPEGの成功はVSIX内のSharp native dependencyがloadできた証拠とする。外部CLIのmissing / failure boundaryはLinuxのfull suiteとExtension Host testでownerを明示する。外部CLIはVSIXへbundleせず、各runnerのinstall / verify scriptで用意する。見た目の検証はpixel比較でなく、`visual:capture`で生成した画像を人間が目視確認する。
+各targetのVSIXは同じrunnerの実VS Code Electronへinstallする。PRではLinuxがCrop / Merge / Splitのwide+narrow full responsive suiteを実行し、macOS / Windowsはwide packaged conversion smokeを実行する。release前はLinux / macOS / Windowsの全wide+narrow suiteを実行し、`visual:capture`で生成した各OSのscreenshotを目視確認する。全OSでCrop Configureの小さいApply、PNG→JPEG、PDF→JPEG、Draw.io→PDFのsuccessful packaged conversion smoke 4 casesを確認する。PDF→JPEG smokeはconfigured `pdftocairo`、Unicode / space path、WindowsのASCII scratch、Sharp encode、staging / commit、success notificationまで確認する。PNG→JPEGの成功はVSIX内のSharp native dependencyがloadできた証拠とする。Draw.io→PDF smokeはconfigured `drawio` CLI（各OSのinstall / verify scriptで用意する）、単純な`.drawio` fixture、実CLI起動、PDF出力の生成と読み込みまで確認する。外部CLIのmissing / failure boundaryはLinuxのfull suiteとExtension Host testでownerを明示する。外部CLIはVSIXへbundleせず、各runnerのinstall / verify scriptで用意する。見た目の検証はpixel比較でなく、`visual:capture`で生成した画像を人間が目視確認する。
 
 ## version
 

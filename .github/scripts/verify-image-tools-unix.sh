@@ -21,6 +21,13 @@ test -x "${rsvg_convert_path}"
 test -x "${qpdf_path}"
 test -x "${chrome_path}"
 
+if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
+	drawio_path="$(read_setting "graphics-workbench.execPath.drawio")"
+	test -x "${drawio_path}"
+	echo "Draw.io from settings.json: ${drawio_path}"
+	"${drawio_path}" --version 2>&1 | head -1 || true
+fi
+
 echo "Ghostscript: ${gs_path}"
 "${gs_path}" --version
 

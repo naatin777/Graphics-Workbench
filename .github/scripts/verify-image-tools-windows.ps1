@@ -17,6 +17,12 @@ if (-not (Test-Path $rsvgConvert)) { throw "missing rsvg-convert: $rsvgConvert" 
 if (-not (Test-Path $qpdf)) { throw "missing qpdf: $qpdf" }
 if (-not (Test-Path $chrome)) { throw "missing Chrome from settings.json: $chrome" }
 
+if ($env:INSTALL_DRAWIO -eq '1') {
+	$drawio = $settings.'graphics-workbench.execPath.drawio'
+	if (-not (Test-Path $drawio)) { throw "missing Draw.io from settings.json: $drawio" }
+	Write-Host "Draw.io: $drawio"
+}
+
 Write-Host "Ghostscript: $gs"
 & $gs --version | Out-Host
 

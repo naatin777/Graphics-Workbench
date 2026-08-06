@@ -296,6 +296,28 @@ export async function expectWebviewNetworkBlocked(frame: Frame): Promise<void> {
   expect(externalRequestSucceeded).toBe(false);
 }
 
+export async function readWebviewBodyColors(body: Locator): Promise<WebviewThemeState> {
+  return body.evaluate((element) => {
+    const getComputedStyle = Reflect.get(globalThis, 'getComputedStyle');
+    if (typeof getComputedStyle !== 'function') {
+      throw new Error('Webview does not expose getComputedStyle.');
+    }
+    const style: unknown = getComputedStyle.call(globalThis, element);
+    if (typeof style !== 'object' || style === null) {
+      throw new Error('Webview returned an invalid computed style.');
+    }
+    const backgroundColor = Reflect.get(style, 'backgroundColor');
+    const color = Reflect.get(style, 'color');
+    if (typeof backgroundColor !== 'string' || typeof color !== 'string') {
+      throw new Error('Webview computed style did not contain colors.');
+    }
+    return {
+      bodyBackground: backgroundColor,
+      bodyForeground: color,
+    };
+  });
+}
+
 export async function waitForWebviewTheme(
   body: Locator,
   themeClass: 'vscode-dark' | 'vscode-light' | 'vscode-high-contrast' | 'vscode-high-contrast-light',
@@ -386,25 +408,7 @@ export async function waitForWebviewTheme(
     )
     .toBe(true);
 
-  return body.evaluate((element) => {
-    const getComputedStyle = Reflect.get(globalThis, 'getComputedStyle');
-    if (typeof getComputedStyle !== 'function') {
-      throw new Error('Webview does not expose getComputedStyle.');
-    }
-    const style: unknown = getComputedStyle.call(globalThis, element);
-    if (typeof style !== 'object' || style === null) {
-      throw new Error('Webview returned an invalid computed style.');
-    }
-    const backgroundColor = Reflect.get(style, 'backgroundColor');
-    const color = Reflect.get(style, 'color');
-    if (typeof backgroundColor !== 'string' || typeof color !== 'string') {
-      throw new Error('Webview computed style did not contain colors.');
-    }
-    return {
-      bodyBackground: backgroundColor,
-      bodyForeground: color,
-    };
-  });
+  return readWebviewBodyColors(body);
 }
 
 async function captureCanvasWhitePixelRatios(canvases: Locator): Promise<number[]> {

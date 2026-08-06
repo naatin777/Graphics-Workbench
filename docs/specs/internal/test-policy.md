@@ -40,7 +40,7 @@ Browser Playwrightは使用しない。Webview protocol、validation、状態変
 - pre-package testではVS Code Extension Hostを正式採用する。
 - Extension Host testはLinux、macOS、Windowsの3 OSで恒久的に維持する。
 - Node専用runnerやExtension Hostからのtest file除外は持たない。
-- Browser Playwrightは廃止し、配布物E2Eはpackage済みVSIX Electron Playwrightへ統一する。PRのrequired scopeは3 OS各3 cases（wide packaged conversion smoke）とする。full wide+narrow suite（37 cases）はローカルとrelease前の3 OSで実行し、`visual:capture`の画像を目視確認する。
+- Browser Playwrightは廃止し、配布物E2Eはpackage済みVSIX Electron Playwrightへ統一する。PRのrequired scopeは3 OS各4 cases（wide packaged conversion smoke: Crop Configure / PNG→JPEG / PDF→JPEG / Draw.io→PDF）とする。full wide+narrow suite（38 cases）はローカルとrelease前の3 OSで実行し、`visual:capture`の画像を目視確認する。
 - required statusは今回設定しない。
 - Mochaを維持し、Vitest comparisonは今回行わない。
 

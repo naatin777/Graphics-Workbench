@@ -60,6 +60,29 @@ interface NativeElectronWindow {
   setContentSize: (width: number, height: number) => void;
 }
 
+export interface ElectronViewportSize {
+  width: number;
+  height: number;
+}
+
+/**
+ * Resizes an already-launched Electron window and its Playwright page viewport.
+ * Resizing the native window is required on macOS, where page viewport
+ * emulation alone leaves a black strip; the page viewport is kept in sync so
+ * the two never disagree during a capture run.
+ */
+export async function resizeElectronWindow(
+  electronApp: ElectronApplication,
+  window: Page,
+  size: ElectronViewportSize,
+): Promise<void> {
+  const browserWindow: JSHandle<NativeElectronWindow> = await electronApp.browserWindow(window);
+  await browserWindow.evaluate((nativeWindow, nextSize) => {
+    nativeWindow.setContentSize(nextSize.width, nextSize.height);
+  }, size);
+  await window.setViewportSize(size);
+}
+
 export async function prepareElectronTest(packagedVsixPath: string): Promise<PreparedElectronTest> {
   const installationRoot = await mkdtemp(join(temporaryBase, 'gw-package-'));
   const extensionsDir = join(installationRoot, 'extensions');

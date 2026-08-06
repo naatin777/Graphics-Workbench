@@ -86,5 +86,40 @@ $settings = [ordered]@{
 	'graphics-workbench.execPath.qpdf' = $qpdf.FullName
 	'graphics-workbench.puppeteer.executablePath' = $chrome
 }
+
+# Draw.io CLI is only needed by the packaged Playwright Draw.io -> PDF smoke,
+# not by the Extension Host suite (whose Draw.io oracle tests skip without it).
+if ($env:INSTALL_DRAWIO -eq '1') {
+	$drawioVersion = '31.1.5'
+	$drawioInstaller = Join-Path $env:RUNNER_TEMP 'draw.io-installer.exe'
+	$drawioUrl = "https://github.com/jgraph/drawio-desktop/releases/download/v$drawioVersion/draw.io-$drawioVersion-windows-installer.exe"
+
+	Write-Host 'Downloading Draw.io installer...'
+	Invoke-WebRequest $drawioUrl -OutFile $drawioInstaller
+	$process = Start-Process -Wait -FilePath $drawioInstaller -ArgumentList '/S' -PassThru
+	if ($process.ExitCode -ne 0) {
+		throw "Draw.io installer failed with exit code $($process.ExitCode)"
+	}
+
+	$drawio = $null
+	foreach ($candidate in @(
+		(Join-Path $env:ProgramFiles 'draw.io\draw.io.exe'),
+		(Join-Path ${env:ProgramFiles(x86)} 'draw.io\draw.io.exe'),
+		(Join-Path $env:LOCALAPPDATA 'Programs\draw.io\draw.io.exe')
+	)) {
+		if (Test-Path $candidate) { $drawio = Get-Item $candidate; break }
+	}
+	if (-not $drawio) {
+		$drawio = Get-ChildItem -Path $env:ProgramFiles -Recurse -Filter 'draw.io.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+	}
+	if (-not $drawio) {
+		$drawio = Get-ChildItem -Path $env:LOCALAPPDATA -Recurse -Filter 'draw.io.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+	}
+	if (-not $drawio) {
+		throw 'draw.io.exe not found after installing Draw.io'
+	}
+	$settings['graphics-workbench.execPath.drawio'] = $drawio.FullName
+}
+
 $settings | ConvertTo-Json | Set-Content $settingsPath -Encoding utf8
 Get-Content $settingsPath

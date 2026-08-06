@@ -105,6 +105,21 @@ export async function waitForWebviewLayoutToSettle(body: Locator): Promise<void>
     .toBe(true);
 }
 
+/**
+ * Waits until the webview body has actually adopted a window whose content
+ * width is at most `expectedMaxWidth`. A native window resize relayouts the VS
+ * Code workbench before the webview iframe shrinks, so the body width must be
+ * polled instead of assumed from the viewport size alone.
+ */
+export async function waitForWebviewViewportResize(body: Locator, expectedMaxWidth: number): Promise<void> {
+  await expect
+    .poll(async () => {
+      const width = await body.evaluate((element) => element.clientWidth);
+      return width > 0 && width <= expectedMaxWidth;
+    })
+    .toBe(true);
+}
+
 export async function captureCropPdfScreenshot(
   page: Page,
   body: Locator,
