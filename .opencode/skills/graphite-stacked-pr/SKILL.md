@@ -235,6 +235,16 @@ gt submit --dry-run                    # report what would be submitted, no remo
 
 After submitting, report: PR/stack URLs, stack order bottom-to-top, draft/published status, which existing PRs were updated, and remaining review dependencies.
 
+### PR body
+
+- `gt submit --no-edit` takes the PR title from the first line of the commit
+  message but does **not** fill the PR body (it stays empty and GitHub's PR
+  template applies). Commit message body lines are not copied to the PR body.
+- To provide a PR body, run `gt submit --edit-description` (interactive) or
+  update it afterwards with `gh pr edit <number> --body "..."`.
+- New PRs are created as drafts. Mark them ready (`gh pr ready`) after the
+  checks pass if they should be reviewable.
+
 ## merge and cleanup
 
 Merge a stack with Graphite's native `gt merge` from the CLI. Do not use the GitHub Merge button or `gh pr merge` for stacked PRs: merging individual PRs that way deletes the base branch and can auto-close upstack PRs. `gt merge` merges the PRs for all branches from trunk up to the current branch via Graphite; `gt sync` then deletes merged branches and restacks the remaining stack onto the updated trunk.

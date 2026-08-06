@@ -15,22 +15,6 @@
 - 明示されていない将来要件を推測して実装しない。
 - タスクで変更を求められていない既存挙動を維持する。
 
-## コミットとPR
-
-- gt（Graphite）の`gt submit --no-edit`は、PR titleをcommit messageの1行目から取るが、PR本文は自動入力されない（空になり、GitHubのPRテンプレートが適用される）。
-- PR本文が必要な場合は、`gt submit`（対話）または`gt submit --edit-description`で説明を入力するか、submit後に`gh pr edit <PR番号> --body "..."`で入力する。commit messageのbodyはPR本文へ反映されない。
-- stack完了はGitHub APIの`merged: true`だけを正本にしない。`npm run check:prs-landed -- <PR番号>...`で、各PRの`merge_commit_sha`が`origin/main`のancestorかを確認する。このリポジトリはsquash mergeを使うため元commit SHAは`main`に入らず、merge commitで判定する。Graphite base branch（`graphite-base/*`など）へのmergeは製品完了と誤認しない。`--ref <tag>`でrelease tagを、`--no-fetch`でfetchを省略できる。
-
-## ブランチ開始規則
-
-- 新しいユーザー依頼は、既存の未マージPRへの明示的な依存がない限り、**trunk（main）から独立したブランチで開始する**。
-- 作業を開始する前に現在のブランチとGraphiteの親を確認する。`git status --short`、`gt log short`、`gt trunk`、`gt sync`を実行してからtrunkへ戻る。
-- 現在のブランチを暗黙の親として`gt create`してはならない。
-- スタックを作る場合は、各PRについて「直前のPRが無いと実装・レビューできない」という依存理由を1文で説明できる場合に限る。
-- 依存理由を説明できないPRは、trunk直下の独立PRにする。
-- 独立タスクの開始: `gt create <branch> -m "<commit message>"`（trunk上で実行）。
-- 既存PRに本当に依存する場合だけ: `gt checkout <intended-parent>` → `gt create <child> -m "<commit message>"`。
-
 ## 実装
 
 - 最も近い既存実装を確認し、適切なら再利用する。
@@ -40,15 +24,6 @@
 - 抽象化は、置き換える重複より小さく単純にする。
 - 新しい依存関係は必要な場合に限り、理由と保守・実行・ライセンスへの影響を説明する。
 - ユーザー向けファイルには既存のステージング処理を使用する。
-
-## テストと完了条件
-
-- 実装前に、期待される挙動と主要なエッジケースを確認する。
-- 内部実装より、外部から確認できる挙動をテストする。
-- 可能な限り実際の形式に近いフィクスチャを使用する。
-- 変更に関係するテスト、型チェック、Lint、フォーマット、ビルドを実行する。
-- 実行していない検証、失敗、残る制約、挙動に影響する前提を報告する。
-- 未検証または部分的な実装を完了済みとしない。
 
 ## 安全性
 
@@ -62,29 +37,9 @@
 - バグリスク、レビューコスト、反復的な変更コスト、テスト困難性を具体的に減らす場合のみ行う。
 - コードをきれいに見せることだけを理由に行わない。
 
-## 入力制限・タイムアウト方針
+## 詳細ルールはskillを参照
 
-- 入力ファイルサイズまたはPDFページ数に対する、アプリケーション共通の固定上限を追加しない。
-- 変換などの本処理に対する、アプリケーション共通の実行タイムアウトを追加しない。停止はユーザーのキャンセルで行う。
-- ファイルサイズやページ数だけを理由とした確認ダイアログを追加しない。
-- 操作固有の制限またはタイムアウトを追加する場合は、以下をすべて必要とする。
-  1. 再現可能な技術的根拠
-  2. 対象操作に固有である理由
-  3. 一律制限以外の対策では解決できない理由
-  4. テストまたは再現手順
-  5. 該当ADRの更新
-- 制御処理（外部ツールの起動確認、通信、キャンセル後の終了猶予）の短いタイムアウトは、本処理のタイムアウトと混同しない。
-- セキュリティガード（decompression bomb対策のピクセル上限、パス検証など）は任意の入力制限と混同して削除しない。
-
-## 途中移行・互換残骸
-
-- v1移行で削除すると正式決定した旧command IDや旧settingを、内部aliasやfallbackとして復活させない。
-- 一時的なcommand alias、setting fallback、compatibility wrapperを追加する場合は、追加時点でcanonical置き換え先、具体的利用者、public/internal、削除条件、削除予定version、canonical経路のテスト、削除時に消す一覧を明記する。「念のため」「移行中だから」だけでは追加しない。
-- 旧API専用のwrapper・NLS・テストが残ったままにするのは避け、canonical経路へ統合する。command IDとpair-specific outputPath設定キー（`outputPath.convertPngToPdf`等）の粒度は混同しない。
-
-## command登録と生成metadataの正本
-
-- package.json由来のcommand ID、configuration schema、Extension identity、submenu metadataは、`src/generated/extension_manifest.ts`へ手書きしない（`npm run generate:extension-meta`で再生成する）。
-- public commandの実装bindingは`src/commands/shared/command_bindings.ts`を正本とし、`extension.ts`へ個別登録を追加しない。commandを追加する場合はbindingへ登録し、`package.json`の`contributes.commands`と一致させる。
-- generator内へlegacy command IDを直接記述しない。
-- 旧command aliasや一時的なinternal commandは「念のため」残さない。
+- Graphite / PR / ブランチ: `graphite-stacked-pr` skill
+- テスト・検証・完了条件: `graphics-workbench-verify` skill
+- 入力制限・タイムアウト・移行・command正本: `graphics-workbench-architecture` skill
+- git hook無効化禁止: `never-disable-git-hooks` skill
