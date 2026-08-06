@@ -10,7 +10,14 @@ export type PdfOptions = Partial<
     Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'],
     'workerSrc' | 'cMapUrl' | 'standardFontDataUrl' | 'wasmUrl' | 'preview'
   >
->;
+> & {
+  resources?: {
+    workerSrc?: string;
+    cMapUrl?: string;
+    standardFontDataUrl?: string;
+    wasmUrl?: string;
+  };
+};
 
 export function PreviewThumbnail(props: {
   source: MergePdfSource;

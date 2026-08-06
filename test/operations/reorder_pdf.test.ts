@@ -116,7 +116,6 @@ suite('reorderPdf protocol guard', () => {
     order: { title: 'Order', moveUp: 'up', moveDown: 'down', positionLabel: 'pages' },
     validation: { orderRequired: 'required', orderInvalid: 'invalid' },
     actions: { apply: 'Apply', cancel: 'Cancel' },
-    tooManyPages: 'too many',
   };
 
   const initPayload = {

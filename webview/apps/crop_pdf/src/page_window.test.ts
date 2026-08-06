@@ -1,4 +1,8 @@
-import { calculatePageWindow, insertPageFrameInOrder } from '../../../shared/pdf/page_window';
+import {
+  calculatePageWindow,
+  insertPageFrameInOrder,
+  shouldUseWindowedRendering,
+} from '../../../shared/pdf/page_window';
 
 describe('PDF preview page window', () => {
   test('keeps the rendered page count bounded for a large document', () => {
@@ -32,5 +36,16 @@ describe('PDF preview page window', () => {
       .filter((child): child is HTMLElement => child instanceof HTMLElement)
       .map((child) => Number(child.dataset.pdfPage));
     expect(order).toEqual(Array.from({ length: 24 }, (_, index) => index + 1));
+  });
+
+  test('virtualize未指定では32ページ超過でwindowed renderingを維持する', () => {
+    expect(shouldUseWindowedRendering(1, undefined)).toBe(false);
+    expect(shouldUseWindowedRendering(32, undefined)).toBe(false);
+    expect(shouldUseWindowedRendering(33, undefined)).toBe(true);
+  });
+
+  test('virtualize: falseでは全ページフレームを作るためwindowed renderingを使わない', () => {
+    expect(shouldUseWindowedRendering(33, false)).toBe(false);
+    expect(shouldUseWindowedRendering(1000, false)).toBe(false);
   });
 });

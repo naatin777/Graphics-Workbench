@@ -117,18 +117,20 @@ function renderOptions(
   return {
     preview: payload.preview,
     ...(pdfPreview !== undefined && { root: pdfPreview }),
-    ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
-      ? { workerSrc: payload.resources.workerSrc }
-      : {}),
-    ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
-      ? { cMapUrl: payload.resources.cMapUrl }
-      : {}),
-    ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
-      ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
-      : {}),
-    ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
-      ? { wasmUrl: payload.resources.wasmUrl }
-      : {}),
+    resources: {
+      ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
+        ? { workerSrc: payload.resources.workerSrc }
+        : {}),
+      ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
+        ? { cMapUrl: payload.resources.cMapUrl }
+        : {}),
+      ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
+        ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
+        : {}),
+      ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
+        ? { wasmUrl: payload.resources.wasmUrl }
+        : {}),
+    },
     page: { label: payload.labels.header.pageLabel },
     signal,
     onRenderError: (error: unknown) => {

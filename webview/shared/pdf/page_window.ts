@@ -22,6 +22,12 @@ export function calculatePageWindow(
 
 export const MAX_RENDERED_PAGES = WINDOW_SIZE;
 
+const MAX_EAGER_PAGES = 32;
+
+export function shouldUseWindowedRendering(numPages: number, virtualize: boolean | undefined): boolean {
+  return numPages > MAX_EAGER_PAGES && virtualize !== false;
+}
+
 export function insertPageFrameInOrder(container: HTMLElement, pageFrame: HTMLElement): void {
   const pageNumber = Number(pageFrame.dataset.pdfPage);
   for (const child of container.children) {

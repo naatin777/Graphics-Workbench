@@ -36,7 +36,6 @@ export function App(): JSX.Element {
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [applyError, setApplyError] = createSignal('');
-  const [tooManyPages, setTooManyPages] = createSignal(false);
   const [previewReady, setPreviewReady] = createSignal(false);
 
   let pdfPages: HTMLDivElement | undefined;
@@ -83,7 +82,6 @@ export function App(): JSX.Element {
       setFileName(payload.fileName);
       setPageCount(payload.pageCount);
       setApplyError('');
-      setTooManyPages(payload.pageCount > 32);
       setPreviewReady(false);
       const generation = previewGeneration + 1;
       previewGeneration = generation;
@@ -144,21 +142,24 @@ export function App(): JSX.Element {
 
     try {
       renderController = await renderPdfPages(payload.pdfSrc, pdfPages, {
+        virtualize: false,
+        resources: {
+          ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
+            ? { workerSrc: payload.resources.workerSrc }
+            : {}),
+          ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
+            ? { cMapUrl: payload.resources.cMapUrl }
+            : {}),
+          ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
+            ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
+            : {}),
+          ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
+            ? { wasmUrl: payload.resources.wasmUrl }
+            : {}),
+        },
         preview: payload.preview,
-        ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
-          ? { workerSrc: payload.resources.workerSrc }
-          : {}),
-        ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
-          ? { cMapUrl: payload.resources.cMapUrl }
-          : {}),
-        ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
-          ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
-          : {}),
-        ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
-          ? { wasmUrl: payload.resources.wasmUrl }
-          : {}),
-        root: pdfPages,
         page: { label: currentLabels.preview.ariaLabel },
+        root: pdfPages,
         signal: controller.signal,
         onRenderError: (error) => {
           if (controller.signal.aborted) {
@@ -316,13 +317,12 @@ export function App(): JSX.Element {
               {pageCount()} {labels().order.positionLabel}
             </p>
 
-            {tooManyPages() && <p role='alert'>{labels().tooManyPages}</p>}
             {applyError() !== '' && <p role='alert'>{applyError()}</p>}
 
             <div class='reorder__actions'>
               <Button
                 variant='primary'
-                disabled={!previewReady() || tooManyPages()}
+                disabled={!previewReady()}
                 onClick={apply}
               >
                 {labels().actions.apply}

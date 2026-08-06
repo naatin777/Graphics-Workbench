@@ -29,12 +29,14 @@ export function App(): JSX.Element {
       setSources([...payload.sources]);
       setPdfOptions({
         preview: payload.preview,
-        ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
-        ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
-        ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''
-          ? { standardFontDataUrl: payload.standardFontDataUrl }
-          : {}),
-        ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
+        resources: {
+          ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
+          ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
+          ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''
+            ? { standardFontDataUrl: payload.standardFontDataUrl }
+            : {}),
+          ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
+        },
       });
       setLabels(payload.labels);
       setHostError('');

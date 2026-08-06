@@ -4,7 +4,12 @@ import './install_map_get_or_insert_computed';
 import * as pdfjsModule from 'pdfjs-dist';
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 
-import { calculatePageWindow, insertPageFrameInOrder, MAX_RENDERED_PAGES } from './page_window';
+import {
+  calculatePageWindow,
+  insertPageFrameInOrder,
+  MAX_RENDERED_PAGES,
+  shouldUseWindowedRendering,
+} from './page_window';
 import { calculatePdfCanvasDimensions } from './canvas_limits';
 // Vite turns this worker query into an asset URL even though the source module has no default export.
 // oxlint-disable-next-line import/default
@@ -13,7 +18,6 @@ import pdfJsWorkerUrl from './pdfjs_worker?worker&url';
 type PdfJs = typeof pdfjsModule;
 
 let pdfJsWorkerPromise: Promise<Worker> | undefined;
-const MAX_EAGER_PAGES = 32;
 const PAGE_GAP_PX = 12;
 
 export interface PdfRenderController {
@@ -29,8 +33,9 @@ export async function renderFirstPdfPage(
   throwIfAborted(options.signal);
   const pdfjs = await loadPdfJs();
 
-  if (options.workerSrc !== undefined && options.workerSrc !== '') {
-    pdfjs.GlobalWorkerOptions.workerSrc = options.workerSrc;
+  const workerSrc = options.resources?.workerSrc;
+  if (workerSrc !== undefined && workerSrc !== '') {
+    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
   }
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
@@ -76,8 +81,9 @@ export async function renderPdfPages(
   throwIfAborted(options.signal);
   const pdfjs = await loadPdfJs();
 
-  if (options.workerSrc !== undefined && options.workerSrc !== '') {
-    pdfjs.GlobalWorkerOptions.workerSrc = options.workerSrc;
+  const workerSrc = options.resources?.workerSrc;
+  if (workerSrc !== undefined && workerSrc !== '') {
+    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
   }
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
@@ -99,7 +105,7 @@ export async function renderPdfPages(
   }
   options.signal?.removeEventListener('abort', abortLoading);
 
-  if (document.numPages > MAX_EAGER_PAGES) {
+  if (shouldUseWindowedRendering(document.numPages, options.virtualize)) {
     return attachRenderSignal(createWindowedRenderController(), options.signal);
   }
 
@@ -460,10 +466,12 @@ async function loadPdfJsWorker(): Promise<Worker> {
 }
 
 interface PdfRenderOptions {
-  workerSrc?: string;
-  cMapUrl?: string;
-  standardFontDataUrl?: string;
-  wasmUrl?: string;
+  resources?: {
+    workerSrc?: string;
+    cMapUrl?: string;
+    standardFontDataUrl?: string;
+    wasmUrl?: string;
+  };
   root?: Element;
   page?: {
     label?: string;
@@ -475,6 +483,7 @@ interface PdfRenderOptions {
     maxCanvasPixels: number;
     maxDevicePixelRatio: number;
   };
+  virtualize?: boolean;
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
@@ -490,15 +499,16 @@ function createAbortError(): Error {
 }
 
 function createDocumentOptions(pdfSrc: string, options: PdfRenderOptions): Parameters<PdfJs['getDocument']>[0] {
+  const { resources } = options;
   return {
     url: pdfSrc,
     cMapPacked: true,
     useWorkerFetch: false,
-    ...(options.cMapUrl !== undefined && options.cMapUrl !== '' ? { cMapUrl: options.cMapUrl } : {}),
-    ...(options.standardFontDataUrl !== undefined && options.standardFontDataUrl !== ''
-      ? { standardFontDataUrl: options.standardFontDataUrl }
+    ...(resources?.cMapUrl !== undefined && resources.cMapUrl !== '' ? { cMapUrl: resources.cMapUrl } : {}),
+    ...(resources?.standardFontDataUrl !== undefined && resources.standardFontDataUrl !== ''
+      ? { standardFontDataUrl: resources.standardFontDataUrl }
       : {}),
-    ...(options.wasmUrl !== undefined && options.wasmUrl !== '' ? { wasmUrl: options.wasmUrl } : {}),
+    ...(resources?.wasmUrl !== undefined && resources.wasmUrl !== '' ? { wasmUrl: resources.wasmUrl } : {}),
   };
 }
 
