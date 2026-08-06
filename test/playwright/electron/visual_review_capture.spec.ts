@@ -6,13 +6,25 @@ import { expect, test, type Locator, type TestInfo } from '@playwright/test';
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
 import { operationPdfInputDirectory } from '../../helpers/fixture_paths.js';
 import { resetTestWorkspace } from '../../helpers/test_workspace.js';
-import { openCropPdfConfigure, waitForWebviewTheme } from './helpers/crop_pdf_webview.js';
-import { captureCropPdfScreenshot } from './helpers/crop_pdf_screenshot.js';
+import {
+  expectPdfCanvasesReadable,
+  openCropPdfConfigure,
+  readWebviewBodyColors,
+  waitForWebviewTheme,
+  type WebviewThemeState,
+} from './helpers/crop_pdf_webview.js';
+import {
+  captureCropPdfScreenshot,
+  waitForWebviewLayoutToSettle,
+  waitForWebviewViewportResize,
+} from './helpers/crop_pdf_screenshot.js';
 import {
   type ElectronTestEnv,
+  type ElectronViewportSize,
   type PreparedElectronTest,
   prepareElectronTest,
   resolvePackagedVsixPath,
+  resizeElectronWindow,
   setupElectronTest,
   disposePreparedElectronTest,
   getElectronViewportWidth,
@@ -24,10 +36,15 @@ import {
   disposeElectronTest,
   writeVscodeUserSettings,
 } from './helpers/vscode_electron_test.js';
-import { writeVisualReviewScreenshot } from './helpers/visual_review.js';
+import {
+  initializeVisualReviewOutput,
+  type VisualReviewViewport,
+  writeVisualReviewScreenshot,
+} from './helpers/visual_review.js';
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const secondPdfName = 'second.pdf';
+const narrowViewportSize: ElectronViewportSize = { width: 600, height: 900 };
 const captureThemes = [
   { id: 'dark', colorTheme: 'Default Dark Modern', themeClass: 'vscode-dark' },
   { id: 'light', colorTheme: 'Default Light Modern', themeClass: 'vscode-light' },
@@ -43,6 +60,7 @@ test.beforeAll(async ({ playwright }, testInfo) => {
   void playwright;
   testInfo.setTimeout(180_000);
   await resetTestWorkspace();
+  await initializeVisualReviewOutput();
   preparedElectronTest = await prepareElectronTest(packagedVsixPath);
 });
 
@@ -78,15 +96,64 @@ async function addSecondPdf(workspacePath: string): Promise<void> {
   await cp(sourceFixture, join(workspacePath, secondPdfName));
 }
 
+function themeSignature(state: WebviewThemeState): string {
+  return `${state.bodyBackground}|${state.bodyForeground}`;
+}
+
+/**
+ * Writes the VS Code color theme, then waits until the webview has adopted both
+ * the theme class and its CSS variables. Same-class transitions (for example
+ * dark -> red -> abyss) keep the `vscode-dark` class, so the class check can
+ * pass before the new colors are painted; the body colors are polled until the
+ * previous theme's colors are actually replaced.
+ */
 async function applyTheme(
   userSettingsPath: string,
   theme: (typeof captureThemes)[number],
   body: Locator,
-): Promise<void> {
-  if (theme.colorTheme !== 'Default Dark Modern') {
-    await writeVscodeUserSettings(userSettingsPath, theme.colorTheme);
+  previousState: WebviewThemeState | undefined,
+): Promise<WebviewThemeState> {
+  await writeVscodeUserSettings(userSettingsPath, theme.colorTheme);
+  const state = await waitForWebviewTheme(body, theme.themeClass);
+
+  if (previousState !== undefined && themeSignature(state) === themeSignature(previousState)) {
+    await expect
+      .poll(async () => themeSignature(await readWebviewBodyColors(body)) !== themeSignature(previousState), {
+        message: `Theme switch to ${theme.colorTheme} did not replace the previous theme's colors.`,
+        timeout: 30_000,
+      })
+      .toBe(true);
+    return readWebviewBodyColors(body);
   }
-  await waitForWebviewTheme(body, theme.themeClass);
+
+  return state;
+}
+
+async function captureViewportThemes(options: {
+  body: Locator;
+  canvases: Locator | undefined;
+  env: ElectronTestEnv;
+  screen: 'crop' | 'merge' | 'split';
+  userSettingsPath: string;
+  viewport: VisualReviewViewport;
+}): Promise<void> {
+  const { body, canvases, env, screen, userSettingsPath, viewport } = options;
+  let previousState: WebviewThemeState | undefined;
+
+  for (const theme of captureThemes) {
+    previousState = await applyTheme(userSettingsPath, theme, body, previousState);
+    const screenshot =
+      screen === 'crop' && canvases
+        ? await captureCropPdfScreenshot(env.app.window, body, {
+            canvases,
+            snapshotPrefix: join(env.directories.temporaryRoot, `${screen}-${theme.id}`),
+          })
+        : screen === 'merge'
+          ? await captureMergePdfScreenshot(env.app.window, body)
+          : await captureSplitPdfScreenshot(env.app.window, body);
+    const outputPath = await writeVisualReviewScreenshot(viewport, `${screen}-configure-${theme.id}.png`, screenshot);
+    console.log(`Visual review image written: ${outputPath}`);
+  }
 }
 
 async function attachDiagnostics(
@@ -108,8 +175,14 @@ async function attachDiagnostics(
   });
 }
 
+async function resizeToNarrow(env: ElectronTestEnv, body: Locator): Promise<void> {
+  await resizeElectronWindow(env.app.electronApp, env.app.window, narrowViewportSize);
+  await waitForWebviewViewportResize(body, narrowViewportSize.width);
+  await waitForWebviewLayoutToSettle(body);
+}
+
 test('capture Crop PDF Configure screenshots for visual review', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(120_000);
+  testInfo.setTimeout(300_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -122,15 +195,26 @@ test('capture Crop PDF Configure screenshots for visual review', async ({ playwr
     const { body, canvases } = await openCropPdfConfigure(env.app.window, cropConfigureFixture.fileName);
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
 
-    for (const theme of captureThemes) {
-      await applyTheme(userSettingsPath, theme, body);
-      const screenshot = await captureCropPdfScreenshot(env.app.window, body, {
-        canvases,
-        snapshotPrefix: join(env.directories.temporaryRoot, `crop-${theme.id}`),
-      });
-      const outputPath = await writeVisualReviewScreenshot(`crop-configure-${theme.id}.png`, screenshot);
-      console.log(`Visual review image written: ${outputPath}`);
-    }
+    await expectPdfCanvasesReadable(canvases, 'Crop PDF preview did not render before the wide capture.');
+    await captureViewportThemes({
+      body,
+      canvases,
+      env,
+      screen: 'crop',
+      userSettingsPath,
+      viewport: 'wide',
+    });
+
+    await resizeToNarrow(env, body);
+    await expectPdfCanvasesReadable(canvases, 'Crop PDF preview did not remain readable after the narrow resize.');
+    await captureViewportThemes({
+      body,
+      canvases,
+      env,
+      screen: 'crop',
+      userSettingsPath,
+      viewport: 'narrow',
+    });
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));
@@ -142,7 +226,7 @@ test('capture Crop PDF Configure screenshots for visual review', async ({ playwr
 });
 
 test('capture Merge PDF Configure screenshots for visual review', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(120_000);
+  testInfo.setTimeout(300_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -156,12 +240,24 @@ test('capture Merge PDF Configure screenshots for visual review', async ({ playw
     const { body } = await openMergePdfConfigure(env.app.window, [cropConfigureFixture.fileName, secondPdfName]);
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
 
-    for (const theme of captureThemes) {
-      await applyTheme(userSettingsPath, theme, body);
-      const screenshot = await captureMergePdfScreenshot(env.app.window, body);
-      const outputPath = await writeVisualReviewScreenshot(`merge-configure-${theme.id}.png`, screenshot);
-      console.log(`Visual review image written: ${outputPath}`);
-    }
+    await captureViewportThemes({
+      body,
+      canvases: undefined,
+      env,
+      screen: 'merge',
+      userSettingsPath,
+      viewport: 'wide',
+    });
+
+    await resizeToNarrow(env, body);
+    await captureViewportThemes({
+      body,
+      canvases: undefined,
+      env,
+      screen: 'merge',
+      userSettingsPath,
+      viewport: 'narrow',
+    });
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));
@@ -173,7 +269,7 @@ test('capture Merge PDF Configure screenshots for visual review', async ({ playw
 });
 
 test('capture Split PDF Configure screenshots for visual review', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(120_000);
+  testInfo.setTimeout(300_000);
   let env: ElectronTestEnv | undefined;
   const consoleMessages: string[] = [];
 
@@ -187,14 +283,27 @@ test('capture Split PDF Configure screenshots for visual review', async ({ playw
     await frame.getByRole('textbox', { name: 'Pages 1', exact: true }).fill('1');
     await frame.getByRole('button', { name: 'All pages', exact: true }).click();
     await expect(frame.locator('.pdf-preview')).toBeVisible();
+    await expectPdfCanvasesReadable(frame.locator('canvas[data-pdf-page]'), 'Split PDF preview did not render.');
     const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
 
-    for (const theme of captureThemes) {
-      await applyTheme(userSettingsPath, theme, body);
-      const screenshot = await captureSplitPdfScreenshot(env.app.window, body);
-      const outputPath = await writeVisualReviewScreenshot(`split-configure-${theme.id}.png`, screenshot);
-      console.log(`Visual review image written: ${outputPath}`);
-    }
+    await captureViewportThemes({
+      body,
+      canvases: undefined,
+      env,
+      screen: 'split',
+      userSettingsPath,
+      viewport: 'wide',
+    });
+
+    await resizeToNarrow(env, body);
+    await captureViewportThemes({
+      body,
+      canvases: undefined,
+      env,
+      screen: 'split',
+      userSettingsPath,
+      viewport: 'narrow',
+    });
   } catch (error) {
     await attachDiagnostics(testInfo, env, error, consoleMessages);
     throw error instanceof Error ? error : new Error(String(error));

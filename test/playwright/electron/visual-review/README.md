@@ -16,20 +16,47 @@
 
 1. `npm run package:vsix` でVSIXを生成する（`graphics-workbench.vsix`）
 2. `npm run visual:capture` を実行する
-   - 出力先: `artifacts/visual-review/<platform>-<arch>/<screen>-<state>.png`（例: `darwin-arm64/crop-configure-dark.png`）
-   - 対象: crop / merge / split のConfigure画面をdark / light / high-contrast / high-contrast-light / red / abyssテーマで撮影
+   - 出力先: `artifacts/visual-review/<platform>-<arch>/<viewport>/<screen>-<state>.png`
+   - viewportは `wide`（1280×900）と `narrow`（600×900）
+   - 対象: crop / merge / split のConfigure画面をdark / light / high-contrast / high-contrast-light / red / abyssテーマで、wideとnarrowの両方を撮影
 3. 生成された画像を確認する
 4. 意図した変更であることを確認する
 5. 必要な場合のみreference画像を更新する
 6. コード変更と画像変更を一緒にレビューする
 
+撮影は画面ごとにElectronを1回起動し、その同一セッション内でテーマを切り替え、wide撮影後にウィンドウをnarrowへリサイズして再び全テーマを撮影する。テーマごとの再起動は行わない。撮影前には出力ディレクトリを初期化するため、今回撮影しなかった古い画像は成果物へ混入しない。
+
 `visual:capture` は通常のE2Eコマンド（`npm run test:playwright:vsix`）とは分離しており、E2Eの合否には影響しない。撮影に失敗した場合はエラーと出力先パスが表示される。
+
+## 出力ディレクトリ構成
+
+```text
+artifacts/
+└── visual-review/
+    └── <platform>-<arch>/
+        ├── wide/
+        │   ├── crop-configure-dark.png
+        │   ├── crop-configure-light.png
+        │   ├── merge-configure-dark.png
+        │   ├── merge-configure-light.png
+        │   ├── split-configure-dark.png
+        │   └── split-configure-light.png
+        └── narrow/
+            ├── crop-configure-dark.png
+            ├── crop-configure-light.png
+            ├── merge-configure-dark.png
+            ├── merge-configure-light.png
+            ├── split-configure-dark.png
+            └── split-configure-light.png
+```
+
+全テーマ（dark / light / high-contrast / high-contrast-light / red / abyss）について、wideとnarrowが同じ命名規則で生成される。
 
 ## generated画像とreference画像
 
 - `artifacts/visual-review/` は実行ごとに生成される未確認画像で、Git管理しない
 - `references/` は人間が確認して「この見た目が正しい」と採用した画像で、Git管理する
-- reference画像を採用する場合は、`artifacts/visual-review/<platform>-<arch>/` から `references/<platform>-<arch>/` へコピーし、コード変更と一緒にcommitする
+- reference画像を採用する場合は、`artifacts/visual-review/<platform>-<arch>/<viewport>/` から `references/<platform>-<arch>/<viewport>/` へコピーし、コード変更と一緒にcommitする
 
 ## reference画像を更新する条件
 

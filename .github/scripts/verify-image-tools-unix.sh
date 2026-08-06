@@ -15,11 +15,13 @@ pdftocairo_path="$(read_setting "graphics-workbench.execPath.pdftocairo")"
 rsvg_convert_path="$(read_setting "graphics-workbench.execPath.rsvgConvert")"
 qpdf_path="$(read_setting "graphics-workbench.execPath.qpdf")"
 chrome_path="$(read_setting "graphics-workbench.puppeteer.executablePath")"
+drawio_path="$(read_setting "graphics-workbench.execPath.drawio")"
 test -x "${gs_path}"
 test -x "${pdftocairo_path}"
 test -x "${rsvg_convert_path}"
 test -x "${qpdf_path}"
 test -x "${chrome_path}"
+test -x "${drawio_path}"
 
 echo "Ghostscript: ${gs_path}"
 "${gs_path}" --version
@@ -35,6 +37,9 @@ echo "qpdf: ${qpdf_path}"
 
 echo "Chrome from settings.json: ${chrome_path}"
 "${chrome_path}" --version
+
+echo "Draw.io from settings.json: ${drawio_path}"
+"${drawio_path}" --version 2>&1 | head -1 || true
 
 work_dir="$(mktemp -d)"
 trap 'rm -rf "${work_dir}"' EXIT

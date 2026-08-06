@@ -47,4 +47,32 @@ cat > "$settings_dir/settings.json" <<EOF
 }
 EOF
 
+# Draw.io CLI for the packaged Draw.io -> PDF smoke and the real-CLI operation test.
+drawio_version="31.1.5"
+drawio_url="https://github.com/jgraph/drawio-desktop/releases/download/v${drawio_version}/drawio-amd64-${drawio_version}.deb"
+drawio_deb="$(mktemp --suffix=.deb)"
+trap 'rm -f "${drawio_deb}"' EXIT
+
+curl -L --fail --retry 3 -o "${drawio_deb}" "${drawio_url}"
+"${apt_prefix[@]}" apt-get install -y "${drawio_deb}"
+
+drawio_path="$(command -v drawio || true)"
+if [ -z "${drawio_path}" ]; then
+	for candidate in /opt/drawio/drawio /usr/bin/drawio; do
+		if [ -x "${candidate}" ]; then
+			drawio_path="${candidate}"
+			break
+		fi
+	done
+fi
+if [ -z "${drawio_path}" ] || [ ! -x "${drawio_path}" ]; then
+	echo "Could not find the drawio executable after installing the .deb." >&2
+	exit 1
+fi
+
+node -e "const fs = require('node:fs'); const p = '${settings_dir}/settings.json'; const s = JSON.parse(fs.readFileSync(p, 'utf8')); s['graphics-workbench.execPath.drawio'] = process.argv[1]; fs.writeFileSync(p, JSON.stringify(s, null, 4) + '\n');" "${drawio_path}"
+
+echo "Draw.io: ${drawio_path}"
+"${drawio_path}" --version 2>&1 | head -1 || true
+
 cat "$settings_dir/settings.json"

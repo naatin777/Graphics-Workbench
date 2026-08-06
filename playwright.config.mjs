@@ -28,7 +28,11 @@ export default defineConfig({
     {
       name: 'vscode-electron-narrow',
       testMatch: '**/electron/**/*.spec.ts',
-      testIgnore: '**/electron/packaged_conversion_smoke.spec.ts',
+      testIgnore: [
+        '**/electron/packaged_conversion_smoke.spec.ts',
+        // Visual review captures both widths inside one session, so it must run once.
+        '**/electron/visual_review_capture.spec.ts',
+      ],
       metadata: { electronViewportWidth: 600 },
     },
   ],

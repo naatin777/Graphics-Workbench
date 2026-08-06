@@ -10,12 +10,14 @@ $pdftocairo = $settings.'graphics-workbench.execPath.pdftocairo'
 $rsvgConvert = $settings.'graphics-workbench.execPath.rsvgConvert'
 $qpdf = $settings.'graphics-workbench.execPath.qpdf'
 $chrome = $settings.'graphics-workbench.puppeteer.executablePath'
+$drawio = $settings.'graphics-workbench.execPath.drawio'
 
 if (-not (Test-Path $gs)) { throw "missing Ghostscript: $gs" }
 if (-not (Test-Path $pdftocairo)) { throw "missing pdftocairo: $pdftocairo" }
 if (-not (Test-Path $rsvgConvert)) { throw "missing rsvg-convert: $rsvgConvert" }
 if (-not (Test-Path $qpdf)) { throw "missing qpdf: $qpdf" }
 if (-not (Test-Path $chrome)) { throw "missing Chrome from settings.json: $chrome" }
+if (-not (Test-Path $drawio)) { throw "missing Draw.io from settings.json: $drawio" }
 
 Write-Host "Ghostscript: $gs"
 & $gs --version | Out-Host

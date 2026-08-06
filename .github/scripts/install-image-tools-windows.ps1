@@ -86,5 +86,22 @@ $settings = [ordered]@{
 	'graphics-workbench.execPath.qpdf' = $qpdf.FullName
 	'graphics-workbench.puppeteer.executablePath' = $chrome
 }
+
+# Draw.io CLI for the packaged Draw.io -> PDF smoke and the real-CLI operation test.
+$drawioVersion = '31.1.5'
+$drawioZip = Join-Path $env:RUNNER_TEMP 'drawio.zip'
+$drawioRoot = Join-Path $env:RUNNER_TEMP 'drawio'
+$drawioUrl = "https://github.com/jgraph/drawio-desktop/releases/download/v$drawioVersion/draw.io-$drawioVersion-windows.zip"
+
+Write-Host 'Downloading Draw.io...'
+Invoke-WebRequest $drawioUrl -OutFile $drawioZip
+Expand-Archive $drawioZip -DestinationPath $drawioRoot -Force
+
+$drawio = Get-ChildItem -Path $drawioRoot -Recurse -Filter 'draw*.exe' | Select-Object -First 1
+if (-not $drawio) {
+	throw 'draw.io.exe not found after extracting the Draw.io zip'
+}
+$settings['graphics-workbench.execPath.drawio'] = $drawio.FullName
+
 $settings | ConvertTo-Json | Set-Content $settingsPath -Encoding utf8
 Get-Content $settingsPath

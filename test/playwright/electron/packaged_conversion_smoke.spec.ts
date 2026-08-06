@@ -6,8 +6,14 @@ import sharp from 'sharp';
 import { PDFDocument } from 'pdf-lib';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
+import { operationDrawioInputDirectory } from '../../helpers/fixture_paths.js';
 import { resetTestWorkspace } from '../../helpers/test_workspace.js';
-import { convertPdfToJpeg, convertPngToJpeg, openCropPdfConfigure } from './helpers/crop_pdf_webview.js';
+import {
+  convertPdfToJpeg,
+  convertPngToJpeg,
+  openCropPdfConfigure,
+  selectExplorerEntry,
+} from './helpers/crop_pdf_webview.js';
 import { attachElectronDiagnostics, disposeElectronTest } from './helpers/vscode_electron_test.js';
 import {
   disposePreparedElectronTest,
@@ -21,6 +27,9 @@ import {
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const unicodePdfFileName = '資料 sample.pdf';
+const drawioFixtureFileName = 'unicode-page-names.drawio';
+const drawioFixturePath = join(operationDrawioInputDirectory, drawioFixtureFileName);
+const expectedDrawioPageCount = 3;
 
 let preparedElectronTest: PreparedElectronTest | undefined;
 
@@ -223,6 +232,62 @@ test('package済みVSIXからpdftocairoを使ってPDFをJPEGへ変換できる'
       expect(metadata.width).toBeGreaterThan(0);
       expect(metadata.height).toBeGreaterThan(0);
     }
+  } catch (error) {
+    await runWithDiagnostics(testInfo, env, consoleMessages, error);
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
+test('package済みVSIXからDraw.io CLIでDraw.ioをPDFへ変換できる', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(180_000);
+  let env: ElectronTestEnv | undefined;
+  let consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
+    consoleMessages = collectConsoleMessages(env);
+
+    await cp(drawioFixturePath, join(env.directories.workspacePath, drawioFixtureFileName));
+
+    const explorer = env.app.window.getByRole('tree', { name: 'Files Explorer' });
+    const drawioEntry = explorer.getByRole('treeitem', { name: drawioFixtureFileName });
+    await expect(drawioEntry).toBeVisible();
+    await selectExplorerEntry(drawioEntry);
+    await drawioEntry.press('Shift+F10');
+
+    const directPdfMenu = env.app.window.getByRole('menuitem', {
+      name: 'Convert all Draw.io pages to one PDF',
+      exact: true,
+    });
+    await expect(directPdfMenu).toBeVisible();
+    await directPdfMenu.hover();
+    await expect(directPdfMenu).toBeFocused();
+    await env.app.window.keyboard.press('Enter');
+
+    await expect(
+      env.app.window.getByRole('alert').filter({ hasText: 'Converted 1 Draw.io file(s) to one PDF each.' }),
+    ).toBeVisible({ timeout: 60_000 });
+
+    const outputPath = join(env.directories.workspacePath, `${drawioFixtureFileName.replace(/\.drawio$/u, '')}.pdf`);
+    await expect
+      .poll(
+        async () => {
+          try {
+            const outputDocument = await PDFDocument.load(await readFile(outputPath));
+            return outputDocument.getPageCount() === expectedDrawioPageCount;
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 60_000 },
+      )
+      .toBe(true);
+    const outputDocument = await PDFDocument.load(await readFile(outputPath));
+    expect(outputDocument.getPageCount()).toBe(expectedDrawioPageCount);
+    await env.app.window.keyboard.press('Escape');
   } catch (error) {
     await runWithDiagnostics(testInfo, env, consoleMessages, error);
   } finally {
