@@ -50,7 +50,7 @@ Taskは小さな作業手順やPR単位ではなく、達成する成果また�
 
 ### Implementation
 
-_No pending implementation tasks._
+- [0221: README用の操作スクリーンショットを追加する](0221-add-readme-screenshots.md) — Not Started
 
 ### Migration and conditional maintenance
 

@@ -6,49 +6,94 @@
 
 English | [日本語](README.ja.md)
 
-This extension is designed to make PDF and image files easier to handle in VS Code.
-It provides PDF splitting and cropping, conversion between PDF, image, SVG, Mermaid, and Draw.io files, and LaTeX code generation.
+Graphics Workbench lets you convert, crop, merge, reorder, and insert the PDFs and images used in papers and technical documents without leaving VS Code. It also works for general PDF and image processing beyond LaTeX.
 
-## Features
+## Who it is for and what it solves
 
-### PDF Operations
+This extension is aimed at VS Code users who work with figures in papers, reports, and technical documents.
 
-- **Crop**: Crops the margins of the selected PDF file. Auto crop and configurable crop are available.
-- **Split**: Splits the selected PDF file into single-page PDFs. Split all pages or configure the split interactively.
-- **Merge**: Merges multiple selected PDF files into one. Merge the selected files or configure the merge interactively.
-- **Rotate**: Rotates the pages of a PDF by 90°, 180°, or 270°. Quick rotate and configurable rotate (select pages) are available.
-- **Reorder**: Changes the page order of a PDF interactively.
-- **Compress**: Recompresses a PDF to reduce its size.
-- **Linearize**: Linearizes a PDF for fast web viewing.
-- **Encrypt / Decrypt**: Protects a PDF with a password or removes its password.
+- Convert screenshots, plots, and figures to PDF
+- Crop the margins of figure PDFs for use in a paper
+- Combine several images into a single PDF
+- Insert figures into LaTeX as `figure` / `includegraphics` code
+
+The value of Graphics Workbench is not any single conversion format but the whole flow: operate directly from the Explorer, edit a PDF while previewing it, resolve output conflicts safely, undo when needed, and finally place the figure into LaTeX or a technical document. There is no need to leave VS Code to run external tools by hand.
+
+## Example workflows
+
+### 1. Remove the margins of a PDF
+
+1. Right-click the PDF in the Explorer
+2. Choose **Crop PDF** → **Adjust Margins** (or **Auto crop** to do it automatically)
+3. Review the margins in the preview
+4. Remove the margins automatically or with explicit settings
+5. Confirm the output path and overwrite policy, then save
+
+### 2. Combine several images into one PDF
+
+1. Select multiple images in the Explorer
+2. Right-click → **Convert** → **Combine Images into Single PDF**
+3. Review the resulting PDF
+4. Save the output
+
+### 3. Insert a screenshot into LaTeX
+
+1. Paste a clipboard image into your LaTeX document
+2. Choose whether to save it as a PDF or as an image
+3. Generate the output file and insert the LaTeX code
+4. If needed, use **Undo Last Graphics Operation** to revert the previous step
+
+## Safe Mode and Undo
+
+Graphics Workbench is designed so existing files are never overwritten carelessly.
+
+- **Safe Mode (enabled by default)**: before an existing output is overwritten, choose **Keep Both**, **Do Not Overwrite**, or **Overwrite**
+- **Staging / backup**: outputs are written to a staging area first and committed on success. A pre-overwrite backup is kept while the Undo record needs it
+- **Undo**: revert the latest completed conversion, merge, crop, split, reorder, rotate, or clipboard paste. Outputs changed since creation are not reverted
+- **No incomplete outputs**: on failure or cancellation, no partial output is left at the destination
+
+Convert confidently. Existing files are protected by default, and the latest graphics operation can be undone.
+
+## Main capabilities
+
+### PDF operations
+
+- **Crop**: remove margins automatically or with explicit settings and a preview
+- **Split**: split a PDF into single-page PDFs
+- **Merge**: merge multiple PDFs into one (order can be reviewed)
+- **Rotate**: rotate pages by 90°, 180°, or 270°
+- **Reorder**: change the page order interactively
+- **Compress / Linearize / Encrypt / Decrypt**: reduce size, linearize for web viewing, or protect with a password
 
 ### Conversion
 
-- **Output-format based conversion**: In the Explorer context menu, choose output formats such as `Convert > PDF`, `Convert > PNG`, `Convert > JPEG`, `Convert > WebP`, `Convert > AVIF`, `Convert > GIF`, `Convert > TIFF`, `Convert > EPS`, or `Convert > SVG`.
-- **PDF / image / SVG / Mermaid / editable Draw.io conversion**: Convert supported inputs to the selected output format.
-- **Multiple images to a single PDF**: Combine multiple selected images into one PDF.
-- **Animation preserve / frame split**: Preserve the animation or split frames when converting between animated GIF and WebP.
-- **Create Draw.io files**: Convert a figure to a native `.drawio` file or to an editable `.drawio.png` / `.drawio.svg` image.
-- **Native Draw.io PDF conversion**: Convert `.drawio` and `.dio` files into one PDF per page or one PDF containing all pages.
-- **Mixed selection**: Convert multiple supported input formats to the same output format in one operation.
-- **Safety rules**: Same-format conversion is rejected. Normal GIF/TIFF conversion uses only the first page/frame; the explicit animation preserve/split commands retain multiple frames.
+- Choose the output format (PDF / PNG / JPEG / WebP / AVIF / GIF / TIFF / EPS / SVG) from the Explorer context menu
+- Convert between PDF, image, SVG, Mermaid, and Draw.io files
+- Combine multiple images into one PDF
+- Convert between animated GIF and WebP (preserve animation or split frames)
+- Create editable `.drawio` / `.drawio.png` / `.drawio.svg` from a figure
+- Convert native Draw.io files (`.drawio` / `.dio`) into one PDF per page or one PDF with all pages
 
-### LaTeX Code Generation
+### LaTeX code generation
 
-- **Insert from PDF**: Drag and drop a PDF file into a LaTeX document to automatically insert the corresponding LaTeX code.
-- **Insert from Image**: Paste a clipboard image into a LaTeX document, choose whether to save it as PDF or as an image, edit the output path, and insert the corresponding LaTeX code.
+- **Insert from PDF**: drag a PDF into a LaTeX document to insert the matching LaTeX code automatically
+- **Insert from clipboard image**: paste an image, choose whether to save it as a PDF or as an image, edit the output path, and insert the matching LaTeX code
 
 ## Installation
 
 You can install this extension in one of the following ways:
 
-- **Visual Studio Code Marketplace**:
-  Search for "Graphics Workbench" in the Extensions Marketplace within VS Code and install it.
-  [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=naatin777.graphics-workbench)
+### Visual Studio Code Marketplace
 
-- **Open VSX Registry**:
-  It can also be installed from Open VSX, an alternative marketplace for VS Code.
-  [Open VSX](https://open-vsx.org/extension/naatin777/graphics-workbench)
+Search for "Graphics Workbench" in the Extensions Marketplace within VS Code and install it.
+
+[Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=naatin777.graphics-workbench)
+
+### Open VSX Registry
+
+It can also be installed from Open VSX, an alternative marketplace for VS Code.
+
+[Open VSX](https://open-vsx.org/extension/naatin777/graphics-workbench)
 
 ### Platform-specific packages
 
@@ -68,6 +113,76 @@ When manually picking a VSIX from GitHub Releases, choose the file matching your
 With Remote SSH / WSL / Dev Container, the extension runs in the remote Extension Host, so the package for the remote OS and CPU is installed. VS Code selects it automatically.
 
 Unsupported environments (Alpine Linux / musl, ARM32, and other environments without a `sharp` binary) are not supported; no Universal fallback package is provided.
+
+## Setup and external tools
+
+Some features need external tools in addition to the VS Code extension. Install what you need for the features you use. Executable paths can be set in VS Code settings (`graphics-workbench.execPath.*`).
+
+| Tool                     | Purpose                                            | Required by                                                             | Notes                                                                                         |
+| ------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Ghostscript              | PDF margin detection                               | PDF cropping                                                            | When the setting is empty, resolves `gs` on macOS/Linux and `gswin64c` on Windows from `PATH` |
+| Poppler / `pdftocairo`   | Rendering PDF pages to images                      | PDF to PNG/JPEG/WebP/AVIF/SVG conversion                                | Install via your OS package manager or official distribution, then set `PATH` or the setting  |
+| rsvg-convert             | SVG to PDF conversion                              | When the `rsvg-convert` backend is selected                             | One of the SVG conversion backends                                                            |
+| Google Chrome / Chromium | SVG / Mermaid conversion                           | SVG to PDF, Mermaid to PDF/PNG/JPEG/WebP/AVIF/SVG                       | Used by Puppeteer / Mermaid CLI                                                               |
+| Draw.io Desktop          | Draw.io file and editable Draw.io image conversion | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Requires the Draw.io desktop application                                                      |
+| Firefox                  | SVG to PDF conversion                              | When `puppeteer.browser` is set to `firefox`                            | Requires the Firefox executable                                                               |
+
+### To use every feature
+
+To use all conversion features, the following tools are required:
+
+- Ghostscript
+- Poppler / `pdftocairo`
+- Draw.io Desktop
+- One of the SVG conversion backends
+  - `rsvg-convert`
+  - Google Chrome / Chromium
+- Google Chrome / Chromium if you use Mermaid conversion
+
+### About SVG to PDF conversion
+
+SVG to PDF conversion requires one of the following tools:
+
+```text
+rsvg-convert or Google Chrome / Chromium
+```
+
+Use whichever conversion backend is available in your environment.
+
+### Installation examples
+
+#### macOS
+
+```sh
+brew install ghostscript poppler librsvg
+```
+
+Homebrew is one example for macOS. The extension itself does not call Homebrew; it resolves external tools from each OS's `PATH` or the `graphics-workbench.execPath.*` settings.
+
+Install Draw.io Desktop from:
+
+[Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases)
+
+#### Debian / Ubuntu
+
+```sh
+sudo apt install ghostscript poppler-utils librsvg2-bin
+```
+
+Install Draw.io Desktop from:
+
+[Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases)
+
+#### Windows
+
+Install the following tools and, if necessary, set the path to the executables in VS Code settings.
+
+- Ghostscript
+- Poppler (`pdftocairo`)
+- Draw.io Desktop
+- Google Chrome / Chromium
+
+On Windows, use the Windows distributions of each tool or your organization's package manager instead of Homebrew. Add `pdftocairo.exe`, `rsvg-convert.exe`, `qpdf.exe`, or `gswin64c.exe` to `PATH`, or specify the executable paths in VS Code settings.
 
 ## Commands
 
@@ -103,15 +218,6 @@ Unsupported environments (Alpine Linux / musl, ARM32, and other environments wit
 
 GIF/TIFF input uses only the first page/frame. Use the explicit animation preserve/split commands for multi-frame output. Same-format conversion is rejected. EPS output is supported by this release; native `.drawio` / `.dio` files are not EPS inputs.
 
-## Required Tools
-
-- **Draw.io**: The Draw.io desktop application is required to convert native Draw.io files (`.drawio`, `.dio`) and editable Draw.io images (`.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg`). Download it from [Draw.io](https://github.com/jgraph/drawio-desktop/releases).
-- **Ghostscript**: Required for PDF margin detection during PDF cropping. If `graphics-workbench.execPath.ghostscript` is empty, the extension uses `gs` on macOS/Linux and `gswin64c` on Windows, resolved from `PATH`.
-- **Poppler / `pdftocairo`**: Required for rendering PDF pages to PNG, JPEG, WebP, AVIF, or SVG. Install it using the package manager or installer for your OS, then make `pdftocairo` available on `PATH` or set `graphics-workbench.execPath.pdftocairo`.
-- **rsvg-convert**: Required only when `graphics-workbench.convertToPdf.svg.engine` is set to `rsvg-convert`. It is provided by [librsvg](https://wiki.gnome.org/Projects/LibRsvg). Install it using the package manager or installer for your OS, then make `rsvg-convert` available on `PATH` or set `graphics-workbench.execPath.rsvgConvert`.
-- **Google Chrome / Chromium**: Required for Mermaid conversion and optional for SVG conversion when the Puppeteer browser is set to `chrome`.
-- **Firefox**: Can be selected for SVG conversion with `graphics-workbench.puppeteer.browser` set to `firefox`.
-
 ## Configuration
 
 Main settings:
@@ -140,12 +246,6 @@ Command IDs use output-format names such as `convertToPdf`, but output paths use
 
 Open **View → Output → Graphics Workbench** to see relevant command inputs, external tool failures, conflict decisions, committed outputs, and cleanup failures. Progress is shown in the VS Code notification.
 
-## Safe Mode and Undo
-
-Safe Mode is enabled by default and asks before an existing output is overwritten. Choose **Keep Both**, **Do Not Overwrite**, or **Overwrite**. Undo is available for the latest completed conversion, merge, crop, split, or clipboard paste and only reverts outputs that have not changed since they were created. Undo is kept in memory and is not available after the extension restarts.
-
-Normal staging files are removed after a conversion, cancellation, failure, or successful Undo. An overwrite backup is kept only while it is needed by the current Undo record. Password-protected PDF encryption/decryption uses a per-user OS temporary directory, passes qpdf secrets through a private job-json file instead of process arguments, and never copies the source PDF into the workspace staging directory. The extension records the temporary root's PID and start time and removes abandoned PDF roots on the next activation; an active root is preserved for Undo until its normal retention policy expires. Diagnostic ASCII scratch files are managed separately and may be retained after an external-tool failure.
-
 ## Input size and processing time
 
 Graphics Workbench does not impose a fixed limit on input file size or PDF page count.
@@ -153,3 +253,36 @@ Graphics Workbench does not impose a fixed limit on input file size or PDF page 
 The range of inputs that can be processed, the processing time, and the required resources depend on the input contents, the operation, the external tools used, and your computer's performance. Very large inputs can take a long time or fail with memory, disk, or external-tool errors.
 
 You can cancel a running operation where possible. External processes (Ghostscript, qpdf, Poppler, etc.) are terminated, but depending on the processing method it may take some time for the cancellation to take effect.
+
+## Troubleshooting
+
+### A command fails
+
+Check that the external tools are installed.
+
+```sh
+gs --version
+rsvg-convert --version
+```
+
+On Windows, the command may not be found depending on the executable name or `PATH` configuration. In that case, specify the executable path for each tool in VS Code settings.
+
+### PDF cropping fails
+
+Check that Ghostscript is available.
+
+### SVG to PDF conversion fails
+
+Depending on the configured backend, check that `rsvg-convert` or Google Chrome / Chromium is available.
+
+### Mermaid conversion fails
+
+Check that Google Chrome / Chromium is available. If necessary, set the browser executable path for Mermaid conversion in VS Code settings.
+
+### Editable Draw.io image conversion fails
+
+Check that Draw.io Desktop is installed. If necessary, set the executable path in `graphics-workbench.execPath.drawio`.
+
+## License
+
+MIT

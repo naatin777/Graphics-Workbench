@@ -6,37 +6,183 @@
 
 [English](README.md) | 日本語
 
-VS Code で PDF や画像ファイルを直感的に扱えるように設計された拡張機能です。
-PDF の分割、トリミング、PDF・画像・SVG・Mermaid・Draw.io ファイルの形式変換、LaTeX コード生成などを提供します。
+Graphics Workbench は、論文や技術文書で使用する PDF や画像を、VS Code から離れずに変換・トリミング・結合・並べ替え・挿入できる拡張機能です。LaTeX 以外の一般的な PDF・画像処理にも利用できます。
 
-## 機能
+## 対象ユーザーと解決する作業
+
+この拡張機能は、論文、レポート、技術文書などで図版を扱う VS Code ユーザーを主な対象にしています。
+
+- スクリーンショットや図表を PDF に変換したい
+- 図版 PDF の余白を削除して論文に貼りたい
+- 複数の画像を 1 つの PDF にまとめたい
+- 図版を LaTeX の `figure` / `includegraphics` コードとして挿入したい
+
+Graphics Workbench の独自性は、個々の変換形式ではなく、次の一連の流れにあります。Explorer から直接操作し、PDF をプレビューしながら編集し、出力競合を安全に処理し、必要に応じて Undo し、最後に LaTeX や技術文書へ配置できます。VS Code を離れて外部ツールを手で操作する必要がありません。
+
+## 代表的なワークフロー
+
+### 1. PDF の余白を削除する
+
+1. Explorer で PDF を右クリック
+2. **Crop PDF** → **Adjust Margins** を選択（自動で行う場合は **Auto crop**）
+3. プレビューで余白を確認
+4. 自動または詳細指定で余白を削除
+5. 出力先と上書き方針を確認して保存
+
+### 2. 複数画像を 1 つの PDF にまとめる
+
+1. Explorer で複数の画像を選択
+2. 右クリック → **Convert** → **Combine Images into Single PDF**
+3. 生成される PDF を確認
+4. 出力を保存
+
+### 3. スクリーンショットを LaTeX へ挿入する
+
+1. クリップボードの画像を LaTeX ドキュメントへ貼り付け
+2. PDF として保存するか画像として保存するかを選択
+3. 出力ファイルを生成して LaTeX コードを挿入
+4. 必要なら **Undo Last Graphics Operation** で直前の処理を取り消す
+
+## Safe Mode と Undo
+
+Graphics Workbench は、既存のファイルを不用意に上書きしないよう設計されています。
+
+- **Safe Mode（既定で有効）**: 既存の出力を上書きする前に **Keep Both**・**Do Not Overwrite**・**Overwrite** の選択を求めます
+- **staging / backup**: 出力はまず staging 領域へ書き込み、確定時に反映します。上書き前の backup は Undo が済むまで保持されます
+- **Undo**: 最後に完了した変換・結合・トリミング・分割・回転・並べ替え・クリップボード貼り付けを元に戻せます。生成後に変更された出力は取り消しません
+- **不完全な出力を残さない**: 変換の失敗時やキャンセル時には、不完全な出力を出力先へ残しません
+
+Convert confidently. Existing files are protected by default, and the latest graphics operation can be undone.
+
+## 対応する主な処理
 
 ### PDF 操作
 
-- **PDF の余白トリミング**: 選択した PDF ファイルの余白をトリミングします。自動トリミングと設定付きトリミングが利用できます。
-- **PDF の分割**: PDF をページごとに単一ページ PDF として分割します。全ページ分割と設定付き分割が利用できます。
-- **PDF の結合**: 複数選択した PDF ファイルを 1 つの PDF に結合します。選択ファイルの結合と設定付き結合が利用できます。
-- **PDF の回転**: PDF のページを90° / 180° / 270°で回転します。クイック回転とページ選択付きの設定が利用できます。
-- **PDF の並び替え**: PDF のページ順をインタラクティブに変更します。
-- **PDF の圧縮**: PDF を再圧縮してサイズを削減します。
-- **PDF のリニアライズ**: Web 表示に適したPDFへ線形化します。
-- **PDF の暗号化 / 復号化**: PDF にパスワードを設定、または解除します。
+- **余白のトリミング**: 自動、またはプレビューで余白を指定して削除
+- **分割**: PDF をページごとに単一ページ PDF として分割
+- **結合**: 複数の PDF を 1 つに結合（並べ替えも可能）
+- **回転**: ページを 90° / 180° / 270° で回転
+- **並べ替え**: ページ順をプレビューしながら変更
+- **圧縮 / リニアライズ / 暗号化 / 復号化**: サイズ削減や Web 表示向け線形化、パスワード保護
 
 ### 変換
 
-- **出力形式を選ぶ変換**: Explorer の右クリックメニューでは `変換 > PDF` / `変換 > PNG` / `変換 > JPEG` / `変換 > WebP` / `変換 > AVIF` / `変換 > GIF` / `変換 > TIFF` / `変換 > EPS` / `変換 > SVG` のように、出力形式を選んで変換します。
-- **PDF / 画像 / SVG / Mermaid / editable Draw.io の変換**: 対応入力を、選択した出力形式へまとめて変換します。
-- **複数画像を1つのPDFへ結合**: 複数選択した画像を1つのPDFへ結合します。
-- **アニメーション保持 / フレーム分割**: アニメーションGIFとWebPの相互変換で、アニメーションを保持するかフレームを分割して出力できます。
-- **Draw.ioファイルの作成**: 図版をネイティブ `.drawio` または editable `.drawio.png` / `.drawio.svg` へ変換します。
-- **混在選択**: 同じ出力形式へ変換できる複数形式のファイルを、1回の操作で変換できます。
-- **安全規則**: 入力と出力が同じ形式の変換は拒否します。通常のGIF/TIFF変換は先頭page/frameだけを使用し、複数frameが必要な場合はanimation preserve/split commandを使用します。
-- **ネイティブDraw.ioのPDF変換**: `.drawio` / `.dio` をページごとのPDF、または全ページを含む1つのPDFへ変換できます。
+- Explorer の右クリックメニューから、出力形式（PDF / PNG / JPEG / WebP / AVIF / GIF / TIFF / EPS / SVG）を選んで変換
+- PDF・画像・SVG・Mermaid・Draw.io ファイルの相互変換
+- 複数の画像を 1 つの PDF に結合
+- アニメーション GIF / WebP の相互変換（アニメーション保持 / フレーム分割）
+- 図版から編集可能な `.drawio` / `.drawio.png` / `.drawio.svg` を作成
+- ネイティブ Draw.io ファイル（`.drawio` / `.dio`）をページごと、または 1 つの PDF へ変換
 
 ### LaTeX コード生成
 
-- **PDF の LaTeX 挿入**: PDF ファイルを LaTeX ドキュメントにドラッグ&ドロップすると、`figure` / `includegraphics` を含む LaTeX コードを自動挿入します。
-- **クリップボード画像の LaTeX 挿入**: クリップボードの画像を LaTeX ドキュメントに貼り付けると、PDF / 画像のどちらで保存するかを選び、保存先を編集してから、対応する LaTeX コードを挿入します。
+- **PDF の挿入**: PDF ファイルを LaTeX ドキュメントへドラッグ&ドロップすると、対応する LaTeX コードを自動挿入
+- **クリップボード画像の挿入**: 画像を貼り付けると、PDF / 画像のどちらで保存するかを選び、保存先を編集してから LaTeX コードを挿入
+
+## インストール
+
+この拡張機能は、以下のいずれかの方法でインストールできます。
+
+### Visual Studio Code Marketplace
+
+VS Code 内の拡張機能マーケットプレイスから **Graphics Workbench** を検索し、インストールしてください。
+
+[Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=naatin777.graphics-workbench)
+
+### Open VSX Registry
+
+Open VSX Registry からもインストールできます。
+
+[Open VSX](https://open-vsx.org/extension/naatin777/graphics-workbench)
+
+### プラットフォーム別パッケージ
+
+Graphics Workbench は OS・CPU ごとにネイティブバイナリ（`sharp`）を含む VSIX を分けて公開しています。Marketplace / Open VSX からの通常インストールでは、VS Code が実行環境に合うパッケージを自動選択するため、利用者が選択する必要はありません。
+
+| 環境                | パッケージ     |
+| ------------------- | -------------- |
+| Windows Intel / AMD | `win32-x64`    |
+| Windows ARM         | `win32-arm64`  |
+| Intel Mac           | `darwin-x64`   |
+| Apple Silicon Mac   | `darwin-arm64` |
+| Linux x64 (glibc)   | `linux-x64`    |
+| Linux ARM64 (glibc) | `linux-arm64`  |
+
+GitHub Releases から手動で VSIX を選ぶ場合は、上記の表から自分の環境に合うファイルを選んでください。
+
+Remote SSH / WSL / Dev Container では、この拡張機能はローカルではなくリモート側の Extension Host で動作するため、リモート環境の OS・CPU 向けパッケージがインストールされます。VS Code が自動で選択します。
+
+非対応環境（Alpine Linux / musl、ARM32 など、`sharp` のバイナリがない環境）はサポート対象外です。Universal 版のフォールバックは提供しません。
+
+## セットアップと外部ツール
+
+一部の機能では、VS Code 拡張機能とは別に外部ツールが必要です。使用する機能に応じて、必要なツールをインストールしてください。実行ファイルへのパスは VS Code の設定（`graphics-workbench.execPath.*`）で指定できます。
+
+| ツール                   | 用途                                        | 必須になる機能                                                          | 備考                                                                                   |
+| ------------------------ | ------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Ghostscript              | PDF の余白検出                              | PDF トリミング                                                          | 設定が空の場合は macOS / Linux で `gs`、Windows で `gswin64c` を `PATH` から解決します |
+| Poppler / `pdftocairo`   | PDFページの画像化                           | PDFからPNG/JPEG/WebP/AVIF/SVGへの変換                                   | OSのパッケージマネージャーまたは公式配布物で導入し、`PATH`または設定で指定             |
+| rsvg-convert             | SVG から PDF への変換                       | `rsvg-convert`バックエンドを選択した場合                                | SVG 変換バックエンドの 1 つです                                                        |
+| Google Chrome / Chromium | SVG / Mermaid 変換                          | SVG から PDF、Mermaid から PDF/PNG/JPEG/WebP/AVIF/SVG                   | Puppeteer / Mermaid CLI から使用します                                                 |
+| Draw.io Desktop          | Draw.ioファイルとeditable Draw.io画像の変換 | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Draw.io デスクトップアプリケーションが必要です                                         |
+| Firefox                  | SVG から PDF への変換                       | `puppeteer.browser` を `firefox` にした場合                             | Firefox の実行ファイルが必要です                                                       |
+
+### すべての機能を利用する場合
+
+すべての変換機能を利用するには、以下のツールが必要です。
+
+- Ghostscript
+- Poppler / `pdftocairo`
+- Draw.io Desktop
+- SVG 変換バックエンドのいずれか
+  - `rsvg-convert`
+  - Google Chrome / Chromium
+- Mermaid変換を使う場合は Google Chrome / Chromium
+
+### SVG から PDF への変換について
+
+SVG から PDF への変換には、以下のいずれかのツールが必要です。
+
+```text
+rsvg-convert または Google Chrome / Chromium
+```
+
+環境に応じて利用可能な変換バックエンドを使用してください。
+
+### 外部ツールのインストール例
+
+#### macOS
+
+```sh
+brew install ghostscript poppler librsvg
+```
+
+HomebrewはmacOSでの導入例です。拡張機能本体はHomebrewを呼び出さず、各OSの`PATH`または`graphics-workbench.execPath.*`設定から外部ツールを解決します。
+
+Draw.io Desktop は以下からインストールしてください。
+
+[Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases)
+
+#### Debian / Ubuntu
+
+```sh
+sudo apt install ghostscript poppler-utils librsvg2-bin
+```
+
+Draw.io Desktop は以下からインストールしてください。
+
+[Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases)
+
+#### Windows
+
+以下のツールをインストールし、必要に応じて実行ファイルへのパスを VS Code の設定で指定してください。
+
+- Ghostscript
+- Poppler（`pdftocairo`）
+- Draw.io Desktop
+- Google Chrome / Chromium
+
+WindowsではHomebrewを使用せず、各ツールのWindows向け配布物または組織のパッケージマネージャーで導入してください。`pdftocairo.exe`、`rsvg-convert.exe`、`qpdf.exe`、`gswin64c.exe`を`PATH`へ追加するか、VS Codeの設定で実行ファイルのパスを指定します。
 
 ## コマンド一覧
 
@@ -72,111 +218,6 @@ PDF の分割、トリミング、PDF・画像・SVG・Mermaid・Draw.io ファ�
 
 GIF/TIFF入力は先頭page/frameだけを使用します。複数frameが必要な場合はanimation preserve/split commandを使用してください。EPSの出力にも対応しています。ネイティブ `.drawio` / `.dio` はEPS入力にできません。同じ形式への変換は拒否します。
 
-## インストール方法
-
-この拡張機能は、以下のいずれかの方法でインストールできます。
-
-### Visual Studio Code Marketplace
-
-VS Code 内の拡張機能マーケットプレイスから **Graphics Workbench** を検索し、インストールしてください。
-
-[Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=naatin777.graphics-workbench)
-
-### Open VSX Registry
-
-Open VSX Registry からもインストールできます。
-
-[Open VSX](https://open-vsx.org/extension/naatin777/graphics-workbench)
-
-### プラットフォーム別パッケージ
-
-Graphics Workbench は OS・CPU ごとにネイティブバイナリ（`sharp`）を含む VSIX を分けて公開しています。Marketplace / Open VSX からの通常インストールでは、VS Code が実行環境に合うパッケージを自動選択するため、利用者が選択する必要はありません。
-
-| 環境                | パッケージ     |
-| ------------------- | -------------- |
-| Windows Intel / AMD | `win32-x64`    |
-| Windows ARM         | `win32-arm64`  |
-| Intel Mac           | `darwin-x64`   |
-| Apple Silicon Mac   | `darwin-arm64` |
-| Linux x64 (glibc)   | `linux-x64`    |
-| Linux ARM64 (glibc) | `linux-arm64`  |
-
-GitHub Releases から手動で VSIX を選ぶ場合は、上記の表から自分の環境に合うファイルを選んでください。
-
-Remote SSH / WSL / Dev Container では、この拡張機能はローカルではなくリモート側の Extension Host で動作するため、リモート環境の OS・CPU 向けパッケージがインストールされます。VS Code が自動で選択します。
-
-非対応環境（Alpine Linux / musl、ARM32 など、`sharp` のバイナリがない環境）はサポート対象外です。Universal 版のフォールバックは提供しません。
-
-## 外部依存関係
-
-一部の機能では、VS Code 拡張機能とは別に外部ツールが必要です。使用する機能に応じて、必要なツールをインストールしてください。
-
-| ツール                   | 用途                                        | 必須になる機能                                                          | 備考                                                                                   |
-| ------------------------ | ------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Ghostscript              | PDF の余白検出                              | PDF トリミング                                                          | 設定が空の場合は macOS / Linux で `gs`、Windows で `gswin64c` を `PATH` から解決します |
-| Poppler / `pdftocairo`   | PDFページの画像化                           | PDFからPNG/JPEG/WebP/AVIF/SVGへの変換                                   | OSのパッケージマネージャーまたは公式配布物で導入し、`PATH`または設定で指定             |
-| rsvg-convert             | SVG から PDF への変換                       | `rsvg-convert`バックエンドを選択した場合                                | SVG 変換バックエンドの 1 つです                                                        |
-| Google Chrome / Chromium | SVG / Mermaid 変換                          | SVG から PDF、Mermaid から PDF/PNG/JPEG/WebP/AVIF/SVG                   | Puppeteer / Mermaid CLI から使用します                                                 |
-| Draw.io Desktop          | Draw.ioファイルとeditable Draw.io画像の変換 | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Draw.io デスクトップアプリケーションが必要です                                         |
-| Firefox                  | SVG から PDF への変換                       | `puppeteer.browser` を `firefox` にした場合                             | Firefox の実行ファイルが必要です                                                       |
-
-### すべての機能を利用する場合
-
-すべての変換機能を利用するには、以下のツールが必要です。
-
-- Ghostscript
-- Poppler / `pdftocairo`
-- Draw.io Desktop
-- SVG 変換バックエンドのいずれか
-  - `rsvg-convert`
-  - Google Chrome / Chromium
-- Mermaid変換を使う場合は Google Chrome / Chromium
-
-### SVG から PDF への変換について
-
-SVG から PDF への変換には、以下のいずれかのツールが必要です。
-
-```text
-rsvg-convert または Google Chrome / Chromium
-```
-
-環境に応じて利用可能な変換バックエンドを使用してください。
-
-## 外部ツールのインストール例
-
-### macOS
-
-```sh
-brew install ghostscript poppler librsvg
-```
-
-HomebrewはmacOSでの導入例です。拡張機能本体はHomebrewを呼び出さず、各OSの`PATH`または`graphics-workbench.execPath.*`設定から外部ツールを解決します。
-
-Draw.io Desktop は以下からインストールしてください。
-
-[Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases)
-
-### Debian / Ubuntu
-
-```sh
-sudo apt install ghostscript poppler-utils librsvg2-bin
-```
-
-Draw.io Desktop は以下からインストールしてください。
-
-[Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases)
-
-### Windows
-
-以下のツールをインストールし、必要に応じて実行ファイルへのパスを VS Code の設定で指定してください。
-
-- Ghostscript
-- Poppler（`pdftocairo`）
-- Draw.io Desktop
-- Google Chrome / Chromium
-
-WindowsではHomebrewを使用せず、各ツールのWindows向け配布物または組織のパッケージマネージャーで導入してください。`pdftocairo.exe`、`rsvg-convert.exe`、`qpdf.exe`、`gswin64c.exe`を`PATH`へ追加するか、VS Codeの設定で実行ファイルのパスを指定します。
-
 ## 設定
 
 主な設定項目は以下の通りです。
@@ -208,12 +249,6 @@ command IDは`convertToPdf`などの出力形式基準ですが、出力先設�
 ```text
 表示 → 出力 → Graphics Workbench
 ```
-
-## Safe Mode と Undo
-
-Safe Mode は初期状態で有効です。既存の出力を上書きする前に、**Keep Both**、**Do Not Overwrite**、**Overwrite**を選択します。Undo は最後に完了した変換、結合、クロップ、分割、クリップボード貼り付けに対して利用でき、生成後に変更された出力は取り消しません。Undo はメモリ上だけに保持されるため、拡張機能の再起動後は利用できません。
-
-通常のstagingは、変換の成功後、失敗時、キャンセル時、Undo成功後に不要なものが削除されます。上書き前のbackupは現在のUndo recordが必要な間だけ保持されます。拡張機能起動時にruntime root全体を削除しないため、crash後の残骸が残る場合があります。これは別windowの実行中staging、Undo backup、未知のdirectory、診断用scratchを保護するためです。診断用のASCII scratchは別管理のため、外部ツール失敗時に残る場合があります。
 
 ## 入力サイズと処理時間について
 
