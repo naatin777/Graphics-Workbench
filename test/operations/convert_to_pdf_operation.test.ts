@@ -147,6 +147,28 @@ suite('PDF変換operation（PNG入力）', () => {
     }
   });
 
+  test('Draw.io backend未指定のeditable Draw.io画像はフォールバックせず失敗する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-pdf-no-drawio-'));
+    const sourcePath = path.join(workspacePath, 'source.drawio.png');
+    const outputPath = path.join(workspacePath, 'output.pdf');
+
+    try {
+      await writeFile(sourcePath, 'editable drawio image placeholder');
+
+      await assert.rejects(
+        convertToPdfFiles({
+          jobs: [{ sourcePath, outputPath, workspacePath }],
+          supportedExtensions: ['.drawio.png'],
+          operationName: 'convert-to-pdf',
+        }),
+        /Draw\.io executable is not configured/,
+      );
+      await assert.rejects(access(outputPath));
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
   test('Firefox選択時は実行ファイルの指定を必須にする', () => {
     assert.throws(
       () =>

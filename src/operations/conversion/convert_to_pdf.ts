@@ -323,14 +323,16 @@ async function writeDrawioAsPdf(
   signal?: AbortSignal,
   drawio?: DrawioBackend,
 ): Promise<void> {
-  const resolvedDrawio = drawio ?? { drawioPath: 'drawio' };
+  if (drawio === undefined) {
+    throw new Error('Draw.io executable is not configured. Set graphics-workbench.execPath.drawio.');
+  }
   signal?.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
   signal?.throwIfAborted();
 
-  await (resolvedDrawio.runDrawio ?? executeDrawio)(
-    resolvedDrawio.drawioPath,
+  await (drawio.runDrawio ?? executeDrawio)(
+    drawio.drawioPath,
     ['-x', '-f', 'pdf', '-o', outputPath, sourcePath],
     signal,
   );
