@@ -8,7 +8,7 @@
     "webview/apps/*/vite.config.ts",
     "webview/apps/*/vitest.config.ts",
     "scripts/*.mjs",
-    "src/operations/conversion/tools/mermaid_runner.ts",
+    "src/operations/conversion/tools/run_mermaid_cli.ts",
     "src/operations/pdf/crop_pdf_runner.ts",
     "src/commands/pdf/*.ts",
     "src/commands/conversion/*.ts",
@@ -24,6 +24,7 @@
     "@types/sinon",
     "@types/vscode",
     "@types/xml2js",
+    "@mermaid-js/mermaid-cli",
     "@vscode/test-electron",
     "@vscode/vsce",
     "@vscode/codicons"

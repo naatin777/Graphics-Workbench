@@ -62,24 +62,27 @@ README / CHANGELOG / migration noteには、`execPath.pdfcrop`が廃止され、
 
 移行先:
 
-- SVG / Mermaid: `graphics-workbench.puppeteer.executablePath`
+- SVG / Mermaid: `graphics-workbench.execPath.chrome`
 
 理由:
 
 - SVG変換とMermaid CLIでChrome実行ファイルのパスを共有する
 - Chromeを使う変換だけを共有対象とし、Draw.ioなどの外部tool pathとは分ける
-- v1ではChrome系設定と非Chromeの外部tool設定を分ける
+- Chrome実行はPuppeteer APIではなくCLI経由で行う
 
 ### `graphics-workbench.puppeteer.browser`
 
-`v1.0.0`でも設定を維持する。
+`v1.0.0`では復元しない。
 
-SVG変換で`chrome`または`firefox`を選択できる。Firefoxを選択する場合は`puppeteer.executablePath`にFirefoxの実行ファイルを指定する。
+移行先:
+
+- SVG / Mermaid: `graphics-workbench.execPath.chrome`
 
 理由:
 
-- 現行のPuppeteer利用はChrome系channel / executable pathで制御する
-- Firefox対応を公開設定として維持し、実行ファイル指定を必須にする
+- SVG→PDFはChromeをheadless CLIとして直接実行する
+- Mermaidは同梱mmdc CLIを使う
+- Firefox backendは提供しない
 
 ### `graphics-workbench.puppeteer.channel`
 
@@ -87,13 +90,13 @@ SVG変換で`chrome`または`firefox`を選択できる。Firefoxを選択す�
 
 移行先:
 
-- SVG / Mermaid: `graphics-workbench.puppeteer.browser`
+- SVG / Mermaid: `graphics-workbench.execPath.chrome`
 
 理由:
 
-- SVG変換とMermaid CLIで同じブラウザ設定を共有する
-- Mermaidの出力形式間でも同じブラウザ設定を使う
-- 変換処理ごとの検証範囲を明確にする
+- SVG変換とMermaid CLIで同じChrome実行ファイル設定を共有する
+- Mermaidの出力形式間でも同じChrome実行ファイルを使う
+- browser channelの選択を公開しない
 
 ## READMEに書く内容
 
@@ -103,9 +106,9 @@ READMEでは、詳細な互換表をすべて載せすぎず、以下を短く�
 - 変換コマンドは`PDFに変換` / `PNGに変換`のような出力形式基準になった
 - keybindingsやtasksで旧command IDを使っている場合はmigration noteを参照する
 - `execPath.pdfcrop`は廃止され、cropには`execPath.ghostscript`を使う
-- Puppeteer設定は用途別設定へ移行した
+- Chrome実行ファイルは`execPath.chrome`へ移行した
 
-SVGとMermaidの出力形式別legacy設定は、共通Puppeteer実行ファイル設定が未指定の場合だけfallbackとして使用される。
+SVGとMermaidの出力形式別legacy設定は使用しない。
 
 ## CHANGELOGに書く内容
 
@@ -115,7 +118,7 @@ CHANGELOGでは、`BREAKING CHANGE`として以下を明記する。
 - 変換コマンドを出力形式基準へ統合した
 - PDF操作コマンドはサブメニュー化し、quick系は`cropPdf.auto` / `splitPdf.allPages` / `mergePdf.selectedFiles`、Webview GUI系は`cropPdf.configure` / `splitPdf.configure` / `mergePdf.configure`などの具体的なcommand IDへ移行した
 - `execPath.pdfcrop`を廃止し、`execPath.ghostscript`へ移行した
-- 共通Puppeteer設定を廃止し、用途別Puppeteer設定へ移行した
+- Puppeteer設定を廃止し、Chrome実行ファイルを`execPath.chrome`へ集約した
 
 ## migration noteに書く内容
 

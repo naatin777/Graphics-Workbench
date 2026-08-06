@@ -16,6 +16,7 @@ type ConfigurationKey =
   | 'execPath.ghostscript'
   | 'execPath.pdftocairo'
   | 'execPath.rsvgConvert'
+  | 'execPath.chrome'
   | 'execPath.qpdf'
   | 'externalTools.qpdf.timeoutSeconds'
   | 'externalTools.drawio.timeoutSeconds'
@@ -33,8 +34,6 @@ type ConfigurationKey =
   | 'mermaid.backgroundColor'
   | 'insertLatex.pdfTemplate'
   | 'insertLatex.imageTemplate'
-  | 'puppeteer.executablePath'
-  | 'puppeteer.browser'
   | 'convertToWebp.effort'
   | 'convertToAvif.effort'
   | 'outputPath.cropPdf'
@@ -235,6 +234,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'execPath.rsvgConvert': {
     types: ['string'],
   },
+  'execPath.chrome': {
+    types: ['string'],
+  },
   'execPath.qpdf': {
     types: ['string'],
   },
@@ -294,7 +296,7 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   },
   'convertToPdf.svg.engine': {
     types: ['string'],
-    enumValues: ['puppeteer', 'rsvg-convert'],
+    enumValues: ['chrome', 'rsvg-convert'],
   },
   'mermaid.theme': {
     types: ['string'],
@@ -314,13 +316,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     items: {
       types: ['string'],
     },
-  },
-  'puppeteer.executablePath': {
-    types: ['string'],
-  },
-  'puppeteer.browser': {
-    types: ['string'],
-    enumValues: ['chrome', 'firefox'],
   },
   'convertToWebp.effort': {
     types: ['integer'],
@@ -690,6 +685,7 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'execPath.ghostscript': 'string',
   'execPath.pdftocairo': 'string',
   'execPath.rsvgConvert': 'string',
+  'execPath.chrome': 'string',
   'execPath.qpdf': 'string',
   'externalTools.qpdf.timeoutSeconds': 'integer',
   'externalTools.drawio.timeoutSeconds': 'integer',
@@ -702,13 +698,11 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'preview.maxCanvasPixels': 'integer',
   'preview.maxDevicePixelRatio': 'number',
   'performance.maxConcurrentHeavyProcesses': 'integer',
-  'convertToPdf.svg.engine': 'one of puppeteer, rsvg-convert',
+  'convertToPdf.svg.engine': 'one of chrome, rsvg-convert',
   'mermaid.theme': 'one of default, forest, dark, neutral, base',
   'mermaid.backgroundColor': 'string',
   'insertLatex.pdfTemplate': 'string or array of string',
   'insertLatex.imageTemplate': 'string or array of string',
-  'puppeteer.executablePath': 'string',
-  'puppeteer.browser': 'one of chrome, firefox',
   'convertToWebp.effort': 'integer',
   'convertToAvif.effort': 'integer',
   'outputPath.cropPdf': 'string',
@@ -1202,6 +1196,7 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       ghostscript: defineConfiguration<string>(configurationReader, 'execPath.ghostscript', ''),
       pdftocairo: defineConfiguration<string>(configurationReader, 'execPath.pdftocairo', 'pdftocairo'),
       rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
+      chrome: defineConfiguration<string>(configurationReader, 'execPath.chrome', ''),
       qpdf: defineConfiguration<string>(configurationReader, 'execPath.qpdf', 'qpdf'),
     },
     externalTools: {
@@ -1241,10 +1236,10 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
     },
     convertToPdf: {
       svg: {
-        engine: defineConfiguration<'puppeteer' | 'rsvg-convert'>(
+        engine: defineConfiguration<'chrome' | 'rsvg-convert'>(
           configurationReader,
           'convertToPdf.svg.engine',
-          'puppeteer',
+          'chrome',
         ),
       },
     },
@@ -1267,10 +1262,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'insertLatex.imageTemplate',
         '\\begin{figure}[H]\n  \\centering\n  \\resizebox{\\linewidth}{!}{\\includegraphics{${path}}}\n  \\caption{${name}}\n  \\label{fig:${name}}\n\\end{figure}',
       ),
-    },
-    puppeteer: {
-      executablePath: defineConfiguration<string>(configurationReader, 'puppeteer.executablePath', ''),
-      browser: defineConfiguration<'chrome' | 'firefox'>(configurationReader, 'puppeteer.browser', 'chrome'),
     },
     convertToWebp: {
       effort: defineConfiguration<number>(configurationReader, 'convertToWebp.effort', 4),

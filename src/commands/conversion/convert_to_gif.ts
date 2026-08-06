@@ -4,7 +4,7 @@ import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { readMermaidPuppeteerOptions } from '../../config/rendering/mermaid_puppeteer_options.js';
+import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executeGifConversion } from '../../operations/conversion/convert_to_gif.js';
 import { planGifConversionJobs } from './plan_gif_conversion_jobs.js';
 import { runAnimatedRasterConversionCommand } from './run_raster_conversion_command.js';
@@ -34,7 +34,7 @@ export async function convertToGifCommand(
         ghostscriptPath: readGhostscriptExecutablePath(configuration),
         platform: process.platform,
       },
-      mermaidTools: readMermaidPuppeteerOptions(configuration),
+      mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: readDrawioOptions(configuration),
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, maxAnimationPixels, runtime }) =>

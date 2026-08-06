@@ -8,6 +8,7 @@ Mermaid 変換で theme と背景色を settings.json から変更可能にす�
 
 | 設定キー                                     | 型       | 既定値      | 説明                                      |
 | -------------------------------------------- | -------- | ----------- | ----------------------------------------- |
+| `graphics-workbench.execPath.chrome`         | `string` | 空文字      | Chrome実行ファイルの明示指定              |
 | `graphics-workbench.mermaid.theme`           | `string` | `"default"` | Mermaid の theme                          |
 | `graphics-workbench.mermaid.backgroundColor` | `string` | `"white"`   | 背景色（CSS color値または `transparent`） |
 
@@ -25,52 +26,32 @@ CSS color 値（`white`、`#ffffff`、`rgb(255,255,255)` など）または `tra
 
 ## CLI への引き渡し
 
-`@mermaid-js/mermaid-cli` の `run()` 関数呼び出し時に追加の引数として渡す。
+同梱の`mmdc` CLIを通常の外部プロセスとして実行する。入力・出力・形式・背景色は引数配列で渡す。
 
-現在の呼び出し:
-
-```typescript
-await runMermaidCli(sourcePath, outputPath, {
-  outputFormat: 'png',
-  puppeteerConfig: createMermaidPuppeteerConfig(mermaid),
-  quiet: true,
-});
+```text
+mmdc --input source.mmd --output output.png --outputFormat png \
+  --backgroundColor transparent --configFile mermaid-config.json \
+  --puppeteerConfigFile chrome-config.json --quiet
 ```
 
-変更後:
-
-```typescript
-await runMermaidCli(sourcePath, outputPath, {
-  outputFormat: 'png',
-  puppeteerConfig: createMermaidPuppeteerConfig(mermaid),
-  quiet: true,
-  theme: mermaidConfig.theme,
-  backgroundColor: mermaidConfig.backgroundColor,
-});
-```
-
-`MermaidPuppeteerOptions` インターフェースを拡張し、`theme` と `backgroundColor` を追加する。
+`mermaid-config.json`にはthemeを、`chrome-config.json`には`execPath.chrome`から解決したChrome実行ファイルを一時的に書き込む。これらはCLI実行後に削除する。`base`を含むthemeの実行時検証はmmdcに委譲する。
 
 ## 設定の読み取り
 
-`readMermaidPuppeteerOptions` 関数を拡張する。
+`readMermaidCliOptions` 関数で読む。
 
 ```typescript
-export interface MermaidPuppeteerOptions {
-  browserChannel: string;
-  executablePath?: string;
+export interface MermaidCliOptions {
+  chromePath: string;
   theme: string;
   backgroundColor: string;
 }
 
-export function readMermaidPuppeteerOptions(
-  configuration: vscode.WorkspaceConfiguration,
-  _commandId: string,
-): MermaidPuppeteerOptions {
+export function readMermaidCliOptions(configuration: Configuration): MermaidCliOptions {
   return {
-    browserChannel: 'chrome',
-    theme: configuration.get<string>('mermaid.theme', 'default'),
-    backgroundColor: configuration.get<string>('mermaid.backgroundColor', 'white'),
+    chromePath: readChromeExecutablePath(configuration),
+    theme: configuration.mermaid.theme(),
+    backgroundColor: configuration.mermaid.backgroundColor(),
   };
 }
 ```

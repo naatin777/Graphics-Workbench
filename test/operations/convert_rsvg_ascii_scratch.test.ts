@@ -160,8 +160,7 @@ function createSvgToPdfOptions(runRsvgConvert: RunRsvgConvert): RsvgToPdfOptions
   return {
     engine: 'rsvg-convert',
     rsvgConvertPath: 'rsvg-convert',
-    puppeteerBrowser: 'chrome',
-    puppeteerBrowserChannel: 'chrome',
+    chromePath: '',
     runRsvgConvert,
   };
 }

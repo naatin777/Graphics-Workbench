@@ -21,7 +21,6 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import type { DrawioBackend, MermaidBackend, PdftocairoBackend, RunPdfToSvg } from './tools/index.js';
-import { createMermaidPuppeteerConfig } from './mermaid_render_options.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
@@ -362,7 +361,7 @@ async function writeMermaidAsSvg(
         sourcePath,
         outputPath: asSvgOutputPath(outputPath),
         outputFormat: 'svg',
-        puppeteerConfig: createMermaidPuppeteerConfig(mermaid),
+        chromePath: mermaid.chromePath,
         theme: mermaid.theme,
         backgroundColor: mermaid.backgroundColor,
       },

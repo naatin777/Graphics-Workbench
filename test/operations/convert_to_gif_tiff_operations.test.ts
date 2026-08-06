@@ -20,7 +20,7 @@ suite('GIF/TIFFに変換する処理', () => {
       const common = {
         pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
         ghostscriptTools: { ghostscriptPath: 'gs' },
-        mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
+        mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio' },
         runtime: {},
       };

@@ -125,9 +125,8 @@ Run **Graphics Workbench: Check Environment** from the command palette to see pe
 | Ghostscript              | PDF margin detection                               | PDF cropping                                                            | When the setting is empty, resolves `gs` on macOS/Linux and `gswin64c` on Windows from `PATH` |
 | Poppler / `pdftocairo`   | Rendering PDF pages to images                      | PDF to PNG/JPEG/WebP/AVIF/SVG conversion                                | Install via your OS package manager or official distribution, then set `PATH` or the setting  |
 | rsvg-convert             | SVG to PDF conversion                              | When the `rsvg-convert` backend is selected                             | One of the SVG conversion backends                                                            |
-| Google Chrome / Chromium | SVG / Mermaid conversion                           | SVG to PDF, Mermaid to PDF/PNG/JPEG/WebP/AVIF/SVG                       | Used by Puppeteer / Mermaid CLI                                                               |
+| Google Chrome / Chromium | SVG / Mermaid conversion                           | SVG to PDF, Mermaid to PDF/PNG/JPEG/WebP/AVIF/SVG                       | Used by the Chrome headless CLI and bundled mmdc CLI                                          |
 | Draw.io Desktop          | Draw.io file and editable Draw.io image conversion | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Requires the Draw.io desktop application                                                      |
-| Firefox                  | SVG to PDF conversion                              | When `puppeteer.browser` is set to `firefox`                            | Requires the Firefox executable                                                               |
 
 ### To use every feature
 
@@ -233,9 +232,8 @@ Main settings:
 | `graphics-workbench.execPath.ghostscript`                  | empty string                                    | Path to Ghostscript. If empty, the OS default command is used                                                                     |
 | `graphics-workbench.execPath.pdftocairo`                   | `pdftocairo`                                    | Path to the `pdftocairo` executable                                                                                               |
 | `graphics-workbench.execPath.rsvgConvert`                  | `rsvg-convert`                                  | Path to the `rsvg-convert` executable                                                                                             |
-| `graphics-workbench.convertToPdf.svg.engine`               | `puppeteer`                                     | SVG to PDF backend. Choose `puppeteer` or `rsvg-convert`                                                                          |
-| `graphics-workbench.puppeteer.browser`                     | `chrome`                                        | Browser used by Puppeteer for SVG conversion. Choose `chrome` or `firefox`                                                        |
-| `graphics-workbench.puppeteer.executablePath`              | empty string                                    | Browser executable shared by SVG and Mermaid conversions; takes precedence over the channel                                       |
+| `graphics-workbench.execPath.chrome`                       | empty string                                    | Chrome executable for mmdc and Chrome SVG-to-PDF; uses the standard OS command/location when empty                                |
+| `graphics-workbench.convertToPdf.svg.engine`               | `chrome`                                        | SVG to PDF backend. Choose `chrome` or `rsvg-convert`                                                                             |
 | `graphics-workbench.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Output path for the one-PDF Draw.io command                                                                                       |
 | `graphics-workbench.convertToWebp.effort`                  | `4`                                             | Encoding effort for WebP output                                                                                                   |
 | `graphics-workbench.convertToAvif.effort`                  | `4`                                             | Encoding effort for AVIF output                                                                                                   |
@@ -279,7 +277,7 @@ Depending on the configured backend, check that `rsvg-convert` or Google Chrome 
 
 ### Mermaid conversion fails
 
-Check that Google Chrome / Chromium is available. If necessary, set the browser executable path for Mermaid conversion in VS Code settings.
+Check that Google Chrome / Chromium is available. If necessary, set `graphics-workbench.execPath.chrome` in VS Code settings.
 
 ### Editable Draw.io image conversion fails
 

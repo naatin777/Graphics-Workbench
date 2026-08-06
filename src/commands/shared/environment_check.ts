@@ -6,7 +6,7 @@ import {
   readPdftocairoExecutablePath,
   readRsvgConvertExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { readPuppeteerExecutablePath } from '../../config/rendering/mermaid_puppeteer_options.js';
+import { readChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { runExternalTool } from '../../operations/external_tools/run_external_tool.js';
 
@@ -117,7 +117,7 @@ export async function runEnvironmentChecks(options: RunEnvironmentChecksOptions)
     }),
   );
 
-  entries.push(await checkBrowser(options.configuration, timeoutMs, options.signal, probe));
+  entries.push(await checkChrome(options.configuration, timeoutMs, options.signal, probe));
 
   entries.push(
     await checkTool({
@@ -196,67 +196,25 @@ async function checkTool(params: {
   }
 }
 
-async function checkBrowser(
+async function checkChrome(
   configuration: Configuration,
   timeoutMs: number,
   signal: AbortSignal | undefined,
   probe: ProbeTool,
 ): Promise<EnvironmentCheckEntry> {
   const feature = userMessage('message.environmentCheck.feature.mermaidConversion');
-  const configuredPath = readPuppeteerExecutablePath(configuration);
-
-  if (configuredPath !== '') {
-    return checkTool({
-      feature,
-      toolLabel: userMessage('message.environmentCheck.tool.browser'),
-      executable: configuredPath,
-      versionArgs: ['--version'],
-      settingId: 'graphics-workbench.puppeteer.executablePath',
-      timeoutMs,
-      signal,
-      probe,
-    });
-  }
-
-  const browser = configuration.puppeteer.browser();
-  if (browser === 'firefox') {
-    return {
-      feature,
-      status: 'unavailable',
-      detail: userMessage('message.environmentCheck.browserFirefoxNeedsPath'),
-      settingId: 'graphics-workbench.puppeteer.executablePath',
-    };
-  }
-
-  const resolved = await resolveSystemBrowser();
-  if (resolved === undefined) {
-    return {
-      feature,
-      status: 'unavailable',
-      detail: userMessage('message.environmentCheck.browserNotFound'),
-      settingId: 'graphics-workbench.puppeteer.executablePath',
-    };
-  }
+  const chromePath = readChromeExecutablePath(configuration);
 
   return checkTool({
     feature,
     toolLabel: userMessage('message.environmentCheck.tool.browser'),
-    executable: resolved,
+    executable: chromePath,
     versionArgs: ['--version'],
-    settingId: 'graphics-workbench.puppeteer.executablePath',
+    settingId: 'graphics-workbench.execPath.chrome',
     timeoutMs,
     signal,
     probe,
   });
-}
-
-async function resolveSystemBrowser(): Promise<string | undefined> {
-  try {
-    const { default: puppeteer } = await import('puppeteer-core');
-    return await puppeteer.executablePath('chrome');
-  } catch {
-    return undefined;
-  }
 }
 
 function isExecutableNotFound(error: unknown): boolean {

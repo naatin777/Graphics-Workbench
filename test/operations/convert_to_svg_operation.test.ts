@@ -41,7 +41,7 @@ suite('SVGに変換する処理', () => {
         pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
         ghostscriptTools: { ghostscriptPath: 'gs' },
         mermaidTools: {
-          browserChannel: 'chrome',
+          chromePath: 'chrome',
           theme: 'default',
           backgroundColor: 'white',
         },
@@ -86,7 +86,7 @@ suite('SVGに変換する処理', () => {
           jobs: [{ sourcePath, outputPath, workspacePath, page: 1 }],
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
           ghostscriptTools: { ghostscriptPath: 'gs' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
+          mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
           drawioTools: {
             drawioPath: 'drawio',
             runDrawio: async (_executable, args) => {
@@ -124,7 +124,7 @@ suite('SVGに変換する処理', () => {
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
           ghostscriptTools: { ghostscriptPath: 'gs' },
           mermaidTools: {
-            browserChannel: 'chrome',
+            chromePath: 'chrome',
             theme: 'default',
             backgroundColor: 'white',
           },
@@ -158,7 +158,7 @@ suite('SVGに変換する処理', () => {
           jobs: [{ sourcePath, outputPath, workspacePath, page: 1 }],
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
           ghostscriptTools: { ghostscriptPath: 'gs', platform: 'linux' },
-          mermaidTools: { browserChannel: 'chrome', theme: 'default', backgroundColor: 'white' },
+          mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           runPdfToSvg: async (_sourcePath, toolOutputPath) => {
             await writeFile(toolOutputPath, '');
@@ -196,7 +196,7 @@ suite('SVGに変換する処理', () => {
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
           ghostscriptTools: { ghostscriptPath: 'gs' },
           mermaidTools: {
-            browserChannel: 'chrome',
+            chromePath: 'chrome',
             theme: 'default',
             backgroundColor: 'white',
           },

@@ -23,7 +23,7 @@ cat > "$settings_dir/settings.json" <<EOF
     "graphics-workbench.execPath.pdftocairo": "${pdftocairo_path}",
     "graphics-workbench.execPath.rsvgConvert": "${rsvg_convert_path}",
     "graphics-workbench.execPath.qpdf": "${qpdf_path}",
-    "graphics-workbench.puppeteer.executablePath": "${chrome_path}"
+    "graphics-workbench.execPath.chrome": "${chrome_path}"
 }
 EOF
 

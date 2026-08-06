@@ -4,11 +4,11 @@ import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('生成された設定スキーマ検証', () => {
   test('列挙値を厳格に検証する', () => {
-    const configuration = fakeConfiguration({ 'puppeteer.browser': 'safari' });
+    const configuration = fakeConfiguration({ 'convertToPdf.svg.engine': 'puppeteer' });
 
     assert.throws(
-      () => configuration.puppeteer.browser(),
-      /Invalid configuration value for graphics-workbench\.puppeteer\.browser: expected one of chrome, firefox, received string\./,
+      () => configuration.convertToPdf.svg.engine(),
+      /Invalid configuration value for graphics-workbench\.convertToPdf\.svg\.engine: expected one of chrome, rsvg-convert, received string\./,
     );
   });
 

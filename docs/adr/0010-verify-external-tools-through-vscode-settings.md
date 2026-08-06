@@ -4,6 +4,8 @@
 
 採用
 
+Chrome / ChromiumのPuppeteer経由検証に関する部分は、[ADR-0029](0029-use-cli-processes-for-mermaid-and-chrome-svg-pdf.md)で置き換えられた。その他のsettings.json経由の検証方針は維持する。
+
 ## 日付
 
 2026-07-01

@@ -29,7 +29,7 @@ tool scratchはtransaction stagingの代わりではない。
 - Draw.io
 - qpdf
 - pdf-lib、sharp、Node.js file APIなどprocess内処理
-- PuppeteerとMermaid CLI
+- Chrome headless CLIとMermaid CLI
 
 対象追加は推測で行わず、実体probeの結果を別タスクで記録してから決める。
 
@@ -202,7 +202,7 @@ platform、temp候補、file APIはテストから注入できるようにし、
 - Unicodeの論理SVGを`input.svg`へcopyする
 - `output.pdf`だけをworkspace側へcopyする
 - exit 0かつ0 byte、別名出力、missingを失敗にする
-- Puppeteer engineには適用しない
+- Chrome backendには適用しない
 
 ### batch・Safe Mode・Undo
 

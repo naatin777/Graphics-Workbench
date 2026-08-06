@@ -55,7 +55,7 @@ suite('AVIFに変換する処理', () => {
         },
         ghostscriptTools: { ghostscriptPath: 'gs' },
         mermaidTools: {
-          browserChannel: 'chrome',
+          chromePath: 'chrome',
           theme: 'default',
           backgroundColor: 'white',
         },

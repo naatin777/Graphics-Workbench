@@ -17,7 +17,6 @@ import { destroyRasterInput, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
-import type { ChromeReleaseChannel } from 'puppeteer-core';
 
 interface DrawioInput {
   sourcePath: string;
@@ -475,32 +474,13 @@ async function executeMermaid(
       sourcePath,
       outputPath: asSvgOutputPath(outputPath),
       outputFormat: 'svg',
-      puppeteerConfig: {
-        headless: true,
-        channel: toChromeReleaseChannel(options?.browserChannel ?? 'chrome'),
-        ...(options?.executablePath === undefined || options.executablePath === ''
-          ? {}
-          : { executablePath: options.executablePath }),
-      },
-      ...(options === undefined ? {} : { theme: options.theme, backgroundColor: options.backgroundColor }),
+      chromePath: options?.chromePath ?? '',
+      theme: options?.theme ?? 'default',
+      backgroundColor: options?.backgroundColor ?? 'white',
     },
     signal,
   );
   signal?.throwIfAborted();
-}
-
-function toChromeReleaseChannel(value: string): ChromeReleaseChannel {
-  switch (value) {
-    case 'chrome':
-    case 'chrome-beta':
-    case 'chrome-canary':
-    case 'chrome-dev': {
-      return value;
-    }
-    default: {
-      throw new Error(`Unsupported Mermaid browser channel: ${value}`);
-    }
-  }
 }
 
 function asSvgOutputPath(outputPath: string): `${string}.svg` {

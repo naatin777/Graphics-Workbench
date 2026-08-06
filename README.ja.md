@@ -125,9 +125,8 @@ Remote SSH / WSL / Dev Container では、この拡張機能はローカルで�
 | Ghostscript              | PDF の余白検出                              | PDF トリミング                                                          | 設定が空の場合は macOS / Linux で `gs`、Windows で `gswin64c` を `PATH` から解決します |
 | Poppler / `pdftocairo`   | PDFページの画像化                           | PDFからPNG/JPEG/WebP/AVIF/SVGへの変換                                   | OSのパッケージマネージャーまたは公式配布物で導入し、`PATH`または設定で指定             |
 | rsvg-convert             | SVG から PDF への変換                       | `rsvg-convert`バックエンドを選択した場合                                | SVG 変換バックエンドの 1 つです                                                        |
-| Google Chrome / Chromium | SVG / Mermaid 変換                          | SVG から PDF、Mermaid から PDF/PNG/JPEG/WebP/AVIF/SVG                   | Puppeteer / Mermaid CLI から使用します                                                 |
+| Google Chrome / Chromium | SVG / Mermaid 変換                          | SVG から PDF、Mermaid から PDF/PNG/JPEG/WebP/AVIF/SVG                   | Chrome headless CLI と同梱mmdc CLIから使用します                                       |
 | Draw.io Desktop          | Draw.ioファイルとeditable Draw.io画像の変換 | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Draw.io デスクトップアプリケーションが必要です                                         |
-| Firefox                  | SVG から PDF への変換                       | `puppeteer.browser` を `firefox` にした場合                             | Firefox の実行ファイルが必要です                                                       |
 
 ### すべての機能を利用する場合
 
@@ -233,9 +232,8 @@ GIF/TIFF入力は先頭page/frameだけを使用します。複数frameが必要
 | `graphics-workbench.execPath.ghostscript`                  | 空文字                                          | Ghostscript 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                  |
 | `graphics-workbench.execPath.pdftocairo`                   | `pdftocairo`                                    | `pdftocairo` 実行ファイルへのパスです                                                                                   |
 | `graphics-workbench.execPath.rsvgConvert`                  | `rsvg-convert`                                  | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
-| `graphics-workbench.convertToPdf.svg.engine`               | `puppeteer`                                     | SVGをPDFへ変換するときのバックエンドです。`puppeteer` または `rsvg-convert` を選択できます                              |
-| `graphics-workbench.puppeteer.browser`                     | `chrome`                                        | SVG変換でPuppeteerが使用するブラウザです。`chrome` または `firefox` を選択できます                                      |
-| `graphics-workbench.puppeteer.executablePath`              | 空文字                                          | SVG変換とMermaid変換で共有するブラウザ実行ファイルです。チャンネルより優先されます                                      |
+| `graphics-workbench.execPath.chrome`                       | 空文字                                          | mmdcとChrome方式のSVGからPDF変換で使うChrome実行ファイルのパスです。未指定時はOS標準のコマンドまたは場所を使います      |
+| `graphics-workbench.convertToPdf.svg.engine`               | `chrome`                                        | SVGをPDFへ変換するときのバックエンドです。`chrome` または `rsvg-convert` を選択できます                                 |
 | `graphics-workbench.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Draw.ioの全ページを1つのPDFへ出力するパスです                                                                           |
 | `graphics-workbench.convertToWebp.effort`                  | `4`                                             | WebP出力のエンコードeffortです                                                                                          |
 | `graphics-workbench.convertToAvif.effort`                  | `4`                                             | AVIF出力のエンコードeffortです                                                                                          |
@@ -283,7 +281,7 @@ Ghostscript が利用可能か確認してください。
 
 ### Mermaid ファイルの変換に失敗する
 
-Google Chrome / Chromium が利用可能か確認してください。必要に応じて Mermaid 変換用のブラウザ実行ファイルパスを VS Code の設定で指定してください。
+Google Chrome / Chromium が利用可能か確認してください。必要に応じて `graphics-workbench.execPath.chrome` に実行ファイルのパスを指定してください。
 
 ### editable Draw.io 画像の変換に失敗する
 

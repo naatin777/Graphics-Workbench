@@ -161,17 +161,19 @@ suite('外部tool runner — 実行失敗', () => {
     );
   });
 
-  test('元の失敗原因を失わない', async () => {
+  test('終了コードとstderrを失わない', async () => {
     try {
       await runExternalTool({
         toolName: 'fail-tool',
         executable: process.execPath,
-        args: ['-e', 'process.exit(42)'],
+        args: ['-e', "process.stderr.write('failure detail'); process.exit(42)"],
       });
       assert.fail('should have rejected');
     } catch (error: unknown) {
       assert.ok(error instanceof Error);
-      assert.ok('code' in error || 'stderr' in error || error.message.length > 0, 'should preserve error details');
+      assert.strictEqual(error.message, 'fail-tool failed (exited with code 42, signal none)');
+      assert.ok('stderr' in error);
+      assert.strictEqual(error.stderr, 'failure detail');
     }
   });
 });

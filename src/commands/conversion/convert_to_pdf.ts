@@ -14,10 +14,7 @@ import {
   readRsvgConvertExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/raster_input.js';
-import {
-  readMermaidPuppeteerOptions,
-  readPuppeteerExecutablePath,
-} from '../../config/rendering/mermaid_puppeteer_options.js';
+import { readChromeExecutablePath, readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import {
@@ -84,7 +81,7 @@ async function convertSelectedSourcesToPdf(
     );
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
-    const mermaidTools = readMermaidPuppeteerOptions(configuration);
+    const mermaidTools = readMermaidCliOptions(configuration);
     const drawioTools = readDrawioOptions(configuration);
     const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     const plannedJobs: ConvertToPdfJob[] = [];
@@ -212,14 +209,10 @@ export function outputTemplateForSource(
 }
 
 export function readSvgToPdfOptions(configuration: Configuration): SvgToPdfBackend {
-  const executablePath = readPuppeteerExecutablePath(configuration);
-
   return {
     engine: configuration.convertToPdf.svg.engine(),
     rsvgConvertPath: readRsvgConvertExecutablePath(configuration),
-    puppeteerBrowser: configuration.puppeteer.browser(),
-    puppeteerBrowserChannel: 'chrome',
-    ...(executablePath ? { puppeteerExecutablePath: executablePath } : {}),
+    chromePath: readChromeExecutablePath(configuration),
   };
 }
 

@@ -9,7 +9,7 @@ $gs = $settings.'graphics-workbench.execPath.ghostscript'
 $pdftocairo = $settings.'graphics-workbench.execPath.pdftocairo'
 $rsvgConvert = $settings.'graphics-workbench.execPath.rsvgConvert'
 $qpdf = $settings.'graphics-workbench.execPath.qpdf'
-$chrome = $settings.'graphics-workbench.puppeteer.executablePath'
+$chrome = $settings.'graphics-workbench.execPath.chrome'
 
 if (-not (Test-Path $gs)) { throw "missing Ghostscript: $gs" }
 if (-not (Test-Path $pdftocairo)) { throw "missing pdftocairo: $pdftocairo" }
