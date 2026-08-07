@@ -13,7 +13,7 @@ import {
   readGhostscriptExecutablePath,
   readRsvgConvertExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readChromeExecutablePath, readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';

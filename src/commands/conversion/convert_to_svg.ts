@@ -15,7 +15,7 @@ import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';

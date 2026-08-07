@@ -5,7 +5,7 @@ import sharp, { type Sharp } from 'sharp';
 // Path-backed inputs must not remain open in libvips's file cache on Windows.
 sharp.cache({ files: 0 });
 
-export type RasterInput = Sharp;
+export type RasterPipeline = Sharp;
 
 export interface RasterAnimationMetadata {
   pages: number;
@@ -20,7 +20,7 @@ export function openRasterInput(
   maxInputPixels: number,
   page?: number,
   animated = false,
-): RasterInput {
+): RasterPipeline {
   const inputOptions: Parameters<typeof sharp>[1] = {
     limitInputPixels: maxInputPixels,
     failOn: 'warning',
@@ -38,10 +38,10 @@ export async function readRasterAnimationMetadata(
   sourcePath: string,
   maxInputPixels: number,
 ): Promise<RasterAnimationMetadata | undefined> {
-  const image = openRasterInput(sourcePath, maxInputPixels, undefined, true);
+  const pipeline = openRasterInput(sourcePath, maxInputPixels, undefined, true);
 
   try {
-    const metadata = await image.metadata();
+    const metadata = await pipeline.metadata();
     const pages = metadata.pages ?? 1;
     const { width } = metadata;
     const pageHeight = metadata.pageHeight ?? metadata.height;
@@ -72,17 +72,17 @@ export async function readRasterAnimationMetadata(
     }
     return result;
   } finally {
-    await destroyRasterInput(image);
+    await closeRasterPipeline(pipeline);
   }
 }
 
-export async function destroyRasterInput(image: RasterInput): Promise<void> {
-  if (image.destroyed) {
+export async function closeRasterPipeline(pipeline: RasterPipeline): Promise<void> {
+  if (pipeline.destroyed) {
     return;
   }
 
-  const closed = once(image, 'close');
-  image.destroy();
+  const closed = once(pipeline, 'close');
+  pipeline.destroy();
   await closed;
 }
 
@@ -91,7 +91,7 @@ export function isRasterInputPixelLimitError(error: unknown): boolean {
   return /(?:pixel|pixels).{0,40}(?:limit|maximum)|(?:limit|maximum).{0,40}(?:pixel|pixels)/iu.test(message);
 }
 
-export function rasterInputPixelLimitMessage(
+export function formatRasterInputPixelLimitMessage(
   maxInputPixels: number,
   dimensions?: { width: number; height: number },
 ): string {
