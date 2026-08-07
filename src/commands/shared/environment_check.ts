@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import {
   readDrawioExecutablePath,
-  readPdftocairoExecutablePath,
+  readMermaidExecutablePath,
   readRsvgConvertExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
 import { readChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
@@ -79,19 +79,6 @@ export async function runEnvironmentChecks(options: RunEnvironmentChecksOptions)
 
   entries.push(
     await checkTool({
-      feature: userMessage('message.environmentCheck.feature.pdfToImage'),
-      toolLabel: userMessage('message.environmentCheck.tool.pdftocairo'),
-      executable: readPdftocairoExecutablePath(options.configuration),
-      versionArgs: ['-v'],
-      settingId: 'graphics-workbench.execPath.pdftocairo',
-      timeoutMs,
-      signal: options.signal,
-      probe,
-    }),
-  );
-
-  entries.push(
-    await checkTool({
       feature: userMessage('message.environmentCheck.feature.drawioConversion'),
       toolLabel: userMessage('message.environmentCheck.tool.drawio'),
       executable: readDrawioExecutablePath(options.configuration),
@@ -104,6 +91,19 @@ export async function runEnvironmentChecks(options: RunEnvironmentChecksOptions)
   );
 
   entries.push(await checkChrome(options.configuration, timeoutMs, options.signal, probe));
+
+  entries.push(
+    await checkTool({
+      feature: userMessage('message.environmentCheck.feature.mermaidCli'),
+      toolLabel: userMessage('message.environmentCheck.tool.mermaidCli'),
+      executable: readMermaidExecutablePath(options.configuration),
+      versionArgs: ['--version'],
+      settingId: 'graphics-workbench.execPath.mermaid',
+      timeoutMs,
+      signal: options.signal,
+      probe,
+    }),
+  );
 
   const svgEngine = options.configuration.convertToPdf.svg.engine();
   if (svgEngine === 'rsvg-convert') {

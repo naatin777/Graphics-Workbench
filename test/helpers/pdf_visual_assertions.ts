@@ -1,15 +1,10 @@
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import sharp from 'sharp';
 
-import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
-
-const execFileAsync = promisify(execFile);
+import { renderPdfPageToPng } from '../../src/operations/pdf/mupdf.js';
 
 export interface PdfPageVisualComparison {
   expectedPdfPath: string;
@@ -42,23 +37,11 @@ export async function assertRenderedPdfPagesSimilar(comparison: PdfPageVisualCom
 }
 
 async function renderPdfPage(pdfPath: string, pageNumber: number, outputPrefix: string, dpi: number): Promise<string> {
-  const pdftocairoPath = readPdftocairoExecutablePath(getExtensionConfiguration());
-  assert.notStrictEqual(pdftocairoPath, '', 'pdftocairo must be configured in test/vscode-settings/settings.json');
-
-  await execFileAsync(pdftocairoPath, [
-    '-png',
-    '-singlefile',
-    '-f',
-    pageNumber.toString(),
-    '-l',
-    pageNumber.toString(),
-    '-r',
-    dpi.toString(),
-    pdfPath,
-    outputPrefix,
-  ]);
-
-  return `${outputPrefix}.png`;
+  const pdfBytes = await readFile(pdfPath);
+  const png = await renderPdfPageToPng(pdfBytes, pageNumber, { dpi });
+  const pngPath = `${outputPrefix}.png`;
+  await writeFile(pngPath, png);
+  return pngPath;
 }
 
 async function assertPngsSimilar(expectedPng: Buffer, actualPng: Buffer): Promise<void> {

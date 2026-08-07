@@ -2,10 +2,11 @@ type RunPdfToPng = (sourcePath: string, outputPath: string, page: number, signal
 
 export type RunPdfToSvg = (sourcePath: string, outputPath: string, page: number, signal?: AbortSignal) => Promise<void>;
 
+/**
+ * Test-seam for PDF → PNG/SVG rendering. Production uses mupdf.js; these
+ * callbacks let tests inject a stub or a fixed renderer.
+ */
 export interface PdftocairoBackend {
-  pdftocairoPath: string;
-  platform?: NodeJS.Platform;
-  scratchBaseCandidates?: readonly string[];
   runPdfToPng?: RunPdfToPng;
   runPdfToSvg?: RunPdfToSvg;
 }

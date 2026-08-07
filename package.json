@@ -70,10 +70,9 @@
     "package:vsix": "node scripts/package-vsix.mjs"
   },
   "dependencies": {
-    "@mermaid-js/mermaid-cli": "^11.16.0",
+    "fast-xml-parser": "^5.10.1",
     "mupdf": "^1.28.0",
-    "sharp": "^0.35.3",
-    "xml2js": "^0.6.2"
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
@@ -83,7 +82,6 @@
     "@types/node": "^22.20.0",
     "@types/sinon": "^22.0.0",
     "@types/vscode": "^1.105.0",
-    "@types/xml2js": "^0.4.14",
     "@vitest/coverage-v8": "^4.1.10",
     "@vscode/codicons": "^0.0.45",
     "@vscode/test-cli": "^0.0.15",
@@ -99,7 +97,6 @@
     "oxlint-tsgolint": "^0.25.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.2.108",
-    "puppeteer": "^25.3.0",
     "sinon": "^22.0.0",
     "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
@@ -584,11 +581,11 @@
           "scope": "machine",
           "description": "%config.execPath.drawio%"
         },
-        "graphics-workbench.execPath.pdftocairo": {
+        "graphics-workbench.execPath.mermaid": {
           "type": "string",
-          "default": "pdftocairo",
+          "default": "mmdc",
           "scope": "machine",
-          "description": "%config.execPath.pdftocairo%"
+          "description": "%config.execPath.mermaid%"
         },
         "graphics-workbench.execPath.rsvgConvert": {
           "type": "string",
@@ -609,14 +606,6 @@
           "maximum": 86400,
           "scope": "machine",
           "description": "%config.externalTools.drawio.timeoutSeconds%"
-        },
-        "graphics-workbench.externalTools.pdftocairo.timeoutSeconds": {
-          "type": "integer",
-          "default": 0,
-          "minimum": 0,
-          "maximum": 86400,
-          "scope": "machine",
-          "description": "%config.externalTools.pdftocairo.timeoutSeconds%"
         },
         "graphics-workbench.externalTools.rsvgConvert.timeoutSeconds": {
           "type": "integer",
@@ -1239,7 +1228,6 @@
   "allowScripts": {
     "lefthook": true,
     "fsevents": false,
-    "puppeteer@25.3.0": false,
     "keytar": false,
     "@vscode/vsce-sign": false
   },

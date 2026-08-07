@@ -11,7 +11,6 @@ import {
   isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
-import { readPdftocairoExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
@@ -50,7 +49,6 @@ export async function convertToSvgCommand(
     const maxInputPixels = getMaxInputPixels(configuration);
     const mermaidTools = readMermaidCliOptions(configuration);
     const drawioTools = buildDrawioCommandOptions(configuration);
-    const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
     await runConversionLifecycle({
       operationName: 'convert-to-svg',
       ...(outputChannel !== undefined && { outputChannel }),
@@ -65,7 +63,6 @@ export async function convertToSvgCommand(
         return convertToSvgFiles({
           jobs,
           maxInputPixels,
-          pdftocairoTools,
           mermaidTools,
           drawioTools,
           runtime,

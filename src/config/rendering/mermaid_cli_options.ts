@@ -1,5 +1,6 @@
 import type { Configuration } from '../../generated/extension_manifest.js';
 import type { MermaidBackend } from '../../operations/conversion/tools/index.js';
+import { readMermaidExecutablePath } from '../external_tools/external_tool_paths.js';
 
 export type MermaidConfiguration = Configuration;
 
@@ -29,6 +30,7 @@ export function resolveChromeExecutablePath(
 export function readMermaidCliOptions(configuration: MermaidConfiguration): MermaidBackend {
   return {
     chromePath: readChromeExecutablePath(configuration),
+    mermaidPath: readMermaidExecutablePath(configuration),
     theme: configuration.mermaid.theme(),
     backgroundColor: configuration.mermaid.backgroundColor(),
   };

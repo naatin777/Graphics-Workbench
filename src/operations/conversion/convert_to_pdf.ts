@@ -328,6 +328,7 @@ async function writeMermaidAsPdf(
         sourcePath,
         outputPath: asPdfOutputPath(outputPath),
         outputFormat: 'pdf',
+        mermaidPath: mermaid?.mermaidPath ?? '',
         chromePath: mermaid?.chromePath ?? '',
         theme: mermaid?.theme ?? 'default',
         backgroundColor: mermaid?.backgroundColor ?? 'white',

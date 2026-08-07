@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
+import { readMermaidExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { readChromeExecutablePath } from '../../src/config/rendering/mermaid_cli_options.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 import {
@@ -31,6 +32,7 @@ suite('mmdc CLI実行', () => {
         sourcePath,
         outputPath,
         outputFormat: 'svg',
+        mermaidPath: readMermaidExecutablePath(getExtensionConfiguration()),
         chromePath: readChromeExecutablePath(getExtensionConfiguration()),
         theme: 'default',
         backgroundColor: 'white',
@@ -53,8 +55,7 @@ suite('mmdc CLI実行', () => {
   test('CLI引数はinput/outputと一時設定fileを別の引数で渡す', () => {
     const args = createMermaidCliArgs(createTestRequest(), '/tmp/mermaid.json', '/tmp/chrome.json');
 
-    assert.ok(args[0]?.endsWith('/node_modules/@mermaid-js/mermaid-cli/src/cli.js'));
-    assert.deepStrictEqual(args.slice(1), [
+    assert.deepStrictEqual(args, [
       '--input',
       '/workspace/input.mmd',
       '--output',
@@ -77,6 +78,7 @@ function createTestRequest(): MermaidCliRunRequest {
     sourcePath: '/workspace/input.mmd',
     outputPath: '/workspace/output.svg',
     outputFormat: 'svg',
+    mermaidPath: 'mmdc',
     chromePath: 'chrome',
     theme: 'default',
     backgroundColor: 'white',

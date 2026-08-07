@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { Parser } from 'xml2js';
+import { XMLParser } from 'fast-xml-parser';
 import sharp from 'sharp';
 
 import { isMermaidPath } from '../../application/policy/source_format.js';
@@ -16,7 +16,7 @@ import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
-import { countPdfPages } from '../pdf/mupdf.js';
+import { countPdfPages, renderPdfPageToSvg } from '../pdf/mupdf.js';
 
 interface DrawioInput {
   sourcePath: string;
@@ -41,7 +41,6 @@ type RunDrawio = (
 export interface ConvertToDrawioOptions {
   jobs: ConvertToDrawioJob[];
   tools: {
-    pdftocairoPath?: string;
     mermaidTools?: MermaidBackend;
     drawioPath: string;
     runPdfToSvg?: RunPdfToSvg;
@@ -180,7 +179,7 @@ async function stagePdfDrawioInput(
     await (
       options.tools.runPdfToSvg ??
       (async (source, output, currentPage, signal): Promise<void> =>
-        executePdfToSvg(options.tools.pdftocairoPath ?? 'pdftocairo', source, output, currentPage, signal))
+        executePdfToSvg(source, output, currentPage, signal))
     )(input.sourcePath, svgPath, page, runtime.signal);
     pages.push(await svgPage(svgPath, input, page));
   }
@@ -213,8 +212,9 @@ async function exportEditableDrawioImage(options: {
     options.format,
     '--output',
     options.outputPath,
-    '--embed-diagram',
-    options.xmlPath,
+    ...(options.format === 'png' || options.format === 'svg'
+      ? ['--embed-diagram', options.xmlPath]
+      : [options.xmlPath]),
   ];
   await (options.runDrawio ?? executeDrawio)(
     options.drawioPath,
@@ -244,7 +244,7 @@ async function validateEmbeddedDrawioImage(outputPath: string, format: string, s
 
 async function validateDrawioXml(xml: string, sourcePath: string): Promise<void> {
   try {
-    const parsed: unknown = await new Parser().parseStringPromise(xml);
+    const parsed: unknown = parseDrawioXml(xml);
     const mxfile = isRecord(parsed) && isRecord(parsed.mxfile) ? parsed.mxfile : undefined;
     if (!mxfile || !Array.isArray(mxfile.diagram) || mxfile.diagram.length === 0) {
       throw new Error('missing diagram');
@@ -256,13 +256,17 @@ async function validateDrawioXml(xml: string, sourcePath: string): Promise<void>
 
 async function validateSvgDocument(content: string, sourcePath: string): Promise<void> {
   try {
-    const parsed: unknown = await new Parser().parseStringPromise(content);
+    const parsed: unknown = new XMLParser({ ignoreAttributes: false }).parse(content);
     if (typeof parsed !== 'object' || parsed === null || !('svg' in parsed) || parsed.svg === undefined) {
       throw new Error('missing svg root');
     }
   } catch (error) {
     throw new Error(`Draw.io produced invalid embedded SVG: ${sourcePath}`, { cause: error });
   }
+}
+
+function parseDrawioXml(xml: string): unknown {
+  return new XMLParser({ ignoreAttributes: false, isArray: (name) => name === 'diagram' }).parse(xml);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -405,18 +409,17 @@ function escapeXml(value: string): string {
 }
 
 async function executePdfToSvg(
-  executable: string,
   sourcePath: string,
   outputPath: string,
   page: number,
   signal?: AbortSignal,
 ): Promise<void> {
-  await runExternalTool({
-    toolName: 'pdftocairo',
-    executable,
-    args: ['-svg', '-f', String(page), '-l', String(page), sourcePath, outputPath],
-    ...(signal === undefined ? {} : { signal }),
-  });
+  signal?.throwIfAborted();
+  const pdfBytes = await readFile(sourcePath);
+  signal?.throwIfAborted();
+  const svg = await renderPdfPageToSvg(pdfBytes, page);
+  signal?.throwIfAborted();
+  await writeFile(outputPath, svg, 'utf8');
 }
 
 async function executeDrawio(
@@ -447,6 +450,7 @@ async function executeMermaid(
       sourcePath,
       outputPath: asSvgOutputPath(outputPath),
       outputFormat: 'svg',
+      mermaidPath: options?.mermaidPath ?? '',
       chromePath: options?.chromePath ?? '',
       theme: options?.theme ?? 'default',
       backgroundColor: options?.backgroundColor ?? 'white',

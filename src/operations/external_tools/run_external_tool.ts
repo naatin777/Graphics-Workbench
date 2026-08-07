@@ -42,7 +42,6 @@ const TERMINATION_GRACE_MS = 250;
 const TERMINATION_WATCHDOG_MS = 5_000;
 const TOOL_ID_BY_NAME: Readonly<Record<string, ExternalToolId>> = {
   drawio: 'drawio',
-  pdftocairo: 'pdftocairo',
   'rsvg-convert': 'rsvgConvert',
   mermaid: 'mermaid',
 };

@@ -29,8 +29,8 @@ suite('PNGに変換する処理', () => {
             workspacePath,
             page,
           })),
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
+          pdftocairoTools: {},
+          mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           runtime: { resolveConflicts: async () => 'overwrite' },
         });
@@ -80,7 +80,6 @@ suite('PNGに変換する処理', () => {
       await executePngConversion({
         jobs: [job],
         pdftocairoTools: {
-          pdftocairoPath: 'pdftocairo',
           runPdfToPng: async (pdfPath, pngPath, page) => {
             assert.ok(pdfPath.endsWith('.pdf'));
             assert.strictEqual(page, 1);
@@ -96,7 +95,7 @@ suite('PNGに変換する処理', () => {
               .toFile(pngPath);
           },
         },
-        mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
+        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: drawio,
         runtime: { resolveConflicts: async () => 'overwrite' },
       });

@@ -35,8 +35,8 @@ suite('WebPに変換する処理', () => {
             animation: { pages: 2, pageHeight: 8, delay: [100, 250], loop: 3 },
           },
         ],
-        pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-        mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
+        pdftocairoTools: {},
+        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio' },
         webp: { effort: 0 },
         runtime: {},
@@ -66,8 +66,8 @@ suite('WebPに変換する処理', () => {
       await assert.rejects(
         executeWebpConversion({
           jobs: [{ sourcePath, outputPath, workspacePath, animation: { pages: 2, pageHeight: 8 } }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
+          pdftocairoTools: {},
+          mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           webp: { effort: 0 },
           runtime: {},
@@ -101,7 +101,6 @@ suite('WebPに変換する処理', () => {
           },
         ],
         pdftocairoTools: {
-          pdftocairoPath: 'pdftocairo',
           runPdfToPng: async (pdfSourcePath, pngOutputPath, page) => {
             pdfToPngCalls.push({ sourcePath: pdfSourcePath, outputPath: pngOutputPath, page });
             await sharp({ create: { width: 4, height: 4, channels: 4, background: '#ff0000' } })
@@ -111,6 +110,7 @@ suite('WebPに変換する処理', () => {
         },
         mermaidTools: {
           chromePath: 'chrome',
+          mermaidPath: 'mmdc',
           theme: 'default',
           backgroundColor: 'white',
         },

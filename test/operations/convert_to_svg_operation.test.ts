@@ -38,9 +38,9 @@ suite('SVGに変換する処理', () => {
             page: 1,
           },
         ],
-        pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
         mermaidTools: {
           chromePath: 'chrome',
+          mermaidPath: 'mmdc',
           theme: 'default',
           backgroundColor: 'white',
         },
@@ -83,8 +83,7 @@ suite('SVGに変換する処理', () => {
       await assert.rejects(
         convertToSvgFiles({
           jobs: [{ sourcePath, outputPath, workspacePath, page: 1 }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
+          mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
           drawioTools: {
             drawioPath: 'drawio',
             runDrawio: async (_executable, args) => {
@@ -119,9 +118,9 @@ suite('SVGに変換する処理', () => {
               page: 1,
             },
           ],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
           mermaidTools: {
             chromePath: 'chrome',
+            mermaidPath: 'mmdc',
             theme: 'default',
             backgroundColor: 'white',
           },
@@ -153,8 +152,7 @@ suite('SVGに変換する処理', () => {
       await assert.rejects(
         convertToSvgFiles({
           jobs: [{ sourcePath, outputPath, workspacePath, page: 1 }],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
+          mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           runPdfToSvg: async (_sourcePath, toolOutputPath) => {
             await writeFile(toolOutputPath, '');
@@ -169,7 +167,7 @@ suite('SVGに変換する処理', () => {
     }
   });
 
-  test('pdftocairoの失敗をstderrつきのエラーに包む', async () => {
+  test('PDF→SVG変換の失敗をstderrつきのエラーに包む', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-svg-operation-'));
 
     try {
@@ -189,9 +187,9 @@ suite('SVGに変換する処理', () => {
               page: 1,
             },
           ],
-          pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
           mermaidTools: {
             chromePath: 'chrome',
+            mermaidPath: 'mmdc',
             theme: 'default',
             backgroundColor: 'white',
           },
@@ -203,7 +201,7 @@ suite('SVGに変換する処理', () => {
           },
           runId: 'test-run',
         }),
-        /pdftocairo failed: Command failed: pdftocairo\nsyntax error/,
+        /PDF to SVG conversion failed: Command failed: pdftocairo\nsyntax error/,
       );
     } finally {
       await rm(workspacePath, { recursive: true, force: true });

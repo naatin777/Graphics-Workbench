@@ -1,19 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-$popplerVersion = '24.08.0-0'
-$popplerZip = Join-Path $env:RUNNER_TEMP 'poppler.zip'
-$popplerRoot = Join-Path $env:RUNNER_TEMP 'poppler'
-
-Write-Host 'Downloading Poppler...'
-Invoke-WebRequest "https://github.com/oschwartz10612/poppler-windows/releases/download/v$popplerVersion/Release-$popplerVersion.zip" -OutFile $popplerZip
-Expand-Archive $popplerZip -DestinationPath $popplerRoot -Force
-
-$pdftocairo = Get-ChildItem -Path $popplerRoot -Recurse -Filter pdftocairo.exe | Select-Object -First 1
-if (-not $pdftocairo) {
-	throw "pdftocairo.exe not found under $popplerRoot"
-}
-
 $rsvgDir = Join-Path $env:RUNNER_TEMP 'rsvg'
 New-Item -ItemType Directory -Force -Path $rsvgDir | Out-Null
 $rsvgConvert = Join-Path $rsvgDir 'rsvg-convert.exe'
@@ -21,8 +8,14 @@ $rsvgConvert = Join-Path $rsvgDir 'rsvg-convert.exe'
 Write-Host 'Downloading rsvg-convert...'
 Invoke-WebRequest 'https://github.com/miyako/console-rsvg-convert/releases/download/1.0.windows-msvc-static/rsvg-convert.exe' -OutFile $rsvgConvert
 
-if (-not (Test-Path $pdftocairo.FullName)) { throw "missing $($pdftocairo.FullName)" }
 if (-not (Test-Path $rsvgConvert)) { throw "missing $rsvgConvert" }
+
+Write-Host 'Installing Mermaid CLI...'
+npm install -g @mermaid-js/mermaid-cli
+$mermaid = (Get-Command mmdc -ErrorAction SilentlyContinue)
+if (-not $mermaid) {
+	throw 'mmdc not found after installing @mermaid-js/mermaid-cli'
+}
 
 $chromeCandidates = @(
 	(Join-Path $env:ProgramFiles 'Google/Chrome/Application/chrome.exe'),
@@ -37,8 +30,8 @@ $settingsDir = 'test/vscode-settings'
 New-Item -ItemType Directory -Force -Path $settingsDir | Out-Null
 $settingsPath = Join-Path $settingsDir 'settings.json'
 $settings = [ordered]@{
-	'graphics-workbench.execPath.pdftocairo' = $pdftocairo.FullName
 	'graphics-workbench.execPath.rsvgConvert' = $rsvgConvert
+	'graphics-workbench.execPath.mermaid' = $mermaid.Source
 	'graphics-workbench.execPath.chrome' = $chrome
 }
 

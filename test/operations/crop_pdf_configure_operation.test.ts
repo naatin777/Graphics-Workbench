@@ -10,17 +10,14 @@
 // - Safe Modeのdialog
 
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
 import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 import sharp from 'sharp';
 
-import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
+import { renderPdfPageToPng } from '../../src/operations/pdf/mupdf.js';
 import { resolveOutputPath } from '../../src/config/output/resolve_output_path.js';
 import { cropPdfWithConfiguredBox, type CropBox } from '../../src/operations/pdf/crop_pdf_configure.js';
 import { asRunId } from '../../src/operations/lifecycle/run_id.js';
@@ -30,7 +27,6 @@ import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { RecordingOutputChannel } from '../helpers/recording_output_channel.js';
 import { assertWorkspaceChangesSince, captureWorkspaceSnapshot } from '../helpers/workspace_snapshot.js';
 
-const execFileAsync = promisify(execFile);
 suite('PDF configure crop処理', () => {
   const temporaryDirectories: string[] = [];
 
@@ -389,24 +385,11 @@ async function assertRenderedPagesSimilar(params: {
 }
 
 async function renderPdfPage(pdfPath: string, pageNumber: number, outputPrefix: string): Promise<string> {
-  const pdftocairoPath = readPdftocairoExecutablePath(getExtensionConfiguration());
-  assert.notStrictEqual(pdftocairoPath, '', 'pdftocairo must be configured in test/vscode-settings/settings.json');
-
-  await execFileAsync(pdftocairoPath, [
-    '-cropbox',
-    '-png',
-    '-singlefile',
-    '-f',
-    pageNumber.toString(),
-    '-l',
-    pageNumber.toString(),
-    '-r',
-    '72',
-    pdfPath,
-    outputPrefix,
-  ]);
-
-  return `${outputPrefix}.png`;
+  const pdfBytes = await readFile(pdfPath);
+  const png = await renderPdfPageToPng(pdfBytes, pageNumber, { dpi: 72 });
+  const pngPath = `${outputPrefix}.png`;
+  await writeFile(pngPath, png);
+  return pngPath;
 }
 
 async function assertPngsSimilar(expectedPng: Buffer, actualPng: Buffer): Promise<void> {

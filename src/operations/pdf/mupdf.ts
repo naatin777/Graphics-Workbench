@@ -16,6 +16,11 @@ interface MupdfPixmap {
   getWidth(): number;
   getHeight(): number;
   getPixels(): Uint8ClampedArray;
+  asPNG(): Uint8Array;
+  destroy(): void;
+}
+
+interface MupdfColorSpace {
   destroy(): void;
 }
 
@@ -24,7 +29,8 @@ export interface MupdfPdfPage {
   getBounds(boxName: 'MediaBox' | 'CropBox' | 'TrimBox'): MupdfRect;
   getTransform(): MupdfMatrix;
   setPageBox(boxName: 'MediaBox' | 'CropBox' | 'TrimBox', rect: MupdfRect): void;
-  toPixmap(matrix: MupdfMatrix, colorspace: unknown, alpha: boolean): MupdfPixmap;
+  toPixmap(matrix: MupdfMatrix, colorspace: MupdfColorSpace, alpha: boolean): MupdfPixmap;
+  run(device: MupdfDevice, matrix: MupdfMatrix): void;
 }
 
 interface MupdfPdfDocumentReader {
@@ -56,13 +62,26 @@ export interface MupdfModule {
   Matrix: {
     scale(sx: number, sy: number): MupdfMatrix;
     invert(matrix: MupdfMatrix): MupdfMatrix;
+    identity: MupdfMatrix;
   };
   ColorSpace: {
-    DeviceRGB: unknown;
+    DeviceRGB: MupdfColorSpace;
   };
   Rect: {
     transform(rect: MupdfRect, matrix: MupdfMatrix): MupdfRect;
   };
+  Buffer: new () => MupdfBuffer;
+  DocumentWriter: new (buffer: MupdfBuffer, format: string, options: string) => MupdfDocumentWriter;
+}
+
+interface MupdfDocumentWriter {
+  beginPage(mediabox: MupdfRect): MupdfDevice;
+  endPage(): void;
+  close(): void;
+}
+
+interface MupdfDevice {
+  close(): void;
 }
 
 type MupdfMatrix = [number, number, number, number, number, number];
@@ -119,6 +138,120 @@ export async function countPdfPages(bytes: Uint8Array): Promise<number> {
   try {
     return document.countPages();
   } finally {
+    document.destroy();
+  }
+}
+
+/** Returns whether the given 1-based page draws any non-white content. */
+export async function hasPdfPageContent(bytes: Uint8Array, page: number): Promise<boolean> {
+  const mupdf = await loadMupdf();
+  const document = await openPdfDocument(bytes);
+  try {
+    const pageObject = document.loadPage(page - 1);
+    return findPageContentBounds(mupdf, pageObject) !== undefined;
+  } finally {
+    document.destroy();
+  }
+}
+
+/**
+ * Renders a PDF page to a PNG buffer. `page` is 1-based; the default scale
+ * matches pdftocairo's 150 DPI (72 * 150 / 72 = 1.5x zoom on the 72pt page).
+ * With `cropContent`, white margins are trimmed to the drawn content bounds
+ * (a pdfcrop-like behavior implemented on top of mupdf.js).
+ */
+export async function renderPdfPageToPng(
+  bytes: Uint8Array,
+  page: number,
+  options?: { dpi?: number; cropContent?: boolean | undefined },
+): Promise<Uint8Array> {
+  const mupdf = await loadMupdf();
+  const document = await openPdfDocument(bytes);
+  try {
+    const pageObject = document.loadPage(page - 1);
+    if (options?.cropContent === true) {
+      const bounds = findPageContentBounds(mupdf, pageObject);
+      if (bounds !== undefined) {
+        pageObject.setPageBox('CropBox', bounds);
+      }
+    }
+    const dpi = options?.dpi ?? 150;
+    const scale = dpi / 72;
+    const pixmap = pageObject.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, false);
+    try {
+      return Uint8Array.from(pixmap.asPNG());
+    } finally {
+      pixmap.destroy();
+    }
+  } finally {
+    document.destroy();
+  }
+}
+
+function findPageContentBounds(mupdf: MupdfModule, pageObject: MupdfPdfPage): MupdfRect | undefined {
+  const probeDpi = 72;
+  const probePixmap = pageObject.toPixmap(
+    mupdf.Matrix.scale(probeDpi / 72, probeDpi / 72),
+    mupdf.ColorSpace.DeviceRGB,
+    false,
+  );
+  try {
+    const bounds = findNonWhiteBounds(probePixmap);
+    if (bounds === undefined) {
+      return undefined;
+    }
+    const mediabox = pageObject.getBounds('MediaBox');
+    const scale = 72 / probeDpi;
+    return [bounds.x0 * scale, mediabox[3] - bounds.y1 * scale, bounds.x1 * scale, mediabox[3] - bounds.y0 * scale];
+  } finally {
+    probePixmap.destroy();
+  }
+}
+
+function findNonWhiteBounds(pixmap: MupdfPixmap): { x0: number; y0: number; x1: number; y1: number } | undefined {
+  const width = pixmap.getWidth();
+  const height = pixmap.getHeight();
+  const pixels = pixmap.getPixels();
+  const channels = Math.max(1, Math.floor(pixels.length / (width * height)));
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * channels;
+      const red = pixels[index] ?? 0;
+      const green = pixels[index + 1] ?? 0;
+      const blue = pixels[index + 2] ?? 0;
+      if (red < 250 || green < 250 || blue < 250) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+  if (maxX === -1) {
+    return undefined;
+  }
+  return { x0: minX, y0: minY, x1: maxX + 1, y1: maxY + 1 };
+}
+
+/** Renders a PDF page to an SVG string. `page` is 1-based. */
+export async function renderPdfPageToSvg(bytes: Uint8Array, page: number): Promise<string> {
+  const mupdf = await loadMupdf();
+  const document = await openPdfDocument(bytes);
+  const buffer = new mupdf.Buffer();
+  const writer = new mupdf.DocumentWriter(buffer, 'svg', '');
+  try {
+    const pageObject = document.loadPage(page - 1);
+    const device = writer.beginPage(pageObject.getBounds('CropBox'));
+    pageObject.run(device, mupdf.Matrix.identity);
+    writer.endPage();
+    writer.close();
+    return buffer.asString();
+  } finally {
+    buffer.destroy();
     document.destroy();
   }
 }

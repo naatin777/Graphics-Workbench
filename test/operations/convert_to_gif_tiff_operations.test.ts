@@ -18,8 +18,8 @@ suite('GIF/TIFFに変換する処理', () => {
       await writeAnimatedGif(gifSourcePath);
       await writeAnimatedTiff(tiffSourcePath);
       const common = {
-        pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-        mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
+        pdftocairoTools: {},
+        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio' },
         runtime: {},
       };

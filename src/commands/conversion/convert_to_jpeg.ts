@@ -1,7 +1,6 @@
 import type * as vscode from 'vscode';
 
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { readPdftocairoExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executeJpegConversion } from '../../operations/conversion/convert_to_jpeg.js';
 import { planJpegConversionJobs } from './plan_jpeg_conversion_jobs.js';
@@ -25,7 +24,7 @@ export async function convertToJpegCommand(
       defaultConfiguration: getDefaultConfiguration(),
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
-      pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
+      pdftocairoTools: {},
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, prepared, runtime }) =>
       planJpegConversionJobs(sourceUri, configuration, prepared.defaultConfiguration, maxInputPixels, runtime),

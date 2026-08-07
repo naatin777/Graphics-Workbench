@@ -32,7 +32,6 @@ suite('Mermaid fixtureの内容比較', () => {
         });
         await convertToSvgFiles({
           jobs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
-          pdftocairoTools,
           mermaidTools,
           drawioTools,
           runId: `mermaid-${index}-svg`,

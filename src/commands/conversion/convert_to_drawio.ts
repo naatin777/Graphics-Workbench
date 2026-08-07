@@ -2,10 +2,7 @@ import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import {
-  readDrawioExecutablePath,
-  readPdftocairoExecutablePath,
-} from '../../config/external_tools/external_tool_paths.js';
+import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/conversion/convert_to_drawio.js';
@@ -103,7 +100,6 @@ async function convertToDrawioWithDefaults(
           jobs,
           tools: {
             drawioPath,
-            pdftocairoPath: readPdftocairoExecutablePath(configuration),
             mermaidTools: readMermaidCliOptions(configuration),
           },
           maxInputPixels: getMaxInputPixels(configuration),

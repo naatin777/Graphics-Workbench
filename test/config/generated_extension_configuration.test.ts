@@ -45,7 +45,7 @@ suite('生成された設定スキーマ検証', () => {
     assert.strictEqual(configuration.preview.maxCanvasPixels(), 40_000_000);
     assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
     assert.strictEqual(configuration.performance.maxConcurrentHeavyProcesses(), 2);
-    assert.strictEqual(configuration.externalTools.pdftocairo.timeoutSeconds(), 0);
+    assert.strictEqual(configuration.externalTools.rsvgConvert.timeoutSeconds(), 0);
   });
 
   test('新しい数値設定の範囲を拒否する', () => {
@@ -56,9 +56,9 @@ suite('生成された設定スキーマ検証', () => {
     assert.throws(
       () =>
         fakeConfiguration({
-          'externalTools.pdftocairo.timeoutSeconds': 86401,
-        }).externalTools.pdftocairo.timeoutSeconds(),
-      /Invalid configuration value for graphics-workbench\.externalTools\.pdftocairo\.timeoutSeconds/iu,
+          'externalTools.rsvgConvert.timeoutSeconds': 86401,
+        }).externalTools.rsvgConvert.timeoutSeconds(),
+      /Invalid configuration value for graphics-workbench\.externalTools\.rsvgConvert\.timeoutSeconds/iu,
     );
   });
 });

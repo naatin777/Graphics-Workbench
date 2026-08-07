@@ -1,6 +1,5 @@
 import type * as vscode from 'vscode';
 
-import { readPdftocairoExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executePngConversion } from '../../operations/conversion/convert_to_png.js';
 import { planPngConversionJobs } from './plan_png_conversion_jobs.js';
@@ -23,7 +22,7 @@ export async function convertToPngCommand(
     prepare: (configuration) => ({
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
-      pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
+      pdftocairoTools: {},
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, runtime }) =>
       planPngConversionJobs(sourceUri, configuration, maxInputPixels, runtime),

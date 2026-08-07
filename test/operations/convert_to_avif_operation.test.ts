@@ -38,7 +38,6 @@ suite('AVIFに変換する処理', () => {
           },
         ],
         pdftocairoTools: {
-          pdftocairoPath: 'pdftocairo',
           runPdfToPng: async (pdfPath, pngPath, page) => {
             pdfToPngCalls.push({ sourcePath: pdfPath, outputPath: pngPath, page });
             await sharp({
@@ -55,6 +54,7 @@ suite('AVIFに変換する処理', () => {
         },
         mermaidTools: {
           chromePath: 'chrome',
+          mermaidPath: 'mmdc',
           theme: 'default',
           backgroundColor: 'white',
         },

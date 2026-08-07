@@ -38,13 +38,17 @@ for (const entry of readdirSync(testWorkspaceDirectory)) {
 if (existsSync(settingsSourcePath)) {
   const settings = JSON.parse(readFileSync(settingsSourcePath, 'utf8'));
   const toolCommands = [
-    ['graphics-workbench.execPath.pdftocairo', 'pdftocairo'],
     ['graphics-workbench.execPath.rsvgConvert', 'rsvg-convert'],
+    ['graphics-workbench.execPath.mermaid', 'mmdc'],
+    ['graphics-workbench.execPath.drawio', 'drawio'],
   ];
 
   for (const [key, command] of toolCommands) {
     if (typeof settings[key] !== 'string' || settings[key] === '') {
-      const resolved = resolveExecutable(command);
+      const resolved =
+        key === 'graphics-workbench.execPath.drawio'
+          ? (resolveExecutable(command) ?? resolveDrawioExecutable())
+          : resolveExecutable(command);
       if (resolved !== undefined) {
         settings[key] = resolved;
       }
@@ -67,6 +71,14 @@ function resolveExecutable(command) {
   } catch {
     return undefined;
   }
+}
+
+function resolveDrawioExecutable() {
+  if (process.platform !== 'darwin') {
+    return undefined;
+  }
+  const appPath = '/Applications/draw.io.app/Contents/MacOS/draw.io';
+  return existsSync(appPath) ? appPath : undefined;
 }
 
 export default defineConfig({

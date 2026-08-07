@@ -139,8 +139,10 @@ async function generateDrawioOutputs(drawioExecutablePath: string): Promise<void
     const expectedSvgPath = path.join(outputDataDirectory, 'expected.svg');
     const expectedPdfPath = path.join(outputDataDirectory, 'expected.pdf');
     const expectedPngPath = path.join(outputDataDirectory, 'expected.png');
+    const pngSourcePdfPath = path.join(outputDataDirectory, 'render.pdf');
 
     await runDrawio(drawioExecutablePath, inputPath, expectedSvgPath, 'svg');
+    // oxlint-disable-next-line unicorn/prefer-ternary -- both branches run side-effectful child processes.
     if (inputPath.endsWith('.drawio') || inputPath.endsWith('.dio')) {
       await execFileAsync(drawioExecutablePath, [
         inputPath,
@@ -153,10 +155,27 @@ async function generateDrawioOutputs(drawioExecutablePath: string): Promise<void
         '-a',
         '--crop',
       ]);
-      await runDrawio(drawioExecutablePath, inputPath, expectedPngPath, 'png');
     } else {
       await runDrawio(drawioExecutablePath, inputPath, expectedPdfPath, 'pdf');
-      await renderPdfPage(expectedPdfPath, 1, expectedPngPath);
+    }
+    // The raster path renders Draw.io through a PDF export and crops white
+    // margins (pdfcrop), so the oracle PNG must be produced the same way.
+    // Pick the first page that actually contains content.
+    await runDrawio(drawioExecutablePath, inputPath, pngSourcePdfPath, 'pdf');
+    try {
+      const { countPdfPages, hasPdfPageContent } = await import('../src/operations/pdf/mupdf.js');
+      const pngSourceBytes = new Uint8Array(await readFile(pngSourcePdfPath));
+      const pngSourcePageCount = await countPdfPages(pngSourceBytes);
+      let pngSourcePage = 1;
+      for (let candidate = 1; candidate <= pngSourcePageCount; candidate += 1) {
+        if (await hasPdfPageContent(pngSourceBytes, candidate)) {
+          pngSourcePage = candidate;
+          break;
+        }
+      }
+      await renderPdfPage(pngSourcePdfPath, pngSourcePage, expectedPngPath, true);
+    } finally {
+      await rm(pngSourcePdfPath, { force: true });
     }
   }
 }
@@ -182,18 +201,12 @@ async function createSharpInput(inputPath: string): Promise<Sharp> {
   return sharp(inputPath);
 }
 
-async function renderPdfPage(sourcePath: string, page: number, outputPath: string): Promise<void> {
-  const outputPrefix = outputPath.slice(0, -path.extname(outputPath).length);
-  await execFileAsync('pdftocairo', [
-    '-png',
-    '-singlefile',
-    '-f',
-    String(page),
-    '-l',
-    String(page),
-    sourcePath,
-    outputPrefix,
-  ]);
+async function renderPdfPage(sourcePath: string, page: number, outputPath: string, cropContent = false): Promise<void> {
+  const { renderPdfPageToPng } = await import('../src/operations/pdf/mupdf.js');
+  const png = await renderPdfPageToPng(new Uint8Array(await readFile(sourcePath)), page, {
+    cropContent: cropContent || undefined,
+  });
+  await writeFile(outputPath, png);
 }
 
 async function listFiles(directoryPath: string): Promise<string[]> {
