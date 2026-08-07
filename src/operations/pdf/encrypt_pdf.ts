@@ -1,7 +1,8 @@
-import { access, mkdir } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { openPdfDocument, savePdfDocument } from './mupdf.js';
 import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
@@ -10,7 +11,6 @@ import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/inp
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId } from '../lifecycle/run_id.js';
 import { createSecurePdfStagingRoot } from '../lifecycle/secure_staging.js';
-import { runQpdfWithJobJson } from './run_qpdf_with_job_json.js';
 
 export interface EncryptPdfJob {
   sourcePath: string;
@@ -21,7 +21,6 @@ export interface EncryptPdfJob {
 export interface EncryptPdfOptions {
   jobs: EncryptPdfJob[];
   password: string;
-  qpdfPath: string;
   runtime?: ConversionExecutionContext;
   runId?: string;
 }
@@ -56,7 +55,6 @@ export async function encryptPdfFiles(options: EncryptPdfOptions): Promise<Commi
         job,
         index,
         password: options.password,
-        qpdfPath: options.qpdfPath,
         stagingRootPath,
         signal: batchRuntime.signal,
       }),
@@ -67,11 +65,10 @@ async function encryptPdf(params: {
   job: EncryptPdfJob;
   index: number;
   password: string;
-  qpdfPath: string;
   stagingRootPath: string;
   signal: AbortSignal | undefined;
 }): Promise<PreparedConversionOutput> {
-  const { job, password, qpdfPath, signal } = params;
+  const { job, password, signal } = params;
   signal?.throwIfAborted();
 
   const itemName = `${params.index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
@@ -84,16 +81,17 @@ async function encryptPdf(params: {
   await mkdir(workDirectory, { recursive: true });
   signal?.throwIfAborted();
 
-  await runQpdfWithJobJson({
-    qpdfPath,
-    job: {
-      inputFile: job.sourcePath,
-      outputFile: stagedOutputPath,
-      encrypt: { userPassword: password, ownerPassword: password, '256bit': {} },
-    },
-    ...(signal === undefined ? {} : { signal }),
-    temporaryDirectory: params.stagingRootPath,
-  });
+  const bytes = await readFile(job.sourcePath);
+  signal?.throwIfAborted();
+  const document = await openPdfDocument(bytes);
+  // ponytail: the password is embedded in the save options string; passwords
+  // containing `,` or `=` break mupdf's option parser. qpdf previously used a job
+  // JSON to keep secrets out of argv; mupdf runs in-process, so that is not a
+  // concern here, only the comma/equals limitation remains.
+  const options = `encrypt=aes-256,user-password=${password},owner-password=${password}`;
+  const encryptedBytes = savePdfDocument(document, options);
+  signal?.throwIfAborted();
+  await writeFile(stagedOutputPath, encryptedBytes);
 
   signal?.throwIfAborted();
 

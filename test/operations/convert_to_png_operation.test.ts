@@ -30,7 +30,6 @@ suite('PNGに変換する処理', () => {
             page,
           })),
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
           mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           runtime: { resolveConflicts: async () => 'overwrite' },
@@ -97,7 +96,6 @@ suite('PNGに変換する処理', () => {
               .toFile(pngPath);
           },
         },
-        ghostscriptTools: { ghostscriptPath: 'gs' },
         mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
         drawioTools: drawio,
         runtime: { resolveConflicts: async () => 'overwrite' },

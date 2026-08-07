@@ -3,7 +3,6 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
-import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { localeMap } from '../../locale_map.js';
 import { compressPdfFiles, type CompressPdfJob, type GhostscriptQuality } from '../../operations/pdf/compress_pdf.js';
 
@@ -45,7 +44,6 @@ export async function compressPdfCommand(
     }
 
     const jobs = sourceUris.map((sourceUri) => planCompressPdfJob(sourceUri, outputTemplate));
-    const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     await runConversionLifecycle({
       operationName: 'compress-pdf',
       ...(outputChannel !== undefined && { outputChannel }),
@@ -58,7 +56,7 @@ export async function compressPdfCommand(
         cancelledMessage: userMessage('message.compressPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.compressPdf.failed', reason),
       },
-      run: async (runtime) => compressPdfFiles({ jobs, quality, ghostscriptPath, runtime }),
+      run: async (runtime) => compressPdfFiles({ jobs, quality, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {

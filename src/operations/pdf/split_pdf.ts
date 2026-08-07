@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { loadMupdf, openPdfDocument, savePdfDocument } from './mupdf.js';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
@@ -103,41 +103,42 @@ async function splitPdf(params: {
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
-  const sourceDocument = await PDFDocument.load(await readFile(copiedSourcePath));
+  const mupdf = await loadMupdf();
+  const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
   signal?.throwIfAborted();
-  const pageCount = sourceDocument.getPageCount();
 
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${job.sourcePath}`);
-  }
+  try {
+    const pageCount = sourceDocument.countPages();
 
-  const stagedPages: PreparedConversionOutput[] = [];
-
-  for (let page = 1; page <= pageCount; page++) {
-    signal?.throwIfAborted();
-    const pageDocument = await PDFDocument.create();
-    const [copiedPage] = await pageDocument.copyPages(sourceDocument, [page - 1]);
-
-    if (!copiedPage) {
-      throw new Error(`Could not copy page ${page}: ${job.sourcePath}`);
+    if (pageCount === 0) {
+      throw new Error(`PDF has no pages: ${job.sourcePath}`);
     }
 
-    pageDocument.addPage(copiedPage);
-    const stagedOutputPath = path.join(pagesDirectory, `${page}.pdf`);
-    await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-    signal?.throwIfAborted();
-    await writeFile(stagedOutputPath, await pageDocument.save());
-    signal?.throwIfAborted();
+    const stagedPages: PreparedConversionOutput[] = [];
 
-    stagedPages.push({
-      stagedOutputPath,
-      outputPath: job.outputPathForPage(page),
-      workspacePath: job.workspacePath,
-      stagingRootPath,
-    });
+    for (let page = 1; page <= pageCount; page++) {
+      signal?.throwIfAborted();
+      const pageDocument = new mupdf.PDFDocument();
+      pageDocument.graftPage(0, sourceDocument, page - 1);
+
+      const stagedOutputPath = path.join(pagesDirectory, `${page}.pdf`);
+      await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+      signal?.throwIfAborted();
+      await writeFile(stagedOutputPath, savePdfDocument(pageDocument));
+      signal?.throwIfAborted();
+
+      stagedPages.push({
+        stagedOutputPath,
+        outputPath: job.outputPathForPage(page),
+        workspacePath: job.workspacePath,
+        stagingRootPath,
+      });
+    }
+
+    return stagedPages;
+  } finally {
+    sourceDocument.destroy();
   }
-
-  return stagedPages;
 }
 
 async function splitPdfPageGroups(params: {
@@ -172,49 +173,46 @@ async function splitPdfPageGroups(params: {
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
-  const sourceDocument = await PDFDocument.load(await readFile(copiedSourcePath));
+  const mupdf = await loadMupdf();
+  const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
   signal?.throwIfAborted();
-  const pageCount = sourceDocument.getPageCount();
 
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${job.sourcePath}`);
-  }
+  try {
+    const pageCount = sourceDocument.countPages();
 
-  validatePageGroups(pageGroups, pageCount, job.sourcePath);
-
-  const stagedGroups: PreparedConversionOutput[] = [];
-
-  for (const [groupIndex, pages] of pageGroups.entries()) {
-    signal?.throwIfAborted();
-    const groupDocument = await PDFDocument.create();
-    const copiedPages = await groupDocument.copyPages(
-      sourceDocument,
-      pages.map((page) => page - 1),
-    );
-
-    if (copiedPages.length !== pages.length) {
-      throw new Error(`Could not copy all pages for group ${groupIndex}: ${job.sourcePath}`);
+    if (pageCount === 0) {
+      throw new Error(`PDF has no pages: ${job.sourcePath}`);
     }
 
-    for (const copiedPage of copiedPages) {
-      groupDocument.addPage(copiedPage);
+    validatePageGroups(pageGroups, pageCount, job.sourcePath);
+
+    const stagedGroups: PreparedConversionOutput[] = [];
+
+    for (const [groupIndex, pages] of pageGroups.entries()) {
+      signal?.throwIfAborted();
+      const groupDocument = new mupdf.PDFDocument();
+      for (const page of pages) {
+        groupDocument.graftPage(groupDocument.countPages(), sourceDocument, page - 1);
+      }
+
+      const stagedOutputPath = path.join(groupsDirectory, `${groupIndex + 1}.pdf`);
+      await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+      signal?.throwIfAborted();
+      await writeFile(stagedOutputPath, savePdfDocument(groupDocument));
+      signal?.throwIfAborted();
+
+      stagedGroups.push({
+        stagedOutputPath,
+        outputPath: outputPathForGroup(groupIndex, pages),
+        workspacePath: job.workspacePath,
+        stagingRootPath,
+      });
     }
 
-    const stagedOutputPath = path.join(groupsDirectory, `${groupIndex + 1}.pdf`);
-    await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-    signal?.throwIfAborted();
-    await writeFile(stagedOutputPath, await groupDocument.save());
-    signal?.throwIfAborted();
-
-    stagedGroups.push({
-      stagedOutputPath,
-      outputPath: outputPathForGroup(groupIndex, pages),
-      workspacePath: job.workspacePath,
-      stagingRootPath,
-    });
+    return stagedGroups;
+  } finally {
+    sourceDocument.destroy();
   }
-
-  return stagedGroups;
 }
 
 function validateJobs(jobs: SplitPdfJob[]): void {

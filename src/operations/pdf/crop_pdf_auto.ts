@@ -1,26 +1,23 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument, type PDFPage } from 'pdf-lib';
-
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import {
-  createAsciiInputScratch,
-  defaultWindowsScratchBaseCandidates,
-  removeSuccessfulScratch,
-  validateAsciiScratchInput,
-  type AsciiScratch,
-  type LineOutputChannel,
-} from '../external_tools/external_tool_ascii_scratch.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
-import { runExternalTool } from '../external_tools/run_external_tool.js';
+import {
+  loadMupdf,
+  openPdfDocument,
+  savePdfDocument,
+  type MupdfModule,
+  type MupdfPdfObject,
+  type MupdfPdfPage,
+} from './mupdf.js';
 
 export interface CropPdfJob {
   sourcePath: string;
@@ -28,30 +25,16 @@ export interface CropPdfJob {
   outputPath: string;
 }
 
-interface GhostscriptResult {
-  stdout: string;
-  stderr: string;
-}
-
-export type RunGhostscript = (executable: string, args: string[], signal?: AbortSignal) => Promise<GhostscriptResult>;
-
 export interface CropPdfOptions {
   jobs: CropPdfJob[];
   margin: number;
-  ghostscriptPath: string;
   runtime?: ConversionExecutionContext;
   runId?: string;
-  runGhostscript?: RunGhostscript;
-  platform?: NodeJS.Platform;
-  scratchBaseCandidates?: readonly string[];
 }
 
-interface Box {
-  left: number;
-  bottom: number;
-  right: number;
-  top: number;
-}
+type Rect = [number, number, number, number];
+
+const MAX_CONTENT_RENDER_PIXELS = 50_000_000;
 
 export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
@@ -70,9 +53,6 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
-  const runGhostscript = options.runGhostscript ?? executeGhostscript;
-  const platform = options.platform ?? process.platform;
-  const scratchBaseCandidates = options.scratchBaseCandidates ?? defaultWindowsScratchBaseCandidates();
 
   return runStagedConversionBatch({
     jobs: options.jobs,
@@ -86,16 +66,7 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
         index,
         margin: options.margin,
         runId: currentRunId,
-        tools: {
-          ghostscriptPath: options.ghostscriptPath,
-          runGhostscript,
-          platform,
-          scratchBaseCandidates,
-        },
-        runtime: {
-          signal: batchRuntime.signal,
-          ...(batchRuntime.outputChannel !== undefined && { outputChannel: batchRuntime.outputChannel }),
-        },
+        signal: batchRuntime.signal,
       }),
   });
 }
@@ -105,20 +76,9 @@ async function convertPdf(params: {
   index: number;
   margin: number;
   runId: string;
-  tools: {
-    ghostscriptPath: string;
-    runGhostscript: RunGhostscript;
-    platform: NodeJS.Platform;
-    scratchBaseCandidates: readonly string[];
-  };
-  runtime: {
-    signal: AbortSignal | undefined;
-    outputChannel?: LineOutputChannel;
-  };
+  signal: AbortSignal | undefined;
 }): Promise<PreparedConversionOutput> {
-  const { job, index, margin, runId, tools, runtime } = params;
-  const { ghostscriptPath, runGhostscript, platform, scratchBaseCandidates } = tools;
-  const { signal, outputChannel } = runtime;
+  const { job, index, margin, runId, signal } = params;
   signal?.throwIfAborted();
   const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
   const stagingRootPath = createStagingRoot(job.workspacePath, 'crop-pdf', runId);
@@ -134,167 +94,153 @@ async function convertPdf(params: {
   signal?.throwIfAborted();
   await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
-  let scratch: AsciiScratch | undefined;
+  const pdfBytes = await cropDocumentBytes(await readFile(copiedSourcePath), margin, job.sourcePath, signal);
+  signal?.throwIfAborted();
+  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+  signal?.throwIfAborted();
+  await writeFile(stagedOutputPath, pdfBytes);
+  signal?.throwIfAborted();
 
-  try {
-    await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
-    signal?.throwIfAborted();
-    const preparedInput = await prepareGhostscriptInput({
-      sourcePath: job.sourcePath,
-      copiedSourcePath,
-      platform,
-      scratchBaseCandidates,
-      signal,
-      outputChannel,
-    });
-    ({ scratch } = preparedInput);
-    const document = await cropDocument({
-      sourcePath: job.sourcePath,
-      copiedSourcePath,
-      ghostscriptInputPath: preparedInput.ghostscriptInputPath,
-      ghostscriptPath,
-      runGhostscript,
-      signal,
-      outputChannel,
-      margin,
-    });
-
-    await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-    signal?.throwIfAborted();
-    await writeFile(stagedOutputPath, await document.save());
-    signal?.throwIfAborted();
-
-    if (scratch) {
-      await removeSuccessfulScratch(scratch, outputChannel);
-    }
-
-    return {
-      stagedOutputPath,
-      outputPath: job.outputPath,
-      workspacePath: job.workspacePath,
-      stagingRootPath,
-    };
-  } catch (error) {
-    if (scratch) {
-      outputChannel?.appendLine(`[scratch] retained after failure: ${scratch.rootPath}`);
-    }
-    throw error instanceof Error ? error : new Error(String(error));
-  }
-}
-
-async function prepareGhostscriptInput(options: {
-  sourcePath: string;
-  copiedSourcePath: string;
-  platform: NodeJS.Platform;
-  scratchBaseCandidates: readonly string[];
-  signal: AbortSignal | undefined;
-  outputChannel: LineOutputChannel | undefined;
-}): Promise<{ ghostscriptInputPath: string; scratch?: AsciiScratch }> {
-  if (options.platform !== 'win32') {
-    return { ghostscriptInputPath: options.copiedSourcePath };
-  }
-
-  const scratchArgs: Parameters<typeof createAsciiInputScratch>[0] = {
-    baseCandidates: options.scratchBaseCandidates,
-    inputFileName: 'input.pdf',
+  return {
+    stagedOutputPath,
+    outputPath: job.outputPath,
+    workspacePath: job.workspacePath,
+    stagingRootPath,
   };
-  if (options.signal !== undefined) {
-    scratchArgs.signal = options.signal;
-  }
-  if (options.outputChannel !== undefined) {
-    scratchArgs.outputChannel = options.outputChannel;
-  }
-  const scratch = await createAsciiInputScratch(scratchArgs);
-  try {
-    options.signal?.throwIfAborted();
-    await copyFileWithAbort(options.copiedSourcePath, scratch.inputPath, undefined, options.signal);
-    options.signal?.throwIfAborted();
-    await validateAsciiScratchInput(scratch);
-    options.outputChannel?.appendLine(`[scratch] logical input: ${options.sourcePath}`);
-    options.outputChannel?.appendLine(`[scratch] tool input: ${scratch.inputPath}`);
-    return { ghostscriptInputPath: scratch.inputPath, scratch };
-  } catch (error) {
-    options.outputChannel?.appendLine(`[scratch] retained after failure: ${scratch.rootPath}`);
-    throw error instanceof Error ? error : new Error(String(error));
-  }
 }
 
-async function cropDocument(options: {
-  sourcePath: string;
-  copiedSourcePath: string;
-  ghostscriptInputPath: string;
-  ghostscriptPath: string;
-  runGhostscript: RunGhostscript;
-  signal: AbortSignal | undefined;
-  outputChannel: LineOutputChannel | undefined;
-  margin: number;
-}): Promise<PDFDocument> {
-  const boundingBoxes = await readBoundingBoxes(
-    options.ghostscriptPath,
-    options.ghostscriptInputPath,
-    options.runGhostscript,
-    options.signal,
-    options.outputChannel,
-  );
-  options.signal?.throwIfAborted();
-  const document = await PDFDocument.load(await readFile(options.copiedSourcePath));
-  options.signal?.throwIfAborted();
-  const pages = document.getPages();
-
-  if (boundingBoxes.length !== pages.length || pages.length === 0) {
-    throw new Error(`Could not determine all PDF page bounds: ${options.sourcePath}`);
-  }
-
-  for (const [pageIndex, page] of pages.entries()) {
-    options.signal?.throwIfAborted();
-    const boundingBox = boundingBoxes[pageIndex];
-    if (!boundingBox) {
-      throw new Error(`Missing page bounds for page ${pageIndex + 1}: ${options.sourcePath}`);
-    }
-    setPageBounds(page, boundingBox, options.margin);
-  }
-
-  return document;
-}
-
-async function readBoundingBoxes(
-  ghostscriptPath: string,
+async function cropDocumentBytes(
+  sourceBytes: Uint8Array,
+  margin: number,
   sourcePath: string,
-  runGhostscript: RunGhostscript,
-  signal?: AbortSignal,
-  outputChannel?: LineOutputChannel,
-): Promise<Box[]> {
+  signal: AbortSignal | undefined,
+): Promise<Uint8Array> {
+  const mupdf = await loadMupdf();
+  const document = await openPdfDocument(sourceBytes);
   try {
-    const result = await runGhostscript(
-      ghostscriptPath,
-      ['-dSAFER', '-dBATCH', '-dNOPAUSE', '-sDEVICE=bbox', sourcePath],
-      signal,
-    );
-
-    return parseBoundingBoxes(result.stderr);
-  } catch (error) {
-    if (outputChannel) {
-      const message = error instanceof Error ? error.message : String(error);
-      outputChannel.appendLine(`Ghostscript error: ${message}`);
-      outputChannel.appendLine(`Command: ${ghostscriptPath}`);
+    signal?.throwIfAborted();
+    const pageCount = document.countPages();
+    if (pageCount === 0) {
+      throw new Error(`Could not determine all PDF page bounds: ${sourcePath}`);
     }
+
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      signal?.throwIfAborted();
+      setPageBounds(document.loadPage(pageIndex), margin, mupdf);
+    }
+
+    signal?.throwIfAborted();
+    return savePdfDocument(document);
+  } catch (error) {
+    document.destroy();
     throw error instanceof Error ? error : new Error(String(error));
   }
 }
 
-function setPageBounds(page: PDFPage, boundingBox: Box, margin: number): void {
-  if (isEmptyBox(boundingBox)) {
-    const mediaBox = page.getMediaBox();
-    page.setCropBox(mediaBox.x, mediaBox.y, mediaBox.width, mediaBox.height);
+function setPageBounds(page: MupdfPdfPage, margin: number, mupdf: MupdfModule): void {
+  const pageObject = page.getObject();
+  const mediaBox = readRawMediaBox(pageObject);
+  const contentBounds = contentBoundsForPage(page, mupdf);
+
+  if (contentBounds === null || isEmptyBox(contentBounds)) {
+    if (mediaBox !== null) {
+      pageObject.put('CropBox', mediaBox);
+    }
     return;
   }
 
-  const cropBox = addMargin(boundingBox, margin);
-  const width = cropBox.right - cropBox.left;
-  const height = cropBox.top - cropBox.bottom;
+  const cropBox = addMargin(contentBounds, margin);
+  pageObject.put('MediaBox', cropBox);
+  pageObject.put('CropBox', cropBox);
+}
 
-  page.setMediaBox(cropBox.left, cropBox.bottom, width, height);
-  page.setCropBox(cropBox.left, cropBox.bottom, width, height);
+function readRawMediaBox(pageObject: MupdfPdfObject): Rect | null {
+  const value = pageObject.getInheritable('MediaBox').asJS();
+  const rect = asRect(value);
+  if (rect === null) {
+    return null;
+  }
+  return rect;
+}
+
+function asRect(value: unknown): Rect | null {
+  if (!Array.isArray(value) || value.length !== 4) {
+    return null;
+  }
+  const items: unknown[] = value;
+  const x1 = toFiniteNumber(items[0]);
+  const y1 = toFiniteNumber(items[1]);
+  const x2 = toFiniteNumber(items[2]);
+  const y2 = toFiniteNumber(items[3]);
+  if (x1 === null || y1 === null || x2 === null || y2 === null) {
+    return null;
+  }
+  return [x1, y1, x2, y2];
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  const number = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+function contentBoundsForPage(page: MupdfPdfPage, mupdf: MupdfModule): Rect | null {
+  const [x0, y0, x1, y1] = page.getBounds('MediaBox');
+  const width = x1 - x0;
+  const height = y1 - y0;
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  // ponytail: mupdf's page.toDisplayList().getBounds() returns the mediabox, not the content
+  // bounds (fz_bound_display_list returns list->mediabox). Detect content by rendering the
+  // page to a transparent pixmap and scanning for non-transparent pixels.
+  const pixelCount = Math.ceil(width) * Math.ceil(height);
+  const scale = pixelCount > MAX_CONTENT_RENDER_PIXELS ? Math.sqrt(MAX_CONTENT_RENDER_PIXELS / pixelCount) : 1;
+  const pixmap = page.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, true);
+  try {
+    const pixmapWidth = pixmap.getWidth();
+    const pixmapHeight = pixmap.getHeight();
+    if (pixmapWidth <= 0 || pixmapHeight <= 0) {
+      return null;
+    }
+
+    const pixelBounds = contentPixelBounds(pixmapWidth, pixmapHeight, pixmap.getPixels());
+    if (pixelBounds === null) {
+      return null;
+    }
+
+    const [minX, minY, maxX, maxY] = pixelBounds;
+    const deviceRect: Rect = [minX / scale, minY / scale, maxX / scale, maxY / scale];
+    return mupdf.Rect.transform(deviceRect, mupdf.Matrix.invert(page.getTransform()));
+  } finally {
+    pixmap.destroy();
+  }
+}
+
+function contentPixelBounds(
+  pixmapWidth: number,
+  pixmapHeight: number,
+  pixels: Uint8ClampedArray,
+): [number, number, number, number] | null {
+  let minX = pixmapWidth;
+  let minY = pixmapHeight;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < pixmapHeight; y += 1) {
+    let index = y * pixmapWidth * 4;
+    for (let x = 0; x < pixmapWidth; x += 1) {
+      if ((pixels[index + 3] ?? 0) > 0) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+      index += 4;
+    }
+  }
+  if (maxX < 0) {
+    return null;
+  }
+  return [minX, minY, maxX + 1, maxY + 1];
 }
 
 function validateJobs(jobs: CropPdfJob[]): void {
@@ -338,44 +284,14 @@ async function assertOutputsDoNotExist(jobs: CropPdfJob[]): Promise<void> {
   }
 }
 
-export function parseBoundingBoxes(output: string): Box[] {
-  const pattern =
-    /^%%HiResBoundingBox:\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/gm;
-
-  return [...output.matchAll(pattern)].map((match) => ({
-    left: Number(match[1]),
-    bottom: Number(match[2]),
-    right: Number(match[3]),
-    top: Number(match[4]),
-  }));
+function addMargin(box: Rect, margin: number): Rect {
+  return [box[0] - margin, box[1] - margin, box[2] + margin, box[3] + margin];
 }
 
-function addMargin(box: Box, margin: number): Box {
-  return {
-    left: box.left - margin,
-    bottom: box.bottom - margin,
-    right: box.right + margin,
-    top: box.top + margin,
-  };
-}
-
-function isEmptyBox(box: Box): boolean {
-  return box.left === box.right || box.bottom === box.top;
+function isEmptyBox(box: Rect): boolean {
+  return box[0] === box[2] || box[1] === box[3];
 }
 
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT';
-}
-
-async function executeGhostscript(
-  executable: string,
-  args: string[],
-  signal?: AbortSignal,
-): Promise<GhostscriptResult> {
-  return runExternalTool({
-    toolName: 'Ghostscript',
-    executable,
-    args,
-    ...(signal === undefined ? {} : { signal }),
-  });
 }

@@ -28,7 +28,23 @@ export function defaultWindowsScratchBaseCandidates(): string[] {
   return [...new Set(candidates.map((candidate) => path.resolve(candidate)))];
 }
 
-export async function createAsciiInputScratch(options: {
+export async function createAsciiInputOutputScratch(options: {
+  baseCandidates: readonly string[];
+  inputFileName: string;
+  outputFileName: string;
+  signal?: AbortSignal;
+  outputChannel?: LineOutputChannel | undefined;
+  toolName?: string;
+}): Promise<AsciiInputOutputScratch> {
+  assertAsciiFileName(options.outputFileName);
+  const scratch = await createAsciiInputScratch(options);
+  const outputPath = path.join(scratch.rootPath, options.outputFileName);
+  assertAsciiAbsolutePath(outputPath);
+
+  return { ...scratch, outputPath };
+}
+
+async function createAsciiInputScratch(options: {
   baseCandidates: readonly string[];
   inputFileName: string;
   signal?: AbortSignal;
@@ -67,22 +83,6 @@ export async function createAsciiInputScratch(options: {
   }
 
   throw new Error(`Could not create an ASCII temporary directory for ${options.toolName ?? 'Ghostscript'}.`);
-}
-
-export async function createAsciiInputOutputScratch(options: {
-  baseCandidates: readonly string[];
-  inputFileName: string;
-  outputFileName: string;
-  signal?: AbortSignal;
-  outputChannel?: LineOutputChannel | undefined;
-  toolName?: string;
-}): Promise<AsciiInputOutputScratch> {
-  assertAsciiFileName(options.outputFileName);
-  const scratch = await createAsciiInputScratch(options);
-  const outputPath = path.join(scratch.rootPath, options.outputFileName);
-  assertAsciiAbsolutePath(outputPath);
-
-  return { ...scratch, outputPath };
 }
 
 export async function validateAsciiScratchInput(scratch: AsciiScratch, toolName = 'Ghostscript'): Promise<void> {

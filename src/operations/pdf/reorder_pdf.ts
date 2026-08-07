@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { openPdfDocument, savePdfDocument } from './mupdf.js';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
@@ -72,9 +72,9 @@ async function reorderPdf(params: {
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
-  const sourceDocument = await PDFDocument.load(await readFile(copiedSourcePath));
+  const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
   signal?.throwIfAborted();
-  const pageCount = sourceDocument.getPageCount();
+  const pageCount = sourceDocument.countPages();
 
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${job.sourcePath}`);
@@ -82,24 +82,13 @@ async function reorderPdf(params: {
 
   validatePageOrder(job.pageOrder, pageCount, job.sourcePath);
 
-  const outputDocument = await PDFDocument.create();
-  const copiedPages = await outputDocument.copyPages(
-    sourceDocument,
-    job.pageOrder.map((page) => page - 1),
-  );
-
-  if (copiedPages.length !== job.pageOrder.length) {
-    throw new Error(`Could not copy all pages: ${job.sourcePath}`);
-  }
-
-  for (const copiedPage of copiedPages) {
-    signal?.throwIfAborted();
-    outputDocument.addPage(copiedPage);
-  }
+  signal?.throwIfAborted();
+  sourceDocument.rearrangePages(job.pageOrder.map((page) => page - 1));
+  signal?.throwIfAborted();
 
   await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
   signal?.throwIfAborted();
-  await writeFile(stagedOutputPath, await outputDocument.save());
+  await writeFile(stagedOutputPath, savePdfDocument(sourceDocument));
   signal?.throwIfAborted();
 
   return {

@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 
 import { logicalSourcePathForOutputTemplate } from '../../application/policy/source_format.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
@@ -55,7 +54,6 @@ export async function combineImagesToPdfCommand(
     await assertWritablePathInWorkspace(outputPath, workspacePath);
 
     const svgToPdfTools = readSvgToPdfOptions(configuration);
-    const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     const jobs = previewedUris.map((sourceUri) => ({ sourcePath: sourceUri.fsPath }));
 
     await runConversionLifecycle({
@@ -70,7 +68,7 @@ export async function combineImagesToPdfCommand(
           workspacePath,
           runtime,
           maxInputPixels: getMaxInputPixels(configuration),
-          tools: { svgToPdfTools, ghostscriptPath },
+          tools: { svgToPdfTools },
           platform: process.platform,
         }),
     });

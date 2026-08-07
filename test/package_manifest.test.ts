@@ -393,23 +393,6 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToSvg.when?.includes('dio'));
   });
 
-  test('EPSに変換コマンドはネイティブDraw.ioを除外し、editable Draw.io画像は表示する', async () => {
-    const packageJson = await readJson<PackageJson>('package.json');
-    const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
-    const convertToEps = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToEps');
-
-    assert.ok(convertToEps);
-    const { when } = convertToEps;
-    assert.ok(when);
-    assert.ok(when.includes('resourceExtname =~ /^\\.pdf$/i'));
-    assert.ok(when.includes('resourceExtname =~ /^\\.(tif|tiff)$/i'));
-    assert.ok(when.includes(COMPOUND_DRAWIO_MATCH), 'editable Draw.io images must stay on the EPS menu');
-    assert.ok(
-      !when.includes('resourceExtname =~ /^\\.(drawio|dio)$/i'),
-      'native .drawio/.dio files must not match the EPS menu',
-    );
-  });
-
   test('変換サブメニューにPNGに変換コマンドを表示する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];

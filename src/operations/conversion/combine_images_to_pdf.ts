@@ -1,8 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
-
 import { isRasterImagePath, sourceFormatForPath } from '../../application/policy/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
@@ -20,6 +18,7 @@ import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import type { RsvgToolScratchOptions, RunRsvgConvert } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import type { SvgToPdfBackend } from './tools/index.js';
+import { loadMupdf, openPdfDocument, savePdfDocument } from '../pdf/mupdf.js';
 
 interface CombineImagesJob {
   sourcePath: string;
@@ -36,7 +35,6 @@ export interface CombineImagesToPdfOptions {
     svgToPdfTools?: SvgToPdfBackend;
     rsvgConvertPath?: string;
     runRsvgConvert?: RunRsvgConvert;
-    ghostscriptPath?: string;
   };
   platform?: NodeJS.Platform;
   scratchBaseCandidates?: readonly string[];
@@ -68,11 +66,11 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   try {
     await mkdir(stagingRootPath, { recursive: true });
     const pdfPaths = await createPdfPaths(options, configuredMaxInputPixels, stagingRootPath);
-    const mergedDocument = await mergePdfPaths(pdfPaths, runtime);
+    const mergedBytes = await mergePdfPaths(pdfPaths, runtime);
 
     runtime?.signal?.throwIfAborted();
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
-    await writeFile(stagedOutputPath, await mergedDocument.save());
+    await writeFile(stagedOutputPath, mergedBytes);
     runtime?.signal?.throwIfAborted();
 
     const commitOptions = buildCommitOptions(runtime);
@@ -110,9 +108,6 @@ async function createPdfPaths(
       if (options.runtime?.signal !== undefined) {
         writeOptions.signal = options.runtime.signal;
       }
-      if (options.tools?.ghostscriptPath !== undefined) {
-        writeOptions.tools = { ...writeOptions.tools, ghostscriptPath: options.tools.ghostscriptPath };
-      }
       await writeSourceAsPdf(writeOptions);
       pdfPaths.push(pdfPath);
     }
@@ -121,20 +116,24 @@ async function createPdfPaths(
   return pdfPaths;
 }
 
-async function mergePdfPaths(
-  pdfPaths: string[],
-  runtime: ConversionExecutionContext | undefined,
-): Promise<PDFDocument> {
-  const mergedDocument = await PDFDocument.create();
+async function mergePdfPaths(pdfPaths: string[], runtime: ConversionExecutionContext | undefined): Promise<Uint8Array> {
+  const mupdf = await loadMupdf();
+  const mergedDocument = new mupdf.PDFDocument();
   for (const pdfPath of pdfPaths) {
     runtime?.signal?.throwIfAborted();
-    const sourceDocument = await PDFDocument.load(await readFile(pdfPath));
-    const pages = await mergedDocument.copyPages(sourceDocument, sourceDocument.getPageIndices());
-    for (const page of pages) {
-      mergedDocument.addPage(page);
+    const sourceBytes = await readFile(pdfPath);
+    const sourceDocument = await openPdfDocument(sourceBytes);
+    try {
+      const pageCount = sourceDocument.countPages();
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+        runtime?.signal?.throwIfAborted();
+        mergedDocument.graftPage(mergedDocument.countPages(), sourceDocument, pageIndex);
+      }
+    } finally {
+      sourceDocument.destroy();
     }
   }
-  return mergedDocument;
+  return savePdfDocument(mergedDocument);
 }
 
 function buildCommitOptions(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
@@ -174,7 +173,7 @@ function validateJobs(jobs: CombineImagesJob[]): void {
 
   for (const job of jobs) {
     const format = sourceFormatForPath(job.sourcePath);
-    if (!isRasterImagePath(job.sourcePath) && format !== 'svg' && format !== 'eps') {
+    if (!isRasterImagePath(job.sourcePath) && format !== 'svg') {
       throw new Error(`Unsupported image input: ${job.sourcePath}`);
     }
   }

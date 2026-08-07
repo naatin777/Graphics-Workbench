@@ -1,6 +1,6 @@
 import { readFile, rename, rm, writeFile } from 'node:fs/promises';
 
-import { PDFDocument, type PDFPage } from 'pdf-lib';
+import { openPdfDocument, bufferToBytes, type MupdfPdfPage } from './mupdf.js';
 
 export interface CropBox {
   left: number;
@@ -43,23 +43,32 @@ export async function cropPdfFile(
   writer: CropPdfFileWriter = defaultWriter,
 ): Promise<void> {
   const sourceBytes = await readFile(request.sourcePath);
-  const document = await PDFDocument.load(sourceBytes);
-  const pages = document.getPages();
-  const targetPageIndexes = targetToPageIndexes(request.target, pages.length);
-
-  for (const pageIndex of targetPageIndexes) {
-    setPageCropBox(pages[pageIndex], request.cropBox);
-  }
-
-  const outputBytes = await document.save();
-  const temporaryOutputPath = `${request.stagedOutputPath}.partial`;
+  const document = await openPdfDocument(sourceBytes);
   try {
-    await writer.writeFile(temporaryOutputPath, outputBytes);
-    await writer.rename(temporaryOutputPath, request.stagedOutputPath);
+    const targetPageIndexes = targetToPageIndexes(request.target, document.countPages());
+
+    for (const pageIndex of targetPageIndexes) {
+      setPageCropBox(document.loadPage(pageIndex), request.cropBox);
+    }
+
+    const saveBuffer = document.saveToBuffer();
+    let outputBytes: Uint8Array;
+    try {
+      outputBytes = bufferToBytes(saveBuffer);
+    } finally {
+      saveBuffer.destroy();
+    }
+    const temporaryOutputPath = `${request.stagedOutputPath}.partial`;
+    try {
+      await writer.writeFile(temporaryOutputPath, outputBytes);
+      await writer.rename(temporaryOutputPath, request.stagedOutputPath);
+    } finally {
+      await writer.remove(temporaryOutputPath).catch(() => {
+        // The operation owner cleans the staging root after a failed child run.
+      });
+    }
   } finally {
-    await writer.remove(temporaryOutputPath).catch(() => {
-      // The operation owner cleans the staging root after a failed child run.
-    });
+    document.destroy();
   }
 }
 
@@ -87,23 +96,19 @@ function targetToPageIndexes(target: CropTarget, pageCount: number): number[] {
   return [...new Set(indexes)];
 }
 
-function setPageCropBox(page: PDFPage | undefined, cropBox: CropBox): void {
+function setPageCropBox(page: MupdfPdfPage | undefined, cropBox: CropBox): void {
   if (!page) {
     throw new Error('Target page was not found.');
   }
 
   validateCropBox(cropBox, page);
-  const width = cropBox.right - cropBox.left;
-  const height = cropBox.top - cropBox.bottom;
-  // Crop Configure changes the visible region only. The MediaBox remains the
-  // source page boundary so content coordinates and page geometry are preserved.
-  page.setCropBox(cropBox.left, cropBox.bottom, width, height);
+  // ponytail: mupdf setPageBox() maps into its rotated page space (y-down), which
+  // would flip the stored CropBox; write the raw box so the configured region is kept.
+  page.getObject().put('CropBox', [cropBox.left, cropBox.bottom, cropBox.right, cropBox.top]);
 }
 
-function validateCropBox(cropBox: CropBox, page: PDFPage): void {
-  const mediaBox = page.getMediaBox();
-  const mediaRight = mediaBox.x + mediaBox.width;
-  const mediaTop = mediaBox.y + mediaBox.height;
+function validateCropBox(cropBox: CropBox, page: MupdfPdfPage): void {
+  const [mediaLeft, mediaBottom, mediaRight, mediaTop] = pageMediaBox(page);
 
   for (const [key, value] of Object.entries(cropBox)) {
     if (!Number.isFinite(value)) {
@@ -116,11 +121,25 @@ function validateCropBox(cropBox: CropBox, page: PDFPage): void {
   }
 
   if (
-    cropBox.left < mediaBox.x ||
-    cropBox.bottom < mediaBox.y ||
+    cropBox.left < mediaLeft ||
+    cropBox.bottom < mediaBottom ||
     cropBox.right > mediaRight ||
     cropBox.top > mediaTop
   ) {
     throw new Error('Crop box must be inside the page media box.');
   }
+}
+
+function pageMediaBox(page: MupdfPdfPage): readonly [number, number, number, number] {
+  const mediaBox = page.getObject().getInheritable('MediaBox');
+  if (!mediaBox.isArray() || mediaBox.length !== 4) {
+    return [0, 0, 612, 792];
+  }
+
+  return [
+    mediaBox.get(0).asNumber(),
+    mediaBox.get(1).asNumber(),
+    mediaBox.get(2).asNumber(),
+    mediaBox.get(3).asNumber(),
+  ];
 }

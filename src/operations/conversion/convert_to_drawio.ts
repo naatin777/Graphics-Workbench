@@ -1,7 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
 import { Parser } from 'xml2js';
 import sharp from 'sharp';
 
@@ -17,6 +16,7 @@ import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
+import { countPdfPages } from '../pdf/mupdf.js';
 
 interface DrawioInput {
   sourcePath: string;
@@ -30,7 +30,6 @@ export interface ConvertToDrawioJob {
 }
 
 type RunPdfToSvg = (sourcePath: string, outputPath: string, page: number, signal?: AbortSignal) => Promise<void>;
-type RunGhostscript = (executable: string, args: string[], signal?: AbortSignal) => Promise<void>;
 type RunMermaid = (sourcePath: string, outputPath: string, signal?: AbortSignal) => Promise<void>;
 type RunDrawio = (
   executable: string,
@@ -43,11 +42,9 @@ export interface ConvertToDrawioOptions {
   jobs: ConvertToDrawioJob[];
   tools: {
     pdftocairoPath?: string;
-    ghostscriptPath: string;
     mermaidTools?: MermaidBackend;
     drawioPath: string;
     runPdfToSvg?: RunPdfToSvg;
-    runGhostscript?: RunGhostscript;
     runMermaid?: RunMermaid;
     runDrawio?: RunDrawio;
   };
@@ -142,26 +139,6 @@ async function stageDrawioInput(
   if (extension === '.pdf') {
     return stagePdfDrawioInput(input, inputIndex, stageDirectory, runtime, options);
   }
-  if (extension === '.eps') {
-    const pngPath = path.join(stageDirectory, `${inputIndex}.png`);
-    await (options.tools.runGhostscript ?? executeGhostscript)(
-      options.tools.ghostscriptPath,
-      [
-        '-dSAFER',
-        '-dNOPAUSE',
-        '-dBATCH',
-        '-dEPSCrop',
-        '-sDEVICE=pngalpha',
-        '-r144',
-        `-sOutputFile=${pngPath}`,
-        input.sourcePath,
-      ],
-      runtime.signal,
-    );
-    return [
-      await rasterPage(pngPath, input, options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels()),
-    ];
-  }
   if (extension === '.svg') {
     return [await svgPage(input.sourcePath, input)];
   }
@@ -191,13 +168,13 @@ async function stagePdfDrawioInput(
   runtime: ConversionExecutionContext,
   options: ConvertToDrawioOptions,
 ): Promise<DrawioPage[]> {
-  const pdf = await PDFDocument.load(await readFile(input.sourcePath));
-  if (pdf.getPageCount() === 0) {
+  const pageCount = await countPdfPages(await readFile(input.sourcePath));
+  if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${input.sourcePath}`);
   }
 
   const pages: DrawioPage[] = [];
-  for (let page = 1; page <= pdf.getPageCount(); page += 1) {
+  for (let page = 1; page <= pageCount; page += 1) {
     runtime.signal?.throwIfAborted();
     const svgPath = path.join(stageDirectory, `${inputIndex}-${page}.svg`);
     await (
@@ -456,10 +433,6 @@ async function executeDrawio(
     toolOptions.outputChannel = outputChannel;
   }
   await runExternalTool(toolOptions);
-}
-
-async function executeGhostscript(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
-  await runExternalTool({ toolName: 'Ghostscript', executable, args, ...(signal !== undefined && { signal }) });
 }
 
 async function executeMermaid(

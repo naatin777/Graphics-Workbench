@@ -53,7 +53,6 @@ suite('AVIFに変換する処理', () => {
               .toFile(pngPath);
           },
         },
-        ghostscriptTools: { ghostscriptPath: 'gs' },
         mermaidTools: {
           chromePath: 'chrome',
           theme: 'default',

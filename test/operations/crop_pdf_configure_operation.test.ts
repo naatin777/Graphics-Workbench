@@ -238,8 +238,10 @@ suite('PDF configure crop処理', () => {
       },
     ];
 
-    const results = await Promise.allSettled(
-      cases.map(async ({ template, expectedPath }, index) => {
+    const outputPaths: string[] = [];
+    const failures: unknown[] = [];
+    for (const [index, { template, expectedPath }] of cases.entries()) {
+      try {
         const outputPath = resolveOutputPath(template, {
           workspacePath,
           workspaceName,
@@ -269,18 +271,12 @@ suite('PDF configure crop処理', () => {
         const document = await PDFDocument.load(await readFile(expectedPath));
         assert.strictEqual(document.getPageCount(), 1);
 
-        return outputPath;
-      }),
-    );
-    const rejectedResults = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
-    assert.deepStrictEqual(
-      rejectedResults.map(({ reason }) => reason),
-      [],
-    );
-    const outputPaths = results.map((result) => {
-      assert.strictEqual(result.status, 'fulfilled');
-      return result.value;
-    });
+        outputPaths.push(outputPath);
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+    assert.deepStrictEqual(failures, []);
 
     assert.deepStrictEqual(
       outputPaths,

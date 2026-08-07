@@ -10,15 +10,11 @@ read_setting() {
 	node -e "const fs = require('node:fs'); const settings = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); const value = settings[process.argv[2]]; if (!value) process.exit(1); process.stdout.write(value);" "${settings_path}" "${key}"
 }
 
-gs_path="$(read_setting "graphics-workbench.execPath.ghostscript")"
 pdftocairo_path="$(read_setting "graphics-workbench.execPath.pdftocairo")"
 rsvg_convert_path="$(read_setting "graphics-workbench.execPath.rsvgConvert")"
-qpdf_path="$(read_setting "graphics-workbench.execPath.qpdf")"
 chrome_path="$(read_setting "graphics-workbench.execPath.chrome")"
-test -x "${gs_path}"
 test -x "${pdftocairo_path}"
 test -x "${rsvg_convert_path}"
-test -x "${qpdf_path}"
 test -x "${chrome_path}"
 
 if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
@@ -28,17 +24,11 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 	"${drawio_path}" --version 2>&1 | head -1 || true
 fi
 
-echo "Ghostscript: ${gs_path}"
-"${gs_path}" --version
-
 echo "pdftocairo: ${pdftocairo_path}"
 "${pdftocairo_path}" -v
 
 echo "rsvg-convert: ${rsvg_convert_path}"
 "${rsvg_convert_path}" --version
-
-echo "qpdf: ${qpdf_path}"
-"${qpdf_path}" --version
 
 echo "Chrome from settings.json: ${chrome_path}"
 "${chrome_path}" --version

@@ -2,10 +2,7 @@ import type * as vscode from 'vscode';
 
 import { getDefaultConfiguration, type Configuration } from '../../generated/extension_manifest.js';
 
-import {
-  readGhostscriptExecutablePath,
-  readPdftocairoExecutablePath,
-} from '../../config/external_tools/external_tool_paths.js';
+import { readPdftocairoExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executeAvifConversion, type AvifOutputOptions } from '../../operations/conversion/convert_to_avif.js';
 import { planAvifConversionJobs } from './plan_avif_conversion_jobs.js';
@@ -31,10 +28,6 @@ export async function convertToAvifCommand(
       drawioTools: buildDrawioCommandOptions(configuration),
       avif: readAvifOutputOptions(configuration),
       pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
-      ghostscriptTools: {
-        ghostscriptPath: readGhostscriptExecutablePath(configuration),
-        platform: process.platform,
-      },
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, prepared, runtime }) =>
       planAvifConversionJobs(sourceUri, configuration, prepared.defaultConfiguration, maxInputPixels, runtime),

@@ -29,12 +29,6 @@ export const commandBindings = [
     adapter: 'file',
   },
   {
-    id: 'graphics-workbench.linearizePdf',
-    module: '../pdf/linearize_pdf.js',
-    exportName: 'linearizePdfCommand',
-    adapter: 'file',
-  },
-  {
     id: 'graphics-workbench.encryptPdf',
     module: '../pdf/encrypt_pdf.js',
     exportName: 'encryptPdfCommand',
@@ -189,12 +183,6 @@ export const commandBindings = [
     id: 'graphics-workbench.convertToTiff',
     module: '../conversion/convert_to_tiff.js',
     exportName: 'convertToTiffCommand',
-    adapter: 'file',
-  },
-  {
-    id: 'graphics-workbench.convertToEps',
-    module: '../conversion/convert_to_eps.js',
-    exportName: 'convertToEpsCommand',
     adapter: 'file',
   },
   {

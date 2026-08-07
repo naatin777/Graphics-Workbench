@@ -14,7 +14,6 @@ playwright.config.mjs
 tsconfig.test.json
 AGENTS.md
 PROJECT_STATE.md
-THIRD_PARTY_NOTICES.md
 opencode.jsonc
 .opencode/**
 .gitignore

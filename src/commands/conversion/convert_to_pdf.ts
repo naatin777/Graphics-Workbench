@@ -9,10 +9,7 @@ import {
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
-import {
-  readGhostscriptExecutablePath,
-  readRsvgConvertExecutablePath,
-} from '../../config/external_tools/external_tool_paths.js';
+import { readRsvgConvertExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readChromeExecutablePath, readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
@@ -85,7 +82,6 @@ async function convertSelectedSourcesToPdf(
     validateSvgToPdfOptions(svgToPdfTools);
     const mermaidTools = readMermaidCliOptions(configuration);
     const drawioTools = buildDrawioCommandOptions(configuration);
-    const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     const plannedJobs: ConvertToPdfJob[] = [];
     for (const sourceUri of sourceUris) {
       plannedJobs.push(
@@ -119,7 +115,6 @@ async function convertSelectedSourcesToPdf(
             svgToPdfTools,
             mermaidTools,
             drawioTools,
-            ghostscriptPath,
           },
           operationName: 'convert-to-pdf',
           runtime,
@@ -196,12 +191,6 @@ export function outputTemplateForSource(
       return resolveOutputPathTemplate(
         configuration.outputPath.convertTiffToPdf(),
         defaultConfiguration.outputPath.convertTiffToPdf(),
-      );
-    }
-    case '.eps': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertEpsToPdf(),
-        defaultConfiguration.outputPath.convertEpsToPdf(),
       );
     }
     default: {

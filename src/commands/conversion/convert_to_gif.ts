@@ -1,9 +1,6 @@
 import type * as vscode from 'vscode';
 
-import {
-  readGhostscriptExecutablePath,
-  readPdftocairoExecutablePath,
-} from '../../config/external_tools/external_tool_paths.js';
+import { readPdftocairoExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executeGifConversion } from '../../operations/conversion/convert_to_gif.js';
 import { planGifConversionJobs } from './plan_gif_conversion_jobs.js';
@@ -30,10 +27,6 @@ export async function convertToGifCommand(
     outputLabel: 'GIF',
     prepare: (configuration) => ({
       pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
-      ghostscriptTools: {
-        ghostscriptPath: readGhostscriptExecutablePath(configuration),
-        platform: process.platform,
-      },
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
     }),
@@ -50,7 +43,6 @@ export async function convertToGifCommand(
         jobs,
         maxInputPixels,
         pdftocairoTools: prepared.pdftocairoTools,
-        ghostscriptTools: prepared.ghostscriptTools,
         mermaidTools: prepared.mermaidTools,
         drawioTools: prepared.drawioTools,
         runtime,

@@ -8,7 +8,6 @@ import { openRasterInput } from './raster_input.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { DrawioBackend } from './tools/drawio_tools.js';
-import type { GhostscriptBackend } from './tools/ghostscript_tools.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import type { PdftocairoBackend } from './tools/pdftocairo_tools.js';
 
@@ -22,7 +21,6 @@ export interface ExecuteWebpConversionOptions {
   jobs: ConvertToWebpJob[];
   runtime: ConversionExecutionContext;
   pdftocairoTools: PdftocairoBackend;
-  ghostscriptTools: GhostscriptBackend;
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   webp: WebpOutputOptions;

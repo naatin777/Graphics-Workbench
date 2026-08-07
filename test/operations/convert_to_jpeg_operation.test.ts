@@ -62,7 +62,6 @@ suite('JPEGに変換する処理', () => {
               .toFile(pngPath);
           },
         },
-        ghostscriptTools: { ghostscriptPath: 'gs' },
         mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
         drawioTools: drawio,
         runtime: { resolveConflicts: async () => 'overwrite' },

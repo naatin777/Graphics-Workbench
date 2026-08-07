@@ -1,20 +1,14 @@
 import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import {
   readDrawioExecutablePath,
-  readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
   readRsvgConvertExecutablePath,
 } from '../../src/config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../src/config/rendering/mermaid_cli_options.js';
 import type { MermaidBackend } from '../../src/operations/conversion/tools/index.js';
 
-export function readConfiguredQpdfPath(): string {
-  return getExtensionConfiguration().execPath.qpdf();
-}
-
 export function readConfiguredConversionTools(): {
   pdftocairoTools: { pdftocairoPath: string };
-  ghostscriptTools: { ghostscriptPath: string };
   rsvgConvertPath: string;
   mermaidTools: MermaidBackend;
   drawioTools: { drawioPath: string };
@@ -23,7 +17,6 @@ export function readConfiguredConversionTools(): {
 
   return {
     pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration) },
-    ghostscriptTools: { ghostscriptPath: readGhostscriptExecutablePath(configuration) },
     rsvgConvertPath: readRsvgConvertExecutablePath(configuration),
     mermaidTools: readMermaidCliOptions(configuration),
     drawioTools: { drawioPath: readDrawioExecutablePath(configuration) },

@@ -36,7 +36,6 @@ export async function encryptPdfCommand(
     const configuration = configureCommandRuntime(dependencies);
     const outputTemplate = configuration.outputPath.encryptPdf();
     const jobs = sourceUris.map((sourceUri) => planEncryptPdfJob(sourceUri, outputTemplate));
-    const qpdfPath = configuration.execPath.qpdf();
     await runConversionLifecycle({
       operationName: 'encrypt-pdf',
       ...(outputChannel !== undefined && { outputChannel }),
@@ -49,7 +48,7 @@ export async function encryptPdfCommand(
         cancelledMessage: userMessage('message.encryptPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.encryptPdf.failed', reason),
       },
-      run: async (runtime) => encryptPdfFiles({ jobs, password, qpdfPath, runtime }),
+      run: async (runtime) => encryptPdfFiles({ jobs, password, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {

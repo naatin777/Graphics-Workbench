@@ -29,7 +29,7 @@ suite('ラスターfixtureの内容比較', () => {
   for (const [index, fixturePath] of supportedRasterFixturePaths.entries()) {
     test(`${path.relative(rasterInputDirectory, fixturePath)}をPNGへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdftocairoTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index);
         const outputPath = path.join(workspacePath, 'converted outputs', `${index}.png`);
         const sourceFormat = sourceFormatForPath(fixturePath);
@@ -45,7 +45,6 @@ suite('ラスターfixtureの内容比較', () => {
         await executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
           pdftocairoTools,
-          ghostscriptTools,
           mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
@@ -65,7 +64,7 @@ suite('ラスターfixtureの内容比較', () => {
     const fixturePath = path.join(testInputDirectory, 'valid', unsupportedRasterFixtureRelativePaths[0] ?? '');
 
     await withTestWorkspace(async (workspacePath) => {
-      const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+      const { pdftocairoTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
       const sourcePath = await copyInputToWorkspace(fixturePath, 'unsupported sequence.avif');
       const outputPath = path.join(workspacePath, 'unsupported-output.png');
 
@@ -73,7 +72,6 @@ suite('ラスターfixtureの内容比較', () => {
         executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath }],
           pdftocairoTools,
-          ghostscriptTools,
           mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },

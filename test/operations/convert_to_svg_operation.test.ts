@@ -39,7 +39,6 @@ suite('SVGに変換する処理', () => {
           },
         ],
         pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-        ghostscriptTools: { ghostscriptPath: 'gs' },
         mermaidTools: {
           chromePath: 'chrome',
           theme: 'default',
@@ -85,7 +84,6 @@ suite('SVGに変換する処理', () => {
         convertToSvgFiles({
           jobs: [{ sourcePath, outputPath, workspacePath, page: 1 }],
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
           mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
           drawioTools: {
             drawioPath: 'drawio',
@@ -122,7 +120,6 @@ suite('SVGに変換する処理', () => {
             },
           ],
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
           mermaidTools: {
             chromePath: 'chrome',
             theme: 'default',
@@ -157,7 +154,6 @@ suite('SVGに変換する処理', () => {
         convertToSvgFiles({
           jobs: [{ sourcePath, outputPath, workspacePath, page: 1 }],
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs', platform: 'linux' },
           mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           runPdfToSvg: async (_sourcePath, toolOutputPath) => {
@@ -194,7 +190,6 @@ suite('SVGに変換する処理', () => {
             },
           ],
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
           mermaidTools: {
             chromePath: 'chrome',
             theme: 'default',

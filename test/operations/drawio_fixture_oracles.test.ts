@@ -80,7 +80,6 @@ suite('Draw.io fixtureの実変換比較', () => {
           jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           runtime,
           pdftocairoTools: configuredTools.pdftocairoTools,
-          ghostscriptTools: configuredTools.ghostscriptTools,
           mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           runId: `drawio-${fixtureCase.id}-png`,
@@ -88,7 +87,6 @@ suite('Draw.io fixtureの実変換比較', () => {
         await convertToSvgFiles({
           jobs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
           pdftocairoTools: configuredTools.pdftocairoTools,
-          ghostscriptTools: configuredTools.ghostscriptTools,
           mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           runId: `drawio-${fixtureCase.id}-svg`,

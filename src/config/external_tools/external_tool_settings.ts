@@ -5,9 +5,7 @@ export type ExternalToolId = keyof typeof externalToolTimeoutConfigurationKeys;
 export type ExternalToolTimeouts = Readonly<Record<ExternalToolId, number | undefined>>;
 
 const defaultTimeouts: ExternalToolTimeouts = {
-  qpdf: undefined,
   drawio: undefined,
-  ghostscript: undefined,
   pdftocairo: undefined,
   rsvgConvert: undefined,
   mermaid: undefined,
@@ -17,9 +15,7 @@ let configuredTimeouts: ExternalToolTimeouts = defaultTimeouts;
 
 export function readExternalToolTimeouts(configuration: Configuration): ExternalToolTimeouts {
   return {
-    qpdf: timeoutMilliseconds(configuration.externalTools.qpdf.timeoutSeconds()),
     drawio: timeoutMilliseconds(configuration.externalTools.drawio.timeoutSeconds()),
-    ghostscript: timeoutMilliseconds(configuration.externalTools.ghostscript.timeoutSeconds()),
     pdftocairo: timeoutMilliseconds(configuration.externalTools.pdftocairo.timeoutSeconds()),
     rsvgConvert: timeoutMilliseconds(configuration.externalTools.rsvgConvert.timeoutSeconds()),
     mermaid: timeoutMilliseconds(configuration.externalTools.mermaid.timeoutSeconds()),

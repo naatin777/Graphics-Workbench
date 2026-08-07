@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { countPdfPages } from '../../operations/pdf/mupdf.js';
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
@@ -11,10 +11,7 @@ import {
   isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
 } from '../../application/policy/source_format.js';
-import {
-  readGhostscriptExecutablePath,
-  readPdftocairoExecutablePath,
-} from '../../config/external_tools/external_tool_paths.js';
+import { readPdftocairoExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
@@ -54,10 +51,6 @@ export async function convertToSvgCommand(
     const mermaidTools = readMermaidCliOptions(configuration);
     const drawioTools = buildDrawioCommandOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
-    const ghostscriptTools = {
-      ghostscriptPath: readGhostscriptExecutablePath(configuration),
-      platform: process.platform,
-    };
     await runConversionLifecycle({
       operationName: 'convert-to-svg',
       ...(outputChannel !== undefined && { outputChannel }),
@@ -73,7 +66,6 @@ export async function convertToSvgCommand(
           jobs,
           maxInputPixels,
           pdftocairoTools,
-          ghostscriptTools,
           mermaidTools,
           drawioTools,
           runtime,
@@ -159,8 +151,7 @@ async function createPdfJobs(
 ): Promise<ConvertToSvgJob[]> {
   runtime?.signal?.throwIfAborted();
   runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
-  const document = await PDFDocument.load(await readFile(sourcePath));
-  const pageCount = document.getPageCount();
+  const pageCount = await countPdfPages(await readFile(sourcePath));
 
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${sourcePath}`);

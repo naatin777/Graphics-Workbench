@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 
 import {
   readDrawioExecutablePath,
-  readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
   readRsvgConvertExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
@@ -80,19 +79,6 @@ export async function runEnvironmentChecks(options: RunEnvironmentChecksOptions)
 
   entries.push(
     await checkTool({
-      feature: userMessage('message.environmentCheck.feature.pdfCrop'),
-      toolLabel: userMessage('message.environmentCheck.tool.ghostscript'),
-      executable: readGhostscriptExecutablePath(options.configuration),
-      versionArgs: ['--version'],
-      settingId: 'graphics-workbench.execPath.ghostscript',
-      timeoutMs,
-      signal: options.signal,
-      probe,
-    }),
-  );
-
-  entries.push(
-    await checkTool({
       feature: userMessage('message.environmentCheck.feature.pdfToImage'),
       toolLabel: userMessage('message.environmentCheck.tool.pdftocairo'),
       executable: readPdftocairoExecutablePath(options.configuration),
@@ -118,19 +104,6 @@ export async function runEnvironmentChecks(options: RunEnvironmentChecksOptions)
   );
 
   entries.push(await checkChrome(options.configuration, timeoutMs, options.signal, probe));
-
-  entries.push(
-    await checkTool({
-      feature: userMessage('message.environmentCheck.feature.pdfEncryptDecrypt'),
-      toolLabel: userMessage('message.environmentCheck.tool.qpdf'),
-      executable: options.configuration.execPath.qpdf(),
-      versionArgs: ['--version'],
-      settingId: 'graphics-workbench.execPath.qpdf',
-      timeoutMs,
-      signal: options.signal,
-      probe,
-    }),
-  );
 
   const svgEngine = options.configuration.convertToPdf.svg.engine();
   if (svgEngine === 'rsvg-convert') {

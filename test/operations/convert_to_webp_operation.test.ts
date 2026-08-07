@@ -36,7 +36,6 @@ suite('WebPに変換する処理', () => {
           },
         ],
         pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-        ghostscriptTools: { ghostscriptPath: 'gs' },
         mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio' },
         webp: { effort: 0 },
@@ -68,7 +67,6 @@ suite('WebPに変換する処理', () => {
         executeWebpConversion({
           jobs: [{ sourcePath, outputPath, workspacePath, animation: { pages: 2, pageHeight: 8 } }],
           pdftocairoTools: { pdftocairoPath: 'pdftocairo' },
-          ghostscriptTools: { ghostscriptPath: 'gs' },
           mermaidTools: { chromePath: 'chrome', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           webp: { effort: 0 },
@@ -111,7 +109,6 @@ suite('WebPに変換する処理', () => {
               .toFile(pngOutputPath);
           },
         },
-        ghostscriptTools: { ghostscriptPath: 'gs' },
         mermaidTools: {
           chromePath: 'chrome',
           theme: 'default',

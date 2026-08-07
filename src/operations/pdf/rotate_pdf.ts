@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument, degrees } from 'pdf-lib';
+import { loadMupdf, normalizeRotation, openPdfDocument, savePdfDocument } from './mupdf.js';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
@@ -76,9 +76,10 @@ async function rotatePdf(params: {
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
-  const sourceDocument = await PDFDocument.load(await readFile(copiedSourcePath));
+  const mupdf = await loadMupdf();
+  const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
   signal?.throwIfAborted();
-  const pageCount = sourceDocument.getPageCount();
+  const pageCount = sourceDocument.countPages();
 
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${job.sourcePath}`);
@@ -87,26 +88,24 @@ async function rotatePdf(params: {
   const pageIndices = job.pageIndices ?? Array.from({ length: pageCount }, (_, pageIndex) => pageIndex);
   validatePageIndices(pageIndices, pageCount, job.sourcePath);
 
-  const outputDocument = await PDFDocument.create();
-  const copiedPages = await outputDocument.copyPages(sourceDocument, sourceDocument.getPageIndices());
-
-  if (copiedPages.length !== pageCount) {
-    throw new Error(`Could not copy all pages: ${job.sourcePath}`);
-  }
-
+  const outputDocument = new mupdf.PDFDocument();
   const rotateSet = new Set(pageIndices);
 
-  for (const [pageIndex, copiedPage] of copiedPages.entries()) {
-    signal?.throwIfAborted();
-    if (rotateSet.has(pageIndex)) {
-      copiedPage.setRotation(degrees(job.angle));
+  try {
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+      signal?.throwIfAborted();
+      outputDocument.graftPage(outputDocument.countPages(), sourceDocument, pageIndex);
+      if (rotateSet.has(pageIndex)) {
+        outputDocument.loadPage(pageIndex).getObject().put('Rotate', normalizeRotation(job.angle));
+      }
     }
-    outputDocument.addPage(copiedPage);
+  } finally {
+    sourceDocument.destroy();
   }
 
   await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
   signal?.throwIfAborted();
-  await writeFile(stagedOutputPath, await outputDocument.save());
+  await writeFile(stagedOutputPath, savePdfDocument(outputDocument));
   signal?.throwIfAborted();
 
   return {
