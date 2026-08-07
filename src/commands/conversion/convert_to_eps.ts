@@ -25,7 +25,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_utils.js';
+import { isAbortError } from '../../application/error_normalization.js';
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
 

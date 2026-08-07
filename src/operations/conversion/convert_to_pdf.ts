@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 import sharp from 'sharp';
 import { pathToFileURL } from 'node:url';
-import { errorMessage, isAbortError } from '../../application/error_utils.js';
+import { toErrorMessage, isAbortError } from '../../application/error_normalization.js';
 
 import {
   isEditableDrawioImagePath,
@@ -355,7 +355,7 @@ async function writeMermaidAsPdf(
       throw error instanceof Error ? error : new Error(String(error));
     }
 
-    throw new Error(`Mermaid CLI failed: ${errorMessage(error)}`, { cause: error });
+    throw new Error(`Mermaid CLI failed: ${toErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -582,7 +582,7 @@ export async function validateGeneratedPdf(outputPath: string): Promise<void> {
   try {
     pdfDocument = await PDFDocument.load(await readFile(outputPath));
   } catch (error) {
-    throw new Error(`PDF conversion produced an unparsable PDF: ${errorMessage(error)}`, { cause: error });
+    throw new Error(`PDF conversion produced an unparsable PDF: ${toErrorMessage(error)}`, { cause: error });
   }
 
   if (pdfDocument.getPageCount() === 0) {

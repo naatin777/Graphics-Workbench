@@ -10,7 +10,7 @@ import {
 } from '../../application/policy/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { isAbortError } from '../../application/error_utils.js';
+import { isAbortError } from '../../application/error_normalization.js';
 
 import {
   isRasterInputPixelLimitError,
@@ -352,7 +352,7 @@ async function writeMermaidAsRaster(request: RasterRenderRequest, context: Raste
       throw error instanceof Error ? error : new Error(String(error));
     }
 
-    throw new Error(`Mermaid CLI failed: ${errorMessage(error)}`, { cause: error });
+    throw new Error(`Mermaid CLI failed: ${toErrorMessage(error)}`, { cause: error });
   }
 
   await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
@@ -491,7 +491,7 @@ function isPngOutputPath(outputPath: string): outputPath is `${string}.png` {
   return outputPath.toLowerCase().endsWith('.png');
 }
 
-export function errorMessage(error: unknown): string {
+export function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const stderr = 'stderr' in error && typeof error.stderr === 'string' ? error.stderr.trim() : '';
     return stderr ? `${error.message}\n${stderr}` : error.message;

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
-import { errorMessage, isAbortError } from '../../application/error_utils.js';
+import { toErrorMessage, isAbortError } from '../../application/error_normalization.js';
 
 export interface ReportConfigureApplyErrorOptions {
   operationName: string;
@@ -13,7 +13,7 @@ export interface ReportConfigureApplyErrorOptions {
 }
 
 export async function reportConfigureApplyError(options: ReportConfigureApplyErrorOptions): Promise<void> {
-  const message = errorMessage(options.error);
+  const message = toErrorMessage(options.error);
   options.outputChannel?.appendLine(`[${options.operationName}] failure: ${message}`);
   if (isAbortError(options.error)) {
     await vscode.window.showInformationMessage(options.cancelledMessage);
