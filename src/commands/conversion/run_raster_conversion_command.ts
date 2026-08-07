@@ -4,7 +4,7 @@ import type { Configuration } from '../../generated/extension_manifest.js';
 import type { CommittedConversionOutput } from '../../operations/lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { getMaxAnimationPixels } from '../../config/raster_limits.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import {
@@ -13,7 +13,8 @@ import {
   runConversionLifecycle,
 } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { resolveSelectedUris } from '../shared/command_input.js';
 import { userMessage } from '../shared/user_messages.js';
 
 export interface RasterConversionContext<Prepared> {
@@ -42,7 +43,7 @@ interface RasterConversionCommandOptions<Context, Job, Prepared> {
 async function runRasterConversionCommand<Context, Job, Prepared>(
   options: RasterConversionCommandOptions<Context, Job, Prepared>,
 ): Promise<void> {
-  const sourceUris = selectedUris(options.uri, options.uris);
+  const sourceUris = resolveSelectedUris(options.uri, options.uris);
   if (sourceUris.length === 0) {
     await vscode.window.showErrorMessage(
       userMessage('message.convertToOutput.failed', options.outputLabel, 'No files were selected.'),
@@ -57,7 +58,7 @@ async function runRasterConversionCommand<Context, Job, Prepared>(
     resolveConflicts: resolveOutputConflicts,
     messages: createOutputConversionMessages(options.outputLabel, sourceUris.length),
     run: async (runtime) => {
-      const configuration = getCommandConfiguration(options.dependencies);
+      const configuration = configureCommandRuntime(options.dependencies);
       const maxInputPixels = getMaxInputPixels(configuration);
       const prepared = options.prepare(configuration);
       const context = options.createContext({ configuration, maxInputPixels, prepared, runtime });

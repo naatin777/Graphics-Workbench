@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { safeName, validateJobPaths } from './pdf_utils.js';
+import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -42,7 +42,7 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<Commit
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
-  await validateJobPaths(options.jobs, 'split-pdf');
+  await validatePdfJobPaths(options.jobs, 'split-pdf');
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
@@ -62,7 +62,7 @@ export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions)
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validatePageGroupJobs(options.jobs);
-  await validateJobPaths(options.jobs, 'split-pdf');
+  await validatePdfJobPaths(options.jobs, 'split-pdf');
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
@@ -87,7 +87,7 @@ async function splitPdf(params: {
   const { job, index, runId, signal } = params;
   signal?.throwIfAborted();
 
-  const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
+  const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
   const stagingRootPath = createStagingRoot(job.workspacePath, 'split-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const pagesDirectory = path.join(workDirectory, 'pages');
@@ -156,7 +156,7 @@ async function splitPdfPageGroups(params: {
 
   signal?.throwIfAborted();
 
-  const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
+  const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
   const stagingRootPath = createStagingRoot(job.workspacePath, 'split-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const groupsDirectory = path.join(workDirectory, 'groups');

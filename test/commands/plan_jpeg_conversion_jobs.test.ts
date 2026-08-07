@@ -6,7 +6,7 @@ import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
 import { planJpegConversionJobs } from '../../src/commands/conversion/plan_jpeg_conversion_jobs.js';
-import { getCommandConfiguration } from '../../src/commands/shared/command_utils.js';
+import { configureCommandRuntime } from '../../src/commands/shared/command_runtime.js';
 import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { requireValue } from '../helpers/required.js';
 
@@ -24,7 +24,7 @@ suite('JPEG変換planner', () => {
 
       const jobs = await planJpegConversionJobs(
         vscode.Uri.file(sourcePath),
-        getCommandConfiguration(),
+        configureCommandRuntime(),
         getDefaultConfiguration(),
         getDefaultConfiguration().raster.maxInputPixels(),
       );
@@ -63,7 +63,7 @@ suite('JPEG変換planner', () => {
     await assert.rejects(
       planJpegConversionJobs(
         vscode.Uri.file(sourcePath),
-        getCommandConfiguration(),
+        configureCommandRuntime(),
         getDefaultConfiguration(),
         getDefaultConfiguration().raster.maxInputPixels(),
       ),

@@ -24,7 +24,8 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
+import { isAbortError } from '../../application/error_normalization.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function mergePdfSelectedFilesCommand(
@@ -34,15 +35,15 @@ export async function mergePdfSelectedFilesCommand(
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedPdfUris(uri, uris);
 
     if (sourceUris.length < 2) {
       throw new Error('Select at least two PDF files.');
     }
 
-    getCommandConfiguration(dependencies);
+    configureCommandRuntime(dependencies);
 
-    const workspace = await workspaceForSources(sourceUris);
+    const workspace = await requireCommonWorkspace(sourceUris);
     const outputUri = await vscode.window.showSaveDialog({
       defaultUri: vscode.Uri.file(path.join(workspace.uri.fsPath, 'merged.pdf')),
       filters: { PDF: ['pdf'] },
@@ -93,14 +94,14 @@ export async function mergePdfConfigureCommand(
   const outputChannel = dependencies?.outputChannel;
 
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedPdfUris(uri, uris);
 
     if (sourceUris.length < 2) {
       throw new Error('Select at least two PDF files.');
     }
 
-    const workspace = await workspaceForSources(sourceUris);
-    const configuration = getCommandConfiguration(dependencies);
+    const workspace = await requireCommonWorkspace(sourceUris);
+    const configuration = configureCommandRuntime(dependencies);
     const panelTitle = localeMap('submenu.mergePdf');
     const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'merge_pdf');
     const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
@@ -191,7 +192,7 @@ function buildMergePdfInitMessage(params: {
       standardFontDataUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'standard_fonts'),
       wasmUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'wasm'),
       preview,
-      labels: mergePdfLabels(),
+      labels: buildMergePdfLabels(),
     },
   };
 }
@@ -299,7 +300,7 @@ function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, dir
   return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }
 
-function mergePdfLabels(): MergePdfLabels {
+function buildMergePdfLabels(): MergePdfLabels {
   return {
     header: {
       title: localeMap('webview.mergePdf.title'),
@@ -328,7 +329,7 @@ function mergePdfLabels(): MergePdfLabels {
   };
 }
 
-function selectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
+function resolveSelectedPdfUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
   let candidates: vscode.Uri[] = [];
   if (uris !== undefined && uris.length > 0) {
     candidates = uris;
@@ -351,7 +352,7 @@ function selectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
   return selected;
 }
 
-async function workspaceForSources(sourceUris: vscode.Uri[]): Promise<vscode.WorkspaceFolder> {
+async function requireCommonWorkspace(sourceUris: vscode.Uri[]): Promise<vscode.WorkspaceFolder> {
   const [firstSourceUri] = sourceUris;
 
   if (!firstSourceUri) {

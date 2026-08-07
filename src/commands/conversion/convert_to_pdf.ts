@@ -13,7 +13,7 @@ import {
   readGhostscriptExecutablePath,
   readRsvgConvertExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readChromeExecutablePath, readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
@@ -29,7 +29,9 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, isAbortError, readDrawioOptions, selectedUris } from '../shared/command_utils.js';
+import { configureCommandRuntime, buildDrawioCommandOptions } from '../shared/command_runtime.js';
+import { isAbortError } from '../../application/error_normalization.js';
+import { resolveSelectedUris } from '../shared/command_input.js';
 
 const pdfImageExtensions = [
   '.png',
@@ -66,13 +68,13 @@ async function convertSelectedSourcesToPdf(
   outputChannel?: LineOutputChannel,
 ): Promise<void> {
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedUris(uri, uris);
 
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
 
-    const configuration = getCommandConfiguration(dependencies);
+    const configuration = configureCommandRuntime(dependencies);
     const defaultConfiguration = getDefaultConfiguration();
     const maxInputPixels = getMaxInputPixels(configuration);
     const outputTemplate = resolveOutputPathTemplate(
@@ -82,7 +84,7 @@ async function convertSelectedSourcesToPdf(
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
     const mermaidTools = readMermaidCliOptions(configuration);
-    const drawioTools = readDrawioOptions(configuration);
+    const drawioTools = buildDrawioCommandOptions(configuration);
     const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     const plannedJobs: ConvertToPdfJob[] = [];
     for (const sourceUri of sourceUris) {
@@ -137,7 +139,7 @@ async function convertSelectedSourcesToPdf(
 export function outputTemplateForSource(
   sourceUri: vscode.Uri,
   pngOutputTemplate: string,
-  configuration = getCommandConfiguration(),
+  configuration = configureCommandRuntime(),
   defaultConfiguration = getDefaultConfiguration(),
 ): string {
   const sourcePath = sourceUri.fsPath;

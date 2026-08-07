@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 import sharp from 'sharp';
 import { pathToFileURL } from 'node:url';
-import { errorMessage, isAbortError } from '../../application/error_utils.js';
+import { toErrorMessage, isAbortError } from '../../application/error_normalization.js';
 
 import {
   isEditableDrawioImagePath,
@@ -15,16 +15,16 @@ import {
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import {
-  destroyRasterInput,
+  closeRasterPipeline,
   isRasterInputPixelLimitError,
   openRasterInput,
   readRasterAnimationMetadata,
-  rasterInputPixelLimitMessage,
+  formatRasterInputPixelLimitMessage,
   type RasterAnimationMetadata,
 } from './raster_input.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { validateJobPaths } from '../pdf/pdf_utils.js';
+import { validatePdfJobPaths } from '../pdf/pdf_job_paths.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -129,7 +129,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs, options.supportedExtensions ?? defaultSupportedImageExtensions);
-  await validateJobPaths(options.jobs, 'convert-png-to-pdf');
+  await validatePdfJobPaths(options.jobs, 'convert-png-to-pdf');
   runtime?.signal?.throwIfAborted();
 
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
@@ -355,7 +355,7 @@ async function writeMermaidAsPdf(
       throw error instanceof Error ? error : new Error(String(error));
     }
 
-    throw new Error(`Mermaid CLI failed: ${errorMessage(error)}`, { cause: error });
+    throw new Error(`Mermaid CLI failed: ${toErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -441,12 +441,12 @@ async function writeRasterImageAsPdf({
   } catch (error) {
     signal?.throwIfAborted();
     if (isRasterInputPixelLimitError(error)) {
-      throw new Error(rasterInputPixelLimitMessage(maxInputPixels), { cause: error });
+      throw new Error(formatRasterInputPixelLimitMessage(maxInputPixels), { cause: error });
     }
 
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
-    await destroyRasterInput(metadataImage);
+    await closeRasterPipeline(metadataImage);
     signal?.throwIfAborted();
   }
 
@@ -459,12 +459,12 @@ async function writeRasterImageAsPdf({
   } catch (error) {
     signal?.throwIfAborted();
     if (isRasterInputPixelLimitError(error)) {
-      throw new Error(rasterInputPixelLimitMessage(maxInputPixels, { width, height }), { cause: error });
+      throw new Error(formatRasterInputPixelLimitMessage(maxInputPixels, { width, height }), { cause: error });
     }
 
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
-    await destroyRasterInput(encodingImage);
+    await closeRasterPipeline(encodingImage);
     signal?.throwIfAborted();
   }
 
@@ -582,7 +582,7 @@ export async function validateGeneratedPdf(outputPath: string): Promise<void> {
   try {
     pdfDocument = await PDFDocument.load(await readFile(outputPath));
   } catch (error) {
-    throw new Error(`PDF conversion produced an unparsable PDF: ${errorMessage(error)}`, { cause: error });
+    throw new Error(`PDF conversion produced an unparsable PDF: ${toErrorMessage(error)}`, { cause: error });
   }
 
   if (pdfDocument.getPageCount() === 0) {

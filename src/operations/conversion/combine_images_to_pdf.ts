@@ -16,7 +16,7 @@ import { writeSourceAsPdf, type WriteSourceAsPdfOptions } from './convert_to_pdf
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import { destroyRasterInput, openRasterInput } from './raster_input.js';
+import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import type { RsvgToolScratchOptions, RunRsvgConvert } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import type { SvgToPdfBackend } from './tools/index.js';
@@ -75,7 +75,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
     await writeFile(stagedOutputPath, await mergedDocument.save());
     runtime?.signal?.throwIfAborted();
 
-    const commitOptions = commitOptionsForRuntime(runtime);
+    const commitOptions = buildCommitOptions(runtime);
     return await commitStagedOutputs(
       [{ stagedOutputPath, outputPath: options.outputPath, workspacePath: options.workspacePath, stagingRootPath }],
       commitOptions,
@@ -137,7 +137,7 @@ async function mergePdfPaths(
   return mergedDocument;
 }
 
-function commitOptionsForRuntime(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
+function buildCommitOptions(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
   const commitOptions: CommitConversionOutputsOptions = {
     operationName: 'combine-images-to-pdf',
   };
@@ -163,7 +163,7 @@ async function sourcePageCount(sourcePath: string, maxInputPixels: number): Prom
     const metadata = await image.metadata();
     return Math.max(1, metadata.pages ?? 1);
   } finally {
-    await destroyRasterInput(image);
+    await closeRasterPipeline(image);
   }
 }
 

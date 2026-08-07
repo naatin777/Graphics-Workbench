@@ -10,11 +10,11 @@ import {
 } from '../../application/policy/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { isAbortError } from '../../application/error_utils.js';
+import { isAbortError } from '../../application/error_normalization.js';
 
 import {
   isRasterInputPixelLimitError,
-  rasterInputPixelLimitMessage,
+  formatRasterInputPixelLimitMessage,
   type RasterAnimationMetadata,
 } from './raster_input.js';
 // oxlint-disable-next-line unicorn/prefer-export-from -- CommittedConversionOutput is used locally and re-exported.
@@ -352,7 +352,7 @@ async function writeMermaidAsRaster(request: RasterRenderRequest, context: Raste
       throw error instanceof Error ? error : new Error(String(error));
     }
 
-    throw new Error(`Mermaid CLI failed: ${errorMessage(error)}`, { cause: error });
+    throw new Error(`Mermaid CLI failed: ${toErrorMessage(error)}`, { cause: error });
   }
 
   await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
@@ -407,7 +407,7 @@ async function writeImageAsRaster(request: RasterRenderRequest, context: RasterS
     );
   } catch (error) {
     if (isRasterInputPixelLimitError(error)) {
-      throw new Error(rasterInputPixelLimitMessage(context.maxInputPixels), { cause: error });
+      throw new Error(formatRasterInputPixelLimitMessage(context.maxInputPixels), { cause: error });
     }
 
     throw error instanceof Error ? error : new Error(String(error));
@@ -491,7 +491,7 @@ function isPngOutputPath(outputPath: string): outputPath is `${string}.png` {
   return outputPath.toLowerCase().endsWith('.png');
 }
 
-export function errorMessage(error: unknown): string {
+export function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const stderr = 'stderr' in error && typeof error.stderr === 'string' ? error.stderr.trim() : '';
     return stderr ? `${error.message}\n${stderr}` : error.message;

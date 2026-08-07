@@ -8,7 +8,7 @@ import { withCancellationSignal } from './progress_cancellation.js';
 import { createProgressReporters } from './progress_reporting.js';
 import { recordConversionForUndo } from './undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError, errorMessage } from '../shared/command_utils.js';
+import { isAbortError, toErrorMessage } from '../../application/error_normalization.js';
 
 export interface ConversionCommandMessages {
   progressTitle: string;
@@ -85,7 +85,7 @@ export async function runConversionLifecycle(options: {
       return;
     }
 
-    const reason = errorMessage(error);
+    const reason = toErrorMessage(error);
     options.outputChannel?.appendLine(`[${options.operationName}] failure: ${reason}`);
     await vscode.window.showErrorMessage(options.messages.failedMessage(reason));
     return;
@@ -97,7 +97,7 @@ export async function runConversionLifecycle(options: {
   try {
     undoId = await recordConversionForUndo(outputs, options.outputChannel);
   } catch (error) {
-    const reason = errorMessage(error);
+    const reason = toErrorMessage(error);
     options.outputChannel?.appendLine(`[${options.operationName}] Undo record failed: ${reason}`);
     await vscode.window.showWarningMessage(options.messages.undoUnavailableMessage(successMessage, reason));
     return;
@@ -111,6 +111,8 @@ export async function runConversionLifecycle(options: {
     }
   } catch (error) {
     // The conversion already succeeded; a UI failure here must not be reported as a conversion failure.
-    options.outputChannel?.appendLine(`[${options.operationName}] success notification failed: ${errorMessage(error)}`);
+    options.outputChannel?.appendLine(
+      `[${options.operationName}] success notification failed: ${toErrorMessage(error)}`,
+    );
   }
 }

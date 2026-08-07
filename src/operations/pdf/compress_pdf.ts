@@ -2,7 +2,7 @@ import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { safeName, validateJobPaths } from './pdf_utils.js';
+import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -32,7 +32,7 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
-  await validateJobPaths(options.jobs, 'compress-pdf');
+  await validatePdfJobPaths(options.jobs, 'compress-pdf');
 
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
@@ -74,7 +74,7 @@ async function compressPdf(params: {
   const { job, quality, ghostscriptPath, runId, signal } = params;
   signal?.throwIfAborted();
 
-  const itemName = `${params.index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
+  const itemName = `${params.index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
   const stagingRootPath = createStagingRoot(job.workspacePath, 'compress-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));

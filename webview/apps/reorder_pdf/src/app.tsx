@@ -6,7 +6,7 @@ import {
   type ReorderPdfLabels,
 } from '@graphics-workbench-reorder-pdf-protocol';
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
-import { SplitPane } from '@webview-shared/split_pane';
+import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNavigator';
 import { useCurrentPage } from '@webview-shared/ui/use_current_page';

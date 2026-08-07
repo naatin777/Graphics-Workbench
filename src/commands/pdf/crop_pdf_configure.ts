@@ -27,7 +27,8 @@ import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { isAbortError } from '../../application/error_normalization.js';
 
 export async function cropPdfConfigureCommand(
   context: vscode.ExtensionContext,
@@ -79,7 +80,7 @@ async function runCropPdfConfigureCommand(
         return inspectCropPdfMetadata(inputUri.fsPath, signal);
       }),
   );
-  const configuration = getCommandConfiguration(dependencies);
+  const configuration = configureCommandRuntime(dependencies);
   const outputTemplate = configuration.outputPath.cropPdf();
   const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
   const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);

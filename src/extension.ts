@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import { registerCommands } from './commands/shared/command_registrations.js';
 import type { CommandDependencies } from './commands/shared/command_dependencies.js';
+import { applyRuntimeConfiguration } from './commands/shared/command_runtime.js';
 import { initializeSafeMode } from './commands/lifecycle/safe_mode.js';
 import { initializeUndoHistory } from './commands/lifecycle/undo_last_conversion.js';
 import { cleanupStaleSecurePdfStagingRoots } from './operations/lifecycle/secure_staging.js';
@@ -9,22 +10,12 @@ import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
 import { getExtensionConfiguration } from './config/extension_configuration.js';
 import { extensionIdentity } from './generated/extension_manifest.js';
-import { configureExternalToolTimeouts } from './config/external_tools/external_tool_settings.js';
-import { getMaxConcurrentHeavyProcesses } from './config/performance.js';
 import {
   sharedConversionJobLimiter,
   sharedHeavyProcessLimiter,
 } from './operations/external_tools/heavy_process_limiter.js';
 
 const latexDocumentSelector: vscode.DocumentSelector = [{ language: 'latex' }, { language: 'tex' }];
-
-function configureHeavyProcessRuntime(): void {
-  const configuration = getExtensionConfiguration();
-  configureExternalToolTimeouts(configuration);
-  const concurrency = getMaxConcurrentHeavyProcesses(configuration);
-  sharedHeavyProcessLimiter.setConcurrency(concurrency);
-  sharedConversionJobLimiter.setConcurrency(concurrency);
-}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const activatedAt = Date.now();
@@ -35,14 +26,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const dependencies = { getConfiguration: getExtensionConfiguration, outputChannel } satisfies CommandDependencies;
   context.subscriptions.push(outputChannel);
 
-  configureHeavyProcessRuntime();
+  applyRuntimeConfiguration(getExtensionConfiguration());
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (
         event.affectsConfiguration('graphics-workbench.performance.maxConcurrentHeavyProcesses') ||
         event.affectsConfiguration('graphics-workbench.externalTools')
       ) {
-        configureHeavyProcessRuntime();
+        applyRuntimeConfiguration(getExtensionConfiguration());
       }
     }),
     new vscode.Disposable(() => {

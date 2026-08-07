@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { logicalSourcePathForOutputTemplate } from '../../application/policy/source_format.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -13,7 +13,8 @@ import { readSvgToPdfOptions } from './convert_to_pdf.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { resolveSelectedUris } from '../shared/command_input.js';
 import { localeMap } from '../../locale_map.js';
 
 export async function combineImagesToPdfCommand(
@@ -24,7 +25,7 @@ export async function combineImagesToPdfCommand(
   const outputChannel = dependencies?.outputChannel;
 
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedUris(uri, uris);
 
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
@@ -37,7 +38,7 @@ export async function combineImagesToPdfCommand(
 
     const workspaceFolder = requireSingleWorkspace(previewedUris);
     const workspacePath = workspaceFolder.uri.fsPath;
-    const configuration = getCommandConfiguration(dependencies);
+    const configuration = configureCommandRuntime(dependencies);
     const outputTemplate = configuration.outputPath.convertImagesToSinglePdf();
     const defaultOutputTemplate = getDefaultConfiguration().outputPath.convertPngToPdf();
     const outputPath = await resolveCombineOutputPath(

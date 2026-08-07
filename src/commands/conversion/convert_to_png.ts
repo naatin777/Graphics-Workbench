@@ -10,7 +10,7 @@ import { planPngConversionJobs } from './plan_png_conversion_jobs.js';
 import { runSimpleRasterConversionCommand } from './run_raster_conversion_command.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { readDrawioOptions } from '../shared/command_utils.js';
+import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
 
 export async function convertToPngCommand(
   uri?: vscode.Uri,
@@ -25,7 +25,7 @@ export async function convertToPngCommand(
     outputLabel: 'PNG',
     prepare: (configuration) => ({
       mermaidTools: readMermaidCliOptions(configuration),
-      drawioTools: readDrawioOptions(configuration),
+      drawioTools: buildDrawioCommandOptions(configuration),
       pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
       ghostscriptTools: {
         ghostscriptPath: readGhostscriptExecutablePath(configuration),

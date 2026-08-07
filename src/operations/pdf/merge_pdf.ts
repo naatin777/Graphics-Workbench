@@ -80,7 +80,7 @@ async function writeMergedPdf(
     runtime?.signal?.throwIfAborted();
     return await commitStagedOutputs(
       [{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }],
-      commitOptionsForRuntime(runtime),
+      buildCommitOptions(runtime),
     );
   } catch (error) {
     await cleanupConversionArtifacts(artifacts, runtime?.outputChannel, error);
@@ -106,7 +106,7 @@ async function appendSourceDocuments(
   }
 }
 
-function commitOptionsForRuntime(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
+function buildCommitOptions(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
   const commitOptions: CommitConversionOutputsOptions = { operationName: 'merge-pdf' as const };
   if (runtime?.signal !== undefined) {
     commitOptions.signal = runtime.signal;

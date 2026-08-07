@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { asRunId, createRunId, isSafePathSegment } from '../../src/operations/lifecycle/run_id.js';
-import { safeName } from '../../src/operations/pdf/pdf_utils.js';
+import { sanitizePdfPathSegment } from '../../src/operations/pdf/pdf_job_paths.js';
 
 suite('内部path segment', () => {
   test('生成用のrunIdだけを受け入れる', () => {
@@ -23,10 +23,10 @@ suite('内部path segment', () => {
     }
   });
 
-  test('ユーザー由来のsafeNameは危険なbasenameをfallbackへ変換する', () => {
-    assert.equal(safeName('..'), 'pdf');
-    assert.equal(safeName('.'), 'pdf');
-    assert.equal(safeName('CON'), 'pdf');
-    assert.equal(safeName('日本語 file'), '____file');
+  test('ユーザー由来のsanitizePdfPathSegmentは危険なbasenameをfallbackへ変換する', () => {
+    assert.equal(sanitizePdfPathSegment('..'), 'pdf');
+    assert.equal(sanitizePdfPathSegment('.'), 'pdf');
+    assert.equal(sanitizePdfPathSegment('CON'), 'pdf');
+    assert.equal(sanitizePdfPathSegment('日本語 file'), '____file');
   });
 });

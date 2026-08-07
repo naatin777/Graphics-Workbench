@@ -6,15 +6,18 @@ import type { CommandDependencies } from './command_dependencies.js';
 
 const loadedCommandModules = new Set<string>();
 
-type LoadedCommand = (...args: unknown[]) => Promise<unknown>;
+type ResolvedCommandHandler = (...args: unknown[]) => Promise<unknown>;
 
-export type CommandResolver = (binding: CommandBinding, outputChannel: LineOutputChannel) => Promise<LoadedCommand>;
+export type CommandResolver = (
+  binding: CommandBinding,
+  outputChannel: LineOutputChannel,
+) => Promise<ResolvedCommandHandler>;
 
 function isCommandModule(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isLoadedCommand(value: unknown): value is LoadedCommand {
+function isResolvedCommandHandler(value: unknown): value is ResolvedCommandHandler {
   return typeof value === 'function';
 }
 
@@ -40,7 +43,10 @@ async function importCommandModule(specifier: string): Promise<unknown> {
   return imported;
 }
 
-async function resolveCommand(binding: CommandBinding, outputChannel: LineOutputChannel): Promise<LoadedCommand> {
+async function resolveCommand(
+  binding: CommandBinding,
+  outputChannel: LineOutputChannel,
+): Promise<ResolvedCommandHandler> {
   const imported: unknown = await loadCommandModule(outputChannel, binding.module, async () =>
     importCommandModule(binding.module),
   );
@@ -48,7 +54,7 @@ async function resolveCommand(binding: CommandBinding, outputChannel: LineOutput
     throw new Error(`Command module for ${binding.id} could not be loaded: ${binding.module}`);
   }
   const command = imported[binding.exportName];
-  if (!isLoadedCommand(command)) {
+  if (!isResolvedCommandHandler(command)) {
     throw new Error(
       `Command binding ${binding.id} refers to missing export ${binding.exportName} in ${binding.module}.`,
     );

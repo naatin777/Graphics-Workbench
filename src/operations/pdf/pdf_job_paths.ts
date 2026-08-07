@@ -3,7 +3,7 @@ import path from 'node:path';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { isSafePathSegment } from '../lifecycle/run_id.js';
 
-export function safeName(value: string): string {
+export function sanitizePdfPathSegment(value: string): string {
   const sanitized = value.replaceAll(/[^a-zA-Z0-9._-]/g, '_');
   return isSafePathSegment(sanitized) ? sanitized : 'pdf';
 }
@@ -14,7 +14,7 @@ interface PdfJob {
   outputPath?: string;
 }
 
-export async function validateJobPaths(jobs: PdfJob[], stagingDirectoryName: string): Promise<void> {
+export async function validatePdfJobPaths(jobs: PdfJob[], stagingDirectoryName: string): Promise<void> {
   await Promise.all(
     jobs.flatMap((job) => [
       assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),

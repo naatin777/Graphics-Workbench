@@ -10,7 +10,8 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { resolveSelectedUris } from '../shared/command_input.js';
 
 const defaultOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
 const defaultDirectOutputPath = '${fileDirname}/${fileBasenameNoExtension}.pdf';
@@ -71,12 +72,12 @@ async function runDrawioPdfCommand(
   dependencies?: CommandDependencies,
 ): Promise<void> {
   try {
-    const sourceUris = selectedUris(options.uri, options.uris);
+    const sourceUris = resolveSelectedUris(options.uri, options.uris);
     if (sourceUris.length === 0) {
       throw new Error('No Draw.io files were selected.');
     }
 
-    const configuration = getCommandConfiguration(dependencies);
+    const configuration = configureCommandRuntime(dependencies);
     const outputTemplate =
       options.outputMode === 'page-pdfs'
         ? resolveOutputPathsTemplate(configuration, 'convertDrawioToPdf', options.defaultOutputPath)

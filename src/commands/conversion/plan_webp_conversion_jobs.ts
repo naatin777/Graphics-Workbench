@@ -18,7 +18,7 @@ import type { ConvertToWebpJob } from '../../operations/conversion/convert_to_we
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
-import { assertFileScheme } from '../shared/command_utils.js';
+import { assertLocalFileUri } from '../shared/command_input.js';
 
 const defaultSplitOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.webp';
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.webp';
@@ -42,7 +42,7 @@ export async function planWebpConversionJobs(
     runtime?: ConversionExecutionContext;
   },
 ): Promise<ConvertToWebpJob[]> {
-  assertFileScheme(sourceUri);
+  assertLocalFileUri(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
     throw new Error(`The file must be inside an open workspace: ${sourceUri.fsPath}`);

@@ -15,7 +15,7 @@ import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
@@ -29,13 +29,9 @@ import { createOutputConversionMessages, runConversionLifecycle } from '../lifec
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import {
-  assertFileScheme,
-  getCommandConfiguration,
-  isAbortError,
-  readDrawioOptions,
-  selectedUris,
-} from '../shared/command_utils.js';
+import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
+import { configureCommandRuntime, buildDrawioCommandOptions } from '../shared/command_runtime.js';
+import { isAbortError } from '../../application/error_normalization.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.svg';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.svg';
@@ -47,16 +43,16 @@ export async function convertToSvgCommand(
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedUris(uri, uris);
 
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
 
-    const configuration = getCommandConfiguration(dependencies);
+    const configuration = configureCommandRuntime(dependencies);
     const maxInputPixels = getMaxInputPixels(configuration);
     const mermaidTools = readMermaidCliOptions(configuration);
-    const drawioTools = readDrawioOptions(configuration);
+    const drawioTools = buildDrawioCommandOptions(configuration);
     const pdftocairoTools = { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform };
     const ghostscriptTools = {
       ghostscriptPath: readGhostscriptExecutablePath(configuration),
@@ -100,7 +96,7 @@ async function planSvgConversionJobs(
   configuration: Configuration,
   runtime?: ConversionExecutionContext,
 ): Promise<ConvertToSvgJob[]> {
-  assertFileScheme(sourceUri);
+  assertLocalFileUri(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
     throw new Error(`The file must be inside an open workspace: ${sourceUri.fsPath}`);
