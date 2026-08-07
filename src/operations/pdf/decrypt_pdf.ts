@@ -2,7 +2,7 @@ import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { safeName, validateJobPaths } from './pdf_utils.js';
+import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -30,7 +30,7 @@ export async function decryptPdfFiles(options: DecryptPdfOptions): Promise<Commi
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
-  await validateJobPaths(options.jobs, 'decrypt-pdf');
+  await validatePdfJobPaths(options.jobs, 'decrypt-pdf');
 
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
@@ -74,7 +74,7 @@ async function decryptPdf(params: {
   const { job, password, qpdfPath, signal } = params;
   signal?.throwIfAborted();
 
-  const itemName = `${params.index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
+  const itemName = `${params.index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
   const workDirectory = path.join(params.stagingRootPath, itemName);
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
