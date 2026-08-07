@@ -28,7 +28,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_utils.js';
+import { isAbortError } from '../../application/error_normalization.js';
 
 export async function cropPdfConfigureCommand(
   context: vscode.ExtensionContext,

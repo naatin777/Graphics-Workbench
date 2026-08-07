@@ -31,7 +31,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
 import { configureCommandRuntime, buildDrawioCommandOptions } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_utils.js';
+import { isAbortError } from '../../application/error_normalization.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.svg';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.svg';

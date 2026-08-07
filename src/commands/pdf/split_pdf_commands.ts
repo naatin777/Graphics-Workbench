@@ -29,7 +29,7 @@ import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_utils.js';
+import { isAbortError } from '../../application/error_normalization.js';
 import { resolveSelectedUris } from '../shared/command_input.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 

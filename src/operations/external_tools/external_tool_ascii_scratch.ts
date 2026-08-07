@@ -2,7 +2,7 @@ import { lstat, mkdtemp, realpath, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { errorMessage, isAbortError } from '../../application/error_utils.js';
+import { toErrorMessage, isAbortError } from '../../application/error_normalization.js';
 
 export interface LineOutputChannel {
   appendLine: (message: string) => void;
@@ -62,7 +62,7 @@ export async function createAsciiInputScratch(options: {
         });
       }
 
-      options.outputChannel?.appendLine(`[scratch] rejected base: ${candidate} (${errorMessage(error)})`);
+      options.outputChannel?.appendLine(`[scratch] rejected base: ${candidate} (${toErrorMessage(error)})`);
     }
   }
 
@@ -131,7 +131,7 @@ export async function removeSuccessfulScratch(scratch: AsciiScratch, outputChann
   try {
     await rm(scratch.rootPath, { recursive: true, force: true });
   } catch (error) {
-    outputChannel?.appendLine(`[scratch] warning: could not remove ${scratch.rootPath} (${errorMessage(error)})`);
+    outputChannel?.appendLine(`[scratch] warning: could not remove ${scratch.rootPath} (${toErrorMessage(error)})`);
   }
 }
 

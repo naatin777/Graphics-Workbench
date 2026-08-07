@@ -5,7 +5,7 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 import { assertSafePathSegment, createRunId, createStagingRoot, type RunId } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
-import { isAbortError } from '../../application/error_utils.js';
+import { isAbortError } from '../../application/error_normalization.js';
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
   commitStagedOutputs,
