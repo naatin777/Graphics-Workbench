@@ -23,7 +23,9 @@ import { assertExistingPathInWorkspace } from '../../security/workspace_path.js'
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { assertFileScheme, getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
+import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { isAbortError } from '../../application/error_utils.js';
 import { createRasterFrameJobs } from './create_raster_frame_jobs.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
 
@@ -35,11 +37,11 @@ export async function convertToEpsCommand(
   dependencies?: CommandDependencies,
 ): Promise<void> {
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedUris(uri, uris);
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = getCommandConfiguration(dependencies);
+    const configuration = configureCommandRuntime(dependencies);
     const jobs: ConvertToEpsJob[] = [];
     for (const sourceUri of sourceUris) {
       jobs.push(...(await createEpsJobs(sourceUri, configuration)));
@@ -73,7 +75,7 @@ export async function convertToEpsCommand(
 }
 
 export async function createEpsJobs(sourceUri: vscode.Uri, configuration: Configuration): Promise<ConvertToEpsJob[]> {
-  assertFileScheme(sourceUri);
+  assertLocalFileUri(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
     throw new Error(`The file must be inside an open workspace: ${sourceUri.fsPath}`);

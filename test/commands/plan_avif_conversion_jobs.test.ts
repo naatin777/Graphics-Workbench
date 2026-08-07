@@ -6,7 +6,7 @@ import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
 import { planAvifConversionJobs } from '../../src/commands/conversion/plan_avif_conversion_jobs.js';
-import { getCommandConfiguration } from '../../src/commands/shared/command_utils.js';
+import { configureCommandRuntime } from '../../src/commands/shared/command_runtime.js';
 import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
@@ -25,7 +25,7 @@ suite('AVIF変換planner', () => {
 
       const jobs = await planAvifConversionJobs(
         vscode.Uri.file(sourcePath),
-        getCommandConfiguration(),
+        configureCommandRuntime(),
         getDefaultConfiguration(),
         getDefaultConfiguration().raster.maxInputPixels(),
       );
@@ -67,7 +67,7 @@ suite('AVIF変換planner', () => {
 
       const jobs = await planAvifConversionJobs(
         vscode.Uri.file(sourcePath),
-        getCommandConfiguration(),
+        configureCommandRuntime(),
         getDefaultConfiguration(),
         getDefaultConfiguration().raster.maxInputPixels(),
       );
@@ -100,7 +100,7 @@ suite('AVIF変換planner', () => {
     await assert.rejects(
       planAvifConversionJobs(
         vscode.Uri.file(sourcePath),
-        getCommandConfiguration(),
+        configureCommandRuntime(),
         getDefaultConfiguration(),
         getDefaultConfiguration().raster.maxInputPixels(),
       ),

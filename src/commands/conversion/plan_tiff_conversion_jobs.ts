@@ -13,7 +13,7 @@ import { resolveConversionTemplate } from './conversion_routing.js';
 import { planPdfPageConversionJobs } from './plan_pdf_page_conversion_jobs.js';
 import { planRasterSourceConversionJobs } from './plan_raster_source_conversion_jobs.js';
 
-import { assertFileScheme } from '../shared/command_utils.js';
+import { assertLocalFileUri } from '../shared/command_input.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.tiff';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.tiff';
@@ -24,7 +24,7 @@ export async function planTiffConversionJobs(
   maxInputPixels: number,
   runtime?: ConversionExecutionContext,
 ): Promise<ConvertToTiffJob[]> {
-  assertFileScheme(sourceUri);
+  assertLocalFileUri(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
     throw new Error(`The file must be inside an open workspace: ${sourceUri.fsPath}`);

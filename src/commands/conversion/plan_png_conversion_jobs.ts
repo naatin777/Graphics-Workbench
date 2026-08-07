@@ -14,7 +14,7 @@ import { planRasterSourceConversionJobs } from './plan_raster_source_conversion_
 import { planPdfPageConversionJobs } from './plan_pdf_page_conversion_jobs.js';
 
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import { assertFileScheme } from '../shared/command_utils.js';
+import { assertLocalFileUri } from '../shared/command_input.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.png';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.png';
@@ -25,7 +25,7 @@ export async function planPngConversionJobs(
   maxInputPixels: number,
   runtime?: ConversionExecutionContext,
 ): Promise<ConvertToPngJob[]> {
-  assertFileScheme(sourceUri);
+  assertLocalFileUri(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
     throw new Error(`The file must be inside an open workspace: ${sourceUri.fsPath}`);

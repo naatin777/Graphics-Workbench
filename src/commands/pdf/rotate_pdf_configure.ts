@@ -26,7 +26,8 @@ import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { isAbortError } from '../../application/error_utils.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function rotatePdfConfigureCommand(
@@ -72,7 +73,7 @@ async function runRotatePdfConfigureCommand(
     throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
   }
 
-  const configuration = getCommandConfiguration(dependencies);
+  const configuration = configureCommandRuntime(dependencies);
   const outputPath = resolvePdfOutputPath(configuration.outputPath.rotatePdf(), {
     workspacePath: workspaceFolder.uri.fsPath,
     workspaceName: workspaceFolder.name,

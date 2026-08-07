@@ -8,7 +8,7 @@ import { withCancellationSignal } from './progress_cancellation.js';
 import { createProgressReporters } from './progress_reporting.js';
 import { recordConversionForUndo } from './undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError, errorMessage } from '../shared/command_utils.js';
+import { isAbortError, errorMessage } from '../../application/error_utils.js';
 
 export interface ConversionCommandMessages {
   progressTitle: string;
