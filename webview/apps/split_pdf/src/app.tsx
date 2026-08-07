@@ -9,14 +9,14 @@ import { Button } from '../../../shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '../../../shared/ui/PageNavigator';
 import { useCurrentPage } from '../../../shared/ui/use_current_page';
 
-import { GroupRow } from './group_row';
-import { formatLabel, pageFailureMessage } from './helpers';
+import { GroupRow } from './GroupRow';
+import { formatLabel, formatPageParseFailure } from './page_validation_messages';
 import { defaultLabels } from './labels';
 import { parsePages } from './pages';
 import type { ExtensionToWebviewMessage, WebviewToExtensionMessage } from './messages';
 import { applyPreviewZoom, capturePreviewZoomAnchor, restorePreviewZoomAnchor } from './preview_zoom';
 import { PreviewToolbar } from './preview_toolbar';
-import { SplitPane } from '../../../shared/split_pane';
+import { SplitPane } from '@webview-shared/SplitPane';
 import type { InputKind, PreviewMode, Row } from './types';
 import { vscode } from './vscode';
 
@@ -192,7 +192,7 @@ export function App(): JSX.Element {
     const parsedPages = parsePages(row.pages, pageCount());
 
     if (!parsedPages.ok) {
-      setApplyError(`${labels().groups.label} ${rowIndex + 1}: ${pageFailureMessage(parsedPages, labels())}`);
+      setApplyError(`${labels().groups.label} ${rowIndex + 1}: ${formatPageParseFailure(parsedPages, labels())}`);
       return;
     }
 
@@ -251,7 +251,7 @@ export function App(): JSX.Element {
       if (!parsedPages.ok) {
         return {
           rowId: row.id,
-          message: `${labels().groups.label} ${index + 1}: ${pageFailureMessage(parsedPages, labels())}`,
+          message: `${labels().groups.label} ${index + 1}: ${formatPageParseFailure(parsedPages, labels())}`,
         };
       }
 

@@ -8,12 +8,12 @@ import { createSignal, onCleanup, type JSX } from 'solid-js';
  */
 export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX.Element {
   const [leftWidth, setLeftWidth] = createSignal<number | undefined>(undefined);
-  const [active, setActive] = createSignal(false);
+  const [isDragging, setIsDragging] = createSignal(false);
   let containerRef: HTMLDivElement | undefined;
-  let dragHandlers: (() => void) | undefined;
+  let stopDragging: (() => void) | undefined;
 
   onCleanup(() => {
-    dragHandlers?.();
+    stopDragging?.();
   });
 
   const startDrag = (event: PointerEvent): void => {
@@ -24,7 +24,7 @@ export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX
     }
 
     event.preventDefault();
-    setActive(true);
+    setIsDragging(true);
     const containerRect = container.getBoundingClientRect();
     const minimumRightWidth = 240;
     const onPointerMove = (moveEvent: PointerEvent): void => {
@@ -33,12 +33,12 @@ export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX
       setLeftWidth(Math.min(Math.max(width, 120), Math.max(maximumWidth, 120)));
     };
     const onPointerUp = (): void => {
-      dragHandlers = undefined;
-      setActive(false);
+      stopDragging = undefined;
+      setIsDragging(false);
       globalThis.removeEventListener('pointermove', onPointerMove);
       globalThis.removeEventListener('pointerup', onPointerUp);
     };
-    dragHandlers = onPointerUp;
+    stopDragging = onPointerUp;
     globalThis.addEventListener('pointermove', onPointerMove);
     globalThis.addEventListener('pointerup', onPointerUp);
   };
@@ -60,7 +60,7 @@ export function SplitPane(props: { left: JSX.Element; right: JSX.Element }): JSX
         class='split-pane__divider'
         role='separator'
         aria-orientation='vertical'
-        data-active={active()}
+        data-active={isDragging()}
         onPointerDown={startDrag}
       />
       <div class='split-pane__right'>{props.right}</div>

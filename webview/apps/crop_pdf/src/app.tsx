@@ -1,7 +1,7 @@
 import { createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '../../../shared/pdf/render_pdf_pages';
-import { SplitPane } from '../../../shared/split_pane';
+import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '../../../shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '../../../shared/ui/PageNavigator';
 import { ToolbarButton } from '../../../shared/ui/ToolbarButton';

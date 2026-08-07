@@ -6,7 +6,7 @@ import type { ExtensionToWebviewMessage, MergePdfSource } from './messages';
 import { defaultLabels } from './labels';
 import { SourceCard } from './source_card';
 import type { PdfOptions } from './preview_thumbnail';
-import { SplitPane } from '../../../shared/split_pane';
+import { SplitPane } from '@webview-shared/SplitPane';
 import { vscode } from './vscode';
 
 export function App(): JSX.Element {
