@@ -17,6 +17,7 @@ suite('Mermaid CLI設定', () => {
 
     assert.deepEqual(options, {
       chromePath: '/usr/bin/chrome',
+      mermaidPath: 'mmdc',
       theme: 'default',
       backgroundColor: 'white',
     });

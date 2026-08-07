@@ -6,7 +6,6 @@ export type ExternalToolTimeouts = Readonly<Record<ExternalToolId, number | unde
 
 const defaultTimeouts: ExternalToolTimeouts = {
   drawio: undefined,
-  pdftocairo: undefined,
   rsvgConvert: undefined,
   mermaid: undefined,
 };
@@ -16,7 +15,6 @@ let configuredTimeouts: ExternalToolTimeouts = defaultTimeouts;
 export function readExternalToolTimeouts(configuration: Configuration): ExternalToolTimeouts {
   return {
     drawio: timeoutMilliseconds(configuration.externalTools.drawio.timeoutSeconds()),
-    pdftocairo: timeoutMilliseconds(configuration.externalTools.pdftocairo.timeoutSeconds()),
     rsvgConvert: timeoutMilliseconds(configuration.externalTools.rsvgConvert.timeoutSeconds()),
     mermaid: timeoutMilliseconds(configuration.externalTools.mermaid.timeoutSeconds()),
   };

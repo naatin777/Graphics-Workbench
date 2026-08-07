@@ -1,7 +1,7 @@
 {
-  "workspaceTrust.description": "Graphics Workbench executes external tools such as Draw.io, Ghostscript, and pdftocairo, so it is not available in untrusted workspaces.",
+  "workspaceTrust.description": "Graphics Workbench executes external tools such as Draw.io, rsvg-convert, and Mermaid CLI, so it is not available in untrusted workspaces.",
   "config.execPath.drawio": "Path to the draw.io executable. If not specified, the default command for each OS will be used. (Windows: drawio.exe, macOS: drawio, others: drawio)",
-  "config.execPath.pdftocairo": "Path to the pdftocairo executable. If not specified, pdftocairo will be used.",
+  "config.execPath.mermaid": "Path to the mmdc executable from @mermaid-js/mermaid-cli. If not specified, mmdc will be used.",
   "config.execPath.rsvgConvert": "Path to the rsvg-convert executable. If not specified, rsvg-convert will be used.",
   "config.execPath.chrome": "Path to the Chrome executable used for Mermaid rendering and Chrome-based SVG to PDF conversion. If not specified, the standard OS command or location is used.",
   "config.raster.maxInputPixels": "Maximum number of pixels allowed for a raster image input. Increase this value only when processing very large images, as larger images may require significantly more memory.",
@@ -10,7 +10,6 @@
   "config.preview.maxDevicePixelRatio": "Maximum device pixel ratio used for PDF previews.",
   "config.performance.maxConcurrentHeavyProcesses": "Maximum number of heavy external rendering processes that may run at the same time. Higher values may increase CPU and memory usage.",
   "config.externalTools.drawio.timeoutSeconds": "Maximum Draw.io execution time in seconds. Set to 0 for no timeout.",
-  "config.externalTools.pdftocairo.timeoutSeconds": "Maximum pdftocairo execution time in seconds. Set to 0 for no timeout.",
   "config.externalTools.rsvgConvert.timeoutSeconds": "Maximum rsvg-convert execution time in seconds. Set to 0 for no timeout.",
   "config.externalTools.mermaid.timeoutSeconds": "Maximum Mermaid execution time in seconds. Set to 0 for no timeout.",
   "config.convertToPdf.svg.engine": "Engine used when converting SVG files to PDF (Chrome or rsvg-convert).",
@@ -348,12 +347,12 @@
   "message.environmentCheck.pickSetting": "Select an item to open its related settings",
   "message.environmentCheck.feature.imageConversion": "Built-in image conversion",
   "message.environmentCheck.feature.pdfMergeSplitReorder": "PDF merge / split / reorder",
-  "message.environmentCheck.feature.pdfToImage": "PDF to image",
   "message.environmentCheck.feature.drawioConversion": "Draw.io conversion",
   "message.environmentCheck.feature.mermaidConversion": "Mermaid conversion",
+  "message.environmentCheck.feature.mermaidCli": "Mermaid CLI",
   "message.environmentCheck.feature.svgToPdf": "SVG to PDF",
-  "message.environmentCheck.tool.pdftocairo": "pdftocairo",
   "message.environmentCheck.tool.drawio": "Draw.io",
   "message.environmentCheck.tool.rsvgConvert": "rsvg-convert",
-  "message.environmentCheck.tool.browser": "Browser"
+  "message.environmentCheck.tool.browser": "Browser",
+  "message.environmentCheck.tool.mermaidCli": "mmdc"
 }

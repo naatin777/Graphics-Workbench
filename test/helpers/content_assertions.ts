@@ -1,21 +1,16 @@
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { PDFDocument } from 'pdf-lib';
 
-import { readPdftocairoExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
+import { renderPdfPageToPng } from '../../src/operations/pdf/mupdf.js';
 import {
   calculateRgbaDifference,
   readNormalizedRgbaPixels,
   readRgbaPixels,
   type RasterComparisonOptions,
 } from './raster_content.js';
-
-const execFileAsync = promisify(execFile);
 
 export async function assertRasterMatches(
   actualPath: string,
@@ -74,8 +69,6 @@ export async function assertPdfMatches(
     PDFDocument.load(await readFile(expectedPath)),
   ]);
   assert.strictEqual(actual.getPageCount(), expected.getPageCount(), label);
-  const pdftocairoPath = readPdftocairoExecutablePath(getExtensionConfiguration());
-  assert.notStrictEqual(pdftocairoPath, '', 'pdftocairo must be configured in test/vscode-settings/settings.json');
 
   await mkdir(renderDirectory, { recursive: true });
   for (let page = 1; page <= actual.getPageCount(); page += 1) {
@@ -96,29 +89,16 @@ export async function assertPdfMatches(
     } else {
       assert.deepStrictEqual(actualPageSize, expectedPageSize, `${label} page ${page}`);
     }
-    await renderPdfPage(actualPath, actualPagePath, page, pdftocairoPath);
-    await renderPdfPage(expectedPath, expectedPagePath, page, pdftocairoPath);
+    await renderPdfPage(actualPath, actualPagePath, page);
+    await renderPdfPage(expectedPath, expectedPagePath, page);
     await assertRasterMatches(actualPagePath, expectedPagePath, `${label} page ${page}`, options);
   }
 }
 
-async function renderPdfPage(
-  sourcePath: string,
-  outputPath: string,
-  page: number,
-  pdftocairoPath: string,
-): Promise<void> {
-  const outputPrefix = outputPath.slice(0, -path.extname(outputPath).length);
-  await execFileAsync(pdftocairoPath, [
-    '-png',
-    '-singlefile',
-    '-f',
-    String(page),
-    '-l',
-    String(page),
-    sourcePath,
-    outputPrefix,
-  ]);
+async function renderPdfPage(sourcePath: string, outputPath: string, page: number): Promise<void> {
+  const pdfBytes = await readFile(sourcePath);
+  const png = await renderPdfPageToPng(pdfBytes, page);
+  await writeFile(outputPath, png);
 }
 
 function svgStructureSignature(serialized: string): {

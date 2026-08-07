@@ -4,8 +4,8 @@ export function readDrawioExecutablePath(configuration: Configuration): string {
   return configuration.execPath.drawio();
 }
 
-export function readPdftocairoExecutablePath(configuration: Configuration): string {
-  return configuration.execPath.pdftocairo();
+export function readMermaidExecutablePath(configuration: Configuration): string {
+  return configuration.execPath.mermaid();
 }
 
 export function readRsvgConvertExecutablePath(configuration: Configuration): string {

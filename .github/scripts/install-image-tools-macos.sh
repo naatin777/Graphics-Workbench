@@ -2,10 +2,15 @@
 set -euo pipefail
 
 # e2e tools used by conversion tests on macOS.
-brew install poppler librsvg
+brew install librsvg
+npm install -g @mermaid-js/mermaid-cli
 
-pdftocairo_path="$(command -v pdftocairo)"
 rsvg_convert_path="$(command -v rsvg-convert)"
+mermaid_path="$(command -v mmdc || true)"
+if [ -z "${mermaid_path}" ]; then
+	echo "Could not find the mmdc executable. Install it with: npm install -g @mermaid-js/mermaid-cli" >&2
+	exit 1
+fi
 chrome_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 if [[ ! -x "${chrome_path}" ]]; then
@@ -17,8 +22,8 @@ settings_dir="test/vscode-settings"
 mkdir -p "$settings_dir"
 cat > "$settings_dir/settings.json" <<EOF
 {
-    "graphics-workbench.execPath.pdftocairo": "${pdftocairo_path}",
     "graphics-workbench.execPath.rsvgConvert": "${rsvg_convert_path}",
+    "graphics-workbench.execPath.mermaid": "${mermaid_path}",
     "graphics-workbench.execPath.chrome": "${chrome_path}"
 }
 EOF

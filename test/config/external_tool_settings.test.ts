@@ -18,12 +18,12 @@ suite('外部ツールタイムアウト設定', () => {
   test('0を無期限として読み取る', () => {
     const timeouts = readExternalToolTimeouts(
       fakeConfiguration({
-        'externalTools.pdftocairo.timeoutSeconds': 0,
+        'externalTools.rsvgConvert.timeoutSeconds': 0,
         'externalTools.mermaid.timeoutSeconds': 5,
       }),
     );
 
-    assert.strictEqual(timeouts.pdftocairo, undefined);
+    assert.strictEqual(timeouts.rsvgConvert, undefined);
     assert.strictEqual(timeouts.mermaid, 5_000);
   });
 });

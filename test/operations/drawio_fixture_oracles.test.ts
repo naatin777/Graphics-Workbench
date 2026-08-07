@@ -86,7 +86,6 @@ suite('Draw.io fixtureの実変換比較', () => {
         });
         await convertToSvgFiles({
           jobs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
-          pdftocairoTools: configuredTools.pdftocairoTools,
           mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           runId: `drawio-${fixtureCase.id}-svg`,
@@ -116,7 +115,9 @@ suite('Draw.io fixtureの実変換比較', () => {
               runId: `drawio-${fixtureCase.id}-native-pdf`,
             }));
 
-        await assertRasterMatches(actualPngPath, path.join(expectedDirectory, 'expected.png'), `PNG: ${sourcePath}`);
+        await assertRasterMatches(actualPngPath, path.join(expectedDirectory, 'expected.png'), `PNG: ${sourcePath}`, {
+          rendererVariance: true,
+        });
 
         await renderSvg(actualSvgPath, renderedActualSvgPath, configuredTools.rsvgConvertPath);
         await renderSvg(

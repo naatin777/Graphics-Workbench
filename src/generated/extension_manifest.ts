@@ -13,11 +13,10 @@ export const extensionIdentity = {
 
 type ConfigurationKey =
   | 'execPath.drawio'
-  | 'execPath.pdftocairo'
+  | 'execPath.mermaid'
   | 'execPath.rsvgConvert'
   | 'execPath.chrome'
   | 'externalTools.drawio.timeoutSeconds'
-  | 'externalTools.pdftocairo.timeoutSeconds'
   | 'externalTools.rsvgConvert.timeoutSeconds'
   | 'externalTools.mermaid.timeoutSeconds'
   | 'raster.maxInputPixels'
@@ -207,7 +206,7 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'execPath.drawio': {
     types: ['string'],
   },
-  'execPath.pdftocairo': {
+  'execPath.mermaid': {
     types: ['string'],
   },
   'execPath.rsvgConvert': {
@@ -217,11 +216,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['string'],
   },
   'externalTools.drawio.timeoutSeconds': {
-    types: ['integer'],
-    minimum: 0,
-    maximum: 86400,
-  },
-  'externalTools.pdftocairo.timeoutSeconds': {
     types: ['integer'],
     minimum: 0,
     maximum: 86400,
@@ -600,11 +594,10 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
 };
 const configurationExpectations: Record<ConfigurationKey, string> = {
   'execPath.drawio': 'string',
-  'execPath.pdftocairo': 'string',
+  'execPath.mermaid': 'string',
   'execPath.rsvgConvert': 'string',
   'execPath.chrome': 'string',
   'externalTools.drawio.timeoutSeconds': 'integer',
-  'externalTools.pdftocairo.timeoutSeconds': 'integer',
   'externalTools.rsvgConvert.timeoutSeconds': 'integer',
   'externalTools.mermaid.timeoutSeconds': 'integer',
   'raster.maxInputPixels': 'integer',
@@ -979,7 +972,6 @@ export type SubmenuId = keyof typeof submenuContributions;
 export const externalToolTimeoutConfigurationKeys = {
   drawio: 'externalTools.drawio.timeoutSeconds',
   mermaid: 'externalTools.mermaid.timeoutSeconds',
-  pdftocairo: 'externalTools.pdftocairo.timeoutSeconds',
   rsvgConvert: 'externalTools.rsvgConvert.timeoutSeconds',
 } as const;
 
@@ -1061,16 +1053,13 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
   return {
     execPath: {
       drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', ''),
-      pdftocairo: defineConfiguration<string>(configurationReader, 'execPath.pdftocairo', 'pdftocairo'),
+      mermaid: defineConfiguration<string>(configurationReader, 'execPath.mermaid', 'mmdc'),
       rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
       chrome: defineConfiguration<string>(configurationReader, 'execPath.chrome', ''),
     },
     externalTools: {
       drawio: {
         timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.drawio.timeoutSeconds', 0),
-      },
-      pdftocairo: {
-        timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.pdftocairo.timeoutSeconds', 0),
       },
       rsvgConvert: {
         timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.rsvgConvert.timeoutSeconds', 0),

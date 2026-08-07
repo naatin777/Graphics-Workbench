@@ -24,12 +24,11 @@ import { fakeConfiguration } from '../helpers/configuration.js';
 
 const FEATURE_IMAGE_CONVERSION = userMessage('message.environmentCheck.feature.imageConversion');
 const FEATURE_PDF_MERGE = userMessage('message.environmentCheck.feature.pdfMergeSplitReorder');
-const FEATURE_PDF_TO_IMAGE = userMessage('message.environmentCheck.feature.pdfToImage');
 const FEATURE_DRAWIO = userMessage('message.environmentCheck.feature.drawioConversion');
 const FEATURE_MERMAID = userMessage('message.environmentCheck.feature.mermaidConversion');
+const FEATURE_MERMAID_CLI = userMessage('message.environmentCheck.feature.mermaidCli');
 const FEATURE_SVG_TO_PDF = userMessage('message.environmentCheck.feature.svgToPdf');
 
-const TOOL_PDFTOCAIRO = userMessage('message.environmentCheck.tool.pdftocairo');
 const TOOL_DRAWIO = userMessage('message.environmentCheck.tool.drawio');
 const TOOL_RSVG = userMessage('message.environmentCheck.tool.rsvgConvert');
 const TOOL_BROWSER = userMessage('message.environmentCheck.tool.browser');
@@ -67,18 +66,18 @@ suite('環境チェック（機能単位の状態判定）', () => {
 
   test('未導入（ENOENT）のツールはunavailableになる', async () => {
     const entries = await checkWithProbe(async (params) => {
-      if (params.toolName === TOOL_PDFTOCAIRO) {
-        const error = new Error('spawn pdftocairo ENOENT');
+      if (params.toolName === userMessage('message.environmentCheck.tool.mermaidCli')) {
+        const error = new Error('spawn mmdc ENOENT');
         Object.assign(error, { code: 'ENOENT' });
         throw error;
       }
     });
 
     const map = entryMap(entries);
-    assert.strictEqual(map.get(FEATURE_PDF_TO_IMAGE)?.status, 'unavailable');
+    assert.strictEqual(map.get(FEATURE_MERMAID_CLI)?.status, 'unavailable');
     assert.strictEqual(
-      map.get(FEATURE_PDF_TO_IMAGE)?.detail,
-      userMessage('message.environmentCheck.notFound', TOOL_PDFTOCAIRO),
+      map.get(FEATURE_MERMAID_CLI)?.detail,
+      userMessage('message.environmentCheck.notFound', userMessage('message.environmentCheck.tool.mermaidCli')),
     );
     assert.strictEqual(map.get(FEATURE_PDF_MERGE)?.status, 'available');
   });
@@ -99,16 +98,16 @@ suite('環境チェック（機能単位の状態判定）', () => {
 
   test('バージョン確認がタイムアウトしたツールはunavailableになる', async () => {
     const entries = await checkWithProbe(async (params) => {
-      if (params.toolName === TOOL_PDFTOCAIRO) {
-        throw new Error('pdftocairo timed out after 10000ms');
+      if (params.toolName === userMessage('message.environmentCheck.tool.mermaidCli')) {
+        throw new Error('mmdc timed out after 10000ms');
       }
     });
 
     const map = entryMap(entries);
-    assert.strictEqual(map.get(FEATURE_PDF_TO_IMAGE)?.status, 'unavailable');
+    assert.strictEqual(map.get(FEATURE_MERMAID_CLI)?.status, 'unavailable');
     assert.strictEqual(
-      map.get(FEATURE_PDF_TO_IMAGE)?.detail,
-      userMessage('message.environmentCheck.timedOut', TOOL_PDFTOCAIRO),
+      map.get(FEATURE_MERMAID_CLI)?.detail,
+      userMessage('message.environmentCheck.timedOut', userMessage('message.environmentCheck.tool.mermaidCli')),
     );
   });
 
@@ -129,7 +128,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
 
   test('複数ツールのうち一部だけ利用可能な場合はそれぞれ独立に判定される', async () => {
     const entries = await checkWithProbe(async (params) => {
-      if (params.toolName === TOOL_PDFTOCAIRO) {
+      if (params.toolName === userMessage('message.environmentCheck.tool.mermaidCli')) {
         const error = new Error('spawn ENOENT');
         Object.assign(error, { code: 'ENOENT' });
         throw error;
@@ -137,7 +136,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     });
 
     const map = entryMap(entries);
-    assert.strictEqual(map.get(FEATURE_PDF_TO_IMAGE)?.status, 'unavailable');
+    assert.strictEqual(map.get(FEATURE_MERMAID_CLI)?.status, 'unavailable');
     assert.strictEqual(map.get(FEATURE_DRAWIO)?.status, 'available');
     assert.strictEqual(map.get(FEATURE_MERMAID)?.status, 'available');
   });
@@ -179,16 +178,19 @@ suite('環境チェック（機能単位の状態判定）', () => {
 
   test('詳細にはローカルの絶対パスを含めない', async () => {
     const entries = await checkWithProbe(async (params) => {
-      if (params.toolName === TOOL_PDFTOCAIRO) {
-        const error = new Error('spawn /Users/me/secret/pdftocairo ENOENT');
+      if (params.toolName === userMessage('message.environmentCheck.tool.mermaidCli')) {
+        const error = new Error('spawn /Users/me/secret/mmdc ENOENT');
         Object.assign(error, { code: 'ENOENT' });
         throw error;
       }
     });
 
-    const detail = entryMap(entries).get(FEATURE_PDF_TO_IMAGE)?.detail ?? '';
+    const detail = entryMap(entries).get(FEATURE_MERMAID_CLI)?.detail ?? '';
     assert.ok(!detail.includes('/Users/me/secret'));
-    assert.strictEqual(detail, userMessage('message.environmentCheck.notFound', TOOL_PDFTOCAIRO));
+    assert.strictEqual(
+      detail,
+      userMessage('message.environmentCheck.notFound', userMessage('message.environmentCheck.tool.mermaidCli')),
+    );
   });
 
   test('statusとdetailは常に揃っている', async () => {

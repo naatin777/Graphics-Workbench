@@ -1,7 +1,7 @@
 {
-  "workspaceTrust.description": "Graphics WorkbenchはDraw.io、Ghostscript、pdftocairoなどの外部プログラムを実行するため、信頼されていないワークスペースでは利用できません。",
+  "workspaceTrust.description": "Graphics WorkbenchはDraw.io、rsvg-convert、Mermaid CLIなどの外部プログラムを実行するため、信頼されていないワークスペースでは利用できません。",
   "config.execPath.drawio": "drawioの実行ファイルのパス。未指定の場合はOSごとの既定コマンドを使用します。(Windowsの場合はdrawio.exe, macOSの場合はdrawio, その他の場合はdrawio)",
-  "config.execPath.pdftocairo": "pdftocairoの実行ファイルのパス。未指定の場合はpdftocairo",
+  "config.execPath.mermaid": "@mermaid-js/mermaid-cliのmmdc実行ファイルのパス。未指定の場合はmmdcを使用します。",
   "config.execPath.rsvgConvert": "rsvg-convertの実行ファイルのパス。未指定の場合はrsvg-convert",
   "config.execPath.chrome": "Mermaid描画およびChrome方式のSVGからPDF変換に使うChrome実行ファイルのパス。未指定の場合はOS標準のコマンドまたは場所を使用します。",
   "config.raster.maxInputPixels": "ラスター画像の入力に許可する最大ピクセル数です。大きな画像は多くのメモリを消費する可能性があるため、必要な場合のみ値を増やしてください。",
@@ -10,7 +10,6 @@
   "config.preview.maxDevicePixelRatio": "PDFプレビューで使用するデバイスピクセル比の上限です。",
   "config.performance.maxConcurrentHeavyProcesses": "同時に実行できる重い外部レンダリングプロセス数の上限です。値を増やすとCPUとメモリ使用量が増える可能性があります。",
   "config.externalTools.drawio.timeoutSeconds": "Draw.ioの最大実行時間（秒）。0でタイムアウトなし。",
-  "config.externalTools.pdftocairo.timeoutSeconds": "pdftocairoの最大実行時間（秒）。0でタイムアウトなし。",
   "config.externalTools.rsvgConvert.timeoutSeconds": "rsvg-convertの最大実行時間（秒）。0でタイムアウトなし。",
   "config.externalTools.mermaid.timeoutSeconds": "Mermaidの最大実行時間（秒）。0でタイムアウトなし。",
   "config.convertToPdf.svg.engine": "SVGをPDFに変換するときに使用する変換方式（Chromeまたはrsvg-convert）。",
@@ -348,12 +347,12 @@
   "message.environmentCheck.pickSetting": "項目を選択すると関連設定を開きます",
   "message.environmentCheck.feature.imageConversion": "組み込みの画像変換",
   "message.environmentCheck.feature.pdfMergeSplitReorder": "PDF結合 / 分割 / 並び替え",
-  "message.environmentCheck.feature.pdfToImage": "PDFから画像へ変換",
   "message.environmentCheck.feature.drawioConversion": "Draw.io変換",
   "message.environmentCheck.feature.mermaidConversion": "Mermaid変換",
+  "message.environmentCheck.feature.mermaidCli": "Mermaid CLI",
   "message.environmentCheck.feature.svgToPdf": "SVGからPDFへ変換",
-  "message.environmentCheck.tool.pdftocairo": "pdftocairo",
   "message.environmentCheck.tool.drawio": "Draw.io",
   "message.environmentCheck.tool.rsvgConvert": "rsvg-convert",
-  "message.environmentCheck.tool.browser": "ブラウザ"
+  "message.environmentCheck.tool.browser": "ブラウザ",
+  "message.environmentCheck.tool.mermaidCli": "mmdc"
 }

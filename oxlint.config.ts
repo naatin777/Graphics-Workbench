@@ -796,5 +796,13 @@ export default defineConfig({
         'eslint/no-unreachable-loop': 'off',
       },
     },
+    {
+      // This loop scans Draw.io PDF export pages to find the first page with
+      // content; it exits early via break when found.
+      files: ['scripts/generate-test-output.ts'],
+      rules: {
+        'eslint/no-unreachable-loop': 'off',
+      },
+    },
   ],
 });

@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -11,6 +11,7 @@ import {
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { isAbortError } from '../../application/error_normalization.js';
+import { countPdfPages, hasPdfPageContent, renderPdfPageToPng } from '../pdf/mupdf.js';
 
 import {
   isRasterInputPixelLimitError,
@@ -26,7 +27,6 @@ import type { DrawioBackend, MermaidBackend, PdftocairoBackend } from './tools/i
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
-import { runPdftocairoWithAsciiScratch } from '../external_tools/run_pdftocairo_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import sharp from 'sharp';
@@ -123,6 +123,7 @@ interface RasterRenderRequest {
   stageDirectory?: string;
   page?: number;
   animation?: RasterAnimationMetadata;
+  cropContent?: boolean;
 }
 
 export async function executeRasterConversionBatch(
@@ -187,13 +188,8 @@ async function writeSourceAsRaster(
   const { sourcePath } = job;
   const extension = path.extname(sourcePath).toLowerCase();
 
-  if (isEditableDrawioImagePath(sourcePath)) {
+  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     await writeDrawioAsRaster(job, paths, context);
-    return;
-  }
-
-  if (isNativeDrawioPath(sourcePath)) {
-    await writeNativeDrawioAsRaster(job, paths, context);
     return;
   }
 
@@ -239,35 +235,35 @@ async function writeDrawioAsRaster(
     ['-x', '-f', 'pdf', '-o', pdfPath, job.sourcePath],
     context.runtime.signal,
   );
+
+  // Draw.io PDF exports leave white margins even with --crop, so crop each
+  // page to its drawn content. Without an explicit page, use the first page
+  // that actually contains content. The page scan needs a real PDF, so it is
+  // skipped when a test injects a fake drawio runner.
+  const pdfBytes = await readFile(pdfPath);
+  let page = job.page ?? 1;
+  if (job.page === undefined && context.drawioTools.runDrawio === undefined) {
+    const pageCount = await countPdfPages(pdfBytes);
+    for (let candidate = 1; candidate <= pageCount; candidate += 1) {
+      context.runtime.signal?.throwIfAborted();
+      if (await hasPdfPageContent(pdfBytes, candidate)) {
+        page = candidate;
+        break;
+      }
+    }
+  }
+
   await writePdfPageAsRaster(
     {
       sourcePath: pdfPath,
       outputPath: paths.stagedOutputPath,
       workspacePath: job.workspacePath,
       stageDirectory: paths.stageDirectory,
-      page: job.page ?? 1,
+      page,
+      cropContent: true,
     },
     context,
   );
-}
-
-async function writeNativeDrawioAsRaster(
-  job: RasterJob,
-  paths: RasterStagePaths,
-  context: RasterStageContext,
-): Promise<void> {
-  context.runtime.signal?.throwIfAborted();
-  const pngPath = path.join(paths.stageDirectory, 'drawio.png');
-  await assertWritablePathInWorkspace(pngPath, job.workspacePath);
-  await mkdir(path.dirname(pngPath), { recursive: true });
-  context.runtime.signal?.throwIfAborted();
-
-  await (context.drawioTools.runDrawio ?? executeDrawio)(
-    context.drawioTools.drawioPath,
-    ['-x', '-f', 'png', '-o', pngPath, job.sourcePath],
-    context.runtime.signal,
-  );
-  await writeImageAsRaster({ ...job, sourcePath: pngPath, outputPath: paths.stagedOutputPath }, context);
 }
 
 async function writePdfPageAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
@@ -277,43 +273,18 @@ async function writePdfPageAsRaster(request: RasterRenderRequest, context: Raste
   await mkdir(path.dirname(pngPath), { recursive: true });
   context.runtime.signal?.throwIfAborted();
 
-  await runPdftocairoWithAsciiScratch({
-    sourcePath: request.sourcePath,
-    outputPath: pngPath,
-    scratchOutputFileName: 'output.png',
-    scratch: context.pdftocairoTools,
-    signal: context.runtime.signal,
-    outputChannel: context.runtime.outputChannel,
-    run: async (toolSourcePath, toolOutputPath) => {
-      if (context.pdftocairoTools.runPdfToPng) {
-        await context.pdftocairoTools.runPdfToPng(
-          toolSourcePath,
-          toolOutputPath,
-          request.page ?? 1,
-          context.runtime.signal,
-        );
-        return;
-      }
-
-      const outputPrefix = toolOutputPath.slice(0, -path.extname(toolOutputPath).length);
-      await runExternalTool({
-        toolName: 'pdftocairo',
-        executable: context.pdftocairoTools.pdftocairoPath,
-        args: [
-          '-png',
-          '-singlefile',
-          '-f',
-          String(request.page ?? 1),
-          '-l',
-          String(request.page ?? 1),
-          toolSourcePath,
-          outputPrefix,
-        ],
-        ...(context.runtime.signal === undefined ? {} : { signal: context.runtime.signal }),
-        ...(context.runtime.outputChannel === undefined ? {} : { outputChannel: context.runtime.outputChannel }),
-      });
-    },
-  });
+  if (context.pdftocairoTools.runPdfToPng) {
+    await context.pdftocairoTools.runPdfToPng(request.sourcePath, pngPath, request.page ?? 1, context.runtime.signal);
+  } else {
+    const pdfBytes = await readFile(request.sourcePath);
+    context.runtime.signal?.throwIfAborted();
+    const png = await renderPdfPageToPng(pdfBytes, request.page ?? 1, {
+      cropContent: request.cropContent,
+    });
+    context.runtime.signal?.throwIfAborted();
+    await writeFile(pngPath, png);
+  }
+  context.runtime.signal?.throwIfAborted();
 
   await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
 }
@@ -331,6 +302,7 @@ async function writeMermaidAsRaster(request: RasterRenderRequest, context: Raste
         sourcePath: request.sourcePath,
         outputPath: asPngOutputPath(pngPath),
         outputFormat: 'png',
+        mermaidPath: context.mermaidTools.mermaidPath,
         chromePath: context.mermaidTools.chromePath,
         theme: context.mermaidTools.theme,
         backgroundColor: context.mermaidTools.backgroundColor,

@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { Parser } from 'xml2js';
+import { XMLParser } from 'fast-xml-parser';
 
 import {
   isDrawioPath,
@@ -216,13 +216,15 @@ async function prepareDrawioInput(options: {
 
 async function readDrawioPageNames(sourcePath: string): Promise<string[]> {
   const source = await readFile(sourcePath, 'utf8');
-  const parsed: unknown = await new Parser().parseStringPromise(source);
+  const parsed: unknown = new XMLParser({ ignoreAttributes: false, isArray: (name) => name === 'diagram' }).parse(
+    source,
+  );
   const mxfile = isRecord(parsed) && isRecord(parsed.mxfile) ? parsed.mxfile : undefined;
   const diagrams = mxfile && Array.isArray(mxfile.diagram) ? mxfile.diagram : [];
 
   return diagrams.map((diagram, index) => {
-    const attributes = isRecord(diagram) && isRecord(diagram.$) ? diagram.$ : undefined;
-    return typeof attributes?.name === 'string' ? attributes.name : String(index + 1);
+    const name = isRecord(diagram) ? diagram['@_name'] : undefined;
+    return typeof name === 'string' ? name : String(index + 1);
   });
 }
 

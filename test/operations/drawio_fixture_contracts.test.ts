@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { Parser } from 'xml2js';
+import { XMLParser } from 'fast-xml-parser';
 import sharp from 'sharp';
 
 import { isDrawioPath, sourceFormatForPath } from '../../src/application/policy/source_format.js';
 import { listInputFixturePaths, testInputDirectory } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
-const xmlParser = new Parser();
+const xmlParser = new XMLParser({ ignoreAttributes: false });
 
 suite('Draw.io fixtureの契約', () => {
   test('source fixtureはネイティブXMLと埋め込みメタデータを保持する', async () => {
@@ -37,7 +37,7 @@ suite('Draw.io fixtureの契約', () => {
 
 async function assertNativeDrawioFixture(fixturePath: string): Promise<void> {
   const source = await readFile(fixturePath, 'utf8');
-  await xmlParser.parseStringPromise(source);
+  xmlParser.parse(source);
 
   assert.match(source, /^\s*<mxfile\b/u);
   assert.strictEqual([...source.matchAll(/<diagram\b/gu)].length, 3);
@@ -60,7 +60,7 @@ async function assertEmbeddedPngFixture(fixturePath: string): Promise<void> {
 
 async function assertEmbeddedSvgFixture(fixturePath: string): Promise<void> {
   const source = await readFile(fixturePath, 'utf8');
-  await xmlParser.parseStringPromise(source);
+  xmlParser.parse(source);
 
   const metadata = await sharp(fixturePath).metadata();
   assert.strictEqual(metadata.format, 'svg');
@@ -73,7 +73,7 @@ async function assertEmbeddedSvgFixture(fixturePath: string): Promise<void> {
 }
 
 async function assertEmbeddedXml(source: string): Promise<void> {
-  await xmlParser.parseStringPromise(source);
+  xmlParser.parse(source);
   assert.match(source, /^<mxfile>\s*<diagram\b/u);
   assert.match(source, /<\/diagram>\s*<\/mxfile>\s*$/u);
 }

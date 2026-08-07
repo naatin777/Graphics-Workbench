@@ -1,6 +1,5 @@
 import type * as vscode from 'vscode';
 
-import { readPdftocairoExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executeTiffConversion } from '../../operations/conversion/convert_to_tiff.js';
 import { planTiffConversionJobs } from './plan_tiff_conversion_jobs.js';
@@ -22,7 +21,7 @@ export async function convertToTiffCommand(
     prepare: (configuration) => ({
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
-      pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
+      pdftocairoTools: {},
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, runtime }) =>
       planTiffConversionJobs(sourceUri, configuration, maxInputPixels, runtime),

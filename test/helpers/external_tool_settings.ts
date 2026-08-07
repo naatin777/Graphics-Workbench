@@ -1,14 +1,13 @@
 import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import {
   readDrawioExecutablePath,
-  readPdftocairoExecutablePath,
   readRsvgConvertExecutablePath,
 } from '../../src/config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../src/config/rendering/mermaid_cli_options.js';
-import type { MermaidBackend } from '../../src/operations/conversion/tools/index.js';
+import type { MermaidBackend, PdftocairoBackend } from '../../src/operations/conversion/tools/index.js';
 
 export function readConfiguredConversionTools(): {
-  pdftocairoTools: { pdftocairoPath: string };
+  pdftocairoTools: PdftocairoBackend;
   rsvgConvertPath: string;
   mermaidTools: MermaidBackend;
   drawioTools: { drawioPath: string };
@@ -16,7 +15,7 @@ export function readConfiguredConversionTools(): {
   const configuration = getExtensionConfiguration();
 
   return {
-    pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration) },
+    pdftocairoTools: {},
     rsvgConvertPath: readRsvgConvertExecutablePath(configuration),
     mermaidTools: readMermaidCliOptions(configuration),
     drawioTools: { drawioPath: readDrawioExecutablePath(configuration) },

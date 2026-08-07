@@ -1,11 +1,8 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 
 import { runExternalTool } from '../../external_tools/run_external_tool.js';
-
-const requireFromModule = createRequire(import.meta.url);
 
 export type MermaidOutputFormat = 'svg' | 'png' | 'pdf';
 
@@ -13,14 +10,18 @@ export interface MermaidCliRunRequest {
   sourcePath: string;
   outputPath: string;
   outputFormat: MermaidOutputFormat;
+  mermaidPath: string;
   chromePath: string;
   backgroundColor: string;
   theme: string;
 }
 
-/** Runs the bundled mmdc CLI as a normal child process. */
+/** Runs the external mmdc CLI (from @mermaid-js/mermaid-cli) as a child process. */
 export async function runMermaidCliWithSignal(request: MermaidCliRunRequest, signal?: AbortSignal): Promise<void> {
   signal?.throwIfAborted();
+  if (request.mermaidPath === '') {
+    throw new Error('Mermaid CLI is not configured. Set graphics-workbench.execPath.mermaid.');
+  }
   if (request.chromePath === '') {
     throw new Error('Chrome executable is not configured. Set graphics-workbench.execPath.chrome.');
   }
@@ -38,9 +39,8 @@ export async function runMermaidCliWithSignal(request: MermaidCliRunRequest, sig
 
     await runExternalTool({
       toolName: 'mermaid',
-      executable: process.execPath,
+      executable: request.mermaidPath,
       args: createMermaidCliArgs(request, mermaidConfigPath, chromeConfigPath),
-      env: mermaidCliEnvironment(),
       ...(signal === undefined ? {} : { signal }),
     });
   } finally {
@@ -54,7 +54,6 @@ export function createMermaidCliArgs(
   chromeConfigPath: string,
 ): string[] {
   return [
-    mmdcEntrypointPath(),
     '--input',
     request.sourcePath,
     '--output',
@@ -69,13 +68,4 @@ export function createMermaidCliArgs(
     chromeConfigPath,
     '--quiet',
   ];
-}
-
-function mmdcEntrypointPath(): string {
-  return path.join(path.dirname(requireFromModule.resolve('@mermaid-js/mermaid-cli')), 'cli.js');
-}
-
-function mermaidCliEnvironment(): NodeJS.ProcessEnv {
-  const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('VSCODE_')));
-  return { ...environment, ELECTRON_RUN_AS_NODE: '1' };
 }

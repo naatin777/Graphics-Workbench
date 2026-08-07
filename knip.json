@@ -23,12 +23,9 @@
     "@types/node",
     "@types/sinon",
     "@types/vscode",
-    "@types/xml2js",
-    "@mermaid-js/mermaid-cli",
     "@vscode/test-electron",
     "@vscode/vsce",
-    "@vscode/codicons",
-    "puppeteer"
+    "@vscode/codicons"
   ],
   "ignoreFiles": ["webview/apps/crop_pdf/src/pdf/pdfjs.ts", "webview/shared/pdf/render_first_page.ts"]
 }
