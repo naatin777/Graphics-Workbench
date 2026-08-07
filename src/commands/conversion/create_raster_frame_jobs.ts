@@ -2,7 +2,7 @@ import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config
 import { assertAnimationPixelLimit } from '../../config/raster_limits.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import {
-  destroyRasterInput,
+  closeRasterPipeline,
   openRasterInput,
   type RasterAnimationMetadata,
 } from '../../operations/conversion/raster_input.js';
@@ -96,7 +96,7 @@ export async function createRasterFrameJobs(options: {
     ({ width } = metadata);
     pageHeight = metadata.pageHeight ?? metadata.height;
   } finally {
-    await destroyRasterInput(image);
+    await closeRasterPipeline(image);
   }
 
   return createRasterFrameJobsFromMetadata(

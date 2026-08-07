@@ -7,7 +7,7 @@ import {
   readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/conversion/convert_to_drawio.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';

@@ -13,7 +13,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { destroyRasterInput, openRasterInput } from './raster_input.js';
+import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
@@ -320,7 +320,7 @@ async function rasterPage(
       height: metadata.height,
     };
   } finally {
-    await destroyRasterInput(image);
+    await closeRasterPipeline(image);
   }
 }
 

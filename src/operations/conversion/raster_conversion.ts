@@ -14,7 +14,7 @@ import { isAbortError } from '../../application/error_normalization.js';
 
 import {
   isRasterInputPixelLimitError,
-  rasterInputPixelLimitMessage,
+  formatRasterInputPixelLimitMessage,
   type RasterAnimationMetadata,
 } from './raster_input.js';
 // oxlint-disable-next-line unicorn/prefer-export-from -- CommittedConversionOutput is used locally and re-exported.
@@ -407,7 +407,7 @@ async function writeImageAsRaster(request: RasterRenderRequest, context: RasterS
     );
   } catch (error) {
     if (isRasterInputPixelLimitError(error)) {
-      throw new Error(rasterInputPixelLimitMessage(context.maxInputPixels), { cause: error });
+      throw new Error(formatRasterInputPixelLimitMessage(context.maxInputPixels), { cause: error });
     }
 
     throw error instanceof Error ? error : new Error(String(error));

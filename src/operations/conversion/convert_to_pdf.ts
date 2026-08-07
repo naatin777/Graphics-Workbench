@@ -15,11 +15,11 @@ import {
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import {
-  destroyRasterInput,
+  closeRasterPipeline,
   isRasterInputPixelLimitError,
   openRasterInput,
   readRasterAnimationMetadata,
-  rasterInputPixelLimitMessage,
+  formatRasterInputPixelLimitMessage,
   type RasterAnimationMetadata,
 } from './raster_input.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
@@ -441,12 +441,12 @@ async function writeRasterImageAsPdf({
   } catch (error) {
     signal?.throwIfAborted();
     if (isRasterInputPixelLimitError(error)) {
-      throw new Error(rasterInputPixelLimitMessage(maxInputPixels), { cause: error });
+      throw new Error(formatRasterInputPixelLimitMessage(maxInputPixels), { cause: error });
     }
 
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
-    await destroyRasterInput(metadataImage);
+    await closeRasterPipeline(metadataImage);
     signal?.throwIfAborted();
   }
 
@@ -459,12 +459,12 @@ async function writeRasterImageAsPdf({
   } catch (error) {
     signal?.throwIfAborted();
     if (isRasterInputPixelLimitError(error)) {
-      throw new Error(rasterInputPixelLimitMessage(maxInputPixels, { width, height }), { cause: error });
+      throw new Error(formatRasterInputPixelLimitMessage(maxInputPixels, { width, height }), { cause: error });
     }
 
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
-    await destroyRasterInput(encodingImage);
+    await closeRasterPipeline(encodingImage);
     signal?.throwIfAborted();
   }
 

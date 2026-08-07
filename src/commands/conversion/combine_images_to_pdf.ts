@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { logicalSourcePathForOutputTemplate } from '../../application/policy/source_format.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';

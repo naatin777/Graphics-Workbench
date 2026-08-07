@@ -4,7 +4,7 @@ import type { Configuration } from '../../generated/extension_manifest.js';
 import type { CommittedConversionOutput } from '../../operations/lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { getMaxAnimationPixels } from '../../config/raster_limits.js';
-import { getMaxInputPixels } from '../../config/raster_input.js';
+import { getMaxInputPixels } from '../../config/max_input_pixels.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import {
