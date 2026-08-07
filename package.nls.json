@@ -125,6 +125,7 @@
   "pasteOutputPathEmpty": "Enter an output path.",
   "pasteOutputPathOutsideWorkspace": "The output path must be inside the workspace.",
   "message.action.undo": "Undo",
+  "message.action.revealInExplorer": "Reveal in Explorer",
   "message.progress.convertToPdf.title": "Converting {0} selected file(s) to PDF",
   "message.progress.convertToOutput.title": "Converting {0} file(s) to {1}",
   "message.progress.cropPdf.title": "Cropping {0} PDF file(s)",

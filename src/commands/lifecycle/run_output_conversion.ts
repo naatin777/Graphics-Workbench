@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import path from 'node:path';
 
 import type { CommittedConversionOutput } from '../../operations/lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
@@ -104,10 +105,13 @@ export async function runConversionLifecycle(options: {
   }
 
   const undoAction = userMessage('message.action.undo');
+  const revealAction = userMessage('message.action.revealInExplorer');
   try {
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
+    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction, revealAction);
     if (selectedAction === undoAction) {
       await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
+    } else if (selectedAction === revealAction) {
+      await revealOutputsInExplorer(outputs);
     }
   } catch (error) {
     // The conversion already succeeded; a UI failure here must not be reported as a conversion failure.
@@ -115,4 +119,18 @@ export async function runConversionLifecycle(options: {
       `[${options.operationName}] success notification failed: ${toErrorMessage(error)}`,
     );
   }
+}
+
+async function revealOutputsInExplorer(outputs: CommittedConversionOutput[]): Promise<void> {
+  const [first] = outputs;
+  if (first === undefined) {
+    return;
+  }
+
+  if (outputs.length === 1) {
+    await vscode.commands.executeCommand('revealInExplorer', vscode.Uri.file(first.outputPath));
+    return;
+  }
+
+  await vscode.commands.executeCommand('revealInExplorer', vscode.Uri.file(path.dirname(first.outputPath)));
 }
