@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { loadMupdf, openPdfDocument, savePdfDocument, type MupdfPdfDocumentInstance } from './mupdf.js';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
@@ -38,7 +38,7 @@ export async function mergePdf(options: MergePdfOptions): Promise<CommittedConve
 }
 
 async function prepareMerge(options: MergePdfOptions): Promise<{
-  mergedDocument: PDFDocument;
+  mergedDocument: MupdfPdfDocumentInstance;
   stagingRootPath: string;
   stagedOutputPath: string;
 }> {
@@ -59,7 +59,8 @@ async function prepareMerge(options: MergePdfOptions): Promise<{
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
-  const mergedDocument = await PDFDocument.create();
+  const mupdf = await loadMupdf();
+  const mergedDocument = new mupdf.PDFDocument();
   await appendSourceDocuments(mergedDocument, sourcePaths, runtime?.signal);
   runtime?.signal?.throwIfAborted();
   return { mergedDocument, stagingRootPath, stagedOutputPath };
@@ -67,7 +68,7 @@ async function prepareMerge(options: MergePdfOptions): Promise<{
 
 async function writeMergedPdf(
   options: MergePdfOptions,
-  prepared: { mergedDocument: PDFDocument; stagingRootPath: string; stagedOutputPath: string },
+  prepared: { mergedDocument: MupdfPdfDocumentInstance; stagingRootPath: string; stagedOutputPath: string },
 ): Promise<CommittedConversionOutput[]> {
   const { outputPath, workspacePath, runtime } = options;
   const { mergedDocument, stagingRootPath, stagedOutputPath } = prepared;
@@ -76,7 +77,7 @@ async function writeMergedPdf(
     await assertWritablePathInWorkspace(stagedOutputPath, workspacePath);
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
     runtime?.signal?.throwIfAborted();
-    await writeFile(stagedOutputPath, await mergedDocument.save());
+    await writeFile(stagedOutputPath, savePdfDocument(mergedDocument));
     runtime?.signal?.throwIfAborted();
     return await commitStagedOutputs(
       [{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }],
@@ -89,19 +90,22 @@ async function writeMergedPdf(
 }
 
 async function appendSourceDocuments(
-  mergedDocument: PDFDocument,
+  mergedDocument: MupdfPdfDocumentInstance,
   sourcePaths: string[],
   signal: AbortSignal | undefined,
 ): Promise<void> {
   for (const sourcePath of sourcePaths) {
     signal?.throwIfAborted();
-    const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
-    signal?.throwIfAborted();
-    const pages = await mergedDocument.copyPages(sourceDocument, sourceDocument.getPageIndices());
-
-    for (const page of pages) {
-      signal?.throwIfAborted();
-      mergedDocument.addPage(page);
+    const sourceBytes = await readFile(sourcePath);
+    const sourceDocument = await openPdfDocument(sourceBytes);
+    try {
+      const pageCount = sourceDocument.countPages();
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+        signal?.throwIfAborted();
+        mergedDocument.graftPage(mergedDocument.countPages(), sourceDocument, pageIndex);
+      }
+    } finally {
+      sourceDocument.destroy();
     }
   }
 }

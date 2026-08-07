@@ -2,7 +2,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Parser } from 'xml2js';
-import { PDFDocument } from 'pdf-lib';
 
 import {
   isDrawioPath,
@@ -12,6 +11,7 @@ import {
 import { isWindowsReservedPathComponent, resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+import { loadMupdf, openPdfDocument, savePdfDocument } from '../pdf/mupdf.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
@@ -114,76 +114,81 @@ async function stageDrawioJob(options: {
   await assertExistingPathInWorkspace(allPagesPdfPath, job.workspacePath);
   await validateGeneratedPdf(allPagesPdfPath);
 
-  const sourceDocument = await PDFDocument.load(await readFile(allPagesPdfPath));
-  const pageCount = sourceDocument.getPageCount();
-  if (pageCount === 0) {
-    throw new Error(`Draw.io produced an empty PDF: ${job.sourcePath}`);
-  }
+  const sourceDocument = await openPdfDocument(await readFile(allPagesPdfPath));
+  try {
+    const pageCount = sourceDocument.countPages();
+    if (pageCount === 0) {
+      throw new Error(`Draw.io produced an empty PDF: ${job.sourcePath}`);
+    }
 
-  const outputContext = {
-    sourcePath: logicalSourcePath,
-    workspacePath: job.workspacePath,
-    workspaceName: job.workspaceName,
-  };
+    const outputContext = {
+      sourcePath: logicalSourcePath,
+      workspacePath: job.workspacePath,
+      workspaceName: job.workspaceName,
+    };
 
-  if (outputMode === 'single-pdf') {
-    const outputPath = resolveOutputPath(job.outputTemplate, outputContext, { allowedExtensions: ['.pdf'] });
-    await assertWritablePathInWorkspace(outputPath, job.workspacePath);
-    return [
-      {
-        stagedOutputPath: allPagesPdfPath,
+    if (outputMode === 'single-pdf') {
+      const outputPath = resolveOutputPath(job.outputTemplate, outputContext, { allowedExtensions: ['.pdf'] });
+      await assertWritablePathInWorkspace(outputPath, job.workspacePath);
+      return [
+        {
+          stagedOutputPath: allPagesPdfPath,
+          outputPath,
+          workspacePath: job.workspacePath,
+          stagingRootPath: stageRootPath,
+        },
+      ];
+    }
+
+    const pageNames = await readDrawioPageNames(conversionInputPath);
+    if (pageNames.length !== pageCount) {
+      throw new Error(
+        `Draw.io page count does not match XML diagrams: ${job.sourcePath} (${pageCount} PDF pages, ${pageNames.length} diagrams)`,
+      );
+    }
+
+    const pageDirectory = path.join(stageDirectory, 'pages');
+    await assertWritablePathInWorkspace(pageDirectory, job.workspacePath);
+    await mkdir(pageDirectory, { recursive: true });
+
+    const outputs: PreparedConversionOutput[] = [];
+    const usedPageNames = new Set<string>();
+    const mupdf = await loadMupdf();
+    for (let index = 0; index < pageCount; index += 1) {
+      runtime.signal?.throwIfAborted();
+      const pageDocument = new mupdf.PDFDocument();
+      pageDocument.graftPage(0, sourceDocument, index);
+      if (pageDocument.countPages() !== 1) {
+        pageDocument.destroy();
+        throw new Error(`Could not copy Draw.io page ${index + 1}: ${job.sourcePath}`);
+      }
+
+      const stagedOutputPath = path.join(pageDirectory, `${index + 1}.pdf`);
+      await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+      await writeFile(stagedOutputPath, savePdfDocument(pageDocument));
+      await validateGeneratedPdf(stagedOutputPath);
+
+      const outputPath = resolveOutputPath(
+        job.outputTemplate,
+        {
+          ...outputContext,
+          page: uniquePageName(safePageName(pageNames[index], index + 1), usedPageNames),
+        },
+        { allowedExtensions: ['.pdf'] },
+      );
+      await assertWritablePathInWorkspace(outputPath, job.workspacePath);
+      outputs.push({
+        stagedOutputPath,
         outputPath,
         workspacePath: job.workspacePath,
         stagingRootPath: stageRootPath,
-      },
-    ];
-  }
-
-  const pageNames = await readDrawioPageNames(conversionInputPath);
-  if (pageNames.length !== pageCount) {
-    throw new Error(
-      `Draw.io page count does not match XML diagrams: ${job.sourcePath} (${pageCount} PDF pages, ${pageNames.length} diagrams)`,
-    );
-  }
-
-  const pageDirectory = path.join(stageDirectory, 'pages');
-  await assertWritablePathInWorkspace(pageDirectory, job.workspacePath);
-  await mkdir(pageDirectory, { recursive: true });
-
-  const outputs: PreparedConversionOutput[] = [];
-  const usedPageNames = new Set<string>();
-  for (let index = 0; index < pageCount; index += 1) {
-    runtime.signal?.throwIfAborted();
-    const pageDocument = await PDFDocument.create();
-    const [page] = await pageDocument.copyPages(sourceDocument, [index]);
-    if (!page) {
-      throw new Error(`Could not copy Draw.io page ${index + 1}: ${job.sourcePath}`);
+      });
     }
 
-    pageDocument.addPage(page);
-    const stagedOutputPath = path.join(pageDirectory, `${index + 1}.pdf`);
-    await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-    await writeFile(stagedOutputPath, await pageDocument.save());
-    await validateGeneratedPdf(stagedOutputPath);
-
-    const outputPath = resolveOutputPath(
-      job.outputTemplate,
-      {
-        ...outputContext,
-        page: uniquePageName(safePageName(pageNames[index], index + 1), usedPageNames),
-      },
-      { allowedExtensions: ['.pdf'] },
-    );
-    await assertWritablePathInWorkspace(outputPath, job.workspacePath);
-    outputs.push({
-      stagedOutputPath,
-      outputPath,
-      workspacePath: job.workspacePath,
-      stagingRootPath: stageRootPath,
-    });
+    return outputs;
+  } finally {
+    sourceDocument.destroy();
   }
-
-  return outputs;
 }
 
 async function prepareDrawioInput(options: {

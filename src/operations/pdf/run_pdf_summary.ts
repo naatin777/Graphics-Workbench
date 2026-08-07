@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-import { PDFDocument } from 'pdf-lib';
+import { countPdfPages } from './mupdf.js';
 
 export interface PdfSummary {
   pageCount: number;
@@ -15,9 +15,7 @@ export async function inspectPdfSummary(filePath: string, signal: AbortSignal): 
   signal.throwIfAborted();
   const bytes = await readFile(filePath);
   signal.throwIfAborted();
-  const pdf = await PDFDocument.load(bytes);
-  signal.throwIfAborted();
-  const pageCount = pdf.getPageCount();
+  const pageCount = await countPdfPages(bytes);
   signal.throwIfAborted();
 
   return { pageCount };

@@ -2,10 +2,7 @@ import type * as vscode from 'vscode';
 
 import { getDefaultConfiguration, type Configuration } from '../../generated/extension_manifest.js';
 
-import {
-  readGhostscriptExecutablePath,
-  readPdftocairoExecutablePath,
-} from '../../config/external_tools/external_tool_paths.js';
+import { readPdftocairoExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { executeWebpConversion, type WebpOutputOptions } from '../../operations/conversion/convert_to_webp.js';
 import { planWebpConversionJobs } from './plan_webp_conversion_jobs.js';
@@ -36,10 +33,6 @@ export async function convertToWebpCommand(
       drawioTools: buildDrawioCommandOptions(configuration),
       webp: readWebpOutputOptions(configuration),
       pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
-      ghostscriptTools: {
-        ghostscriptPath: readGhostscriptExecutablePath(configuration),
-        platform: process.platform,
-      },
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, maxAnimationPixels, prepared, runtime }) =>
       planWebpConversionJobs(sourceUri, {
@@ -58,7 +51,6 @@ export async function convertToWebpCommand(
         drawioTools: prepared.drawioTools,
         webp: prepared.webp,
         pdftocairoTools: prepared.pdftocairoTools,
-        ghostscriptTools: prepared.ghostscriptTools,
         runtime,
       }),
   });

@@ -27,6 +27,25 @@ const fixtureRunnerPath = path.join(
   '../fixtures/crop_process_fixture_runner.js',
 );
 
+// mupdf re-serializes page boxes with limited float precision, so compare
+// against the source within a small tolerance instead of exact equality.
+function assertBoxEquals(
+  actual: { x: number; y: number; width: number; height: number },
+  expected: { x: number; y: number; width: number; height: number },
+  tolerance = 0.001,
+): void {
+  assert.ok(Math.abs(actual.x - expected.x) <= tolerance, `x differs: ${actual.x} vs ${expected.x}`);
+  assert.ok(Math.abs(actual.y - expected.y) <= tolerance, `y differs: ${actual.y} vs ${expected.y}`);
+  assert.ok(
+    Math.abs(actual.width - expected.width) <= tolerance,
+    `width differs: ${actual.width} vs ${expected.width}`,
+  );
+  assert.ok(
+    Math.abs(actual.height - expected.height) <= tolerance,
+    `height differs: ${actual.height} vs ${expected.height}`,
+  );
+}
+
 suite('Crop PDF child process', () => {
   test('IPC protocol envelopeは余分なmessage・requestキーを拒否する', () => {
     assert.equal(isCropPdfProcessMessage({ type: 'started', protocolVersion: 1, requestId: 'request-1' }), true);
@@ -89,8 +108,10 @@ suite('Crop PDF child process', () => {
         const outputDocument = await PDFDocument.load(await readFile(stagedOutputPath));
         assert.strictEqual(outputDocument.getPageCount(), 2);
         for (const [index, page] of outputDocument.getPages().entries()) {
-          assert.deepStrictEqual(page.getMediaBox(), sourceDocument.getPage(index)?.getMediaBox());
-          assert.deepStrictEqual(page.getCropBox(), {
+          const sourceBox = sourceDocument.getPage(index)?.getMediaBox();
+          assert.ok(sourceBox);
+          assertBoxEquals(page.getMediaBox(), sourceBox);
+          assertBoxEquals(page.getCropBox(), {
             x: cropBox.left,
             y: cropBox.bottom,
             width: cropBox.right - cropBox.left,
@@ -130,16 +151,18 @@ suite('Crop PDF child process', () => {
         const outputDocument = await PDFDocument.load(await readFile(stagedOutputPath));
         assert.strictEqual(outputDocument.getPageCount(), sourceDocument.getPageCount());
         for (const [index, page] of outputDocument.getPages().entries()) {
-          assert.deepStrictEqual(page.getMediaBox(), sourceDocument.getPage(index)?.getMediaBox());
+          const sourceBox = sourceDocument.getPage(index);
+          assert.ok(sourceBox);
+          assertBoxEquals(page.getMediaBox(), sourceBox.getMediaBox());
           if (index === 0) {
-            assert.deepStrictEqual(page.getCropBox(), {
+            assertBoxEquals(page.getCropBox(), {
               x: cropBox.left,
               y: cropBox.bottom,
               width: cropBox.right - cropBox.left,
               height: cropBox.top - cropBox.bottom,
             });
           } else {
-            assert.deepStrictEqual(page.getCropBox(), sourceDocument.getPage(index)?.getCropBox());
+            assertBoxEquals(page.getCropBox(), sourceBox.getCropBox());
           }
         }
 

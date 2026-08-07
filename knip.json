@@ -27,7 +27,8 @@
     "@mermaid-js/mermaid-cli",
     "@vscode/test-electron",
     "@vscode/vsce",
-    "@vscode/codicons"
+    "@vscode/codicons",
+    "puppeteer"
   ],
   "ignoreFiles": ["webview/apps/crop_pdf/src/pdf/pdfjs.ts", "webview/shared/pdf/render_first_page.ts"]
 }

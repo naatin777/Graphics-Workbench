@@ -164,10 +164,6 @@ suite('PDFに変換コマンド', () => {
     await assertFixtureConvertsToPdf('tiff', 'heatmap.tiff');
   });
 
-  test('EPSを読み取り可能なPDFへ変換する', async () => {
-    await assertFixtureConvertsToPdf('eps', 'color-swatches.eps');
-  });
-
   test('outputPath.convertPngToPdfが設定されている場合は指定した出力先を使う', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 

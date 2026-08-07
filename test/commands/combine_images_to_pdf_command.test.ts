@@ -7,6 +7,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { type CombinePreviewItem, previewCombineInputs } from '../../src/commands/conversion/combine_images_to_pdf.js';
+import { extensionIdentity } from '../../src/generated/extension_manifest.js';
 import { userMessage } from '../../src/commands/shared/user_messages.js';
 
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
@@ -36,6 +37,10 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
   });
 
   test('コマンドが登録されている', async () => {
+    const extension = vscode.extensions.getExtension(extensionIdentity.id);
+    if (extension && !extension.isActive) {
+      await extension.activate();
+    }
     const commands = await vscode.commands.getCommands(true);
     assert.ok(commands.includes('graphics-workbench.convertImagesToSinglePdf'));
   });

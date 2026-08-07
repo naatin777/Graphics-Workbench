@@ -36,7 +36,6 @@ export async function decryptPdfCommand(
     const configuration = configureCommandRuntime(dependencies);
     const outputTemplate = configuration.outputPath.decryptPdf();
     const jobs = sourceUris.map((sourceUri) => planDecryptPdfJob(sourceUri, outputTemplate));
-    const qpdfPath = configuration.execPath.qpdf();
     await runConversionLifecycle({
       operationName: 'decrypt-pdf',
       ...(outputChannel !== undefined && { outputChannel }),
@@ -49,7 +48,7 @@ export async function decryptPdfCommand(
         cancelledMessage: userMessage('message.decryptPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.decryptPdf.failed', reason),
       },
-      run: async (runtime) => decryptPdfFiles({ jobs, password, qpdfPath, runtime }),
+      run: async (runtime) => decryptPdfFiles({ jobs, password, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {

@@ -123,11 +123,10 @@ suite('AVIFに変換コマンド', () => {
     await assertMermaidFileConvertsToAvif('source.mermaid');
   });
 
-  test('GIF、TIFF、EPSをAVIFへ変換する', async () => {
+  test('GIF、TIFFをAVIFへ変換する', async () => {
     for (const [format, fixtureFileName] of [
       ['gif', 'swirl-gradient.gif'],
       ['tiff', 'heatmap.tiff'],
-      ['eps', 'color-swatches.eps'],
     ] as const) {
       await assertFixtureConvertsToAvif(format, fixtureFileName);
     }

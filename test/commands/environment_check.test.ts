@@ -24,17 +24,13 @@ import { fakeConfiguration } from '../helpers/configuration.js';
 
 const FEATURE_IMAGE_CONVERSION = userMessage('message.environmentCheck.feature.imageConversion');
 const FEATURE_PDF_MERGE = userMessage('message.environmentCheck.feature.pdfMergeSplitReorder');
-const FEATURE_PDF_CROP = userMessage('message.environmentCheck.feature.pdfCrop');
 const FEATURE_PDF_TO_IMAGE = userMessage('message.environmentCheck.feature.pdfToImage');
 const FEATURE_DRAWIO = userMessage('message.environmentCheck.feature.drawioConversion');
 const FEATURE_MERMAID = userMessage('message.environmentCheck.feature.mermaidConversion');
-const FEATURE_ENCRYPT = userMessage('message.environmentCheck.feature.pdfEncryptDecrypt');
 const FEATURE_SVG_TO_PDF = userMessage('message.environmentCheck.feature.svgToPdf');
 
-const TOOL_GHOSTSCRIPT = userMessage('message.environmentCheck.tool.ghostscript');
 const TOOL_PDFTOCAIRO = userMessage('message.environmentCheck.tool.pdftocairo');
 const TOOL_DRAWIO = userMessage('message.environmentCheck.tool.drawio');
-const TOOL_QPDF = userMessage('message.environmentCheck.tool.qpdf');
 const TOOL_RSVG = userMessage('message.environmentCheck.tool.rsvgConvert');
 const TOOL_BROWSER = userMessage('message.environmentCheck.tool.browser');
 
@@ -65,40 +61,40 @@ suite('環境チェック（機能単位の状態判定）', () => {
   test('全ツールが利用可能な場合は全てavailableになる', async () => {
     const entries = await checkWithProbe(async () => {});
 
-    assert.ok(entries.length >= 7, `expected at least 7 entries, got ${entries.length}`);
+    assert.ok(entries.length >= 5, `expected at least 5 entries, got ${entries.length}`);
     assert.ok(entries.every((entry) => entry.status === 'available'));
   });
 
   test('未導入（ENOENT）のツールはunavailableになる', async () => {
     const entries = await checkWithProbe(async (params) => {
-      if (params.toolName === TOOL_GHOSTSCRIPT) {
-        const error = new Error('spawn gs ENOENT');
+      if (params.toolName === TOOL_PDFTOCAIRO) {
+        const error = new Error('spawn pdftocairo ENOENT');
         Object.assign(error, { code: 'ENOENT' });
         throw error;
       }
     });
 
     const map = entryMap(entries);
-    assert.strictEqual(map.get(FEATURE_PDF_CROP)?.status, 'unavailable');
+    assert.strictEqual(map.get(FEATURE_PDF_TO_IMAGE)?.status, 'unavailable');
     assert.strictEqual(
-      map.get(FEATURE_PDF_CROP)?.detail,
-      userMessage('message.environmentCheck.notFound', TOOL_GHOSTSCRIPT),
+      map.get(FEATURE_PDF_TO_IMAGE)?.detail,
+      userMessage('message.environmentCheck.notFound', TOOL_PDFTOCAIRO),
     );
     assert.strictEqual(map.get(FEATURE_PDF_MERGE)?.status, 'available');
   });
 
   test('パス設定が無効（実行ファイル不在）のツールはunavailableになる', async () => {
     const entries = await checkWithProbe(async (params) => {
-      if (params.toolName === TOOL_QPDF) {
-        const error = new Error('spawn qpdf ENOENT');
+      if (params.toolName === TOOL_DRAWIO) {
+        const error = new Error('spawn drawio ENOENT');
         Object.assign(error, { code: 'ENOENT' });
         throw error;
       }
     });
 
     const map = entryMap(entries);
-    assert.strictEqual(map.get(FEATURE_ENCRYPT)?.status, 'unavailable');
-    assert.strictEqual(map.get(FEATURE_ENCRYPT)?.detail, userMessage('message.environmentCheck.notFound', TOOL_QPDF));
+    assert.strictEqual(map.get(FEATURE_DRAWIO)?.status, 'unavailable');
+    assert.strictEqual(map.get(FEATURE_DRAWIO)?.detail, userMessage('message.environmentCheck.notFound', TOOL_DRAWIO));
   });
 
   test('バージョン確認がタイムアウトしたツールはunavailableになる', async () => {
@@ -133,7 +129,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
 
   test('複数ツールのうち一部だけ利用可能な場合はそれぞれ独立に判定される', async () => {
     const entries = await checkWithProbe(async (params) => {
-      if (params.toolName === TOOL_GHOSTSCRIPT || params.toolName === TOOL_QPDF) {
+      if (params.toolName === TOOL_PDFTOCAIRO) {
         const error = new Error('spawn ENOENT');
         Object.assign(error, { code: 'ENOENT' });
         throw error;
@@ -141,9 +137,8 @@ suite('環境チェック（機能単位の状態判定）', () => {
     });
 
     const map = entryMap(entries);
-    assert.strictEqual(map.get(FEATURE_PDF_CROP)?.status, 'unavailable');
-    assert.strictEqual(map.get(FEATURE_ENCRYPT)?.status, 'unavailable');
-    assert.strictEqual(map.get(FEATURE_PDF_TO_IMAGE)?.status, 'available');
+    assert.strictEqual(map.get(FEATURE_PDF_TO_IMAGE)?.status, 'unavailable');
+    assert.strictEqual(map.get(FEATURE_DRAWIO)?.status, 'available');
     assert.strictEqual(map.get(FEATURE_MERMAID)?.status, 'available');
   });
 
@@ -184,16 +179,16 @@ suite('環境チェック（機能単位の状態判定）', () => {
 
   test('詳細にはローカルの絶対パスを含めない', async () => {
     const entries = await checkWithProbe(async (params) => {
-      if (params.toolName === TOOL_GHOSTSCRIPT) {
-        const error = new Error('spawn /Users/me/secret/gs ENOENT');
+      if (params.toolName === TOOL_PDFTOCAIRO) {
+        const error = new Error('spawn /Users/me/secret/pdftocairo ENOENT');
         Object.assign(error, { code: 'ENOENT' });
         throw error;
       }
     });
 
-    const detail = entryMap(entries).get(FEATURE_PDF_CROP)?.detail ?? '';
+    const detail = entryMap(entries).get(FEATURE_PDF_TO_IMAGE)?.detail ?? '';
     assert.ok(!detail.includes('/Users/me/secret'));
-    assert.strictEqual(detail, userMessage('message.environmentCheck.notFound', TOOL_GHOSTSCRIPT));
+    assert.strictEqual(detail, userMessage('message.environmentCheck.notFound', TOOL_PDFTOCAIRO));
   });
 
   test('statusとdetailは常に揃っている', async () => {

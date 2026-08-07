@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-import { PDFDocument } from 'pdf-lib';
+import { countPdfPages } from '../../operations/pdf/mupdf.js';
 
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -18,8 +18,7 @@ export async function planPdfPageConversionJobs<Job>(options: {
 }): Promise<Job[]> {
   options.runtime?.signal?.throwIfAborted();
   options.runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
-  const document = await PDFDocument.load(await readFile(options.sourcePath));
-  const pageCount = document.getPageCount();
+  const pageCount = await countPdfPages(await readFile(options.sourcePath));
 
   const jobs: Job[] = [];
   for (const { page, outputPath } of planPdfPageJobs(

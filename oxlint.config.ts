@@ -787,5 +787,14 @@ export default defineConfig({
         'unicorn/consistent-function-scoping': 'off',
       },
     },
+    {
+      // These loops await an imported mupdf helper per source and then append
+      // pages; oxlint's no-unreachable-loop misreads them as single-iteration
+      // loops. Both iterate over a >=2-element array by construction.
+      files: ['src/operations/pdf/merge_pdf.ts', 'src/operations/conversion/combine_images_to_pdf.ts'],
+      rules: {
+        'eslint/no-unreachable-loop': 'off',
+      },
+    },
   ],
 });

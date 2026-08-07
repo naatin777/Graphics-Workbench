@@ -115,11 +115,10 @@ suite('JPEGに変換コマンド', () => {
     await assertMermaidFileConvertsToJpeg('source.mermaid');
   });
 
-  test('GIF、TIFF、EPSをJPEGへ変換する', async () => {
+  test('GIF、TIFFをJPEGへ変換する', async () => {
     for (const [format, fixtureFileName] of [
       ['gif', 'swirl-gradient.gif'],
       ['tiff', 'heatmap.tiff'],
-      ['eps', 'color-swatches.eps'],
     ] as const) {
       await assertFixtureConvertsToJpeg(format, fixtureFileName);
     }

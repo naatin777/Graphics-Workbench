@@ -6,6 +6,7 @@ pre-commit:
   commands:
     format:
       glob: "*.{ts,tsx,js,jsx,json,jsonc,md,html,css}"
+      exclude: "package-lock.json"
       run: npx --no -- oxfmt --config ./oxfmt.config.ts --write {staged_files}
       stage_fixed: true
 

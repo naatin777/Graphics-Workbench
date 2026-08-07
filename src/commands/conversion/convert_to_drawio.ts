@@ -4,7 +4,6 @@ import type { Configuration } from '../../generated/extension_manifest.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   readDrawioExecutablePath,
-  readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
 } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxInputPixels } from '../../config/max_input_pixels.js';
@@ -104,7 +103,6 @@ async function convertToDrawioWithDefaults(
           jobs,
           tools: {
             drawioPath,
-            ghostscriptPath: readGhostscriptExecutablePath(configuration),
             pdftocairoPath: readPdftocairoExecutablePath(configuration),
             mermaidTools: readMermaidCliOptions(configuration),
           },

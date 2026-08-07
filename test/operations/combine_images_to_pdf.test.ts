@@ -5,15 +5,11 @@ import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
-import { readGhostscriptExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { combineImagesToPdf } from '../../src/operations/conversion/combine_images_to_pdf.js';
 import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';
-import { operationEpsInputPath, operationPngInputPath } from '../helpers/fixture_paths.js';
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 const VALID_PNG = operationPngInputPath;
-const EPS_FIXTURE = operationEpsInputPath;
-const GHOSTSCRIPT_PATH = readGhostscriptExecutablePath(getExtensionConfiguration());
 
 const supportedInputFixtures = [
   { format: 'png', width: 320, height: 200 },
@@ -23,7 +19,6 @@ const supportedInputFixtures = [
   { format: 'gif', width: 19, height: 13 },
   { format: 'tiff', width: 23, height: 15 },
   { format: 'svg', width: 29, height: 17 },
-  { format: 'eps', width: 216, height: 216 },
 ] as const;
 
 type SupportedInputFormat = (typeof supportedInputFixtures)[number]['format'];
@@ -230,7 +225,6 @@ suite('画像→1PDF結合', () => {
           outputPath,
           workspacePath,
           tools: {
-            ghostscriptPath: GHOSTSCRIPT_PATH,
             svgToPdfTools: createStubSvgToPdfOptions(),
           },
           platform: process.platform,
@@ -255,7 +249,6 @@ suite('画像→1PDF結合', () => {
         outputPath,
         workspacePath,
         tools: {
-          ghostscriptPath: GHOSTSCRIPT_PATH,
           svgToPdfTools: createStubSvgToPdfOptions(),
         },
         platform: process.platform,
@@ -367,8 +360,6 @@ async function writeSupportedInputFixtures(workspacePath: string): Promise<Input
         sourcePath,
         `<svg xmlns="http://www.w3.org/2000/svg" width="${fixture.width}" height="${fixture.height}" viewBox="0 0 ${fixture.width} ${fixture.height}"><rect width="${fixture.width}" height="${fixture.height}" /></svg>`,
       );
-    } else {
-      await copyFile(EPS_FIXTURE, sourcePath);
     }
 
     fixtures.push({ ...fixture, sourcePath });

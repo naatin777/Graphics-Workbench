@@ -49,7 +49,6 @@ suite('Draw.ioへの集約変換', () => {
         jobs: [{ inputs: [{ sourcePath: imagePath }, { sourcePath: pdfPath }], outputPath, workspacePath }],
         tools: {
           drawioPath: 'drawio',
-          ghostscriptPath: 'gs',
           runPdfToSvg: async (_source, output, page) => {
             calls.push(page);
             await writeFile(output, '<svg width="100" height="50"/>');
@@ -95,7 +94,7 @@ suite('Draw.ioへの集約変換', () => {
             workspacePath,
           },
         ],
-        tools: { drawioPath: 'drawio', ghostscriptPath: 'gs' },
+        tools: { drawioPath: 'drawio' },
         runId: 'raster-frames',
         runtime: { resolveConflicts: async () => 'overwrite' },
       });
@@ -125,7 +124,6 @@ suite('Draw.ioへの集約変換', () => {
           jobs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath }],
           tools: {
             drawioPath: '/custom/drawio',
-            ghostscriptPath: 'gs',
             runDrawio: async (executable, args) => {
               call = { executable, args };
               const generatedOutputPath = requireValue(args[args.indexOf('--output') + 1]);
@@ -180,7 +178,6 @@ suite('Draw.ioへの集約変換', () => {
           jobs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath }],
           tools: {
             drawioPath: 'drawio',
-            ghostscriptPath: 'gs',
             runDrawio: async () => {
               throw new Error('Draw.io export failed');
             },

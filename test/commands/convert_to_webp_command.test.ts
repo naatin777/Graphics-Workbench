@@ -166,11 +166,8 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('TIFF、EPSをWebPへ変換する', async () => {
-    for (const [format, fixtureFileName] of [
-      ['tiff', 'heatmap.tiff'],
-      ['eps', 'color-swatches.eps'],
-    ] as const) {
+  test('TIFFをWebPへ変換する', async () => {
+    for (const [format, fixtureFileName] of [['tiff', 'heatmap.tiff']] as const) {
       await assertFixtureConvertsToWebp(format, fixtureFileName);
     }
   });

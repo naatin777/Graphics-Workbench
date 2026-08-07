@@ -4,7 +4,7 @@
 // - 出力PDFがパスワードで保護されていること
 //
 // Mocked:
-// - なし。実qpdfと実ファイルを使用する
+// - なし。実mupdfと実ファイルを使用する
 //
 // Not tested:
 // - VS CodeのwithProgress UI
@@ -15,20 +15,16 @@ import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/prom
 import os from 'node:os';
 import path from 'node:path';
 
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
 import { PDFDocument } from 'pdf-lib';
 
 import { encryptPdfFiles } from '../../src/operations/pdf/encrypt_pdf.js';
+import { loadMupdf } from '../../src/operations/pdf/mupdf.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
-import { readConfiguredQpdfPath } from '../helpers/external_tool_settings.js';
 
-const execFileAsync = promisify(execFile);
 const password = 'secret-password';
 
 suite('PDF暗号化', () => {
-  test('qpdfでパスワード付きPDFを生成し、正しいパスワードで復号できる', async () => {
+  test('mupdfでパスワード付きPDFを生成し、正しいパスワードで復号できる', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-encrypt-test-'));
     const sourcePath = path.join(workspacePath, 'multi-page-table.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -38,17 +34,25 @@ suite('PDF暗号化', () => {
       await encryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password,
-        qpdfPath: readConfiguredQpdfPath(),
         runId: 'run',
       });
 
-      const wrongPasswordPath = path.join(workspacePath, 'wrong.pdf');
-      await assert.rejects(decryptWithQpdf(outputPath, wrongPasswordPath, 'wrong-password'));
+      const mupdf = await loadMupdf();
+      const encrypted = mupdf.Document.openDocument(await readFile(outputPath));
+      try {
+        assert.equal(encrypted.needsPassword(), true);
+        assert.equal(encrypted.authenticatePassword(password) === 0, false);
+        assert.match(encrypted.getMetaData('encryption') ?? '', /AES|Standard/);
+      } finally {
+        encrypted.destroy();
+      }
 
-      const decryptedPath = path.join(workspacePath, 'decrypted.pdf');
-      await decryptWithQpdf(outputPath, decryptedPath, password);
-      const decrypted = await PDFDocument.load(await readFile(decryptedPath));
-      assert.ok(decrypted.getPageCount() >= 1);
+      const wrongPasswordDocument = mupdf.Document.openDocument(await readFile(outputPath));
+      try {
+        assert.equal(wrongPasswordDocument.authenticatePassword('wrong-password'), 0);
+      } finally {
+        wrongPasswordDocument.destroy();
+      }
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
@@ -65,7 +69,6 @@ suite('PDF暗号化', () => {
       encryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password,
-        qpdfPath: readConfiguredQpdfPath(),
       }),
       /Output file already exists/,
     );
@@ -85,7 +88,6 @@ suite('PDF暗号化', () => {
       encryptPdfFiles({
         jobs: [{ sourcePath, workspacePath, outputPath }],
         password,
-        qpdfPath: readConfiguredQpdfPath(),
         runtime: { signal: abortController.signal },
       }),
       { name: 'AbortError' },
@@ -94,13 +96,6 @@ suite('PDF暗号化', () => {
     await assert.rejects(access(outputPath));
   });
 });
-
-async function decryptWithQpdf(sourcePath: string, outputPath: string, pdfPassword: string): Promise<void> {
-  await execFileAsync(readConfiguredQpdfPath(), ['--decrypt', `--password=${pdfPassword}`, sourcePath, outputPath], {
-    encoding: 'utf8',
-    maxBuffer: 10 * 1024 * 1024,
-  });
-}
 
 async function writePdf(filePath: string): Promise<void> {
   const document = await PDFDocument.create();

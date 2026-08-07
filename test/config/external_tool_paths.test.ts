@@ -2,35 +2,21 @@ import assert from 'node:assert/strict';
 
 import {
   readDrawioExecutablePath,
-  readGhostscriptExecutablePath,
   readPdftocairoExecutablePath,
   readRsvgConvertExecutablePath,
-  resolveGhostscriptExecutablePath,
 } from '../../src/config/external_tools/external_tool_paths.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('外部tool実行ファイルの設定', () => {
   test('設定値をそのまま読み取る', () => {
-    const configuration = fakeConfiguration({ 'execPath.ghostscript': '/custom/gs' });
+    const configuration = fakeConfiguration({});
 
-    assert.strictEqual(readGhostscriptExecutablePath(configuration), '/custom/gs');
     assert.strictEqual(readDrawioExecutablePath(configuration), '');
     assert.strictEqual(readPdftocairoExecutablePath(configuration), 'pdftocairo');
     assert.strictEqual(readRsvgConvertExecutablePath(configuration), 'rsvg-convert');
   });
 
-  test('空文字のGhostscript設定はOS標準の実行ファイル名へフォールバックする', () => {
+  test('空文字のDraw.io設定は空のまま読み取る', () => {
     assert.strictEqual(readDrawioExecutablePath(fakeConfiguration({ 'execPath.drawio': '' })), '');
-    const expectedGhostscript = process.platform === 'win32' ? 'gswin64c' : 'gs';
-    assert.strictEqual(
-      readGhostscriptExecutablePath(fakeConfiguration({ 'execPath.ghostscript': '' })),
-      expectedGhostscript,
-    );
-    assert.strictEqual(resolveGhostscriptExecutablePath('', 'win32'), 'gswin64c');
-    assert.strictEqual(resolveGhostscriptExecutablePath('', 'linux'), 'gs');
-  });
-
-  test('明示したGhostscriptパスはOSに関係なく優先する', () => {
-    assert.strictEqual(resolveGhostscriptExecutablePath('/custom/gs', 'win32'), '/custom/gs');
   });
 });

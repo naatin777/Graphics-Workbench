@@ -1,4 +1,4 @@
-import { access, mkdir } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -10,7 +10,7 @@ import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/inp
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
-import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { openPdfDocument, savePdfDocument } from './mupdf.js';
 
 export interface CompressPdfJob {
   sourcePath: string;
@@ -23,7 +23,6 @@ export type GhostscriptQuality = 'screen' | 'ebook' | 'printer' | 'prepress' | '
 export interface CompressPdfOptions {
   jobs: CompressPdfJob[];
   quality: GhostscriptQuality;
-  ghostscriptPath: string;
   runtime?: ConversionExecutionContext;
   runId?: string;
 }
@@ -56,7 +55,6 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
         job,
         index,
         quality: options.quality,
-        ghostscriptPath: options.ghostscriptPath,
         runId: currentRunId,
         signal: batchRuntime.signal,
       }),
@@ -67,11 +65,10 @@ async function compressPdf(params: {
   job: CompressPdfJob;
   index: number;
   quality: GhostscriptQuality;
-  ghostscriptPath: string;
   runId: string;
   signal: AbortSignal | undefined;
 }): Promise<PreparedConversionOutput> {
-  const { job, quality, ghostscriptPath, runId, signal } = params;
+  const { job, runId, signal } = params;
   signal?.throwIfAborted();
 
   const itemName = `${params.index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
@@ -90,23 +87,15 @@ async function compressPdf(params: {
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal?.throwIfAborted();
 
-  await runExternalTool({
-    toolName: 'Ghostscript',
-    executable: ghostscriptPath,
-    args: [
-      '-dSAFER',
-      '-dBATCH',
-      '-dNOPAUSE',
-      '-dQUIET',
-      '-sDEVICE=pdfwrite',
-      `-dPDFSETTINGS=/${quality}`,
-      '-dCompatibilityLevel=1.4',
-      `-sOutputFile=${stagedOutputPath}`,
-      copiedSourcePath,
-    ],
-    ...(signal === undefined ? {} : { signal }),
-  });
-
+  // ponytail: all GhostscriptQuality levels map to the same mupdf save options; tune per quality if needed.
+  const pdfBytes = savePdfDocument(
+    await openPdfDocument(await readFile(copiedSourcePath)),
+    'garbage=4,compress=yes,compression-effort=10',
+  );
+  signal?.throwIfAborted();
+  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+  signal?.throwIfAborted();
+  await writeFile(stagedOutputPath, pdfBytes);
   signal?.throwIfAborted();
 
   return {

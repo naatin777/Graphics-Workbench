@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { PDFDocument } from 'pdf-lib';
+import { openPdfDocument } from '../../operations/pdf/mupdf.js';
 
 import { getPdfPageGeometry } from '../../operations/pdf/pdf_page_geometry.js';
 import type { PdfPageGeometry } from '../../application/protocols/crop_pdf_protocol.js';
@@ -27,13 +27,20 @@ process.on('message', (message: unknown) => {
 async function inspectMetadata(message: unknown): Promise<void> {
   try {
     const filePath = parseFilePath(message);
-    const document = await PDFDocument.load(await readFile(filePath));
-    const pages = document.getPages().map((page, index) => getPdfPageGeometry(page, index + 1));
-    if (pages.length === 0) {
-      throw new Error('PDF has no pages.');
-    }
+    const document = await openPdfDocument(await readFile(filePath));
+    try {
+      const pageCount = document.countPages();
+      const pages = Array.from({ length: pageCount }, (_value, index) =>
+        getPdfPageGeometry(document.loadPage(index), index + 1),
+      );
+      if (pages.length === 0) {
+        throw new Error('PDF has no pages.');
+      }
 
-    sendResult({ type: 'success', pages }, true);
+      sendResult({ type: 'success', pages }, true);
+    } finally {
+      document.destroy();
+    }
   } catch (error) {
     sendResult({ type: 'failure', error: error instanceof Error ? error.message : String(error) }, true);
   }

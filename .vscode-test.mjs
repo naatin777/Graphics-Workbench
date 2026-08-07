@@ -38,7 +38,6 @@ for (const entry of readdirSync(testWorkspaceDirectory)) {
 if (existsSync(settingsSourcePath)) {
   const settings = JSON.parse(readFileSync(settingsSourcePath, 'utf8'));
   const toolCommands = [
-    ['graphics-workbench.execPath.ghostscript', process.platform === 'win32' ? 'gswin64c' : 'gs'],
     ['graphics-workbench.execPath.pdftocairo', 'pdftocairo'],
     ['graphics-workbench.execPath.rsvgConvert', 'rsvg-convert'],
   ];

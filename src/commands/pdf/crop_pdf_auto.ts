@@ -3,7 +3,6 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
-import { readGhostscriptExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { localeMap } from '../../locale_map.js';
 import { cropPdfFiles, type CropPdfJob } from '../../operations/pdf/crop_pdf_auto.js';
 
@@ -38,7 +37,6 @@ export async function cropPdfAutoCommand(
 
     const outputTemplate = configuration.outputPath.cropPdf();
     const jobs = sourceUris.map((sourceUri) => planCropPdfJob(sourceUri, outputTemplate));
-    const ghostscriptPath = readGhostscriptExecutablePath(configuration);
     await runConversionLifecycle({
       operationName: 'crop-pdf',
       ...(outputChannel !== undefined && { outputChannel }),
@@ -51,7 +49,7 @@ export async function cropPdfAutoCommand(
         cancelledMessage: userMessage('message.cropPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.cropPdf.failed', reason),
       },
-      run: async (runtime) => cropPdfFiles({ jobs, margin: selectedMargin, ghostscriptPath, runtime }),
+      run: async (runtime) => cropPdfFiles({ jobs, margin: selectedMargin, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {

@@ -15,7 +15,7 @@ suite('PDF fixtureの内容比較', () => {
   ).entries()) {
     test(`pdf/${path.basename(fixturePath)}を全ページPNGへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdftocairoTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const document = await PDFDocument.load(await readFile(sourcePath));
         const outputDirectory = path.join(workspacePath, 'converted PDF pages', String(index));
@@ -28,7 +28,6 @@ suite('PDF fixtureの内容比較', () => {
         await executePngConversion({
           jobs: cases.map(({ outputPath, page }) => ({ sourcePath, outputPath, workspacePath, page })),
           pdftocairoTools,
-          ghostscriptTools,
           mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },

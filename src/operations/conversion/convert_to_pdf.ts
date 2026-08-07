@@ -1,10 +1,16 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument, type PDFPage } from 'pdf-lib';
 import sharp from 'sharp';
 import { pathToFileURL } from 'node:url';
 import { toErrorMessage, isAbortError } from '../../application/error_normalization.js';
+import {
+  loadMupdf,
+  openPdfDocument,
+  savePdfDocument,
+  type MupdfPdfDocumentInstance,
+  type MupdfPdfPage,
+} from '../pdf/mupdf.js';
 
 import {
   isEditableDrawioImagePath,
@@ -13,7 +19,6 @@ import {
   isSameSourceFormat,
 } from '../../application/policy/source_format.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { convertEpsToPdf } from './eps_to_pdf.js';
 import {
   closeRasterPipeline,
   isRasterInputPixelLimitError,
@@ -65,7 +70,6 @@ export interface WriteSourceAsPdfOptions {
     svgToPdfTools?: SvgToPdfBackend;
     mermaidTools?: MermaidBackend;
     drawioTools?: DrawioBackend;
-    ghostscriptPath?: string;
   };
   scratchOptions?: RsvgToolScratchOptions;
 }
@@ -76,17 +80,7 @@ interface StageSourceToPdfOptions {
   mermaidTools: MermaidBackend | undefined;
   drawioTools: DrawioBackend | undefined;
   scratchOptions: RsvgToolScratchOptions;
-  ghostscriptPath: string | undefined;
   maxInputPixels: number | undefined;
-}
-
-interface WriteEpsAsPdfOptions {
-  sourcePath: string;
-  outputPath: string;
-  workspacePath: string;
-  signal: AbortSignal | undefined;
-  ghostscriptPath: string | undefined;
-  scratchOptions: RsvgToolScratchOptions;
 }
 
 interface WriteRasterImageAsPdfOptions {
@@ -116,7 +110,6 @@ export interface ConvertToPdfFilesOptions {
     svgToPdfTools?: SvgToPdfBackend;
     mermaidTools?: MermaidBackend;
     drawioTools?: DrawioBackend;
-    ghostscriptPath?: string;
   };
   platform?: NodeJS.Platform;
   maxInputPixels?: number;
@@ -159,7 +152,6 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
         mermaidTools: options.tools?.mermaidTools,
         drawioTools: options.tools?.drawioTools,
         scratchOptions,
-        ghostscriptPath: options.tools?.ghostscriptPath,
         maxInputPixels,
       }),
   });
@@ -171,7 +163,7 @@ async function stageSourceToPdf(
   runId: string,
   options: StageSourceToPdfOptions,
 ): Promise<PreparedConversionOutput> {
-  const { signal, svgToPdfTools, mermaidTools, drawioTools, scratchOptions, ghostscriptPath, maxInputPixels } = options;
+  const { signal, svgToPdfTools, mermaidTools, drawioTools, scratchOptions, maxInputPixels } = options;
   signal?.throwIfAborted();
   const stagedOutputPath = path.join(
     job.workspacePath,
@@ -207,9 +199,6 @@ async function stageSourceToPdf(
   if (drawioTools !== undefined) {
     writeOptions.tools = { ...writeOptions.tools, drawioTools };
   }
-  if (ghostscriptPath !== undefined) {
-    writeOptions.tools = { ...writeOptions.tools, ghostscriptPath };
-  }
   await writeSourceAsPdf(writeOptions);
   signal?.throwIfAborted();
   await validateGeneratedPdf(stagedOutputPath);
@@ -237,7 +226,7 @@ async function readRasterAnimationMetadataSafely(
 
 export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promise<void> {
   const { sourcePath, outputPath, workspacePath, signal, maxInputPixels, tools, scratchOptions = {} } = options;
-  const { svgToPdfTools, mermaidTools, drawioTools, ghostscriptPath } = tools ?? {};
+  const { svgToPdfTools, mermaidTools, drawioTools } = tools ?? {};
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
@@ -277,11 +266,6 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
       svgToPdf: svgToPdfTools,
       scratchOptions,
     });
-    return;
-  }
-
-  if (extension === '.eps') {
-    await writeEpsAsPdf({ sourcePath, outputPath, workspacePath, signal, ghostscriptPath, scratchOptions });
     return;
   }
 
@@ -371,50 +355,6 @@ function isPdfOutputPath(outputPath: string): outputPath is `${string}.pdf` {
   return outputPath.toLowerCase().endsWith('.pdf');
 }
 
-async function writeEpsAsPdf({
-  sourcePath,
-  outputPath,
-  workspacePath,
-  signal,
-  ghostscriptPath,
-  scratchOptions,
-}: WriteEpsAsPdfOptions): Promise<void> {
-  if (ghostscriptPath === undefined || ghostscriptPath === '') {
-    throw new Error('Ghostscript is required for EPS conversion');
-  }
-
-  signal?.throwIfAborted();
-  const epsStaging = path.join(path.dirname(outputPath), 'eps-staging');
-  await mkdir(epsStaging, { recursive: true });
-  signal?.throwIfAborted();
-
-  const epsOptions: Parameters<typeof convertEpsToPdf>[0] = {
-    epsPath: sourcePath,
-    workspacePath,
-    stagingDirectory: epsStaging,
-    tools: { ghostscriptPath },
-  };
-  if (signal !== undefined) {
-    epsOptions.signal = signal;
-  }
-  if (scratchOptions.platform !== undefined) {
-    epsOptions.platform = scratchOptions.platform;
-  }
-  if (scratchOptions.scratchBaseCandidates !== undefined) {
-    epsOptions.scratchBaseCandidates = scratchOptions.scratchBaseCandidates;
-  }
-  if (scratchOptions.outputChannel !== undefined) {
-    epsOptions.outputChannel = scratchOptions.outputChannel;
-  }
-
-  const { pdfPath } = await convertEpsToPdf(epsOptions);
-
-  signal?.throwIfAborted();
-  await assertWritablePathInWorkspace(outputPath, workspacePath);
-  await mkdir(path.dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, await readFile(pdfPath));
-}
-
 async function writeRasterImageAsPdf({
   sourcePath,
   outputPath,
@@ -468,17 +408,24 @@ async function writeRasterImageAsPdf({
     signal?.throwIfAborted();
   }
 
-  const pdfDocument = await PDFDocument.create();
-  const page = pdfDocument.addPage([width, height]);
-  const embeddedImage = await pdfDocument.embedPng(imageBuffer);
-  page.drawImage(embeddedImage, {
-    x: 0,
-    y: 0,
-    width,
-    height,
-  });
-
-  const pdfBytes = await pdfDocument.save();
+  const mupdf = await loadMupdf();
+  const doc = new mupdf.PDFDocument();
+  const image = new mupdf.Image(imageBuffer);
+  const imageRef = doc.addImage(image);
+  image.destroy();
+  const page = doc.newDictionary();
+  page.put('Type', doc.newName('Page'));
+  page.put('MediaBox', [0, 0, width, height]);
+  const resources = doc.newDictionary();
+  const xobject = doc.newDictionary();
+  xobject.put('Im0', imageRef);
+  resources.put('XObject', xobject);
+  page.put('Resources', resources);
+  const content = doc.addStream(`q ${width} 0 0 ${height} 0 0 cm /Im0 Do Q`, null);
+  page.put('Contents', content);
+  doc.insertPage(0, doc.addObject(page));
+  // ponytail: doc.addPage(...) is broken in mupdf.js; build the page dict and insertPage instead.
+  const pdfBytes = savePdfDocument(doc);
   signal?.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
@@ -577,47 +524,51 @@ async function executeChrome(executable: string, args: string[], signal?: AbortS
 }
 
 export async function validateGeneratedPdf(outputPath: string): Promise<void> {
-  let pdfDocument: PDFDocument;
+  let pdfDocument: MupdfPdfDocumentInstance;
 
   try {
-    pdfDocument = await PDFDocument.load(await readFile(outputPath));
+    pdfDocument = await openPdfDocument(await readFile(outputPath));
   } catch (error) {
     throw new Error(`PDF conversion produced an unparsable PDF: ${toErrorMessage(error)}`, { cause: error });
   }
 
-  if (pdfDocument.getPageCount() === 0) {
-    throw new Error(`PDF conversion produced no pages: ${outputPath}`);
-  }
+  try {
+    const pageCount = pdfDocument.countPages();
+    if (pageCount === 0) {
+      throw new Error(`PDF conversion produced no pages: ${outputPath}`);
+    }
 
-  for (const page of pdfDocument.getPages()) {
-    for (const [boxName, box] of [
-      ['MediaBox', page.getMediaBox()],
-      ['CropBox', page.getCropBox()],
-      ['TrimBox', page.getTrimBox()],
-    ] as const) {
-      const values = [box.x, box.y, box.width, box.height];
-      if (!values.every((value) => Number.isFinite(value)) || box.width <= 0 || box.height <= 0) {
-        throw new Error(`PDF conversion produced invalid ${boxName} dimensions: ${outputPath}`);
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      const page = pdfDocument.loadPage(pageIndex);
+      for (const boxName of ['MediaBox', 'CropBox', 'TrimBox'] as const) {
+        const [x1, y1, x2, y2] = page.getBounds(boxName);
+        const width = x2 - x1;
+        const height = y2 - y1;
+        if (![x1, y1, x2, y2, width, height].every((value) => Number.isFinite(value)) || width <= 0 || height <= 0) {
+          throw new Error(`PDF conversion produced invalid ${boxName} dimensions: ${outputPath}`);
+        }
       }
     }
+  } finally {
+    pdfDocument.destroy();
   }
 }
 
 async function normalizePdfPageSize(outputPath: string, width: number, height: number): Promise<void> {
-  const pdfDocument = await PDFDocument.load(await readFile(outputPath));
-  if (pdfDocument.getPageCount() === 0) {
+  const pdfDocument = await openPdfDocument(await readFile(outputPath));
+  if (pdfDocument.countPages() === 0) {
+    pdfDocument.destroy();
     throw new Error(`Generated PDF has no pages: ${outputPath}`);
   }
 
-  const firstPage = pdfDocument.getPage(0);
-  setPageSize(firstPage, width, height);
-
-  await writeFile(outputPath, await pdfDocument.save());
+  setPageSize(pdfDocument.loadPage(0), width, height);
+  const pdfBytes = savePdfDocument(pdfDocument);
+  await writeFile(outputPath, pdfBytes);
 }
 
-function setPageSize(page: PDFPage, width: number, height: number): void {
-  page.setMediaBox(0, 0, width, height);
-  page.setCropBox(0, 0, width, height);
+function setPageSize(page: MupdfPdfPage, width: number, height: number): void {
+  page.setPageBox('MediaBox', [0, 0, width, height]);
+  page.setPageBox('CropBox', [0, 0, width, height]);
 }
 
 function validateJobs(jobs: ConvertToPdfJob[], supportedExtensions: readonly string[]): void {

@@ -26,7 +26,7 @@ suite('invalid fixtureの実変換エラー', () => {
   for (const [index, invalidCase] of invalidCases.entries()) {
     test(`${invalidCase.directory}/${invalidCase.fileName}を${invalidCase.outputFormat.toUpperCase()}へ実変換すると失敗し、出力を残さない`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdftocairoTools, ghostscriptTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdftocairoTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const inputPath = path.join(testInputDirectory, 'invalid', invalidCase.directory, invalidCase.fileName);
         const destinationPath = workspaceDestinationPath(invalidCase.fileName, index);
         const sourcePath = await copyInputToWorkspace(inputPath, destinationPath);
@@ -39,7 +39,6 @@ suite('invalid fixtureの実変換エラー', () => {
         const conversion = executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath }],
           pdftocairoTools,
-          ghostscriptTools,
           mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },

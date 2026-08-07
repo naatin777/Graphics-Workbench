@@ -13,14 +13,10 @@ export const extensionIdentity = {
 
 type ConfigurationKey =
   | 'execPath.drawio'
-  | 'execPath.ghostscript'
   | 'execPath.pdftocairo'
   | 'execPath.rsvgConvert'
   | 'execPath.chrome'
-  | 'execPath.qpdf'
-  | 'externalTools.qpdf.timeoutSeconds'
   | 'externalTools.drawio.timeoutSeconds'
-  | 'externalTools.ghostscript.timeoutSeconds'
   | 'externalTools.pdftocairo.timeoutSeconds'
   | 'externalTools.rsvgConvert.timeoutSeconds'
   | 'externalTools.mermaid.timeoutSeconds'
@@ -46,7 +42,6 @@ type ConfigurationKey =
   | 'outputPath.convertMermaidToPdf'
   | 'outputPath.convertGifToPdf'
   | 'outputPath.convertTiffToPdf'
-  | 'outputPath.convertEpsToPdf'
   | 'outputPath.convertPngToJpeg'
   | 'outputPath.convertPngToWebp'
   | 'outputPath.convertPngToAvif'
@@ -69,14 +64,9 @@ type ConfigurationKey =
   | 'outputPath.convertMermaidToWebp'
   | 'outputPath.convertGifToJpeg'
   | 'outputPath.convertTiffToJpeg'
-  | 'outputPath.convertEpsToJpeg'
   | 'outputPath.convertGifToAvif'
   | 'outputPath.convertTiffToAvif'
-  | 'outputPath.convertEpsToAvif'
-  | 'outputPath.convertGifToEps'
-  | 'outputPath.convertTiffToEps'
   | 'outputPath.convertTiffToWebp'
-  | 'outputPath.convertEpsToWebp'
   | 'outputPath.convertGifToWebp'
   | 'outputPath.convertMermaidToAvif'
   | 'outputPath.convertPngToGif'
@@ -95,12 +85,6 @@ type ConfigurationKey =
   | 'outputPath.convertGifToTiff'
   | 'outputPath.convertSvgToTiff'
   | 'outputPath.convertMermaidToTiff'
-  | 'outputPath.convertPngToEps'
-  | 'outputPath.convertJpegToEps'
-  | 'outputPath.convertWebpToEps'
-  | 'outputPath.convertAvifToEps'
-  | 'outputPath.convertSvgToEps'
-  | 'outputPath.convertMermaidToEps'
   | 'outputPath.convertToDrawio'
   | 'outputPath.convertToDrawioPng'
   | 'outputPath.convertToDrawioSvg'
@@ -122,7 +106,6 @@ type ConfigurationKey =
   | 'contextMenu.convertMermaid.enabled'
   | 'contextMenu.convertDrawioCreate.enabled'
   | 'contextMenu.compressPdf.enabled'
-  | 'contextMenu.linearizePdf.enabled'
   | 'contextMenu.encryptPdf.enabled'
   | 'contextMenu.decryptPdf.enabled'
   | 'contextMenu.rotatePdf.enabled'
@@ -130,7 +113,6 @@ type ConfigurationKey =
   | 'outputPath.reorderPdf'
   | 'outputPath.rotatePdf'
   | 'outputPath.compressPdf'
-  | 'outputPath.linearizePdf'
   | 'outputPath.encryptPdf'
   | 'outputPath.decryptPdf';
 
@@ -225,9 +207,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'execPath.drawio': {
     types: ['string'],
   },
-  'execPath.ghostscript': {
-    types: ['string'],
-  },
   'execPath.pdftocairo': {
     types: ['string'],
   },
@@ -237,20 +216,7 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'execPath.chrome': {
     types: ['string'],
   },
-  'execPath.qpdf': {
-    types: ['string'],
-  },
-  'externalTools.qpdf.timeoutSeconds': {
-    types: ['integer'],
-    minimum: 0,
-    maximum: 86400,
-  },
   'externalTools.drawio.timeoutSeconds': {
-    types: ['integer'],
-    minimum: 0,
-    maximum: 86400,
-  },
-  'externalTools.ghostscript.timeoutSeconds': {
     types: ['integer'],
     minimum: 0,
     maximum: 86400,
@@ -357,9 +323,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
       convertDrawioToTiff: {
         types: ['string'],
       },
-      convertDrawioToEps: {
-        types: ['string'],
-      },
       convertPdfToPng: {
         types: ['string'],
       },
@@ -379,9 +342,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
         types: ['string'],
       },
       convertPdfToTiff: {
-        types: ['string'],
-      },
-      convertPdfToEps: {
         types: ['string'],
       },
       splitPdf: {
@@ -412,9 +372,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['string'],
   },
   'outputPath.convertTiffToPdf': {
-    types: ['string'],
-  },
-  'outputPath.convertEpsToPdf': {
     types: ['string'],
   },
   'outputPath.convertPngToJpeg': {
@@ -483,28 +440,13 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.convertTiffToJpeg': {
     types: ['string'],
   },
-  'outputPath.convertEpsToJpeg': {
-    types: ['string'],
-  },
   'outputPath.convertGifToAvif': {
     types: ['string'],
   },
   'outputPath.convertTiffToAvif': {
     types: ['string'],
   },
-  'outputPath.convertEpsToAvif': {
-    types: ['string'],
-  },
-  'outputPath.convertGifToEps': {
-    types: ['string'],
-  },
-  'outputPath.convertTiffToEps': {
-    types: ['string'],
-  },
   'outputPath.convertTiffToWebp': {
-    types: ['string'],
-  },
-  'outputPath.convertEpsToWebp': {
     types: ['string'],
   },
   'outputPath.convertGifToWebp': {
@@ -559,24 +501,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['string'],
   },
   'outputPath.convertMermaidToTiff': {
-    types: ['string'],
-  },
-  'outputPath.convertPngToEps': {
-    types: ['string'],
-  },
-  'outputPath.convertJpegToEps': {
-    types: ['string'],
-  },
-  'outputPath.convertWebpToEps': {
-    types: ['string'],
-  },
-  'outputPath.convertAvifToEps': {
-    types: ['string'],
-  },
-  'outputPath.convertSvgToEps': {
-    types: ['string'],
-  },
-  'outputPath.convertMermaidToEps': {
     types: ['string'],
   },
   'outputPath.convertToDrawio': {
@@ -646,9 +570,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'contextMenu.compressPdf.enabled': {
     types: ['boolean'],
   },
-  'contextMenu.linearizePdf.enabled': {
-    types: ['boolean'],
-  },
   'contextMenu.encryptPdf.enabled': {
     types: ['boolean'],
   },
@@ -670,9 +591,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.compressPdf': {
     types: ['string'],
   },
-  'outputPath.linearizePdf': {
-    types: ['string'],
-  },
   'outputPath.encryptPdf': {
     types: ['string'],
   },
@@ -682,14 +600,10 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
 };
 const configurationExpectations: Record<ConfigurationKey, string> = {
   'execPath.drawio': 'string',
-  'execPath.ghostscript': 'string',
   'execPath.pdftocairo': 'string',
   'execPath.rsvgConvert': 'string',
   'execPath.chrome': 'string',
-  'execPath.qpdf': 'string',
-  'externalTools.qpdf.timeoutSeconds': 'integer',
   'externalTools.drawio.timeoutSeconds': 'integer',
-  'externalTools.ghostscript.timeoutSeconds': 'integer',
   'externalTools.pdftocairo.timeoutSeconds': 'integer',
   'externalTools.rsvgConvert.timeoutSeconds': 'integer',
   'externalTools.mermaid.timeoutSeconds': 'integer',
@@ -715,7 +629,6 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.convertMermaidToPdf': 'string',
   'outputPath.convertGifToPdf': 'string',
   'outputPath.convertTiffToPdf': 'string',
-  'outputPath.convertEpsToPdf': 'string',
   'outputPath.convertPngToJpeg': 'string',
   'outputPath.convertPngToWebp': 'string',
   'outputPath.convertPngToAvif': 'string',
@@ -738,14 +651,9 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.convertMermaidToWebp': 'string',
   'outputPath.convertGifToJpeg': 'string',
   'outputPath.convertTiffToJpeg': 'string',
-  'outputPath.convertEpsToJpeg': 'string',
   'outputPath.convertGifToAvif': 'string',
   'outputPath.convertTiffToAvif': 'string',
-  'outputPath.convertEpsToAvif': 'string',
-  'outputPath.convertGifToEps': 'string',
-  'outputPath.convertTiffToEps': 'string',
   'outputPath.convertTiffToWebp': 'string',
-  'outputPath.convertEpsToWebp': 'string',
   'outputPath.convertGifToWebp': 'string',
   'outputPath.convertMermaidToAvif': 'string',
   'outputPath.convertPngToGif': 'string',
@@ -764,12 +672,6 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.convertGifToTiff': 'string',
   'outputPath.convertSvgToTiff': 'string',
   'outputPath.convertMermaidToTiff': 'string',
-  'outputPath.convertPngToEps': 'string',
-  'outputPath.convertJpegToEps': 'string',
-  'outputPath.convertWebpToEps': 'string',
-  'outputPath.convertAvifToEps': 'string',
-  'outputPath.convertSvgToEps': 'string',
-  'outputPath.convertMermaidToEps': 'string',
   'outputPath.convertToDrawio': 'string',
   'outputPath.convertToDrawioPng': 'string',
   'outputPath.convertToDrawioSvg': 'string',
@@ -791,7 +693,6 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'contextMenu.convertMermaid.enabled': 'boolean',
   'contextMenu.convertDrawioCreate.enabled': 'boolean',
   'contextMenu.compressPdf.enabled': 'boolean',
-  'contextMenu.linearizePdf.enabled': 'boolean',
   'contextMenu.encryptPdf.enabled': 'boolean',
   'contextMenu.decryptPdf.enabled': 'boolean',
   'contextMenu.rotatePdf.enabled': 'boolean',
@@ -799,7 +700,6 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.reorderPdf': 'string',
   'outputPath.rotatePdf': 'string',
   'outputPath.compressPdf': 'string',
-  'outputPath.linearizePdf': 'string',
   'outputPath.encryptPdf': 'string',
   'outputPath.decryptPdf': 'string',
 };
@@ -879,11 +779,6 @@ type OutputPathsToTiff = {
   readonly convertPdfToTiff?: string;
 };
 
-type OutputPathsToEps = {
-  readonly convertDrawioToEps?: string;
-  readonly convertPdfToEps?: string;
-};
-
 type OutputPathsToOther = {
   readonly splitPdf?: string;
 };
@@ -896,7 +791,6 @@ export type OutputPaths = OutputPathsToPdf &
   OutputPathsToSvg &
   OutputPathsToGif &
   OutputPathsToTiff &
-  OutputPathsToEps &
   OutputPathsToOther;
 export const commandContributions = {
   'graphics-workbench.cropPdf.auto': {
@@ -991,10 +885,6 @@ export const commandContributions = {
     titleKey: 'command.convertToTiff',
     category: 'Graphics Workbench',
   },
-  'graphics-workbench.convertToEps': {
-    titleKey: 'command.convertToEps',
-    category: 'Graphics Workbench',
-  },
   'graphics-workbench.convertToDrawio': {
     titleKey: 'command.convertToDrawio',
     category: 'Graphics Workbench',
@@ -1013,10 +903,6 @@ export const commandContributions = {
   },
   'graphics-workbench.compressPdf': {
     titleKey: 'command.compressPdf',
-    category: 'Graphics Workbench',
-  },
-  'graphics-workbench.linearizePdf': {
-    titleKey: 'command.linearizePdf',
     category: 'Graphics Workbench',
   },
   'graphics-workbench.encryptPdf': {
@@ -1065,13 +951,11 @@ export const publicCommandIds = [
   'graphics-workbench.convertToGifPreserveAnimation',
   'graphics-workbench.convertToGifSeparately',
   'graphics-workbench.convertToTiff',
-  'graphics-workbench.convertToEps',
   'graphics-workbench.convertToDrawio',
   'graphics-workbench.convertToDrawioPng',
   'graphics-workbench.convertToDrawioSvg',
   'graphics-workbench.convertImagesToSinglePdf',
   'graphics-workbench.compressPdf',
-  'graphics-workbench.linearizePdf',
   'graphics-workbench.encryptPdf',
   'graphics-workbench.decryptPdf',
   'graphics-workbench.rotatePdf.rotate',
@@ -1094,16 +978,13 @@ export type SubmenuId = keyof typeof submenuContributions;
 
 export const externalToolTimeoutConfigurationKeys = {
   drawio: 'externalTools.drawio.timeoutSeconds',
-  ghostscript: 'externalTools.ghostscript.timeoutSeconds',
   mermaid: 'externalTools.mermaid.timeoutSeconds',
   pdftocairo: 'externalTools.pdftocairo.timeoutSeconds',
-  qpdf: 'externalTools.qpdf.timeoutSeconds',
   rsvgConvert: 'externalTools.rsvgConvert.timeoutSeconds',
 } as const;
 
 export const conversionPairs = {
   flat: [
-    { source: 'eps', target: 'avif', setting: 'convertEpsToAvif' },
     { source: 'gif', target: 'avif', setting: 'convertGifToAvif' },
     { source: 'jpeg', target: 'avif', setting: 'convertJpegToAvif' },
     { source: 'mermaid', target: 'avif', setting: 'convertMermaidToAvif' },
@@ -1111,14 +992,6 @@ export const conversionPairs = {
     { source: 'svg', target: 'avif', setting: 'convertSvgToAvif' },
     { source: 'tiff', target: 'avif', setting: 'convertTiffToAvif' },
     { source: 'webp', target: 'avif', setting: 'convertWebpToAvif' },
-    { source: 'avif', target: 'eps', setting: 'convertAvifToEps' },
-    { source: 'gif', target: 'eps', setting: 'convertGifToEps' },
-    { source: 'jpeg', target: 'eps', setting: 'convertJpegToEps' },
-    { source: 'mermaid', target: 'eps', setting: 'convertMermaidToEps' },
-    { source: 'png', target: 'eps', setting: 'convertPngToEps' },
-    { source: 'svg', target: 'eps', setting: 'convertSvgToEps' },
-    { source: 'tiff', target: 'eps', setting: 'convertTiffToEps' },
-    { source: 'webp', target: 'eps', setting: 'convertWebpToEps' },
     { source: 'avif', target: 'gif', setting: 'convertAvifToGif' },
     { source: 'jpeg', target: 'gif', setting: 'convertJpegToGif' },
     { source: 'mermaid', target: 'gif', setting: 'convertMermaidToGif' },
@@ -1127,7 +1000,6 @@ export const conversionPairs = {
     { source: 'tiff', target: 'gif', setting: 'convertTiffToGif' },
     { source: 'webp', target: 'gif', setting: 'convertWebpToGif' },
     { source: 'avif', target: 'jpeg', setting: 'convertAvifToJpeg' },
-    { source: 'eps', target: 'jpeg', setting: 'convertEpsToJpeg' },
     { source: 'gif', target: 'jpeg', setting: 'convertGifToJpeg' },
     { source: 'mermaid', target: 'jpeg', setting: 'convertMermaidToJpeg' },
     { source: 'png', target: 'jpeg', setting: 'convertPngToJpeg' },
@@ -1135,7 +1007,6 @@ export const conversionPairs = {
     { source: 'tiff', target: 'jpeg', setting: 'convertTiffToJpeg' },
     { source: 'webp', target: 'jpeg', setting: 'convertWebpToJpeg' },
     { source: 'avif', target: 'pdf', setting: 'convertAvifToPdf' },
-    { source: 'eps', target: 'pdf', setting: 'convertEpsToPdf' },
     { source: 'gif', target: 'pdf', setting: 'convertGifToPdf' },
     { source: 'jpeg', target: 'pdf', setting: 'convertJpegToPdf' },
     { source: 'mermaid', target: 'pdf', setting: 'convertMermaidToPdf' },
@@ -1159,7 +1030,6 @@ export const conversionPairs = {
     { source: 'svg', target: 'tiff', setting: 'convertSvgToTiff' },
     { source: 'webp', target: 'tiff', setting: 'convertWebpToTiff' },
     { source: 'avif', target: 'webp', setting: 'convertAvifToWebp' },
-    { source: 'eps', target: 'webp', setting: 'convertEpsToWebp' },
     { source: 'gif', target: 'webp', setting: 'convertGifToWebp' },
     { source: 'jpeg', target: 'webp', setting: 'convertJpegToWebp' },
     { source: 'mermaid', target: 'webp', setting: 'convertMermaidToWebp' },
@@ -1170,8 +1040,6 @@ export const conversionPairs = {
   plural: [
     { source: 'drawio', target: 'avif', setting: 'convertDrawioToAvif' },
     { source: 'pdf', target: 'avif', setting: 'convertPdfToAvif' },
-    { source: 'drawio', target: 'eps', setting: 'convertDrawioToEps' },
-    { source: 'pdf', target: 'eps', setting: 'convertPdfToEps' },
     { source: 'drawio', target: 'gif', setting: 'convertDrawioToGif' },
     { source: 'pdf', target: 'gif', setting: 'convertPdfToGif' },
     { source: 'drawio', target: 'jpeg', setting: 'convertDrawioToJpeg' },
@@ -1193,21 +1061,13 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
   return {
     execPath: {
       drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', ''),
-      ghostscript: defineConfiguration<string>(configurationReader, 'execPath.ghostscript', ''),
       pdftocairo: defineConfiguration<string>(configurationReader, 'execPath.pdftocairo', 'pdftocairo'),
       rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
       chrome: defineConfiguration<string>(configurationReader, 'execPath.chrome', ''),
-      qpdf: defineConfiguration<string>(configurationReader, 'execPath.qpdf', 'qpdf'),
     },
     externalTools: {
-      qpdf: {
-        timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.qpdf.timeoutSeconds', 0),
-      },
       drawio: {
         timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.drawio.timeoutSeconds', 0),
-      },
-      ghostscript: {
-        timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.ghostscript.timeoutSeconds', 0),
       },
       pdftocairo: {
         timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.pdftocairo.timeoutSeconds', 0),
@@ -1313,11 +1173,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       convertTiffToPdf: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertTiffToPdf',
-        '${fileDirname}/${fileBasenameNoExtension}.pdf',
-      ),
-      convertEpsToPdf: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertEpsToPdf',
         '${fileDirname}/${fileBasenameNoExtension}.pdf',
       ),
       convertPngToJpeg: defineConfiguration<string>(
@@ -1430,11 +1285,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.convertTiffToJpeg',
         '${fileDirname}/${fileBasenameNoExtension}.jpeg',
       ),
-      convertEpsToJpeg: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertEpsToJpeg',
-        '${fileDirname}/${fileBasenameNoExtension}.jpeg',
-      ),
       convertGifToAvif: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertGifToAvif',
@@ -1445,29 +1295,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.convertTiffToAvif',
         '${fileDirname}/${fileBasenameNoExtension}.avif',
       ),
-      convertEpsToAvif: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertEpsToAvif',
-        '${fileDirname}/${fileBasenameNoExtension}.avif',
-      ),
-      convertGifToEps: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertGifToEps',
-        '${fileDirname}/${fileBasenameNoExtension}.eps',
-      ),
-      convertTiffToEps: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertTiffToEps',
-        '${fileDirname}/${fileBasenameNoExtension}.eps',
-      ),
       convertTiffToWebp: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertTiffToWebp',
-        '${fileDirname}/${fileBasenameNoExtension}.webp',
-      ),
-      convertEpsToWebp: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertEpsToWebp',
         '${fileDirname}/${fileBasenameNoExtension}.webp',
       ),
       convertGifToWebp: defineConfiguration<string>(
@@ -1560,36 +1390,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.convertMermaidToTiff',
         '${fileDirname}/${fileBasenameNoExtension}.tiff',
       ),
-      convertPngToEps: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertPngToEps',
-        '${fileDirname}/${fileBasenameNoExtension}.eps',
-      ),
-      convertJpegToEps: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertJpegToEps',
-        '${fileDirname}/${fileBasenameNoExtension}.eps',
-      ),
-      convertWebpToEps: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertWebpToEps',
-        '${fileDirname}/${fileBasenameNoExtension}.eps',
-      ),
-      convertAvifToEps: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertAvifToEps',
-        '${fileDirname}/${fileBasenameNoExtension}.eps',
-      ),
-      convertSvgToEps: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertSvgToEps',
-        '${fileDirname}/${fileBasenameNoExtension}.eps',
-      ),
-      convertMermaidToEps: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertMermaidToEps',
-        '${fileDirname}/${fileBasenameNoExtension}.eps',
-      ),
       convertToDrawio: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertToDrawio',
@@ -1634,11 +1434,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         configurationReader,
         'outputPath.compressPdf',
         '${fileDirname}/${fileBasenameNoExtension}_compressed.pdf',
-      ),
-      linearizePdf: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.linearizePdf',
-        '${fileDirname}/${fileBasenameNoExtension}-linearized.pdf',
       ),
       encryptPdf: defineConfiguration<string>(
         configurationReader,
@@ -1695,9 +1490,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       compressPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.compressPdf.enabled', true),
-      },
-      linearizePdf: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.linearizePdf.enabled', true),
       },
       encryptPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.encryptPdf.enabled', true),
