@@ -6,7 +6,7 @@ export function formatLabel(template: string, value: string): string {
   return template.replace('{0}', value);
 }
 
-export function pageFailureMessage(failure: PageParseFailure, labels: SplitPdfLabels): string {
+export function formatPageParseFailure(failure: PageParseFailure, labels: SplitPdfLabels): string {
   if (failure.kind === 'required') {
     return labels.validation.pagesRequired;
   }
