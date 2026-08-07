@@ -19,7 +19,7 @@ import {
 import { writeSourceAsPdf } from './convert_to_pdf.js';
 import type { DrawioBackend, MermaidBackend, RunGhostscript, SvgToPdfBackend } from './tools/index.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { validateJobPaths } from '../pdf/pdf_utils.js';
+import { validatePdfJobPaths } from '../pdf/pdf_job_paths.js';
 import {
   isMermaidPath,
   isSameSourceFormat,
@@ -56,7 +56,7 @@ export async function convertToEpsFiles(options: ConvertToEpsFilesOptions): Prom
   options.runtime.signal?.throwIfAborted();
   const supportedExtensions = options.supportedExtensions ?? DEFAULT_EXTENSIONS;
   validateJobs(options.jobs, supportedExtensions);
-  await validateJobPaths(options.jobs, 'convert-to-eps');
+  await validatePdfJobPaths(options.jobs, 'convert-to-eps');
   await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
   options.runtime.signal?.throwIfAborted();
 

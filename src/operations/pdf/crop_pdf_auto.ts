@@ -4,7 +4,7 @@ import path from 'node:path';
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { safeName, validateJobPaths } from './pdf_utils.js';
+import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -58,7 +58,7 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
   validateMargin(options.margin);
-  await validateJobPaths(options.jobs, 'crop-pdf');
+  await validatePdfJobPaths(options.jobs, 'crop-pdf');
 
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
@@ -120,7 +120,7 @@ async function convertPdf(params: {
   const { ghostscriptPath, runGhostscript, platform, scratchBaseCandidates } = tools;
   const { signal, outputChannel } = runtime;
   signal?.throwIfAborted();
-  const itemName = `${index + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
+  const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
   const stagingRootPath = createStagingRoot(job.workspacePath, 'crop-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));

@@ -13,7 +13,7 @@ import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import { convertEpsToPdf } from './eps_to_pdf.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { validateJobPaths } from '../pdf/pdf_utils.js';
+import { validatePdfJobPaths } from '../pdf/pdf_job_paths.js';
 import { toErrorMessage } from './raster_conversion.js';
 import { isAbortError } from '../../application/error_normalization.js';
 
@@ -104,7 +104,7 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
   runtime?.signal?.throwIfAborted();
   const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
   validateJobs(options.jobs);
-  await validateJobPaths(options.jobs, 'convert-to-svg');
+  await validatePdfJobPaths(options.jobs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
 
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));

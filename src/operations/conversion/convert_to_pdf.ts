@@ -24,7 +24,7 @@ import {
 } from './raster_input.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { validateJobPaths } from '../pdf/pdf_utils.js';
+import { validatePdfJobPaths } from '../pdf/pdf_job_paths.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -129,7 +129,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs, options.supportedExtensions ?? defaultSupportedImageExtensions);
-  await validateJobPaths(options.jobs, 'convert-png-to-pdf');
+  await validatePdfJobPaths(options.jobs, 'convert-png-to-pdf');
   runtime?.signal?.throwIfAborted();
 
   await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
