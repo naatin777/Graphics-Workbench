@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- なし
+- [0223: AI開発用skillsをrepository構成と開発パターンに合わせて整理・強化する](0223-organize-ai-development-skills.md) — Not Started
 
 ## On hold
 
