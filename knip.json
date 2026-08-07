@@ -7,6 +7,7 @@
     "webview/apps/*/src/app.test.tsx",
     "webview/apps/*/vite.config.ts",
     "webview/apps/*/vitest.config.ts",
+    "webview/excalidraw/entry.ts",
     "scripts/*.mjs",
     "src/operations/conversion/tools/run_mermaid_cli.ts",
     "src/operations/pdf/crop_pdf_runner.ts",

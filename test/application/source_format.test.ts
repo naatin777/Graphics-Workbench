@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 import {
   isEditableDrawioImagePath,
+  isExcalidrawPath,
   isNativeDrawioPath,
   isSameSourceFormat,
   logicalSourcePathForOutputTemplate,
@@ -18,6 +19,8 @@ suite('source format判定', () => {
     assert.strictEqual(sourceFormatForPath('chart.mermaid'), 'mermaid');
     assert.strictEqual(sourceFormatForPath('diagram.drawio'), 'drawio');
     assert.strictEqual(isNativeDrawioPath('diagram.DIO'), true);
+    assert.strictEqual(sourceFormatForPath('sketch.excalidraw'), 'excalidraw');
+    assert.strictEqual(isExcalidrawPath('sketch.EXCALIDRAW'), true);
     assert.strictEqual(sourceFormatForPath('notes.txt'), undefined);
     assert.strictEqual(isEditableDrawioImagePath('diagram.drawio.png'), true);
     assert.strictEqual(logicalSourcePathForOutputTemplate('diagram.drawio.png'), 'diagram');

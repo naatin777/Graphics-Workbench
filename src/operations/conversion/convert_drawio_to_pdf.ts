@@ -104,6 +104,7 @@ async function stageDrawioJob(options: {
     ...(runDrawio !== undefined && { runDrawio }),
     runtime,
   });
+  await assertHasDrawioContent(conversionInputPath);
 
   await runDrawioCommand(
     drawioPath,
@@ -226,6 +227,33 @@ async function readDrawioPageNames(sourcePath: string): Promise<string[]> {
     const name = isRecord(diagram) ? diagram['@_name'] : undefined;
     return typeof name === 'string' ? name : String(index + 1);
   });
+}
+
+/**
+ * The drawio CLI fails `--crop` on diagrams without any vertex or edge cell,
+ * so detect empty content up front and report it as a clear error.
+ */
+async function assertHasDrawioContent(sourcePath: string): Promise<void> {
+  const source = await readFile(sourcePath, 'utf8');
+  const parsed: unknown = new XMLParser({ ignoreAttributes: false, isArray: (name) => name === 'diagram' }).parse(
+    source,
+  );
+  const mxfile = isRecord(parsed) && isRecord(parsed.mxfile) ? parsed.mxfile : undefined;
+  const diagrams = mxfile && Array.isArray(mxfile.diagram) ? mxfile.diagram : [];
+
+  if (!diagrams.some((diagram) => diagramHasContent(diagram))) {
+    throw new Error('The Draw.io file contains no content to export.');
+  }
+}
+
+function diagramHasContent(diagram: unknown): boolean {
+  const graphModel = isRecord(diagram) && isRecord(diagram.mxGraphModel) ? diagram.mxGraphModel : undefined;
+  const root = graphModel && isRecord(graphModel.root) ? graphModel.root : undefined;
+  if (root === undefined || !('mxCell' in root)) {
+    return false;
+  }
+  const cells = Array.isArray(root.mxCell) ? root.mxCell : [root.mxCell];
+  return cells.some((cell) => isRecord(cell) && (cell['@_vertex'] === '1' || cell['@_edge'] === '1'));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

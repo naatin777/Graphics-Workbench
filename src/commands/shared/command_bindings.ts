@@ -114,6 +114,12 @@ export const commandBindings = [
     adapter: 'file',
   },
   {
+    id: 'graphics-workbench.convertExcalidrawToPdf',
+    module: '../conversion/convert_excalidraw_to_pdf.js',
+    exportName: 'convertExcalidrawToPdfCommand',
+    adapter: 'file',
+  },
+  {
     id: 'graphics-workbench.convertToPng',
     module: '../conversion/convert_to_png.js',
     exportName: 'convertToPngCommand',

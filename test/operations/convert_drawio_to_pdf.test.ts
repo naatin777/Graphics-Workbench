@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,6 +12,7 @@ import { requireValue } from '../helpers/required.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
+const emptyDrawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'empty.drawio');
 
 suite('Draw.io PDF変換', () => {
   test('ネイティブDraw.ioをページ名ごとのPDFへ分割する', async () => {
@@ -132,7 +134,10 @@ suite('Draw.io PDF変換', () => {
 
     try {
       const sourcePath = path.join(workspacePath, 'names.drawio');
-      await writeFile(sourcePath, '<mxfile><diagram name="CON"/><diagram name="con"/></mxfile>');
+      await writeFile(
+        sourcePath,
+        '<mxfile><diagram name="CON"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="2" parent="1" vertex="1"><mxGeometry width="10" height="10" as="geometry"/></mxCell></root></mxGraphModel></diagram><diagram name="con"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="2" parent="1" vertex="1"><mxGeometry width="10" height="10" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>',
+      );
 
       const outputs = await convertDrawioToPdfFiles({
         jobs: [
@@ -196,6 +201,42 @@ suite('Draw.io PDF変換', () => {
         [outputPath],
       );
       assert.strictEqual(await PDFDocument.load(await readFile(outputPath)).then((pdf) => pdf.getPageCount()), 3);
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
+  test('コンテンツのないDraw.ioファイルはCLIを起動せず明示的なエラーにする', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-pdf-empty-'));
+
+    try {
+      const sourcePath = path.join(workspacePath, 'empty.drawio');
+      await copyFile(emptyDrawioFixturePath, sourcePath);
+      let cliCalled = false;
+
+      await assert.rejects(
+        convertDrawioToPdfFiles({
+          jobs: [
+            {
+              sourcePath,
+              outputTemplate: '${fileDirname}/empty.pdf',
+              workspacePath,
+              workspaceName: path.basename(workspacePath),
+            },
+          ],
+          drawioPath: 'drawio',
+          outputMode: 'single-pdf',
+          runId: 'empty-test',
+          runtime: { resolveConflicts: async () => 'overwrite' },
+          runDrawio: async () => {
+            cliCalled = true;
+          },
+        }),
+        /no content to export/u,
+      );
+
+      assert.strictEqual(cliCalled, false);
+      assert.strictEqual(existsSync(path.join(workspacePath, 'empty.pdf')), false);
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
