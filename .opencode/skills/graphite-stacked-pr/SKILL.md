@@ -3,7 +3,7 @@ name: graphite-stacked-pr
 description: Use when starting any new coding task that may create a branch, and when working with the Graphite CLI (gt), stacked PRs, upstack/downstack branches, restacking, splitting large changes across multiple PRs, or repairing a Graphite stack. Load BEFORE creating a branch to decide the parent (trunk vs. an existing PR branch); do not start a task on the current branch and only later consult this skill. Use for gt workflows (gt create/modify/submit/sync/restack/continue/abort/undo/track/split/move/reorder/fold/pop/absorb/log/info) and for branch-start decisions; do NOT use for plain git operations, single-commit work, or GitHub operations unrelated to stacked PRs.
 compatibility: Graphite CLI 1.8.x (verified against 1.8.6)
 metadata:
-  version: '0.2.0'
+  version: '0.4.0'
 ---
 
 # Graphite Stacked PR (gt)
@@ -18,6 +18,67 @@ Graphite (`gt`) manages PRs as a **stack**: each branch is a PR whose diff is re
 - Prefer short stacks and incremental landing over deep, long-lived stacks. Typical stack size is 2–5 branches; treat that as an operational guideline, not a Graphite limitation.
 - Confirm Git, Graphite, and worktree state before mutating operations.
 - Do not publish to remote, merge, or perform destructive structural changes without explicit user approval.
+
+## CI economy
+
+**CI green is primarily a landing/review condition, not a condition for continuing ordinary local development.**
+
+### Do not wait on CI during development
+
+- Restacking alone is not a reason to wait on CI. For `trunk <- A <- B <- C`, fixing A restacks B/C and their commit SHAs change — that is a normal stack operation, not a signal to pause for GitHub CI.
+- Do not run `gt submit --stack` after every change. Batch remote updates at a useful checkpoint.
+- Preferred loop:
+  ```text
+  implement
+  → local verification
+  → modify/restack
+  → continue working
+  → local verification
+  → stack reaches a useful checkpoint
+  → submit
+  ```
+- Local being restacked while the remote PR is stale is not an anomaly. Report it explicitly as "local stack updated / remote PR not resubmitted yet".
+
+### CI wait policy
+
+Wait on CI only when:
+
+- merging / landing is imminent,
+- a required check is needed to mark a PR ready for review,
+- asked to investigate a CI failure,
+- CI results are themselves the task's purpose,
+- the user explicitly asked to confirm until CI passes,
+- branch protection / repository policy requires it for the next operation.
+
+Do NOT wait on CI for:
+
+- a mere `gt restack`,
+- an upstack commit SHA changing,
+- a mid-work draft PR,
+- being able to implement the next local branch,
+- local verification already passing,
+- CI merely being pending.
+
+Do not poll indefinitely just because CI is pending. If the implementation is done, hand off with "local verification complete / remote CI pending".
+
+### CI polling
+
+- Do not use `gh pr checks --watch` or long-running watch as the default.
+- Fetch status once when needed. Continuous monitoring is only for an explicit purpose.
+
+### Submit scope
+
+- Do not submit the whole upstack unless it actually needs updating.
+- Verify available scope options with `gt ... --help` for the installed CLI; do not rely on memory. (`gt submit --stack` includes descendants; `gt submit --no-edit` covers current + downstack.)
+
+### Merge
+
+- Check required CI before merging. But there is no need to sit and wait through every intermediate CI run before the merge moment.
+
+### GitHub Actions concurrency
+
+- Confirm whether workflows already cancel stale runs for the same PR (`concurrency: cancel-in-progress: true`). This repository's check/test/playwright workflows already do.
+- If a workflow lacks it, evaluate whether adding it belongs in this task's scope. Do not change workflows as a side effect of a docs task — create a separate task if clearly needed.
 
 ## Supporting references
 
@@ -160,16 +221,29 @@ Do not mix unrelated renames, formatting, or cleanup into the bottom of a featur
 
 ## Stack creation
 
-Do not pre-create empty branches. The preferred flow is:
+Do not pre-create empty branches. Create each branch **exactly once**, with its name and commit together, only after the changes are staged.
+
+The preferred flow is:
 
 1. On the current parent branch, make that PR's changes.
 2. Verify them (run the relevant minimal tests).
 3. Stage the target files (`gt add <paths>`).
-4. Create the child branch with its changes: `gt create -m "<imperative message>"` (or `gt create -am "<message>"` when all changes should be staged).
+4. Create the child branch with its changes in a single call: `gt create <child> -m "<imperative message>"` (or `gt create <child> -am "<message>"` when all changes should be staged).
 5. Inspect the result: `gt info --diff` and `gt log short`.
 6. Proceed to the next upstack change.
 
 Each branch should keep a minimal, relevant test run green before moving on.
+
+### One `gt create` per branch
+
+Call `gt create` exactly once per branch. Never split it into two calls:
+
+- `gt create <name>` **before** the changes are staged creates an **empty branch** (a placeholder with no commit). The branch name is taken, but the commit never lands on it.
+- A later `gt create -m "<message>"` **without a branch name** auto-generates a branch name from the commit message (e.g. `2026-08-07-refactor_split_...`), and the real commit lands on that auto-named branch. The intended branch is left empty and the stack gets doubled.
+
+Both failures stem from forgetting that `gt create` both creates the branch **and** commits the staged changes. There is no "create now, commit later" step.
+
+Symptom to catch immediately after step 4/5: a branch name that does not match the name you planned (e.g. a date-prefixed slug like `YYYY-MM-DD-<slug>`), or a planned branch whose diff is empty. Fix by renaming the auto-named branch to the intended name (`git branch -m`) and deleting the empty placeholder — confirm with the user before deleting branches.
 
 ## Tracking existing git branches
 

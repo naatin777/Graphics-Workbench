@@ -7,6 +7,19 @@ description: Graphics WorkbenchのVS Code API、Extension Host、Webview、Solid
 
 変更された動作を確認できる最も低いテスト境界を選択する。
 
+## visual review
+
+UI変更では、変更した挙動に関係する状態だけを確認する。全てのUI変更で全パターンを強制しない。
+
+確認候補:
+
+- wide / narrow layout
+- loading / empty / error / disabled state
+- long filename
+- many pages
+
+Playwrightはスクリーンショットを`artifacts/visual-review/`へ生成し人間が目視確認する(pixel比較しない)。スクリーンショットだけを機能検証の代わりにしない。
+
 ## テスト境界
 
 ### Unit Test
@@ -37,3 +50,5 @@ VS Code API、コマンド実行、ファイル操作、外部CLIとの接続に
 - 不安定な待ち時間の固定値を増やさない。
 - PlaywrightをUnit Testで確認できる変更に乱用しない。
 - スクリーンショットだけで動作確認を代用しない。
+- Unit / Integration / VS Code Electron / Playwright のうち、最も低い適切な境界を選ぶ。
+- 実装の検証は `graphics-workbench-verify`、Webview機能の設計は `graphics-workbench-webview-feature` を参照する。

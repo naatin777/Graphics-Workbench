@@ -36,10 +36,3 @@
 
 - バグリスク、レビューコスト、反復的な変更コスト、テスト困難性を具体的に減らす場合のみ行う。
 - コードをきれいに見せることだけを理由に行わない。
-
-## 詳細ルールはskillを参照
-
-- Graphite / PR / ブランチ: `graphite-stacked-pr` skill
-- テスト・検証・完了条件: `graphics-workbench-verify` skill
-- 入力制限・タイムアウト・移行・command正本: `graphics-workbench-architecture` skill
-- git hook無効化禁止: `never-disable-git-hooks` skill
