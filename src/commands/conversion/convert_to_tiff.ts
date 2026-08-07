@@ -9,7 +9,7 @@ import { executeTiffConversion } from '../../operations/conversion/convert_to_ti
 import { planTiffConversionJobs } from './plan_tiff_conversion_jobs.js';
 import { runSimpleRasterConversionCommand } from './run_raster_conversion_command.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { readDrawioOptions } from '../shared/command_utils.js';
+import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
 
 export async function convertToTiffCommand(
   uri?: vscode.Uri,
@@ -24,7 +24,7 @@ export async function convertToTiffCommand(
     outputLabel: 'TIFF',
     prepare: (configuration) => ({
       mermaidTools: readMermaidCliOptions(configuration),
-      drawioTools: readDrawioOptions(configuration),
+      drawioTools: buildDrawioCommandOptions(configuration),
       pdftocairoTools: { pdftocairoPath: readPdftocairoExecutablePath(configuration), platform: process.platform },
       ghostscriptTools: {
         ghostscriptPath: readGhostscriptExecutablePath(configuration),

@@ -10,7 +10,7 @@ import { planGifConversionJobs } from './plan_gif_conversion_jobs.js';
 import { runAnimatedRasterConversionCommand } from './run_raster_conversion_command.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { readDrawioOptions } from '../shared/command_utils.js';
+import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
 
 export interface ConvertToGifCommandOptions {
   outputMode?: 'auto' | 'preserve' | 'split';
@@ -35,7 +35,7 @@ export async function convertToGifCommand(
         platform: process.platform,
       },
       mermaidTools: readMermaidCliOptions(configuration),
-      drawioTools: readDrawioOptions(configuration),
+      drawioTools: buildDrawioCommandOptions(configuration),
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, maxAnimationPixels, runtime }) =>
       planGifConversionJobs(sourceUri, {

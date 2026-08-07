@@ -11,7 +11,7 @@ import type { Configuration } from '../../generated/extension_manifest.js';
 import { runExternalTool } from '../../operations/external_tools/run_external_tool.js';
 
 import type { CommandDependencies } from './command_dependencies.js';
-import { getCommandConfiguration } from './command_utils.js';
+import { configureCommandRuntime } from './command_runtime.js';
 import { userMessage } from './user_messages.js';
 
 const CHECK_TIMEOUT_MS = 10_000;
@@ -226,7 +226,7 @@ function isTimeout(error: unknown): boolean {
 }
 
 export async function checkEnvironmentCommand(_uri: undefined, dependencies?: CommandDependencies): Promise<void> {
-  const configuration = getCommandConfiguration(dependencies);
+  const configuration = configureCommandRuntime(dependencies);
   const outputChannel = dependencies?.outputChannel;
 
   outputChannel?.appendLine(`[environment-check] starting`);

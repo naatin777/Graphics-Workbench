@@ -11,7 +11,9 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { isAbortError } from '../../application/error_utils.js';
+import { resolveSelectedUris } from '../shared/command_input.js';
 
 export async function cropPdfAutoCommand(
   uri?: vscode.Uri,
@@ -20,13 +22,13 @@ export async function cropPdfAutoCommand(
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedUris(uri, uris);
 
     if (sourceUris.length === 0) {
       throw new Error('No PDF files were selected.');
     }
 
-    const configuration = getCommandConfiguration(dependencies);
+    const configuration = configureCommandRuntime(dependencies);
     const marginOptions = readMarginOptions(configuration.cropPdf.marginOptions(), configuration);
     const selectedMargin = await selectMargin(marginOptions);
 
@@ -90,7 +92,7 @@ function planCropPdfJob(sourceUri: vscode.Uri, outputTemplate: string): CropPdfJ
   };
 }
 
-function readMarginOptions(value: unknown, configuration: ReturnType<typeof getCommandConfiguration>): number[] {
+function readMarginOptions(value: unknown, configuration: ReturnType<typeof configureCommandRuntime>): number[] {
   if (!Array.isArray(value)) {
     return configuration.cropPdf.marginOptions();
   }

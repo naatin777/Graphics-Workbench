@@ -24,7 +24,8 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, isAbortError } from '../shared/command_utils.js';
+import { isAbortError } from '../../application/error_utils.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function mergePdfSelectedFilesCommand(
@@ -40,7 +41,7 @@ export async function mergePdfSelectedFilesCommand(
       throw new Error('Select at least two PDF files.');
     }
 
-    getCommandConfiguration(dependencies);
+    configureCommandRuntime(dependencies);
 
     const workspace = await workspaceForSources(sourceUris);
     const outputUri = await vscode.window.showSaveDialog({
@@ -100,7 +101,7 @@ export async function mergePdfConfigureCommand(
     }
 
     const workspace = await workspaceForSources(sourceUris);
-    const configuration = getCommandConfiguration(dependencies);
+    const configuration = configureCommandRuntime(dependencies);
     const panelTitle = localeMap('submenu.mergePdf');
     const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'merge_pdf');
     const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);

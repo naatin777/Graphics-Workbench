@@ -13,7 +13,8 @@ import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { assertFileScheme, getCommandConfiguration, selectedUris } from '../shared/command_utils.js';
+import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
 
 const drawioExtensions = ['.drawio', '.dio', '.drawio.png', '.dio.png', '.drawio.svg', '.dio.svg'] as const;
 
@@ -54,16 +55,16 @@ async function convertToDrawioWithDefaults(
   setting: (configuration: Configuration) => string,
 ): Promise<void> {
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedUris(uri, uris);
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = getCommandConfiguration(dependencies);
+    const configuration = configureCommandRuntime(dependencies);
     const [first] = sourceUris;
     if (first === undefined) {
       throw new Error('No files were selected.');
     }
-    assertFileScheme(first);
+    assertLocalFileUri(first);
     const workspace = vscode.workspace.getWorkspaceFolder(first);
     if (!workspace) {
       throw new Error(`The file must be inside an open workspace: ${first.fsPath}`);
@@ -82,7 +83,7 @@ async function convertToDrawioWithDefaults(
     const jobs: ConvertToDrawioJob[] = [
       {
         inputs: sourceUris.map((sourceUri) => {
-          assertFileScheme(sourceUri);
+          assertLocalFileUri(sourceUri);
           const inputWorkspace = vscode.workspace.getWorkspaceFolder(sourceUri);
           if (!inputWorkspace || inputWorkspace.uri.fsPath !== workspace.uri.fsPath) {
             throw new Error(`All files must be inside the same workspace: ${sourceUri.fsPath}`);

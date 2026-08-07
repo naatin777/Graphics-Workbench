@@ -6,7 +6,7 @@ import { PDFDocument } from 'pdf-lib';
 import * as vscode from 'vscode';
 
 import { planPngConversionJobs } from '../../src/commands/conversion/plan_png_conversion_jobs.js';
-import { getCommandConfiguration } from '../../src/commands/shared/command_utils.js';
+import { configureCommandRuntime } from '../../src/commands/shared/command_runtime.js';
 import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { requireValue } from '../helpers/required.js';
 
@@ -24,7 +24,7 @@ suite('PNG変換planner', () => {
 
       const jobs = await planPngConversionJobs(
         vscode.Uri.file(sourcePath),
-        getCommandConfiguration(),
+        configureCommandRuntime(),
         getDefaultConfiguration().raster.maxInputPixels(),
       );
 
@@ -62,7 +62,7 @@ suite('PNG変換planner', () => {
     await assert.rejects(
       planPngConversionJobs(
         vscode.Uri.file(sourcePath),
-        getCommandConfiguration(),
+        configureCommandRuntime(),
         getDefaultConfiguration().raster.maxInputPixels(),
       ),
       new RegExp(`Unsupported input for PNG conversion: ${escapeRegExp(sourcePath)}`),

@@ -28,13 +28,15 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { getCommandConfiguration, isAbortError, selectedUris } from '../shared/command_utils.js';
+import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { isAbortError } from '../../application/error_utils.js';
+import { resolveSelectedUris } from '../shared/command_input.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 const defaultSplitPdfTemplate = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
 
 function readSplitPdfTemplate(dependencies?: CommandDependencies): string {
-  return resolveOutputPathsTemplate(getCommandConfiguration(dependencies), 'splitPdf', defaultSplitPdfTemplate);
+  return resolveOutputPathsTemplate(configureCommandRuntime(dependencies), 'splitPdf', defaultSplitPdfTemplate);
 }
 
 export async function splitPdfAllPagesCommand(
@@ -44,7 +46,7 @@ export async function splitPdfAllPagesCommand(
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
   try {
-    const sourceUris = selectedUris(uri, uris);
+    const sourceUris = resolveSelectedUris(uri, uris);
 
     if (sourceUris.length === 0) {
       throw new Error('No PDF files were selected.');
@@ -157,7 +159,7 @@ async function runSplitPdfConfigureCommand(
   }
 
   const outputPathTemplate = createOutputPathPreviewTemplate(outputTemplate, inputUri, workspaceFolder);
-  const configuration = getCommandConfiguration(dependencies);
+  const configuration = configureCommandRuntime(dependencies);
   const panelTitle = localeMap('submenu.splitPdf');
   const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'split_pdf');
   const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
