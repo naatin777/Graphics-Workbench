@@ -20,12 +20,21 @@ description: Graphics Workbenchのバージョン更新、リリース前検証�
 ## 基本コマンド
 
 ```bash
-pnpm run check:all
-pnpm test
-pnpm run package
+npm run check:all
+npm test
+npm run package
 ```
 
 変更範囲に応じてPlaywrightも実行する。
+
+(リポジトリはnpmを使う。`pnpm`ではない。)
+
+## VSIX内容の確認
+
+packagingの詳細チェックリストは `graphics-workbench-packaging` を参照する。本skillはrelease手順に集中する。
+
+- `npm run package:vsix` で作成したVSIXの内容を `npx vsce ls --tree` で確認する。
+- 6 target VSIXとsharp実実行検証は `node scripts/verify-vsix.mjs --vsix <file> --target <target>` を利用する(ADR-0026)。
 
 ## 確認項目
 
