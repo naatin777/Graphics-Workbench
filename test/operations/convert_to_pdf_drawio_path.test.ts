@@ -12,7 +12,7 @@ import { copyFile, mkdtempDisposable, mkdir, readFile, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';

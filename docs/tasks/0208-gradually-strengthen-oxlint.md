@@ -550,3 +550,12 @@ Phase 58で決定した「バグ・型安全・セキュリティ・依存整合
 次のphaseでは、バグ・型安全・セキュリティ・依存整合を検出するルールだけを、既存違反を小さく解消してerrorへ移す。0違反のスタイル規則（`prefer-*`系の慣用API強制）は一括有効化しない。
 
 方針（Phase 58後の決定）: Phase 42–58で機械的に積んだ0違反スタイル規則のうち、摩擦を生んだ`prefer-destructuring`（疎destructuring強制）と`prefer-spread`（`no-misused-spread`との衝突）は、revertせず現状維持とする。ただし今後は、`use-isnan`/`no-unsafe-*`/`no-eval`/`import/no-cycle`等のように**実際のバグ・型安全・セキュリティ・依存整合を検出する規則だけ**を追加する。
+
+## Phase 60 — lint policy全体監査（v1.x）
+
+lint policyを全面監査し、「errorは高signalな問題のみ、readability heuristicはwarn、純粋なstyle preferenceはoff」へ整理した。`lint:strict-experimental`は新規則探索専用として`lint:audit`へ改名し、品質gateとしては使わない。
+
+- **error→warn**: `complexity`、`max-depth`、`max-params`、`eslint/max-classes-per-file`（threshold超過はcode smell）。`eslint/no-else-return`、`eslint/no-lonely-if`、`eslint/no-implicit-coercion`、`eslint/prefer-destructuring`、`unicorn/no-negated-condition`、`unicorn/no-array-for-each`、`unicorn/no-array-reduce`、`unicorn/no-array-callback-reference`、`typescript/prefer-for-of`（context依存の構文選択）。`project/max-conditional-spreads-per-object`、`project/max-flat-type-members`（nested化を強制しない）
+- **error→off**: `unicorn/prefer-ternary`（if/elseとternaryのどちらが読みやすいかはcontext依存）
+- **維持（error）**: バグ・型安全・Promise・dependency cycle・architecture/security invariant（`project/no-direct-child-process`、`project/no-secret-output-log`等を含む全custom invariant rule）
+- **suppression**: `unicorn/prefer-ternary`をoffにしたため、`scripts/generate-test-output.ts`の対応suppressionを削除

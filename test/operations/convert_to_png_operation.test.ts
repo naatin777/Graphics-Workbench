@@ -7,7 +7,7 @@ import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 import sharp from 'sharp';
 
 import { executePngConversion, type RasterJob } from '../../src/operations/conversion/raster_conversion.js';

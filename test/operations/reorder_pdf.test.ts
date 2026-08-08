@@ -5,7 +5,7 @@
 // - ページ順が順列でない場合は失敗すること
 //
 // Mocked:
-// - なし。実pdf-libと実ファイルを使用する
+// - なし。mupdfと実ファイルを使用する
 //
 // Not tested:
 // - VS CodeのwithProgress UI
@@ -16,7 +16,7 @@ import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import {
   isReorderPdfHostToWebviewMessage,

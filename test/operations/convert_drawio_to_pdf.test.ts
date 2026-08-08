@@ -4,7 +4,7 @@ import { copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';

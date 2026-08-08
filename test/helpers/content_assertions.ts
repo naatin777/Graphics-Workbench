@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from './pdf_document.js';
 
 import { renderPdfPageToPng } from '../../src/operations/pdf/mupdf.js';
 import {

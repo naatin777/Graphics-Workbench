@@ -13,7 +13,7 @@ import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument, rgb } from '../helpers/pdf_document.js';
 
 import { cropPdfFiles } from '../../src/operations/pdf/crop_pdf_auto.js';
 

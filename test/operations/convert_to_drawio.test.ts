@@ -38,7 +38,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
       .png()
       .toFile(imagePath);
-    const { PDFDocument } = await import('pdf-lib');
+    const { PDFDocument } = await import('../helpers/pdf_document.js');
     const pdf = await PDFDocument.create();
     pdf.addPage([100, 50]);
     pdf.addPage([80, 40]);

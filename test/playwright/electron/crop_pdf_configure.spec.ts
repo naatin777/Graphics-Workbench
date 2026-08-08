@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { expect, test, type TestInfo } from '@playwright/test';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../../helpers/pdf_document.js';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
 import type { MergePdfOptions } from '../../../src/operations/pdf/merge_pdf.js';

@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import { mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 

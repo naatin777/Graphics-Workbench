@@ -42,15 +42,15 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは既に `convertDr
 
 ```
 画像1 ─→ 既存の画像→PDF処理 ─→ 中間PDF1 ┐
-画像2 ─→ 既存の画像→PDF処理 ─→ 中間PDF2 ┤─ pdf-lib copyPages → 結合PDF
+画像2 ─→ 既存の画像→PDF処理 ─→ 中間PDF2 ┤─ mupdf graftPage → 結合PDF
 画像3 ─→ 既存の画像→PDF処理 ─→ 中間PDF3 ┘
 ```
 
 1. 各入力画像を既存の経路で単ページPDFへ変換する
-   - ラスター画像: `writeRasterImageAsPdf`（sharp + pdf-lib）
+   - ラスター画像: `writeRasterImageAsPdf`（sharp + mupdf）
    - SVG: `writeSvgAsPdf`（rsvg-convert またはChrome headless CLI）
-   - EPS: `writeEpsAsPdf`（Ghostscript pdfwrite → pdf-lib copy）
-2. 生成された中間PDFを pdf-lib の `copyPages` で1つの `PDFDocument` にマージする
+   - EPS: `writeEpsAsPdf`（Ghostscript pdfwrite → mupdf copy）
+2. 生成された中間PDFを mupdf の `graftPage` で1つの `PDFDocument` にマージする
 3. 結合PDFを staging へ保存し、commit する
 
 中間PDFは staging directory 内で管理し、ユーザーに見せない。commit 後に staging cleanup で削除する。

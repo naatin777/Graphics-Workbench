@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { expect, test, type TestInfo } from '@playwright/test';
 import sharp from 'sharp';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../../helpers/pdf_document.js';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
 import { operationDrawioInputDirectory } from '../../helpers/fixture_paths.js';
