@@ -6,8 +6,9 @@ set -euo pipefail
 # The container mirrors the GitHub Actions setup: pinned npm, npm ci (Linux
 # dependencies), and the conversion tools (rsvg-convert / mermaid-cli / drawio /
 # Chromium). The repository is bind-mounted read-write, so host-built out/ and
-# media/ assets are used as-is; node_modules stays in an anonymous volume backed
-# by the image's Linux install so the host's macOS node_modules never leaks in.
+# media/ assets are used as-is; node_modules stays in a named volume keyed by the
+# package-lock.json hash, so an unchanged lockfile reuses the same Linux install
+# and the host's macOS node_modules never leaks in.
 #
 # Usage:
 #   npm run test:docker -- <npm-script> [more npm-scripts...]
@@ -38,9 +39,27 @@ image_name="graphics-workbench-test"
 
 docker build -t "${image_name}" "${repository_root}"
 
+# In a git worktree, .git is a file pointing at the real gitdir (and its common
+# dir) outside the bind-mounted tree. Mount them so `git rev-parse --git-path
+# hooks` resolves inside the container; otherwise knip's lefthook detection
+# fails and check:all exits 1.
+extra_mounts=()
+if [[ -f "${repository_root}/.git" ]]; then
+  worktree_gitdir="$(sed -n 's/^gitdir: //p' "${repository_root}/.git")"
+  common_dir="$(cd "$(dirname "${worktree_gitdir}")/$(cat "${worktree_gitdir}/commondir")" && pwd)"
+  extra_mounts+=(-v "${worktree_gitdir}:${worktree_gitdir}" -v "${common_dir}:${common_dir}")
+fi
+
+# node_modules volume keyed by the lockfile so a changed package-lock.json gets
+# a fresh Linux install while unchanged lockfiles reuse the same volume.
+node_modules_volume="$(
+  bash "${repository_root}/scripts/docker-node-modules-volume-name.sh" "${repository_root}/package-lock.json"
+)"
+
 docker run --rm \
   -v "${repository_root}":/workspace \
-  -v /workspace/node_modules \
+  -v "${node_modules_volume}":/workspace/node_modules \
+  "${extra_mounts[@]}" \
   -w /workspace \
   -e GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR=/tmp/vscode-test-ci-data \
   "${image_name}" "$@"

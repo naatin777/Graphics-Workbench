@@ -1,31 +1,42 @@
 # syntax=docker/dockerfile:1
 
 # Local test container mirroring the GitHub Actions setup:
-#   - mcr.microsoft.com/playwright base (Chromium, xvfb, fonts)
+#   - mcr.microsoft.com/playwright base (Chromium, xvfb, fonts-liberation)
 #   - pinned npm to satisfy devEngines (npm 12.0.1)
-#   - .github/scripts/install-test-tools-linux.sh for rsvg / mermaid / chrome
-#   - drawio installed per-architecture
+#   - librsvg2-bin / mermaid-cli / fonts-noto-cjk / drawio for conversion tests
 #
 # Used by scripts/test-in-docker.sh. Run tests with:
 #   npm run test:docker -- <npm-script>
+#
+# The repository is bind-mounted at runtime, so no source code is COPY'd into
+# the image. Layers are ordered stable-first: package.json / package-lock.json
+# change far less often than src, so the expensive tool installs sit before the
+# npm ci layer and only re-run when package files actually change.
 FROM mcr.microsoft.com/playwright:v1.62.1-noble
 
 ARG DRAWIO_VERSION=31.1.5
 
 WORKDIR /workspace
 
-RUN npm install --global npm@12.0.1
+# Pin npm to satisfy devEngines.packageManager (npm 12.0.1).
+RUN --mount=type=cache,target=/root/.npm \
+  npm install --global npm@12.0.1
 
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY . .
-
-# System tools + mermaid-cli + chrome detection (writes test/vscode-settings/settings.json).
-RUN bash .github/scripts/install-test-tools-linux.sh \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends fonts-noto-cjk \
+# System tools + fonts. xvfb / fonts-liberation already ship in the base image;
+# librsvg2-bin (rsvg-convert) and fonts-dejavu-core / fonts-noto-cjk (Japanese
+# PDF rendering) do not.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    librsvg2-bin \
+    fonts-dejavu-core \
+    fonts-noto-cjk \
   && rm -rf /var/lib/apt/lists/*
+
+# Mermaid CLI. Puppeteer must not download its own Chrome: the container runs
+# the base image's Chromium through the google-chrome wrapper below.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+RUN --mount=type=cache,target=/root/.npm \
+  npm install --global @mermaid-js/mermaid-cli
 
 # execPath.chrome falls back to `google-chrome` on Linux when the setting is
 # empty. The bind-mounted workspace keeps the tracked {} settings, so expose the
@@ -53,6 +64,13 @@ RUN arch="$(dpkg --print-architecture)" \
   && drawio_path="$(command -v drawio || echo /opt/drawio/drawio)" \
   && printf '#!/usr/bin/env bash\nexec "%s" --no-sandbox --disable-gpu --disable-dev-shm-usage "$@"\n' "${drawio_path}" > /usr/local/bin/drawio \
   && chmod +x /usr/local/bin/drawio
+
+# Linux node_modules (sharp / mupdf native builds). Only package files are
+# COPY'd, so src / test changes never re-run npm ci. The resulting node_modules
+# seeds the named volume used by scripts/test-in-docker.sh.
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci
 
 COPY docker/test/entrypoint.sh /usr/local/bin/graphics-workbench-test
 RUN chmod +x /usr/local/bin/graphics-workbench-test

@@ -5,6 +5,7 @@
 - [0226: 全テスト名を処理フローの日本語訳に全面書き換える](0226-rewrite-test-names-as-flow.md) — Done（規約の正本は `graphics-workbench-vscode-testing` skill）
 - [0225: drop/paste edit providerをLaTeX以外の文書形式（Typst / Quarkdown）へ拡張する](0225-extend-edit-provider-insertion-formats.md) — Done
 - [0227: Webview UIをVS Codeのテーマ・フォント・Zoomへ自然に追従させる](0227-review-webview-vscode-theme-integration.md) — In Progress
+- [0228: ローカルDockerテスト環境の起動を高速化する](0228-speed-up-local-docker-test-env.md) — In Progress
 
 ## On hold
 
