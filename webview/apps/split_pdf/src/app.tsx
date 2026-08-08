@@ -540,7 +540,7 @@ export function App(): JSX.Element {
                   <p>{labels().groups.outputOrder}</p>
                 </div>
                 <button
-                  class='button'
+                  class='gw-button gw-button--secondary'
                   type='button'
                   onClick={() => {
                     const rowId = addRow();

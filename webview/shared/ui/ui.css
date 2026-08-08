@@ -1,37 +1,61 @@
 /*
  * Graphics Workbench shared Webview UI.
  *
- * Alias VS Code theme variables by meaning and provide the small controls that
- * all PDF Configure screens share: text buttons, toolbar buttons, inputs,
- * selects, radio groups, dividers, the page navigator and the preview page
- * current-page outline. Screens keep their own layout CSS and import this file
- * first so the aliases and base control styles apply everywhere.
+ * Alias VS Code theme variables by meaning and provide the base defaults plus
+ * the small controls that all PDF Configure screens share: text buttons,
+ * toolbar buttons, inputs, selects, radio groups, the page navigator and the
+ * preview current-page outline. Screens keep their own layout CSS and import
+ * this file first.
+ *
+ * Styling is driven by VS Code theme variables and the UI font (`--vscode-
+ * font-family` / `--vscode-font-size`), so screens follow the user's theme,
+ * font size and window zoom. Fixed px values here are reserved for structural
+ * details that VS Code itself keeps fixed (icon buttons, borders, gaps).
  */
 
 :root {
-  --gw-background: var(--vscode-editor-background);
-  --gw-foreground: var(--vscode-editor-foreground);
-  --gw-description-foreground: var(--vscode-descriptionForeground);
+  color-scheme: light dark;
 
-  --gw-control-background: var(--vscode-input-background);
-  --gw-control-foreground: var(--vscode-input-foreground);
-  --gw-control-border: var(--vscode-input-border, transparent);
-
-  --gw-primary-background: var(--vscode-button-background);
-  --gw-primary-foreground: var(--vscode-button-foreground);
-  --gw-primary-hover-background: var(--vscode-button-hoverBackground);
-
-  --gw-secondary-background: var(--vscode-button-secondaryBackground);
-  --gw-secondary-foreground: var(--vscode-button-secondaryForeground);
-  --gw-secondary-hover-background: var(--vscode-button-secondaryHoverBackground);
+  /* Base font so rem and inherited sizes track VS Code's UI font size. */
+  font-size: var(--vscode-font-size, 13px);
 
   --gw-border: var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+}
 
-  --gw-focus-border: var(--vscode-focusBorder);
+/*
+ * Base defaults.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-  --gw-radius: 4px;
-  --gw-icon-size: 16px;
-  --gw-toolbar-button-size: 24px;
+body {
+  margin: 0;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /*
@@ -43,15 +67,12 @@
   align-items: center;
   justify-content: center;
 
-  width: auto;
   min-width: 0;
   padding: 4px 8px;
 
   border: 1px solid var(--vscode-button-border, transparent);
   border-radius: 4px;
 
-  font-size: 12px;
-  line-height: 16px;
   text-align: center;
   text-decoration: none;
 
@@ -94,8 +115,7 @@
 
 .gw-button--small {
   padding: 3px 6px;
-  font-size: 11px;
-  line-height: 14px;
+  font-size: 0.85em;
 }
 
 /*
@@ -169,10 +189,6 @@
 
   color: var(--vscode-input-foreground);
   background: var(--vscode-input-background);
-
-  font-family: inherit;
-  font-size: inherit;
-  line-height: 17px;
 }
 
 .gw-input:hover:not(:disabled) {
@@ -201,8 +217,8 @@
 .gw-select {
   box-sizing: border-box;
   width: 100%;
-  min-width: 100px;
-  min-height: 24px;
+  min-width: 7.5rem;
+  min-height: 1.85em;
 
   padding: 2px 23px 2px 8px;
 
@@ -211,7 +227,6 @@
   border: 1px solid var(--vscode-dropdown-border, transparent);
   border-radius: var(--vscode-cornerRadius-small, 2px);
 
-  font-size: 13px;
   font-weight: 400;
   text-transform: none;
 
@@ -221,6 +236,20 @@
 .gw-select:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
+}
+
+/*
+ * Form field: label above control.
+ */
+.field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.field__label {
+  color: var(--vscode-foreground);
+  font-weight: 600;
 }
 
 /*
@@ -239,19 +268,14 @@
   margin-bottom: 4px;
   padding: 0;
 
-  font-size: 12px;
-  line-height: 16px;
   font-weight: 600;
 }
 
 .gw-radio-option {
   display: flex;
   align-items: center;
-  min-height: 24px;
+  min-height: 1.85em;
   gap: 8px;
-
-  font-size: 13px;
-  line-height: 18px;
 }
 
 .gw-radio-option input[type='radio'] {
@@ -265,40 +289,6 @@
 }
 
 /*
- * Form layout: simple vertical stack, not cards.
- */
-.gw-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.gw-field {
-  min-width: 0;
-}
-
-.gw-field-label {
-  display: block;
-  margin: 0 0 4px;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 600;
-}
-
-.gw-field-message {
-  margin-top: 4px;
-  font-size: 12px;
-  line-height: 17px;
-}
-
-.gw-field-message[data-severity='error'] {
-  color: var(--vscode-inputValidation-errorForeground);
-  background: var(--vscode-inputValidation-errorBackground);
-  border: 1px solid var(--vscode-inputValidation-errorBorder);
-  padding: 4px 6px;
-}
-
-/*
  * Action row: primary on the right.
  */
 .gw-actions {
@@ -309,35 +299,8 @@
 }
 
 /*
- * Divider.
+ * Preview page navigator.
  */
-.gw-divider {
-  height: 1px;
-  border: 0;
-  margin: 4px 0;
-
-  background: var(--vscode-panel-border, var(--vscode-widget-border, transparent));
-}
-
-/*
- * Preview panel and page navigator.
- */
-.preview-panel {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-
-  border-right: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, transparent));
-}
-
-.preview-scroll-area {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-}
-
 .page-navigator {
   flex: 0 0 auto;
 
@@ -346,20 +309,17 @@
   justify-content: center;
   gap: 8px;
 
-  min-height: 32px;
+  min-height: 2.4em;
   padding: 4px 8px;
 
   border-top: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, transparent));
 
   color: var(--vscode-descriptionForeground);
   background: var(--vscode-editor-background);
-
-  font-size: 12px;
-  line-height: 16px;
 }
 
 .page-navigator__position {
-  min-width: 52px;
+  min-width: 3.5em;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -383,37 +343,4 @@ body.vscode-high-contrast-light .preview-page[data-current='true'],
 body.vscode-high-contrast .pdf-page[data-current='true'],
 body.vscode-high-contrast-light .pdf-page[data-current='true'] {
   outline-width: 2px;
-}
-
-/*
- * Resizable sash. Visible resting border is 1px (on the preview panel); the
- * 4px sash is transparent and only highlights while hovered or active.
- */
-.gw-sash {
-  position: absolute;
-  z-index: 10;
-
-  top: 0;
-  right: -2px;
-
-  width: 4px;
-  height: 100%;
-
-  cursor: ew-resize;
-  touch-action: none;
-  background: transparent;
-}
-
-.gw-sash::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-
-  pointer-events: none;
-  background: transparent;
-}
-
-.gw-sash:hover::before,
-.gw-sash[data-active='true']::before {
-  background: var(--vscode-sash-hoverBorder);
 }
