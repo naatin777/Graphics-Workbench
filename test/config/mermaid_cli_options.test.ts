@@ -8,7 +8,7 @@ import {
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('Mermaid CLI設定', () => {
-  test('execPath.chromeが設定されているとき実行パスを返す', () => {
+  test("execPath.chromeに'/usr/bin/chrome'が設定されている場合は、chromePath='/usr/bin/chrome'・mermaidPath=mmdc・theme=default・backgroundColor=whiteをまとめたMermaid CLIオプションを返す", () => {
     const options = readMermaidCliOptions(
       fakeConfiguration({
         'execPath.chrome': '/usr/bin/chrome',
@@ -23,7 +23,7 @@ suite('Mermaid CLI設定', () => {
     });
   });
 
-  test('未設定時はOS標準のChrome実行パスを使う', () => {
+  test('execPath.chromeが未設定(空文字)の場合は、darwin・win32・linuxそれぞれのOS標準Chrome実行パスへ解決する', () => {
     assert.strictEqual(
       resolveChromeExecutablePath('', 'darwin'),
       '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -32,7 +32,7 @@ suite('Mermaid CLI設定', () => {
     assert.strictEqual(resolveChromeExecutablePath('', 'linux'), 'google-chrome');
   });
 
-  test('readChromeExecutablePathはexecPath.chromeを返す', () => {
+  test("readChromeExecutablePathは設定値execPath.chrome'/shared/chrome'をそのまま返す", () => {
     const executablePath = readChromeExecutablePath(
       fakeConfiguration({
         'execPath.chrome': '/shared/chrome',

@@ -32,8 +32,8 @@ import { requireValue } from '../helpers/required.js';
 const fixturePath = operationPngInputPath;
 const editableDrawioImageExtensions = ['.drawio.png', '.dio.png', '.drawio.svg', '.dio.svg'] as const;
 
-suite('PNG変換のSafe Mode', () => {
-  test('すべての変換を作業領域に作成してから出力へ反映する', async () => {
+suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）', () => {
+  test('2件のPNG→PDF変換を実行すると、各結果を一時フォルダに作成してから出力PDFへ反映し、一時作業ディレクトリにはジョブごとのresult.pdfが残る', async () => {
     const { workspacePath, jobs } = await createJobs(['first', 'second']);
 
     const outputs = await convertToPdfFiles({
@@ -55,7 +55,7 @@ suite('PNG変換のSafe Mode', () => {
     await assert.doesNotReject(access(path.join(stagedRoot, '2', 'result.pdf')));
   });
 
-  test('バッチ全体で1回だけ競合判断を行い、両方残す', async () => {
+  test('2件の出力先がすべて競合するまとめ変換で競合解決を1回だけ呼び、両方残すを選ぶと既存出力を変更せずfirst-2.pdfとsecond-1.pdfとして保存する', async () => {
     const { workspacePath, jobs } = await createJobs(['first', 'second']);
     await writeFile(requireValue(jobs[0]).outputPath, 'old-first');
     await writeFile(requireValue(jobs[1]).outputPath, 'old-second');
@@ -82,7 +82,7 @@ suite('PNG変換のSafe Mode', () => {
     assert.strictEqual(await readFile(requireValue(jobs[1]).outputPath, 'utf8'), 'old-second');
   });
 
-  test('上書きしない判断の場合はどの出力も反映しない', async () => {
+  test('競合解決でキャンセルを選ぶと変換全体を中止し、既存の出力ファイルは変更せず未作成の出力も作成しない', async () => {
     const { jobs } = await createJobs(['first', 'second']);
     await writeFile(requireValue(jobs[0]).outputPath, 'old-first');
 
@@ -98,7 +98,7 @@ suite('PNG変換のSafe Mode', () => {
     await assert.rejects(access(requireValue(jobs[1]).outputPath));
   });
 
-  test('後続のPNG変換が失敗した場合は先行ジョブの出力も反映しない', async () => {
+  test('後続ジョブのPNGが不正で変換が失敗すると、先行ジョブの出力も含めてどの出力ファイルも作成しない', async () => {
     const { workspacePath, jobs } = await createJobs(['first', 'second']);
     const invalidSourcePath = path.join(workspacePath, 'invalid.png');
     await writeFile(invalidSourcePath, 'not a PNG');
@@ -117,7 +117,7 @@ suite('PNG変換のSafe Mode', () => {
     await Promise.all(jobs.map((job) => assert.rejects(access(job.outputPath))));
   });
 
-  test('上書きファイルをバックアップし、undo操作で復元する', async () => {
+  test('上書きした各出力の元ファイルをバックアップし、undo操作で上書き前の内容へ復元する', async () => {
     const { jobs } = await createJobs(['first', 'second']);
     await writeFile(requireValue(jobs[0]).outputPath, 'old-first');
     await writeFile(requireValue(jobs[1]).outputPath, 'old-second');
@@ -135,7 +135,7 @@ suite('PNG変換のSafe Mode', () => {
     assert.strictEqual(await readFile(requireValue(jobs[1]).outputPath, 'utf8'), 'old-second');
   });
 
-  test('既にキャンセル済みの場合は出力へ反映しない', async () => {
+  test('変換開始前にabort済みsignalを渡すとAbortErrorで失敗し、どの出力ファイルも作成しない', async () => {
     const { jobs } = await createJobs(['first', 'second']);
     const abortController = new AbortController();
     abortController.abort();
@@ -154,7 +154,7 @@ suite('PNG変換のSafe Mode', () => {
     await Promise.all(jobs.map((job) => assert.rejects(access(job.outputPath))));
   });
 
-  test('編集可能なDraw.io PNG/SVGを注入したDraw.io runnerで変換する', async () => {
+  test('編集可能なDraw.io PNG/SVGをsupportedExtensionsに指定し、注入したDraw.io runnerで各ソースを1ページPDFへ変換する', async () => {
     const { jobs } = await createEditableDrawioJobs([
       ['source.drawio.png', 'source.pdf'],
       ['diagram.dio.svg', 'diagram.pdf'],
@@ -182,7 +182,7 @@ suite('PNG変換のSafe Mode', () => {
     }
   });
 
-  test('編集可能なDraw.io画像の出力競合では両方残す', async () => {
+  test('編集可能なDraw.io画像の出力先が既存の場合に両方残すを選ぶと、既存出力を変更せずsource-1.pdfとして保存する', async () => {
     const { jobs, workspacePath } = await createEditableDrawioJobs([['source.drawio.png', 'source.pdf']]);
     const originalOutputPath = requireValue(jobs[0]).outputPath;
     const keptOutputPath = path.join(workspacePath, 'source-1.pdf');
@@ -209,7 +209,7 @@ suite('PNG変換のSafe Mode', () => {
     assert.strictEqual(pdf.getPageCount(), 1);
   });
 
-  test('編集可能なDraw.io画像の上書き出力をバックアップしundoで復元する', async () => {
+  test('編集可能なDraw.io画像の出力を上書きした際の元ファイルをバックアップし、undo操作で上書き前の内容を復元する', async () => {
     const { jobs } = await createEditableDrawioJobs([['source.drawio.png', 'source.pdf']]);
     await writeFile(requireValue(jobs[0]).outputPath, 'old output');
 

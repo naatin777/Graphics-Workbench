@@ -25,8 +25,8 @@ import { requireValue } from '../helpers/required.js';
 const sourceJpegBase64 =
   '/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAANABEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCbAL6KAA//2Q==';
 
-suite('runConversionLifecycleの成功後phase分離', () => {
-  test('変換成功後のshowInformationMessage失敗は変換失敗として表示しない', async () => {
+suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗として表示しない成功後処理の分離', () => {
+  test('PNG変換が成功して出力ファイルsource.pngを作成した後、成功通知のshowInformationMessageが失敗しても、それを変換失敗としてエラー通知しない', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
@@ -51,7 +51,7 @@ suite('runConversionLifecycleの成功後phase分離', () => {
     }
   });
 
-  test('変換成功後のUndo command呼び出し失敗も変換失敗として表示しない', async () => {
+  test('変換成功後、成功通知でUndoボタンを選択した際にUndo commandの呼び出しが失敗しても、それを変換失敗としてエラー通知しない', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
@@ -80,7 +80,7 @@ suite('runConversionLifecycleの成功後phase分離', () => {
     }
   });
 
-  test('Reveal in Explorer選択時に出力先をExplorerで表示する', async () => {
+  test('変換成功後の成功通知でReveal in Explorerを選択すると、生成された出力ファイルsource.pngのfile URIをrevealInExplorerで表示する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(

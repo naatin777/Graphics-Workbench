@@ -17,8 +17,8 @@ import sharp from 'sharp';
 import { executeWebpConversion } from '../../src/operations/conversion/raster_conversion.js';
 import { requireValue } from '../helpers/required.js';
 
-suite('WebPに変換する処理', () => {
-  test('アニメーションメタデータを保持して1つのWebPへ変換する', async () => {
+suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
+  test('2フレーム・delay[100,250]・loop3のアニメーションGIFをアニメーション設定つきの1jobでWebPへ変換し、pages=2・pageHeight=8・delay・loopのメタデータを保持して出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-webp-animation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
@@ -49,7 +49,7 @@ suite('WebPに変換する処理', () => {
     assert.strictEqual(metadata.loop, 3);
   });
 
-  test('アニメーション維持の失敗時にフレーム分割へfallbackせずstagingを掃除する', async () => {
+  test('アニメーションとして維持できない画像ではフレーム分割へfallbackせず変換を失敗させ、最終出力を作成せず一時作業ディレクトリを削除する', async () => {
     await using workspacePath = await mkdtempDisposable(
       path.join(os.tmpdir(), 'gw-convert-to-webp-animation-failure-'),
     );
@@ -73,7 +73,7 @@ suite('WebPに変換する処理', () => {
     await assert.rejects(readFile(path.join(workspacePath.path, '.graphics-workbench', 'convert-to-webp')));
   });
 
-  test('編集可能なDraw.io画像はPDFとPNGを経由してWebPへ変換する', async () => {
+  test('編集可能なDraw.io画像をDraw.io CLIで一時作業ディレクトリ内のdrawio.pdfへPDF出力させ、そのPDFを1ページ目PNGへ描画してからWebPへ変換し、各中間出力pathを検証する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-webp-operation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');

@@ -14,8 +14,8 @@ import { executeJpegConversion, type RasterJob } from '../../src/operations/conv
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
 
-suite('JPEGに変換する処理', () => {
-  test('編集可能なDraw.io画像はPDFを経由してJPEGへ変換する', async () => {
+suite('編集可能なDraw.io画像をPDF中間経由でJPEGへ変換する処理', () => {
+  test('編集可能なDraw.io画像をDraw.io CLIへ-f pdfオプションでPDF出力を要求し、そのPDFを1ページ目PNGへ描画してから読み取り可能なJPEGを最終出力へ反映する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-jpeg-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');

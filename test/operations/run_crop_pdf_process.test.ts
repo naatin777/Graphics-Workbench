@@ -46,8 +46,8 @@ function assertBoxEquals(
   );
 }
 
-suite('Crop PDF child process', () => {
-  test('IPC protocol envelopeは余分なmessage・requestキーを拒否する', () => {
+suite('Crop処理を子プロセスで実行してIPCの完了・失敗を確定する', () => {
+  test('Crop子プロセスとのメッセージ共通枠は定義外の余分なmessage・requestキーを持つ入力を拒否する', () => {
     assert.equal(isCropPdfProcessMessage({ type: 'started', protocolVersion: 1, requestId: 'request-1' }), true);
     assert.equal(
       isCropPdfProcessMessage({ type: 'started', protocolVersion: 1, requestId: 'request-1', extra: true }),
@@ -81,8 +81,8 @@ suite('Crop PDF child process', () => {
     );
   });
 
-  suite('Real child process・real filesystem・real pdf-lib', () => {
-    test('multilingual-text.pdfをstaging/result.pdfへ全ページCropすると、CropBoxだけを更新し隣接ファイルを変更しない', async () => {
+  suite('実プロセスと実ファイルでPDFのCropBoxだけを更新して作業出力へ書き出す', () => {
+    test('multilingual-text.pdfを全ページCropして一時作業ディレクトリのresult.pdfへ出力すると、各ページのCropBoxを更新するだけでMediaBox・隣接ファイルを変更しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const sourcePath = path.join(workspacePath, 'multilingual-text.pdf');
         const adjacentPath = path.join(workspacePath, 'notes.txt');
@@ -134,7 +134,7 @@ suite('Crop PDF child process', () => {
       });
     });
 
-    test('multi-page-mixed-content.pdfの1ページだけをCropすると、対象外ページのCropBoxと全MediaBoxを維持する', async () => {
+    test('multi-page-mixed-content.pdfの先頭ページだけをCropすると、対象外ページのCropBoxと全ページのMediaBoxを維持したまま一時作業ディレクトリへ出力する', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const sourcePath = path.join(workspacePath, 'multi-page-mixed-content.pdf');
         const adjacentPath = path.join(workspacePath, 'adjacent.txt');
@@ -173,7 +173,7 @@ suite('Crop PDF child process', () => {
       });
     });
 
-    test('壊れたPDFを実childへ渡すと、staging出力と周辺ファイルを残さず失敗ログだけを記録する', async () => {
+    test('壊れたPDFを実childへ渡すと、子の失敗通知を記録して処理失敗になり、一時出力も周辺ファイルも作成しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const sourcePath = path.join(workspacePath, 'invalid.pdf');
         const adjacentPath = path.join(workspacePath, 'notes.txt');
@@ -206,7 +206,7 @@ suite('Crop PDF child process', () => {
       });
     });
 
-    test('存在しない入力pathを実filesystemで指定すると、出力を作らず診断可能な失敗になる', async () => {
+    test('存在しない入力ファイルを実filesystemで指定すると、子の失敗通知を記録してENOENTで失敗し、出力ファイルを作成しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const sourcePath = path.join(workspacePath, 'missing.pdf');
         const stagedOutputPath = path.join(workspacePath, 'staging', 'result.pdf');
@@ -233,7 +233,7 @@ suite('Crop PDF child process', () => {
       });
     });
 
-    test('実pathの書き込み先がdirectoryの場合、partial outputを残さず失敗する', async () => {
+    test('作業出力先pathが既にdirectoryとして存在する場合は、一時ファイル出力を残さずrename失敗として扱う', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const sourcePath = path.join(workspacePath, 'source.pdf');
         const stagedOutputPath = path.join(workspacePath, 'staging', 'result.pdf');
@@ -258,7 +258,7 @@ suite('Crop PDF child process', () => {
       });
     });
 
-    test('hang-with-descendant fixtureをAbortSignalでcancelするとchild process treeを終了する', async () => {
+    test('hang-with-descendant fixture実行中にAbortSignalでcancelすると、子プロセスと子孫をまとめて終了させてOperationCancelledErrorで止まり、一時出力を作成しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const pidFile = path.join(workspacePath, 'descendant.pid');
         const controller = new AbortController();
@@ -295,8 +295,8 @@ suite('Crop PDF child process', () => {
     });
   });
 
-  suite('Fixture runner・real OS終了処理', () => {
-    test('request受信後にexit(23)するfixtureは異常exitとして扱いcommitへ進めない', async () => {
+  suite('Crop子プロセスの異常終了（exit code・成功後のexit）を失敗として扱う', () => {
+    test('request受信後にexit code 23で終了するfixtureは異常終了として扱い、一時出力を作成せず失敗する', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const stagedOutputPath = path.join(workspacePath, 'staging', 'result.pdf');
         await mkdir(path.dirname(stagedOutputPath), { recursive: true });
@@ -318,7 +318,7 @@ suite('Crop PDF child process', () => {
       });
     });
 
-    test('success通知後にexit(1)するfixtureはsuccess扱いせず異常終了を返す', async () => {
+    test('success通知を受けた後でexit code 1で終了するfixtureは、成功扱いせず異常終了として失敗し一時出力を作成しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const stagedOutputPath = path.join(workspacePath, 'staging', 'result.pdf');
         await mkdir(path.dirname(stagedOutputPath), { recursive: true });
@@ -341,7 +341,7 @@ suite('Crop PDF child process', () => {
     });
   });
 
-  suite('FakeChildProcessによる親側ライフサイクル', () => {
+  suite('Fakeの子プロセスで、親側がIPC通知とキャンセル・終了待機の判定を行う', () => {
     // Real:
     // - 親のIPC state machineとAbortSignal
     //
@@ -356,7 +356,7 @@ suite('Crop PDF child process', () => {
     //
     // Not covered:
     // - このsuiteでは実OSのprocess tree terminationを保証しない
-    test('started→success→disconnect→exit 0だけをoperation成功として確定する', async () => {
+    test('started→success→disconnect→exit 0の順で通知が来た場合だけ処理を成功として確定し、message/exit監視を解放して破棄する', async () => {
       const child = new FakeChildProcess();
       const logs = new RecordingOutputChannel();
       const operation = runCropPdfProcess(createTestRequest('/workspace', '/workspace/staging/result.pdf'), undefined, {
@@ -376,7 +376,7 @@ suite('Crop PDF child process', () => {
       assert.ok(logs.hasLine('process-completed'));
     });
 
-    test('success後の異常exitをcommit可能な成功へ昇格させない', async () => {
+    test('success通知後にexit 1で異常終了した場合は、commit可能な成功へ昇格させず失敗を返す', async () => {
       const child = new FakeChildProcess();
       const operation = runCropPdfProcess(createTestRequest('/workspace', '/workspace/staging/result.pdf'), undefined, {
         launcher: () => child,
@@ -390,7 +390,7 @@ suite('Crop PDF child process', () => {
       await assert.rejects(operation, /reported success but exited with code 1/iu);
     });
 
-    test('success→disconnect後にexitしないFakeはcompletion grace後にterminateする', async () => {
+    test('success→disconnect後にexitしないFakeは待機猶予期間を過ぎると終了要求を1回呼び出し、成功扱いせず失敗する', async () => {
       const child = new FakeChildProcess();
       let terminationRequests = 0;
       const operation = runCropPdfProcess(createTestRequest('/workspace', '/workspace/staging/result.pdf'), undefined, {
@@ -411,7 +411,7 @@ suite('Crop PDF child process', () => {
       assert.strictEqual(terminationRequests, 1);
     });
 
-    test('failure→disconnect後にexitしないFakeもfailureを保ったままterminateする', async () => {
+    test('failure通知→disconnect後にexitしないFakeはfailureを保持したまま終了要求を1回呼び出して失敗する', async () => {
       const child = new FakeChildProcess();
       let terminationRequests = 0;
       const operation = runCropPdfProcess(createTestRequest('/workspace', '/workspace/staging/result.pdf'), undefined, {
@@ -438,7 +438,7 @@ suite('Crop PDF child process', () => {
     });
 
     for (const [name, messages] of invalidMessageCases()) {
-      test(`不正IPC ${name}を成功扱いせずpayloadをログへ出さない`, async () => {
+      test(`不正IPC（${name}）を受信した場合はprotocol errorとして失敗し、監視を解放して秘密payloadをログへ出さない`, async () => {
         const child = new FakeChildProcess();
         const logs = new RecordingOutputChannel();
         const operation = runCropPdfProcess(
@@ -465,7 +465,7 @@ suite('Crop PDF child process', () => {
       });
     }
 
-    test('kill後にexit通知が来ないFakeではwatchdogがPromiseを有限時間で終了させる', async () => {
+    test('cancel後にexit通知が来ないFakeは終了待機の見張りが終了要求を呼んで有限時間でOperationCancelledErrorにする', async () => {
       const child = new FakeChildProcess();
       const controller = new AbortController();
       const logs = new RecordingOutputChannel();
@@ -495,7 +495,7 @@ suite('Crop PDF child process', () => {
       assertNoLog(logs, /operation-completed|child-success-received/iu);
     });
 
-    test('terminateがthrowしてもtermination watchdogでPromiseを終了する', async () => {
+    test('終了要求実装がthrowしても終了待機の見張りが待機を打ち切りOperationCancelledErrorで終了する', async () => {
       const child = new FakeChildProcess();
       const controller = new AbortController();
       const operation = runCropPdfProcess(
@@ -518,8 +518,8 @@ suite('Crop PDF child process', () => {
     });
   });
 
-  suite('DIしたwriter・launcher・Output Channel', () => {
-    test('cropPdfFileのwriterがENOSPCを返すと、成功扱いせずpartial outputをcleanupする', async () => {
+  suite('Crop処理のファイル書き込み・プロセス起動を差し替えて失敗時の後始末を検証する', () => {
+    test('crop結果のPDF書き出しがディスク不足（ENOSPC）で失敗すると、出力先へ置き換えせず一時ファイルを削除して失敗する', async () => {
       // Real:
       // - 実pdf-libによるsource PDFのload/save
       //
@@ -571,7 +571,7 @@ suite('Crop PDF child process', () => {
       });
     });
 
-    test('launcherがENOENTで起動失敗した場合はrequest前に一度だけfailureを記録する', async () => {
+    test('プロセス起動がENOENTで起動に失敗した場合はrequest送信前に1回だけchild-spawn-failedを記録して失敗する', async () => {
       const logs = new RecordingOutputChannel();
       let launcherCalls = 0;
       await assert.rejects(
@@ -591,7 +591,7 @@ suite('Crop PDF child process', () => {
     });
   });
 
-  test('child wrapperはNode childのmessageを転送し、disposeでNode側listenerを解放する', async () => {
+  test('子プロセスのラッパーは実Node childのmessageを転送し、破棄するとNode側のmessage監視を解放する', async () => {
     const runnerPath = path.join(
       path.dirname(fileURLToPath(import.meta.url)),
       '../../src/operations/pdf/crop_pdf_runner.js',

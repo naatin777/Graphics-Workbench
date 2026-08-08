@@ -9,11 +9,11 @@ import { assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
-suite('PDF fixtureの内容比較', () => {
+suite('PDFテスト入力の全ページPNG変換結果が、各ページの期待出力PNGと一致する', () => {
   for (const [index, fixturePath] of listInputFixturePathsSync(
     path.join(testInputDirectory, 'valid', 'pdf'),
   ).entries()) {
-    test(`pdf/${path.basename(fixturePath)}を全ページPNGへ変換すると固定正解データと一致する`, async () => {
+    test(`pdf/${path.basename(fixturePath)}をpdf-libで取得したページ数分だけページごとにPNG変換し、各ページの出力が固定正解PNGと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
         const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));

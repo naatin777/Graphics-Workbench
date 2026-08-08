@@ -8,7 +8,7 @@ import {
 
 const workspacePath = process.platform === 'win32' ? 'C:\\test-workspace' : '/test-workspace';
 
-suite('ラスターframe job純粋planner', () => {
+suite('既知のフレーム枚数からframe jobを生成する処理', () => {
   const options: RasterFrameJobSource = {
     sourcePath: path.join(workspacePath, 'source.png'),
     workspacePath,
@@ -18,14 +18,14 @@ suite('ラスターframe job純粋planner', () => {
     createJob: (job) => job,
   };
 
-  test('frame mode firstでは先頭pageだけを生成する', () => {
+  test('先頭フレームのみを変換する設定では、全4フレームのうちpage 1の変換処理単位を1件だけ生成する', () => {
     const jobs = createRasterFrameJobsFromMetadata(options, { pages: 4, width: 10, pageHeight: 10 });
 
     assert.strictEqual(jobs.length, 1);
     assert.strictEqual(jobs[0]?.page, 1);
   });
 
-  test('frame mode allでは全frameを生成する', () => {
+  test('全フレームを変換する設定では、4フレームの変換処理単位を4件生成し、最後の出力パスがsource-4.jpegになる', () => {
     const jobs = createRasterFrameJobsFromMetadata(
       { ...options, frameMode: 'all' },
       { pages: 4, width: 10, pageHeight: 10 },
@@ -35,7 +35,7 @@ suite('ラスターframe job純粋planner', () => {
     assert.strictEqual(jobs[3]?.outputPath, path.join(workspacePath, 'source-4.jpeg'));
   });
 
-  test('frame countが取得できない場合は拒否する', () => {
+  test('フレーム枚数が0で取得できない場合は"Could not determine image frame count"エラーを投げ、変換処理単位を1件も生成しない', () => {
     assert.throws(
       () => createRasterFrameJobsFromMetadata(options, { pages: 0, width: 0, pageHeight: 0 }),
       /Could not determine image frame count/,

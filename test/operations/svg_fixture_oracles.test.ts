@@ -7,11 +7,11 @@ import { assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
-suite('SVG fixtureの内容比較', () => {
+suite('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
   for (const [index, fixturePath] of listInputFixturePathsSync(path.join(testInputDirectory, 'valid', 'svg'))
     .filter((candidatePath) => sourceFormatForPath(candidatePath) === 'svg')
     .entries()) {
-    test(`svg/${path.basename(fixturePath)}をPNGへ変換すると固定正解データと一致する`, async () => {
+    test(`svg/${path.basename(fixturePath)}をworkspaceへコピーしてPNGへ変換すると、renderer差を許容して固定正解expected.pngと内容が一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
         const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));

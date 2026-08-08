@@ -14,7 +14,7 @@ import { LatexPasteEditProvider } from '../../src/edit_provider/latex_paste_edit
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 suite('LaTeXクリップボード画像挿入', () => {
-  test('clipboard画像を画像ファイルとして保存しfigure snippetを作る', async () => {
+  test("clipboardのPNGを'画像形式で貼り付け'選択と入力名'edited'でedited.pngとして保存し、\\includegraphics{edited.png}と\\caption{edited}を含むfigure snippetを返す", async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -63,7 +63,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     }
   });
 
-  test('Undo記録に失敗しても保存済み画像とPaste editを維持する', async () => {
+  test("Undo記録(backup保存)が'backup unavailable'で失敗しても、保存済みのpasted.pngとPaste editを維持し、警告を1回表示し、一時保存用の.graphics-workbench/clipboard-pasteディレクトリを作らない", async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -115,7 +115,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     }
   });
 
-  test('clipboard画像をPDFとして保存しfigure snippetを作る', async () => {
+  test("clipboardのPNGを'PDF形式で貼り付け'選択で1ページのpasted.pdfとして保存し、既存PDFのbackupを作ってundoで復元し、競合時に両方保持する選択肢を選んだ場合はpasted-1.pdfを生成してundoで削除する", async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -215,7 +215,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     }
   });
 
-  test('clipboard画像の既存出力を保持して競合解決後の出力を使う', async () => {
+  test('既存のpasted.pngがある状態で競合時に両方保持する選択肢を選んだ場合、既存ファイルを保持したままpasted-1.pngを生成し、snippetにpasted-1.pngを参照させる', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -264,7 +264,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     }
   });
 
-  test('変換開始前のcancelでは出力とstagingを作らない', async () => {
+  test('貼り付け処理開始前にキャンセル済みtokenが渡された場合は、Paste editを返さず(undefined)、showQuickPickも呼ばず、出力pasted.pngも作成しない', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -298,7 +298,7 @@ suite('LaTeXクリップボード画像挿入', () => {
     }
   });
 
-  test('conflict処理中のcancelでは既存出力を変更せずstagingを削除する', async () => {
+  test("競合解決処理中にcancelされた場合は、既存のpasted.pngを変更せず、一時保存用の.graphics-workbench/clipboard-pasteディレクトリを作らず、'cancellation requested'を出力チャンネルに記録してundefinedを返す", async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 

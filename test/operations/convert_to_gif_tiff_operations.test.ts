@@ -7,8 +7,8 @@ import sharp from 'sharp';
 
 import { executeGifConversion, executeTiffConversion } from '../../src/operations/conversion/raster_conversion.js';
 
-suite('GIF/TIFFに変換する処理', () => {
-  test('各フレームを独立した静止GIF/TIFFとしてstaging lifecycleで出力する', async () => {
+suite('GIF/TIFFの各フレームを静止画像として出力する', () => {
+  test('アニメーションGIFをTIFFへ・アニメーションTIFFをGIFへ、各フレームをページ指定で独立した単一フレームの静止画像として出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-tiff-operation-'));
 
     const gifSourcePath = path.join(workspacePath.path, 'source.gif');

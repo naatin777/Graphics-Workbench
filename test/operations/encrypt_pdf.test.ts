@@ -23,8 +23,8 @@ import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const password = 'secret-password';
 
-suite('PDF暗号化', () => {
-  test('mupdfでパスワード付きPDFを生成し、正しいパスワードで復号できる', async () => {
+suite('PDFのパスワード暗号化', () => {
+  test('multi-page-table.pdfを指定パスワードでmupdfにより暗号化して出力し、needsPassword=trueで正しいパスワードでのみ認証できるPDFになっていることを検証する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-test-'));
     const sourcePath = path.join(workspacePath, 'multi-page-table.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -58,7 +58,7 @@ suite('PDF暗号化', () => {
     }
   });
 
-  test('出力先が既に存在する場合は何も作成しない', async () => {
+  test('出力先に既存ファイルがある場合はOutput file already existsエラーで暗号化前に失敗し、既存内容を変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -76,7 +76,7 @@ suite('PDF暗号化', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
   });
 
-  test('キャンセルされた場合は出力しない', async () => {
+  test('abort済みのsignalを渡すと暗号化を開始せずAbortErrorで失敗し、出力を作成しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');

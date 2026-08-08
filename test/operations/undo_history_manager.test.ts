@@ -24,8 +24,8 @@ import {
 } from '../../src/operations/lifecycle/undo_history_manager.js';
 import type { ConversionOutput } from '../../src/operations/lifecycle/undo_last_conversion.js';
 
-suite('Undo履歴のライフサイクル管理', () => {
-  test('履歴が上限を超えると最も古いrecordのバックアップを削除する', async () => {
+suite('Undo用に保存した変換前バックアップの記録と期限管理', () => {
+  test('履歴上限2を超えて3つ目の変換履歴を追加すると、最も古い変換履歴のバックアップだけを削除して残り2つを保持する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const manager = new UndoHistoryManager({ maxRecords: 2, now: () => 0 });
 
@@ -43,7 +43,7 @@ suite('Undo履歴のライフサイクル管理', () => {
     await assert.doesNotReject(access(third.previousFilePath));
   });
 
-  test('保存期間を過ぎたrecordは次のrecord時に追い出してバックアップを削除する', async () => {
+  test('保存期間1000msを過ぎた変換履歴は次の変換履歴追加時に追い出してバックアップを削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     let currentTime = 0;
     const manager = new UndoHistoryManager({ maxRecords: 10, retentionMs: 1000, now: () => currentTime });
@@ -59,7 +59,7 @@ suite('Undo履歴のライフサイクル管理', () => {
     await assert.doesNotReject(access(second.previousFilePath));
   });
 
-  test('マニフェストへ記録し、起動時initializeで保存期間を過ぎた孤立データを削除する', async () => {
+  test('変換履歴をマニフェストへ記録し、再起動時初期化で保存期間を過ぎた変換履歴のバックアップを削除してマニフェストからも除去する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     let currentTime = 0;
@@ -77,7 +77,7 @@ suite('Undo履歴のライフサイクル管理', () => {
     assert.strictEqual(readManifestEntries(storage).length, 0);
   });
 
-  test('保存期限内のマニフェスト記録は起動時initializeで削除しない', async () => {
+  test('保存期限内の保存先記録は再起動時初期化で削除せずバックアップも保持する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     let currentTime = 0;
@@ -94,7 +94,7 @@ suite('Undo履歴のライフサイクル管理', () => {
     assert.strictEqual(readManifestEntries(storage).length, 1);
   });
 
-  test('再起動後の新しいrecordで期限内の孤立マニフェスト記録を保持する', async () => {
+  test('再起動後に新しい変換履歴を追加しても、保存期限内の孤立保存先記録のバックアップは保持してマニフェストに2件記録する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     let currentTime = 0;
@@ -115,7 +115,7 @@ suite('Undo履歴のライフサイクル管理', () => {
     assert.strictEqual(readManifestEntries(storage).length, 2);
   });
 
-  test('再起動後に期限切れになった孤立マニフェスト記録は次のrecordで削除する', async () => {
+  test('再起動後に保存期間を過ぎた孤立保存先記録は次の変換履歴追加時にバックアップとマニフェストから削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     let currentTime = 0;
@@ -138,7 +138,7 @@ suite('Undo履歴のライフサイクル管理', () => {
     assert.strictEqual(readManifestEntries(storage).length, 1);
   });
 
-  test('Undo成功後にrecordをマニフェストからも除去し、バックアップを削除する', async () => {
+  test('Undoが成功した後は、変換前バックアップの記録をマニフェストから除去してバックアップファイルも削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     const manager = new UndoHistoryManager({ storage, now: () => 0 });
@@ -153,12 +153,12 @@ suite('Undo履歴のライフサイクル管理', () => {
     await assert.rejects(access(first.previousFilePath));
   });
 
-  test('履歴が空のときundoはno-recordを返す', async () => {
+  test('変換履歴が1件も記録されていない状態でundoを呼ぶと、何もせず『履歴なし』の結果を返す', async () => {
     const manager = new UndoHistoryManager();
     assert.strictEqual(await manager.undo(), 'no-record');
   });
 
-  test('新しい変換後に古いrecordをundoしようとするとnewer-conversionを返す', async () => {
+  test('2件目の変換を記録した後に1件目の変換履歴のidを指定してundoを試みると、最新の変換履歴と不一致のため変換を元に戻さず『新しい変換が先行』の結果を返す', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const manager = new UndoHistoryManager({ now: () => 0 });
 

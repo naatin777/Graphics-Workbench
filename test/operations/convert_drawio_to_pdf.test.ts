@@ -14,8 +14,8 @@ import { testInputDirectory } from '../helpers/fixture_paths.js';
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 const emptyDrawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'empty.drawio');
 
-suite('Draw.io PDF変換', () => {
-  test('ネイティブDraw.ioをページ名ごとのPDFへ分割する', async () => {
+suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
+  test('drawioファイルを一時作業ディレクトリへ複製してpage-pdfsモードでDraw.io CLIを実行し、ページ名ごとのPDF（各1ページ）を生成して元ファイルは変更しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-pdf-'));
 
     const sourcePath = path.join(workspacePath.path, 'q a.drawio');
@@ -89,7 +89,7 @@ suite('Draw.io PDF変換', () => {
     assert.strictEqual(await readFile(sourcePath, 'utf8'), originalSource);
   });
 
-  test('ネイティブDraw.ioの全ページを1つのPDFへ変換する', async () => {
+  test('single-pdfモードで全ページを1つのPDFへ変換し、3ページのall-pages.pdfを出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-pdf-direct-'));
 
     const sourcePath = path.join(workspacePath.path, 'q a.drawio');
@@ -121,7 +121,7 @@ suite('Draw.io PDF変換', () => {
     assert.strictEqual(await PDFDocument.load(await readFile(outputPath)).then((pdf) => pdf.getPageCount()), 3);
   });
 
-  test('ページ名をWindowsで安全かつ一意な出力名へ変換する', async () => {
+  test('ページ名CONとconが並ぶ場合、Windows予約名・重複を避けて一意な出力名（_CON.pdfと_con-2.pdf）へ変換する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-pdf-names-'));
 
     const sourcePath = path.join(workspacePath.path, 'names.drawio');
@@ -154,7 +154,7 @@ suite('Draw.io PDF変換', () => {
     );
   });
 
-  test('設定されたDraw.io CLIを実際に起動して全ページを1つのPDFへ変換する', async function realDrawioCliConversion() {
+  test('設定されたDraw.io CLIを実際に起動し、全ページを3ページの1つのPDFへ変換する（設定が空ならskipする）', async function realDrawioCliConversion() {
     const { drawioTools } = readConfiguredConversionTools();
     const { drawioPath } = drawioTools;
     if (drawioPath === '') {
@@ -190,7 +190,7 @@ suite('Draw.io PDF変換', () => {
     assert.strictEqual(await PDFDocument.load(await readFile(outputPath)).then((pdf) => pdf.getPageCount()), 3);
   });
 
-  test('コンテンツのないDraw.ioファイルはCLIを起動せず明示的なエラーにする', async () => {
+  test('コンテンツのないDraw.ioファイルはCLIを起動せず「no content to export」エラーを返し、出力PDFも作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-pdf-empty-'));
 
     const sourcePath = path.join(workspacePath.path, 'empty.drawio');

@@ -7,14 +7,14 @@ function normalizeSnippetValue(value: string): string {
 }
 
 suite('Typst / Quarkdownファイルdrag挿入', () => {
-  test('Typst単一PDFからfigure snippetを作る', () => {
+  test('Typstで単一PDF\'figures/sample.pdf\'を、#figure(image("figures/sample.pdf"), caption: [sample])形式のfigure snippetへ変換する', () => {
     const provider = new LatexDropEditProvider('typst');
     const snippet = normalizeSnippetValue(provider.createSinglePdfSnippet('sample', 'figures/sample.pdf').value);
 
     assert.ok(snippet.includes('#figure(image("figures/sample.pdf"), caption: [sample])'));
   });
 
-  test('Typst複数PDFからgrid snippetを作る', () => {
+  test("Typstで2つのPDFから'#grid(columns: 2,'で始まり各PDFをcaption付きfigureとして並べたgrid snippetを生成し、末尾を')'で閉じる", () => {
     const provider = new LatexDropEditProvider('typst');
     const snippet = normalizeSnippetValue(
       provider.createMultiplePdfSnippet(['first', 'second'], ['figures/first.pdf', 'figures/second.pdf']).value,
@@ -26,14 +26,14 @@ suite('Typst / Quarkdownファイルdrag挿入', () => {
     assert.ok(snippet.trimEnd().endsWith(')'));
   });
 
-  test('Quarkdown単一PDFからfigure snippetを作る', () => {
+  test("Quarkdownで単一PDF'figures/sample.pdf'を、'![sample](figures/sample.pdf \"sample\")'形式のfigure snippetへ変換する", () => {
     const provider = new LatexDropEditProvider('quarkdown');
     const snippet = normalizeSnippetValue(provider.createSinglePdfSnippet('sample', 'figures/sample.pdf').value);
 
     assert.ok(snippet.includes('![sample](figures/sample.pdf "sample")'));
   });
 
-  test('Quarkdown複数PDFからrow snippetを作る', () => {
+  test("Quarkdownで2つのPDFから'.row alignment:{spacebetween}'で始まり各PDFの画像参照を並べたrow snippetを生成する", () => {
     const provider = new LatexDropEditProvider('quarkdown');
     const snippet = normalizeSnippetValue(
       provider.createMultiplePdfSnippet(['first', 'second'], ['figures/first.pdf', 'figures/second.pdf']).value,
@@ -44,14 +44,14 @@ suite('Typst / Quarkdownファイルdrag挿入', () => {
     assert.ok(snippet.includes('![second](figures/second.pdf "second")'));
   });
 
-  test('Windowsのpath separatorを正規化する', () => {
+  test("Windows形式'figures\\sample.pdf'のpath separatorをフォワードスラッシュ'figures/sample.pdf'へ正規化してsnippetに含める", () => {
     const provider = new LatexDropEditProvider('typst');
     const snippet = normalizeSnippetValue(provider.createSinglePdfSnippet('sample', 'figures\\sample.pdf').value);
 
     assert.ok(snippet.includes('figures/sample.pdf'));
   });
 
-  test('LaTeX単一PDFのファイル名をエスケープする', () => {
+  test("LaTeXでファイル名'my_file 100%'のアンダースコアとパーセントをエスケープし、captionに'my\\_file 100\\%'を含むfigure snippetを作る", () => {
     const provider = new LatexDropEditProvider('latex');
     const snippet = normalizeSnippetValue(
       provider.createSinglePdfSnippet('my_file 100%', 'figures/my_file 100%.pdf').value,

@@ -14,8 +14,8 @@ import { executePngConversion, type RasterJob } from '../../src/operations/conve
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
 
-suite('PNGに変換する処理', () => {
-  test('GIF、アニメーションWebP、TIFFのframeを個別に変換する', async () => {
+suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', () => {
+  test('GIF・アニメーションWebP・TIFFの2フレームをフレームごとの個別PNGへ変換し、1フレーム目は赤系・2フレーム目は青系の内容のPNGを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-png-frames-'));
 
     for (const format of ['gif', 'webp', 'tiff'] as const) {
@@ -47,7 +47,7 @@ suite('PNGに変換する処理', () => {
     }
   });
 
-  test('編集可能なDraw.io画像はPDFを経由してPNGへ変換する', async () => {
+  test('編集可能なDraw.io画像をDraw.io CLIへ-f pdfオプションでPDF出力を要求し、そのPDFを1ページ目PNGへ描画してから読み取り可能なPNGを最終出力へ反映する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-png-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');

@@ -10,11 +10,11 @@ import { convertToGifCommand, convertToTiffCommand } from '../../src/commands/co
 import { requireValue } from '../helpers/required.js';
 
 suite('GIF/TIFFに変換コマンド', () => {
-  test('GIF入力の先頭frameをTIFFへ変換する', async () => {
+  test('2フレームのGIF入力をTIFFへ変換し、出力が1ページのTIFFになる', async () => {
     await assertAnimatedInputIsSplit('gif', 'tiff', convertToTiffCommand);
   });
 
-  test('TIFF入力の先頭pageをGIFへ変換する', async () => {
+  test('2ページのTIFF入力をGIFへ変換し、出力が1ページのGIFになる', async () => {
     await assertAnimatedInputIsSplit('tiff', 'gif', convertToGifCommand);
   });
 });

@@ -41,7 +41,7 @@ suite('PDF configure crop処理', () => {
     );
   });
 
-  test('固定fixtureの全ページを同じboxでcropし、描画内容の位置を維持する', async () => {
+  test('固定fixtureの全ページを同じcropBoxでcropし、元のMediaBoxを維持したまま1・2ページ目とも描画内容の位置を保って出力し、一時作業ディレクトリの検証と処理完了のログを記録する', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
     const renderDirectory = await createTemporaryRenderDirectory(temporaryDirectories);
     const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, '入力 PDF');
@@ -106,7 +106,7 @@ suite('PDF configure crop処理', () => {
     });
   });
 
-  test('選択ページだけをcropし、未選択ページと元fixtureを変更しない', async () => {
+  test('pages[1,1]で選択された1ページ目だけをcropし、未選択の2ページ目のMediaBox・CropBoxと元fixtureファイルを変更しない', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
     const renderDirectory = await createTemporaryRenderDirectory(temporaryDirectories);
     const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, '選択元');
@@ -160,7 +160,7 @@ suite('PDF configure crop処理', () => {
     });
   });
 
-  test('child成功後に既存outputへのcommitが失敗すると、既存outputを維持しstagingだけをcleanupする', async () => {
+  test('crop処理の子プロセス成功後に出力先への反映が既存ファイルで失敗すると、既存出力を維持したまま一時作業領域を削除し、失敗ログを記録して完了ログを記録しない', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
     const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, 'commit失敗元');
     const outputPath = path.join(workspacePath, 'commit-failure', 'result.pdf');
@@ -193,7 +193,7 @@ suite('PDF configure crop処理', () => {
     assert.equal(logs.hasLine('[crop-pdf-configure] operation-completed'), false);
   });
 
-  test('多言語・複雑なUnicode・半角全角空白を保ち、複数のoutputPathへ出力する', async () => {
+  test('多言語・複雑なUnicode・半角全角空白を含む入力名を6種類のoutputPathテンプレートで解決し、各パターンで1ページPDFのcrop出力を作成して元fixtureを変更しない', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
     const sourceFixtureFileName = 'single-page-document.pdf';
     const sourceFileName = cropConfigureFixture.complexUnicodeFileName;

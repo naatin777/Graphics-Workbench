@@ -49,13 +49,13 @@ suite('JPEGに変換コマンド', () => {
     sandbox.restore();
   });
 
-  test('コマンドが登録されている', async () => {
+  test('graphics-workbench.convertToJpegコマンドがVS Codeに登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
     assert.ok(commands.includes('graphics-workbench.convertToJpeg'));
   });
 
-  test('PNG、WebP、AVIF、PDFを1つのbatchでJPEGへ変換する', async () => {
+  test('PNG、WebP、AVIF、2ページPDFを1回のコマンド実行でまとめてJPEGへ変換し、画像は拡張子置換の.jpeg、PDFはページごとの-1.jpeg/-2.jpegを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -88,7 +88,7 @@ suite('JPEGに変換コマンド', () => {
     }
   });
 
-  test('SVGを読み取り可能なJPEGへ変換する', async () => {
+  test('SVG入力から変換したJPEGがjpeg形式で幅と高さが0より大きい', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -107,15 +107,15 @@ suite('JPEGに変換コマンド', () => {
     }
   });
 
-  test('.mmdファイルを読み取り可能なJPEGへ変換する', async () => {
+  test('.mmdのMermaid入力を変換したJPEGがjpeg形式で幅と高さが0より大きい', async () => {
     await assertMermaidFileConvertsToJpeg('source.mmd');
   });
 
-  test('.mermaidファイルを読み取り可能なJPEGへ変換する', async () => {
+  test('.mermaidのMermaid入力を変換したJPEGがjpeg形式で幅と高さが0より大きい', async () => {
     await assertMermaidFileConvertsToJpeg('source.mermaid');
   });
 
-  test('GIF、TIFFをJPEGへ変換する', async () => {
+  test('GIFとTIFFのテスト入力ファイルをそれぞれJPEGへ変換し、jpeg形式で幅と高さが0より大きい', async () => {
     for (const [format, fixtureFileName] of [
       ['gif', 'swirl-gradient.gif'],
       ['tiff', 'heatmap.tiff'],
@@ -124,7 +124,7 @@ suite('JPEGに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPngToJpegが設定されている場合は指定した出力先を使う', async () => {
+  test('outputPath.convertPngToJpegが設定済みの場合、テンプレートを展開したcustom-source.jpegを出力し、既定のsource.jpegは作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -148,7 +148,7 @@ suite('JPEGに変換コマンド', () => {
     }
   });
 
-  test('空のpair-specific outputPath設定は既定値へfallbackする', async () => {
+  test('outputPath.convertPngToJpegが空文字の場合は既定のsource.jpegへ出力する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {

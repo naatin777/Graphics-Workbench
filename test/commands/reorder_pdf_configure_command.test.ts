@@ -21,8 +21,8 @@ import * as vscode from 'vscode';
 import { requireValue } from '../helpers/required.js';
 import { stubWebviewPanel, waitFor } from '../helpers/webview_panel.js';
 
-suite('Reorder PDF ConfigureコマンドのApplyエラー処理', () => {
-  test('重複ページを含むorderをApplyするとoperationが拒否し、エラー通知とWebviewへのerror送信を行う', async () => {
+suite('Reorder PDF ConfigureコマンドがWebviewから送られた重複orderをApply時に拒否してエラー通知する処理', () => {
+  test('Webviewから重複ページ（1が2回）を含むorderをApplyするとホスト側のApply処理がそのorderを拒否し、エラー通知と拒否理由を含むerrorメッセージをWebviewへ送信する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(

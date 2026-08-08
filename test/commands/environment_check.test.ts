@@ -48,8 +48,8 @@ function entryMap(entries: EnvironmentCheckEntry[]): Map<string, EnvironmentChec
   return new Map(entries.map((entry) => [entry.feature, entry]));
 }
 
-suite('環境チェック（機能単位の状態判定）', () => {
-  test('組み込み機能は常に利用可能と判定される', async () => {
+suite('外部ツールの起動結果ごとに機能単位で利用可否を判定する環境チェック', () => {
+  test('外部ツールの起動結果に関わらず、組み込み機能の画像変換とPDF結合/分割/並び替えは常に利用可能と判定する', async () => {
     const entries = await checkWithProbe(async () => {});
 
     const map = entryMap(entries);
@@ -57,14 +57,14 @@ suite('環境チェック（機能単位の状態判定）', () => {
     assert.strictEqual(map.get(FEATURE_PDF_MERGE)?.status, 'available');
   });
 
-  test('全ツールが利用可能な場合は全てavailableになる', async () => {
+  test('全ての外部ツールが正常に起動できる場合は、チェック対象の全機能を利用可能と報告する', async () => {
     const entries = await checkWithProbe(async () => {});
 
     assert.ok(entries.length >= 5, `expected at least 5 entries, got ${entries.length}`);
     assert.ok(entries.every((entry) => entry.status === 'available'));
   });
 
-  test('未導入（ENOENT）のツールはunavailableになる', async () => {
+  test('Mermaid CLIの起動でENOENTエラーが発生した場合は、そのツールを未導入として利用不可と判定し、未導入の詳細メッセージを設定する（PDF結合機能は利用可能のまま）', async () => {
     const entries = await checkWithProbe(async (params) => {
       if (params.toolName === userMessage('message.environmentCheck.tool.mermaidCli')) {
         const error = new Error('spawn mmdc ENOENT');
@@ -82,7 +82,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     assert.strictEqual(map.get(FEATURE_PDF_MERGE)?.status, 'available');
   });
 
-  test('パス設定が無効（実行ファイル不在）のツールはunavailableになる', async () => {
+  test('Draw.ioの実行ファイルパスを設定しているが起動時にENOENTが発生する場合は、パス設定が無効として利用不可と判定し、未導入の詳細メッセージを設定する', async () => {
     const entries = await checkWithProbe(async (params) => {
       if (params.toolName === TOOL_DRAWIO) {
         const error = new Error('spawn drawio ENOENT');
@@ -96,7 +96,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     assert.strictEqual(map.get(FEATURE_DRAWIO)?.detail, userMessage('message.environmentCheck.notFound', TOOL_DRAWIO));
   });
 
-  test('バージョン確認がタイムアウトしたツールはunavailableになる', async () => {
+  test('Mermaid CLIのバージョン確認がタイムアウトした場合は利用不可と判定し、タイムアウトを示す詳細を設定する', async () => {
     const entries = await checkWithProbe(async (params) => {
       if (params.toolName === userMessage('message.environmentCheck.tool.mermaidCli')) {
         throw new Error('mmdc timed out after 10000ms');
@@ -111,7 +111,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     );
   });
 
-  test('バージョン確認が非ゼロ終了したツールはunavailableになる', async () => {
+  test('Draw.ioのバージョン確認が非ゼロ終了コードで終了した場合は利用不可と判定し、失敗メッセージを詳細に設定する', async () => {
     const entries = await checkWithProbe(async (params) => {
       if (params.toolName === TOOL_DRAWIO) {
         throw new Error('Draw.io failed (exited with code 1)');
@@ -126,7 +126,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     );
   });
 
-  test('複数ツールのうち一部だけ利用可能な場合はそれぞれ独立に判定される', async () => {
+  test('複数ツールのうちMermaid CLIだけがENOENTで起動できない場合でも、その他のDraw.ioとMermaidの機能は独立に利用可能と判定する', async () => {
     const entries = await checkWithProbe(async (params) => {
       if (params.toolName === userMessage('message.environmentCheck.tool.mermaidCli')) {
         const error = new Error('spawn ENOENT');
@@ -141,7 +141,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     assert.strictEqual(map.get(FEATURE_MERMAID)?.status, 'available');
   });
 
-  test('設定済みのブラウザ実行パスを使う場合はプローブ対象になる', async () => {
+  test('Chrome実行パスを設定済みの場合はその設定パスでブラウザをプローブし、Mermaid機能が利用可能と判定される', async () => {
     const probed: string[] = [];
     const entries = await checkWithProbe(
       async (params) => {
@@ -155,7 +155,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     assert.ok(probed.includes(TOOL_BROWSER));
   });
 
-  test('SVG変換チェックは選択したエンジンのツールをプローブする', async () => {
+  test('SVG→PDF変換チェックは設定された変換エンジンの実行ファイルのみをプローブし、既定ではexecPath.chrome、rsvg-convert設定時はexecPath.rsvgConvertの設定IDを持つ', async () => {
     const chromeProbed: string[] = [];
     const chromeEntries = await checkWithProbe(async (params) => {
       chromeProbed.push(params.toolName);
@@ -185,7 +185,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     assert.ok(rsvgProbed.includes(TOOL_RSVG));
   });
 
-  test('詳細にはローカルの絶対パスを含めない', async () => {
+  test('Mermaid CLIの起動失敗で絶対パスを含むENOENTが発生しても、詳細表示にはローカルマシンの絶対パスを含めず未導入の詳細メッセージを返す', async () => {
     const entries = await checkWithProbe(async (params) => {
       if (params.toolName === userMessage('message.environmentCheck.tool.mermaidCli')) {
         const error = new Error('spawn /Users/me/secret/mmdc ENOENT');
@@ -202,7 +202,7 @@ suite('環境チェック（機能単位の状態判定）', () => {
     );
   });
 
-  test('statusとdetailは常に揃っている', async () => {
+  test('全外部ツールで起動エラーが発生する場合でも、各機能エントリはfeatureとdetailを持ち、利用不可のときは設定IDを必ず持つ', async () => {
     const entries = await checkWithProbe(async () => {
       throw new Error('boom');
     });

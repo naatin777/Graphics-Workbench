@@ -10,7 +10,7 @@ import { requireValue } from '../helpers/required.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 
 suite('PDF圧縮コマンド', () => {
-  test('qualityを選択してPDFを圧縮し、_compressed付きの出力を作成する', async () => {
+  test('2ページのPDF入力でquality選択ダイアログにebookを選ぶと、ソースと同名の_compressed.pdfを出力し、1ページ以上のPDFとして読み込める', async () => {
     await using workspacePath = await mkdtempDisposable(
       path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-compress-pdf-'),
     );

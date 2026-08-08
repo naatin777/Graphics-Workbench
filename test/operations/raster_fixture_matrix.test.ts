@@ -25,9 +25,9 @@ const supportedRasterFixturePaths = rasterFixtureFormats
       ),
   );
 
-suite('ラスターfixtureの内容比較', () => {
+suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () => {
   for (const [index, fixturePath] of supportedRasterFixturePaths.entries()) {
-    test(`${path.relative(rasterInputDirectory, fixturePath)}をPNGへ変換すると固定正解データと一致する`, async () => {
+    test(`${path.relative(rasterInputDirectory, fixturePath)}をworkspaceへコピーし、複数フレームなら2ページ目を指定してPNGへ変換すると、fixture固定のexpected.pngと内容が一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
         const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index);
@@ -60,7 +60,7 @@ suite('ラスターfixtureの内容比較', () => {
     });
   }
 
-  test('avif/animated-swirl.avifをPNGへ変換すると未対応sequenceとして出力を残さず失敗する', async () => {
+  test('avif/animated-swirl.avifをPNGへ変換するとunsupported image formatエラーで失敗し、出力ファイルも作成しない', async () => {
     const fixturePath = path.join(testInputDirectory, 'valid', unsupportedRasterFixtureRelativePaths[0] ?? '');
 
     await withTestWorkspace(async (workspacePath) => {

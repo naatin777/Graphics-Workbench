@@ -6,8 +6,8 @@ import path from 'node:path';
 import { CommitRollbackError } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
 import { saveClipboardImage } from '../../src/operations/input/save_clipboard_image.js';
 
-suite('Clipboard画像保存のartifact ownership', () => {
-  test('rollback失敗時は復旧backupを保持し、Clipboard外をcleanupしない', async () => {
+suite('クリップボード画像保存で、上書き時の退避・復旧処理を管理する', () => {
+  test('commit後のrollbackコピーが失敗すると、復旧用backup（source.png.previous）を残し、出力を元のままにしてClipboard外のファイルは変更しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-clipboard-save-'));
     const runId = 'rollback-failure';
     const outputPath = path.join(workspacePath.path, 'pasted.png');

@@ -22,8 +22,8 @@ import { convertToPdfFiles, validateSvgToPdfOptions } from '../../src/operations
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
-suite('PDF変換operation（PNG入力）', () => {
-  test('複数フレームのGIF jobは1フレーム1ページPDFとして変換する', async () => {
+suite('入力画像をPDFへ変換する処理', () => {
+  test('2フレームのアニメーションGIFをpage1・page2の2jobに分け、各フレームを1ページのPDFへ変換する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-to-pdf-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
@@ -49,7 +49,7 @@ suite('PDF変換operation（PNG入力）', () => {
     );
   });
 
-  test('page未指定のアニメーションGIFは全フレームを1つのPDFへ統合する', async () => {
+  test('page未指定の2フレームアニメーションGIFを1jobで渡すと、全フレームを1つのPDFへ統合した2ページPDFを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-to-pdf-all-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
@@ -67,7 +67,7 @@ suite('PDF変換operation（PNG入力）', () => {
     assert.strictEqual(pdf.getPageCount(), 2);
   });
 
-  test('PNGをPDFへ変換する', async () => {
+  test('PNGを読み込んで1ページのPDFへ変換し、出力PDFのページ数が1であることを確認する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-png-test-'));
     const sourcePath = path.join(workspacePath.path, 'source.png');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -84,7 +84,7 @@ suite('PDF変換operation（PNG入力）', () => {
     const pdf = await LoadedPdfDocument.load(await import('node:fs/promises').then((fs) => fs.readFile(outputPath)));
     assert.strictEqual(pdf.getPageCount(), 1);
   });
-  test('preflightと実変換で設定pixel上限を共有する', async () => {
+  test('10x10のPNGに対しmaxInputPixels=99ではpixel上限エラーで変換せず、maxInputPixels=100では変換を実行して出力PDFを作成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-png-pixel-limit-'));
     const sourcePath = path.join(workspacePath.path, 'ten-by-ten.png');
     const limitedOutputPath = path.join(workspacePath.path, 'limited-output.pdf');
@@ -120,7 +120,7 @@ suite('PDF変換operation（PNG入力）', () => {
     await access(outputPath);
   });
 
-  test('Draw.io runnerが成功終了しても非PDF出力をcommitしない', async () => {
+  test('Draw.io runnerが成功終了しても非PDF内容を書き出した場合はunparsable PDFエラーで失敗とし、最終出力を作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-invalid-output-'));
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -146,7 +146,7 @@ suite('PDF変換operation（PNG入力）', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('Draw.io backend未指定のeditable Draw.io画像はフォールバックせず失敗する', async () => {
+  test('Draw.io backend未指定のeditable Draw.io画像はフォールバックせずDraw.io executable未設定エラーで失敗し、最終出力を作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-no-drawio-'));
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -164,7 +164,7 @@ suite('PDF変換operation（PNG入力）', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('Chrome backendはheadless印刷のCLI引数でSVGをPDFへ変換する', async () => {
+  test('SVGのPDF変換でChrome backendが--headless --no-pdf-header-footerと--print-to-pdf=...result.pdfおよびSVGのfile URLを渡して実行され、SVGサイズの1ページPDFが生成される', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-svg-chrome-'));
     const sourcePath = path.join(workspacePath.path, 'source.svg');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -207,7 +207,7 @@ suite('PDF変換operation（PNG入力）', () => {
     assert.deepStrictEqual(document.getPage(0).getSize(), { width: 31, height: 19 });
   });
 
-  test('Chrome方式ではChrome実行ファイルの指定を必須にする', () => {
+  test('Chrome方式でchromePathが空文字の設定をvalidateSvgToPdfOptionsへ渡すとChrome executable未設定エラーを投げる', () => {
     assert.throws(
       () =>
         validateSvgToPdfOptions({

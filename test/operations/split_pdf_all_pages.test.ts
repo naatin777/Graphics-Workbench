@@ -23,7 +23,7 @@ import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.js';
 
 suite('PDF全ページ分割', () => {
-  test('すべてのページを1始まりのページ番号で分割し、作業ファイルを残す', async () => {
+  test('multi-page-table.pdfの全ページを1から始まるページ番号で1ページずつのPDFへ分割し、各分割ページが元の対応ページと同じ描画内容であることを確認する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
     const sourcePath = path.join(workspacePath.path, 'multi-page-table.pdf');
     const outputDirectory = path.join(workspacePath.path, 'source');
@@ -67,7 +67,7 @@ suite('PDF全ページ分割', () => {
     await assert.doesNotReject(access(path.join(stagingDirectory, 'pages', '2.pdf')));
   });
 
-  test('複数PDFはすべての入力が成功してから出力する', async () => {
+  test('複数のPDFをまとめて分割し、すべての入力の分割が成功した後に各ページを出力して元の対応ページと描画内容を比較する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
     const sourcePaths = ['multi-page-table.pdf', 'multilingual-text.pdf'].map((fileName) =>
       path.join(workspacePath.path, fileName),
@@ -101,7 +101,7 @@ suite('PDF全ページ分割', () => {
     }
   });
 
-  test('出力先が既に存在する場合は何も作成しない', async () => {
+  test('分割先のページ出力ファイルが既に存在する場合は分割を開始せず、他ページの出力も作成しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-split-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const firstOutputPath = path.join(workspacePath, 'source', '1.pdf');
@@ -127,7 +127,7 @@ suite('PDF全ページ分割', () => {
     assert.strictEqual(await readFile(secondOutputPath, 'utf8'), 'existing');
   });
 
-  test('ページごとの出力パスが衝突する場合は出力しない', async () => {
+  test('複数ページが同じ出力パスを指す場合はsame outputエラーで失敗し、出力ファイルを作成しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-split-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'same.pdf');
@@ -149,7 +149,7 @@ suite('PDF全ページ分割', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('キャンセルされた場合は出力しない', async () => {
+  test('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-split-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source', '1.pdf');

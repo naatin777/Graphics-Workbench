@@ -20,8 +20,8 @@ function rejectsWithCategory(category: string): (error: unknown) => boolean {
   return (error) => error instanceof ExcalidrawError && error.category === category;
 }
 
-suite('Excalidraw SVG生成', () => {
-  test('normalizeExcalidrawSvgは重複したxmlns属性を1つにまとめる', () => {
+suite('Excalidraw sceneからSVGを生成する処理', () => {
+  test('重複したxmlns属性を持つSVG文字列をnormalizeExcalidrawSvgで正規化するとxmlnsが1つにまとまり、再適用しても結果が変わらない', () => {
     const duplicated =
       '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="5" height="5"/></svg>';
     const normalized = normalizeExcalidrawSvg(duplicated);
@@ -30,7 +30,7 @@ suite('Excalidraw SVG生成', () => {
     assert.strictEqual(normalized, normalizeExcalidrawSvg(normalized));
   });
 
-  test('embedded imageが欠けたsceneは画像エラーとして区別する', async () => {
+  test('filesに存在しないfileIdを参照するimage要素を含むsceneを変換すると、embedded-imageカテゴリのエラーとして失敗する', async () => {
     await withTempSvgOutput(async (svgPath) => {
       const sourcePath = await writeTempScene(
         JSON.stringify({
@@ -46,7 +46,7 @@ suite('Excalidraw SVG生成', () => {
     });
   });
 
-  test('malformed JSONはJSONエラーとして区別する', async () => {
+  test('JSONとして解釈できないsceneファイルを渡すと、jsonカテゴリのエラーとして失敗する', async () => {
     await withTempSvgOutput(async (svgPath) => {
       const sourcePath = await writeTempScene('{ not json');
       await assert.rejects(
@@ -56,7 +56,7 @@ suite('Excalidraw SVG生成', () => {
     });
   });
 
-  test('読み込めないファイルは読み込みエラーとして区別する', async () => {
+  test('存在しないパスを指すsceneファイルを渡すと、readカテゴリのエラーとして失敗する', async () => {
     await withTempSvgOutput(async (svgPath) => {
       await assert.rejects(
         excalidrawToSvg({
@@ -69,7 +69,7 @@ suite('Excalidraw SVG生成', () => {
     });
   });
 
-  test('exportToSvgにsceneを渡し、正規化したSVGファイルを書き出す', async () => {
+  test('読み込んだsceneをexportToSvgのoptions（elements・viewBackgroundColor・exportPadding=10）へ渡してSVGを生成し、正規化したSVGを出力ファイルへ書き出す', async () => {
     const capturedOptions: Record<string, unknown>[] = [];
     const loadExportToSvg = async () => ({
       exportToSvg: async (options: Record<string, unknown>) => {
@@ -107,7 +107,7 @@ suite('Excalidraw SVG生成', () => {
     });
   });
 
-  test('exportToSvgが失敗するとexportエラーとして区別する', async () => {
+  test('exportToSvgが失敗すると、exportカテゴリのエラーとして失敗する', async () => {
     const loadExportToSvg = async () => ({
       exportToSvg: async () => {
         throw new Error('boom');
@@ -120,7 +120,7 @@ suite('Excalidraw SVG生成', () => {
     });
   });
 
-  test('実bundleを使ってexcalidraw fixtureをSVGへ変換する', async function realBundleExport() {
+  test('実excalidraw-adapter.mjs bundleでbackground-color fixtureをSVGへ変換し、svg・rect要素と正のviewBox・埋め込み@font-faceを含むSVGを生成する', async function realBundleExport() {
     if (!existsSync(excalidrawBundlePath)) {
       this.skip();
       return;

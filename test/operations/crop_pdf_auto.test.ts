@@ -18,7 +18,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import { cropPdfFiles } from '../../src/operations/pdf/crop_pdf_auto.js';
 
 suite('PDF自動crop処理', () => {
-  test('全ページを内容バウンディングボックス＋マージンでcropする', async () => {
+  test('2ページPDFの各ページを描画スキャンで検出した内容バウンディングボックス＋マージン5の範囲でcropし、MediaBox・CropBoxを更新して一時作業ディレクトリへinput.pdf・result.pdfを作成する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output', 'source-crop.pdf');
@@ -56,7 +56,7 @@ suite('PDF自動crop処理', () => {
     await access(path.join(workDirectory, 'result.pdf'));
   });
 
-  test('空白ページでは元のMediaBoxを維持する', async () => {
+  test('内容が無い320x180のPDFページではcrop範囲を検出できず、元のMediaBox・CropBoxを維持して出力する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'blank.pdf');
     const outputPath = path.join(workspacePath, 'blank-crop.pdf');
@@ -84,7 +84,7 @@ suite('PDF自動crop処理', () => {
     });
   });
 
-  test('複数のPDFを並列変換して各出力を作成する', async () => {
+  test('4つのPDFを1回のcropPdfFiles呼び出しで並列にcrop変換し、各jobの出力PDFを作成する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const jobs = await Promise.all(
       ['first', 'second', 'third', 'fourth'].map(async (name) => {
@@ -110,7 +110,7 @@ suite('PDF自動crop処理', () => {
     }
   });
 
-  test('既存の出力を上書きしない', async () => {
+  test('出力先に既存ファイルがある場合はOutput file already existsエラーでcrop前に失敗し、既存の出力内容を変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
@@ -128,7 +128,7 @@ suite('PDF自動crop処理', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
   });
 
-  test('変換前に宣言workspace外の入力ファイルを拒否する', async () => {
+  test('宣言されたworkspace外のディレクトリにある入力ファイルを渡すと、変換を開始せずoutside the workspaceエラーで失敗する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-outside-'));
     const sourcePath = path.join(outsideDirectory, 'source.pdf');
@@ -144,7 +144,7 @@ suite('PDF自動crop処理', () => {
     );
   });
 
-  test('変換前にworkspace外の出力パスを拒否する', async () => {
+  test('出力パスが宣言されたworkspace外を指している場合は、変換を開始せずoutside the workspaceエラーで失敗する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-outside-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
@@ -160,7 +160,7 @@ suite('PDF自動crop処理', () => {
     );
   });
 
-  test('既にキャンセル済みの場合は変換を開始しない', async () => {
+  test('abort済みのsignalを渡すと変換を開始せずAbortErrorで失敗し、出力を作成しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
@@ -180,7 +180,7 @@ suite('PDF自動crop処理', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('変換が失敗した場合は出力を作成しない', async () => {
+  test('解釈できないPDF（%PDF-1.7で始まる不正な内容）を入力するとcrop変換が失敗し、出力を作成しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'broken.pdf');
     const outputPath = path.join(workspacePath, 'broken-crop.pdf');

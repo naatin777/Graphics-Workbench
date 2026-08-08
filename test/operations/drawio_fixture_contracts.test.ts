@@ -11,8 +11,8 @@ import { requireValue } from '../helpers/required.js';
 
 const xmlParser = new XMLParser({ ignoreAttributes: false });
 
-suite('Draw.io fixtureの契約', () => {
-  test('source fixtureはネイティブXMLと埋め込みメタデータを保持する', async () => {
+suite('Draw.io fixtureの保存形式契約', () => {
+  test('valid/drawio配下のfixtureを列挙し、native drawioはmxfileで始まるXMLと3つのdiagram・絵文字を、埋め込みPNGは355x515のPNGにmxfileコメントとdata:image/pngのXMLを、埋め込みSVGは312x525のSVGにcontent属性内のXMLを保持していることを検証する', async () => {
     const drawioDirectory = path.join(testInputDirectory, 'valid', 'drawio');
     const fixturePaths = (await listInputFixturePaths(drawioDirectory)).filter(isDrawioPath);
     assert.deepStrictEqual(

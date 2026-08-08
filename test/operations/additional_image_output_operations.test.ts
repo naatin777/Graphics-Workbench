@@ -18,8 +18,8 @@ import { requireValue } from '../helpers/required.js';
 const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
 
-suite('GIF/TIFFの出力経路', () => {
-  test('GIF/TIFFを各supported outputへ変換する', async () => {
+suite('GIF/TIFFを各出力形式へ変換する', () => {
+  test('2フレームのGIF/TIFFをPDFへ変換すると全フレームを2ページへ展開し、PNG/JPEG/WebP/AVIFへ変換すると先頭フレームだけを4x4の赤画像として出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-additional-image-output-'));
 
     for (const inputFormat of inputFormats) {

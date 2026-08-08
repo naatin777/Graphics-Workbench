@@ -14,6 +14,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## Implemented
 
+- 全テスト名を処理フローの日本語訳に全面書き換え（106ファイル・約660件、内部名称を処理内容へ展開）
 - drop/paste edit providerをTypst / Quarkdownへ拡張（`insertTypst.*` / `insertQuarkdown.*`設定、複数drop形式別ラップ）
 - PR時CI停止（check/test/playwrightをworkflow_dispatchのみに変更、rulesetからrequired_status_checks除去）
 - Graphite廃止（check-prs-landed削除、graphite-stacked-pr/parallel-development skill削除）

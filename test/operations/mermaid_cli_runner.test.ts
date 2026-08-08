@@ -21,7 +21,7 @@ import {
 const operationMermaidInputPath = path.join(testInputDirectory, 'valid', 'mermaid', 'conversion-flowchart.mmd');
 
 suite('mmdc CLI実行', () => {
-  test('mmdcでSVGを描画できる', async () => {
+  test('mermaidテスト入力を入力としてmmdcを外部プロセス起動してSVG描画し、出力SVGに<svg要素が含まれる', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-mermaid-workspace-'));
     const sourcePath = path.join(workspacePath.path, 'input.mmd');
     const outputPath = path.join(workspacePath.path, 'output.svg');
@@ -41,14 +41,14 @@ suite('mmdc CLI実行', () => {
     assert.ok(svg.includes('<svg'));
   });
 
-  test('キャンセル済みのsignalではmmdcを起動せずAbortErrorでrejectする', async () => {
+  test('abort済みsignalでmmdc実行を呼ぶと、mmdcプロセスを起動せずにaborted/cancelledのエラーでrejectする', async () => {
     const controller = new AbortController();
     controller.abort();
 
     await assert.rejects(runMermaidCliWithSignal(createTestRequest(), controller.signal), /aborted|cancelled/iu);
   });
 
-  test('CLI引数はinput/outputと一時設定fileを別の引数で渡す', () => {
+  test('CLI引数が、--input/--outputの変換対象と--configFile/--puppeteerConfigFileの一時設定ファイルを別々の引数として組み立てられる', () => {
     const args = createMermaidCliArgs(createTestRequest(), '/tmp/mermaid.json', '/tmp/chrome.json');
 
     assert.deepStrictEqual(args, [

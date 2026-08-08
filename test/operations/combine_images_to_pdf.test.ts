@@ -40,8 +40,8 @@ async function copyFixtureTo(workspacePath: string, name: string): Promise<strin
   return destination;
 }
 
-suite('画像→1PDF結合', () => {
-  test('単一のPNG画像を1ページPDFに変換する', async () => {
+suite('複数の画像を1つのPDFへ結合する', () => {
+  test('単一のPNG画像を読み込んで1ページのPDFを出力する', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -62,7 +62,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('設定したRaster入力pixel上限をpreflightと変換に適用する', async () => {
+  test('設定したラスター入力pixel上限（maxInputPixels）を超えるPNGを渡すと、変換前にpixel上限エラーで拒否してPDFを生成しない', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -83,7 +83,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('複数のPNG画像を選択順で複数ページPDFに結合する', async () => {
+  test('3つのPNG画像を選択順に読み込み、3ページのPDFを生成し、進捗を1/3・2/3・3/3の順で報告する', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -115,7 +115,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('変換前にキャンセルされた場合はstagingと出力を作成しない', async () => {
+  test('変換開始前にabort済みsignalを渡すと、出力PDFも一時作業ディレクトリも作成せずにキャンセルエラーを返す', async () => {
     const workspacePath = await setupWorkspace();
     const sourcePath = await copyFixtureTo(workspacePath, 'input.png');
     const outputPath = path.join(workspacePath, 'result.pdf');
@@ -139,7 +139,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('生成されたPDFの各ページに正のサイズがある', async () => {
+  test('2枚のPNGを結合した2ページPDFの各ページが正のwidth/heightを持つことを検証する', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -168,7 +168,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('SVGは設定したrsvg backendを使い、ページサイズをpixel=pointへ正規化する', async () => {
+  test('SVGを設定したrsvg-convertへ--format=pdf --outputで渡し、SVGのpixel寸法（31x19）をそのままpointとして正規化したページを出力する', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -211,7 +211,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('対応する全入力形式がPDFへ寄与する', async () => {
+  test('対応する全入力形式（PNG/JPEG/WebP/AVIF/GIF/TIFF/SVG）をそれぞれ単独で1PDFへ変換し、各ページサイズを入力の寸法と一致させる', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -237,7 +237,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('全対応形式の混在バッチが入力順と各ページサイズを保持する', async () => {
+  test('全対応形式の混在バッチを入力順に結合し、GIF/TIFFは2フレームを各2ページへ展開した上で各ページサイズを保持する', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -260,7 +260,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('画像が0件の場合はエラー', async () => {
+  test('画像が0件の場合は「No images」エラーを返す', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -277,7 +277,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('破損画像は変換で停止する', async () => {
+  test('破損したPNGを渡すと、変換を停止してunsupported image format系エラーを返す', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -297,7 +297,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('Mermaid、Draw.io、PDFを仕様対象外として変換前に拒否する', async () => {
+  test('Mermaid（.mmd）・Draw.io（.drawio.png）・PDF（.pdf）は対象外として変換前に「Unsupported image input:」エラーで拒否する', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
@@ -319,7 +319,7 @@ suite('画像→1PDF結合', () => {
     }
   });
 
-  test('workspace外の入力はpreflightで読み取る前に拒否する', async () => {
+  test('workspace外の入力PNGはpreflightで読み取る前に「File operation is outside the workspace:」エラーで拒否する', async () => {
     const workspacePath = await setupWorkspace();
     const outsideDirectory = await setupWorkspace();
 

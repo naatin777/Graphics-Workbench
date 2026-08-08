@@ -21,14 +21,14 @@ const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-te
 const longFixturePath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
 
 suite('PDF結合コマンド', () => {
-  test('現行の選択PDF結合コマンドが登録されている', async () => {
+  test('VS Codeに選択ファイル版のPDF結合コマンドが登録されており、旧ページ選択版のコマンドは登録されていない', async () => {
     const commands = await vscode.commands.getCommands(true);
 
     assert.ok(commands.includes('graphics-workbench.mergePdf.selectedFiles'));
     assert.ok(!commands.includes('graphics-workbench.mergePdf.selectedPages'));
   });
 
-  test('複数PDFを選択順に1つのPDFへ結合する', async () => {
+  test('選択された2つのPDFを先頭から順に読み込み、それぞれの全ページを同じ順序で1つの出力PDFへ書き出し、2件の成功通知を出す', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -94,7 +94,7 @@ suite('PDF結合コマンド', () => {
     }
   });
 
-  test('10ページ以上のPDFを実際に結合できる', async () => {
+  test('10ページ以上の長いPDFと2つ目のPDFを結合し、合計17ページを含む1つの出力PDFとして保存する', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -130,7 +130,7 @@ suite('PDF結合コマンド', () => {
     }
   });
 
-  test('workspace外へ解決するsymlinkのpreviewを作成しない', async () => {
+  test('選択にworkspace外へ解決するsymlinkのPDFが含まれる場合はConfigureのWebviewを開かず、エラー通知を表示する', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -164,7 +164,7 @@ suite('PDF結合コマンド', () => {
     }
   });
 
-  test('PDF以外を含む選択は結合せずエラー通知を出す', async () => {
+  test('選択にPDF以外のファイル（.txt）が含まれる場合は保存ダイアログを表示せず結合を開始せず、エラー通知を出して出力ファイルも作成しない', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -201,7 +201,7 @@ suite('PDF結合コマンド', () => {
     }
   });
 
-  test('非file URIを含む選択は結合を開始しない', async () => {
+  test('選択にfileスキームでないURI（untitled:）が含まれる場合は保存ダイアログを表示せず結合を開始せず、エラー通知を出す', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -235,7 +235,7 @@ suite('PDF結合コマンド', () => {
     }
   });
 
-  test('PDFが1ファイル以下の選択は結合せずエラー通知を出す', async () => {
+  test('選択がPDF1ファイルのみの場合は結合に必要な2ファイル以上を満たさないため、保存ダイアログを表示せずエラー通知を出す', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -267,7 +267,7 @@ suite('PDF結合コマンド', () => {
     }
   });
 
-  test('既存出力がある場合も成功した結合PDFで置き換える', async () => {
+  test('出力先に既存PDFがあり上書き確認でOverwriteを選択した場合は、既存出力を結合結果の4ページPDFで置き換える', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -305,7 +305,7 @@ suite('PDF結合コマンド', () => {
     }
   });
 
-  test('結合途中で失敗した場合は既存出力を変更しない', async () => {
+  test('結合対象に不正な内容のPDFが含まれ結合途中で失敗する場合は、既存の出力ファイルを元の内容のまま変更しない', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 

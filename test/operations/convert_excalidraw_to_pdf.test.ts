@@ -29,8 +29,8 @@ const fakeBundleModule = `export async function exportToSvg() {
 }
 `;
 
-suite('Excalidraw → PDF変換', () => {
-  test('Excalidraw sceneをPDFへ変換してstagingを掃除する', async () => {
+suite('Excalidraw sceneをSVG経由でPDFへ変換する', () => {
+  test('Excalidraw sceneをSVGへexportして1ページのPDFを生成し、変換後に一時作業ディレクトリを掃除して元ファイルは変更しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-excalidraw-pdf-'));
     const { fakeBundlePath, cleanupBundle } = await writeFakeBundle();
 
@@ -61,7 +61,7 @@ suite('Excalidraw → PDF変換', () => {
     }
   });
 
-  test('不正なsceneは失敗し出力とstagingを残さない', async () => {
+  test('JSONとして不正なsceneはExcalidrawError（JSONが壊れている旨）で失敗し、出力PDFも一時作業ディレクトリも残さない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-excalidraw-invalid-'));
     const { fakeBundlePath, cleanupBundle } = await writeFakeBundle();
 

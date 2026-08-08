@@ -24,8 +24,8 @@ import {
 } from '../../src/shared/protocols/reorder_pdf_protocol.js';
 import { reorderPdfFiles } from '../../src/operations/pdf/reorder_pdf.js';
 
-suite('PDF並び替え', () => {
-  test('指定順序でページを並び替えて出力する', async () => {
+suite('PDFページ並び替え', () => {
+  test('3ページのPDFへページ順[3,1,2]を指定すると、出力PDFは3ページを保ちながら元の3・1・2ページ目の順に並ぶ', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -46,7 +46,7 @@ suite('PDF並び替え', () => {
     }
   });
 
-  test('ページ順が順列でない場合は失敗する', async () => {
+  test('3ページのPDFにページ順[1,2]や[1,1,2]のように全ページをちょうど1回ずつ含まない順列以外を指定すると、ページ数不一致や重複として失敗する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -67,7 +67,7 @@ suite('PDF並び替え', () => {
     );
   });
 
-  test('出力先が既に存在する場合は何も作成しない', async () => {
+  test('出力先ファイルが既に存在する場合は並び替えを開始せず、既存の出力ファイルも変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -84,7 +84,7 @@ suite('PDF並び替え', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
   });
 
-  test('キャンセルされた場合は出力しない', async () => {
+  test('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -104,7 +104,7 @@ suite('PDF並び替え', () => {
   });
 });
 
-suite('reorderPdf protocol guard', () => {
+suite('Reorder PDFのWebview⇔ホスト間メッセージ型検証', () => {
   const labels = {
     header: { title: 'Reorder PDF', description: 'description' },
     preview: {
@@ -128,26 +128,26 @@ suite('reorderPdf protocol guard', () => {
     labels,
   };
 
-  test('正しいinitメッセージを受け入れる', () => {
+  test('必須フィールドをすべて持つ正しいinitメッセージは受け入れられる', () => {
     assert.strictEqual(isReorderPdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
   });
 
-  test('空のページ順を拒否する', () => {
+  test('applyメッセージのページ順が空の場合は拒否される', () => {
     assert.strictEqual(isReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order: [] } }), false);
   });
 
-  test('正しいapplyメッセージを受け入れる', () => {
+  test('applyメッセージのページ順[3,1,2]が定義された配列を持つ場合は受け入れられる', () => {
     assert.strictEqual(isReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order: [3, 1, 2] } }), true);
   });
 
-  test('追加キーを持つinitを拒否する', () => {
+  test('initメッセージに定義外のsourcePathキーが含まれる場合は拒否される', () => {
     assert.strictEqual(
       isReorderPdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
       false,
     );
   });
 
-  test('共有envelopeのtop-level追加キーを拒否する', () => {
+  test('メッセージ共通枠で許されないrequestIdキーを最上位に付けると拒否される', () => {
     assert.strictEqual(
       isReorderPdfWebviewToHostMessage({
         type: 'apply',

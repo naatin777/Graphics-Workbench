@@ -23,8 +23,8 @@ import {
 } from '../../src/shared/protocols/rotate_pdf_protocol.js';
 import { rotatePdfFiles } from '../../src/operations/pdf/rotate_pdf.js';
 
-suite('PDF回転', () => {
-  test('全ページを90度回転して出力する', async () => {
+suite('PDFページ回転', () => {
+  test('3ページのPDFへ角度90を指定すると、出力PDFは3ページを保ったまま全ページの回転角を90度として保存する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -48,7 +48,7 @@ suite('PDF回転', () => {
     }
   });
 
-  test('既に回転したページには角度を加算する', async () => {
+  test('既に90度回転している1ページのPDFにさらに90度回転を適用すると、既存の回転角に加算して180度として保存する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-pre-rotated-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -68,7 +68,7 @@ suite('PDF回転', () => {
     }
   });
 
-  test('選択ページだけを回転する', async () => {
+  test('3ページのPDFで2番目のページだけに角度180を指定すると、2番目のページだけ回転角180度になり他のページは0度のままになる', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -89,7 +89,7 @@ suite('PDF回転', () => {
     }
   });
 
-  test('出力先が既に存在する場合は何も作成しない', async () => {
+  test('出力先ファイルが既に存在する場合は回転を開始せず、既存の出力ファイルも変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -106,7 +106,7 @@ suite('PDF回転', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
   });
 
-  test('キャンセルされた場合は出力しない', async () => {
+  test('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -125,7 +125,7 @@ suite('PDF回転', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('範囲外のページ指定は失敗する', async () => {
+  test('2ページのPDFに対して範囲外のページ番号5を指定すると、out of rangeエラーで失敗する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -151,7 +151,7 @@ async function writePdf(filePath: string, pageCount: number, rotation = 0): Prom
   await writeFile(filePath, await document.save());
 }
 
-suite('rotatePdf protocol guard', () => {
+suite('Rotate PDFのWebview⇔ホスト間メッセージ型検証', () => {
   const labels = {
     header: { title: 'Rotate PDF', description: 'description' },
     preview: {
@@ -182,39 +182,39 @@ suite('rotatePdf protocol guard', () => {
     labels,
   };
 
-  test('正しいinitメッセージを受け入れる', () => {
+  test('必須フィールドをすべて持つ正しいinitメッセージは受け入れられる', () => {
     assert.strictEqual(isRotatePdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
   });
 
-  test('不正なapply角度を拒否する', () => {
+  test('applyメッセージの角度が45度のように90度の倍数でない場合は拒否される', () => {
     assert.strictEqual(
       isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 45, pageIndices: [1] } }),
       false,
     );
   });
 
-  test('空のページ選択を拒否する', () => {
+  test('applyメッセージのページ選択が空の場合は拒否される', () => {
     assert.strictEqual(
       isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 90, pageIndices: [] } }),
       false,
     );
   });
 
-  test('正しいapplyメッセージを受け入れる', () => {
+  test('applyメッセージの角度180とページ選択[1,3]が定義に合う場合は受け入れられる', () => {
     assert.strictEqual(
       isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 180, pageIndices: [1, 3] } }),
       true,
     );
   });
 
-  test('追加キーを持つinitを拒否する', () => {
+  test('initメッセージに定義外のsourcePathキーが含まれる場合は拒否される', () => {
     assert.strictEqual(
       isRotatePdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
       false,
     );
   });
 
-  test('共有envelopeのtop-level追加キーを拒否する', () => {
+  test('メッセージ共通枠で許されないrequestIdキーを最上位に付けると拒否される', () => {
     assert.strictEqual(
       isRotatePdfWebviewToHostMessage({
         type: 'apply',

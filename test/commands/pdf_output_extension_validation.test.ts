@@ -23,8 +23,8 @@ import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
 const invalidPdfTemplate = '${fileDirname}/result.png';
 
-suite('PDF出力の拡張子検証', () => {
-  test('rotatePdf (Quick)は.pdf以外のoutputPath設定をApply前に拒否する', async () => {
+suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前に拒否する拡張子検証', () => {
+  test('rotatePdfの出力パス設定が.pngで終わる場合は、Quick回転の適用処理（withProgress）を開始せず、無効な拡張子のエラー通知を出す', async () => {
     await withPdfSource(async (sourcePath, sandbox) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const withProgress = sandbox
@@ -43,7 +43,7 @@ suite('PDF出力の拡張子検証', () => {
     });
   });
 
-  test('rotatePdf.configureはWebviewを開く前に.pdf以外のoutputPath設定を拒否する', async () => {
+  test('rotatePdfの出力パス設定が.pngで終わる場合は、ConfigureのWebviewを開く前にエラー通知を出して画面を作成しない', async () => {
     await withPdfSource(async (sourcePath, sandbox) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
@@ -57,7 +57,7 @@ suite('PDF出力の拡張子検証', () => {
     });
   });
 
-  test('reorderPdf.configureはWebviewを開く前に.pdf以外のoutputPath設定を拒否する', async () => {
+  test('reorderPdfの出力パス設定が.pngで終わる場合は、ConfigureのWebviewを開く前にエラー通知を出して画面を作成しない', async () => {
     await withPdfSource(async (sourcePath, sandbox) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
@@ -71,7 +71,7 @@ suite('PDF出力の拡張子検証', () => {
     });
   });
 
-  test('cropPdf (Auto)は.pdf以外のoutputPath設定をApply前に拒否する', async () => {
+  test('cropPdfの出力パス設定が.pngで終わる場合は、Autoトリミングの適用処理（withProgress）を開始せず、無効な拡張子のエラー通知を出す', async () => {
     await withPdfSource(async (sourcePath, sandbox) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const withProgress = sandbox
@@ -90,7 +90,7 @@ suite('PDF出力の拡張子検証', () => {
     });
   });
 
-  test('splitPdf.configureはWebviewを開く前に.pdf以外のoutputPath設定を拒否する', async () => {
+  test('splitPdfの出力パステンプレートが.pngで終わる場合は、ConfigureのWebviewを開く前にエラー通知を出して画面を作成しない', async () => {
     await withPdfSource(async (sourcePath, sandbox) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
@@ -107,7 +107,7 @@ suite('PDF出力の拡張子検証', () => {
     });
   });
 
-  test('encryptPdfは.pdf以外のoutputPath設定を変換開始前に拒否する', async () => {
+  test('encryptPdfの出力パス設定が.pngで終わる場合は、暗号化処理（withProgress）を開始せず、無効な拡張子のエラー通知を出す', async () => {
     await withPdfSource(async (sourcePath, sandbox) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const withProgress = sandbox
@@ -124,7 +124,7 @@ suite('PDF出力の拡張子検証', () => {
     });
   });
 
-  test('convertToPdf (SVG入力)は.pdf以外のoutputPath設定を変換開始前に拒否する', async () => {
+  test('convertToPdf（SVG入力）の出力パス設定が.pngで終わる場合は、変換処理（withProgress）を開始せず、無効な拡張子のエラー通知を出す', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(

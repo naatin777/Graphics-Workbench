@@ -90,13 +90,13 @@ suite('PDFに変換コマンド', () => {
     sandbox.restore();
   });
 
-  test('コマンドが登録されている', async () => {
+  test('graphics-workbench.convertToPdfコマンドがVS Codeに登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
     assert.ok(commands.includes('graphics-workbench.convertToPdf'));
   });
 
-  test('PNG、JPEG、WebP、AVIFを1つのbatchでPDFへ変換する', async () => {
+  test('PNG、JPEG、WebP、AVIFを1回のコマンド実行でまとめてPDFへ変換し、各出力PDFが1ページで入力画像の幅・高さと同じpointサイズになる', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -129,7 +129,7 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('SVGをSVGの幅と高さと同じpointサイズの1ページPDFへ変換する', async () => {
+  test('SVGを変換したPDFが1ページでSVGのwidthとheightと同じpointサイズになる', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -148,23 +148,23 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('.mmdファイルを読み取り可能なPDFへ変換する', async () => {
+  test('.mmdのMermaid入力を変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
     await assertMermaidFileConvertsToPdf('source.mmd');
   });
 
-  test('.mermaidファイルを読み取り可能なPDFへ変換する', async () => {
+  test('.mermaidのMermaid入力を変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
     await assertMermaidFileConvertsToPdf('source.mermaid');
   });
 
-  test('GIFを全フレームのPDFへ変換する', async () => {
+  test('GIFのテスト入力ファイルを変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
     await assertFixtureConvertsToPdf('gif', 'swirl-gradient.gif');
   });
 
-  test('TIFFを全ページのPDFへ変換する', async () => {
+  test('TIFFのテスト入力ファイルを変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
     await assertFixtureConvertsToPdf('tiff', 'heatmap.tiff');
   });
 
-  test('outputPath.convertPngToPdfが設定されている場合は指定した出力先を使う', async () => {
+  test('outputPath.convertPngToPdfが設定済みの場合、テンプレートを展開したto-pdf-source.pdfを出力し、既定のsource.pdfは作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -188,7 +188,7 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('空のpair-specific outputPath設定は既定値へfallbackする', async () => {
+  test('outputPath.convertPngToPdfが空文字の場合は既定のsource.pdfへ出力する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -210,7 +210,7 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('大文字拡張子のファイルを変換する', async () => {
+  test('拡張子が大文字のraster.PNGでも変換でき、raster.pdfが入力画像と同じpixelサイズになる', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -230,7 +230,7 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('編集可能なDraw.io画像では出力テンプレートに論理入力パスを使う', () => {
+  test('source.drawio.pngとdiagram.DIO.SVGは出力テンプレート用に拡張子を除いた論理パスを返し、image.pngはそのまま返す', () => {
     assert.strictEqual(
       logicalSourcePathForOutputTemplate(path.join('workspace', 'source.drawio.png')),
       path.join('workspace', 'source'),
@@ -245,7 +245,7 @@ suite('PDFに変換コマンド', () => {
     );
   });
 
-  test('editable Draw.io画像をConvert to PDFで変換するときは直接PDF設定を使う', async () => {
+  test('editableなDraw.io画像の出力テンプレートは、convertDrawioToPdfDirectly未設定なら既定、設定済みならその設定値を返す', async () => {
     const sourceUri = vscode.Uri.file(path.join('workspace', 'source.drawio.png'));
 
     await withWorkspaceSettings({ 'graphics-workbench.outputPath.convertDrawioToPdfDirectly': undefined }, async () => {
@@ -269,7 +269,7 @@ suite('PDFに変換コマンド', () => {
     );
   });
 
-  test('複数PNGを1つのバッチとして変換する', async () => {
+  test('2つのPNGを1回のコマンド実行でまとめて変換し、それぞれfirst.pdf、second.pdfが入力画像と同じpixelサイズで生成される', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -290,7 +290,7 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('非対応入力が含まれる場合はどのファイルも変換しない', async () => {
+  test('batchに.txtの非対応入力が含まれる場合は変換を開始せず、対応しているPNGの出力source.pdfも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -310,7 +310,7 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('PDFからPDFへは変換しない', async () => {
+  test('PDF入力をPDFへ変換するコマンドを実行しても変換を開始しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {

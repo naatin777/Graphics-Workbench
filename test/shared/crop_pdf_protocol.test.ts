@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 
 import { isCropConfigureMessage } from '../../src/shared/protocols/crop_pdf_protocol.js';
 
-suite('Crop PDF Webviewプロトコル', () => {
-  test('valid apply payloadを受け入れる', () => {
+suite('Crop PDFのWebview操作メッセージの受信判定（ready/apply/previewLoadFailed）', () => {
+  test('cropBoxの4座標がすべて有限数値で、targetがselected・正の整数pagesであるapplyメッセージを受け入れる', () => {
     assert.equal(
       isCropConfigureMessage({
         type: 'apply',
@@ -16,7 +16,7 @@ suite('Crop PDF Webviewプロトコル', () => {
     );
   });
 
-  test('preview errorと不正なapply payloadを区別する', () => {
+  test('messageだけを持つpreviewLoadFailedメッセージを受け入れ、cropBox座標にNaNを含むapplyメッセージは有限数値チェックで拒否する', () => {
     assert.equal(
       isCropConfigureMessage({
         type: 'previewLoadFailed',
@@ -36,7 +36,7 @@ suite('Crop PDF Webviewプロトコル', () => {
     );
   });
 
-  test('共有envelopeの余分なキーと空のtypeを拒否する', () => {
+  test('readyにrequestId等の余分なトップレベルキーを持つ場合・payloadにmessage以外のcodeを持つ場合・applyにsourcePathを持つ場合・typeが空文字の場合をすべて拒否する', () => {
     assert.equal(isCropConfigureMessage({ type: 'ready', requestId: 'request-1' }), false);
     assert.equal(
       isCropConfigureMessage({ type: 'previewLoadFailed', payload: { message: 'failed', code: 'E_FAIL' } }),

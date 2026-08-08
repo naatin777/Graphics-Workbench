@@ -13,13 +13,13 @@ import assert from 'node:assert/strict';
 import { SafeModeState } from '../../src/commands/lifecycle/safe_mode.js';
 
 suite('Safe Mode状態', () => {
-  test('初期状態では有効である', () => {
+  test('保存済み状態が無い初期状態ではSafe Modeが有効（ON）である', () => {
     const state = new SafeModeState(new MemoryState());
 
     assert.strictEqual(state.isEnabled(), true);
   });
 
-  test('切り替えた値をglobalStateに保存する', async () => {
+  test('toggleでOFFに切り替えるとglobalStateへfalseを保存し、別インスタンスで読み直してもOFFを復元し、再度toggleするとtrueが保存される', async () => {
     const storage = new MemoryState();
     const state = new SafeModeState(storage);
 
