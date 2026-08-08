@@ -23,7 +23,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 
 export type { CommittedConversionOutput };
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import type { DrawioBackend, MermaidBackend, PdftocairoBackend } from './tools/index.js';
+import type { DrawioBackend, MermaidBackend, PdfRenderBackend } from './tools/index.js';
 import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
 import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
@@ -92,7 +92,7 @@ export interface RasterJob {
 export interface ExecuteRasterConversionBatchOptions {
   jobs: RasterJob[];
   runtime: ConversionExecutionContext;
-  pdftocairoTools: PdftocairoBackend;
+  pdfRenderTools: PdfRenderBackend;
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   maxInputPixels: number;
@@ -103,7 +103,7 @@ export interface ExecuteRasterConversionBatchOptions {
 interface RasterStageContext {
   runId: string;
   runtime: ConversionExecutionContext;
-  pdftocairoTools: PdftocairoBackend;
+  pdfRenderTools: PdfRenderBackend;
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   definition: RasterConversionDefinition;
@@ -147,7 +147,7 @@ export async function executeRasterConversionBatch(
       stageRasterConversion(job, index, {
         runId: stageRunId,
         runtime: stageRuntime,
-        pdftocairoTools: options.pdftocairoTools,
+        pdfRenderTools: options.pdfRenderTools,
         mermaidTools: options.mermaidTools,
         drawioTools: options.drawioTools,
         definition: options.definition,
@@ -273,8 +273,8 @@ async function writePdfPageAsRaster(request: RasterRenderRequest, context: Raste
   await mkdir(path.dirname(pngPath), { recursive: true });
   context.runtime.signal?.throwIfAborted();
 
-  if (context.pdftocairoTools.runPdfToPng) {
-    await context.pdftocairoTools.runPdfToPng(request.sourcePath, pngPath, request.page ?? 1, context.runtime.signal);
+  if (context.pdfRenderTools.runPdfToPng) {
+    await context.pdfRenderTools.runPdfToPng(request.sourcePath, pngPath, request.page ?? 1, context.runtime.signal);
   } else {
     const pdfBytes = await readFile(request.sourcePath);
     context.runtime.signal?.throwIfAborted();

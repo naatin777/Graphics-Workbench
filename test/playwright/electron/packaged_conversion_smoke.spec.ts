@@ -189,7 +189,7 @@ test('package済みVSIXのSharp native dependencyでPNGをJPEGへ変換できる
   }
 });
 
-test('package済みVSIXからpdftocairoを使ってPDFをJPEGへ変換できる', async ({ playwright }, testInfo) => {
+test('package済みVSIXからMuPDFでPDFをJPEGへ変換できる', async ({ playwright }, testInfo) => {
   testInfo.setTimeout(120_000);
   let env: ElectronTestEnv | undefined;
   let consoleMessages: string[] = [];

@@ -25,7 +25,7 @@ export async function convertToGifCommand(
     operationName: 'convert-to-gif',
     outputLabel: 'GIF',
     prepare: (configuration) => ({
-      pdftocairoTools: {},
+      pdfRenderTools: {},
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
     }),
@@ -41,7 +41,7 @@ export async function convertToGifCommand(
       executeGifConversion({
         jobs,
         maxInputPixels,
-        pdftocairoTools: prepared.pdftocairoTools,
+        pdfRenderTools: prepared.pdfRenderTools,
         mermaidTools: prepared.mermaidTools,
         drawioTools: prepared.drawioTools,
         runtime,

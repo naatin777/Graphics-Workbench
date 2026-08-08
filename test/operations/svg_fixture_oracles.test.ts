@@ -13,14 +13,14 @@ suite('SVG fixtureの内容比較', () => {
     .entries()) {
     test(`svg/${path.basename(fixturePath)}をPNGへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdftocairoTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const outputPath = path.join(workspacePath, 'converted', `svg-${index}.png`);
         const expectedPath = path.join(testOutputDirectory, 'svg', sourceName(fixturePath), 'expected.png');
 
         await executePngConversion({
           jobs: [{ sourcePath, outputPath, workspacePath }],
-          pdftocairoTools,
+          pdfRenderTools,
           mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },

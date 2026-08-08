@@ -4,7 +4,7 @@
 //
 // Not tested:
 // - Draw.io CLI実体での変換
-// - pdftocairo実体での変換
+// - PDF renderer実体での変換
 // - 画像内容のpixel完全一致
 
 import assert from 'node:assert/strict';
@@ -35,7 +35,7 @@ suite('WebPに変換する処理', () => {
             animation: { pages: 2, pageHeight: 8, delay: [100, 250], loop: 3 },
           },
         ],
-        pdftocairoTools: {},
+        pdfRenderTools: {},
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio' },
         webp: { effort: 0 },
@@ -66,7 +66,7 @@ suite('WebPに変換する処理', () => {
       await assert.rejects(
         executeWebpConversion({
           jobs: [{ sourcePath, outputPath, workspacePath, animation: { pages: 2, pageHeight: 8 } }],
-          pdftocairoTools: {},
+          pdfRenderTools: {},
           mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           webp: { effort: 0 },
@@ -100,7 +100,7 @@ suite('WebPに変換する処理', () => {
             page: 1,
           },
         ],
-        pdftocairoTools: {
+        pdfRenderTools: {
           runPdfToPng: async (pdfSourcePath, pngOutputPath, page) => {
             pdfToPngCalls.push({ sourcePath: pdfSourcePath, outputPath: pngOutputPath, page });
             await sharp({ create: { width: 4, height: 4, channels: 4, background: '#ff0000' } })

@@ -152,7 +152,7 @@ rsvg-convert または Google Chrome / Chromium
 #### macOS
 
 ```sh
-brew install poppler librsvg
+brew install librsvg
 npm install -g @mermaid-js/mermaid-cli
 ```
 
@@ -165,7 +165,7 @@ Draw.io Desktop は以下からインストールしてください。
 #### Debian / Ubuntu
 
 ```sh
-sudo apt install poppler-utils librsvg2-bin
+sudo apt install librsvg2-bin
 npm install -g @mermaid-js/mermaid-cli
 ```
 

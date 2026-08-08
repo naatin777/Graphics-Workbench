@@ -152,7 +152,7 @@ Use whichever conversion backend is available in your environment.
 #### macOS
 
 ```sh
-brew install poppler librsvg
+brew install librsvg
 npm install -g @mermaid-js/mermaid-cli
 ```
 
@@ -165,7 +165,7 @@ Install Draw.io Desktop from:
 #### Debian / Ubuntu
 
 ```sh
-sudo apt install poppler-utils librsvg2-bin
+sudo apt install librsvg2-bin
 npm install -g @mermaid-js/mermaid-cli
 ```
 

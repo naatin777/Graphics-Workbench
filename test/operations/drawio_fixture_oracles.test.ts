@@ -79,7 +79,7 @@ suite('Draw.io fixtureの実変換比較', () => {
         await executePngConversion({
           jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           runtime,
-          pdftocairoTools: configuredTools.pdftocairoTools,
+          pdfRenderTools: configuredTools.pdfRenderTools,
           mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           runId: `drawio-${fixtureCase.id}-png`,

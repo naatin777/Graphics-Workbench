@@ -21,7 +21,7 @@ export async function convertToTiffCommand(
     prepare: (configuration) => ({
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
-      pdftocairoTools: {},
+      pdfRenderTools: {},
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, runtime }) =>
       planTiffConversionJobs(sourceUri, configuration, maxInputPixels, runtime),

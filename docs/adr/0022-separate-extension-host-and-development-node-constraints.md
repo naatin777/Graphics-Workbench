@@ -22,7 +22,7 @@ VS CodeのExtension HostがNode.jsを実行runtimeとして持つことは[VS Co
 - repositoryのlocal開発・installに必要なNode.jsの最小versionは、`devEngines.runtime: >=22.22.2`で強制する。
 - npmのversionは、引き続き`devEngines.packageManager: npm 12.0.1`と`packageManager: npm@12.0.1`で固定する。
 - CIとreleaseは、引き続きNode.js 22.23.1をsetupし、npm 12.0.1を明示的にinstallする。
-- extension runtimeの互換性は、`engines.vscode`と固定VS CodeのExtension Host testで確認する。repositoryの開発用Node.js versionを、VS Code内蔵Node.jsのversion宣言として扱わない。
+- extension runtimeの互換性は、`engines.vscode`とVS CodeのExtension Host testで確認する。CIはcurrent stableと対応最小version（`1.105.x`）の2本を実行する。repositoryの開発用Node.js versionを、VS Code内蔵Node.jsのversion宣言として扱わない。
 
 ## 理由
 

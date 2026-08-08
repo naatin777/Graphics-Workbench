@@ -31,7 +31,7 @@ export async function convertToWebpCommand(
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
       webp: readWebpOutputOptions(configuration),
-      pdftocairoTools: {},
+      pdfRenderTools: {},
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, maxAnimationPixels, prepared, runtime }) =>
       planWebpConversionJobs(sourceUri, {
@@ -49,7 +49,7 @@ export async function convertToWebpCommand(
         mermaidTools: prepared.mermaidTools,
         drawioTools: prepared.drawioTools,
         webp: prepared.webp,
-        pdftocairoTools: prepared.pdftocairoTools,
+        pdfRenderTools: prepared.pdfRenderTools,
         runtime,
       }),
   });
