@@ -14,7 +14,7 @@ export interface MergePdfWebview {
 }
 
 export async function openMergePdfConfigure(vscodeWindow: Page, fileNames: string[]): Promise<MergePdfWebview> {
-  await expect(vscodeWindow.getByText('Safe Mode: ON', { exact: true })).toBeVisible();
+  await expect(vscodeWindow.getByRole('button', { name: /Graphics Workbench Controls/ })).toBeVisible();
 
   const explorer = vscodeWindow.getByRole('tree', { name: 'Files Explorer' });
   await expect(explorer).toBeVisible();

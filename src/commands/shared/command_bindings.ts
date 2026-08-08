@@ -229,6 +229,12 @@ export const commandBindings = [
     adapter: 'extensionCommand',
   },
   {
+    id: 'graphics-workbench.openControls',
+    module: '../lifecycle/controls_panel.js',
+    exportName: 'openControlsPanelCommand',
+    adapter: 'extensionCommand',
+  },
+  {
     id: 'graphics-workbench.checkEnvironment',
     module: '../shared/environment_check.js',
     exportName: 'checkEnvironmentCommand',

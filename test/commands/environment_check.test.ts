@@ -17,7 +17,9 @@ import assert from 'node:assert/strict';
 import { userMessage } from '../../src/commands/shared/user_messages.js';
 import {
   runEnvironmentChecks,
+  runFeatureAvailabilityChecks,
   type EnvironmentCheckEntry,
+  type FeatureAvailabilityEntry,
   type RunEnvironmentChecksOptions,
 } from '../../src/commands/shared/environment_check.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
@@ -215,5 +217,114 @@ suite('外部ツールの起動結果ごとに機能単位で利用可否を判�
         assert.ok(entry.settingId !== undefined);
       }
     }
+  });
+});
+
+suite('ユーザー視点の機能単位で利用可否を返すrunFeatureAvailabilityChecks', () => {
+  function featureCheckWithProbe(
+    probe: (params: { toolName: string }) => Promise<void>,
+    overrides: Record<string, unknown> = {},
+  ): Promise<FeatureAvailabilityEntry[]> {
+    return runFeatureAvailabilityChecks({
+      configuration: fakeConfiguration(overrides),
+      probe,
+    });
+  }
+
+  function featureEntryMap(entries: FeatureAvailabilityEntry[]): Map<string, FeatureAvailabilityEntry> {
+    return new Map(entries.map((entry) => [entry.id, entry]));
+  }
+
+  test('PDF operationsとImagesは外部ツールに依存せず常に利用可能と判定する', async () => {
+    const map = featureEntryMap(await featureCheckWithProbe(async () => {}));
+
+    assert.strictEqual(map.get('pdf-operations')?.available, true);
+    assert.strictEqual(map.get('images')?.available, true);
+  });
+
+  test('SVG → PDFは選択した変換エンジンの利用可否に連動し、選択エンジンが無い場合は利用不可と判定する', async () => {
+    const rsvgUnavailable = featureEntryMap(
+      await featureCheckWithProbe(
+        async (params) => {
+          if (params.toolName === userMessage('message.environmentCheck.tool.rsvgConvert')) {
+            const error = new Error('spawn rsvg-convert ENOENT');
+            Object.assign(error, { code: 'ENOENT' });
+            throw error;
+          }
+        },
+        { 'convertToPdf.svg.engine': 'rsvg-convert' },
+      ),
+    );
+
+    assert.strictEqual(rsvgUnavailable.get('svg-to-pdf')?.available, false);
+
+    const chromeAvailable = featureEntryMap(
+      await featureCheckWithProbe(async () => {}, { 'convertToPdf.svg.engine': 'chrome' }),
+    );
+
+    assert.strictEqual(chromeAvailable.get('svg-to-pdf')?.available, true);
+  });
+
+  test('Draw.ioはdrawioツールの利用可否をそのまま反映する', async () => {
+    const entries = await featureCheckWithProbe(async (params) => {
+      if (params.toolName === userMessage('message.environmentCheck.tool.drawio')) {
+        const error = new Error('spawn drawio ENOENT');
+        Object.assign(error, { code: 'ENOENT' });
+        throw error;
+      }
+    });
+
+    assert.strictEqual(featureEntryMap(entries).get('drawio')?.available, false);
+  });
+
+  test('Mermaidはmmdcとchromeの両方が利用可能な場合だけ利用可能と判定する', async () => {
+    const mermaidCliOnly = featureEntryMap(
+      await featureCheckWithProbe(async (params) => {
+        if (params.toolName === userMessage('message.environmentCheck.tool.browser')) {
+          const error = new Error('spawn chrome ENOENT');
+          Object.assign(error, { code: 'ENOENT' });
+          throw error;
+        }
+      }),
+    );
+
+    assert.strictEqual(mermaidCliOnly.get('mermaid')?.available, false);
+
+    const bothAvailable = featureEntryMap(await featureCheckWithProbe(async () => {}));
+
+    assert.strictEqual(bothAvailable.get('mermaid')?.available, true);
+  });
+
+  test('SVG → PDFは選択エンジンが利用できない場合でも別エンジンへフォールバックせず、利用不可のまま返す', async () => {
+    const chromeBrokenButRsvgAvailable = featureEntryMap(
+      await featureCheckWithProbe(
+        async (params) => {
+          if (params.toolName === userMessage('message.environmentCheck.tool.browser')) {
+            const error = new Error('spawn chrome ENOENT');
+            Object.assign(error, { code: 'ENOENT' });
+            throw error;
+          }
+        },
+        { 'convertToPdf.svg.engine': 'rsvg-convert' },
+      ),
+    );
+
+    assert.strictEqual(chromeBrokenButRsvgAvailable.get('svg-to-pdf')?.available, true);
+
+    const rsvgUnavailable = featureEntryMap(
+      await featureCheckWithProbe(
+        async (params) => {
+          if (params.toolName === userMessage('message.environmentCheck.tool.rsvgConvert')) {
+            const error = new Error('spawn rsvg-convert ENOENT');
+            Object.assign(error, { code: 'ENOENT' });
+            throw error;
+          }
+        },
+        { 'convertToPdf.svg.engine': 'rsvg-convert' },
+      ),
+    );
+
+    assert.strictEqual(rsvgUnavailable.get('svg-to-pdf')?.available, false);
+    assert.strictEqual(rsvgUnavailable.get('mermaid')?.available, true);
   });
 });

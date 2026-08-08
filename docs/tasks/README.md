@@ -69,6 +69,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0229: Safe Mode周辺UIをControlsパネルへ整理する](0229-consolidate-safe-mode-ui-into-controls-panel.md) — Done — 単独のSafe Modeボタンを廃止し、アイコンのみのControlsボタン＋QuickPickポップオーバー（SVG→PDFエンジン選択・Safe Mode ON/OFF・機能別availability＋Check again）へ整理
 - [0228: ローカルDockerテスト環境の起動を高速化する](0228-speed-up-local-docker-test-env.md) — Done — `COPY . .`削除・stable layer順・node_modules named volume・Xvfb条件起動（PR #238）
 - [0227: Webview UIをVS Codeのテーマ・フォント・Zoomへ自然に追従させる](0227-review-webview-vscode-theme-integration.md) — Done — CSS variables / remベースへ移行（PR #236）
 - [0226: 全テスト名を処理フローの日本語訳に全面書き換える](0226-rewrite-test-names-as-flow.md) — Done（規約の正本は `docs/testing/test-naming.md`）
