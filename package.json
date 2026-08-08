@@ -63,6 +63,8 @@
     "test:coverage": "npm run build && npm run test:coverage:run",
     "test:coverage:run": "vscode-test --coverage --coverage-output coverage/vscode --coverage-reporter text-summary --coverage-reporter html --coverage-reporter lcov",
     "test:playwright:vsix": "playwright test --grep-invert \"visual review\"",
+    "test:playwright:smoke": "playwright test --project=vscode-electron electron/packaged_conversion_smoke.spec.ts",
+    "test:docker": "bash scripts/test-in-docker.sh",
     "visual:capture": "playwright test --grep \"visual review\" --project=vscode-electron",
     "generate:extension-meta": "node --experimental-strip-types scripts/generate-extension-meta.ts",
     "check:extension-meta": "node --experimental-strip-types scripts/generate-extension-meta.ts --check",

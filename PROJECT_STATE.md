@@ -8,12 +8,15 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## Current priority
 
-- Extension Hostをpre-package testの唯一のruntimeとして維持する
-- 変換commandの境界を段階的に整理し、planner・lifecycle・operationを分離する
+- PR時CIを停止し、local testはDockerで実行する（`npm run test:docker`）
+- Graphiteを廃止し、plain git + ghへ移行する
 - 次の作業は `docs/tasks/README.md` で管理する
 
 ## Implemented
 
+- PR時CI停止（check/test/playwrightをworkflow_dispatchのみに変更、rulesetからrequired_status_checks除去）
+- Graphite廃止（check-prs-landed削除、graphite-stacked-pr/parallel-development skill削除）
+- ローカルDocker test環境（`npm run test:docker`、playwright base image + 変換ツール + 日本語フォント）
 - PDF crop / split / merge
 - PDF to/from PNG/JPEG/WebP/AVIF/SVG/GIF/TIFF/EPS conversion
 - Draw.io to PDF conversion
@@ -40,7 +43,6 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 - production codeのリファクタリング
 - test directoryの全面移動
 - test runnerの移行・比較
-- required statusやbranch protectionの変更
 - Playwright Electronへの全面置換
 - 新しいユーザー機能
 - Coding Houtei相当のrepository内実装

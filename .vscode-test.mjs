@@ -41,6 +41,7 @@ if (existsSync(settingsSourcePath)) {
     ['graphics-workbench.execPath.rsvgConvert', 'rsvg-convert'],
     ['graphics-workbench.execPath.mermaid', 'mmdc'],
     ['graphics-workbench.execPath.drawio', 'drawio'],
+    ['graphics-workbench.execPath.chrome', 'google-chrome'],
   ];
 
   for (const [key, command] of toolCommands) {

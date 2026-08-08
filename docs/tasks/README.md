@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0224: PR CIを停止し、Graphite廃止の手順を決める](0224-stop-pr-ci-and-phase-out-graphite.md) — In Progress
+- [0224: PR CIを停止し、Graphite廃止し、ローカルDocker test環境を導入する](0224-stop-pr-ci-and-phase-out-graphite.md) — Done
 
 ## On hold
 
