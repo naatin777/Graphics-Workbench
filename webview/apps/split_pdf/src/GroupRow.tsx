@@ -89,7 +89,7 @@ export function GroupRow(props: {
               props.handlers.fields.setInputRef(props.row.id, 'pages', element);
             }}
             aria-label={`${props.labels.pages.title} ${props.index() + 1}`}
-            class='input gw-input'
+            class='gw-input'
             placeholder={props.labels.pages.placeholder}
             type='text'
             value={props.row.pages}
@@ -111,7 +111,7 @@ export function GroupRow(props: {
               props.handlers.fields.setInputRef(props.row.id, 'outputName', element);
             }}
             aria-label={`${props.labels.output.name} ${props.index() + 1}`}
-            class='input gw-input'
+            class='gw-input'
             placeholder={props.labels.output.namePlaceholder}
             type='text'
             value={props.row.outputName}

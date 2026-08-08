@@ -497,7 +497,7 @@ export function App(): JSX.Element {
                   <label class='field'>
                     <span class='field__label'>{labels().cropBox.left}</span>
                     <input
-                      class='input gw-input'
+                      class='gw-input'
                       disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
@@ -511,7 +511,7 @@ export function App(): JSX.Element {
                   <label class='field'>
                     <span class='field__label'>{labels().cropBox.bottom}</span>
                     <input
-                      class='input gw-input'
+                      class='gw-input'
                       disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
@@ -525,7 +525,7 @@ export function App(): JSX.Element {
                   <label class='field'>
                     <span class='field__label'>{labels().cropBox.right}</span>
                     <input
-                      class='input gw-input'
+                      class='gw-input'
                       disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
@@ -539,7 +539,7 @@ export function App(): JSX.Element {
                   <label class='field'>
                     <span class='field__label'>{labels().cropBox.top}</span>
                     <input
-                      class='input gw-input'
+                      class='gw-input'
                       disabled={isApplying()}
                       inputmode='decimal'
                       type='number'
@@ -556,7 +556,7 @@ export function App(): JSX.Element {
                 </p>
               </div>
 
-              <fieldset class='target gw-radio-group'>
+              <fieldset class='gw-radio-group'>
                 <legend>{labels().targetPages.applyTo}</legend>
 
                 <label class='gw-radio-option'>
@@ -588,7 +588,7 @@ export function App(): JSX.Element {
                 <label class='field'>
                   <span class='field__label'>{labels().targetPages.inputLabel}</span>
                   <input
-                    class='input gw-input'
+                    class='gw-input'
                     disabled={isApplying() || targetType() !== 'selected'}
                     placeholder={labels().targetPages.placeholder}
                     type='text'

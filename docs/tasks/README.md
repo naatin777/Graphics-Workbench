@@ -3,6 +3,7 @@
 ## Current Task
 
 - [0225: drop/paste edit providerをLaTeX以外の文書形式（Typst / Quarkdown）へ拡張する](0225-extend-edit-provider-insertion-formats.md) — Done
+- [0227: Webview UIをVS Codeのテーマ・フォント・Zoomへ自然に追従させる](0227-review-webview-vscode-theme-integration.md) — In Progress
 
 ## On hold
 
