@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { isDrawioPath } from '../../application/policy/source_format.js';
+import { isDrawioPath } from '../../shared/source_format.js';
 import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { assertPageTemplateForSplitOutput } from '../../config/output/page_template.js';

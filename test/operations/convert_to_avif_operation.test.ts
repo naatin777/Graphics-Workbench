@@ -14,7 +14,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { executeAvifConversion } from '../../src/operations/conversion/convert_to_avif.js';
+import { executeAvifConversion } from '../../src/operations/conversion/raster_conversion.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('AVIFに変換する処理', () => {

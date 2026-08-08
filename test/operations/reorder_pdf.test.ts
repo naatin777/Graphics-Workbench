@@ -21,7 +21,7 @@ import { PDFDocument } from 'pdf-lib';
 import {
   isReorderPdfHostToWebviewMessage,
   isReorderPdfWebviewToHostMessage,
-} from '../../src/application/protocols/reorder_pdf_protocol.js';
+} from '../../src/shared/protocols/reorder_pdf_protocol.js';
 import { reorderPdfFiles } from '../../src/operations/pdf/reorder_pdf.js';
 
 suite('PDF並び替え', () => {

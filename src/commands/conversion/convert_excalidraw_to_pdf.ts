@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { isExcalidrawPath } from '../../application/policy/source_format.js';
+import { isExcalidrawPath } from '../../shared/source_format.js';
 import {
   convertExcalidrawToPdfFiles,
   type ExcalidrawPdfJob,

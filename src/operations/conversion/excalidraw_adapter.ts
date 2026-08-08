@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { toErrorMessage } from '../../application/error_normalization.js';
+import { toErrorMessage } from '../../shared/error.js';
 import { ExcalidrawError, parseExcalidrawScene } from './excalidraw_scene.js';
 import { withExcalidrawDom, type ExcalidrawDomOptions } from './excalidraw_dom.js';
 

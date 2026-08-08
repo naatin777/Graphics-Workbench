@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { isCropConfigureMessage } from '../../src/application/protocols/crop_pdf_protocol.js';
+import { isCropConfigureMessage } from '../../src/shared/protocols/crop_pdf_protocol.js';
 
 suite('Crop PDF Webviewプロトコル', () => {
   test('valid apply payloadを受け入れる', () => {

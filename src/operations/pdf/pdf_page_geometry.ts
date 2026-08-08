@@ -1,6 +1,6 @@
 import type { MupdfPdfObject, MupdfPdfPage } from './mupdf.js';
 
-import type { PdfPageGeometry, PdfPageRotation, PdfRectangle } from '../../application/protocols/crop_pdf_protocol.js';
+import type { PdfPageGeometry, PdfPageRotation, PdfRectangle } from '../../shared/protocols/crop_pdf_protocol.js';
 
 export function getPdfPageGeometry(page: MupdfPdfPage, pageNumber: number): PdfPageGeometry {
   return {

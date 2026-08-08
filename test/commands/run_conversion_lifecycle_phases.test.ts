@@ -18,7 +18,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { localeMap } from '../../src/locale_map.js';
-import { convertToPngCommand } from '../../src/commands/conversion/convert_to_png.js';
+import { convertToPngCommand } from '../../src/commands/conversion/convert_to_raster.js';
 
 import { requireValue } from '../helpers/required.js';
 

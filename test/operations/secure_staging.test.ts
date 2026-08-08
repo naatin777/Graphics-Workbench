@@ -5,7 +5,7 @@ import {
   cleanupStaleSecurePdfStagingRoots,
   createSecurePdfStagingRoot,
 } from '../../src/operations/lifecycle/secure_staging.js';
-import { isRecord } from '../../src/application/protocols/protocol_utils.js';
+import { isRecord } from '../../src/shared/protocols/protocol_utils.js';
 
 suite('機密PDF staging lifecycle', () => {
   test('active root is preserved and an old root is removed on activation cleanup', async () => {

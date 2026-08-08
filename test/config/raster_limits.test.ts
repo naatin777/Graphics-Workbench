@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { assertAnimationPixelLimit, getMaxAnimationPixels } from '../../src/config/raster_limits.js';
+import { assertAnimationPixelLimit, getMaxAnimationPixels } from '../../src/config/raster.js';
 import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 

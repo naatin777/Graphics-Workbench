@@ -12,7 +12,7 @@ import {
   type ExcalidrawPdfJob,
 } from '../../src/operations/conversion/convert_excalidraw_to_pdf.js';
 import { ExcalidrawError } from '../../src/operations/conversion/excalidraw_scene.js';
-import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';
+import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/svg_to_pdf_tools.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const fakeBundleModule = `export async function exportToSvg() {

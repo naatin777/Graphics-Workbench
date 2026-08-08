@@ -6,7 +6,7 @@ import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js'
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
@@ -33,7 +33,6 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
   validateJobs(options.jobs);
   await validatePdfJobPaths(options.jobs, 'compress-pdf');
 
-  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   if (!runtime?.resolveConflicts) {

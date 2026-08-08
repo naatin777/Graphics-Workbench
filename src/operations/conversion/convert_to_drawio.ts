@@ -4,17 +4,17 @@ import path from 'node:path';
 import { XMLParser } from 'fast-xml-parser';
 import sharp from 'sharp';
 
-import { isMermaidPath } from '../../application/policy/source_format.js';
+import { isMermaidPath } from '../../shared/source_format.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
+import { executeDrawio, type RunDrawio } from './tools/drawio_tools.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
-import { runExternalTool } from '../external_tools/run_external_tool.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { countPdfPages, renderPdfPageToSvg } from '../pdf/mupdf.js';
 
@@ -31,13 +31,6 @@ export interface ConvertToDrawioJob {
 
 type RunPdfToSvg = (sourcePath: string, outputPath: string, page: number, signal?: AbortSignal) => Promise<void>;
 type RunMermaid = (sourcePath: string, outputPath: string, signal?: AbortSignal) => Promise<void>;
-type RunDrawio = (
-  executable: string,
-  args: string[],
-  signal?: AbortSignal,
-  outputChannel?: ConversionExecutionContext['outputChannel'],
-) => Promise<void>;
-
 export interface ConvertToDrawioOptions {
   jobs: ConvertToDrawioJob[];
   tools: {
@@ -70,7 +63,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
     ]);
   }
 
-  await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
+  options.runtime?.signal?.throwIfAborted();
   const runId = options.runId ?? createRunId();
 
   return runStagedConversionBatch({
@@ -420,22 +413,6 @@ async function executePdfToSvg(
   const svg = await renderPdfPageToSvg(pdfBytes, page);
   signal?.throwIfAborted();
   await writeFile(outputPath, svg, 'utf8');
-}
-
-async function executeDrawio(
-  executable: string,
-  args: string[],
-  signal?: AbortSignal,
-  outputChannel?: ConversionExecutionContext['outputChannel'],
-): Promise<void> {
-  const toolOptions: Parameters<typeof runExternalTool>[0] = { toolName: 'drawio' as const, executable, args };
-  if (signal !== undefined) {
-    toolOptions.signal = signal;
-  }
-  if (outputChannel !== undefined) {
-    toolOptions.outputChannel = outputChannel;
-  }
-  await runExternalTool(toolOptions);
 }
 
 async function executeMermaid(

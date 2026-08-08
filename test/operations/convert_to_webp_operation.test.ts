@@ -14,7 +14,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
+import { executeWebpConversion } from '../../src/operations/conversion/raster_conversion.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('WebPに変換する処理', () => {

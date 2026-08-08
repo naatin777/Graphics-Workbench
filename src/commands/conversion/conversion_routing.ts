@@ -1,5 +1,5 @@
 import { conversionPairs, getDefaultConfiguration, type Configuration } from '../../generated/extension_manifest.js';
-import { type SourceFormat, sourceFormatForPath } from '../../application/policy/source_format.js';
+import { type SourceFormat, sourceFormatForPath } from '../../shared/source_format.js';
 import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 
 type ConversionTarget = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff' | 'svg' | 'eps' | 'pdf';

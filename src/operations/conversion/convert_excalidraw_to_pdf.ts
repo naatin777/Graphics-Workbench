@@ -1,18 +1,18 @@
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-import { isExcalidrawPath } from '../../application/policy/source_format.js';
+import { isExcalidrawPath } from '../../shared/source_format.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import type { RsvgToolScratchOptions } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { validateGeneratedPdf, writeSourceAsPdf } from './convert_to_pdf.js';
 import { excalidrawToSvg, type ExcalidrawToSvgOptions } from './excalidraw_adapter.js';
-import type { SvgToPdfBackend } from './tools/index.js';
+import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 
 export interface ExcalidrawPdfJob {
   sourcePath: string;
@@ -35,7 +35,7 @@ export async function convertExcalidrawToPdfFiles(
   const operationName = 'convert-excalidraw-to-pdf';
   validateJobs(options.jobs);
   await validateJobPaths(options.jobs, operationName);
-  await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
+  options.runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
   const scratchOptions: RsvgToolScratchOptions = { platform: process.platform };

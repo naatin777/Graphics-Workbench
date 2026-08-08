@@ -4,10 +4,10 @@ import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { isEditableDrawioImagePath } from '../../src/application/policy/source_format.js';
+import { isEditableDrawioImagePath } from '../../src/shared/source_format.js';
 import { readDrawioExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
-import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
+import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
 import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';

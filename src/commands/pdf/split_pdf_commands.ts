@@ -8,8 +8,8 @@ import {
   type SplitPdfLabels,
   type SplitPdfPageGroupRow,
   type SplitPdfWebviewToHost,
-} from '../../application/protocols/split_pdf_protocol.js';
-import type { PdfPreviewSettings } from '../../application/protocols/pdf_preview_protocol.js';
+} from '../../shared/protocols/split_pdf_protocol.js';
+import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
@@ -29,8 +29,8 @@ import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_normalization.js';
-import { resolveSelectedUris } from '../shared/command_input.js';
+import { isAbortError } from '../../shared/error.js';
+import { resolveSelectedUris, resolveSingleConfiguredPdfUri, toWebviewDirectoryUri } from '../shared/command_input.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 const defaultSplitPdfTemplate = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
@@ -138,7 +138,7 @@ async function runSplitPdfConfigureCommand(
   dependencies?: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
-  const inputUri = resolveSinglePdfUri(uri, uris);
+  const inputUri = resolveSingleConfiguredPdfUri(uri, uris, 'splitPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
   if (!workspaceFolder) {
@@ -353,35 +353,6 @@ async function applyConfiguredSplit(params: {
   panel.dispose();
 }
 
-function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri {
-  let candidates: vscode.Uri[] = [];
-  if (uris !== undefined && uris.length > 0) {
-    candidates = uris;
-  } else if (uri !== undefined) {
-    candidates = [uri];
-  }
-
-  if (candidates.length !== 1) {
-    throw new Error('splitPdf.configure requires exactly one PDF file.');
-  }
-
-  const [inputUri] = candidates;
-
-  if (!inputUri) {
-    throw new Error('splitPdf.configure requires exactly one PDF file.');
-  }
-
-  if (inputUri.scheme !== 'file') {
-    throw new Error('splitPdf.configure supports only local file URI.');
-  }
-
-  if (path.extname(inputUri.fsPath).toLowerCase() !== '.pdf') {
-    throw new Error('splitPdf.configure supports only PDF files.');
-  }
-
-  return inputUri;
-}
-
 function validateConfiguredRows(rows: readonly SplitPdfPageGroupRow[], pageCount: number): void {
   if (rows.length === 0) {
     throw new Error('At least one PDF page group is required.');
@@ -431,10 +402,6 @@ function createOutputPathPreviewTemplate(
   const relativePath = path.relative(workspaceFolder.uri.fsPath, outputPath);
 
   return relativePath.length > 0 ? relativePath : path.basename(outputPath);
-}
-
-function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, directoryName: string): string {
-  return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }
 
 function splitPdfLabels(): SplitPdfLabels {

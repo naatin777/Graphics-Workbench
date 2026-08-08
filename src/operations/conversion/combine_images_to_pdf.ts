@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { isRasterImagePath, sourceFormatForPath } from '../../application/policy/source_format.js';
+import { isRasterImagePath, sourceFormatForPath } from '../../shared/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
@@ -13,11 +13,11 @@ import {
 import { writeSourceAsPdf, type WriteSourceAsPdfOptions } from './convert_to_pdf.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import type { RsvgToolScratchOptions, RunRsvgConvert } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
-import type { SvgToPdfBackend } from './tools/index.js';
+import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 import { loadMupdf, openPdfDocument, savePdfDocument } from '../pdf/mupdf.js';
 
 interface CombineImagesJob {
@@ -56,7 +56,6 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   ]);
   runtime?.signal?.throwIfAborted();
 
-  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();

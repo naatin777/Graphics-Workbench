@@ -20,7 +20,7 @@ import { PDFDocument } from 'pdf-lib';
 import {
   isRotatePdfHostToWebviewMessage,
   isRotatePdfWebviewToHostMessage,
-} from '../../src/application/protocols/rotate_pdf_protocol.js';
+} from '../../src/shared/protocols/rotate_pdf_protocol.js';
 import { rotatePdfFiles } from '../../src/operations/pdf/rotate_pdf.js';
 
 suite('PDF回転', () => {

@@ -17,25 +17,16 @@ export function defineWebviewTestConfig(config: WebviewTestConfig): ReturnType<t
     resolve: {
       alias: {
         '@webview-shared': resolve(webviewRoot, 'shared'),
-        '@graphics-workbench-crop-pdf-protocol': resolve(
-          webviewRoot,
-          '../src/application/protocols/crop_pdf_protocol.ts',
-        ),
-        '@graphics-workbench-merge-pdf-protocol': resolve(
-          webviewRoot,
-          '../src/application/protocols/merge_pdf_protocol.ts',
-        ),
-        '@graphics-workbench-split-pdf-protocol': resolve(
-          webviewRoot,
-          '../src/application/protocols/split_pdf_protocol.ts',
-        ),
+        '@graphics-workbench-crop-pdf-protocol': resolve(webviewRoot, '../src/shared/protocols/crop_pdf_protocol.ts'),
+        '@graphics-workbench-merge-pdf-protocol': resolve(webviewRoot, '../src/shared/protocols/merge_pdf_protocol.ts'),
+        '@graphics-workbench-split-pdf-protocol': resolve(webviewRoot, '../src/shared/protocols/split_pdf_protocol.ts'),
         '@graphics-workbench-rotate-pdf-protocol': resolve(
           webviewRoot,
-          '../src/application/protocols/rotate_pdf_protocol.ts',
+          '../src/shared/protocols/rotate_pdf_protocol.ts',
         ),
         '@graphics-workbench-reorder-pdf-protocol': resolve(
           webviewRoot,
-          '../src/application/protocols/reorder_pdf_protocol.ts',
+          '../src/shared/protocols/reorder_pdf_protocol.ts',
         ),
       },
     },

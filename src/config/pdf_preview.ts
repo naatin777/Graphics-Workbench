@@ -1,9 +1,6 @@
 import type { Configuration } from '../generated/extension_manifest.js';
 
-export interface PdfPreviewSettings {
-  maxCanvasPixels: number;
-  maxDevicePixelRatio: number;
-}
+import type { PdfPreviewSettings } from '../shared/protocols/pdf_preview_protocol.js';
 
 export function readPdfPreviewSettings(configuration: Configuration): PdfPreviewSettings {
   return {

@@ -8,18 +8,18 @@ import {
   isNativeDrawioPath,
   isSameSourceFormat,
   sourceFormatForPath,
-} from '../../application/policy/source_format.js';
+} from '../../shared/source_format.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { validatePdfJobPaths } from '../pdf/pdf_job_paths.js';
-import { toErrorMessage } from './raster_conversion.js';
-import { isAbortError } from '../../application/error_normalization.js';
+import { toErrorMessage, isAbortError } from '../../shared/error.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import type { DrawioBackend, MermaidBackend, RunPdfToSvg } from './tools/index.js';
-import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { executeDrawio, type DrawioBackend } from './tools/drawio_tools.js';
+import type { MermaidBackend } from './tools/mermaid_tools.js';
+import type { RunPdfToSvg } from './tools/pdf_render_tools.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { renderPdfPageToSvg } from '../pdf/mupdf.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
@@ -81,7 +81,6 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
   await validatePdfJobPaths(options.jobs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
 
-  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -253,15 +252,6 @@ async function writeMermaidAsSvg(
 
     throw new Error(`Mermaid CLI failed: ${toErrorMessage(error)}`, { cause: error });
   }
-}
-
-async function executeDrawio(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
-  await runExternalTool({
-    toolName: 'drawio',
-    executable,
-    args,
-    ...(signal !== undefined && { signal }),
-  });
 }
 
 async function validateGeneratedSvg(outputPath: string): Promise<void> {

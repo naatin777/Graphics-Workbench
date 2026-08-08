@@ -4,8 +4,8 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { isRasterImagePath, sourceFormatForPath } from '../../src/application/policy/source_format.js';
-import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
+import { isRasterImagePath, sourceFormatForPath } from '../../src/shared/source_format.js';
+import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';

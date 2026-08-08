@@ -12,7 +12,7 @@ import {
   type CommittedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 
 export interface MergePdfOptions {
@@ -55,8 +55,6 @@ async function prepareMerge(options: MergePdfOptions): Promise<{
     assertWritablePathInWorkspace(stagingRootPath, workspacePath),
     assertWritablePathInWorkspace(stagedOutputPath, workspacePath),
   ]);
-  runtime?.signal?.throwIfAborted();
-  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const mupdf = await loadMupdf();

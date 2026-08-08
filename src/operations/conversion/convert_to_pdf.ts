@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 import { pathToFileURL } from 'node:url';
-import { toErrorMessage, isAbortError } from '../../application/error_normalization.js';
+import { toErrorMessage, isAbortError } from '../../shared/error.js';
 import {
   loadMupdf,
   openPdfDocument,
@@ -17,7 +17,7 @@ import {
   isMermaidPath,
   isRasterImagePath,
   isSameSourceFormat,
-} from '../../application/policy/source_format.js';
+} from '../../shared/source_format.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import {
   closeRasterPipeline,
@@ -27,7 +27,7 @@ import {
   formatRasterInputPixelLimitMessage,
   type RasterAnimationMetadata,
 } from './raster_input.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { validatePdfJobPaths } from '../pdf/pdf_job_paths.js';
 
@@ -41,7 +41,9 @@ import {
 } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
-import type { DrawioBackend, MermaidBackend, SvgToPdfBackend } from './tools/index.js';
+import { executeDrawio, type DrawioBackend } from './tools/drawio_tools.js';
+import type { MermaidBackend } from './tools/mermaid_tools.js';
+import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 
 const defaultSupportedImageExtensions = ['.png'] as const;
 const svgExtension = '.svg';
@@ -125,7 +127,6 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   await validatePdfJobPaths(options.jobs, 'convert-png-to-pdf');
   runtime?.signal?.throwIfAborted();
 
-  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -299,15 +300,6 @@ async function writeDrawioAsPdf(
     ['-x', '-f', 'pdf', '-o', outputPath, sourcePath],
     signal,
   );
-}
-
-async function executeDrawio(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
-  await runExternalTool({
-    toolName: 'drawio',
-    executable,
-    args,
-    ...(signal !== undefined && { signal }),
-  });
 }
 
 async function writeMermaidAsPdf(

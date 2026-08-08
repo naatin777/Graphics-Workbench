@@ -1,4 +1,6 @@
-import type * as vscode from 'vscode';
+import path from 'node:path';
+
+import * as vscode from 'vscode';
 
 /** Resolves the selected URIs, deduplicating by their string form. */
 export function resolveSelectedUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
@@ -16,4 +18,45 @@ export function assertLocalFileUri(sourceUri: vscode.Uri): void {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local files are supported: ${sourceUri.toString()}`);
   }
+}
+
+/**
+ * Resolves the single PDF selected by a Configure command, validating that it
+ * is a local file with a `.pdf` extension.
+ */
+export function resolveSingleConfiguredPdfUri(
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  commandName: string,
+): vscode.Uri {
+  let candidates: vscode.Uri[] = [];
+  if (uris !== undefined && uris.length > 0) {
+    candidates = uris;
+  } else if (uri !== undefined) {
+    candidates = [uri];
+  }
+
+  if (candidates.length !== 1) {
+    throw new Error(`${commandName} requires exactly one PDF file.`);
+  }
+
+  const [inputUri] = candidates;
+  if (!inputUri) {
+    throw new Error(`${commandName} requires exactly one PDF file.`);
+  }
+
+  if (inputUri.scheme !== 'file') {
+    throw new Error(`${commandName} supports only local file URI.`);
+  }
+
+  if (path.extname(inputUri.fsPath).toLowerCase() !== '.pdf') {
+    throw new Error(`${commandName} supports only PDF files.`);
+  }
+
+  return inputUri;
+}
+
+/** Builds the webview URI for a shared asset subdirectory (pdf.js resources). */
+export function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, directoryName: string): string {
+  return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }

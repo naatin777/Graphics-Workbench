@@ -7,15 +7,16 @@ import {
   isNativeDrawioPath,
   isSameSourceFormat,
   isSupportedImageInputPath,
-} from '../../application/policy/source_format.js';
+} from '../../shared/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { isAbortError } from '../../application/error_normalization.js';
+import { isAbortError, toErrorMessage } from '../../shared/error.js';
 import { countPdfPages, hasPdfPageContent, renderPdfPageToPng } from '../pdf/mupdf.js';
 
 import {
   isRasterInputPixelLimitError,
   formatRasterInputPixelLimitMessage,
+  openRasterInput,
   type RasterAnimationMetadata,
 } from './raster_input.js';
 // oxlint-disable-next-line unicorn/prefer-export-from -- CommittedConversionOutput is used locally and re-exported.
@@ -23,9 +24,10 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 
 export type { CommittedConversionOutput };
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import type { DrawioBackend, MermaidBackend, PdfRenderBackend } from './tools/index.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
-import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { executeDrawio, type DrawioBackend } from './tools/drawio_tools.js';
+import type { MermaidBackend } from './tools/mermaid_tools.js';
+import type { PdfRenderBackend } from './tools/pdf_render_tools.js';
+
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
@@ -39,46 +41,12 @@ type RasterEncoder = (
   animation?: RasterAnimationMetadata,
 ) => Promise<void>;
 
-export interface RasterConversionDefinition {
+interface RasterConversionDefinition {
   operationName: string;
   stagingDirectoryName: string;
   resultExtension: string;
   encoder: RasterEncoder;
   unsupportedInputMessage: (sourcePath: string) => string;
-}
-
-export interface SimpleRasterConversionOptions {
-  operationName: string;
-  resultExtension: string;
-  encoder: RasterEncoder;
-}
-
-type SimpleRasterExecutor = (
-  batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
-    maxInputPixels?: number;
-  },
-) => Promise<CommittedConversionOutput[]>;
-
-export function createSimpleRasterExecutor(options: SimpleRasterConversionOptions): SimpleRasterExecutor {
-  const definition: RasterConversionDefinition = {
-    operationName: options.operationName,
-    stagingDirectoryName: options.operationName,
-    resultExtension: options.resultExtension,
-    encoder: options.encoder,
-    unsupportedInputMessage: (sourcePath) =>
-      `Unsupported input for ${options.resultExtension.toUpperCase()} conversion: ${sourcePath}`,
-  };
-
-  return async (
-    batchOptions: Omit<ExecuteRasterConversionBatchOptions, 'definition' | 'maxInputPixels'> & {
-      maxInputPixels?: number;
-    },
-  ): Promise<CommittedConversionOutput[]> =>
-    executeRasterConversionBatch({
-      ...batchOptions,
-      maxInputPixels: batchOptions.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
-      definition,
-    });
 }
 
 export interface RasterJob {
@@ -89,7 +57,7 @@ export interface RasterJob {
   animation?: RasterAnimationMetadata;
 }
 
-export interface ExecuteRasterConversionBatchOptions {
+interface ExecuteRasterConversionBatchOptions {
   jobs: RasterJob[];
   runtime: ConversionExecutionContext;
   pdfRenderTools: PdfRenderBackend;
@@ -126,15 +94,12 @@ interface RasterRenderRequest {
   cropContent?: boolean;
 }
 
-export async function executeRasterConversionBatch(
+async function executeRasterConversionBatch(
   options: ExecuteRasterConversionBatchOptions,
 ): Promise<CommittedConversionOutput[]> {
   options.runtime.signal?.throwIfAborted();
   validateJobs(options.jobs, options.definition);
   await validateJobPaths(options.jobs, options.definition.stagingDirectoryName);
-  options.runtime.signal?.throwIfAborted();
-
-  await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
   options.runtime.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -344,15 +309,6 @@ async function writeImageAsRaster(request: RasterRenderRequest, context: RasterS
   }
 }
 
-async function executeDrawio(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
-  await runExternalTool({
-    toolName: 'drawio',
-    executable,
-    args,
-    ...(signal !== undefined && { signal }),
-  });
-}
-
 async function validateJobPaths(jobs: RasterJob[], stagingDirectoryName: string): Promise<void> {
   await Promise.all(
     jobs.flatMap((job) => [
@@ -420,11 +376,157 @@ function isPngOutputPath(outputPath: string): outputPath is `${string}.png` {
   return outputPath.toLowerCase().endsWith('.png');
 }
 
-export function toErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    const stderr = 'stderr' in error && typeof error.stderr === 'string' ? error.stderr.trim() : '';
-    return stderr ? `${error.message}\n${stderr}` : error.message;
-  }
+export interface AvifOutputOptions {
+  effort: number;
+}
 
-  return String(error);
+export interface WebpOutputOptions {
+  effort: number;
+}
+
+export interface ExecuteRasterConversionOptions {
+  jobs: RasterJob[];
+  runtime: ConversionExecutionContext;
+  pdfRenderTools: PdfRenderBackend;
+  mermaidTools: MermaidBackend;
+  drawioTools: DrawioBackend;
+  maxInputPixels?: number;
+  runId?: string | undefined;
+}
+
+export interface ExecuteAvifConversionOptions extends ExecuteRasterConversionOptions {
+  avif: AvifOutputOptions;
+}
+
+export interface ExecuteWebpConversionOptions extends ExecuteRasterConversionOptions {
+  webp: WebpOutputOptions;
+}
+
+function simpleRasterDefinition(operationName: string, format: 'png' | 'jpeg' | 'tiff'): RasterConversionDefinition {
+  return {
+    operationName,
+    stagingDirectoryName: operationName,
+    resultExtension: format,
+    encoder: async (sourcePath, outputPath, maxInputPixels, page) => {
+      const input = openRasterInput(sourcePath, maxInputPixels, page);
+      let pipeline;
+      if (format === 'png') {
+        pipeline = input.png();
+      } else if (format === 'jpeg') {
+        pipeline = input.jpeg();
+      } else {
+        pipeline = input.tiff();
+      }
+      await pipeline.toFile(outputPath);
+    },
+    unsupportedInputMessage: (sourcePath) => `Unsupported input for ${format.toUpperCase()} conversion: ${sourcePath}`,
+  };
+}
+
+function animatedRasterDefinition(operationName: string, outputFormat: 'gif' | 'webp'): RasterConversionDefinition {
+  const definition: RasterConversionDefinition = {
+    operationName,
+    stagingDirectoryName: operationName,
+    resultExtension: outputFormat,
+    encoder: async (sourcePath, outputPath, maxInputPixels, page, animation) => {
+      const outputOptions: { delay?: number[]; loop?: number } = {};
+      if (animation?.delay !== undefined) {
+        outputOptions.delay = animation.delay;
+      }
+      if (animation?.loop !== undefined) {
+        outputOptions.loop = animation.loop;
+      }
+      await openRasterInput(sourcePath, maxInputPixels, page, animation !== undefined)
+        .toFormat(outputFormat, outputOptions)
+        .toFile(outputPath);
+    },
+    unsupportedInputMessage: (sourcePath) =>
+      `Unsupported input for ${outputFormat.toUpperCase()} conversion: ${sourcePath}`,
+  };
+  return definition;
+}
+
+const pngDefinition = simpleRasterDefinition('convert-to-png', 'png');
+const jpegDefinition = simpleRasterDefinition('convert-to-jpeg', 'jpeg');
+const tiffDefinition = simpleRasterDefinition('convert-to-tiff', 'tiff');
+
+const gifDefinition = animatedRasterDefinition('convert-to-gif', 'gif');
+
+async function runRasterConversion(
+  options: ExecuteRasterConversionOptions & { definition: RasterConversionDefinition },
+): Promise<CommittedConversionOutput[]> {
+  return executeRasterConversionBatch({
+    ...options,
+    maxInputPixels: options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
+    definition: options.definition,
+  });
+}
+
+export async function executePngConversion(
+  options: ExecuteRasterConversionOptions,
+): Promise<CommittedConversionOutput[]> {
+  return runRasterConversion({ ...options, definition: pngDefinition });
+}
+
+export async function executeJpegConversion(
+  options: ExecuteRasterConversionOptions,
+): Promise<CommittedConversionOutput[]> {
+  return runRasterConversion({ ...options, definition: jpegDefinition });
+}
+
+export async function executeTiffConversion(
+  options: ExecuteRasterConversionOptions,
+): Promise<CommittedConversionOutput[]> {
+  return runRasterConversion({ ...options, definition: tiffDefinition });
+}
+
+export async function executeGifConversion(
+  options: ExecuteRasterConversionOptions,
+): Promise<CommittedConversionOutput[]> {
+  return runRasterConversion({ ...options, definition: gifDefinition });
+}
+
+export async function executeAvifConversion(
+  options: ExecuteAvifConversionOptions,
+): Promise<CommittedConversionOutput[]> {
+  return runRasterConversion({
+    ...options,
+    definition: {
+      operationName: 'convert-to-avif',
+      stagingDirectoryName: 'convert-to-avif',
+      resultExtension: 'avif',
+      encoder: async (sourcePath, outputPath, maxInputPixels, page) => {
+        await openRasterInput(sourcePath, maxInputPixels, page)
+          .avif({ effort: options.avif.effort })
+          .toFile(outputPath);
+      },
+      unsupportedInputMessage: (sourcePath) => `Unsupported input for AVIF conversion: ${sourcePath}`,
+    },
+  });
+}
+
+export async function executeWebpConversion(
+  options: ExecuteWebpConversionOptions,
+): Promise<CommittedConversionOutput[]> {
+  return runRasterConversion({
+    ...options,
+    definition: {
+      operationName: 'convert-to-webp',
+      stagingDirectoryName: 'convert-to-webp',
+      resultExtension: 'webp',
+      encoder: async (sourcePath, outputPath, maxInputPixels, page, animation) => {
+        const encoderOptions: WebpOutputOptions & { delay?: number[]; loop?: number } = { effort: options.webp.effort };
+        if (animation?.delay !== undefined) {
+          encoderOptions.delay = animation.delay;
+        }
+        if (animation?.loop !== undefined) {
+          encoderOptions.loop = animation.loop;
+        }
+        await openRasterInput(sourcePath, maxInputPixels, page, animation !== undefined)
+          .webp(encoderOptions)
+          .toFile(outputPath);
+      },
+      unsupportedInputMessage: (sourcePath) => `Unsupported input for WebP conversion: ${sourcePath}`,
+    },
+  });
 }

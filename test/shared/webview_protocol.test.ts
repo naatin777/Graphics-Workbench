@@ -6,7 +6,7 @@ import {
   isWebviewMessageWithPayload,
   isWebviewMessageWithoutPayload,
   type WebviewMessage,
-} from '../../src/application/protocols/webview_protocol.js';
+} from '../../src/shared/protocols/webview_protocol.js';
 
 suite('共有Webview protocol envelope', () => {
   test('payloadなしのcontrol messageをtype-only envelopeとして受け付ける', () => {

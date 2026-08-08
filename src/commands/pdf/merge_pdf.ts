@@ -7,8 +7,8 @@ import {
   type MergePdfHostToWebview,
   type MergePdfLabels,
   type MergePdfWebviewToHost,
-} from '../../application/protocols/merge_pdf_protocol.js';
-import type { PdfPreviewSettings } from '../../application/protocols/pdf_preview_protocol.js';
+} from '../../shared/protocols/merge_pdf_protocol.js';
+import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
 import { localeMap } from '../../locale_map.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { mergePdf } from '../../operations/pdf/merge_pdf.js';
@@ -24,8 +24,9 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '../../application/error_normalization.js';
+import { isAbortError } from '../../shared/error.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
+import { toWebviewDirectoryUri } from '../shared/command_input.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function mergePdfSelectedFilesCommand(
@@ -294,10 +295,6 @@ function resolveConfiguredSources(sourceById: ReadonlyMap<string, vscode.Uri>, s
   }
 
   return resolvedUris;
-}
-
-function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, directoryName: string): string {
-  return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }
 
 function buildMergePdfLabels(): MergePdfLabels {

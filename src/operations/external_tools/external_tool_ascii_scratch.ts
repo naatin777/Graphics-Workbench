@@ -2,7 +2,7 @@ import { lstat, mkdtemp, realpath, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { toErrorMessage, isAbortError } from '../../application/error_normalization.js';
+import { toErrorMessage, isAbortError } from '../../shared/error.js';
 
 export interface LineOutputChannel {
   appendLine: (message: string) => void;

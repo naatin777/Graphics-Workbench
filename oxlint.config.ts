@@ -675,7 +675,7 @@ export default defineConfig({
       rules: restrictedImports(extensionOnly, webviewPatterns),
     },
     {
-      files: ['src/application/**/*.ts', 'src/operations/**/*.ts', 'src/config/**/*.ts'],
+      files: ['src/shared/**/*.ts', 'src/operations/**/*.ts', 'src/config/**/*.ts'],
       rules: restrictedImports(corePaths, corePatterns),
     },
     {
