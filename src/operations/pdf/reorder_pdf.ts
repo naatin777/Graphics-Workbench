@@ -4,13 +4,13 @@ import path from 'node:path';
 import { openPdfDocument, savePdfDocument } from './mupdf.js';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
+import { sanitizePdfPathSegment, validatePdfPathInputs } from './pdf_path_validation.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 interface ReorderPdfJob {
@@ -31,7 +31,7 @@ export async function reorderPdfFiles(options: ReorderPdfOptions): Promise<Commi
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
-  await validatePdfJobPaths(options.jobs, 'reorder-pdf');
+  await validatePdfPathInputs(options.jobs, 'reorder-pdf');
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -40,7 +40,7 @@ export async function reorderPdfFiles(options: ReorderPdfOptions): Promise<Commi
     jobs: options.jobs,
     operationName: 'reorder-pdf',
     runId,
-    runtime: runtime ?? {},
+    ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       reorderPdf({ job, index, runId: currentRunId, signal: batchRuntime.signal }),
   });
@@ -50,29 +50,29 @@ async function reorderPdf(params: {
   job: ReorderPdfJob;
   index: number;
   runId: string;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }): Promise<PreparedConversionOutput> {
   const { job, index, runId, signal } = params;
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const stagingRootPath = createStagingRoot(job.workspacePath, 'reorder-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'reorder-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
   await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
   await assertWritablePathInWorkspace(workDirectory, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await mkdir(workDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const pageCount = sourceDocument.countPages();
 
   if (pageCount === 0) {
@@ -81,14 +81,14 @@ async function reorderPdf(params: {
 
   validatePageOrder(job.pageOrder, pageCount, job.sourcePath);
 
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   sourceDocument.rearrangePages(job.pageOrder.map((page) => page - 1));
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await writeFile(stagedOutputPath, savePdfDocument(sourceDocument));
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   return {
     stagedOutputPath,

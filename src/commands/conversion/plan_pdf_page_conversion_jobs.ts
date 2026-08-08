@@ -13,8 +13,8 @@ export async function planPdfPageConversionJobs<Job>(options: {
   workspaceName: string;
   outputTemplate: string;
   allowedExtensions: readonly string[];
-  runtime?: ConversionExecutionContext | undefined;
-  createJob: (page: number, outputPath: string) => Job;
+  runtime?: ConversionExecutionContext;
+  toJob: (page: number, outputPath: string) => Job;
 }): Promise<Job[]> {
   options.runtime?.signal?.throwIfAborted();
   options.runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
@@ -32,7 +32,7 @@ export async function planPdfPageConversionJobs<Job>(options: {
     options.allowedExtensions,
   )) {
     options.runtime?.signal?.throwIfAborted();
-    jobs.push(options.createJob(page, outputPath));
+    jobs.push(options.toJob(page, outputPath));
   }
   return jobs;
 }

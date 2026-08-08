@@ -33,7 +33,7 @@ export async function createAsciiInputOutputScratch(options: {
   inputFileName: string;
   outputFileName: string;
   signal?: AbortSignal;
-  outputChannel?: LineOutputChannel | undefined;
+  outputChannel?: LineOutputChannel;
   toolName?: string;
 }): Promise<AsciiInputOutputScratch> {
   assertAsciiFileName(options.outputFileName);
@@ -48,7 +48,7 @@ async function createAsciiInputScratch(options: {
   baseCandidates: readonly string[];
   inputFileName: string;
   signal?: AbortSignal;
-  outputChannel?: LineOutputChannel | undefined;
+  outputChannel?: LineOutputChannel;
   toolName?: string;
 }): Promise<AsciiScratch> {
   assertAsciiFileName(options.inputFileName);

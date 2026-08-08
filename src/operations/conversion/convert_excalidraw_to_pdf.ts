@@ -7,8 +7,8 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 import type { RsvgToolScratchOptions } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
-import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { validateGeneratedPdf, writeSourceAsPdf } from './convert_to_pdf.js';
 import { excalidrawToSvg, type ExcalidrawToSvgOptions } from './excalidraw_adapter.js';
@@ -70,10 +70,10 @@ async function stageExcalidrawJob(options: {
   svgToPdf: SvgToPdfBackend;
   scratchOptions: RsvgToolScratchOptions;
   bundleUrl?: string;
-  runtime: ConversionExecutionContext;
+  runtime: ResolvedConversionRuntime;
 }): Promise<PreparedConversionOutput> {
   const { job, index: jobIndex, runId, operationName, svgToPdf, scratchOptions, bundleUrl, runtime } = options;
-  const stageRootPath = createStagingRoot(job.workspacePath, operationName, runId);
+  const stageRootPath = stagingRootPathFor(job.workspacePath, operationName, runId);
   const stageDirectory = path.join(
     stageRootPath,
     `${jobIndex + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`,
@@ -81,19 +81,16 @@ async function stageExcalidrawJob(options: {
   const svgPath = path.join(stageDirectory, 'source.svg');
   const stagedOutputPath = path.join(stageDirectory, 'result.pdf');
 
-  runtime.signal?.throwIfAborted();
+  runtime.signal.throwIfAborted();
   await assertWritablePathInWorkspace(stageDirectory, job.workspacePath);
   await mkdir(stageDirectory, { recursive: true });
 
-  const svgOptions: ExcalidrawToSvgOptions = { sourcePath: job.sourcePath, svgPath };
-  if (runtime.signal !== undefined) {
-    svgOptions.signal = runtime.signal;
-  }
+  const svgOptions: ExcalidrawToSvgOptions = { sourcePath: job.sourcePath, svgPath, signal: runtime.signal };
   if (bundleUrl !== undefined) {
     svgOptions.bundleUrl = bundleUrl;
   }
   await excalidrawToSvg(svgOptions);
-  runtime.signal?.throwIfAborted();
+  runtime.signal.throwIfAborted();
   await assertExistingPathInWorkspace(svgPath, job.workspacePath);
 
   const outputPath = resolveOutputPath(
@@ -108,11 +105,11 @@ async function stageExcalidrawJob(options: {
     sourcePath: svgPath,
     outputPath: stagedOutputPath,
     workspacePath: job.workspacePath,
-    ...(runtime.signal !== undefined && { signal: runtime.signal }),
+    signal: runtime.signal,
     scratchOptions,
     tools: { svgToPdfTools: svgToPdf },
   });
-  runtime.signal?.throwIfAborted();
+  runtime.signal.throwIfAborted();
   await validateGeneratedPdf(stagedOutputPath);
 
   return { stagedOutputPath, outputPath, workspacePath: job.workspacePath, stagingRootPath: stageRootPath };

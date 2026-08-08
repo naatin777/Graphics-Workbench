@@ -16,9 +16,9 @@ import { loadMupdf, openPdfDocument, savePdfDocument } from '../pdf/mupdf.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { executeDrawio, type RunDrawio } from './tools/drawio_tools.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { validateGeneratedPdf } from './convert_to_pdf.js';
 
 export interface DrawioPdfJob {
@@ -75,10 +75,10 @@ async function stageDrawioJob(options: {
   outputMode: 'page-pdfs' | 'single-pdf';
   drawioPath: string;
   runDrawio?: RunDrawio;
-  runtime: ConversionExecutionContext;
+  runtime: ResolvedConversionRuntime;
 }): Promise<PreparedConversionOutput[]> {
   const { job, index: jobIndex, runId, operationName, outputMode, drawioPath, runDrawio, runtime } = options;
-  const stageRootPath = createStagingRoot(job.workspacePath, operationName, runId);
+  const stageRootPath = stagingRootPathFor(job.workspacePath, operationName, runId);
   const logicalSourcePath = logicalSourcePathForOutputTemplate(job.sourcePath);
   const stageDirectory = path.join(
     stageRootPath,
@@ -86,7 +86,7 @@ async function stageDrawioJob(options: {
   );
   const allPagesPdfPath = path.join(stageDirectory, 'all-pages.pdf');
 
-  runtime.signal?.throwIfAborted();
+  runtime.signal.throwIfAborted();
   await assertWritablePathInWorkspace(stageDirectory, job.workspacePath);
   await mkdir(stageDirectory, { recursive: true });
   const conversionInputPath = await prepareDrawioInput({
@@ -149,7 +149,7 @@ async function stageDrawioJob(options: {
     const usedPageNames = new Set<string>();
     const mupdf = await loadMupdf();
     for (let index = 0; index < pageCount; index += 1) {
-      runtime.signal?.throwIfAborted();
+      runtime.signal.throwIfAborted();
       const pageDocument = new mupdf.PDFDocument();
       pageDocument.graftPage(0, sourceDocument, index);
       if (pageDocument.countPages() !== 1) {
@@ -191,11 +191,11 @@ async function prepareDrawioInput(options: {
   workspacePath: string;
   drawioPath: string;
   runDrawio?: RunDrawio;
-  runtime: ConversionExecutionContext;
+  runtime: ResolvedConversionRuntime;
 }): Promise<string> {
   const drawioSourcePath = path.join(options.stageDirectory, 'source.drawio');
   await assertWritablePathInWorkspace(drawioSourcePath, options.workspacePath);
-  options.runtime.signal?.throwIfAborted();
+  options.runtime.signal.throwIfAborted();
   await (isEditableDrawioImagePath(options.sourcePath)
     ? runDrawioCommand(
         options.drawioPath,
@@ -256,7 +256,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 async function runDrawioCommand(
   executable: string,
   args: string[],
-  runtime: ConversionExecutionContext,
+  runtime: ResolvedConversionRuntime,
   runDrawio?: RunDrawio,
 ): Promise<void> {
   await (runDrawio ?? executeDrawio)(executable, args, runtime.signal, runtime.outputChannel);

@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { openPdfDocument, savePdfDocument } from './mupdf.js';
-import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
+import { sanitizePdfPathSegment, validatePdfPathInputs } from './pdf_path_validation.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -29,7 +29,7 @@ export async function encryptPdfFiles(options: EncryptPdfOptions): Promise<Commi
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
-  await validatePdfJobPaths(options.jobs, 'encrypt-pdf');
+  await validatePdfPathInputs(options.jobs, 'encrypt-pdf');
 
   runtime?.signal?.throwIfAborted();
 
@@ -48,7 +48,7 @@ export async function encryptPdfFiles(options: EncryptPdfOptions): Promise<Commi
     stagingOperationName: 'encrypt-pdf',
     runId,
     artifactRoots: [{ rootPath: stagingRootPath, workspacePath: stagingRootPath }],
-    runtime: runtime ?? {},
+    ...(runtime !== undefined && { runtime }),
     stage: async (job, index, _runId, batchRuntime) =>
       encryptPdf({
         job,
@@ -65,10 +65,10 @@ async function encryptPdf(params: {
   index: number;
   password: string;
   stagingRootPath: string;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }): Promise<PreparedConversionOutput> {
   const { job, password, signal } = params;
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   const itemName = `${params.index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
   const workDirectory = path.join(params.stagingRootPath, itemName);
@@ -76,12 +76,12 @@ async function encryptPdf(params: {
 
   await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
   await assertWritablePathInWorkspace(workDirectory, params.stagingRootPath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await mkdir(workDirectory, { recursive: true });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   const bytes = await readFile(job.sourcePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const document = await openPdfDocument(bytes);
   // ponytail: the password is embedded in the save options string; passwords
   // containing `,` or `=` break mupdf's option parser. qpdf previously used a job
@@ -89,10 +89,10 @@ async function encryptPdf(params: {
   // concern here, only the comma/equals limitation remains.
   const options = `encrypt=aes-256,user-password=${password},owner-password=${password}`;
   const encryptedBytes = savePdfDocument(document, options);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await writeFile(stagedOutputPath, encryptedBytes);
 
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   return {
     stagedOutputPath,

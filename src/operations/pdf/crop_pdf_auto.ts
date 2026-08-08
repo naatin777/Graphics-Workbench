@@ -2,13 +2,13 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
+import { sanitizePdfPathSegment, validatePdfPathInputs } from './pdf_path_validation.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import {
   loadMupdf,
@@ -41,7 +41,7 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
   validateMargin(options.margin);
-  await validatePdfJobPaths(options.jobs, 'crop-pdf');
+  await validatePdfPathInputs(options.jobs, 'crop-pdf');
 
   runtime?.signal?.throwIfAborted();
 
@@ -58,7 +58,7 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
     operationName: 'crop-pdf-auto',
     stagingOperationName: 'crop-pdf',
     runId,
-    runtime: runtime ?? {},
+    ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       convertPdf({
         job,
@@ -75,30 +75,30 @@ async function convertPdf(params: {
   index: number;
   margin: number;
   runId: string;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }): Promise<PreparedConversionOutput> {
   const { job, index, margin, runId, signal } = params;
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const stagingRootPath = createStagingRoot(job.workspacePath, 'crop-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'crop-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
   await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
   await assertWritablePathInWorkspace(workDirectory, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await mkdir(workDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
   const pdfBytes = await cropDocumentBytes(await readFile(copiedSourcePath), margin, job.sourcePath, signal);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await writeFile(stagedOutputPath, pdfBytes);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   return {
     stagedOutputPath,
@@ -112,23 +112,23 @@ async function cropDocumentBytes(
   sourceBytes: Uint8Array,
   margin: number,
   sourcePath: string,
-  signal: AbortSignal | undefined,
+  signal: AbortSignal,
 ): Promise<Uint8Array> {
   const mupdf = await loadMupdf();
   const document = await openPdfDocument(sourceBytes);
   try {
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
     const pageCount = document.countPages();
     if (pageCount === 0) {
       throw new Error(`Could not determine all PDF page bounds: ${sourcePath}`);
     }
 
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       setPageBounds(document.loadPage(pageIndex), margin, mupdf);
     }
 
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
     return savePdfDocument(document);
   } catch (error) {
     document.destroy();

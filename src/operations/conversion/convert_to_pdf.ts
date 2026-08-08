@@ -29,7 +29,7 @@ import {
 } from './raster_input.js';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { validatePdfJobPaths } from '../pdf/pdf_job_paths.js';
+import { validatePdfPathInputs } from '../pdf/pdf_path_validation.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -40,7 +40,7 @@ import {
   type RsvgToolScratchOptions,
 } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { executeDrawio, type DrawioBackend } from './tools/drawio_tools.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
@@ -77,7 +77,7 @@ export interface WriteSourceAsPdfOptions {
 }
 
 interface StageSourceToPdfOptions {
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
   svgToPdfTools: SvgToPdfBackend | undefined;
   mermaidTools: MermaidBackend | undefined;
   drawioTools: DrawioBackend | undefined;
@@ -124,9 +124,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs, options.supportedExtensions ?? defaultSupportedImageExtensions);
-  await validatePdfJobPaths(options.jobs, 'convert-png-to-pdf');
-  runtime?.signal?.throwIfAborted();
-
+  await validatePdfPathInputs(options.jobs, 'convert-png-to-pdf');
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -145,7 +143,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
     operationName,
     stagingOperationName: 'convert-png-to-pdf',
     runId,
-    runtime: runtime ?? {},
+    ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       stageSourceToPdf(job, index, currentRunId, {
         signal: batchRuntime.signal,
@@ -165,7 +163,7 @@ async function stageSourceToPdf(
   options: StageSourceToPdfOptions,
 ): Promise<PreparedConversionOutput> {
   const { signal, svgToPdfTools, mermaidTools, drawioTools, scratchOptions, maxInputPixels } = options;
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const stagedOutputPath = path.join(
     job.workspacePath,
     '.graphics-workbench',
@@ -174,22 +172,20 @@ async function stageSourceToPdf(
     `${index + 1}`,
     'result.pdf',
   );
-  const stagingRootPath = createStagingRoot(job.workspacePath, 'convert-png-to-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'convert-png-to-pdf', runId);
 
   const writeOptions: WriteSourceAsPdfOptions = {
     sourcePath: job.sourcePath,
     outputPath: stagedOutputPath,
     workspacePath: job.workspacePath,
     scratchOptions,
+    signal,
   };
   if (maxInputPixels !== undefined) {
     writeOptions.maxInputPixels = maxInputPixels;
   }
   if (job.page !== undefined) {
     writeOptions.page = job.page;
-  }
-  if (signal !== undefined) {
-    writeOptions.signal = signal;
   }
   if (svgToPdfTools !== undefined) {
     writeOptions.tools = { ...writeOptions.tools, svgToPdfTools };
@@ -201,9 +197,9 @@ async function stageSourceToPdf(
     writeOptions.tools = { ...writeOptions.tools, drawioTools };
   }
   await writeSourceAsPdf(writeOptions);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await validateGeneratedPdf(stagedOutputPath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   return {
     stagedOutputPath,

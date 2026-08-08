@@ -4,7 +4,8 @@ import {
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import { createRasterFrameJobs, type RasterFrameJob } from './create_raster_frame_jobs.js';
+import type { RasterJob } from '../../operations/conversion/raster_conversion.js';
+import { planRasterFrameJobs } from './plan_raster_frame_jobs.js';
 
 export async function planRasterSourceConversionJobs(options: {
   sourcePath: string;
@@ -13,13 +14,10 @@ export async function planRasterSourceConversionJobs(options: {
   outputTemplate: string;
   allowedExtensions: readonly string[];
   maxInputPixels: number;
-}): Promise<RasterFrameJob[]> {
+}): Promise<RasterJob[]> {
   const page = isEditableDrawioImagePath(options.sourcePath) ? '1' : undefined;
   if (isRasterImagePath(options.sourcePath)) {
-    return createRasterFrameJobs({
-      ...options,
-      createJob: (job) => job,
-    });
+    return planRasterFrameJobs(options);
   }
 
   const outputPath = resolveOutputPath(

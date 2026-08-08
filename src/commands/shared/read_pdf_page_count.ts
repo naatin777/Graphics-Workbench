@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { inspectPdfSummary } from '../../operations/pdf/run_pdf_summary.js';
+import { inspectPdfSummary } from '../../operations/pdf/pdf_summary.js';
 import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { userMessage } from './user_messages.js';
 

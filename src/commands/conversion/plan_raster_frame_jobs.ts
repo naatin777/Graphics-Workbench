@@ -1,32 +1,18 @@
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { assertAnimationPixelLimit } from '../../config/raster.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import {
-  closeRasterPipeline,
-  openRasterInput,
-  type RasterAnimationMetadata,
-} from '../../operations/conversion/raster_input.js';
+import { closeRasterPipeline, openRasterInput } from '../../operations/conversion/raster_input.js';
+import type { RasterJob } from '../../operations/conversion/raster_conversion.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
-export interface RasterFrameJob {
-  sourcePath: string;
-  outputPath: string;
-  workspacePath: string;
-  page?: number;
-  animation?: RasterAnimationMetadata;
-}
-
-export { readRasterAnimationMetadata } from '../../operations/conversion/raster_input.js';
-
-export interface RasterFrameJobSource {
+export interface RasterFramePlanOptions {
   sourcePath: string;
   workspacePath: string;
   workspaceName: string;
   outputTemplate: string;
   allowedExtensions: readonly string[];
-  frameMode?: 'first' | 'all' | undefined;
-  maxAnimationPixels?: number | undefined;
-  createJob: (job: RasterFrameJob) => RasterFrameJob;
+  frameMode?: 'first' | 'all';
+  maxAnimationPixels?: number;
 }
 
 export interface RasterFrameAnalysis {
@@ -36,10 +22,10 @@ export interface RasterFrameAnalysis {
 }
 
 /** Pure: 既知のframe metadataからjobを生成する。ファイル読み込みを伴わない。 */
-export function createRasterFrameJobsFromMetadata(
-  options: RasterFrameJobSource,
+export function planRasterFrameJobsFromMetadata(
+  options: RasterFramePlanOptions,
   analysis: RasterFrameAnalysis,
-): RasterFrameJob[] {
+): RasterJob[] {
   const { pages, width, pageHeight } = analysis;
 
   if (!Number.isInteger(pages) || pages < 1) {
@@ -55,7 +41,7 @@ export function createRasterFrameJobsFromMetadata(
 
   return Array.from({ length: outputPages }, (_value, index) => {
     const page = index + 1;
-    return options.createJob({
+    return {
       sourcePath: options.sourcePath,
       workspacePath: options.workspacePath,
       outputPath: resolveOutputPath(
@@ -69,11 +55,11 @@ export function createRasterFrameJobsFromMetadata(
         { allowedExtensions: options.allowedExtensions },
       ),
       page,
-    });
+    };
   });
 }
 
-export async function createRasterFrameJobs(options: {
+export async function planRasterFrameJobs(options: {
   sourcePath: string;
   workspacePath: string;
   workspaceName: string;
@@ -82,8 +68,7 @@ export async function createRasterFrameJobs(options: {
   maxInputPixels: number;
   maxAnimationPixels?: number;
   frameMode?: 'first' | 'all';
-  createJob: (job: RasterFrameJob) => RasterFrameJob;
-}): Promise<RasterFrameJob[]> {
+}): Promise<RasterJob[]> {
   await assertExistingPathInWorkspace(options.sourcePath, options.workspacePath);
   const image = openRasterInput(options.sourcePath, options.maxInputPixels);
   let pages: number;
@@ -99,17 +84,19 @@ export async function createRasterFrameJobs(options: {
     await closeRasterPipeline(image);
   }
 
-  return createRasterFrameJobsFromMetadata(
-    {
-      sourcePath: options.sourcePath,
-      workspacePath: options.workspacePath,
-      workspaceName: options.workspaceName,
-      outputTemplate: options.outputTemplate,
-      allowedExtensions: options.allowedExtensions,
-      frameMode: options.frameMode,
-      maxAnimationPixels: options.maxAnimationPixels,
-      createJob: options.createJob,
-    },
-    { pages, width, pageHeight },
-  );
+  const planOptions: RasterFramePlanOptions = {
+    sourcePath: options.sourcePath,
+    workspacePath: options.workspacePath,
+    workspaceName: options.workspaceName,
+    outputTemplate: options.outputTemplate,
+    allowedExtensions: options.allowedExtensions,
+  };
+  if (options.frameMode !== undefined) {
+    planOptions.frameMode = options.frameMode;
+  }
+  if (options.maxAnimationPixels !== undefined) {
+    planOptions.maxAnimationPixels = options.maxAnimationPixels;
+  }
+
+  return planRasterFrameJobsFromMetadata(planOptions, { pages, width, pageHeight });
 }

@@ -70,7 +70,7 @@ export async function planRasterConversionJobs(
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, spec, options);
+    return planPdfPageRasterJobs(sourcePath, workspace, spec, options);
   }
 
   const outputTemplate = outputTemplateForSource(sourcePath, spec, options);
@@ -121,7 +121,7 @@ export async function planRasterConversionJobs(
   });
 }
 
-async function createPdfJobs(
+async function planPdfPageRasterJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   spec: RasterFormatSpec,
@@ -134,8 +134,8 @@ async function createPdfJobs(
     workspaceName: workspace.name,
     outputTemplate,
     allowedExtensions: spec.extensions,
-    runtime: options.runtime,
-    createJob: (page, outputPath) => ({ sourcePath, workspacePath: workspace.uri.fsPath, outputPath, page }),
+    ...(options.runtime !== undefined && { runtime: options.runtime }),
+    toJob: (page, outputPath) => ({ sourcePath, workspacePath: workspace.uri.fsPath, outputPath, page }),
   });
 }
 

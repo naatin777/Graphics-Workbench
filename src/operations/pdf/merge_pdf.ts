@@ -13,7 +13,7 @@ import {
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 
 export interface MergePdfOptions {
   sourcePaths: string[];
@@ -33,11 +33,11 @@ export async function mergePdf(options: MergePdfOptions): Promise<CommittedConve
     throw new Error('Select at least two PDF files.');
   }
 
-  const prepared = await prepareMerge(options);
+  const prepared = await buildMergedDocument(options);
   return writeMergedPdf(options, prepared);
 }
 
-async function prepareMerge(options: MergePdfOptions): Promise<{
+async function buildMergedDocument(options: MergePdfOptions): Promise<{
   mergedDocument: MupdfPdfDocumentInstance;
   stagingRootPath: string;
   stagedOutputPath: string;
@@ -46,7 +46,7 @@ async function prepareMerge(options: MergePdfOptions): Promise<{
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
-  const stagingRootPath = createStagingRoot(workspacePath, 'merge-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(workspacePath, 'merge-pdf', runId);
   const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
   await Promise.all([
     ...sourcePaths.map(async (sourcePath) => assertExistingPathInWorkspace(sourcePath, workspacePath)),

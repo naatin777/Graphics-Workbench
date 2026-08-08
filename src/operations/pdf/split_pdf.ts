@@ -4,13 +4,13 @@ import path from 'node:path';
 import { loadMupdf, openPdfDocument, savePdfDocument } from './mupdf.js';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
+import { sanitizePdfPathSegment, validatePdfPathInputs } from './pdf_path_validation.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 export interface SplitPdfJob {
@@ -22,8 +22,8 @@ export interface SplitPdfJob {
 interface SplitPdfPageGroupsJob {
   sourcePath: string;
   workspacePath: string;
-  pageGroups?: number[][];
-  outputPathForGroup?: (groupIndex: number, pages: readonly number[]) => string;
+  pageGroups: number[][];
+  outputPathForGroup: (groupIndex: number, pages: readonly number[]) => string;
 }
 
 export interface SplitPdfOptions {
@@ -42,7 +42,7 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<Commit
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
-  await validatePdfJobPaths(options.jobs, 'split-pdf');
+  await validatePdfPathInputs(options.jobs, 'split-pdf');
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -51,7 +51,7 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<Commit
     jobs: options.jobs,
     operationName: 'split-pdf',
     runId,
-    runtime: runtime ?? {},
+    ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       splitPdf({ job, index, runId: currentRunId, signal: batchRuntime.signal }),
   });
@@ -61,7 +61,7 @@ export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions)
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validatePageGroupJobs(options.jobs);
-  await validatePdfJobPaths(options.jobs, 'split-pdf');
+  await validatePdfPathInputs(options.jobs, 'split-pdf');
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -70,7 +70,7 @@ export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions)
     jobs: options.jobs,
     operationName: 'split-pdf',
     runId,
-    runtime: runtime ?? {},
+    ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       splitPdfPageGroups({ job, index, runId: currentRunId, signal: batchRuntime.signal }),
   });
@@ -80,30 +80,30 @@ async function splitPdf(params: {
   job: SplitPdfJob;
   index: number;
   runId: string;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }): Promise<PreparedConversionOutput[]> {
   const { job, index, runId, signal } = params;
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const stagingRootPath = createStagingRoot(job.workspacePath, 'split-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'split-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const pagesDirectory = path.join(workDirectory, 'pages');
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
 
   await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
   await assertWritablePathInWorkspace(pagesDirectory, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await mkdir(pagesDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const mupdf = await loadMupdf();
   const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   try {
     const pageCount = sourceDocument.countPages();
@@ -115,15 +115,15 @@ async function splitPdf(params: {
     const stagedPages: PreparedConversionOutput[] = [];
 
     for (let page = 1; page <= pageCount; page++) {
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       const pageDocument = new mupdf.PDFDocument();
       pageDocument.graftPage(0, sourceDocument, page - 1);
 
       const stagedOutputPath = path.join(pagesDirectory, `${page}.pdf`);
       await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       await writeFile(stagedOutputPath, savePdfDocument(pageDocument));
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
 
       stagedPages.push({
         stagedOutputPath,
@@ -143,37 +143,32 @@ async function splitPdfPageGroups(params: {
   job: SplitPdfPageGroupsJob;
   index: number;
   runId: string;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }): Promise<PreparedConversionOutput[]> {
   const { job, index, runId, signal } = params;
-  const { pageGroups } = job;
-  const { outputPathForGroup } = job;
+  const { pageGroups, outputPathForGroup } = job;
 
-  if (!pageGroups || !outputPathForGroup) {
-    throw new Error('Page groups and outputPathForGroup are required.');
-  }
-
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const stagingRootPath = createStagingRoot(job.workspacePath, 'split-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'split-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const groupsDirectory = path.join(workDirectory, 'groups');
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
 
   await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
   await assertWritablePathInWorkspace(groupsDirectory, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await mkdir(groupsDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const mupdf = await loadMupdf();
   const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   try {
     const pageCount = sourceDocument.countPages();
@@ -187,7 +182,7 @@ async function splitPdfPageGroups(params: {
     const stagedGroups: PreparedConversionOutput[] = [];
 
     for (const [groupIndex, pages] of pageGroups.entries()) {
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       const groupDocument = new mupdf.PDFDocument();
       for (const page of pages) {
         groupDocument.graftPage(groupDocument.countPages(), sourceDocument, page - 1);
@@ -195,9 +190,9 @@ async function splitPdfPageGroups(params: {
 
       const stagedOutputPath = path.join(groupsDirectory, `${groupIndex + 1}.pdf`);
       await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       await writeFile(stagedOutputPath, savePdfDocument(groupDocument));
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
 
       stagedGroups.push({
         stagedOutputPath,
@@ -235,12 +230,8 @@ function validatePageGroupJobs(jobs: SplitPdfPageGroupsJob[]): void {
       throw new Error(`Only PDF files can be split: ${job.sourcePath}`);
     }
 
-    if (!job.pageGroups || job.pageGroups.length === 0) {
+    if (job.pageGroups.length === 0) {
       throw new Error(`No page groups were supplied: ${job.sourcePath}`);
-    }
-
-    if (!job.outputPathForGroup) {
-      throw new Error(`outputPathForGroup is required: ${job.sourcePath}`);
     }
 
     for (const pages of job.pageGroups) {

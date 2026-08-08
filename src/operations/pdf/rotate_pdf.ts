@@ -4,13 +4,13 @@ import path from 'node:path';
 import { loadMupdf, normalizeRotation, openPdfDocument, savePdfDocument, type MupdfPdfPage } from './mupdf.js';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
+import { sanitizePdfPathSegment, validatePdfPathInputs } from './pdf_path_validation.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 export const PDF_ROTATION_ANGLES = [90, 180, 270] as const;
@@ -35,7 +35,7 @@ export async function rotatePdfFiles(options: RotatePdfOptions): Promise<Committ
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
-  await validatePdfJobPaths(options.jobs, 'rotate-pdf');
+  await validatePdfPathInputs(options.jobs, 'rotate-pdf');
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -44,7 +44,7 @@ export async function rotatePdfFiles(options: RotatePdfOptions): Promise<Committ
     jobs: options.jobs,
     operationName: 'rotate-pdf',
     runId,
-    runtime: runtime ?? {},
+    ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       rotatePdf({ job, index, runId: currentRunId, signal: batchRuntime.signal }),
   });
@@ -54,30 +54,30 @@ async function rotatePdf(params: {
   job: RotatePdfJob;
   index: number;
   runId: string;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }): Promise<PreparedConversionOutput> {
   const { job, index, runId, signal } = params;
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const stagingRootPath = createStagingRoot(job.workspacePath, 'rotate-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'rotate-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
   const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
   await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
   await assertWritablePathInWorkspace(workDirectory, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await mkdir(workDirectory, { recursive: true });
   await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
 
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const mupdf = await loadMupdf();
   const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const pageCount = sourceDocument.countPages();
 
   if (pageCount === 0) {
@@ -92,7 +92,7 @@ async function rotatePdf(params: {
 
   try {
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       outputDocument.graftPage(outputDocument.countPages(), sourceDocument, pageIndex);
       if (rotateSet.has(pageIndex)) {
         // graftPageは既存のRotate値を引き継ぐため、現在の回転に加算する。
@@ -107,9 +107,9 @@ async function rotatePdf(params: {
   }
 
   await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await writeFile(stagedOutputPath, savePdfDocument(outputDocument));
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   return {
     stagedOutputPath,

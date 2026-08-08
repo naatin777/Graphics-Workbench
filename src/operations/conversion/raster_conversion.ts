@@ -23,14 +23,14 @@ import {
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 
 export type { CommittedConversionOutput };
-import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import { executeDrawio, type DrawioBackend } from './tools/drawio_tools.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import type { PdfRenderBackend } from './tools/pdf_render_tools.js';
 
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import sharp from 'sharp';
 
 type RasterEncoder = (
@@ -64,13 +64,13 @@ interface ExecuteRasterConversionBatchOptions {
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   maxInputPixels: number;
-  runId?: string | undefined;
+  runId?: string;
   definition: RasterConversionDefinition;
 }
 
 interface RasterStageContext {
   runId: string;
-  runtime: ConversionExecutionContext;
+  runtime: ResolvedConversionRuntime;
   pdfRenderTools: PdfRenderBackend;
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
@@ -126,16 +126,16 @@ async function stageRasterConversion(
   index: number,
   context: RasterStageContext,
 ): Promise<PreparedConversionOutput> {
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
   const { stagingDirectoryName, resultExtension } = context.definition;
-  const stagingRootPath = createStagingRoot(job.workspacePath, stagingDirectoryName, context.runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, stagingDirectoryName, context.runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, `result.${resultExtension}`);
 
   await writeSourceAsRaster(job, { stageDirectory, stagedOutputPath, stagingRootPath }, context);
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
   await validateGeneratedRaster(stagedOutputPath, resultExtension);
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
 
   return {
     stagedOutputPath,
@@ -189,11 +189,11 @@ async function writeDrawioAsRaster(
   paths: RasterStagePaths,
   context: RasterStageContext,
 ): Promise<void> {
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
   const pdfPath = path.join(paths.stageDirectory, 'drawio.pdf');
   await assertWritablePathInWorkspace(pdfPath, job.workspacePath);
   await mkdir(path.dirname(pdfPath), { recursive: true });
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
 
   await (context.drawioTools.runDrawio ?? executeDrawio)(
     context.drawioTools.drawioPath,
@@ -210,7 +210,7 @@ async function writeDrawioAsRaster(
   if (job.page === undefined && context.drawioTools.runDrawio === undefined) {
     const pageCount = await countPdfPages(pdfBytes);
     for (let candidate = 1; candidate <= pageCount; candidate += 1) {
-      context.runtime.signal?.throwIfAborted();
+      context.runtime.signal.throwIfAborted();
       if (await hasPdfPageContent(pdfBytes, candidate)) {
         page = candidate;
         break;
@@ -233,33 +233,33 @@ async function writeDrawioAsRaster(
 
 async function writePdfPageAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
   const pngPath = path.join(request.stageDirectory ?? path.dirname(request.outputPath), 'source.png');
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
   await assertWritablePathInWorkspace(pngPath, request.workspacePath);
   await mkdir(path.dirname(pngPath), { recursive: true });
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
 
   if (context.pdfRenderTools.runPdfToPng) {
     await context.pdfRenderTools.runPdfToPng(request.sourcePath, pngPath, request.page ?? 1, context.runtime.signal);
   } else {
     const pdfBytes = await readFile(request.sourcePath);
-    context.runtime.signal?.throwIfAborted();
+    context.runtime.signal.throwIfAborted();
     const png = await renderPdfPageToPng(pdfBytes, request.page ?? 1, {
-      cropContent: request.cropContent,
+      ...(request.cropContent !== undefined && { cropContent: request.cropContent }),
     });
-    context.runtime.signal?.throwIfAborted();
+    context.runtime.signal.throwIfAborted();
     await writeFile(pngPath, png);
   }
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
 
   await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
 }
 
 async function writeMermaidAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
   const pngPath = path.join(request.stageDirectory ?? path.dirname(request.outputPath), 'mermaid.png');
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
   await assertWritablePathInWorkspace(pngPath, request.workspacePath);
   await mkdir(path.dirname(pngPath), { recursive: true });
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
 
   try {
     await runMermaidCliWithSignal(
@@ -274,7 +274,7 @@ async function writeMermaidAsRaster(request: RasterRenderRequest, context: Raste
       },
       context.runtime.signal,
     );
-    context.runtime.signal?.throwIfAborted();
+    context.runtime.signal.throwIfAborted();
   } catch (error) {
     if (isAbortError(error)) {
       throw error instanceof Error ? error : new Error(String(error));
@@ -287,10 +287,10 @@ async function writeMermaidAsRaster(request: RasterRenderRequest, context: Raste
 }
 
 async function writeImageAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
   await assertWritablePathInWorkspace(request.outputPath, request.workspacePath);
   await mkdir(path.dirname(request.outputPath), { recursive: true });
-  context.runtime.signal?.throwIfAborted();
+  context.runtime.signal.throwIfAborted();
 
   try {
     await context.definition.encoder(
@@ -391,7 +391,7 @@ export interface ExecuteRasterConversionOptions {
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   maxInputPixels?: number;
-  runId?: string | undefined;
+  runId?: string;
 }
 
 export interface ExecuteAvifConversionOptions extends ExecuteRasterConversionOptions {

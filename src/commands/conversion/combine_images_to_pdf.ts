@@ -40,7 +40,7 @@ export async function combineImagesToPdfCommand(
     const configuration = configureCommandRuntime(dependencies);
     const outputTemplate = configuration.outputPath.convertImagesToSinglePdf();
     const defaultOutputTemplate = getDefaultConfiguration().outputPath.convertPngToPdf();
-    const outputPath = await resolveCombineOutputPath(
+    const outputPath = await chooseCombineOutputPath(
       previewedUris,
       workspaceFolder,
       outputTemplate,
@@ -168,7 +168,7 @@ function pathLabel(uri: vscode.Uri): string {
   return uri.fsPath.split(/[\\/]/u).at(-1) ?? uri.fsPath;
 }
 
-async function resolveCombineOutputPath(
+async function chooseCombineOutputPath(
   sourceUris: vscode.Uri[],
   workspaceFolder: vscode.WorkspaceFolder,
   configuredTemplate: string,

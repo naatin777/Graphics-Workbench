@@ -7,11 +7,12 @@ import sharp from 'sharp';
 import { isMermaidPath } from '../../shared/source_format.js';
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 
-import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { executeDrawio, type RunDrawio } from './tools/drawio_tools.js';
+import type { RunPdfToSvg } from './tools/pdf_render_tools.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
@@ -29,7 +30,6 @@ export interface ConvertToDrawioJob {
   workspacePath: string;
 }
 
-type RunPdfToSvg = (sourcePath: string, outputPath: string, page: number, signal?: AbortSignal) => Promise<void>;
 type RunMermaid = (sourcePath: string, outputPath: string, signal?: AbortSignal) => Promise<void>;
 export interface ConvertToDrawioOptions {
   jobs: ConvertToDrawioJob[];
@@ -70,7 +70,7 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
     jobs: options.jobs,
     operationName: 'convert-to-drawio',
     runId,
-    runtime: options.runtime ?? {},
+    ...(options.runtime !== undefined && { runtime: options.runtime }),
     stage: async (job, _index, currentRunId, runtime) => stageDrawio(job, currentRunId, runtime, options),
   });
 }
@@ -78,10 +78,10 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
 async function stageDrawio(
   job: ConvertToDrawioJob,
   runId: string,
-  runtime: ConversionExecutionContext,
+  runtime: ResolvedConversionRuntime,
   options: ConvertToDrawioOptions,
 ): Promise<PreparedConversionOutput> {
-  const stagingRootPath = createStagingRoot(job.workspacePath, 'convert-to-drawio', runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'convert-to-drawio', runId);
   const stageDirectory = path.join(stagingRootPath, 'inputs');
   const stagedOutputPath = path.join(stagingRootPath, `result${drawioExtension(job.outputPath)}`);
   await assertWritablePathInWorkspace(stagingRootPath, job.workspacePath);
@@ -123,10 +123,10 @@ async function stageDrawioInput(
   input: DrawioInput,
   inputIndex: number,
   stageDirectory: string,
-  runtime: ConversionExecutionContext,
+  runtime: ResolvedConversionRuntime,
   options: ConvertToDrawioOptions,
 ): Promise<DrawioPage[]> {
-  runtime.signal?.throwIfAborted();
+  runtime.signal.throwIfAborted();
   const extension = path.extname(input.sourcePath).toLowerCase();
   if (extension === '.pdf') {
     return stagePdfDrawioInput(input, inputIndex, stageDirectory, runtime, options);
@@ -157,7 +157,7 @@ async function stagePdfDrawioInput(
   input: DrawioInput,
   inputIndex: number,
   stageDirectory: string,
-  runtime: ConversionExecutionContext,
+  runtime: ResolvedConversionRuntime,
   options: ConvertToDrawioOptions,
 ): Promise<DrawioPage[]> {
   const pageCount = await countPdfPages(await readFile(input.sourcePath));
@@ -167,12 +167,12 @@ async function stagePdfDrawioInput(
 
   const pages: DrawioPage[] = [];
   for (let page = 1; page <= pageCount; page += 1) {
-    runtime.signal?.throwIfAborted();
+    runtime.signal.throwIfAborted();
     const svgPath = path.join(stageDirectory, `${inputIndex}-${page}.svg`);
     await (
       options.tools.runPdfToSvg ??
       (async (source, output, currentPage, signal): Promise<void> =>
-        executePdfToSvg(source, output, currentPage, signal))
+        renderPdfPageToSvgFile(source, output, currentPage, signal))
     )(input.sourcePath, svgPath, page, runtime.signal);
     pages.push(await svgPage(svgPath, input, page));
   }
@@ -197,7 +197,7 @@ async function exportEditableDrawioImage(options: {
   format: string;
   drawioPath: string;
   runDrawio?: RunDrawio;
-  runtime: ConversionExecutionContext;
+  runtime: ResolvedConversionRuntime;
 }): Promise<void> {
   const args = [
     '--export',
@@ -401,7 +401,7 @@ function escapeXml(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
-async function executePdfToSvg(
+async function renderPdfPageToSvgFile(
   sourcePath: string,
   outputPath: string,
   page: number,
