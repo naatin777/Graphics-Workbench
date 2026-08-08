@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress
+Done
 
 ## 目的
 
@@ -36,4 +36,4 @@ Graphics Workbenchの全Webview（crop / split / merge / rotate / reorder）のC
 
 ## 結果
 
-_完了後に記録_
+完了。全Webview（crop / split / merge / rotate / reorder）をVS Code CSS variablesとremベースのレイアウトへ移行し、テーマ・UIフォントサイズ・ウィンドウZoom・Editor幅へ自然に適応させた（PR #236）。

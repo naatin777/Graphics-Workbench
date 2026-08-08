@@ -10,7 +10,7 @@ Status: Done
 
 ## 規約の正本
 
-テスト名の粒度規約は `.opencode/skills/graphics-workbench-vscode-testing/SKILL.md` の「テスト名の粒度（処理フローの日本語訳）」節を正本とする。新規テスト追加・リネーム時はその規約に従う。
+テスト名の粒度規約は `docs/testing/test-naming.md` を正本とする。新規テスト追加・リネーム時はその規約に従う。
 
 ## Verification
 

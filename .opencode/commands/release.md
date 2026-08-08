@@ -1,5 +1,5 @@
 ---
-description: LHGのリリース準備、検証、VSIX作成を行う
+description: リリース準備、検証、VSIX作成を行う
 agent: build
 ---
 

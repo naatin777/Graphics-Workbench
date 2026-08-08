@@ -1,5 +1,5 @@
 ---
-description: 現在の差分をLHG固有のファイル安全性の観点から確認する
+description: 現在の差分をファイル安全性の観点から確認する
 agent: plan
 ---
 

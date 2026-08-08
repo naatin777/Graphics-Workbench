@@ -59,4 +59,4 @@ host↔webview messageはexternal / unknown境界として扱う。
 - host↔webview message処理はIntegration Test。
 - SolidJS appの表示・操作は`webview/apps/*/src/app.test.tsx`(Vitest)。
 - VS Code上での実表示・幅別layout・PDF.js previewはPlaywright。
-- テスト境界は`graphics-workbench-vscode-testing`を参照。
+- テスト境界と検証方法は`graphics-workbench-verify`を参照。

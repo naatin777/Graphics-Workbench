@@ -3,7 +3,7 @@ description: 外部CLIに関係する問題を再現して原因を調査する
 agent: build
 ---
 
-`graphics-workbench-cli-debug` Skillを読み込む。
+`graphics-workbench-external-tool` Skillを読み込む。
 
 $ARGUMENTSについて調査する。
 
