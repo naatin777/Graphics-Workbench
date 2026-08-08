@@ -26,7 +26,8 @@
     "@types/vscode",
     "@vscode/test-electron",
     "@vscode/vsce",
-    "@vscode/codicons"
+    "@vscode/codicons",
+    "lefthook"
   ],
   "ignoreFiles": ["webview/apps/crop_pdf/src/pdf/pdfjs.ts", "webview/shared/pdf/render_first_page.ts"]
 }

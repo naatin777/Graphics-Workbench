@@ -17,6 +17,7 @@ Graphics Workbenchの全Webview（crop / split / merge / rotate / reorder）のC
 - rotate / reorder: `opacity`による色表現を`--vscode-descriptionForeground`へ。`@media (max-width: 820px)`の縦積みbreakpointを追加。High Contrast用に`--vscode-contrastBorder`境界を追加。reorderのページ上コントロール背景を半透明→solid（HCはsolid背景）。
 - markup整理: crop / splitの冗長class（`input` / `target`）を削除、splitのAdd buttonを`gw-button gw-button--secondary`へ。
 - VS Code window zoomの独自補正・`window.zoomLevel`参照は元から無いことを確認（追加しない）。PDF Preview Zoomはcanvasの`width/height`のみでUIと独立していることを維持。
+- `knip.json`: Docker pre-push hookの`check:all`がknipの`lefthook`誤検出（CI env / git hooks無しのため未使用扱い）で失敗する既存問題を修正（`ignoreDependencies`へ追加）。webview変更とは独立のinfrastructure fix。
 
 ## 対象外
 
