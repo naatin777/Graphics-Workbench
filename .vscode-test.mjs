@@ -85,7 +85,7 @@ export default defineConfig({
   tests: [
     {
       files: extensionHostTestFiles,
-      version: '1.128.0',
+      version: 'stable',
       extensionDevelopmentPath: '.',
       srcDir: 'src',
       workspaceFolder: './test/workspace',

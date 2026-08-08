@@ -26,7 +26,7 @@ export async function convertToAvifCommand(
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
       avif: readAvifOutputOptions(configuration),
-      pdftocairoTools: {},
+      pdfRenderTools: {},
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, prepared, runtime }) =>
       planAvifConversionJobs(sourceUri, configuration, prepared.defaultConfiguration, maxInputPixels, runtime),

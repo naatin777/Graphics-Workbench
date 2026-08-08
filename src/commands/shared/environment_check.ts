@@ -105,23 +105,41 @@ export async function runEnvironmentChecks(options: RunEnvironmentChecksOptions)
     }),
   );
 
-  const svgEngine = options.configuration.convertToPdf.svg.engine();
-  if (svgEngine === 'rsvg-convert') {
-    entries.push(
-      await checkTool({
-        feature: userMessage('message.environmentCheck.feature.svgToPdf'),
-        toolLabel: userMessage('message.environmentCheck.tool.rsvgConvert'),
-        executable: readRsvgConvertExecutablePath(options.configuration),
-        versionArgs: ['--version'],
-        settingId: 'graphics-workbench.execPath.rsvgConvert',
-        timeoutMs,
-        signal: options.signal,
-        probe,
-      }),
-    );
-  }
+  entries.push(await checkSvgToPdf(options.configuration, timeoutMs, options.signal, probe));
 
   return entries;
+}
+
+/** Reports the SVG → PDF backend selected by `convertToPdf.svg.engine`. */
+async function checkSvgToPdf(
+  configuration: Configuration,
+  timeoutMs: number,
+  signal: AbortSignal | undefined,
+  probe: ProbeTool,
+): Promise<EnvironmentCheckEntry> {
+  const feature = userMessage('message.environmentCheck.feature.svgToPdf');
+  if (configuration.convertToPdf.svg.engine() === 'chrome') {
+    return checkTool({
+      feature,
+      toolLabel: userMessage('message.environmentCheck.tool.browser'),
+      executable: readChromeExecutablePath(configuration),
+      versionArgs: ['--version'],
+      settingId: 'graphics-workbench.execPath.chrome',
+      timeoutMs,
+      signal,
+      probe,
+    });
+  }
+  return checkTool({
+    feature,
+    toolLabel: userMessage('message.environmentCheck.tool.rsvgConvert'),
+    executable: readRsvgConvertExecutablePath(configuration),
+    versionArgs: ['--version'],
+    settingId: 'graphics-workbench.execPath.rsvgConvert',
+    timeoutMs,
+    signal,
+    probe,
+  });
 }
 
 async function checkTool(params: {

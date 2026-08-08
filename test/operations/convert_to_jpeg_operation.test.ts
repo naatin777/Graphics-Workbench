@@ -45,7 +45,7 @@ suite('JPEGに変換する処理', () => {
 
       await executeJpegConversion({
         jobs: [job],
-        pdftocairoTools: {
+        pdfRenderTools: {
           runPdfToPng: async (pdfPath, pngPath, page) => {
             assert.ok(pdfPath.endsWith('.pdf'));
             assert.strictEqual(page, 1);

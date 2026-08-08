@@ -1,4 +1,5 @@
 import { execFile, spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { access, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -37,9 +38,10 @@ export async function writeVscodeUserSettings(
   const configuredSettings = JSON.parse(
     (await readFile(testVscodeSettingsPath, 'utf8')).replace(/^\uFEFF/u, ''),
   ) as unknown;
-  if (typeof configuredSettings !== 'object' || configuredSettings === null || Array.isArray(configuredSettings)) {
+  if (!isStringRecord(configuredSettings)) {
     throw new Error(`VS Code test settings must be a JSON object: ${testVscodeSettingsPath}`);
   }
+  await resolveMissingExternalToolPaths(configuredSettings);
 
   await writeFile(
     settingsPath,
@@ -56,6 +58,53 @@ export async function writeVscodeUserSettings(
       2,
     ),
   );
+}
+
+/** Fills empty `graphics-workbench.execPath.*` entries from PATH / known app paths, mirroring `.vscode-test.mjs`. */
+async function resolveMissingExternalToolPaths(settings: Record<string, unknown>): Promise<void> {
+  const tools = [
+    ['graphics-workbench.execPath.rsvgConvert', 'rsvg-convert'],
+    ['graphics-workbench.execPath.mermaid', 'mmdc'],
+    ['graphics-workbench.execPath.drawio', 'drawio'],
+  ] as const;
+
+  for (const [key, command] of tools) {
+    if (typeof settings[key] === 'string' && settings[key] !== '') {
+      continue;
+    }
+    const resolved =
+      key === 'graphics-workbench.execPath.drawio'
+        ? ((await resolveExecutablePath(command)) ?? resolveDrawioAppPath())
+        : await resolveExecutablePath(command);
+    if (resolved !== undefined) {
+      settings[key] = resolved;
+    }
+  }
+}
+
+function isStringRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function resolveExecutablePath(command: string): Promise<string | undefined> {
+  const lookupCommand = process.platform === 'win32' ? 'where' : 'which';
+  try {
+    const { stdout } = await execFileAsync(lookupCommand, [command], { encoding: 'utf8' });
+    return stdout
+      .split(/\r?\n/u)
+      .find((line) => line.trim() !== '')
+      ?.trim();
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveDrawioAppPath(): string | undefined {
+  if (process.platform !== 'darwin') {
+    return undefined;
+  }
+  const appPath = '/Applications/draw.io.app/Contents/MacOS/draw.io';
+  return existsSync(appPath) ? appPath : undefined;
 }
 
 export async function attachElectronDiagnostics({

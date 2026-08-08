@@ -22,7 +22,7 @@ export async function convertToPngCommand(
     prepare: (configuration) => ({
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
-      pdftocairoTools: {},
+      pdfRenderTools: {},
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, runtime }) =>
       planPngConversionJobs(sourceUri, configuration, maxInputPixels, runtime),

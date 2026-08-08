@@ -1,5 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { expect, test, type TestInfo } from '@playwright/test';
@@ -15,7 +14,6 @@ import {
   expectPdfCanvasesReadable,
   expectWebviewNetworkBlocked,
   expectWebviewPreviewScrollable,
-  convertPdfToJpeg,
   openCropPdfConfigure,
   renderAllPdfPreviewPages,
   waitForWebviewTheme,
@@ -492,63 +490,5 @@ test('外部networkが遮断されている', async ({ playwright }, testInfo) =
     if (env) {
       await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
     }
-  }
-});
-
-test('pdftocairo欠損時に期待するfailureになる', async ({ playwright }, testInfo) => {
-  testInfo.setTimeout(120_000);
-  let env: ElectronTestEnv | undefined;
-  const consoleMessages: string[] = [];
-  const missingToolDirectory = await mkdtemp(join(tmpdir(), 'graphics-workbench-missing-pdftocairo-'));
-  const missingToolPath = join(missingToolDirectory, 'pdftocairo');
-
-  try {
-    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
-      ...preparedOptions(testInfo),
-      extraSettings: {
-        'graphics-workbench.execPath.pdftocairo': missingToolPath,
-      },
-    });
-    env.app.electronApp.on('console', (message) => {
-      consoleMessages.push(message.text());
-    });
-
-    await convertPdfToJpeg(env.app.window, cropConfigureFixture.fileName);
-    await expect(env.app.window.getByRole('alert').filter({ hasText: 'Failed to convert to JPEG:' })).toBeVisible();
-
-    const failedPdfJpegOutputPaths = [1, 2].map((page) =>
-      join(env!.directories.workspacePath, `multilingual-text-${page}.jpeg`),
-    );
-    for (const failedOutputPath of failedPdfJpegOutputPaths) {
-      await expect
-        .poll(async () => {
-          try {
-            await readFile(failedOutputPath);
-            return false;
-          } catch {
-            return true;
-          }
-        })
-        .toBe(true);
-    }
-    await env.app.window.keyboard.press('Escape');
-  } catch (error) {
-    await attachElectronDiagnostics({
-      consoleMessages,
-      error,
-      extensionsDir: env?.directories.extensionsDir ?? '',
-      sharedDataDir: env?.directories.sharedDataDir ?? '',
-      temporaryRoot: env?.directories.temporaryRoot ?? '',
-      testInfo,
-      userDataDir: env?.directories.userDataDir ?? '',
-      window: env?.app.window,
-      workspacePath: env?.directories.workspacePath ?? '',
-    });
-    throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    if (env) {
-      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
-    }
-    await rm(missingToolDirectory, { recursive: true, force: true });
   }
 });

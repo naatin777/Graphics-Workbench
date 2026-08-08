@@ -1,7 +1,7 @@
 // Test target:
 // - editable Draw.io画像をSVGへ変換するとき、Draw.io CLIへSVG出力を要求すること
 // - 変換結果を.graphics-workbench配下で作成してから指定出力先へ反映すること
-// - Draw.io CLI / pdftocairo の失敗をユーザー向けエラーに包むこと
+// - Draw.io CLI / PDF renderer の失敗をユーザー向けエラーに包むこと
 // - external toolが成功終了しても不正なSVGをcommitしないこと
 //
 // Not tested:
@@ -139,7 +139,7 @@ suite('SVGに変換する処理', () => {
     }
   });
 
-  test('pdftocairoが成功終了しても空SVGをcommitしない', async () => {
+  test('PDF rendererが成功終了しても空SVGをcommitしない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-svg-empty-'));
 
     try {
@@ -197,11 +197,11 @@ suite('SVGに変換する処理', () => {
             drawioPath: 'drawio',
           },
           runPdfToSvg: async () => {
-            throw errorWithStderr('Command failed: pdftocairo', 'syntax error');
+            throw errorWithStderr('Command failed: pdf-render', 'syntax error');
           },
           runId: 'test-run',
         }),
-        /PDF to SVG conversion failed: Command failed: pdftocairo\nsyntax error/,
+        /PDF to SVG conversion failed: Command failed: pdf-render\nsyntax error/,
       );
     } finally {
       await rm(workspacePath, { recursive: true, force: true });

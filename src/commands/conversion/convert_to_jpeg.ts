@@ -24,7 +24,7 @@ export async function convertToJpegCommand(
       defaultConfiguration: getDefaultConfiguration(),
       mermaidTools: readMermaidCliOptions(configuration),
       drawioTools: buildDrawioCommandOptions(configuration),
-      pdftocairoTools: {},
+      pdfRenderTools: {},
     }),
     plan: async (sourceUri, { configuration, maxInputPixels, prepared, runtime }) =>
       planJpegConversionJobs(sourceUri, configuration, prepared.defaultConfiguration, maxInputPixels, runtime),

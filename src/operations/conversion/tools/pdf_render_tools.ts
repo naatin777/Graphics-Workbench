@@ -6,7 +6,7 @@ export type RunPdfToSvg = (sourcePath: string, outputPath: string, page: number,
  * Test-seam for PDF → PNG/SVG rendering. Production uses mupdf.js; these
  * callbacks let tests inject a stub or a fixed renderer.
  */
-export interface PdftocairoBackend {
+export interface PdfRenderBackend {
   runPdfToPng?: RunPdfToPng;
   runPdfToSvg?: RunPdfToSvg;
 }

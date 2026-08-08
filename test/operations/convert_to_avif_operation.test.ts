@@ -4,7 +4,7 @@
 //
 // Not tested:
 // - Draw.io CLI実体での変換
-// - pdftocairo実体での変換
+// - PDF renderer実体での変換
 // - 画像内容のpixel完全一致
 
 import assert from 'node:assert/strict';
@@ -37,7 +37,7 @@ suite('AVIFに変換する処理', () => {
             page: 1,
           },
         ],
-        pdftocairoTools: {
+        pdfRenderTools: {
           runPdfToPng: async (pdfPath, pngPath, page) => {
             pdfToPngCalls.push({ sourcePath: pdfPath, outputPath: pngPath, page });
             await sharp({

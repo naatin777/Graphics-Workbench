@@ -101,7 +101,7 @@ suite('package.jsonのruntime制約', () => {
     const packageJson = await readJson<PackageJson>('package.json');
 
     assert.strictEqual(packageJson.engines.node, undefined);
-    assert.strictEqual(packageJson.engines.vscode, '^1.105.0');
+    assert.strictEqual(packageJson.engines.vscode, '^1.125.0');
     assert.deepStrictEqual(packageJson.devEngines.runtime, {
       name: 'node',
       version: '>=22.22.2',

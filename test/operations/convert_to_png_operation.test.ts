@@ -29,7 +29,7 @@ suite('PNGに変換する処理', () => {
             workspacePath,
             page,
           })),
-          pdftocairoTools: {},
+          pdfRenderTools: {},
           mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
           drawioTools: { drawioPath: 'drawio' },
           runtime: { resolveConflicts: async () => 'overwrite' },
@@ -79,7 +79,7 @@ suite('PNGに変換する処理', () => {
 
       await executePngConversion({
         jobs: [job],
-        pdftocairoTools: {
+        pdfRenderTools: {
           runPdfToPng: async (pdfPath, pngPath, page) => {
             assert.ok(pdfPath.endsWith('.pdf'));
             assert.strictEqual(page, 1);

@@ -9,7 +9,7 @@
 //
 // Not tested:
 // - rsvg-convert実体のWindows path互換性（GitHub Actionsの実体経路で別に確認する）
-// - Puppeteer engine、pdftocairo、Ghostscript、Draw.io、Safe Mode、UI操作
+// - Puppeteer engine、PDF renderer、Ghostscript、Draw.io、Safe Mode、UI操作
 
 import assert from 'node:assert/strict';
 import { constants } from 'node:fs';

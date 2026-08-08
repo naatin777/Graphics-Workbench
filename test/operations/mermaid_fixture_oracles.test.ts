@@ -15,7 +15,7 @@ suite('Mermaid fixtureの内容比較', () => {
     .entries()) {
     test(`mermaid/${path.basename(fixturePath)}をPNG/SVG/PDFへ変換すると固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdftocairoTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const outputDirectory = path.join(workspacePath, 'converted Mermaid', String(index));
         const actualPngPath = path.join(outputDirectory, 'actual.png');
@@ -24,7 +24,7 @@ suite('Mermaid fixtureの内容比較', () => {
         const expectedDirectory = path.join(testOutputDirectory, 'mermaid', sourceName(fixturePath));
         await executePngConversion({
           jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
-          pdftocairoTools,
+          pdfRenderTools,
           mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },

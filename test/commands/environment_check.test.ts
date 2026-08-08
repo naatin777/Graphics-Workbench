@@ -155,13 +155,18 @@ suite('環境チェック（機能単位の状態判定）', () => {
     assert.ok(probed.includes(TOOL_BROWSER));
   });
 
-  test('rsvg-convertエンジン指定時のみSVG変換チェックを追加する', async () => {
+  test('SVG変換チェックは選択したエンジンのツールをプローブする', async () => {
     const chromeProbed: string[] = [];
     const chromeEntries = await checkWithProbe(async (params) => {
       chromeProbed.push(params.toolName);
     });
 
-    assert.ok(!entryMap(chromeEntries).has(FEATURE_SVG_TO_PDF));
+    assert.strictEqual(entryMap(chromeEntries).get(FEATURE_SVG_TO_PDF)?.status, 'available');
+    assert.strictEqual(
+      entryMap(chromeEntries).get(FEATURE_SVG_TO_PDF)?.settingId,
+      'graphics-workbench.execPath.chrome',
+    );
+    assert.ok(chromeProbed.includes(TOOL_BROWSER));
     assert.ok(!chromeProbed.includes(TOOL_RSVG));
 
     const rsvgProbed: string[] = [];
@@ -173,6 +178,10 @@ suite('環境チェック（機能単位の状態判定）', () => {
     );
 
     assert.strictEqual(entryMap(rsvgEntries).get(FEATURE_SVG_TO_PDF)?.status, 'available');
+    assert.strictEqual(
+      entryMap(rsvgEntries).get(FEATURE_SVG_TO_PDF)?.settingId,
+      'graphics-workbench.execPath.rsvgConvert',
+    );
     assert.ok(rsvgProbed.includes(TOOL_RSVG));
   });
 

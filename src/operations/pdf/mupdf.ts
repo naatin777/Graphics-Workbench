@@ -31,6 +31,7 @@ export interface MupdfPdfPage {
   setPageBox(boxName: 'MediaBox' | 'CropBox' | 'TrimBox', rect: MupdfRect): void;
   toPixmap(matrix: MupdfMatrix, colorspace: MupdfColorSpace, alpha: boolean): MupdfPixmap;
   run(device: MupdfDevice, matrix: MupdfMatrix): void;
+  destroy(): void;
 }
 
 interface MupdfPdfDocumentReader {
@@ -148,7 +149,11 @@ export async function hasPdfPageContent(bytes: Uint8Array, page: number): Promis
   const document = await openPdfDocument(bytes);
   try {
     const pageObject = document.loadPage(page - 1);
-    return findPageContentBounds(mupdf, pageObject) !== undefined;
+    try {
+      return findPageContentBounds(mupdf, pageObject) !== undefined;
+    } finally {
+      pageObject.destroy();
+    }
   } finally {
     document.destroy();
   }
@@ -156,7 +161,7 @@ export async function hasPdfPageContent(bytes: Uint8Array, page: number): Promis
 
 /**
  * Renders a PDF page to a PNG buffer. `page` is 1-based; the default scale
- * matches pdftocairo's 150 DPI (72 * 150 / 72 = 1.5x zoom on the 72pt page).
+ * matches MuPDF's default 150 DPI (72 * 150 / 72 = 1.5x zoom on the 72pt page).
  * With `cropContent`, white margins are trimmed to the drawn content bounds
  * (a pdfcrop-like behavior implemented on top of mupdf.js).
  */
@@ -169,19 +174,23 @@ export async function renderPdfPageToPng(
   const document = await openPdfDocument(bytes);
   try {
     const pageObject = document.loadPage(page - 1);
-    if (options?.cropContent === true) {
-      const bounds = findPageContentBounds(mupdf, pageObject);
-      if (bounds !== undefined) {
-        pageObject.setPageBox('CropBox', bounds);
-      }
-    }
-    const dpi = options?.dpi ?? 150;
-    const scale = dpi / 72;
-    const pixmap = pageObject.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, false);
     try {
-      return Uint8Array.from(pixmap.asPNG());
+      if (options?.cropContent === true) {
+        const bounds = findPageContentBounds(mupdf, pageObject);
+        if (bounds !== undefined) {
+          pageObject.setPageBox('CropBox', bounds);
+        }
+      }
+      const dpi = options?.dpi ?? 150;
+      const scale = dpi / 72;
+      const pixmap = pageObject.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, false);
+      try {
+        return Uint8Array.from(pixmap.asPNG());
+      } finally {
+        pixmap.destroy();
+      }
     } finally {
-      pixmap.destroy();
+      pageObject.destroy();
     }
   } finally {
     document.destroy();
@@ -245,11 +254,19 @@ export async function renderPdfPageToSvg(bytes: Uint8Array, page: number): Promi
   const writer = new mupdf.DocumentWriter(buffer, 'svg', '');
   try {
     const pageObject = document.loadPage(page - 1);
-    const device = writer.beginPage(pageObject.getBounds('CropBox'));
-    pageObject.run(device, mupdf.Matrix.identity);
-    writer.endPage();
-    writer.close();
-    return buffer.asString();
+    try {
+      const device = writer.beginPage(pageObject.getBounds('CropBox'));
+      try {
+        pageObject.run(device, mupdf.Matrix.identity);
+      } finally {
+        device.close();
+      }
+      writer.endPage();
+      writer.close();
+      return buffer.asString();
+    } finally {
+      pageObject.destroy();
+    }
   } finally {
     buffer.destroy();
     document.destroy();

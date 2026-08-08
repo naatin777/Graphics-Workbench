@@ -5,7 +5,6 @@ import type { CommandDependencies } from './commands/shared/command_dependencies
 import { applyRuntimeConfiguration } from './commands/shared/command_runtime.js';
 import { initializeSafeMode } from './commands/lifecycle/safe_mode.js';
 import { initializeUndoHistory } from './commands/lifecycle/undo_last_conversion.js';
-import { cleanupStaleSecurePdfStagingRoots } from './operations/lifecycle/secure_staging.js';
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
 import { getExtensionConfiguration } from './config/extension_configuration.js';
@@ -19,7 +18,6 @@ const latexDocumentSelector: vscode.DocumentSelector = [{ language: 'latex' }, {
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const activatedAt = Date.now();
-  await cleanupStaleSecurePdfStagingRoots();
   initializeSafeMode(context);
   const outputChannel = vscode.window.createOutputChannel(extensionIdentity.displayName);
   initializeUndoHistory({ workspaceState: context.workspaceState, outputChannel });
