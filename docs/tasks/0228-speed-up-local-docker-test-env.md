@@ -1,6 +1,6 @@
 # 0228: ローカルDockerテスト環境の起動を高速化する
 
-Status: In Progress
+Status: Done
 
 ## Objective
 

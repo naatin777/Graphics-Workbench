@@ -2,10 +2,7 @@
 
 ## Current Task
 
-- [0226: 全テスト名を処理フローの日本語訳に全面書き換える](0226-rewrite-test-names-as-flow.md) — Done（規約の正本は `graphics-workbench-vscode-testing` skill）
-- [0225: drop/paste edit providerをLaTeX以外の文書形式（Typst / Quarkdown）へ拡張する](0225-extend-edit-provider-insertion-formats.md) — Done
-- [0227: Webview UIをVS Codeのテーマ・フォント・Zoomへ自然に追従させる](0227-review-webview-vscode-theme-integration.md) — In Progress
-- [0228: ローカルDockerテスト環境の起動を高速化する](0228-speed-up-local-docker-test-env.md) — In Progress
+現在のタスクは [CURRENT.md](CURRENT.md) を参照する。ユーザーから明示的な依頼がある場合はそちらを優先する。
 
 ## On hold
 
@@ -32,10 +29,6 @@ Taskは小さな作業手順やPR単位ではなく、達成する成果また�
 - 必要な意思決定が独立している
 - 変更範囲またはリスクが大きく異なる
 - 別担当で並行して完了できる
-
-## Planned
-
-- [0223: AI開発用skillsをrepository構成と開発パターンに合わせて整理・強化する](0223-organize-ai-development-skills.md) — Not Started（Graphite廃止・Docker移行後に対象を見直す）
 
 ## Backlog
 
@@ -76,6 +69,9 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0228: ローカルDockerテスト環境の起動を高速化する](0228-speed-up-local-docker-test-env.md) — Done — `COPY . .`削除・stable layer順・node_modules named volume・Xvfb条件起動（PR #238）
+- [0227: Webview UIをVS Codeのテーマ・フォント・Zoomへ自然に追従させる](0227-review-webview-vscode-theme-integration.md) — Done — CSS variables / remベースへ移行（PR #236）
+- [0226: 全テスト名を処理フローの日本語訳に全面書き換える](0226-rewrite-test-names-as-flow.md) — Done（規約の正本は `docs/testing/test-naming.md`）
 - [0225: drop/paste edit providerをLaTeX以外の文書形式（Typst / Quarkdown）へ拡張する](0225-extend-edit-provider-insertion-formats.md) — Done — `InsertionFormat`抽象化、`insertTypst.*` / `insertQuarkdown.*`設定、複数drop形式別ラップ（subfigure / #grid / .row）、generatorのquote修正、570 passing
 - [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — Done — Phase 16（Webview / Crop child process / Mermaid runner protocol境界）＋Phase 17（レビュー指摘反映: hasExactKeysのown property化、planning逐次化、PDFページplanner共通化、AVIF共通planner移行、WebP/GIF shell・planner分離、error通知一元化）
 - [0219: command登録と生成metadataの正本を整理する](0219-consolidate-command-registration-and-generated-metadata.md) — Done — command binding正本化・data-driven登録・pure manifest/config adapter分離・metadata生成・manifest検証（PR #119–#122、全CI green・マージ済み）

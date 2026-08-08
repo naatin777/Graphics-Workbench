@@ -38,7 +38,7 @@ VSIXを必要以上に巨大化させず、同時にruntime必須ファイルを
 
 ## 既存の制約
 
-- `.vscodeignore` に既に除外されているもの(src/、test/、scripts/、AGENTS.md、.opencode/等)を誤って必要としない。
+- `.vscodeignore` に既に除外されているもの(src/、test/、scripts/、AGENTS.md、.opencode/、.agents/等)を誤って必要としない。
 - 6 target VSIX生成とsharp実実行検証はrelease workflow(`graphics-workbench-release` / ADR-0026)の対象。
 
 ## releaseとの境界
