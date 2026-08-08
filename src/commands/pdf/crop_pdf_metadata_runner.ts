@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { openPdfDocument } from '../../operations/pdf/mupdf.js';
 
 import { getPdfPageGeometry } from '../../operations/pdf/pdf_page_geometry.js';
-import type { PdfPageGeometry } from '../../application/protocols/crop_pdf_protocol.js';
+import type { PdfPageGeometry } from '../../shared/protocols/crop_pdf_protocol.js';
 
 let requestReceived = false;
 let disconnectRequested = false;

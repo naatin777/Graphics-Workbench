@@ -10,7 +10,7 @@ import {
   type CleanupPreservingError,
   type ConversionArtifactRoot,
 } from './cleanup_conversion_artifacts.js';
-import { OperationCancelledError } from './operation_cancelled_error.js';
+import { OperationCancelledError } from '../../shared/error.js';
 import { copyFileWithAbort, type AbortableCopyFile } from './copy_file_with_abort.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import { filesHaveEqualContents, hashFile } from '../input/file_content_hash.js';
@@ -104,7 +104,7 @@ export class CommitRollbackError extends Error implements CleanupPreservingError
   }
 }
 
-export { OperationCancelledError } from './operation_cancelled_error.js';
+export { OperationCancelledError } from '../../shared/error.js';
 
 export async function commitStagedOutputs(
   outputs: PreparedConversionOutput[],

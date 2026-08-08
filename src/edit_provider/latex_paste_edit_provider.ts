@@ -8,9 +8,9 @@ import { withCancellationSignal } from '../commands/lifecycle/progress_cancellat
 import { resolveOutputConflicts } from '../commands/lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../commands/lifecycle/undo_last_conversion.js';
 import { userMessage } from '../commands/shared/user_messages.js';
-import { isAbortError } from '../application/error_normalization.js';
+import { isAbortError } from '../shared/error.js';
 import { resolveOutputPath } from '../config/output/resolve_output_path.js';
-import { getMaxInputPixels } from '../config/max_input_pixels.js';
+import { getMaxInputPixels } from '../config/raster.js';
 import { localeMap } from '../locale_map.js';
 import type {
   CommittedConversionOutput,

@@ -1,9 +1,29 @@
 import * as vscode from 'vscode';
 
-import { SafeModeState, type StateStorage } from '../../application/policy/safe_mode.js';
 import type { OutputConflictDecision } from '../../operations/lifecycle/commit_conversion_outputs.js';
 
 import { userMessage } from '../shared/user_messages.js';
+
+const SAFE_MODE_STATE_KEY = 'safeMode.enabled';
+
+export interface StateStorage {
+  get(key: 'safeMode.enabled', defaultValue?: boolean): boolean | undefined;
+  update(key: 'safeMode.enabled', value: boolean): Thenable<void>;
+}
+
+export class SafeModeState {
+  constructor(private readonly storage: StateStorage) {}
+
+  isEnabled(): boolean {
+    return this.storage.get(SAFE_MODE_STATE_KEY, true) ?? true;
+  }
+
+  async toggle(): Promise<boolean> {
+    const enabled = !this.isEnabled();
+    await this.storage.update(SAFE_MODE_STATE_KEY, enabled);
+    return enabled;
+  }
+}
 
 let safeModeState: SafeModeState | undefined;
 let statusBarItem: vscode.StatusBarItem | undefined;

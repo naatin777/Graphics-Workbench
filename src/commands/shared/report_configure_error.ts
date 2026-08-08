@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
-import { toErrorMessage, isAbortError } from '../../application/error_normalization.js';
+import { toErrorMessage, isAbortError } from '../../shared/error.js';
 
 export interface ReportConfigureApplyErrorOptions {
   operationName: string;

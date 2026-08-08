@@ -10,7 +10,7 @@
 
 import assert from 'node:assert/strict';
 
-import { SafeModeState } from '../../src/application/policy/safe_mode.js';
+import { SafeModeState } from '../../src/commands/lifecycle/safe_mode.js';
 
 suite('Safe Mode状態', () => {
   test('初期状態では有効である', () => {

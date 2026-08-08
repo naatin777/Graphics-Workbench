@@ -1,4 +1,4 @@
-import { OperationCancelledError } from '../lifecycle/operation_cancelled_error.js';
+import { OperationCancelledError } from '../../shared/error.js';
 
 interface WaitingTask {
   start: () => Promise<void>;

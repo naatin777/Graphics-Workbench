@@ -34,11 +34,11 @@
     "types": ["vite/client"],
     "paths": {
       "@webview-shared/*": ["./shared/*"],
-      "@graphics-workbench-crop-pdf-protocol": ["../src/application/protocols/crop_pdf_protocol.ts"],
-      "@graphics-workbench-merge-pdf-protocol": ["../src/application/protocols/merge_pdf_protocol.ts"],
-      "@graphics-workbench-split-pdf-protocol": ["../src/application/protocols/split_pdf_protocol.ts"],
-      "@graphics-workbench-rotate-pdf-protocol": ["../src/application/protocols/rotate_pdf_protocol.ts"],
-      "@graphics-workbench-reorder-pdf-protocol": ["../src/application/protocols/reorder_pdf_protocol.ts"]
+      "@graphics-workbench-crop-pdf-protocol": ["../src/shared/protocols/crop_pdf_protocol.ts"],
+      "@graphics-workbench-merge-pdf-protocol": ["../src/shared/protocols/merge_pdf_protocol.ts"],
+      "@graphics-workbench-split-pdf-protocol": ["../src/shared/protocols/split_pdf_protocol.ts"],
+      "@graphics-workbench-rotate-pdf-protocol": ["../src/shared/protocols/rotate_pdf_protocol.ts"],
+      "@graphics-workbench-reorder-pdf-protocol": ["../src/shared/protocols/reorder_pdf_protocol.ts"]
     }
   },
   "include": [
@@ -46,7 +46,7 @@
     "shared/**/*",
     "vite.config.ts",
     "vitest.config.ts",
-    "../src/application/protocols/crop_pdf_protocol.ts"
+    "../src/shared/protocols/crop_pdf_protocol.ts"
   ],
   "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.test.tsx"]
 }

@@ -6,8 +6,7 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { convertToGifCommand } from '../../src/commands/conversion/convert_to_gif.js';
-import { convertToTiffCommand } from '../../src/commands/conversion/convert_to_tiff.js';
+import { convertToGifCommand, convertToTiffCommand } from '../../src/commands/conversion/convert_to_raster.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('GIF/TIFFに変換コマンド', () => {

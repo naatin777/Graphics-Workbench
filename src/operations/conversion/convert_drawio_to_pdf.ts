@@ -7,14 +7,14 @@ import {
   isDrawioPath,
   isEditableDrawioImagePath,
   logicalSourcePathForOutputTemplate,
-} from '../../application/policy/source_format.js';
+} from '../../shared/source_format.js';
 import { isWindowsReservedPathComponent, resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import { loadMupdf, openPdfDocument, savePdfDocument } from '../pdf/mupdf.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
-import { runExternalTool } from '../external_tools/run_external_tool.js';
+import { executeDrawio, type RunDrawio } from './tools/drawio_tools.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
@@ -37,13 +37,6 @@ export interface ConvertDrawioToPdfOptions {
   runDrawio?: RunDrawio;
 }
 
-type RunDrawio = (
-  executable: string,
-  args: string[],
-  signal?: AbortSignal,
-  outputChannel?: ConversionExecutionContext['outputChannel'],
-) => Promise<void>;
-
 export async function convertDrawioToPdfFiles(
   options: ConvertDrawioToPdfOptions,
 ): Promise<CommittedConversionOutput[]> {
@@ -51,7 +44,7 @@ export async function convertDrawioToPdfFiles(
   validateJobs(options.jobs, options.outputMode);
   await validateJobPaths(options.jobs, operationName, options.outputMode);
 
-  await assertPreflightPassed(preflightOptionsFromRuntime(options.runtime));
+  options.runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
 
@@ -267,22 +260,6 @@ async function runDrawioCommand(
   runDrawio?: RunDrawio,
 ): Promise<void> {
   await (runDrawio ?? executeDrawio)(executable, args, runtime.signal, runtime.outputChannel);
-}
-
-async function executeDrawio(
-  executable: string,
-  args: string[],
-  signal?: AbortSignal,
-  outputChannel?: ConversionExecutionContext['outputChannel'],
-): Promise<void> {
-  const toolOptions: Parameters<typeof runExternalTool>[0] = { toolName: 'drawio' as const, executable, args };
-  if (signal !== undefined) {
-    toolOptions.signal = signal;
-  }
-  if (outputChannel !== undefined) {
-    toolOptions.outputChannel = outputChannel;
-  }
-  await runExternalTool(toolOptions);
 }
 
 async function validateJobPaths(

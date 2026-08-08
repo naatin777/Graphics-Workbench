@@ -10,7 +10,7 @@ import {
   isSplitPdfWebviewToHostMessage,
   parseSplitPdfPages,
   type SplitPdfLabels,
-} from '../../src/application/protocols/split_pdf_protocol.js';
+} from '../../src/shared/protocols/split_pdf_protocol.js';
 import { splitPdfByPageGroups } from '../../src/operations/pdf/split_pdf.js';
 import { invalidPreflightInputDirectory } from '../helpers/fixture_paths.js';
 

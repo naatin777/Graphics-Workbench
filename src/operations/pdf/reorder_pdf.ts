@@ -8,7 +8,7 @@ import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js'
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
@@ -32,7 +32,6 @@ export async function reorderPdfFiles(options: ReorderPdfOptions): Promise<Commi
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
   await validatePdfJobPaths(options.jobs, 'reorder-pdf');
-  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();

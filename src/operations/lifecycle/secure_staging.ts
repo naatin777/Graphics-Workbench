@@ -3,7 +3,7 @@ import { chmod, lstat, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'n
 import os from 'node:os';
 import path from 'node:path';
 
-import { isRecord } from '../../application/protocols/protocol_utils.js';
+import { isRecord } from '../../shared/protocols/protocol_utils.js';
 
 const STAGING_PREFIX = 'graphics-workbench-pdf-';
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000;

@@ -1,5 +1,5 @@
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
-import { assertAnimationPixelLimit } from '../../config/raster_limits.js';
+import { assertAnimationPixelLimit } from '../../config/raster.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   closeRasterPipeline,

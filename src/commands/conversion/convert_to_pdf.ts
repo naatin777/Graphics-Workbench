@@ -8,9 +8,9 @@ import {
   isEditableDrawioImagePath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
-} from '../../application/policy/source_format.js';
+} from '../../shared/source_format.js';
 import { readRsvgConvertExecutablePath } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/max_input_pixels.js';
+import { getMaxInputPixels } from '../../config/raster.js';
 import { readChromeExecutablePath, readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
@@ -19,7 +19,7 @@ import {
   validateSvgToPdfOptions,
   type ConvertToPdfJob,
 } from '../../operations/conversion/convert_to_pdf.js';
-import type { SvgToPdfBackend } from '../../operations/conversion/tools/index.js';
+import type { SvgToPdfBackend } from '../../operations/conversion/tools/svg_to_pdf_tools.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -27,7 +27,7 @@ import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime, buildDrawioCommandOptions } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_normalization.js';
+import { isAbortError } from '../../shared/error.js';
 import { resolveSelectedUris } from '../shared/command_input.js';
 
 const pdfImageExtensions = [

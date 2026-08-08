@@ -1,4 +1,4 @@
-import { toErrorMessage } from '../../application/error_normalization.js';
+import { toErrorMessage } from '../../shared/error.js';
 
 export type ExcalidrawErrorCategory = 'read' | 'json' | 'scene' | 'embedded-image' | 'export';
 

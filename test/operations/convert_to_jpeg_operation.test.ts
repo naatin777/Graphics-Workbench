@@ -10,7 +10,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 
-import { executeJpegConversion, type ConvertToJpegJob } from '../../src/operations/conversion/convert_to_jpeg.js';
+import { executeJpegConversion, type RasterJob } from '../../src/operations/conversion/raster_conversion.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
 
@@ -35,7 +35,7 @@ suite('JPEGに変換する処理', () => {
         await writeFile(pdfPath, await document.save());
       },
     };
-    const job: ConvertToJpegJob = {
+    const job: RasterJob = {
       sourcePath,
       outputPath,
       workspacePath: workspacePath.path,

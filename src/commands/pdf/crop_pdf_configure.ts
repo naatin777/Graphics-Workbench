@@ -8,11 +8,11 @@ import {
   type PdfPageGeometry,
   type CropTarget,
   isCropConfigureMessage,
-} from '../../application/protocols/crop_pdf_protocol.js';
+} from '../../shared/protocols/crop_pdf_protocol.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
-import { OperationCancelledError } from '../../operations/lifecycle/operation_cancelled_error.js';
+import { OperationCancelledError, isAbortError } from '../../shared/error.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
@@ -28,7 +28,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_normalization.js';
+import { resolveSingleConfiguredPdfUri, toWebviewDirectoryUri } from '../shared/command_input.js';
 
 export async function cropPdfConfigureCommand(
   context: vscode.ExtensionContext,
@@ -57,7 +57,7 @@ async function runCropPdfConfigureCommand(
   dependencies?: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
-  const inputUri = resolveSinglePdfUri(uri, uris);
+  const inputUri = resolveSingleConfiguredPdfUri(uri, uris, 'cropPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
   if (!workspaceFolder) {
@@ -213,12 +213,6 @@ async function runCropPdfConfigureCommand(
   });
 }
 
-function toWebviewDirectoryUri(webview: vscode.Webview, assetsRoot: vscode.Uri, directoryName: string): string {
-  const uri = webview.asWebviewUri(vscode.Uri.joinPath(assetsRoot, directoryName));
-
-  return `${uri.toString()}/`;
-}
-
 async function applyConfiguredCrop(params: {
   inputUri: vscode.Uri;
   workspaceFolder: vscode.WorkspaceFolder;
@@ -358,35 +352,6 @@ function initialCropBoxForPages(pageGeometry: PdfPageGeometry[]): CropBox {
         right: firstPage.cropBox.x + firstPage.cropBox.width,
         top: firstPage.cropBox.y + firstPage.cropBox.height,
       };
-}
-
-function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri {
-  let candidates: vscode.Uri[] = [];
-  if (uris !== undefined && uris.length > 0) {
-    candidates = uris;
-  } else if (uri !== undefined) {
-    candidates = [uri];
-  }
-
-  if (candidates.length !== 1) {
-    throw new Error('cropPdf.configure requires exactly one PDF file.');
-  }
-
-  const [inputUri] = candidates;
-
-  if (!inputUri) {
-    throw new Error('cropPdf.configure requires exactly one PDF file.');
-  }
-
-  if (inputUri.scheme !== 'file') {
-    throw new Error('cropPdf.configure supports only local file URI.');
-  }
-
-  if (path.extname(inputUri.fsPath).toLowerCase() !== '.pdf') {
-    throw new Error('cropPdf.configure supports only PDF files.');
-  }
-
-  return inputUri;
 }
 
 function cropPdfLabels(): CropPdfLabels {

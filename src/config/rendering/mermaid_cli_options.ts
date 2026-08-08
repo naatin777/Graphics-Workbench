@@ -1,5 +1,5 @@
 import type { Configuration } from '../../generated/extension_manifest.js';
-import type { MermaidBackend } from '../../operations/conversion/tools/index.js';
+import type { MermaidBackend } from '../../operations/conversion/tools/mermaid_tools.js';
 import { readMermaidExecutablePath } from '../external_tools/external_tool_paths.js';
 
 export type MermaidConfiguration = Configuration;

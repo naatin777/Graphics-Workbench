@@ -20,7 +20,7 @@ import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 
 import { convertToPdfFiles, type ConvertToPdfFilesOptions } from '../../src/operations/conversion/convert_to_pdf.js';
-import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/index.js';
+import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/svg_to_pdf_tools.js';
 import { operationPathCompatibilitySvgInputPath, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const svgFixturePath = operationPathCompatibilitySvgInputPath;

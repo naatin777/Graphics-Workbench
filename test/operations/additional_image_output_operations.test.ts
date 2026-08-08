@@ -7,10 +7,12 @@ import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
-import { executeAvifConversion } from '../../src/operations/conversion/convert_to_avif.js';
-import { executeJpegConversion } from '../../src/operations/conversion/convert_to_jpeg.js';
-import { executePngConversion } from '../../src/operations/conversion/convert_to_png.js';
-import { executeWebpConversion } from '../../src/operations/conversion/convert_to_webp.js';
+import {
+  executeAvifConversion,
+  executeJpegConversion,
+  executePngConversion,
+  executeWebpConversion,
+} from '../../src/operations/conversion/raster_conversion.js';
 import { requireValue } from '../helpers/required.js';
 
 const inputFormats = ['gif', 'tiff'] as const;

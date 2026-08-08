@@ -36,7 +36,7 @@ import * as vscode from 'vscode';
 
 import { outputTemplateForSource } from '../../src/commands/conversion/convert_to_pdf.js';
 
-import { logicalSourcePathForOutputTemplate } from '../../src/application/policy/source_format.js';
+import { logicalSourcePathForOutputTemplate } from '../../src/shared/source_format.js';
 
 import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';

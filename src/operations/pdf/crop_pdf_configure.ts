@@ -5,7 +5,7 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 import { assertSafePathSegment, createRunId, createStagingRoot, type RunId } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
-import { isAbortError } from '../../application/error_normalization.js';
+import { isAbortError } from '../../shared/error.js';
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
   commitStagedOutputs,
@@ -14,7 +14,7 @@ import {
   type PreparedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { assertPreflightPassed, preflightOptionsFromRuntime } from '../input/input_preflight.js';
+
 import { runCropPdfProcess } from './run_crop_pdf_process.js';
 import type { CropBox, CropTarget } from './crop_pdf_core.js';
 
@@ -41,7 +41,6 @@ export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions)
 
   runtime?.outputChannel?.appendLine('[crop-pdf-configure] operation-started');
 
-  await assertPreflightPassed(preflightOptionsFromRuntime(runtime));
   runtime?.signal?.throwIfAborted();
 
   const runId = options.createRunId?.() ?? createRunId();

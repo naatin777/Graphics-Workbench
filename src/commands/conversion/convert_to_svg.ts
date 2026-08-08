@@ -10,8 +10,8 @@ import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
-} from '../../application/policy/source_format.js';
-import { getMaxInputPixels } from '../../config/max_input_pixels.js';
+} from '../../shared/source_format.js';
+import { getMaxInputPixels } from '../../config/raster.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
@@ -27,7 +27,7 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
 import { configureCommandRuntime, buildDrawioCommandOptions } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_normalization.js';
+import { isAbortError } from '../../shared/error.js';
 
 const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.svg';
 const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.svg';

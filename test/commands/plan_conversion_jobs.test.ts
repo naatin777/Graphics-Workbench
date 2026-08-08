@@ -1,0 +1,110 @@
+import assert from 'node:assert/strict';
+import { copyFile, mkdtempDisposable, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+import { PDFDocument } from 'pdf-lib';
+import * as vscode from 'vscode';
+
+import { avifSpec, jpegSpec, pngSpec, tiffSpec } from '../../src/commands/conversion/convert_to_raster.js';
+import { planRasterConversionJobs } from '../../src/commands/conversion/plan_conversion_jobs.js';
+import { configureCommandRuntime } from '../../src/commands/shared/command_runtime.js';
+import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { requireValue } from '../helpers/required.js';
+
+const simpleFormats = [
+  { spec: pngSpec, extension: 'png', unsupportedLabel: 'PNG' },
+  { spec: jpegSpec, extension: 'jpeg', unsupportedLabel: 'JPEG' },
+  { spec: avifSpec, extension: 'avif', unsupportedLabel: 'AVIF' },
+  { spec: tiffSpec, extension: 'tiff', unsupportedLabel: 'TIFF' },
+] as const;
+
+const maxInputPixels = getDefaultConfiguration().raster.maxInputPixels();
+
+suite('ラスター変換planner', () => {
+  for (const { spec, extension, unsupportedLabel } of simpleFormats) {
+    test(`${spec.label}変換は2ページPDFをページごとのjobへ展開する`, async () => {
+      const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
+      await using temporaryDirectory = await mkdtempDisposable(
+        path.join(workspace.uri.fsPath, `gw-plan-${extension}-`),
+      );
+
+      const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
+      const document = await PDFDocument.create();
+      document.addPage([200, 150]);
+      document.addPage([200, 150]);
+      await writeFile(sourcePath, await document.save());
+
+      const jobs = await planRasterConversionJobs(vscode.Uri.file(sourcePath), spec, {
+        configuration: configureCommandRuntime(),
+        maxInputPixels,
+      });
+
+      assert.deepStrictEqual(
+        jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
+          sourcePath: jobSourcePath,
+          workspacePath,
+          outputPath,
+          page,
+        })),
+        [
+          {
+            sourcePath,
+            workspacePath: workspace.uri.fsPath,
+            outputPath: path.join(temporaryDirectory.path, `source-1.${extension}`),
+            page: 1,
+          },
+          {
+            sourcePath,
+            workspacePath: workspace.uri.fsPath,
+            outputPath: path.join(temporaryDirectory.path, `source-2.${extension}`),
+            page: 2,
+          },
+        ],
+      );
+    });
+
+    test(`${spec.label}変換は通常の${unsupportedLabel}入力を同一形式変換として拒否する`, async () => {
+      const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
+      const sourcePath = path.join(workspace.uri.fsPath, `source.${extension}`);
+
+      await assert.rejects(
+        planRasterConversionJobs(vscode.Uri.file(sourcePath), spec, {
+          configuration: configureCommandRuntime(),
+          maxInputPixels,
+        }),
+        new RegExp(`Unsupported input for ${unsupportedLabel} conversion: ${RegExp.escape(sourcePath)}`),
+      );
+    });
+  }
+
+  test('AVIF変換はraster sourceを単一jobへ展開する', async () => {
+    const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
+    await using temporaryDirectory = await mkdtempDisposable(path.join(workspace.uri.fsPath, 'gw-plan-avif-'));
+
+    const sourcePath = path.join(temporaryDirectory.path, 'source.png');
+    await copyFile(operationPngInputPath, sourcePath);
+
+    const jobs = await planRasterConversionJobs(vscode.Uri.file(sourcePath), avifSpec, {
+      configuration: configureCommandRuntime(),
+      maxInputPixels,
+    });
+
+    assert.deepStrictEqual(
+      jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
+        sourcePath: jobSourcePath,
+        workspacePath,
+        outputPath,
+        page,
+      })),
+      [
+        {
+          sourcePath,
+          workspacePath: workspace.uri.fsPath,
+          outputPath: path.join(temporaryDirectory.path, 'source.avif'),
+          page: 1,
+        },
+      ],
+    );
+  });
+});

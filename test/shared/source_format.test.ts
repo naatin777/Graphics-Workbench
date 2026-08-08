@@ -7,7 +7,7 @@ import {
   isSameSourceFormat,
   logicalSourcePathForOutputTemplate,
   sourceFormatForPath,
-} from '../../src/application/policy/source_format.js';
+} from '../../src/shared/source_format.js';
 
 suite('source format判定', () => {
   test('拡張子とeditable Draw.io compound extensionを一元判定する', () => {

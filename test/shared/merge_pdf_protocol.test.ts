@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   isMergePdfHostToWebviewMessage,
   isMergePdfWebviewToHostMessage,
-} from '../../src/application/protocols/merge_pdf_protocol.js';
+} from '../../src/shared/protocols/merge_pdf_protocol.js';
 
 suite('Merge PDF Webviewプロトコル', () => {
   test('initおよびapplyメッセージの型を受け付ける', () => {

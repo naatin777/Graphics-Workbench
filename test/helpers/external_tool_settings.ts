@@ -4,7 +4,8 @@ import {
   readRsvgConvertExecutablePath,
 } from '../../src/config/external_tools/external_tool_paths.js';
 import { readMermaidCliOptions } from '../../src/config/rendering/mermaid_cli_options.js';
-import type { MermaidBackend, PdfRenderBackend } from '../../src/operations/conversion/tools/index.js';
+import type { MermaidBackend } from '../../src/operations/conversion/tools/mermaid_tools.js';
+import type { PdfRenderBackend } from '../../src/operations/conversion/tools/pdf_render_tools.js';
 
 export function readConfiguredConversionTools(): {
   pdfRenderTools: PdfRenderBackend;

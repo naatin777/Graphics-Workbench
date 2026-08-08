@@ -1,8 +1,8 @@
 import { fork } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { OperationCancelledError } from '../lifecycle/operation_cancelled_error.js';
-import type { PdfPageGeometry } from '../../application/protocols/crop_pdf_protocol.js';
+import { OperationCancelledError } from '../../shared/error.js';
+import type { PdfPageGeometry } from '../../shared/protocols/crop_pdf_protocol.js';
 import { terminateProcessTree } from '../external_tools/run_external_tool.js';
 
 export interface CropPdfMetadata {

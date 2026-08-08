@@ -1,4 +1,4 @@
-import { hasExactKeys, isNonEmptyString, isRecord } from '../../application/protocols/protocol_utils.js';
+import { hasExactKeys, isNonEmptyString, isRecord } from '../../shared/protocols/protocol_utils.js';
 import type { CropPdfFileRequest } from './crop_pdf_core.js';
 
 export const CROP_PDF_PROCESS_PROTOCOL_VERSION = 1;

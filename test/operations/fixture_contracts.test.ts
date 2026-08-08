@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-import { sourceFormatForPath, type SourceFormat } from '../../src/application/policy/source_format.js';
+import { sourceFormatForPath, type SourceFormat } from '../../src/shared/source_format.js';
 import { listInputFixturePaths, testInputDirectory } from '../helpers/fixture_paths.js';
 
 const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {

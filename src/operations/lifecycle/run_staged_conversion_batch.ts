@@ -1,4 +1,4 @@
-import { isAbortError } from '../../application/error_normalization.js';
+import { isAbortError } from '../../shared/error.js';
 import {
   stagingArtifactsForJobs,
   type ConversionArtifactRoot,

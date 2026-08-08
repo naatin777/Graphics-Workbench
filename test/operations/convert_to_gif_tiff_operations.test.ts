@@ -5,8 +5,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { executeGifConversion } from '../../src/operations/conversion/convert_to_gif.js';
-import { executeTiffConversion } from '../../src/operations/conversion/convert_to_tiff.js';
+import { executeGifConversion, executeTiffConversion } from '../../src/operations/conversion/raster_conversion.js';
 
 suite('GIF/TIFFに変換する処理', () => {
   test('各フレームを独立した静止GIF/TIFFとしてstaging lifecycleで出力する', async () => {

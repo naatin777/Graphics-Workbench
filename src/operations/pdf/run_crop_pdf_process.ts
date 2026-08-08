@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { OperationCancelledError } from '../lifecycle/operation_cancelled_error.js';
+import { OperationCancelledError } from '../../shared/error.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import { terminateProcessTree } from '../external_tools/run_external_tool.js';
 import type { CropPdfFileRequest } from './crop_pdf_core.js';

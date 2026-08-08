@@ -1,8 +1,8 @@
 import path from 'node:path';
 
-import { isRasterImagePath, logicalSourcePathForOutputTemplate } from '../../application/policy/source_format.js';
+import { isRasterImagePath, logicalSourcePathForOutputTemplate } from '../../shared/source_format.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import { assertAnimationPixelLimit } from '../../config/raster_limits.js';
+import { assertAnimationPixelLimit } from '../../config/raster.js';
 import { createRasterFrameJobs, readRasterAnimationMetadata, type RasterFrameJob } from './create_raster_frame_jobs.js';
 
 export async function planAnimationRasterSourceJobs(options: {

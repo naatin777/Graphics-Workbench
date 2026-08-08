@@ -202,7 +202,7 @@ suite('command registration', () => {
     await handlers.get('graphics-workbench.convertToWebpPreserveAnimation')!();
 
     const loadLines = outputChannel.lines.filter((line) =>
-      line.includes('../conversion/convert_to_webp.js first load'),
+      line.includes('../conversion/convert_to_raster.js first load'),
     );
     assert.strictEqual(loadLines.length, 1);
   });

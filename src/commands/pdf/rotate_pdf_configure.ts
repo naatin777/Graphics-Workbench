@@ -8,8 +8,8 @@ import {
   type RotatePdfHostToWebview,
   type RotatePdfLabels,
   type RotatePdfWebviewToHost,
-} from '../../application/protocols/rotate_pdf_protocol.js';
-import type { PdfPreviewSettings } from '../../application/protocols/pdf_preview_protocol.js';
+} from '../../shared/protocols/rotate_pdf_protocol.js';
+import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
@@ -27,7 +27,8 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
-import { isAbortError } from '../../application/error_normalization.js';
+import { resolveSingleConfiguredPdfUri, toWebviewDirectoryUri } from '../shared/command_input.js';
+import { isAbortError } from '../../shared/error.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function rotatePdfConfigureCommand(
@@ -59,7 +60,7 @@ async function runRotatePdfConfigureCommand(
   dependencies?: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies?.outputChannel;
-  const inputUri = resolveSinglePdfUri(uri, uris);
+  const inputUri = resolveSingleConfiguredPdfUri(uri, uris, 'rotatePdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
   if (!workspaceFolder) {
@@ -81,7 +82,7 @@ async function runRotatePdfConfigureCommand(
   });
 
   const panelTitle = localeMap('submenu.rotatePdf');
-  const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'rotate_pdf');
+  const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'rotatePdf.configure');
   const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
   const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
   startPdfConfigureSession({
@@ -98,7 +99,7 @@ async function runRotatePdfConfigureCommand(
     },
     webview: {
       title: panelTitle,
-      appName: 'rotate_pdf',
+      appName: 'rotatePdf.configure',
       extensionUri: context.extensionUri,
       locale: vscode.env.language,
     },
@@ -250,39 +251,6 @@ async function applyConfiguredRotation(params: {
   }
 
   panel.dispose();
-}
-
-function resolveSinglePdfUri(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri {
-  let candidates: vscode.Uri[] = [];
-  if (uris !== undefined && uris.length > 0) {
-    candidates = uris;
-  } else if (uri !== undefined) {
-    candidates = [uri];
-  }
-
-  if (candidates.length !== 1) {
-    throw new Error('rotatePdf.configure requires exactly one PDF file.');
-  }
-
-  const [inputUri] = candidates;
-
-  if (!inputUri) {
-    throw new Error('rotatePdf.configure requires exactly one PDF file.');
-  }
-
-  if (inputUri.scheme !== 'file') {
-    throw new Error('rotatePdf.configure supports only local file URI.');
-  }
-
-  if (path.extname(inputUri.fsPath).toLowerCase() !== '.pdf') {
-    throw new Error('rotatePdf.configure supports only PDF files.');
-  }
-
-  return inputUri;
-}
-
-function toWebviewDirectoryUri(webview: vscode.Webview, appRoot: vscode.Uri, directoryName: string): string {
-  return `${webview.asWebviewUri(vscode.Uri.joinPath(appRoot, directoryName)).toString()}/`;
 }
 
 function rotatePdfLabels(): RotatePdfLabels {

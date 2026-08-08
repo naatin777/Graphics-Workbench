@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-import { logicalSourcePathForOutputTemplate } from '../../src/application/policy/source_format.js';
+import { logicalSourcePathForOutputTemplate } from '../../src/shared/source_format.js';
 import { resolveOutputPath, type OutputPathContext } from '../../src/config/output/resolve_output_path.js';
 
 type OutputPathPlatform = 'win32' | 'posix';

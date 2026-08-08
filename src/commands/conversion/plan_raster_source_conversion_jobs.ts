@@ -2,7 +2,7 @@ import {
   isEditableDrawioImagePath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
-} from '../../application/policy/source_format.js';
+} from '../../shared/source_format.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { createRasterFrameJobs, type RasterFrameJob } from './create_raster_frame_jobs.js';
 
