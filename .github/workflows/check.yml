@@ -34,8 +34,8 @@ jobs:
       - name: Save PR body
         shell: bash
         env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: printf '%s' "$PR_BODY" > pr-body.txt
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr view "${{ github.event.pull_request.number }}" --json body --jq '.body' > pr-body.txt
 
       - name: Check required PR body sections
         run: node scripts/check-pr-body.mjs --body pr-body.txt
