@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -170,13 +170,7 @@ function scanCallArguments(scanner) {
  * @returns {string[]}
  */
 function sourceFiles(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return sourceFiles(entryPath);
-    }
-    return entry.name.endsWith('.ts') ? [entryPath] : [];
-  });
+  return globSync('**/*.ts', { cwd: directory }).map((relativePath) => path.join(directory, relativePath));
 }
 
 /**

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -12,42 +12,38 @@ import { requireValue } from '../helpers/required.js';
 suite('TIFF変換planner', () => {
   test('2ページPDFをページごとのTIFF jobへ展開する', async () => {
     const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
-    const temporaryDirectory = await mkdtemp(path.join(workspace.uri.fsPath, 'graphics-workbench-plan-tiff-'));
+    await using temporaryDirectory = await mkdtempDisposable(path.join(workspace.uri.fsPath, 'gw-plan-tiff-'));
 
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'source.pdf');
-      const document = await PDFDocument.create();
-      document.addPage([200, 150]);
-      document.addPage([200, 150]);
-      await writeFile(sourcePath, await document.save());
+    const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
+    const document = await PDFDocument.create();
+    document.addPage([200, 150]);
+    document.addPage([200, 150]);
+    await writeFile(sourcePath, await document.save());
 
-      const jobs = await planTiffConversionJobs(vscode.Uri.file(sourcePath), configureCommandRuntime(), 100_000_000);
+    const jobs = await planTiffConversionJobs(vscode.Uri.file(sourcePath), configureCommandRuntime(), 100_000_000);
 
-      assert.deepStrictEqual(
-        jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
-          sourcePath: jobSourcePath,
-          workspacePath,
-          outputPath,
-          page,
-        })),
-        [
-          {
-            sourcePath,
-            workspacePath: workspace.uri.fsPath,
-            outputPath: path.join(temporaryDirectory, 'source-1.tiff'),
-            page: 1,
-          },
-          {
-            sourcePath,
-            workspacePath: workspace.uri.fsPath,
-            outputPath: path.join(temporaryDirectory, 'source-2.tiff'),
-            page: 2,
-          },
-        ],
-      );
-    } finally {
-      await rm(temporaryDirectory, { recursive: true, force: true });
-    }
+    assert.deepStrictEqual(
+      jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
+        sourcePath: jobSourcePath,
+        workspacePath,
+        outputPath,
+        page,
+      })),
+      [
+        {
+          sourcePath,
+          workspacePath: workspace.uri.fsPath,
+          outputPath: path.join(temporaryDirectory.path, 'source-1.tiff'),
+          page: 1,
+        },
+        {
+          sourcePath,
+          workspacePath: workspace.uri.fsPath,
+          outputPath: path.join(temporaryDirectory.path, 'source-2.tiff'),
+          page: 2,
+        },
+      ],
+    );
   });
 
   test('通常のTIFF入力を同一形式変換として拒否する', async () => {
@@ -56,11 +52,7 @@ suite('TIFF変換planner', () => {
 
     await assert.rejects(
       planTiffConversionJobs(vscode.Uri.file(sourcePath), configureCommandRuntime(), 100_000_000),
-      new RegExp(`Unsupported input for TIFF conversion: ${escapeRegExp(sourcePath)}`),
+      new RegExp(`Unsupported input for TIFF conversion: ${RegExp.escape(sourcePath)}`),
     );
   });
 });
-
-function escapeRegExp(value: string): string {
-  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -11,13 +11,13 @@ import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_comm
 
 suite('PDF圧縮コマンド', () => {
   test('qualityを選択してPDFを圧縮し、_compressed付きの出力を作成する', async () => {
-    const workspacePath = await mkdtemp(
-      path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'graphics-workbench-compress-pdf-'),
+    await using workspacePath = await mkdtempDisposable(
+      path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-compress-pdf-'),
     );
     const sandbox = createSandbox();
 
     try {
-      const sourcePath = path.join(workspacePath, 'source.pdf');
+      const sourcePath = path.join(workspacePath.path, 'source.pdf');
       const document = await PDFDocument.create();
       document.addPage([200, 150]);
       document.addPage([200, 150]);
@@ -34,12 +34,11 @@ suite('PDF圧縮コマンド', () => {
       );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const outputPath = path.join(workspacePath, 'source_compressed.pdf');
+      const outputPath = path.join(workspacePath.path, 'source_compressed.pdf');
       const output = await PDFDocument.load(await readFile(outputPath));
       assert.ok(output.getPageCount() >= 1);
     } finally {
       sandbox.restore();
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 });

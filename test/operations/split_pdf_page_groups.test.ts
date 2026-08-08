@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -30,112 +30,102 @@ suite('PDFページグループ分割', () => {
   });
 
   test('指定順でグループ化PDFを作成し、重複ページを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-split-groups-test-'));
-    const sourcePath = path.join(workspacePath, 'source.pdf');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const sourcePath = path.join(workspacePath.path, 'source.pdf');
 
-    try {
-      await writePdf(sourcePath, [101, 102, 103]);
+    await writePdf(sourcePath, [101, 102, 103]);
 
-      await splitPdfByPageGroups({
-        jobs: [
-          {
-            sourcePath,
-            workspacePath,
-            pageGroups: [[3, 1, 3], [2]],
-            outputPathForGroup: (groupIndex) => path.join(workspacePath, `group-${groupIndex + 1}.pdf`),
-          },
-        ],
-        runId: 'run',
-      });
+    await splitPdfByPageGroups({
+      jobs: [
+        {
+          sourcePath,
+          workspacePath: workspacePath.path,
+          pageGroups: [[3, 1, 3], [2]],
+          outputPathForGroup: (groupIndex) => path.join(workspacePath.path, `group-${groupIndex + 1}.pdf`),
+        },
+      ],
+      runId: 'run',
+    });
 
-      const firstGroup = await PDFDocument.load(await readFile(path.join(workspacePath, 'group-1.pdf')));
-      const secondGroup = await PDFDocument.load(await readFile(path.join(workspacePath, 'group-2.pdf')));
+    const firstGroup = await PDFDocument.load(await readFile(path.join(workspacePath.path, 'group-1.pdf')));
+    const secondGroup = await PDFDocument.load(await readFile(path.join(workspacePath.path, 'group-2.pdf')));
 
-      assert.deepEqual(
-        firstGroup.getPages().map((page) => page.getWidth()),
-        [103, 101, 103],
-      );
-      assert.deepEqual(
-        secondGroup.getPages().map((page) => page.getWidth()),
-        [102],
-      );
-      await access(path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run', '1-source', 'groups', '1.pdf'));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.deepEqual(
+      firstGroup.getPages().map((page) => page.getWidth()),
+      [103, 101, 103],
+    );
+    assert.deepEqual(
+      secondGroup.getPages().map((page) => page.getWidth()),
+      [102],
+    );
+    await access(
+      path.join(workspacePath.path, '.graphics-workbench', 'split-pdf', 'run', '1-source', 'groups', '1.pdf'),
+    );
   });
 
   test('ステージング作成前に不正なPDFを共通preflightで拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-split-groups-test-'));
-    const sourcePath = path.join(workspacePath, 'source.pdf');
-    const outputPath = path.join(workspacePath, 'group.pdf');
-    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const sourcePath = path.join(workspacePath.path, 'source.pdf');
+    const outputPath = path.join(workspacePath.path, 'group.pdf');
+    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'split-pdf', 'run');
     const invalidPdfPath = path.join(invalidPreflightInputDirectory, 'not-a-pdf.pdf');
 
-    try {
-      await copyFile(invalidPdfPath, sourcePath);
+    await copyFile(invalidPdfPath, sourcePath);
 
-      await assert.rejects(
-        splitPdfByPageGroups({
-          jobs: [
-            {
-              sourcePath,
-              workspacePath,
-              pageGroups: [[1]],
-              outputPathForGroup: () => outputPath,
-            },
-          ],
-          runId: 'run',
-        }),
-        /Preflight validation failed|Failed to parse PDF|No PDF header found/,
-      );
+    await assert.rejects(
+      splitPdfByPageGroups({
+        jobs: [
+          {
+            sourcePath,
+            workspacePath: workspacePath.path,
+            pageGroups: [[1]],
+            outputPathForGroup: () => outputPath,
+          },
+        ],
+        runId: 'run',
+      }),
+      /Preflight validation failed|Failed to parse PDF|No PDF header found/,
+    );
 
-      await assert.rejects(access(outputPath));
-      await assert.rejects(access(stagingRootPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(outputPath));
+    await assert.rejects(access(stagingRootPath));
   });
 
   test('空のグループと範囲外のグループをコミット前に拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-split-groups-test-'));
-    const sourcePath = path.join(workspacePath, 'source.pdf');
-    const outputPath = path.join(workspacePath, 'group.pdf');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const sourcePath = path.join(workspacePath.path, 'source.pdf');
+    const outputPath = path.join(workspacePath.path, 'group.pdf');
 
-    try {
-      await writePdf(sourcePath, [101, 102]);
+    await writePdf(sourcePath, [101, 102]);
 
-      await assert.rejects(
-        splitPdfByPageGroups({
-          jobs: [
-            {
-              sourcePath,
-              workspacePath,
-              pageGroups: [[1, 3]],
-              outputPathForGroup: () => outputPath,
-            },
-          ],
-        }),
-        /out of range/,
-      );
-      await assert.rejects(access(outputPath));
+    await assert.rejects(
+      splitPdfByPageGroups({
+        jobs: [
+          {
+            sourcePath,
+            workspacePath: workspacePath.path,
+            pageGroups: [[1, 3]],
+            outputPathForGroup: () => outputPath,
+          },
+        ],
+      }),
+      /out of range/,
+    );
+    await assert.rejects(access(outputPath));
 
-      await assert.rejects(
-        splitPdfByPageGroups({
-          jobs: [
-            {
-              sourcePath,
-              workspacePath,
-              pageGroups: [[]],
-              outputPathForGroup: () => outputPath,
-            },
-          ],
-        }),
-        /cannot be empty/,
-      );
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(
+      splitPdfByPageGroups({
+        jobs: [
+          {
+            sourcePath,
+            workspacePath: workspacePath.path,
+            pageGroups: [[]],
+            outputPathForGroup: () => outputPath,
+          },
+        ],
+      }),
+      /cannot be empty/,
+    );
   });
 
   test('定義されたプロトコルの型のみを受け付ける', () => {

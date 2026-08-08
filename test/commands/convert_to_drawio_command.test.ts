@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { access, copyFile, mkdtempDisposable, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import * as vscode from 'vscode';
@@ -10,28 +10,21 @@ import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_comm
 
 suite('Draw.ioへ変換コマンド', () => {
   test('PNGを.dioファイルへ変換する', async () => {
-    const workspacePath = await mkdtemp(
-      path.join(
-        requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath,
-        'graphics-workbench-to-drawio-command-',
-      ),
+    await using workspacePath = await mkdtempDisposable(
+      path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-to-drawio-command-'),
     );
 
-    try {
-      const sourcePath = path.join(workspacePath, 'source.png');
-      await copyFile(path.join(testInputDirectory, 'valid', 'png', 'checker-mosaic.png'), sourcePath);
+    const sourcePath = path.join(workspacePath.path, 'source.png');
+    await copyFile(path.join(testInputDirectory, 'valid', 'png', 'checker-mosaic.png'), sourcePath);
 
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.convertToDrawio',
-        vscode.Uri.file(sourcePath),
-      );
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.convertToDrawio',
+      vscode.Uri.file(sourcePath),
+    );
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const outputPath = path.join(workspacePath, 'source.dio');
-      await access(outputPath);
-      assert.match(await readFile(outputPath, 'utf8'), /<mxfile|mxGraphModel/u);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    const outputPath = path.join(workspacePath.path, 'source.dio');
+    await access(outputPath);
+    assert.match(await readFile(outputPath, 'utf8'), /<mxfile|mxGraphModel/u);
   });
 });

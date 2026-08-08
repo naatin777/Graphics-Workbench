@@ -11,7 +11,7 @@
 // - 正常な並び替え処理本体
 
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -25,12 +25,12 @@ suite('Reorder PDF ConfigureコマンドのApplyエラー処理', () => {
   test('重複ページを含むorderをApplyするとoperationが拒否し、エラー通知とWebviewへのerror送信を行う', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-reorder-configure-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-reorder-configure-'),
     );
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.pdf');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
       const document = await PDFDocument.create();
       document.addPage([100, 100]);
       document.addPage([100, 100]);
@@ -56,7 +56,6 @@ suite('Reorder PDF ConfigureコマンドのApplyエラー処理', () => {
       );
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 });

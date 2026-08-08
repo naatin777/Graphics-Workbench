@@ -236,7 +236,7 @@ async function createJobs(names: string[]): Promise<{
   workspacePath: string;
   jobs: ConvertToPdfJob[];
 }> {
-  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-png-safe-test-'));
+  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-png-safe-test-'));
   const jobs = await Promise.all(
     names.map(async (name) => {
       const sourcePath = path.join(workspacePath, `${name}.png`);
@@ -257,7 +257,7 @@ async function createEditableDrawioJobs(entries: [sourceName: string, outputName
   workspacePath: string;
   jobs: ConvertToPdfJob[];
 }> {
-  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-safe-test-'));
+  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-drawio-safe-test-'));
   const jobs = await Promise.all(
     entries.map(async ([sourceName, outputName]) => {
       const sourcePath = path.join(workspacePath, sourceName);

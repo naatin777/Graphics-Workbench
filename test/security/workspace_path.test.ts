@@ -19,7 +19,7 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 
 suite('workspaceパスの安全性', () => {
   test('workspace内の既存ファイルを許可する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const sourcePath = path.join(workspacePath, 'figures', 'sample.pdf');
     await mkdir(path.dirname(sourcePath), { recursive: true });
     await writeFile(sourcePath, 'pdf');
@@ -28,33 +28,29 @@ suite('workspaceパスの安全性', () => {
   });
 
   test('workspace内の未作成書き込み先を許可する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const outputPath = path.join(workspacePath, 'generated', 'nested', 'sample.pdf');
 
     await assert.doesNotReject(assertWritablePathInWorkspace(outputPath, workspacePath));
   });
 
   test('workspace外の既存ファイルを拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
-    const outsidePath = path.join(await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-outside-')), 'sample.pdf');
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
+    const outsidePath = path.join(await mkdtemp(path.join(os.tmpdir(), 'gw-outside-')), 'sample.pdf');
     await writeFile(outsidePath, 'pdf');
 
     await assert.rejects(assertExistingPathInWorkspace(outsidePath, workspacePath), /outside the workspace/);
   });
 
   test('workspace外の未作成書き込み先を拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
-    const outsidePath = path.join(
-      await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-outside-')),
-      'new',
-      'sample.pdf',
-    );
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
+    const outsidePath = path.join(await mkdtemp(path.join(os.tmpdir(), 'gw-outside-')), 'new', 'sample.pdf');
 
     await assert.rejects(assertWritablePathInWorkspace(outsidePath, workspacePath), /outside the workspace/);
   });
 
   test('workspace名のprefixだけが一致する兄弟ディレクトリを拒否する', async () => {
-    const parentPath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-prefix-'));
+    const parentPath = await mkdtemp(path.join(os.tmpdir(), 'gw-prefix-'));
     const workspacePath = path.join(parentPath, 'project');
     const siblingPath = path.join(parentPath, 'project-backup', 'sample.pdf');
     await mkdir(workspacePath);
@@ -65,8 +61,8 @@ suite('workspaceパスの安全性', () => {
   });
 
   test('workspace外へのsymlinkを経由した読み込みを拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
+    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-outside-'));
     const outsideFile = path.join(outsideDirectory, 'sample.pdf');
     const linkedDirectory = path.join(workspacePath, 'linked');
     await writeFile(outsideFile, 'pdf');
@@ -79,8 +75,8 @@ suite('workspaceパスの安全性', () => {
   });
 
   test('workspace外へのsymlinkを経由した書き込みを拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
+    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-outside-'));
     const linkedDirectory = path.join(workspacePath, 'linked');
     await createDirectorySymlink(outsideDirectory, linkedDirectory);
 
@@ -91,8 +87,8 @@ suite('workspaceパスの安全性', () => {
   });
 
   test('workspace自体がsymlinkの場合でもworkspace内のパスを許可する', async () => {
-    const actualWorkspace = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
-    const symlinkParent = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-link-'));
+    const actualWorkspace = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
+    const symlinkParent = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-link-'));
     const workspacePath = path.join(symlinkParent, 'project');
     const sourcePath = path.join(actualWorkspace, 'sample.pdf');
     await writeFile(sourcePath, 'pdf');

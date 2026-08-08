@@ -11,7 +11,7 @@
 // - 各PDF変換処理本体
 
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, rm } from 'node:fs/promises';
+import { copyFile, mkdtempDisposable } from 'node:fs/promises';
 import path from 'node:path';
 
 import { createSandbox } from 'sinon';
@@ -127,12 +127,12 @@ suite('PDF出力の拡張子検証', () => {
   test('convertToPdf (SVG入力)は.pdf以外のoutputPath設定を変換開始前に拒否する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-pdf-extension-validation-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-pdf-extension-validation-'),
     );
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.svg');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.svg');
       await copyFile(path.join(testInputDirectory, 'valid', 'svg', 'gradient-card.svg'), sourcePath);
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const withProgress = sandbox
@@ -147,7 +147,6 @@ suite('PDF出力の拡張子検証', () => {
       assert.ok(withProgress.notCalled);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 });
@@ -157,17 +156,16 @@ async function withPdfSource(
 ): Promise<void> {
   const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
   const sandbox = createSandbox();
-  const temporaryDirectory = await mkdtemp(
-    path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-pdf-extension-validation-'),
+  await using temporaryDirectory = await mkdtempDisposable(
+    path.join(workspaceFolder.uri.fsPath, 'gw-pdf-extension-validation-'),
   );
 
   try {
-    const sourcePath = path.join(temporaryDirectory, 'source.pdf');
+    const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
     await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
     await run(sourcePath, sandbox);
   } finally {
     sandbox.restore();
-    await rm(temporaryDirectory, { recursive: true, force: true });
   }
 }
 

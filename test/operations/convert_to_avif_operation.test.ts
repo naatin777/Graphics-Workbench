@@ -8,7 +8,7 @@
 // - 画像内容のpixel完全一致
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -19,89 +19,92 @@ import { requireValue } from '../helpers/required.js';
 
 suite('AVIFに変換する処理', () => {
   test('編集可能なDraw.io画像はPDFとPNGを経由してAVIFへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-avif-operation-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-avif-operation-'));
 
-    try {
-      const sourcePath = path.join(workspacePath, 'source.drawio.png');
-      const outputPath = path.join(workspacePath, 'source', '1.avif');
-      const drawioCalls: string[][] = [];
-      const pdfToPngCalls: { sourcePath: string; outputPath: string; page: number }[] = [];
-      await writeFile(sourcePath, 'editable drawio image placeholder');
+    const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
+    const outputPath = path.join(workspacePath.path, 'source', '1.avif');
+    const drawioCalls: string[][] = [];
+    const pdfToPngCalls: { sourcePath: string; outputPath: string; page: number }[] = [];
+    await writeFile(sourcePath, 'editable drawio image placeholder');
 
-      await executeAvifConversion({
-        jobs: [
-          {
-            sourcePath,
-            outputPath,
-            workspacePath,
-            page: 1,
-          },
-        ],
-        pdfRenderTools: {
-          runPdfToPng: async (pdfPath, pngPath, page) => {
-            pdfToPngCalls.push({ sourcePath: pdfPath, outputPath: pngPath, page });
-            await sharp({
-              create: {
-                width: 12,
-                height: 8,
-                channels: 4,
-                background: '#285078',
-              },
-            })
-              .png()
-              .toFile(pngPath);
-          },
-        },
-        mermaidTools: {
-          chromePath: 'chrome',
-          mermaidPath: 'mmdc',
-          theme: 'default',
-          backgroundColor: 'white',
-        },
-        drawioTools: {
-          drawioPath: 'drawio',
-          runDrawio: async (_executable, args) => {
-            drawioCalls.push(args);
-            const outputIndex = args.indexOf('-o') + 1;
-            assert.ok(outputIndex > 0);
-            await writeFile(requireValue(args[outputIndex]), '%PDF-1.7\n');
-          },
-        },
-        avif: {
-          effort: 0,
-        },
-        runtime: {},
-        runId: 'test-run',
-      });
-
-      assert.strictEqual(drawioCalls.length, 1);
-      const drawioArgs = requireValue(drawioCalls[0]);
-      const expectedPdfPath = path.join(
-        workspacePath,
-        '.graphics-workbench',
-        'convert-to-avif',
-        'test-run',
-        '1',
-        'drawio.pdf',
-      );
-      assert.deepStrictEqual(drawioArgs.slice(0, 5), ['-x', '-f', 'pdf', '-o', expectedPdfPath]);
-      assert.strictEqual(drawioArgs.at(-1), sourcePath);
-
-      assert.deepStrictEqual(pdfToPngCalls, [
+    await executeAvifConversion({
+      jobs: [
         {
-          sourcePath: expectedPdfPath,
-          outputPath: path.join(workspacePath, '.graphics-workbench', 'convert-to-avif', 'test-run', '1', 'source.png'),
+          sourcePath,
+          outputPath,
+          workspacePath: workspacePath.path,
           page: 1,
         },
-      ]);
+      ],
+      pdfRenderTools: {
+        runPdfToPng: async (pdfPath, pngPath, page) => {
+          pdfToPngCalls.push({ sourcePath: pdfPath, outputPath: pngPath, page });
+          await sharp({
+            create: {
+              width: 12,
+              height: 8,
+              channels: 4,
+              background: '#285078',
+            },
+          })
+            .png()
+            .toFile(pngPath);
+        },
+      },
+      mermaidTools: {
+        chromePath: 'chrome',
+        mermaidPath: 'mmdc',
+        theme: 'default',
+        backgroundColor: 'white',
+      },
+      drawioTools: {
+        drawioPath: 'drawio',
+        runDrawio: async (_executable, args) => {
+          drawioCalls.push(args);
+          const outputIndex = args.indexOf('-o') + 1;
+          assert.ok(outputIndex > 0);
+          await writeFile(requireValue(args[outputIndex]), '%PDF-1.7\n');
+        },
+      },
+      avif: {
+        effort: 0,
+      },
+      runtime: {},
+      runId: 'test-run',
+    });
 
-      const buffer = await readFile(outputPath);
-      const metadata = await sharp(buffer).metadata();
-      assert.strictEqual(metadata.format, 'heif');
-      assert.ok(metadata.width);
-      assert.ok(metadata.height);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(drawioCalls.length, 1);
+    const drawioArgs = requireValue(drawioCalls[0]);
+    const expectedPdfPath = path.join(
+      workspacePath.path,
+      '.graphics-workbench',
+      'convert-to-avif',
+      'test-run',
+      '1',
+      'drawio.pdf',
+    );
+    assert.deepStrictEqual(drawioArgs.slice(0, 5), ['-x', '-f', 'pdf', '-o', expectedPdfPath]);
+    assert.strictEqual(drawioArgs.at(-1), sourcePath);
+
+    assert.deepStrictEqual(pdfToPngCalls, [
+      {
+        sourcePath: expectedPdfPath,
+        outputPath: path.join(
+          workspacePath.path,
+          '.graphics-workbench',
+          'convert-to-avif',
+          'test-run',
+          '1',
+          'source.png',
+        ),
+        page: 1,
+      },
+    ]);
+
+    const buffer = await readFile(outputPath);
+    const metadata = await sharp(buffer).metadata();
+    assert.strictEqual(metadata.format, 'heif');
+    assert.ok(metadata.width);
+    assert.ok(metadata.height);
   });
 });

@@ -82,7 +82,7 @@
     "@excalidraw/excalidraw": "^0.18.1",
     "@playwright/test": "^1.62.1",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^22.20.0",
+    "@types/node": "^24.13.3",
     "@types/sinon": "^22.0.0",
     "@types/vscode": "^1.125.0",
     "@vitest/coverage-v8": "^4.1.10",

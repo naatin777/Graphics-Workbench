@@ -11,7 +11,7 @@
 // - 実際の変換エラー時の失敗通知（既存の各command testが対象）
 
 import assert from 'node:assert/strict';
-import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { createSandbox } from 'sinon';
@@ -29,12 +29,12 @@ suite('runConversionLifecycleの成功後phase分離', () => {
   test('変換成功後のshowInformationMessage失敗は変換失敗として表示しない', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-lifecycle-phase-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-lifecycle-phase-'),
     );
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.jpeg');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
       await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
 
       sandbox.stub(vscode.window, 'showInformationMessage').rejects(new Error('UI failed after conversion.'));
@@ -43,24 +43,23 @@ suite('runConversionLifecycleの成功後phase分離', () => {
       await convertToPngCommand(vscode.Uri.file(sourcePath));
 
       assert.ok(showErrorMessage.notCalled, '成功後のUI失敗を変換失敗として表示してはいけない');
-      await access(path.join(temporaryDirectory, 'source.png'));
+      await access(path.join(temporaryDirectory.path, 'source.png'));
 
       await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
   test('変換成功後のUndo command呼び出し失敗も変換失敗として表示しない', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-lifecycle-phase-undo-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-lifecycle-phase-undo-'),
     );
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.jpeg');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
       await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
 
       sandbox.stub(vscode.window, 'showInformationMessage').resolves({
@@ -72,25 +71,24 @@ suite('runConversionLifecycleの成功後phase分離', () => {
       await convertToPngCommand(vscode.Uri.file(sourcePath));
 
       assert.ok(showErrorMessage.notCalled, 'Undo実行失敗を変換失敗として表示してはいけない');
-      await access(path.join(temporaryDirectory, 'source.png'));
+      await access(path.join(temporaryDirectory.path, 'source.png'));
 
       executeCommand.restore();
       await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
   test('Reveal in Explorer選択時に出力先をExplorerで表示する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-lifecycle-phase-reveal-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-lifecycle-phase-reveal-'),
     );
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.jpeg');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
       await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
 
       sandbox
@@ -105,10 +103,9 @@ suite('runConversionLifecycleの成功後phase分離', () => {
       assert.ok(revealCall, 'revealInExplorerが呼ばれること');
       const uri: vscode.Uri = revealCall.args[1];
       assert.strictEqual(uri.scheme, 'file');
-      assert.strictEqual(uri.fsPath, path.join(temporaryDirectory, 'source.png'));
+      assert.strictEqual(uri.fsPath, path.join(temporaryDirectory.path, 'source.png'));
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 });

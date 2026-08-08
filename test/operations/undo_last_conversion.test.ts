@@ -11,7 +11,19 @@
 // - crop処理
 
 import assert from 'node:assert/strict';
-import { access, chmod, mkdir, mkdtemp, readFile, rm, stat, symlink, utimes, writeFile } from 'node:fs/promises';
+import {
+  access,
+  chmod,
+  mkdir,
+  mkdtemp,
+  mkdtempDisposable,
+  readFile,
+  rm,
+  stat,
+  symlink,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -43,95 +55,90 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('複数のUndo recordを保持し、直近recordのbackupを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
-    const firstOutputPath = path.join(workspacePath, 'first.pdf');
-    const secondOutputPath = path.join(workspacePath, 'second.pdf');
-    const firstRoot = path.join(workspacePath, '.graphics-workbench', 'first');
-    const secondRoot = path.join(workspacePath, '.graphics-workbench', 'second');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
+    const firstOutputPath = path.join(workspacePath.path, 'first.pdf');
+    const secondOutputPath = path.join(workspacePath.path, 'second.pdf');
+    const firstRoot = path.join(workspacePath.path, '.graphics-workbench', 'first');
+    const secondRoot = path.join(workspacePath.path, '.graphics-workbench', 'second');
     const firstBackupPath = path.join(firstRoot, 'first.previous');
     const secondBackupPath = path.join(secondRoot, 'second.previous');
 
-    try {
-      await writeFixture(firstOutputPath, 'generated-first');
-      await writeFixture(firstBackupPath, 'original-first');
-      await recordConversionForUndo([
-        {
-          outputPath: firstOutputPath,
-          workspacePath,
-          previousFilePath: firstBackupPath,
-          stagingRootPath: firstRoot,
-        },
-      ]);
-      await assert.doesNotReject(access(firstBackupPath));
+    await writeFixture(firstOutputPath, 'generated-first');
+    await writeFixture(firstBackupPath, 'original-first');
+    await recordConversionForUndo([
+      {
+        outputPath: firstOutputPath,
+        workspacePath: workspacePath.path,
+        previousFilePath: firstBackupPath,
+        stagingRootPath: firstRoot,
+      },
+    ]);
+    await assert.doesNotReject(access(firstBackupPath));
 
-      await writeFixture(secondOutputPath, 'generated-second');
-      await writeFixture(secondBackupPath, 'original-second');
-      await recordConversionForUndo([
-        {
-          outputPath: secondOutputPath,
-          workspacePath,
-          previousFilePath: secondBackupPath,
-          stagingRootPath: secondRoot,
-        },
-      ]);
+    await writeFixture(secondOutputPath, 'generated-second');
+    await writeFixture(secondBackupPath, 'original-second');
+    await recordConversionForUndo([
+      {
+        outputPath: secondOutputPath,
+        workspacePath: workspacePath.path,
+        previousFilePath: secondBackupPath,
+        stagingRootPath: secondRoot,
+      },
+    ]);
 
-      await assert.doesNotReject(access(firstBackupPath));
-      await assert.doesNotReject(access(secondBackupPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.doesNotReject(access(firstBackupPath));
+    await assert.doesNotReject(access(secondBackupPath));
   });
 
   test('複数回のUndoを新しい変換から順に適用できる', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
-    const outputPath = path.join(workspacePath, 'output.pdf');
-    const firstRoot = path.join(workspacePath, '.graphics-workbench', 'first');
-    const secondRoot = path.join(workspacePath, '.graphics-workbench', 'second');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    const firstRoot = path.join(workspacePath.path, '.graphics-workbench', 'first');
+    const secondRoot = path.join(workspacePath.path, '.graphics-workbench', 'second');
 
-    try {
-      await writeFixture(outputPath, 'first');
-      const firstRecordId = await recordConversionForUndo([{ outputPath, workspacePath, stagingRootPath: firstRoot }]);
+    await writeFixture(outputPath, 'first');
+    const firstRecordId = await recordConversionForUndo([
+      { outputPath, workspacePath: workspacePath.path, stagingRootPath: firstRoot },
+    ]);
 
-      const secondBackupPath = path.join(secondRoot, 'output.previous');
-      await writeFixture(secondBackupPath, 'first');
-      await writeFixture(outputPath, 'second');
-      const secondRecordId = await recordConversionForUndo([
-        { outputPath, workspacePath, previousFilePath: secondBackupPath, stagingRootPath: secondRoot },
-      ]);
+    const secondBackupPath = path.join(secondRoot, 'output.previous');
+    await writeFixture(secondBackupPath, 'first');
+    await writeFixture(outputPath, 'second');
+    const secondRecordId = await recordConversionForUndo([
+      {
+        outputPath,
+        workspacePath: workspacePath.path,
+        previousFilePath: secondBackupPath,
+        stagingRootPath: secondRoot,
+      },
+    ]);
 
-      await undoLastConversionCommand(secondRecordId);
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'first');
-      await undoLastConversionCommand(firstRecordId);
-      await assert.rejects(access(outputPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await undoLastConversionCommand(secondRecordId);
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'first');
+    await undoLastConversionCommand(firstRecordId);
+    await assert.rejects(access(outputPath));
   });
 
   test('Undo成功後に対象recordのbackupとstagingを削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
-    const outputPath = path.join(workspacePath, 'output.pdf');
-    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const previousFilePath = path.join(rootPath, 'output.previous');
 
-    try {
-      await writeFixture(outputPath, 'generated');
-      await writeFixture(previousFilePath, 'original');
-      const record = await createConversionUndoRecord([
-        { outputPath, workspacePath, previousFilePath, stagingRootPath: rootPath },
-      ]);
+    await writeFixture(outputPath, 'generated');
+    await writeFixture(previousFilePath, 'original');
+    const record = await createConversionUndoRecord([
+      { outputPath, workspacePath: workspacePath.path, previousFilePath, stagingRootPath: rootPath },
+    ]);
 
-      await undoConversionOutputs(record);
+    await undoConversionOutputs(record);
 
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
-      await assert.rejects(access(previousFilePath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
+    await assert.rejects(access(previousFilePath));
   });
 
   test('変更されていない出力を削除し、workspace内の作業ファイルは残す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'output', 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'output', 'second.pdf');
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'crop-pdf', 'run', 'result.pdf');
@@ -152,7 +159,7 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('出力の1つが変更されている場合はどの出力も削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
     await writeFixture(firstOutputPath, 'first');
@@ -170,7 +177,7 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('出力の1つが存在しない場合はどの出力も削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
     await writeFixture(firstOutputPath, 'first');
@@ -187,11 +194,8 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('出力の1つがworkspace外へのsymlinkになった場合はどの出力も削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
-    const outsidePath = path.join(
-      await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-outside-')),
-      'outside.pdf',
-    );
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
+    const outsidePath = path.join(await mkdtemp(path.join(os.tmpdir(), 'gw-undo-outside-')), 'outside.pdf');
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
     await writeFixture(outsidePath, 'outside');
@@ -211,7 +215,7 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('上書きされた出力を取り消すと以前のファイルを復元する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
     const previousFilePath = path.join(workspacePath, '.graphics-workbench', 'output.previous');
     await writeFixture(outputPath, 'generated');
@@ -226,41 +230,37 @@ suite('直前変換の取り消し処理', () => {
   });
 
   test('上書きした出力を取り消すと元の内容とmode/mtimeを復元する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
-    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'run', 'result.pdf');
-    const outputPath = path.join(workspacePath, 'output.pdf');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
+    const stagedOutputPath = path.join(workspacePath.path, '.graphics-workbench', 'run', 'result.pdf');
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
     const originalMtime = new Date(2005, 5, 15, 12, 34, 56, 789);
 
-    try {
-      await writeFixture(stagedOutputPath, 'new');
-      await writeFixture(outputPath, 'original');
-      await utimes(outputPath, originalMtime, originalMtime);
-      if (process.platform !== 'win32') {
-        await chmod(outputPath, 0o640);
-      }
-
-      const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
-        resolveConflicts: async () => 'overwrite',
-      });
-      assert.ok(committed[0]?.previousFileMetadata);
-      const record = await createConversionUndoRecord(committed);
-
-      await undoConversionOutputs(record);
-
-      const restored = await stat(outputPath);
-      assert.strictEqual(restored.mtimeMs, originalMtime.getTime());
-      assert.strictEqual(restored.atimeMs, committed[0]?.previousFileMetadata?.atimeMs);
-      if (process.platform !== 'win32') {
-        assert.strictEqual(restored.mode & 0o7777, 0o640);
-      }
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
+    await writeFixture(stagedOutputPath, 'new');
+    await writeFixture(outputPath, 'original');
+    await utimes(outputPath, originalMtime, originalMtime);
+    if (process.platform !== 'win32') {
+      await chmod(outputPath, 0o640);
     }
+
+    const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path }], {
+      resolveConflicts: async () => 'overwrite',
+    });
+    assert.ok(committed[0]?.previousFileMetadata);
+    const record = await createConversionUndoRecord(committed);
+
+    await undoConversionOutputs(record);
+
+    const restored = await stat(outputPath);
+    assert.strictEqual(restored.mtimeMs, originalMtime.getTime());
+    assert.strictEqual(restored.atimeMs, committed[0]?.previousFileMetadata?.atimeMs);
+    if (process.platform !== 'win32') {
+      assert.strictEqual(restored.mode & 0o7777, 0o640);
+    }
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
   });
 
   test('変換後に出力が変更されている場合は上書き前のファイルを復元しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-workspace-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
     const previousFilePath = path.join(workspacePath, '.graphics-workbench', 'output.previous');
     await writeFixture(outputPath, 'generated');

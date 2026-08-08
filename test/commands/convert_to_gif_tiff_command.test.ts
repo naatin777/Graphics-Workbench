@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import sharp from 'sharp';
@@ -25,8 +25,8 @@ async function assertAnimatedInputIsSplit(
   outputFormat: 'gif' | 'tiff',
   command: (uri?: vscode.Uri, uris?: vscode.Uri[]) => Promise<void>,
 ): Promise<void> {
-  const workspacePath = await mkdtemp(
-    path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, `graphics-workbench-${format}-command-`),
+  await using workspacePath = await mkdtempDisposable(
+    path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, `gw-${format}-command-`),
   );
   const workspaceConfiguration = vscode.workspace.getConfiguration('graphics-workbench');
   const sandbox = createSandbox();
@@ -36,19 +36,18 @@ async function assertAnimatedInputIsSplit(
   try {
     sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
     sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-    const sourcePath = path.join(workspacePath, `source.${format}`);
+    const sourcePath = path.join(workspacePath.path, `source.${format}`);
     await writeAnimatedImage(sourcePath, format);
     await workspaceConfiguration.update(`outputPath.${key}`, template, vscode.ConfigurationTarget.Workspace);
     await command(vscode.Uri.file(sourcePath), undefined);
 
-    const outputPath = path.join(workspacePath, `source.${outputFormat}`);
+    const outputPath = path.join(workspacePath.path, `source.${outputFormat}`);
     const metadata = await sharp(await readFile(outputPath)).metadata();
     assert.strictEqual(metadata.format, outputFormat);
     assert.strictEqual(metadata.pages ?? 1, 1);
   } finally {
     sandbox.restore();
     await workspaceConfiguration.update(`outputPath.${key}`, undefined, vscode.ConfigurationTarget.Workspace);
-    await rm(workspacePath, { recursive: true, force: true });
   }
 }
 

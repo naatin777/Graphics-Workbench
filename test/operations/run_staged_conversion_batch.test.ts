@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -7,95 +7,82 @@ import { runStagedConversionBatch } from '../../src/operations/lifecycle/run_sta
 
 suite('ステージング済み変換バッチ', () => {
   test('成功時はcommit後もUndo登録前のoperation artifactを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
-    const outputPath = path.join(workspacePath, 'result.png');
-    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
+    const outputPath = path.join(workspacePath.path, 'result.png');
+    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'fixture-raster', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.png');
 
-    try {
-      const outputs = await runStagedConversionBatch({
-        jobs: [{ workspacePath }],
-        operationName: 'fixture-raster',
-        runId: 'run',
-        stage: async () => {
-          await mkdir(stagingRootPath, { recursive: true });
-          await writeFile(stagedOutputPath, 'raster result');
-          return { stagedOutputPath, outputPath, workspacePath, stagingRootPath };
-        },
-      });
+    const outputs = await runStagedConversionBatch({
+      jobs: [{ workspacePath: workspacePath.path }],
+      operationName: 'fixture-raster',
+      runId: 'run',
+      stage: async () => {
+        await mkdir(stagingRootPath, { recursive: true });
+        await writeFile(stagedOutputPath, 'raster result');
+        return { stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath };
+      },
+    });
 
-      assert.strictEqual(outputs[0]?.outputPath, outputPath);
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'raster result');
-      assert.strictEqual(await readFile(stagedOutputPath, 'utf8'), 'raster result');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(outputs[0]?.outputPath, outputPath);
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'raster result');
+    assert.strictEqual(await readFile(stagedOutputPath, 'utf8'), 'raster result');
   });
 
   test('stage失敗時は正しいoperation rootだけをcleanupし、最終出力を作らない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-outside-'));
-    const outputPath = path.join(workspacePath, 'result.png');
-    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'failed-run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
+    await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-outside-'));
+    const outputPath = path.join(workspacePath.path, 'result.png');
+    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'fixture-raster', 'failed-run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.png');
-    const outsideFilePath = path.join(outsidePath, 'keep.txt');
+    const outsideFilePath = path.join(outsidePath.path, 'keep.txt');
 
-    try {
-      await writeFile(outsideFilePath, 'keep');
+    await writeFile(outsideFilePath, 'keep');
 
-      await assert.rejects(
-        runStagedConversionBatch({
-          jobs: [{ workspacePath }],
-          operationName: 'fixture-raster',
-          runId: 'failed-run',
-          stage: async () => {
-            await mkdir(stagingRootPath, { recursive: true });
-            await writeFile(stagedOutputPath, 'partial result');
-            throw new Error('injected stage failure');
-          },
-        }),
-        /injected stage failure/,
-      );
+    await assert.rejects(
+      runStagedConversionBatch({
+        jobs: [{ workspacePath: workspacePath.path }],
+        operationName: 'fixture-raster',
+        runId: 'failed-run',
+        stage: async () => {
+          await mkdir(stagingRootPath, { recursive: true });
+          await writeFile(stagedOutputPath, 'partial result');
+          throw new Error('injected stage failure');
+        },
+      }),
+      /injected stage failure/,
+    );
 
-      await assert.rejects(access(stagedOutputPath));
-      await assert.rejects(access(outputPath));
-      assert.strictEqual(await readFile(outsideFilePath, 'utf8'), 'keep');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-      await rm(outsidePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(stagedOutputPath));
+    await assert.rejects(access(outputPath));
+    assert.strictEqual(await readFile(outsideFilePath, 'utf8'), 'keep');
   });
 
   test('安全でないrunIdはpath構築前に拒否し、workspace内の任意directoryをcleanupしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
-    const protectedDirectory = path.join(workspacePath, 'src');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
+    const protectedDirectory = path.join(workspacePath.path, 'src');
     const protectedFile = path.join(protectedDirectory, 'keep.txt');
 
-    try {
-      await mkdir(protectedDirectory, { recursive: true });
-      await writeFile(protectedFile, 'keep');
+    await mkdir(protectedDirectory, { recursive: true });
+    await writeFile(protectedFile, 'keep');
 
-      await assert.rejects(
-        runStagedConversionBatch({
-          jobs: [{ workspacePath }],
-          operationName: 'fixture-raster',
-          runId: '../../src',
-          stage: async () => {
-            throw new Error('stage must not start');
-          },
-        }),
-        /Unsafe runId/iu,
-      );
+    await assert.rejects(
+      runStagedConversionBatch({
+        jobs: [{ workspacePath: workspacePath.path }],
+        operationName: 'fixture-raster',
+        runId: '../../src',
+        stage: async () => {
+          throw new Error('stage must not start');
+        },
+      }),
+      /Unsafe runId/iu,
+    );
 
-      assert.strictEqual(await readFile(protectedFile, 'utf8'), 'keep');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(await readFile(protectedFile, 'utf8'), 'keep');
   });
 
   test('1件のstage失敗後も実行中のstageを待ってからcleanupする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
-    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'abort-run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
+    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'fixture-raster', 'abort-run');
     let resolveSecondStarted!: () => void;
     const secondStarted = new Promise<void>((resolve) => {
       resolveSecondStarted = resolve;
@@ -109,7 +96,11 @@ suite('ステージング済み変換バッチ', () => {
 
     try {
       batch = runStagedConversionBatch({
-        jobs: [{ workspacePath }, { workspacePath }, { workspacePath }],
+        jobs: [
+          { workspacePath: workspacePath.path },
+          { workspacePath: workspacePath.path },
+          { workspacePath: workspacePath.path },
+        ],
         operationName: 'fixture-raster',
         runId: 'abort-run',
         stage: async (_job, index) => {
@@ -147,13 +138,12 @@ suite('ステージング済み変換バッチ', () => {
     } finally {
       releaseSecond();
       await batch?.catch(() => undefined);
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   test('caller cancellationでも実行中のstageがsettleするまでcleanupせず、queueを開始しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-staged-batch-'));
-    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'fixture-raster', 'caller-abort-run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
+    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'fixture-raster', 'caller-abort-run');
     const abortController = new AbortController();
     let startedStages = 0;
     let queuedStageStarted = false;
@@ -169,7 +159,11 @@ suite('ステージング済み変換バッチ', () => {
 
     try {
       batch = runStagedConversionBatch({
-        jobs: [{ workspacePath }, { workspacePath }, { workspacePath }],
+        jobs: [
+          { workspacePath: workspacePath.path },
+          { workspacePath: workspacePath.path },
+          { workspacePath: workspacePath.path },
+        ],
         operationName: 'fixture-raster',
         runId: 'caller-abort-run',
         runtime: { signal: abortController.signal },
@@ -210,7 +204,6 @@ suite('ステージング済み変換バッチ', () => {
     } finally {
       releaseStages();
       await batch?.catch(() => undefined);
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 });

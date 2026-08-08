@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtempDisposable, readFile, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -11,64 +11,56 @@ import {
 
 suite('変換artifactのライフサイクル', () => {
   test('cleanup結果はrootごとの成功数と失敗対象を返す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const lines: string[] = [];
 
-    try {
-      await writeFixture(path.join(rootPath, 'result.pdf'));
+    await writeFixture(path.join(rootPath, 'result.pdf'));
 
-      const result = await cleanupConversionArtifacts([{ rootPath, workspacePath }], {
-        appendLine: (line) => lines.push(line),
-      });
+    const result = await cleanupConversionArtifacts([{ rootPath, workspacePath: workspacePath.path }], {
+      appendLine: (line) => lines.push(line),
+    });
 
-      assert.deepEqual(result, { attempted: 1, succeeded: 1, failures: [] });
-      assert.deepEqual(lines, []);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.deepEqual(result, { attempted: 1, succeeded: 1, failures: [] });
+    assert.deepEqual(lines, []);
   });
 
   test('cleanup失敗は結果とOutput Channelの両方へ記録する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-outside-'));
-    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-outside-'));
+    const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const lines: string[] = [];
 
-    try {
-      await mkdir(path.dirname(rootPath), { recursive: true });
-      await symlink(outsidePath, rootPath);
+    await mkdir(path.dirname(rootPath), { recursive: true });
+    await symlink(outsidePath.path, rootPath);
 
-      const result = await cleanupConversionArtifacts([{ rootPath, workspacePath }], {
-        appendLine: (line) => lines.push(line),
-      });
+    const result = await cleanupConversionArtifacts([{ rootPath, workspacePath: workspacePath.path }], {
+      appendLine: (line) => lines.push(line),
+    });
 
-      assert.equal(result.attempted, 1);
-      assert.equal(result.succeeded, 0);
-      assert.equal(result.failures.length, 1);
-      assert.equal(result.failures[0]?.rootPath, rootPath);
-      assert.match(lines[0] ?? '', /\[cleanup\] failed/iu);
-      assert.match(lines[1] ?? '', /1\/1 artifact roots failed/iu);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-      await rm(outsidePath, { recursive: true, force: true });
-    }
+    assert.equal(result.attempted, 1);
+    assert.equal(result.succeeded, 0);
+    assert.equal(result.failures.length, 1);
+    assert.equal(result.failures[0]?.rootPath, rootPath);
+    assert.match(lines[0] ?? '', /\[cleanup\] failed/iu);
+    assert.match(lines[1] ?? '', /1\/1 artifact roots failed/iu);
   });
 
   test('外側cleanupでもrollback失敗に必要なrecovery backupだけを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(rootPath, 'result.pdf');
-    const outputPath = path.join(workspacePath, 'result.pdf');
+    const outputPath = path.join(workspacePath.path, 'result.pdf');
     let copyCount = 0;
 
-    try {
-      await writeFile(outputPath, 'original');
-      await writeFixture(stagedOutputPath);
+    await writeFile(outputPath, 'original');
+    await writeFixture(stagedOutputPath);
 
-      await assert.rejects(
-        withStagingCleanup([{ rootPath, workspacePath }], () =>
-          commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath: rootPath }], {
+    await assert.rejects(
+      withStagingCleanup([{ rootPath, workspacePath: workspacePath.path }], () =>
+        commitStagedOutputs(
+          [{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath: rootPath }],
+          {
             resolveConflicts: async () => 'overwrite',
             copyFile: async (source, destination, flags) => {
               copyCount += 1;
@@ -84,56 +76,51 @@ suite('変換artifactのライフサイクル', () => {
 
               await copyFile(source, destination, flags);
             },
-          }),
+          },
         ),
-        (error: unknown) => {
-          assert.ok(error instanceof CommitRollbackError);
-          return true;
-        },
-      );
+      ),
+      (error: unknown) => {
+        assert.ok(error instanceof CommitRollbackError);
+        return true;
+      },
+    );
 
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
-      assert.strictEqual(await readFile(`${stagedOutputPath}.previous`, 'utf8'), 'original');
-      await assert.rejects(access(stagedOutputPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
+    assert.strictEqual(await readFile(`${stagedOutputPath}.previous`, 'utf8'), 'original');
+    await assert.rejects(access(stagedOutputPath));
   });
 
   test('通常のerrorではpreviousという名前のartifactも保持しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
 
-    try {
-      await writeFixture(path.join(rootPath, 'result.pdf.previous'));
+    await writeFixture(path.join(rootPath, 'result.pdf.previous'));
 
-      await assert.rejects(
-        withStagingCleanup([{ rootPath, workspacePath }], async () => {
-          throw new Error('injected ordinary failure');
-        }),
-        /injected ordinary failure/,
-      );
+    await assert.rejects(
+      withStagingCleanup([{ rootPath, workspacePath: workspacePath.path }], async () => {
+        throw new Error('injected ordinary failure');
+      }),
+      /injected ordinary failure/,
+    );
 
-      await assert.rejects(access(rootPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(rootPath));
   });
 
   test('rollbackが成功した場合はrecovery backupを保持しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(rootPath, 'result.pdf');
-    const outputPath = path.join(workspacePath, 'result.pdf');
+    const outputPath = path.join(workspacePath.path, 'result.pdf');
     let copyCount = 0;
 
-    try {
-      await writeFile(outputPath, 'original');
-      await writeFixture(stagedOutputPath);
+    await writeFile(outputPath, 'original');
+    await writeFixture(stagedOutputPath);
 
-      await assert.rejects(
-        withStagingCleanup([{ rootPath, workspacePath }], () =>
-          commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath: rootPath }], {
+    await assert.rejects(
+      withStagingCleanup([{ rootPath, workspacePath: workspacePath.path }], () =>
+        commitStagedOutputs(
+          [{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath: rootPath }],
+          {
             resolveConflicts: async () => 'overwrite',
             copyFile: async (source, destination, flags) => {
               copyCount += 1;
@@ -143,112 +130,91 @@ suite('変換artifactのライフサイクル', () => {
                 throw new Error('injected commit failure');
               }
             },
-          }),
+          },
         ),
-        /injected commit failure/,
-      );
+      ),
+      /injected commit failure/,
+    );
 
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
-      await assert.rejects(access(rootPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
+    await assert.rejects(access(rootPath));
   });
 
   test('Undo用backupを残してstaging結果と入力コピーを削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const rootPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const resultPath = path.join(rootPath, 'result.pdf');
     const sourcePath = path.join(rootPath, 'source.pdf');
     const backupPath = path.join(rootPath, 'result.pdf.previous');
 
-    try {
-      await writeFixture(resultPath);
-      await writeFixture(sourcePath);
-      await writeFixture(backupPath);
+    await writeFixture(resultPath);
+    await writeFixture(sourcePath);
+    await writeFixture(backupPath);
 
-      await cleanupConversionArtifacts([{ rootPath, workspacePath, preservePaths: [backupPath] }]);
+    await cleanupConversionArtifacts([{ rootPath, workspacePath: workspacePath.path, preservePaths: [backupPath] }]);
 
-      await assert.rejects(access(resultPath));
-      await assert.rejects(access(sourcePath));
-      await assert.doesNotReject(access(backupPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(resultPath));
+    await assert.rejects(access(sourcePath));
+    await assert.doesNotReject(access(backupPath));
   });
 
   test('workspace外へ解決するsymlinkをcleanupしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-outside-'));
-    const outsideFile = path.join(outsidePath, 'keep.txt');
-    const symlinkPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-outside-'));
+    const outsideFile = path.join(outsidePath.path, 'keep.txt');
+    const symlinkPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
 
-    try {
-      await writeFixture(outsideFile);
-      await mkdir(path.dirname(symlinkPath), { recursive: true });
-      await symlink(outsidePath, symlinkPath);
+    await writeFixture(outsideFile);
+    await mkdir(path.dirname(symlinkPath), { recursive: true });
+    await symlink(outsidePath.path, symlinkPath);
 
-      await cleanupConversionArtifacts([{ rootPath: symlinkPath, workspacePath }]);
+    await cleanupConversionArtifacts([{ rootPath: symlinkPath, workspacePath: workspacePath.path }]);
 
-      await assert.doesNotReject(access(outsideFile));
-      await assert.doesNotReject(access(symlinkPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-      await rm(outsidePath, { recursive: true, force: true });
-    }
+    await assert.doesNotReject(access(outsideFile));
+    await assert.doesNotReject(access(symlinkPath));
   });
 
   test('cleanup失敗を成功結果へ伝播させずworkspace内の出力を維持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-outside-'));
-    const outputPath = path.join(workspacePath, 'output.pdf');
-    const symlinkPath = path.join(workspacePath, '.graphics-workbench', 'run');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-outside-'));
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    const symlinkPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
 
-    try {
-      await writeFixture(outputPath);
-      await mkdir(path.dirname(symlinkPath), { recursive: true });
-      await symlink(outsidePath, symlinkPath);
+    await writeFixture(outputPath);
+    await mkdir(path.dirname(symlinkPath), { recursive: true });
+    await symlink(outsidePath.path, symlinkPath);
 
-      await cleanupConversionArtifacts([{ rootPath: symlinkPath, workspacePath }]);
+    await cleanupConversionArtifacts([{ rootPath: symlinkPath, workspacePath: workspacePath.path }]);
 
-      await assert.doesNotReject(access(outputPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-      await rm(outsidePath, { recursive: true, force: true });
-    }
+    await assert.doesNotReject(access(outputPath));
   });
 
   test('operation cleanupは別session・未知directory・harness log・symlinkを削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-workspace-'));
-    const currentRoot = path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'current');
-    const activePath = path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'other-active', 'result.pdf');
-    const unknownPath = path.join(workspacePath, '.graphics-workbench', 'unknown', 'keep.txt');
-    const harnessLogPath = path.join(workspacePath, '.graphics-workbench', 'harness', 'stop.log');
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-cleanup-outside-'));
-    const outsideFile = path.join(outsidePath, 'keep.txt');
-    const symlinkPath = path.join(workspacePath, '.graphics-workbench', 'link');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
+    const currentRoot = path.join(workspacePath.path, '.graphics-workbench', 'merge-pdf', 'current');
+    const activePath = path.join(workspacePath.path, '.graphics-workbench', 'merge-pdf', 'other-active', 'result.pdf');
+    const unknownPath = path.join(workspacePath.path, '.graphics-workbench', 'unknown', 'keep.txt');
+    const harnessLogPath = path.join(workspacePath.path, '.graphics-workbench', 'harness', 'stop.log');
+    await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-outside-'));
+    const outsideFile = path.join(outsidePath.path, 'keep.txt');
+    const symlinkPath = path.join(workspacePath.path, '.graphics-workbench', 'link');
 
-    try {
-      await writeFixture(path.join(currentRoot, 'result.pdf'));
-      await writeFixture(activePath);
-      await writeFixture(unknownPath);
-      await writeFixture(harnessLogPath);
-      await writeFixture(outsideFile);
-      await mkdir(path.dirname(symlinkPath), { recursive: true });
-      await symlink(outsidePath, symlinkPath);
+    await writeFixture(path.join(currentRoot, 'result.pdf'));
+    await writeFixture(activePath);
+    await writeFixture(unknownPath);
+    await writeFixture(harnessLogPath);
+    await writeFixture(outsideFile);
+    await mkdir(path.dirname(symlinkPath), { recursive: true });
+    await symlink(outsidePath.path, symlinkPath);
 
-      await cleanupConversionArtifacts([{ rootPath: currentRoot, workspacePath }]);
+    await cleanupConversionArtifacts([{ rootPath: currentRoot, workspacePath: workspacePath.path }]);
 
-      await assert.rejects(access(path.join(currentRoot, 'result.pdf')));
-      await assert.doesNotReject(access(activePath));
-      await assert.doesNotReject(access(unknownPath));
-      await assert.doesNotReject(access(harnessLogPath));
-      await assert.doesNotReject(access(symlinkPath));
-      await assert.doesNotReject(access(outsideFile));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-      await rm(outsidePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(path.join(currentRoot, 'result.pdf')));
+    await assert.doesNotReject(access(activePath));
+    await assert.doesNotReject(access(unknownPath));
+    await assert.doesNotReject(access(harnessLogPath));
+    await assert.doesNotReject(access(symlinkPath));
+    await assert.doesNotReject(access(outsideFile));
   });
 });
 

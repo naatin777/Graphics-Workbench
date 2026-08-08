@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtempDisposable, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -19,10 +19,10 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-'));
+    await using directory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-latex-paste-'));
 
     try {
-      const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
+      const documentUri = vscode.Uri.file(path.join(directory.path, 'main.tex'));
       await vscode.workspace.fs.writeFile(documentUri, Buffer.from('', 'utf8'));
       sandbox.stub(vscode.window, 'showQuickPick').resolves({
         label: '画像形式で貼り付け',
@@ -30,7 +30,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         description: '(標準)',
         pasteKind: 'image',
       } as vscode.QuickPickItem & { pasteKind: 'image' });
-      const showInputBox = sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory, 'edited'));
+      const showInputBox = sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory.path, 'edited'));
 
       const document = await vscode.workspace.openTextDocument(documentUri);
       const provider = new LatexPasteEditProvider();
@@ -54,13 +54,12 @@ suite('LaTeXクリップボード画像挿入', () => {
         const snippet = normalizeSnippetValue(edit.insertText.value);
         assert.ok(snippet.includes('\\includegraphics{edited.png}'));
         assert.ok(snippet.includes('\\caption{edited}'));
-        assert.ok(await readFile(path.join(directory, 'edited.png')));
+        assert.ok(await readFile(path.join(directory.path, 'edited.png')));
       } finally {
         tokenSource.dispose();
       }
     } finally {
       sandbox.restore();
-      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -69,10 +68,10 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-undo-'));
+    await using directory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-latex-paste-undo-'));
 
     try {
-      const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
+      const documentUri = vscode.Uri.file(path.join(directory.path, 'main.tex'));
       await vscode.workspace.fs.writeFile(documentUri, Buffer.from('', 'utf8'));
       sandbox.stub(vscode.window, 'showQuickPick').resolves({
         label: '画像形式で貼り付け',
@@ -80,7 +79,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         description: '(標準)',
         pasteKind: 'image',
       } as vscode.QuickPickItem & { pasteKind: 'image' });
-      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory, 'pasted'));
+      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory.path, 'pasted'));
       const showWarningMessage = sandbox.stub(vscode.window, 'showWarningMessage').resolves(undefined);
       const document = await vscode.workspace.openTextDocument(documentUri);
       const provider = new LatexPasteEditProvider({
@@ -101,19 +100,18 @@ suite('LaTeXクリップボード画像挿入', () => {
 
         assert.ok(edits);
         assert.strictEqual(edits.length, 1);
-        assert.ok(await readFile(path.join(directory, 'pasted.png')));
+        assert.ok(await readFile(path.join(directory.path, 'pasted.png')));
         const [edit] = edits;
         assert.ok(edit);
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         assert.ok(normalizeSnippetValue(edit.insertText.value).includes('pasted.png'));
         assert.ok(showWarningMessage.calledOnce);
-        await assert.rejects(access(path.join(directory, '.graphics-workbench', 'clipboard-paste')));
+        await assert.rejects(access(path.join(directory.path, '.graphics-workbench', 'clipboard-paste')));
       } finally {
         tokenSource.dispose();
       }
     } finally {
       sandbox.restore();
-      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -122,13 +120,13 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-pdf-'));
+    await using directory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-latex-paste-pdf-'));
 
     try {
-      const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
+      const documentUri = vscode.Uri.file(path.join(directory.path, 'main.tex'));
       await vscode.workspace.fs.writeFile(documentUri, Buffer.from('', 'utf8'));
-      const existingImagePath = path.join(directory, 'pasted.png');
-      const existingPdfPath = path.join(directory, 'pasted.pdf');
+      const existingImagePath = path.join(directory.path, 'pasted.png');
+      const existingPdfPath = path.join(directory.path, 'pasted.pdf');
       await writeFile(existingImagePath, 'existing clipboard image');
       const existingPdf = await createPdfBytes('old PDF');
       await writeFile(existingPdfPath, existingPdf);
@@ -138,7 +136,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         description: '(標準)',
         pasteKind: 'pdf',
       } as vscode.QuickPickItem & { pasteKind: 'pdf' });
-      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory, 'pasted'));
+      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory.path, 'pasted'));
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
       const document = await vscode.workspace.openTextDocument(documentUri);
@@ -175,7 +173,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         const snippet = normalizeSnippetValue(edit.insertText.value);
         assert.ok(snippet.includes('\\includegraphics{pasted.pdf}'));
-        const pdf = await PDFDocument.load(await readFile(path.join(directory, 'pasted.pdf')));
+        const pdf = await PDFDocument.load(await readFile(path.join(directory.path, 'pasted.pdf')));
         assert.strictEqual(pdf.getPageCount(), 1);
         assert.strictEqual(await readFile(existingImagePath, 'utf8'), 'existing clipboard image');
         assert.notDeepStrictEqual(await readFile(existingPdfPath), existingPdf);
@@ -204,17 +202,16 @@ suite('LaTeXクリップボード画像挿入', () => {
           tokenSource.token,
         );
         assert.ok(keepBothEdits);
-        assert.ok(await readFile(path.join(directory, 'pasted-1.pdf')));
+        assert.ok(await readFile(path.join(directory.path, 'pasted-1.pdf')));
         await assert.rejects(access(stagedRootFromLines(outputLines, 'keep-both: ')));
         await undoLastConversionCommand();
-        await assert.rejects(access(path.join(directory, 'pasted-1.pdf')));
+        await assert.rejects(access(path.join(directory.path, 'pasted-1.pdf')));
         assert.deepStrictEqual(await readFile(existingPdfPath), existingPdf);
       } finally {
         tokenSource.dispose();
       }
     } finally {
       sandbox.restore();
-      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -223,11 +220,11 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-conflict-'));
+    await using directory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-latex-paste-conflict-'));
 
     try {
-      const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
-      const existingImagePath = path.join(directory, 'pasted.png');
+      const documentUri = vscode.Uri.file(path.join(directory.path, 'main.tex'));
+      const existingImagePath = path.join(directory.path, 'pasted.png');
       await vscode.workspace.fs.writeFile(documentUri, Buffer.from('', 'utf8'));
       await writeFile(existingImagePath, 'existing clipboard image');
       sandbox.stub(vscode.window, 'showQuickPick').resolves({
@@ -236,7 +233,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         description: '(標準)',
         pasteKind: 'image',
       } as vscode.QuickPickItem & { pasteKind: 'image' });
-      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory, 'pasted'));
+      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory.path, 'pasted'));
       const document = await vscode.workspace.openTextDocument(documentUri);
       const provider = new LatexPasteEditProvider({
         resolveOutputConflicts: async () => 'keep-both',
@@ -254,7 +251,7 @@ suite('LaTeXクリップボード画像挿入', () => {
 
         assert.ok(edits);
         assert.strictEqual(await readFile(existingImagePath, 'utf8'), 'existing clipboard image');
-        assert.ok(await readFile(path.join(directory, 'pasted-1.png')));
+        assert.ok(await readFile(path.join(directory.path, 'pasted-1.png')));
         const [edit] = edits;
         assert.ok(edit);
         assert.ok(edit.insertText instanceof vscode.SnippetString);
@@ -264,7 +261,6 @@ suite('LaTeXクリップボード画像挿入', () => {
       }
     } finally {
       sandbox.restore();
-      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -273,14 +269,14 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-cancel-'));
+    await using directory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-latex-paste-cancel-'));
     const tokenSource = new vscode.CancellationTokenSource();
 
     try {
-      const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
+      const documentUri = vscode.Uri.file(path.join(directory.path, 'main.tex'));
       await vscode.workspace.fs.writeFile(documentUri, Buffer.from('', 'utf8'));
       const showQuickPick = sandbox.stub(vscode.window, 'showQuickPick');
-      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory, 'pasted'));
+      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory.path, 'pasted'));
       tokenSource.cancel();
 
       const document = await vscode.workspace.openTextDocument(documentUri);
@@ -295,11 +291,10 @@ suite('LaTeXクリップボード画像挿入', () => {
 
       assert.strictEqual(edits, undefined);
       assert.ok(showQuickPick.notCalled);
-      await assert.rejects(access(path.join(directory, 'pasted.png')));
+      await assert.rejects(access(path.join(directory.path, 'pasted.png')));
     } finally {
       tokenSource.dispose();
       sandbox.restore();
-      await rm(directory, { recursive: true, force: true });
     }
   });
 
@@ -308,15 +303,15 @@ suite('LaTeXクリップボード画像挿入', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const directory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-latex-paste-conflict-cancel-'),
+    await using directory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-latex-paste-conflict-cancel-'),
     );
     const tokenSource = new vscode.CancellationTokenSource();
     const lines: string[] = [];
 
     try {
-      const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
-      const outputPath = path.join(directory, 'pasted.png');
+      const documentUri = vscode.Uri.file(path.join(directory.path, 'main.tex'));
+      const outputPath = path.join(directory.path, 'pasted.png');
       await vscode.workspace.fs.writeFile(documentUri, Buffer.from('', 'utf8'));
       await writeFile(outputPath, 'existing clipboard image');
       sandbox.stub(vscode.window, 'showQuickPick').resolves({
@@ -325,7 +320,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         description: '(標準)',
         pasteKind: 'image',
       } as vscode.QuickPickItem & { pasteKind: 'image' });
-      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory, 'pasted'));
+      sandbox.stub(vscode.window, 'showInputBox').resolves(path.join(directory.path, 'pasted'));
 
       const document = await vscode.workspace.openTextDocument(documentUri);
       const provider = new LatexPasteEditProvider({
@@ -345,12 +340,11 @@ suite('LaTeXクリップボード画像挿入', () => {
 
       assert.strictEqual(edits, undefined);
       assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing clipboard image');
-      await assert.rejects(access(path.join(directory, '.graphics-workbench')));
+      await assert.rejects(access(path.join(directory.path, '.graphics-workbench')));
       assert.ok(lines.some((line) => line.includes('cancellation requested')));
     } finally {
       tokenSource.dispose();
       sandbox.restore();
-      await rm(directory, { recursive: true, force: true });
     }
   });
 });
