@@ -33,6 +33,11 @@ npm run test:docker -- package:vsix test:playwright:smoke
 - 古いvolumeは自動削除されない。不要になったら `docker volume ls` で確認して手動pruneする。
 - キャッシュを無効化したい場合は該当volumeを削除する。
 
+## git worktree
+
+- `test-in-docker.sh` はworktree（`.git` がfile）を検出し、実gitdirとcommon dirをコンテナへmountする。これがないとknipがgit hooksを解決できず `check:all` がknipでexit 1になる。
+- 通常リポジトリ（`.git` がdirectory）ではこのmountは発生しない。
+
 ## Xvfb
 
 - GUIが必要なscript（`test` / `test:coverage` / `test:coverage:run` / `test:playwright:vsix` / `test:playwright:smoke` / `visual:capture`）が含まれる場合だけ、entrypointがXvfbを起動して`DISPLAY`を設定する。
