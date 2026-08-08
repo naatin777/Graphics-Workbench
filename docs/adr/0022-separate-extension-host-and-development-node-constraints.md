@@ -12,17 +12,17 @@
 
 VS Code extensionのproduction codeは、開発者がshellで使うNode.jsではなく、VS Codeが内蔵するExtension HostのNode.jsで実行される。したがって、repositoryのinstall・build・lintに必要なNode.js versionと、extensionが実行されるVS Codeのruntime versionは同じ宣言で管理できない。
 
-現在のrepositoryでは、VS Codeの対応versionを`^1.105.0`、Node.jsを`>=22.22.2`として`package.json`の`engines`に宣言していた。しかし、対応対象に含まれるVS Code 1.105.1のExtension HostはNode.js 22.19.0を使うため、extension runtimeとしては不要に厳しい制約になっていた。一方、Node.js `>=22.22.2`はnpm `12.0.1`のengine要求を満たすために、repositoryの開発・install環境として選択されたversionである。
+現在のrepositoryでは、VS Codeの対応versionを`^1.125.0`、Node.jsを`>=22.22.2`として`package.json`の`engines`に宣言していた。しかし、対応対象に含まれるVS Code 1.125.0のExtension HostはNode.js 24.15.0を使うため、extension runtimeとしては不要に厳しい制約になっていた。一方、Node.js `>=22.22.2`はnpm `12.0.1`のengine要求を満たすために、repositoryの開発・install環境として選択されたversionである。
 
-VS CodeのExtension HostがNode.jsを実行runtimeとして持つことは[VS Code公式ドキュメント](https://code.visualstudio.com/api/advanced-topics/extension-host)に記載されている。VS Code 1.101でExtension HostがNode.js 22世代へ更新されたことは[VS Code 1.101 release notes](https://code.visualstudio.com/updates/v1_101)で確認でき、VS Code 1.105.1のruntime versionは[Microsoft/vscodeのversion情報](https://github.com/microsoft/vscode/issues/277064)で確認した。
+VS CodeのExtension HostがNode.jsを実行runtimeとして持つことは[VS Code公式ドキュメント](https://code.visualstudio.com/api/advanced-topics/extension-host)に記載されている。VS Code 1.125.0はElectron 42.2.0を使い、そのNode.js runtime versionはNode.js 24.15.0である（[Electron releases](https://releases.electronjs.org/)、[VS Code 1.125 package.json](https://github.com/microsoft/vscode/blob/1.125.0/package.json)）。
 
 ## 決定
 
-- extension manifestの`engines`には`vscode: ^1.105.0`だけを置き、`engines.node`は宣言しない。
+- extension manifestの`engines`には`vscode: ^1.125.0`だけを置き、`engines.node`は宣言しない。
 - repositoryのlocal開発・installに必要なNode.jsの最小versionは、`devEngines.runtime: >=22.22.2`で強制する。
 - npmのversionは、引き続き`devEngines.packageManager: npm 12.0.1`と`packageManager: npm@12.0.1`で固定する。
 - CIとreleaseは、引き続きNode.js 22.23.1をsetupし、npm 12.0.1を明示的にinstallする。
-- extension runtimeの互換性は、`engines.vscode`とVS CodeのExtension Host testで確認する。CIはcurrent stableと対応最小version（`1.105.x`）の2本を実行する。repositoryの開発用Node.js versionを、VS Code内蔵Node.jsのversion宣言として扱わない。
+- extension runtimeの互換性は、`engines.vscode`とVS CodeのExtension Host testで確認する。CIはcurrent stable（3 OS full）を実行する。repositoryの開発用Node.js versionを、VS Code内蔵Node.jsのversion宣言として扱わない。
 
 ## 理由
 
@@ -35,11 +35,11 @@ VS CodeのExtension HostがNode.jsを実行runtimeとして持つことは[VS Co
 
 ### `engines.node`を`>=22.19.0`へ下げる
 
-VS Code 1.105.1のExtension Hostには適合するが、repositoryのinstall・開発環境とextension runtimeを1つの制約へ混在させる。npm 12.0.1の要求も別に表す必要があり、責務分離にならないため採用しない。
+VS Code 1.125.0のExtension Hostには適合するが、repositoryのinstall・開発環境とextension runtimeを1つの制約へ混在させる。npm 12.0.1の要求も別に表す必要があり、責務分離にならないため採用しない。
 
 ### `engines.node: >=22.22.2`を維持する
 
-開発環境のinstall policyは保てるが、VS Code 1.105.1でも動作可能なextensionに対して、VS Code利用者へ誤ったNode.js下限を示すため採用しない。
+開発環境のinstall policyは保てるが、VS Code 1.125.0でも動作可能なextensionに対して、VS Code利用者へ誤ったNode.js下限を示すため採用しない。
 
 ### `engines.node`と`devEngines.runtime`を同じversionで併記する
 

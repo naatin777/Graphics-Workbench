@@ -83,6 +83,9 @@ Convert confidently. Existing files are protected by default, and the latest gra
 
 この拡張機能は、以下のいずれかの方法でインストールできます。
 
+> 対応エディタ: Visual Studio Code、Cursor、Devin Desktop（VS Code 1.125 以降）。
+> その他の VS Code 互換エディタは動作する可能性がありますが、互換性テストの対象外です。
+
 ### Visual Studio Code Marketplace
 
 VS Code 内の拡張機能マーケットプレイスから **Graphics Workbench** を検索し、インストールしてください。

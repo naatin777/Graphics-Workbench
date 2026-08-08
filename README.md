@@ -83,6 +83,9 @@ Convert confidently. Existing files are protected by default, and the latest gra
 
 You can install this extension in one of the following ways:
 
+> Supported editors: Visual Studio Code, Cursor, and Devin Desktop (VS Code 1.125 or later).
+> Other VS Code-compatible editors may work, but are not part of our compatibility testing.
+
 ### Visual Studio Code Marketplace
 
 Search for "Graphics Workbench" in the Extensions Marketplace within VS Code and install it.

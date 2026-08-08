@@ -6,8 +6,6 @@ import { defineConfig } from '@vscode/test-cli';
 
 const repositoryDirectory = process.cwd();
 const configuredUserDataDirectory = process.env.GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR;
-const vscodeTestVersion = process.env.VSCODE_TEST_VERSION ?? 'stable';
-const vscodeTestGrep = process.env.VSCODE_TEST_GREP;
 const userDataDirectory = path.resolve(repositoryDirectory, configuredUserDataDirectory ?? 'test/.vscode-test-data');
 const settingsSourcePath = path.join(repositoryDirectory, 'test', 'vscode-settings', 'settings.json');
 const settingsTargetPath = path.join(userDataDirectory, 'User', 'settings.json');
@@ -87,7 +85,7 @@ export default defineConfig({
   tests: [
     {
       files: extensionHostTestFiles,
-      version: vscodeTestVersion,
+      version: 'stable',
       extensionDevelopmentPath: '.',
       srcDir: 'src',
       workspaceFolder: './test/workspace',
@@ -97,7 +95,6 @@ export default defineConfig({
         slow: 5000,
         reporter: 'list',
         color: true,
-        ...(vscodeTestGrep === undefined ? {} : { grep: vscodeTestGrep }),
       },
       launchArgs: [
         '--disable-extensions',

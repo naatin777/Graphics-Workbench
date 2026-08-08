@@ -71,7 +71,7 @@ CIのnpm download cacheは各jobで`actions/cache@v4`を使って有効化する
 
 - `devEngines.packageManager`(`onFail: error`): localでnpm versionを強制し、12.0.1以外のinstallを即時拒否する。
 - `devEngines.runtime`(`>=22.22.2`): repositoryのlocal開発・installに必要な最小Node versionを強制する。これはnpm 12.0.1の実行条件を含む。
-- `engines.vscode`(`^1.105.0`): VSIXが対象とするVS Code versionを宣言する。Extension HostのNode versionはVS Codeが管理するため、extension manifestに`engines.node`は置かない。
+- `engines.vscode`(`^1.125.0`): VSIXが対象とするVS Code versionを宣言する。Extension HostのNode versionはVS Codeが管理するため、extension manifestに`engines.node`は置かない。
 - CIの`setup-node` + `npm install -g npm@12.0.1`: CI環境でもnpm 12.0.1とNode 22.23.1を確実に用意する。CIの強制は`devEngines`ではなくこのpinで担保する。
 - `.npmrc`: install-script policy(`strict-allow-scripts`)、engine厳格化(`engine-strict`)、peer厳格化、release age(`min-release-age`)を定義する。
 

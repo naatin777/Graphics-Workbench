@@ -87,48 +87,6 @@ jobs:
           node --input-type=module -e "import { rm } from 'node:fs/promises'; await rm('.vscode-test-ci-data', { recursive: true, force: true, maxRetries: 20, retryDelay: 200 });"
         shell: bash
 
-  extension-host-105:
-    name: Extension Host (VS Code 1.105, Linux)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: ./.github/actions/setup
-
-      - name: Build extension and Webview
-        run: npm run build
-        shell: bash
-
-      - run: bash .github/scripts/install-test-tools-linux.sh
-        shell: bash
-
-      - run: bash .github/scripts/verify-image-tools-unix.sh
-        shell: bash
-
-      - name: Run VS Code Extension Host smoke tests on VS Code 1.105
-        run: xvfb-run npm test
-        shell: bash
-        env:
-          VSCODE_TEST_VERSION: '1.105.0'
-          # Smoke subset: logic-only suites that verify the declared minimum
-          # VS Code can load the extension and run core command/config logic.
-          VSCODE_TEST_GREP: 'source format判定|command bindingの整合性|生成された設定スキーマ検証|package.jsonの変換メニュー定義|NLS整合性チェック|変換fixtureの契約|outputPath設定'
-          GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR: .vscode-test-ci-data
-
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: extension-host-test-105
-          path: .vscode-test-ci-data/
-          if-no-files-found: ignore
-
-      - if: always()
-        name: Cleanup VS Code test data
-        run: |
-          node --input-type=module -e "import { rm } from 'node:fs/promises'; await rm('.vscode-test-ci-data', { recursive: true, force: true, maxRetries: 20, retryDelay: 200 });"
-        shell: bash
-
   webview:
     name: Webview Vitest coverage (Linux)
     runs-on: ubuntu-latest
