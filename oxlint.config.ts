@@ -213,11 +213,14 @@ export default defineConfig({
     'eslint/prefer-const': 'error',
     'eslint/no-prototype-builtins': 'error',
     'eslint/no-unsafe-optional-chaining': 'error',
-    complexity: ['error', { max: 20 }],
-    'max-depth': ['error', { max: 4 }],
-    'max-params': ['error', { max: 5 }],
-    'eslint/max-classes-per-file': ['error', 1],
-    'eslint/no-implicit-coercion': 'error',
+    // Code smell heuristics: exceeding a threshold is a signal to reconsider,
+    // not a defect. Keep them visible as warnings so they never force
+    // meaninglessly split functions, parameter objects, or helper sprawl.
+    complexity: ['warn', { max: 20 }],
+    'max-depth': ['warn', { max: 4 }],
+    'max-params': ['warn', { max: 5 }],
+    'eslint/max-classes-per-file': ['warn', 1],
+    'eslint/no-implicit-coercion': 'warn',
     'eslint/no-unsafe-finally': 'error',
     'eslint/no-unreachable-loop': 'error',
     'eslint/no-duplicate-imports': 'error',
@@ -225,11 +228,15 @@ export default defineConfig({
     'import/no-duplicates': 'error',
     'import/newline-after-import': 'error',
     'no-warning-comments': 'error',
-    'unicorn/no-negated-condition': 'error',
-    'unicorn/prefer-ternary': 'error',
+    // Style choices that are context-dependent: which form reads better
+    // depends on the surrounding control flow, so keep them as warnings or off.
+    'unicorn/no-negated-condition': 'warn',
+    'unicorn/prefer-ternary': 'off',
     'unicorn/switch-case-braces': 'error',
-    'eslint/no-else-return': 'error',
-    'eslint/no-lonely-if': 'error',
+    // Early-return / else-if restructuring is a readability heuristic: the
+    // best shape depends on the surrounding flow, so keep it advisory.
+    'eslint/no-else-return': 'warn',
+    'eslint/no-lonely-if': 'warn',
     'eslint/no-useless-catch': 'error',
     'eslint/object-shorthand': 'error',
     'typescript/no-this-alias': 'error',
@@ -255,7 +262,10 @@ export default defineConfig({
     'typescript/no-unsafe-function-type': 'error',
     'typescript/no-useless-constructor': 'error',
     'typescript/no-require-imports': 'error',
-    'typescript/explicit-function-return-type': 'error',
+    // Require explicit return types on declarations and const-assigned handlers
+    // (boundary documentation), but allow inline callback expressions to rely on
+    // type inference so local arrows do not become noise.
+    'typescript/explicit-function-return-type': ['error', { allowExpressions: true }],
     'typescript/no-unnecessary-type-assertion': 'error',
     'typescript/unified-signatures': 'error',
     'typescript/prefer-nullish-coalescing': 'error',
@@ -271,14 +281,19 @@ export default defineConfig({
     // WebviewはES2022 libのため `toSorted()` が型ライブラリに存在しない。
     'unicorn/no-array-sort': ['error', { allowAfterSpread: true }],
     'unicorn/no-object-as-default-parameter': 'error',
-    'unicorn/no-array-for-each': 'error',
-    'unicorn/no-array-callback-reference': 'error',
-    'unicorn/no-array-reduce': 'error',
+    // Which array iteration form reads better is context-dependent; keep these
+    // as advisories rather than forcing rewrites (reduce<->loop, forEach<->for..of).
+    'unicorn/no-array-for-each': 'warn',
+    'unicorn/no-array-callback-reference': 'warn',
+    'unicorn/no-array-reduce': 'warn',
     'unicorn/no-useless-switch-case': 'error',
     'unicorn/prefer-set-has': 'error',
     'typescript/prefer-find': 'error',
     'typescript/prefer-includes': 'error',
-    'eslint/prefer-destructuring': 'error',
+    // Destructuring and for..of are idiomatic but not universally clearer; the
+    // context (index use, symmetric object shapes) decides. Keep advisory.
+    'eslint/prefer-destructuring': 'warn',
+    'typescript/prefer-for-of': 'warn',
     'eslint/no-fallthrough': 'error',
     'eslint/no-invalid-regexp': 'error',
     'eslint/no-dupe-else-if': 'error',
@@ -291,7 +306,6 @@ export default defineConfig({
     'eslint/default-case-last': 'error',
     'eslint/operator-assignment': 'error',
     'eslint/logical-assignment-operators': 'error',
-    'typescript/prefer-for-of': 'error',
     'typescript/prefer-namespace-keyword': 'error',
     'typescript/prefer-ts-expect-error': 'error',
     'unicorn/prefer-object-from-entries': 'error',
@@ -529,9 +543,13 @@ export default defineConfig({
 
     /*
      * Project-specific rules
+     *
+     * Architecture / security invariants stay errors. Readability heuristics
+     * (member counts, conditional spreads) are advisory: forcing a nested or
+     * restructured shape can make code harder to read than the flat form.
      */
-    'project/max-conditional-spreads-per-object': 'error',
-    'project/max-flat-type-members': 'error',
+    'project/max-conditional-spreads-per-object': 'warn',
+    'project/max-flat-type-members': 'warn',
     'project/forbid-raster-input-limit-bypass': 'error',
     'project/no-fixed-e2e-wait': 'error',
     'project/no-webview-api-bypass': 'error',

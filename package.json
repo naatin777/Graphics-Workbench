@@ -31,6 +31,7 @@
     "typecheck:webview:test": "tsc --noEmit -p webview/tsconfig.test.json",
     "lint": "oxlint src test webview/apps webview/shared webview/excalidraw webview/*.ts scripts .github/scripts .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
     "lint:audit": "npm run lint -- -D all -D nursery --type-aware",
+    "lint:print-config": "oxlint --print-config oxlint.config.ts",
     "lint:fix": "oxlint --fix src test webview/apps webview/shared webview/excalidraw webview/*.ts scripts .github/scripts .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
     "format": "oxfmt --config ./oxfmt.config.ts --check src test webview/apps webview/shared webview/excalidraw package.json tsconfig.json tsconfig.test.json webview/tsconfig.json webview/tsconfig.test.json webview/*.ts scripts .github/scripts/*.mjs .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
     "format:fix": "oxfmt --config ./oxfmt.config.ts --write src test webview/apps webview/shared webview/excalidraw package.json tsconfig.json tsconfig.test.json webview/tsconfig.json webview/tsconfig.test.json webview/*.ts scripts .github/scripts/*.mjs .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
