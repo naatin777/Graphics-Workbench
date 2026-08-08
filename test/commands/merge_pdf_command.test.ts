@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtempDisposable, readFile, stat, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,15 +33,15 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-'),
     );
 
     try {
-      const firstPdfPath = path.join(temporaryDirectory, 'q a.PDF');
-      const secondPdfPath = path.join(temporaryDirectory, ' 薔薇🌹.pdf');
-      const outputPath = path.join(temporaryDirectory, 'merged.pdf');
-      const renderDirectory = path.join(temporaryDirectory, 'rendered');
+      const firstPdfPath = path.join(temporaryDirectory.path, 'q a.PDF');
+      const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
+      const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
+      const renderDirectory = path.join(temporaryDirectory.path, 'rendered');
 
       await copyFile(firstFixturePath, firstPdfPath);
       await copyFile(secondFixturePath, secondPdfPath);
@@ -91,7 +91,6 @@ suite('PDF結合コマンド', () => {
       }
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
@@ -100,14 +99,14 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-long-command-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-long-command-'),
     );
 
     try {
-      const longPdfPath = path.join(temporaryDirectory, 'long-input.pdf');
-      const secondPdfPath = path.join(temporaryDirectory, 'second-input.pdf');
-      const outputPath = path.join(temporaryDirectory, 'merged.pdf');
+      const longPdfPath = path.join(temporaryDirectory.path, 'long-input.pdf');
+      const secondPdfPath = path.join(temporaryDirectory.path, 'second-input.pdf');
+      const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
       await copyFile(longFixturePath, longPdfPath);
       await copyFile(secondFixturePath, secondPdfPath);
 
@@ -128,7 +127,6 @@ suite('PDF結合コマンド', () => {
       assert.ok((await stat(outputPath)).size > 0);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
@@ -137,19 +135,19 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-configure-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-configure-'),
     );
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-pdf-outside-'));
+    await using outsideDirectory = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-pdf-outside-'));
 
     try {
-      const firstPdfPath = path.join(temporaryDirectory, 'first.pdf');
-      const outsidePdfPath = path.join(outsideDirectory, 'second.pdf');
-      const linkedDirectory = path.join(temporaryDirectory, 'linked');
+      const firstPdfPath = path.join(temporaryDirectory.path, 'first.pdf');
+      const outsidePdfPath = path.join(outsideDirectory.path, 'second.pdf');
+      const linkedDirectory = path.join(temporaryDirectory.path, 'linked');
       const linkedPdfPath = path.join(linkedDirectory, 'second.pdf');
       await copyFile(firstFixturePath, firstPdfPath);
       await copyFile(secondFixturePath, outsidePdfPath);
-      await symlink(outsideDirectory, linkedDirectory, process.platform === 'win32' ? 'junction' : 'dir');
+      await symlink(outsideDirectory.path, linkedDirectory, process.platform === 'win32' ? 'junction' : 'dir');
 
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
@@ -163,8 +161,6 @@ suite('PDF結合コマンド', () => {
       assert.strictEqual(showErrorMessage.calledOnce, true);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
-      await rm(outsideDirectory, { recursive: true, force: true });
     }
   });
 
@@ -173,14 +169,14 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
+    await using temporaryDirectory = await mkdtempDisposable(
+      `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
     try {
-      const firstPdfPath = path.join(temporaryDirectory, 'q a.pdf');
-      const secondPdfPath = path.join(temporaryDirectory, ' 薔薇🌹.pdf');
-      const textPath = path.join(temporaryDirectory, 'notes.txt');
+      const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
+      const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
+      const textPath = path.join(temporaryDirectory.path, 'notes.txt');
       await copyFile(firstFixturePath, firstPdfPath);
       await copyFile(secondFixturePath, secondPdfPath);
       await writeFile(textPath, 'not a PDF');
@@ -199,10 +195,9 @@ suite('PDF結合コマンド', () => {
 
       assert.strictEqual(showSaveDialog.called, false);
       assert.strictEqual(showErrorMessage.calledOnce, true);
-      await assert.rejects(access(path.join(temporaryDirectory, 'merged.pdf')));
+      await assert.rejects(access(path.join(temporaryDirectory.path, 'merged.pdf')));
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
@@ -211,13 +206,13 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
+    await using temporaryDirectory = await mkdtempDisposable(
+      `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
     try {
-      const firstPdfPath = path.join(temporaryDirectory, 'first.pdf');
-      const secondPdfPath = path.join(temporaryDirectory, 'second.pdf');
+      const firstPdfPath = path.join(temporaryDirectory.path, 'first.pdf');
+      const secondPdfPath = path.join(temporaryDirectory.path, 'second.pdf');
       await copyFile(firstFixturePath, firstPdfPath);
       await copyFile(secondFixturePath, secondPdfPath);
 
@@ -237,7 +232,6 @@ suite('PDF結合コマンド', () => {
       assert.strictEqual(showErrorMessage.calledOnce, true);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
@@ -246,12 +240,12 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
+    await using temporaryDirectory = await mkdtempDisposable(
+      `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
     try {
-      const pdfPath = path.join(temporaryDirectory, 'q a.pdf');
+      const pdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
       await copyFile(firstFixturePath, pdfPath);
 
       const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
@@ -270,7 +264,6 @@ suite('PDF結合コマンド', () => {
       assert.strictEqual(showErrorMessage.calledOnce, true);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
@@ -279,14 +272,14 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
+    await using temporaryDirectory = await mkdtempDisposable(
+      `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
     try {
-      const firstPdfPath = path.join(temporaryDirectory, 'q a.pdf');
-      const secondPdfPath = path.join(temporaryDirectory, ' 薔薇🌹.pdf');
-      const outputPath = path.join(temporaryDirectory, 'merged.pdf');
+      const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
+      const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
+      const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
       await copyFile(firstFixturePath, firstPdfPath);
       await copyFile(secondFixturePath, secondPdfPath);
       await copyFile(firstFixturePath, outputPath);
@@ -309,7 +302,6 @@ suite('PDF結合コマンド', () => {
       assert.ok((await stat(outputPath)).size > 0);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
@@ -318,14 +310,14 @@ suite('PDF結合コマンド', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      `${path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-merge-pdf-command-')}-`,
+    await using temporaryDirectory = await mkdtempDisposable(
+      `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
     try {
-      const firstPdfPath = path.join(temporaryDirectory, 'q a.pdf');
-      const brokenPdfPath = path.join(temporaryDirectory, 'broken.pdf');
-      const outputPath = path.join(temporaryDirectory, 'merged.pdf');
+      const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
+      const brokenPdfPath = path.join(temporaryDirectory.path, 'broken.pdf');
+      const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
       await copyFile(firstFixturePath, firstPdfPath);
       await writeFile(brokenPdfPath, 'not a PDF');
       await copyFile(firstFixturePath, outputPath);
@@ -346,7 +338,6 @@ suite('PDF結合コマンド', () => {
       assert.deepStrictEqual(await readFile(outputPath), originalOutputBytes);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 });

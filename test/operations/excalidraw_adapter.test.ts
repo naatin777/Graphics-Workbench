@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -185,18 +185,14 @@ function documentFromGlobal(): { createElementNS: (namespaceUri: string, qualifi
 }
 
 async function writeTempScene(source: string): Promise<string> {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-excalidraw-scene-'));
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'gw-excalidraw-scene-'));
   const sourcePath = path.join(directory, 'scene.excalidraw');
   await writeFile(sourcePath, source);
   return sourcePath;
 }
 
 async function withTempSvgOutput(run: (svgPath: string) => Promise<void>): Promise<void> {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-excalidraw-svg-'));
-  const svgPath = path.join(directory, 'output.svg');
-  try {
-    await run(svgPath);
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-  }
+  await using directory = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-excalidraw-svg-'));
+  const svgPath = path.join(directory.path, 'output.svg');
+  await run(svgPath);
 }

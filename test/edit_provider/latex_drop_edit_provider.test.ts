@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, mkdtempDisposable, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -9,7 +9,7 @@ import { LatexDropEditProvider } from '../../src/edit_provider/latex_drop_edit_p
 
 suite('LaTeXファイルdrag挿入', () => {
   test('単一PDFのdropからfigure snippetを作る', async () => {
-    const directory = await createTemporaryWorkspaceDirectory('graphics-workbench-latex-drop-single-');
+    const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-single-');
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
@@ -42,7 +42,7 @@ suite('LaTeXファイルdrag挿入', () => {
   });
 
   test('複数PDFのdropから複数図用snippetを作る', async () => {
-    const directory = await createTemporaryWorkspaceDirectory('graphics-workbench-latex-drop-multiple-');
+    const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-multiple-');
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
@@ -69,7 +69,7 @@ suite('LaTeXファイルdrag挿入', () => {
   });
 
   test('URI-listの空行、comment、重複、拡張子大文字を処理する', async () => {
-    const directory = await createTemporaryWorkspaceDirectory('graphics-workbench-latex-drop-uri-list-');
+    const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-uri-list-');
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
@@ -94,7 +94,7 @@ suite('LaTeXファイルdrag挿入', () => {
   });
 
   test('非file・非PDF・壊れたURIを含むURI-listは部分処理しない', async () => {
-    const directory = await createTemporaryWorkspaceDirectory('graphics-workbench-latex-drop-invalid-');
+    const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-invalid-');
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
@@ -121,16 +121,16 @@ suite('LaTeXファイルdrag挿入', () => {
   });
 
   test('workspace外のlocal PDFはrelative pathで挿入する', async () => {
-    const directory = await createTemporaryWorkspaceDirectory('graphics-workbench-latex-drop-document-');
+    const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-document-');
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
-    const outsideDirectory = await mkdtemp(
-      path.join(path.dirname(workspaceFolder.uri.fsPath), 'graphics-workbench-latex-drop-outside-'),
+    await using outsideDirectory = await mkdtempDisposable(
+      path.join(path.dirname(workspaceFolder.uri.fsPath), 'gw-latex-drop-outside-'),
     );
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'main.tex'));
-      const pdfUri = vscode.Uri.file(path.join(outsideDirectory, 'outside.pdf'));
+      const pdfUri = vscode.Uri.file(path.join(outsideDirectory.path, 'outside.pdf'));
 
       await vscode.workspace.fs.writeFile(documentUri, Buffer.from('', 'utf8'));
       await writePdf(pdfUri);
@@ -143,12 +143,11 @@ suite('LaTeXファイルdrag挿入', () => {
       assert.ok(snippet.includes('outside.pdf'));
     } finally {
       await rm(directory, { recursive: true, force: true });
-      await rm(outsideDirectory, { recursive: true, force: true });
     }
   });
 
   test('cancel済みまたは未保存documentではsnippetを返さない', async () => {
-    const directory = await createTemporaryWorkspaceDirectory('graphics-workbench-latex-drop-cancel-');
+    const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-cancel-');
 
     try {
       const documentUri = vscode.Uri.file(path.join(directory, 'sample.pdf'));

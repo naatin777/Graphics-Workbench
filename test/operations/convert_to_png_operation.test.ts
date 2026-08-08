@@ -3,7 +3,7 @@
 // - Draw.io runnerを注入しても、最終出力は読み取り可能なPNGとして反映されること
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -16,102 +16,96 @@ import { requireValue } from '../helpers/required.js';
 
 suite('PNGに変換する処理', () => {
   test('GIF、アニメーションWebP、TIFFのframeを個別に変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-png-frames-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-png-frames-'));
 
-    try {
-      for (const format of ['gif', 'webp', 'tiff'] as const) {
-        const sourcePath = path.join(workspacePath, `source.${format}`);
-        await writeAnimatedRaster(sourcePath, format);
-        await executePngConversion({
-          jobs: [1, 2].map((page) => ({
-            sourcePath,
-            outputPath: path.join(workspacePath, `${format}-${page}.png`),
-            workspacePath,
-            page,
-          })),
-          pdfRenderTools: {},
-          mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-          drawioTools: { drawioPath: 'drawio' },
-          runtime: { resolveConflicts: async () => 'overwrite' },
-        });
+    for (const format of ['gif', 'webp', 'tiff'] as const) {
+      const sourcePath = path.join(workspacePath.path, `source.${format}`);
+      await writeAnimatedRaster(sourcePath, format);
+      await executePngConversion({
+        jobs: [1, 2].map((page) => ({
+          sourcePath,
+          outputPath: path.join(workspacePath.path, `${format}-${page}.png`),
+          workspacePath: workspacePath.path,
+          page,
+        })),
+        pdfRenderTools: {},
+        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
+        drawioTools: { drawioPath: 'drawio' },
+        runtime: { resolveConflicts: async () => 'overwrite' },
+      });
 
-        assert.ok(
-          requireValue((await sharp(await readFile(path.join(workspacePath, `${format}-1.png`))).stats()).channels[0])
-            .mean > 200,
-        );
-        assert.ok(
-          requireValue((await sharp(await readFile(path.join(workspacePath, `${format}-2.png`))).stats()).channels[2])
-            .mean > 200,
-        );
-      }
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
+      assert.ok(
+        requireValue(
+          (await sharp(await readFile(path.join(workspacePath.path, `${format}-1.png`))).stats()).channels[0],
+        ).mean > 200,
+      );
+      assert.ok(
+        requireValue(
+          (await sharp(await readFile(path.join(workspacePath.path, `${format}-2.png`))).stats()).channels[2],
+        ).mean > 200,
+      );
     }
   });
 
   test('編集可能なDraw.io画像はPDFを経由してPNGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-png-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-png-'));
 
-    try {
-      const sourcePath = path.join(workspacePath, 'source.drawio.png');
-      const outputPath = path.join(workspacePath, 'source.png');
-      await writeFile(sourcePath, 'editable drawio image placeholder');
-      const drawioCalls: string[][] = [];
-      const drawio: DrawioBackend = {
-        drawioPath: 'drawio',
-        runDrawio: async (_executable, args) => {
-          drawioCalls.push(args);
-          const outputFlagIndex = args.indexOf('-o');
-          assert.ok(outputFlagIndex >= 0);
-          const pdfPath = args[outputFlagIndex + 1];
-          assert.ok(pdfPath);
-          const document = await PDFDocument.create();
-          document.addPage([32, 24]);
-          await writeFile(pdfPath, await document.save());
+    const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
+    const outputPath = path.join(workspacePath.path, 'source.png');
+    await writeFile(sourcePath, 'editable drawio image placeholder');
+    const drawioCalls: string[][] = [];
+    const drawio: DrawioBackend = {
+      drawioPath: 'drawio',
+      runDrawio: async (_executable, args) => {
+        drawioCalls.push(args);
+        const outputFlagIndex = args.indexOf('-o');
+        assert.ok(outputFlagIndex >= 0);
+        const pdfPath = args[outputFlagIndex + 1];
+        assert.ok(pdfPath);
+        const document = await PDFDocument.create();
+        document.addPage([32, 24]);
+        await writeFile(pdfPath, await document.save());
+      },
+    };
+    const job: ConvertToPngJob = {
+      sourcePath,
+      outputPath,
+      workspacePath: workspacePath.path,
+      page: 1,
+    };
+
+    await executePngConversion({
+      jobs: [job],
+      pdfRenderTools: {
+        runPdfToPng: async (pdfPath, pngPath, page) => {
+          assert.ok(pdfPath.endsWith('.pdf'));
+          assert.strictEqual(page, 1);
+          await sharp({
+            create: {
+              width: 32,
+              height: 24,
+              channels: 4,
+              background: '#285078',
+            },
+          })
+            .png()
+            .toFile(pngPath);
         },
-      };
-      const job: ConvertToPngJob = {
-        sourcePath,
-        outputPath,
-        workspacePath,
-        page: 1,
-      };
+      },
+      mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
+      drawioTools: drawio,
+      runtime: { resolveConflicts: async () => 'overwrite' },
+    });
 
-      await executePngConversion({
-        jobs: [job],
-        pdfRenderTools: {
-          runPdfToPng: async (pdfPath, pngPath, page) => {
-            assert.ok(pdfPath.endsWith('.pdf'));
-            assert.strictEqual(page, 1);
-            await sharp({
-              create: {
-                width: 32,
-                height: 24,
-                channels: 4,
-                background: '#285078',
-              },
-            })
-              .png()
-              .toFile(pngPath);
-          },
-        },
-        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-        drawioTools: drawio,
-        runtime: { resolveConflicts: async () => 'overwrite' },
-      });
-
-      assert.strictEqual(drawioCalls.length, 1);
-      const args = requireValue(drawioCalls[0]);
-      assert.strictEqual(args[0], '-x');
-      assert.strictEqual(args[1], '-f');
-      assert.strictEqual(args[2], 'pdf');
-      assert.strictEqual(args[3], '-o');
-      assert.ok(args[4]?.endsWith('.pdf'));
-      assert.strictEqual(args[5], sourcePath);
-      await assertReadablePng(outputPath);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-    }
+    assert.strictEqual(drawioCalls.length, 1);
+    const args = requireValue(drawioCalls[0]);
+    assert.strictEqual(args[0], '-x');
+    assert.strictEqual(args[1], '-f');
+    assert.strictEqual(args[2], 'pdf');
+    assert.strictEqual(args[3], '-o');
+    assert.ok(args[4]?.endsWith('.pdf'));
+    assert.strictEqual(args[5], sourcePath);
+    await assertReadablePng(outputPath);
   });
 });
 

@@ -25,7 +25,7 @@ const password = 'secret-password';
 
 suite('PDF復号化', () => {
   test('mupdfで暗号化PDFを復号し、パスワードなしで読み取れる', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-decrypt-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
@@ -54,7 +54,7 @@ suite('PDF復号化', () => {
   });
 
   test('誤ったパスワードでは復号に失敗し出力を残さない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-decrypt-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
@@ -71,7 +71,7 @@ suite('PDF復号化', () => {
   });
 
   test('出力先が既に存在する場合は何も作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-decrypt-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath);

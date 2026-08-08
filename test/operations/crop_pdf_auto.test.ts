@@ -19,7 +19,7 @@ import { cropPdfFiles } from '../../src/operations/pdf/crop_pdf_auto.js';
 
 suite('PDF自動crop処理', () => {
   test('全ページを内容バウンディングボックス＋マージンでcropする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output', 'source-crop.pdf');
     await writeFixturePdf(sourcePath);
@@ -57,7 +57,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('空白ページでは元のMediaBoxを維持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'blank.pdf');
     const outputPath = path.join(workspacePath, 'blank-crop.pdf');
     const document = await PDFDocument.create();
@@ -85,7 +85,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('複数のPDFを並列変換して各出力を作成する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const jobs = await Promise.all(
       ['first', 'second', 'third', 'fourth'].map(async (name) => {
         const sourcePath = path.join(workspacePath, `${name}.pdf`);
@@ -111,7 +111,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('既存の出力を上書きしない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);
@@ -129,8 +129,8 @@ suite('PDF自動crop処理', () => {
   });
 
   test('変換前に宣言workspace外の入力ファイルを拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
+    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-outside-'));
     const sourcePath = path.join(outsideDirectory, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);
@@ -145,8 +145,8 @@ suite('PDF自動crop処理', () => {
   });
 
   test('変換前にworkspace外の出力パスを拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-workspace-'));
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-outside-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
+    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-outside-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(outsideDirectory, 'source-crop.pdf');
     await writeSinglePagePdf(sourcePath);
@@ -161,7 +161,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('既にキャンセル済みの場合は変換を開始しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
     const abortController = new AbortController();
@@ -181,7 +181,7 @@ suite('PDF自動crop処理', () => {
   });
 
   test('変換が失敗した場合は出力を作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'broken.pdf');
     const outputPath = path.join(workspacePath, 'broken-crop.pdf');
     await writeFile(sourcePath, '%PDF-1.7\nnot a real pdf');

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdtempDisposable, readFile, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -16,152 +16,131 @@ const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-te
 
 suite('PDF結合operation', () => {
   test('結合結果をstagingへ作成してSafe Modeの両方残すを適用する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
 
-    try {
-      const firstPath = path.join(workspacePath, 'first.pdf');
-      const secondPath = path.join(workspacePath, 'second.pdf');
-      const outputPath = path.join(workspacePath, 'merged.pdf');
-      await copyFile(firstFixturePath, firstPath);
-      await copyFile(secondFixturePath, secondPath);
-      await writeFile(outputPath, 'existing output');
+    const firstPath = path.join(workspacePath.path, 'first.pdf');
+    const secondPath = path.join(workspacePath.path, 'second.pdf');
+    const outputPath = path.join(workspacePath.path, 'merged.pdf');
+    await copyFile(firstFixturePath, firstPath);
+    await copyFile(secondFixturePath, secondPath);
+    await writeFile(outputPath, 'existing output');
 
-      const outputs = await mergePdf({
-        sourcePaths: [firstPath, secondPath],
-        outputPath,
-        workspacePath,
-        runId: 'safe-mode',
-        runtime: { resolveConflicts: async () => 'keep-both' },
-      });
-      await recordConversionForUndo(outputs);
+    const outputs = await mergePdf({
+      sourcePaths: [firstPath, secondPath],
+      outputPath,
+      workspacePath: workspacePath.path,
+      runId: 'safe-mode',
+      runtime: { resolveConflicts: async () => 'keep-both' },
+    });
+    await recordConversionForUndo(outputs);
 
-      assert.strictEqual(outputs[0]?.outputPath, path.join(workspacePath, 'merged-1.pdf'));
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing output');
-      await assert.rejects(access(path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'safe-mode')));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(outputs[0]?.outputPath, path.join(workspacePath.path, 'merged-1.pdf'));
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing output');
+    await assert.rejects(access(path.join(workspacePath.path, '.graphics-workbench', 'merge-pdf', 'safe-mode')));
   });
 
   test('上書き後のUndoで既存PDFを復元する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
 
-    try {
-      const firstPath = path.join(workspacePath, 'first.pdf');
-      const secondPath = path.join(workspacePath, 'second.pdf');
-      const outputPath = path.join(workspacePath, 'merged.pdf');
-      await copyFile(firstFixturePath, firstPath);
-      await copyFile(secondFixturePath, secondPath);
-      await copyFile(firstFixturePath, outputPath);
-      const originalOutput = await readFile(outputPath);
+    const firstPath = path.join(workspacePath.path, 'first.pdf');
+    const secondPath = path.join(workspacePath.path, 'second.pdf');
+    const outputPath = path.join(workspacePath.path, 'merged.pdf');
+    await copyFile(firstFixturePath, firstPath);
+    await copyFile(secondFixturePath, secondPath);
+    await copyFile(firstFixturePath, outputPath);
+    const originalOutput = await readFile(outputPath);
 
-      const outputs = await mergePdf({
-        sourcePaths: [firstPath, secondPath],
-        outputPath,
-        workspacePath,
-        runId: 'undo',
-        runtime: { resolveConflicts: async () => 'overwrite' },
-      });
-      const undoRecord = await createConversionUndoRecord(outputs);
+    const outputs = await mergePdf({
+      sourcePaths: [firstPath, secondPath],
+      outputPath,
+      workspacePath: workspacePath.path,
+      runId: 'undo',
+      runtime: { resolveConflicts: async () => 'overwrite' },
+    });
+    const undoRecord = await createConversionUndoRecord(outputs);
 
-      await undoConversionOutputs(undoRecord);
+    await undoConversionOutputs(undoRecord);
 
-      assert.deepStrictEqual(await readFile(outputPath), originalOutput);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.deepStrictEqual(await readFile(outputPath), originalOutput);
   });
 
   test('変換開始前にキャンセルされた場合は出力を作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
 
-    try {
-      const firstPath = path.join(workspacePath, 'first.pdf');
-      const secondPath = path.join(workspacePath, 'second.pdf');
-      const outputPath = path.join(workspacePath, 'merged.pdf');
-      await copyFile(firstFixturePath, firstPath);
-      await copyFile(secondFixturePath, secondPath);
-      const abortController = new AbortController();
-      abortController.abort();
+    const firstPath = path.join(workspacePath.path, 'first.pdf');
+    const secondPath = path.join(workspacePath.path, 'second.pdf');
+    const outputPath = path.join(workspacePath.path, 'merged.pdf');
+    await copyFile(firstFixturePath, firstPath);
+    await copyFile(secondFixturePath, secondPath);
+    const abortController = new AbortController();
+    abortController.abort();
 
-      await assert.rejects(
-        mergePdf({
-          sourcePaths: [firstPath, secondPath],
-          outputPath,
-          workspacePath,
-          runtime: {
-            signal: abortController.signal,
-            resolveConflicts: async () => 'overwrite',
-          },
-        }),
-        { name: 'AbortError' },
-      );
-      await assert.rejects(access(outputPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(
+      mergePdf({
+        sourcePaths: [firstPath, secondPath],
+        outputPath,
+        workspacePath: workspacePath.path,
+        runtime: {
+          signal: abortController.signal,
+          resolveConflicts: async () => 'overwrite',
+        },
+      }),
+      { name: 'AbortError' },
+    );
+    await assert.rejects(access(outputPath));
   });
 
   test('preflightより先にworkspace境界を検証し、外部symlink入力を読み込まない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
-    const outsidePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-outside-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
+    await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-outside-'));
 
-    try {
-      const linkedSourcePath = path.join(workspacePath, 'linked.pdf');
-      const secondPath = path.join(workspacePath, 'second.pdf');
-      const outputPath = path.join(workspacePath, 'merged.pdf');
-      const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'boundary');
-      const outsideSourcePath = path.join(outsidePath, 'malformed.pdf');
+    const linkedSourcePath = path.join(workspacePath.path, 'linked.pdf');
+    const secondPath = path.join(workspacePath.path, 'second.pdf');
+    const outputPath = path.join(workspacePath.path, 'merged.pdf');
+    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'merge-pdf', 'boundary');
+    const outsideSourcePath = path.join(outsidePath.path, 'malformed.pdf');
 
-      await writeFile(outsideSourcePath, 'not a PDF');
-      await symlink(outsideSourcePath, linkedSourcePath);
-      await copyFile(secondFixturePath, secondPath);
+    await writeFile(outsideSourcePath, 'not a PDF');
+    await symlink(outsideSourcePath, linkedSourcePath);
+    await copyFile(secondFixturePath, secondPath);
 
-      await assert.rejects(
-        mergePdf({
-          sourcePaths: [linkedSourcePath, secondPath],
-          outputPath,
-          workspacePath,
-          runId: 'boundary',
-        }),
-        /outside the workspace/,
-      );
+    await assert.rejects(
+      mergePdf({
+        sourcePaths: [linkedSourcePath, secondPath],
+        outputPath,
+        workspacePath: workspacePath.path,
+        runId: 'boundary',
+      }),
+      /outside the workspace/,
+    );
 
-      await assert.rejects(access(outputPath));
-      await assert.rejects(access(stagingRootPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-      await rm(outsidePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(outputPath));
+    await assert.rejects(access(stagingRootPath));
   });
 
   test('競合解決でキャンセルされた場合はstagingを削除し既存出力を維持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-merge-operation-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
 
-    try {
-      const firstPath = path.join(workspacePath, 'first.pdf');
-      const secondPath = path.join(workspacePath, 'second.pdf');
-      const outputPath = path.join(workspacePath, 'merged.pdf');
-      const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'merge-pdf', 'cancelled');
-      await copyFile(firstFixturePath, firstPath);
-      await copyFile(secondFixturePath, secondPath);
-      await writeFile(outputPath, 'existing output');
+    const firstPath = path.join(workspacePath.path, 'first.pdf');
+    const secondPath = path.join(workspacePath.path, 'second.pdf');
+    const outputPath = path.join(workspacePath.path, 'merged.pdf');
+    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'merge-pdf', 'cancelled');
+    await copyFile(firstFixturePath, firstPath);
+    await copyFile(secondFixturePath, secondPath);
+    await writeFile(outputPath, 'existing output');
 
-      await assert.rejects(
-        mergePdf({
-          sourcePaths: [firstPath, secondPath],
-          outputPath,
-          workspacePath,
-          runId: 'cancelled',
-          runtime: { resolveConflicts: async () => 'cancel' },
-        }),
-        /cancelled/,
-      );
+    await assert.rejects(
+      mergePdf({
+        sourcePaths: [firstPath, secondPath],
+        outputPath,
+        workspacePath: workspacePath.path,
+        runId: 'cancelled',
+        runtime: { resolveConflicts: async () => 'cancel' },
+      }),
+      /cancelled/,
+    );
 
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing output');
-      await assert.rejects(access(stagingRootPath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing output');
+    await assert.rejects(access(stagingRootPath));
   });
 });

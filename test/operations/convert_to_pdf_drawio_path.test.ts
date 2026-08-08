@@ -8,7 +8,7 @@
 // - Draw.io CLIの実行。CIにDraw.io Desktopを必須化せず、CLI境界へ渡すpathと出力の反映を検証する。
 
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtempDisposable, mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -22,9 +22,9 @@ const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unic
 
 suite('Draw.ioの複雑なpath変換', () => {
   test('ページ名・フォルダ名・ファイル名に空白とUnicodeがあっても3ページPDFへ変換する', async () => {
-    const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-drawio-complex-path-'));
+    await using testRootPath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-complex-path-'));
     const workspacePath = path.join(
-      testRootPath,
+      testRootPath.path,
       'workspace 日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹　ＡＢＣ',
     );
     const inputDirectory = path.join(workspacePath, '入力 フォルダ　図面 العربية');
@@ -32,69 +32,65 @@ suite('Draw.ioの複雑なpath変換', () => {
     const sourcePath = path.join(inputDirectory, '　設計図 Drawio 日本語🌹　ＡＢＣ.dio.png');
     const outputPath = path.join(outputDirectory, '結果 ページ名　日本語🌹.pdf');
 
-    try {
-      await mkdir(inputDirectory, { recursive: true });
-      await mkdir(outputDirectory, { recursive: true });
-      await copyFile(drawioFixturePath, sourcePath);
-      const originalSourceBytes = await readFile(sourcePath);
-      const sourceText = originalSourceBytes.toString('utf8');
-      assert.match(sourceText, /name=" ペ　ー　ジ 1"/u);
-      assert.match(sourceText, /name=" p ーe2　"/u);
-      assert.match(sourceText, /name=" {2}😀 ーe2　のco😀 py"/u);
+    await mkdir(inputDirectory, { recursive: true });
+    await mkdir(outputDirectory, { recursive: true });
+    await copyFile(drawioFixturePath, sourcePath);
+    const originalSourceBytes = await readFile(sourcePath);
+    const sourceText = originalSourceBytes.toString('utf8');
+    assert.match(sourceText, /name=" ペ　ー　ジ 1"/u);
+    assert.match(sourceText, /name=" p ーe2　"/u);
+    assert.match(sourceText, /name=" {2}😀 ーe2　のco😀 py"/u);
 
-      const drawioCalls: { executable: string; args: string[] }[] = [];
-      const drawio: DrawioBackend = {
-        drawioPath: 'drawio',
-        runDrawio: async (executable, args) => {
-          drawioCalls.push({ executable, args });
-          const outputFlagIndex = args.indexOf('-o');
-          assert.strictEqual(outputFlagIndex, 3);
-          const toolOutputPath = args[outputFlagIndex + 1];
-          assert.ok(toolOutputPath);
-          assert.strictEqual(args[5], sourcePath);
-          assert.ok(path.isAbsolute(toolOutputPath));
-          assert.match(toolOutputPath, /workspace .*ＡＢＣ/u);
-          await writeDrawioPdf(toolOutputPath, 3);
-        },
-      };
+    const drawioCalls: { executable: string; args: string[] }[] = [];
+    const drawio: DrawioBackend = {
+      drawioPath: 'drawio',
+      runDrawio: async (executable, args) => {
+        drawioCalls.push({ executable, args });
+        const outputFlagIndex = args.indexOf('-o');
+        assert.strictEqual(outputFlagIndex, 3);
+        const toolOutputPath = args[outputFlagIndex + 1];
+        assert.ok(toolOutputPath);
+        assert.strictEqual(args[5], sourcePath);
+        assert.ok(path.isAbsolute(toolOutputPath));
+        assert.match(toolOutputPath, /workspace .*ＡＢＣ/u);
+        await writeDrawioPdf(toolOutputPath, 3);
+      },
+    };
 
-      const outputs = await convertToPdfFiles({
-        jobs: [
-          {
-            sourcePath,
-            outputPath,
-            workspacePath,
-          },
-        ],
-        tools: { drawioTools: drawio },
-        runtime: { resolveConflicts: async () => 'overwrite' },
-        runId: 'drawio-complex-path',
-      });
-
-      assert.deepStrictEqual(outputs, [
+    const outputs = await convertToPdfFiles({
+      jobs: [
         {
+          sourcePath,
           outputPath,
           workspacePath,
-          stagingRootPath: path.join(workspacePath, '.graphics-workbench', 'convert-png-to-pdf', 'drawio-complex-path'),
         },
-      ]);
-      assert.strictEqual(drawioCalls.length, 1);
-      assert.strictEqual(drawioCalls[0]?.executable, 'drawio');
-      assert.deepStrictEqual(drawioCalls[0]?.args.slice(0, 4), ['-x', '-f', 'pdf', '-o']);
-      assert.strictEqual(drawioCalls[0]?.args[5], sourcePath);
-      assert.deepStrictEqual(await readFile(sourcePath), originalSourceBytes);
+      ],
+      tools: { drawioTools: drawio },
+      runtime: { resolveConflicts: async () => 'overwrite' },
+      runId: 'drawio-complex-path',
+    });
 
-      const actualPdf = await PDFDocument.load(await readFile(outputPath));
-      const expectedPdf = await PDFDocument.load(await writeDrawioPdf(path.join(testRootPath, 'expected.pdf'), 3));
-      assert.strictEqual(actualPdf.getPageCount(), 3);
-      assert.strictEqual(actualPdf.getPageCount(), expectedPdf.getPageCount());
-      assert.deepStrictEqual(
-        actualPdf.getPages().map((page) => page.getSize()),
-        expectedPdf.getPages().map((page) => page.getSize()),
-      );
-    } finally {
-      await rm(testRootPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-    }
+    assert.deepStrictEqual(outputs, [
+      {
+        outputPath,
+        workspacePath,
+        stagingRootPath: path.join(workspacePath, '.graphics-workbench', 'convert-png-to-pdf', 'drawio-complex-path'),
+      },
+    ]);
+    assert.strictEqual(drawioCalls.length, 1);
+    assert.strictEqual(drawioCalls[0]?.executable, 'drawio');
+    assert.deepStrictEqual(drawioCalls[0]?.args.slice(0, 4), ['-x', '-f', 'pdf', '-o']);
+    assert.strictEqual(drawioCalls[0]?.args[5], sourcePath);
+    assert.deepStrictEqual(await readFile(sourcePath), originalSourceBytes);
+
+    const actualPdf = await PDFDocument.load(await readFile(outputPath));
+    const expectedPdf = await PDFDocument.load(await writeDrawioPdf(path.join(testRootPath.path, 'expected.pdf'), 3));
+    assert.strictEqual(actualPdf.getPageCount(), 3);
+    assert.strictEqual(actualPdf.getPageCount(), expectedPdf.getPageCount());
+    assert.deepStrictEqual(
+      actualPdf.getPages().map((page) => page.getSize()),
+      expectedPdf.getPages().map((page) => page.getSize()),
+    );
   });
 });
 

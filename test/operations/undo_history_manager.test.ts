@@ -13,7 +13,7 @@
 // - Undo時のハッシュ検証・ロールバック（既存のundo_last_conversionテストが対象）
 
 import assert from 'node:assert/strict';
-import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtempDisposable, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -26,159 +26,131 @@ import type { ConversionOutput } from '../../src/operations/lifecycle/undo_last_
 
 suite('Undo履歴のライフサイクル管理', () => {
   test('履歴が上限を超えると最も古いrecordのバックアップを削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const manager = new UndoHistoryManager({ maxRecords: 2, now: () => 0 });
 
-    try {
-      const first = await makeRecordFixture(workspacePath, 'first');
-      const second = await makeRecordFixture(workspacePath, 'second');
-      await manager.record([first]);
-      await manager.record([second]);
-      await assert.doesNotReject(access(first.previousFilePath));
+    const first = await makeRecordFixture(workspacePath.path, 'first');
+    const second = await makeRecordFixture(workspacePath.path, 'second');
+    await manager.record([first]);
+    await manager.record([second]);
+    await assert.doesNotReject(access(first.previousFilePath));
 
-      const third = await makeRecordFixture(workspacePath, 'third');
-      await manager.record([third]);
+    const third = await makeRecordFixture(workspacePath.path, 'third');
+    await manager.record([third]);
 
-      await assert.rejects(access(first.previousFilePath));
-      await assert.doesNotReject(access(second.previousFilePath));
-      await assert.doesNotReject(access(third.previousFilePath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(first.previousFilePath));
+    await assert.doesNotReject(access(second.previousFilePath));
+    await assert.doesNotReject(access(third.previousFilePath));
   });
 
   test('保存期間を過ぎたrecordは次のrecord時に追い出してバックアップを削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     let currentTime = 0;
     const manager = new UndoHistoryManager({ maxRecords: 10, retentionMs: 1000, now: () => currentTime });
 
-    try {
-      const first = await makeRecordFixture(workspacePath, 'first');
-      await manager.record([first]);
+    const first = await makeRecordFixture(workspacePath.path, 'first');
+    await manager.record([first]);
 
-      currentTime = 2000;
-      const second = await makeRecordFixture(workspacePath, 'second');
-      await manager.record([second]);
+    currentTime = 2000;
+    const second = await makeRecordFixture(workspacePath.path, 'second');
+    await manager.record([second]);
 
-      await assert.rejects(access(first.previousFilePath));
-      await assert.doesNotReject(access(second.previousFilePath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(first.previousFilePath));
+    await assert.doesNotReject(access(second.previousFilePath));
   });
 
   test('マニフェストへ記録し、起動時initializeで保存期間を過ぎた孤立データを削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     let currentTime = 0;
 
-    try {
-      const first = await makeRecordFixture(workspacePath, 'first');
-      const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
-      await manager.record([first]);
-      assert.strictEqual(readManifestEntries(storage).length, 1);
+    const first = await makeRecordFixture(workspacePath.path, 'first');
+    const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+    await manager.record([first]);
+    assert.strictEqual(readManifestEntries(storage).length, 1);
 
-      currentTime = 5000;
-      const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
-      await restarted.initialize();
+    currentTime = 5000;
+    const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+    await restarted.initialize();
 
-      await assert.rejects(access(first.previousFilePath));
-      assert.strictEqual(readManifestEntries(storage).length, 0);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(first.previousFilePath));
+    assert.strictEqual(readManifestEntries(storage).length, 0);
   });
 
   test('保存期限内のマニフェスト記録は起動時initializeで削除しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     let currentTime = 0;
 
-    try {
-      const first = await makeRecordFixture(workspacePath, 'first');
-      const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
-      await manager.record([first]);
+    const first = await makeRecordFixture(workspacePath.path, 'first');
+    const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+    await manager.record([first]);
 
-      currentTime = 500;
-      const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
-      await restarted.initialize();
+    currentTime = 500;
+    const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+    await restarted.initialize();
 
-      await assert.doesNotReject(access(first.previousFilePath));
-      assert.strictEqual(readManifestEntries(storage).length, 1);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.doesNotReject(access(first.previousFilePath));
+    assert.strictEqual(readManifestEntries(storage).length, 1);
   });
 
   test('再起動後の新しいrecordで期限内の孤立マニフェスト記録を保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     let currentTime = 0;
 
-    try {
-      const first = await makeRecordFixture(workspacePath, 'first');
-      const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
-      await manager.record([first]);
+    const first = await makeRecordFixture(workspacePath.path, 'first');
+    const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+    await manager.record([first]);
 
-      currentTime = 500;
-      const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
-      await restarted.initialize();
+    currentTime = 500;
+    const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+    await restarted.initialize();
 
-      const second = await makeRecordFixture(workspacePath, 'second');
-      await restarted.record([second]);
+    const second = await makeRecordFixture(workspacePath.path, 'second');
+    await restarted.record([second]);
 
-      await assert.doesNotReject(access(first.previousFilePath));
-      await assert.doesNotReject(access(second.previousFilePath));
-      assert.strictEqual(readManifestEntries(storage).length, 2);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.doesNotReject(access(first.previousFilePath));
+    await assert.doesNotReject(access(second.previousFilePath));
+    assert.strictEqual(readManifestEntries(storage).length, 2);
   });
 
   test('再起動後に期限切れになった孤立マニフェスト記録は次のrecordで削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     let currentTime = 0;
 
-    try {
-      const first = await makeRecordFixture(workspacePath, 'first');
-      const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
-      await manager.record([first]);
+    const first = await makeRecordFixture(workspacePath.path, 'first');
+    const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+    await manager.record([first]);
 
-      currentTime = 500;
-      const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
-      await restarted.initialize();
-      assert.strictEqual(readManifestEntries(storage).length, 1);
+    currentTime = 500;
+    const restarted = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => currentTime });
+    await restarted.initialize();
+    assert.strictEqual(readManifestEntries(storage).length, 1);
 
-      currentTime = 2000;
-      const second = await makeRecordFixture(workspacePath, 'second');
-      await restarted.record([second]);
+    currentTime = 2000;
+    const second = await makeRecordFixture(workspacePath.path, 'second');
+    await restarted.record([second]);
 
-      await assert.rejects(access(first.previousFilePath));
-      await assert.doesNotReject(access(second.previousFilePath));
-      assert.strictEqual(readManifestEntries(storage).length, 1);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(access(first.previousFilePath));
+    await assert.doesNotReject(access(second.previousFilePath));
+    assert.strictEqual(readManifestEntries(storage).length, 1);
   });
 
   test('Undo成功後にrecordをマニフェストからも除去し、バックアップを削除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const storage = new MemoryManifestStorage();
     const manager = new UndoHistoryManager({ storage, now: () => 0 });
 
-    try {
-      const first = await makeRecordFixture(workspacePath, 'first');
-      const recordId = await manager.record([first]);
-      assert.strictEqual(readManifestEntries(storage).length, 1);
+    const first = await makeRecordFixture(workspacePath.path, 'first');
+    const recordId = await manager.record([first]);
+    assert.strictEqual(readManifestEntries(storage).length, 1);
 
-      const outcome = await manager.undo(recordId);
-      assert.strictEqual(outcome, 'done');
-      assert.strictEqual(readManifestEntries(storage).length, 0);
-      await assert.rejects(access(first.previousFilePath));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    const outcome = await manager.undo(recordId);
+    assert.strictEqual(outcome, 'done');
+    assert.strictEqual(readManifestEntries(storage).length, 0);
+    await assert.rejects(access(first.previousFilePath));
   });
 
   test('履歴が空のときundoはno-recordを返す', async () => {
@@ -187,17 +159,13 @@ suite('Undo履歴のライフサイクル管理', () => {
   });
 
   test('新しい変換後に古いrecordをundoしようとするとnewer-conversionを返す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-undo-history-workspace-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
     const manager = new UndoHistoryManager({ now: () => 0 });
 
-    try {
-      const firstRecordId = await manager.record([await makeRecordFixture(workspacePath, 'first')]);
-      await manager.record([await makeRecordFixture(workspacePath, 'second')]);
+    const firstRecordId = await manager.record([await makeRecordFixture(workspacePath.path, 'first')]);
+    await manager.record([await makeRecordFixture(workspacePath.path, 'second')]);
 
-      assert.strictEqual(await manager.undo(firstRecordId), 'newer-conversion');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(await manager.undo(firstRecordId), 'newer-conversion');
   });
 });
 

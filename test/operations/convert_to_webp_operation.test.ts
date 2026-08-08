@@ -8,7 +8,7 @@
 // - 画像内容のpixel完全一致
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -19,146 +19,141 @@ import { requireValue } from '../helpers/required.js';
 
 suite('WebPに変換する処理', () => {
   test('アニメーションメタデータを保持して1つのWebPへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-webp-animation-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-webp-animation-'));
 
-    try {
-      const sourcePath = path.join(workspacePath, 'source.gif');
-      const outputPath = path.join(workspacePath, 'source.webp');
-      await writeAnimatedGifFixture(sourcePath);
+    const sourcePath = path.join(workspacePath.path, 'source.gif');
+    const outputPath = path.join(workspacePath.path, 'source.webp');
+    await writeAnimatedGifFixture(sourcePath);
 
-      await executeWebpConversion({
-        jobs: [
-          {
-            sourcePath,
-            outputPath,
-            workspacePath,
-            animation: { pages: 2, pageHeight: 8, delay: [100, 250], loop: 3 },
-          },
-        ],
+    await executeWebpConversion({
+      jobs: [
+        {
+          sourcePath,
+          outputPath,
+          workspacePath: workspacePath.path,
+          animation: { pages: 2, pageHeight: 8, delay: [100, 250], loop: 3 },
+        },
+      ],
+      pdfRenderTools: {},
+      mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
+      drawioTools: { drawioPath: 'drawio' },
+      webp: { effort: 0 },
+      runtime: {},
+      runId: 'animation-test',
+    });
+
+    const metadata = await sharp(outputPath).metadata();
+    assert.strictEqual(metadata.pages, 2);
+    assert.strictEqual(metadata.pageHeight ?? metadata.height, 8);
+    assert.deepStrictEqual(metadata.delay, [100, 250]);
+    assert.strictEqual(metadata.loop, 3);
+  });
+
+  test('アニメーション維持の失敗時にフレーム分割へfallbackせずstagingを掃除する', async () => {
+    await using workspacePath = await mkdtempDisposable(
+      path.join(os.tmpdir(), 'gw-convert-to-webp-animation-failure-'),
+    );
+
+    const sourcePath = path.join(workspacePath.path, 'broken.gif');
+    const outputPath = path.join(workspacePath.path, 'broken.webp');
+    await writeFile(sourcePath, 'not an image');
+
+    await assert.rejects(
+      executeWebpConversion({
+        jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, animation: { pages: 2, pageHeight: 8 } }],
         pdfRenderTools: {},
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio' },
         webp: { effort: 0 },
         runtime: {},
-        runId: 'animation-test',
-      });
-
-      const metadata = await sharp(outputPath).metadata();
-      assert.strictEqual(metadata.pages, 2);
-      assert.strictEqual(metadata.pageHeight ?? metadata.height, 8);
-      assert.deepStrictEqual(metadata.delay, [100, 250]);
-      assert.strictEqual(metadata.loop, 3);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
-  });
-
-  test('アニメーション維持の失敗時にフレーム分割へfallbackせずstagingを掃除する', async () => {
-    const workspacePath = await mkdtemp(
-      path.join(os.tmpdir(), 'graphics-workbench-convert-to-webp-animation-failure-'),
+        runId: 'animation-failure-test',
+      }),
     );
-
-    try {
-      const sourcePath = path.join(workspacePath, 'broken.gif');
-      const outputPath = path.join(workspacePath, 'broken.webp');
-      await writeFile(sourcePath, 'not an image');
-
-      await assert.rejects(
-        executeWebpConversion({
-          jobs: [{ sourcePath, outputPath, workspacePath, animation: { pages: 2, pageHeight: 8 } }],
-          pdfRenderTools: {},
-          mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-          drawioTools: { drawioPath: 'drawio' },
-          webp: { effort: 0 },
-          runtime: {},
-          runId: 'animation-failure-test',
-        }),
-      );
-      await assert.rejects(readFile(outputPath));
-      await assert.rejects(readFile(path.join(workspacePath, '.graphics-workbench', 'convert-to-webp')));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    await assert.rejects(readFile(outputPath));
+    await assert.rejects(readFile(path.join(workspacePath.path, '.graphics-workbench', 'convert-to-webp')));
   });
 
   test('編集可能なDraw.io画像はPDFとPNGを経由してWebPへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-webp-operation-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-webp-operation-'));
 
-    try {
-      const sourcePath = path.join(workspacePath, 'source.drawio.png');
-      const outputPath = path.join(workspacePath, 'source', '1.webp');
-      const drawioCalls: string[][] = [];
-      const pdfToPngCalls: { sourcePath: string; outputPath: string; page: number }[] = [];
-      await writeFile(sourcePath, 'editable drawio image placeholder');
+    const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
+    const outputPath = path.join(workspacePath.path, 'source', '1.webp');
+    const drawioCalls: string[][] = [];
+    const pdfToPngCalls: { sourcePath: string; outputPath: string; page: number }[] = [];
+    await writeFile(sourcePath, 'editable drawio image placeholder');
 
-      await executeWebpConversion({
-        jobs: [
-          {
-            sourcePath,
-            outputPath,
-            workspacePath,
-            page: 1,
-          },
-        ],
-        pdfRenderTools: {
-          runPdfToPng: async (pdfSourcePath, pngOutputPath, page) => {
-            pdfToPngCalls.push({ sourcePath: pdfSourcePath, outputPath: pngOutputPath, page });
-            await sharp({ create: { width: 4, height: 4, channels: 4, background: '#ff0000' } })
-              .png()
-              .toFile(pngOutputPath);
-          },
-        },
-        mermaidTools: {
-          chromePath: 'chrome',
-          mermaidPath: 'mmdc',
-          theme: 'default',
-          backgroundColor: 'white',
-        },
-        drawioTools: {
-          drawioPath: 'drawio',
-          runDrawio: async (_executable, args) => {
-            drawioCalls.push(args);
-            const outputIndex = args.indexOf('-o') + 1;
-            assert.ok(outputIndex > 0);
-            await writeFile(requireValue(args[outputIndex]), '%PDF-1.7\n');
-          },
-        },
-        webp: {
-          effort: 0,
-        },
-        runtime: {},
-        runId: 'test-run',
-      });
-
-      assert.strictEqual(drawioCalls.length, 1);
-      const drawioArgs = requireValue(drawioCalls[0]);
-      const expectedPdfPath = path.join(
-        workspacePath,
-        '.graphics-workbench',
-        'convert-to-webp',
-        'test-run',
-        '1',
-        'drawio.pdf',
-      );
-      assert.deepStrictEqual(drawioArgs.slice(0, 5), ['-x', '-f', 'pdf', '-o', expectedPdfPath]);
-      assert.strictEqual(drawioArgs.at(-1), sourcePath);
-
-      assert.deepStrictEqual(pdfToPngCalls, [
+    await executeWebpConversion({
+      jobs: [
         {
-          sourcePath: expectedPdfPath,
-          outputPath: path.join(workspacePath, '.graphics-workbench', 'convert-to-webp', 'test-run', '1', 'source.png'),
+          sourcePath,
+          outputPath,
+          workspacePath: workspacePath.path,
           page: 1,
         },
-      ]);
+      ],
+      pdfRenderTools: {
+        runPdfToPng: async (pdfSourcePath, pngOutputPath, page) => {
+          pdfToPngCalls.push({ sourcePath: pdfSourcePath, outputPath: pngOutputPath, page });
+          await sharp({ create: { width: 4, height: 4, channels: 4, background: '#ff0000' } })
+            .png()
+            .toFile(pngOutputPath);
+        },
+      },
+      mermaidTools: {
+        chromePath: 'chrome',
+        mermaidPath: 'mmdc',
+        theme: 'default',
+        backgroundColor: 'white',
+      },
+      drawioTools: {
+        drawioPath: 'drawio',
+        runDrawio: async (_executable, args) => {
+          drawioCalls.push(args);
+          const outputIndex = args.indexOf('-o') + 1;
+          assert.ok(outputIndex > 0);
+          await writeFile(requireValue(args[outputIndex]), '%PDF-1.7\n');
+        },
+      },
+      webp: {
+        effort: 0,
+      },
+      runtime: {},
+      runId: 'test-run',
+    });
 
-      const buffer = await readFile(outputPath);
-      const metadata = await sharp(buffer).metadata();
-      assert.strictEqual(metadata.format, 'webp');
-      assert.ok(metadata.width);
-      assert.ok(metadata.height);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    assert.strictEqual(drawioCalls.length, 1);
+    const drawioArgs = requireValue(drawioCalls[0]);
+    const expectedPdfPath = path.join(
+      workspacePath.path,
+      '.graphics-workbench',
+      'convert-to-webp',
+      'test-run',
+      '1',
+      'drawio.pdf',
+    );
+    assert.deepStrictEqual(drawioArgs.slice(0, 5), ['-x', '-f', 'pdf', '-o', expectedPdfPath]);
+    assert.strictEqual(drawioArgs.at(-1), sourcePath);
+
+    assert.deepStrictEqual(pdfToPngCalls, [
+      {
+        sourcePath: expectedPdfPath,
+        outputPath: path.join(
+          workspacePath.path,
+          '.graphics-workbench',
+          'convert-to-webp',
+          'test-run',
+          '1',
+          'source.png',
+        ),
+        page: 1,
+      },
+    ]);
+
+    const buffer = await readFile(outputPath);
+    const metadata = await sharp(buffer).metadata();
+    assert.strictEqual(metadata.format, 'webp');
+    assert.ok(metadata.width);
+    assert.ok(metadata.height);
   });
 });
 

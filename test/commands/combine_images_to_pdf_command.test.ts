@@ -1,5 +1,15 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  access,
+  copyFile,
+  mkdir,
+  mkdtemp,
+  mkdtempDisposable,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -46,19 +56,15 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
   });
 
   test('open workspace外の入力をworkspaceとして扱わない', async () => {
-    const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-combine-command-'));
+    await using outsideDirectory = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-command-'));
 
-    try {
-      const sourcePath = path.join(outsideDirectory, 'outside.png');
-      await copyFile(VALID_PNG, sourcePath);
+    const sourcePath = path.join(outsideDirectory.path, 'outside.png');
+    await copyFile(VALID_PNG, sourcePath);
 
-      await vscode.commands.executeCommand('graphics-workbench.convertImagesToSinglePdf', vscode.Uri.file(sourcePath));
+    await vscode.commands.executeCommand('graphics-workbench.convertImagesToSinglePdf', vscode.Uri.file(sourcePath));
 
-      assert.ok(showErrorMessage.calledOnce);
-      assert.match(String(showErrorMessage.firstCall.args[0]), /inside an open workspace/);
-    } finally {
-      await rm(outsideDirectory, { recursive: true, force: true });
-    }
+    assert.ok(showErrorMessage.calledOnce);
+    assert.match(String(showErrorMessage.firstCall.args[0]), /inside an open workspace/);
   });
 
   test('file scheme以外の入力を拒否する', async () => {
@@ -322,7 +328,7 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  return mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-combine-command-'));
+  return mkdtemp(path.join(workspaceFolder.uri.fsPath, 'gw-combine-command-'));
 }
 
 async function assertFileDoesNotExist(filePath: string): Promise<void> {

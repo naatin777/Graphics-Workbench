@@ -158,7 +158,7 @@ async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
 
-  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-convert-to-svg-'));
+  const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'gw-convert-to-svg-'));
   await mkdir(temporaryDirectory, { recursive: true });
   return temporaryDirectory;
 }

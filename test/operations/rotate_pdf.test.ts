@@ -25,7 +25,7 @@ import { rotatePdfFiles } from '../../src/operations/pdf/rotate_pdf.js';
 
 suite('PDF回転', () => {
   test('全ページを90度回転して出力する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-rotate-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
@@ -49,7 +49,7 @@ suite('PDF回転', () => {
   });
 
   test('選択ページだけを回転する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-rotate-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
@@ -70,7 +70,7 @@ suite('PDF回転', () => {
   });
 
   test('出力先が既に存在する場合は何も作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-rotate-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 1);
@@ -87,7 +87,7 @@ suite('PDF回転', () => {
   });
 
   test('キャンセルされた場合は出力しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-rotate-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     const abortController = new AbortController();
@@ -106,7 +106,7 @@ suite('PDF回転', () => {
   });
 
   test('範囲外のページ指定は失敗する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-rotate-test-'));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 2);

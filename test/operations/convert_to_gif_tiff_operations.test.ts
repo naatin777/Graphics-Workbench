@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -10,39 +10,40 @@ import { executeTiffConversion } from '../../src/operations/conversion/convert_t
 
 suite('GIF/TIFFに変換する処理', () => {
   test('各フレームを独立した静止GIF/TIFFとしてstaging lifecycleで出力する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-gif-tiff-operation-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-tiff-operation-'));
 
-    try {
-      const gifSourcePath = path.join(workspacePath, 'source.gif');
-      const tiffSourcePath = path.join(workspacePath, 'source.tiff');
-      await writeAnimatedGif(gifSourcePath);
-      await writeAnimatedTiff(tiffSourcePath);
-      const common = {
-        pdfRenderTools: {},
-        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-        drawioTools: { drawioPath: 'drawio' },
-        runtime: {},
-      };
+    const gifSourcePath = path.join(workspacePath.path, 'source.gif');
+    const tiffSourcePath = path.join(workspacePath.path, 'source.tiff');
+    await writeAnimatedGif(gifSourcePath);
+    await writeAnimatedTiff(tiffSourcePath);
+    const common = {
+      pdfRenderTools: {},
+      mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
+      drawioTools: { drawioPath: 'drawio' },
+      runtime: {},
+    };
 
-      for (const [format, convert, sourcePath] of [
-        ['gif', executeGifConversion, tiffSourcePath],
-        ['tiff', executeTiffConversion, gifSourcePath],
-      ] as const) {
-        const outputPaths = [1, 2].map((page) => path.join(workspacePath, `${format}-${page}.${format}`));
-        await convert({
-          ...common,
-          jobs: outputPaths.map((outputPath, index) => ({ sourcePath, outputPath, workspacePath, page: index + 1 })),
-          runId: `test-${format}`,
-        });
+    for (const [format, convert, sourcePath] of [
+      ['gif', executeGifConversion, tiffSourcePath],
+      ['tiff', executeTiffConversion, gifSourcePath],
+    ] as const) {
+      const outputPaths = [1, 2].map((page) => path.join(workspacePath.path, `${format}-${page}.${format}`));
+      await convert({
+        ...common,
+        jobs: outputPaths.map((outputPath, index) => ({
+          sourcePath,
+          outputPath,
+          workspacePath: workspacePath.path,
+          page: index + 1,
+        })),
+        runId: `test-${format}`,
+      });
 
-        for (const outputPath of outputPaths) {
-          const metadata = await sharp(await readFile(outputPath)).metadata();
-          assert.strictEqual(metadata.format, format);
-          assert.strictEqual(metadata.pages ?? 1, 1);
-        }
+      for (const outputPath of outputPaths) {
+        const metadata = await sharp(await readFile(outputPath)).metadata();
+        assert.strictEqual(metadata.format, format);
+        assert.strictEqual(metadata.pages ?? 1, 1);
       }
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 });

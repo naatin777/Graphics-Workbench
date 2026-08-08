@@ -11,7 +11,7 @@
 // - 正常な回転処理本体
 
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, rm } from 'node:fs/promises';
+import { copyFile, mkdtempDisposable } from 'node:fs/promises';
 import path from 'node:path';
 
 import { createSandbox, match } from 'sinon';
@@ -25,12 +25,12 @@ suite('Rotate PDF ConfigureコマンドのApplyエラー処理', () => {
   test('範囲外ページをApplyするとエラー通知され、Webviewへerrorメッセージが返る', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-rotate-configure-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-rotate-configure-'),
     );
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.pdf');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
       await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
       const getPanel = stubWebviewPanel(sandbox);
@@ -51,19 +51,18 @@ suite('Rotate PDF ConfigureコマンドのApplyエラー処理', () => {
       );
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
   test('Apply失敗後もapply lockが解放され、再度Applyできる', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-rotate-configure-retry-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-rotate-configure-retry-'),
     );
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.pdf');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
       await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
       const getPanel = stubWebviewPanel(sandbox);
@@ -83,7 +82,6 @@ suite('Rotate PDF ConfigureコマンドのApplyエラー処理', () => {
       assert.ok(showErrorMessage.calledTwice, '2回目のApplyも処理されるべき');
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 });

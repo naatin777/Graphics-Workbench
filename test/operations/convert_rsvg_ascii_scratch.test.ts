@@ -201,7 +201,7 @@ function outputPathFromArgs(args: string[]): string {
 }
 
 async function prepareFixedFixtureWorkspace(): Promise<FixedFixtureWorkspace> {
-  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-rsvg-scratch-test-'));
+  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'gw-rsvg-scratch-test-'));
   const workspacePath = path.join(testRootPath, 'workspace 日本語 हिन्दी 🌹');
   const scratchBasePath = path.join(testRootPath, 'scratch');
   const sourcePath = path.join(workspacePath, complexSourceFileName);

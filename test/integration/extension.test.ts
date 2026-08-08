@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdtempDisposable, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { createSandbox } from 'sinon';
@@ -49,15 +49,15 @@ suite('Extension activation smoke', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-extension-test-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-extension-test-'),
     );
 
     try {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
-      const sourcePath = path.join(temporaryDirectory, 'source.png');
-      const outputPath = path.join(temporaryDirectory, 'source.pdf');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.png');
+      const outputPath = path.join(temporaryDirectory.path, 'source.pdf');
       await copyFile(operationPngInputPath, sourcePath);
 
       await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
@@ -67,7 +67,6 @@ suite('Extension activation smoke', () => {
       assert.strictEqual(pdf.getPageCount(), 1);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
@@ -76,7 +75,7 @@ suite('Extension activation smoke', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-crop-auto-'));
+    await using temporaryDirectory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-crop-auto-'));
 
     try {
       const selectedMargin = { label: '0 pt', description: '', margin: 0 };
@@ -84,18 +83,17 @@ suite('Extension activation smoke', () => {
       sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
-      const sourcePath = path.join(temporaryDirectory, 'document.pdf');
+      const sourcePath = path.join(temporaryDirectory.path, 'document.pdf');
       await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
       await vscode.commands.executeCommand('graphics-workbench.cropPdf.auto', vscode.Uri.file(sourcePath));
 
-      const croppedPath = path.join(temporaryDirectory, 'document-crop.pdf');
+      const croppedPath = path.join(temporaryDirectory.path, 'document-crop.pdf');
       const { PDFDocument } = await import('pdf-lib');
       const pdf = await PDFDocument.load(await readFile(croppedPath));
       assert.strictEqual(pdf.getPageCount(), 2);
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
@@ -104,19 +102,19 @@ suite('Extension activation smoke', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-split-all-'));
+    await using temporaryDirectory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-split-all-'));
 
     try {
       sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
       sandbox.stub(vscode.window, 'showWarningMessage').resolves(undefined);
 
-      const sourcePath = path.join(temporaryDirectory, 'split-test.pdf');
+      const sourcePath = path.join(temporaryDirectory.path, 'split-test.pdf');
       await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
       await vscode.commands.executeCommand('graphics-workbench.splitPdf.allPages', vscode.Uri.file(sourcePath));
 
       const { PDFDocument } = await import('pdf-lib');
-      const splitOutputDir = path.join(temporaryDirectory, 'split-test');
+      const splitOutputDir = path.join(temporaryDirectory.path, 'split-test');
       for (const page of [1, 2]) {
         const pagePath = path.join(splitOutputDir, `${page}.pdf`);
         const pdf = await PDFDocument.load(await readFile(pagePath));
@@ -124,7 +122,6 @@ suite('Extension activation smoke', () => {
       }
     } finally {
       sandbox.restore();
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 });

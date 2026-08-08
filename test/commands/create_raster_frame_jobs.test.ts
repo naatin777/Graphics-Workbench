@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, rm } from 'node:fs/promises';
+import { copyFile, mkdtempDisposable } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -11,48 +11,40 @@ const fixturePath = operationPngInputPath;
 
 suite('ラスター分割jobの出力path検証', () => {
   test('コマンドの許容拡張子と一致しないtemplateを変換前に拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-frame-jobs-'));
-    const sourcePath = path.join(workspacePath, 'source.png');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-frame-jobs-'));
+    const sourcePath = path.join(workspacePath.path, 'source.png');
 
-    try {
-      await copyFile(fixturePath, sourcePath);
-      await assert.rejects(
-        createRasterFrameJobs({
-          sourcePath,
-          workspacePath,
-          workspaceName: path.basename(workspacePath),
-          outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
-          allowedExtensions: ['.png'],
-          maxInputPixels: getDefaultConfiguration().raster.maxInputPixels(),
-          createJob: (job) => job,
-        }),
-        /Invalid output extension/,
-      );
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
-  });
-
-  test('許容拡張子と一致するtemplateからjobを生成する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-frame-jobs-'));
-    const sourcePath = path.join(workspacePath, 'source.png');
-
-    try {
-      await copyFile(fixturePath, sourcePath);
-      const jobs = await createRasterFrameJobs({
+    await copyFile(fixturePath, sourcePath);
+    await assert.rejects(
+      createRasterFrameJobs({
         sourcePath,
-        workspacePath,
-        workspaceName: path.basename(workspacePath),
-        outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.png',
+        workspacePath: workspacePath.path,
+        workspaceName: path.basename(workspacePath.path),
+        outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
         allowedExtensions: ['.png'],
         maxInputPixels: getDefaultConfiguration().raster.maxInputPixels(),
         createJob: (job) => job,
-      });
+      }),
+      /Invalid output extension/,
+    );
+  });
 
-      assert.strictEqual(jobs.length, 1);
-      assert.strictEqual(path.extname(jobs[0]?.outputPath ?? ''), '.png');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+  test('許容拡張子と一致するtemplateからjobを生成する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-frame-jobs-'));
+    const sourcePath = path.join(workspacePath.path, 'source.png');
+
+    await copyFile(fixturePath, sourcePath);
+    const jobs = await createRasterFrameJobs({
+      sourcePath,
+      workspacePath: workspacePath.path,
+      workspaceName: path.basename(workspacePath.path),
+      outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.png',
+      allowedExtensions: ['.png'],
+      maxInputPixels: getDefaultConfiguration().raster.maxInputPixels(),
+      createJob: (job) => job,
+    });
+
+    assert.strictEqual(jobs.length, 1);
+    assert.strictEqual(path.extname(jobs[0]?.outputPath ?? ''), '.png');
   });
 });

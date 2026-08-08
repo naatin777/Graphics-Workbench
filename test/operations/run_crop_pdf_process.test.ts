@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { fork } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -717,12 +717,8 @@ function assertNoLog(logs: RecordingOutputChannel, pattern: RegExp): void {
 }
 
 async function withTemporaryWorkspace(callback: (workspacePath: string) => Promise<void>): Promise<void> {
-  const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-process-'));
-  try {
-    return await callback(workspacePath);
-  } finally {
-    await rm(workspacePath, { recursive: true, force: true });
-  }
+  await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-crop-process-'));
+  return await callback(workspacePath.path);
 }
 
 async function pathExists(filePath: string): Promise<boolean> {

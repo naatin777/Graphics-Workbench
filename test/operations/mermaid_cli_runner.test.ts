@@ -4,7 +4,7 @@
 // - a pre-aborted signal avoids spawning mmdc; in-flight termination is covered by run_external_tool tests.
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -22,27 +22,23 @@ const operationMermaidInputPath = path.join(testInputDirectory, 'valid', 'mermai
 
 suite('mmdc CLI実行', () => {
   test('mmdcでSVGを描画できる', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-mermaid-workspace-'));
-    const sourcePath = path.join(workspacePath, 'input.mmd');
-    const outputPath = path.join(workspacePath, 'output.svg');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-mermaid-workspace-'));
+    const sourcePath = path.join(workspacePath.path, 'input.mmd');
+    const outputPath = path.join(workspacePath.path, 'output.svg');
 
-    try {
-      await writeFile(sourcePath, await readFile(operationMermaidInputPath));
-      await runMermaidCliWithSignal({
-        sourcePath,
-        outputPath,
-        outputFormat: 'svg',
-        mermaidPath: readMermaidExecutablePath(getExtensionConfiguration()),
-        chromePath: readChromeExecutablePath(getExtensionConfiguration()),
-        theme: 'default',
-        backgroundColor: 'white',
-      });
+    await writeFile(sourcePath, await readFile(operationMermaidInputPath));
+    await runMermaidCliWithSignal({
+      sourcePath,
+      outputPath,
+      outputFormat: 'svg',
+      mermaidPath: readMermaidExecutablePath(getExtensionConfiguration()),
+      chromePath: readChromeExecutablePath(getExtensionConfiguration()),
+      theme: 'default',
+      backgroundColor: 'white',
+    });
 
-      const svg = await readFile(outputPath, 'utf8');
-      assert.ok(svg.includes('<svg'));
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    const svg = await readFile(outputPath, 'utf8');
+    assert.ok(svg.includes('<svg'));
   });
 
   test('キャンセル済みのsignalではmmdcを起動せずAbortErrorでrejectする', async () => {

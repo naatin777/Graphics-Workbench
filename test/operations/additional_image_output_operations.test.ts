@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -18,21 +18,17 @@ const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
 
 suite('GIF/TIFFの出力経路', () => {
   test('GIF/TIFFを各supported outputへ変換し、PDFでも先頭frame/pageだけを保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-additional-image-output-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-additional-image-output-'));
 
-    try {
-      for (const inputFormat of inputFormats) {
-        const sourcePath = path.join(workspacePath, `source.${inputFormat}`);
-        await writeAnimatedImageFixture(sourcePath, inputFormat);
+    for (const inputFormat of inputFormats) {
+      const sourcePath = path.join(workspacePath.path, `source.${inputFormat}`);
+      await writeAnimatedImageFixture(sourcePath, inputFormat);
 
-        for (const outputFormat of outputFormats) {
-          const outputPath = path.join(workspacePath, `source-${inputFormat}.${outputFormat}`);
-          await convertImage(inputFormat, outputFormat, sourcePath, outputPath, workspacePath);
-          await assertFirstFrameOutput(outputFormat, outputPath);
-        }
+      for (const outputFormat of outputFormats) {
+        const outputPath = path.join(workspacePath.path, `source-${inputFormat}.${outputFormat}`);
+        await convertImage(inputFormat, outputFormat, sourcePath, outputPath, workspacePath.path);
+        await assertFirstFrameOutput(outputFormat, outputPath);
       }
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 });

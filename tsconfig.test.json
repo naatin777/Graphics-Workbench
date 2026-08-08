@@ -5,8 +5,8 @@
     // test/ も含めるため、ルートをプロジェクト直下に広げる。
     "rootDir": ".",
     "outDir": "out",
-    // Node.js 22で利用できる非破壊のArray.prototype.toSortedを使う。
-    "lib": ["ES2023"],
+    // Node.js 22で利用できる非破壊のArray.prototype.toSortedなどを使う。
+    "lib": ["ES2023", "ES2025.Regexp"],
     // テストコードで mocha の describe / it などを使えるようにする。
     "types": ["node", "mocha"]
   },

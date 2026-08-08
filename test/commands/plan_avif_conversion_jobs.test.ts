@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -14,83 +14,75 @@ import { requireValue } from '../helpers/required.js';
 suite('AVIF変換planner', () => {
   test('2ページPDFをページごとのAVIF jobへ展開する', async () => {
     const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
-    const temporaryDirectory = await mkdtemp(path.join(workspace.uri.fsPath, 'graphics-workbench-plan-avif-'));
+    await using temporaryDirectory = await mkdtempDisposable(path.join(workspace.uri.fsPath, 'gw-plan-avif-'));
 
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'source.pdf');
-      const document = await PDFDocument.create();
-      document.addPage([200, 150]);
-      document.addPage([200, 150]);
-      await writeFile(sourcePath, await document.save());
+    const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
+    const document = await PDFDocument.create();
+    document.addPage([200, 150]);
+    document.addPage([200, 150]);
+    await writeFile(sourcePath, await document.save());
 
-      const jobs = await planAvifConversionJobs(
-        vscode.Uri.file(sourcePath),
-        configureCommandRuntime(),
-        getDefaultConfiguration(),
-        getDefaultConfiguration().raster.maxInputPixels(),
-      );
+    const jobs = await planAvifConversionJobs(
+      vscode.Uri.file(sourcePath),
+      configureCommandRuntime(),
+      getDefaultConfiguration(),
+      getDefaultConfiguration().raster.maxInputPixels(),
+    );
 
-      assert.deepStrictEqual(
-        jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
-          sourcePath: jobSourcePath,
-          workspacePath,
-          outputPath,
-          page,
-        })),
-        [
-          {
-            sourcePath,
-            workspacePath: workspace.uri.fsPath,
-            outputPath: path.join(temporaryDirectory, 'source-1.avif'),
-            page: 1,
-          },
-          {
-            sourcePath,
-            workspacePath: workspace.uri.fsPath,
-            outputPath: path.join(temporaryDirectory, 'source-2.avif'),
-            page: 2,
-          },
-        ],
-      );
-    } finally {
-      await rm(temporaryDirectory, { recursive: true, force: true });
-    }
+    assert.deepStrictEqual(
+      jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
+        sourcePath: jobSourcePath,
+        workspacePath,
+        outputPath,
+        page,
+      })),
+      [
+        {
+          sourcePath,
+          workspacePath: workspace.uri.fsPath,
+          outputPath: path.join(temporaryDirectory.path, 'source-1.avif'),
+          page: 1,
+        },
+        {
+          sourcePath,
+          workspacePath: workspace.uri.fsPath,
+          outputPath: path.join(temporaryDirectory.path, 'source-2.avif'),
+          page: 2,
+        },
+      ],
+    );
   });
 
   test('raster sourceを共通planner経由でAVIF jobへ展開する', async () => {
     const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
-    const temporaryDirectory = await mkdtemp(path.join(workspace.uri.fsPath, 'graphics-workbench-plan-avif-'));
+    await using temporaryDirectory = await mkdtempDisposable(path.join(workspace.uri.fsPath, 'gw-plan-avif-'));
 
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'source.png');
-      await copyFile(operationPngInputPath, sourcePath);
+    const sourcePath = path.join(temporaryDirectory.path, 'source.png');
+    await copyFile(operationPngInputPath, sourcePath);
 
-      const jobs = await planAvifConversionJobs(
-        vscode.Uri.file(sourcePath),
-        configureCommandRuntime(),
-        getDefaultConfiguration(),
-        getDefaultConfiguration().raster.maxInputPixels(),
-      );
+    const jobs = await planAvifConversionJobs(
+      vscode.Uri.file(sourcePath),
+      configureCommandRuntime(),
+      getDefaultConfiguration(),
+      getDefaultConfiguration().raster.maxInputPixels(),
+    );
 
-      assert.deepStrictEqual(
-        jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
-          sourcePath: jobSourcePath,
-          workspacePath,
-          outputPath,
-          page,
-        })),
-        [
-          {
-            sourcePath,
-            workspacePath: workspace.uri.fsPath,
-            outputPath: path.join(temporaryDirectory, 'source.avif'),
-            page: 1,
-          },
-        ],
-      );
-    } finally {
-      await rm(temporaryDirectory, { recursive: true, force: true });
-    }
+    assert.deepStrictEqual(
+      jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
+        sourcePath: jobSourcePath,
+        workspacePath,
+        outputPath,
+        page,
+      })),
+      [
+        {
+          sourcePath,
+          workspacePath: workspace.uri.fsPath,
+          outputPath: path.join(temporaryDirectory.path, 'source.avif'),
+          page: 1,
+        },
+      ],
+    );
   });
 
   test('通常のAVIF入力を同一形式変換として拒否する', async () => {
@@ -104,11 +96,7 @@ suite('AVIF変換planner', () => {
         getDefaultConfiguration(),
         getDefaultConfiguration().raster.maxInputPixels(),
       ),
-      new RegExp(`Unsupported input for AVIF conversion: ${escapeRegExp(sourcePath)}`),
+      new RegExp(`Unsupported input for AVIF conversion: ${RegExp.escape(sourcePath)}`),
     );
   });
 });
-
-function escapeRegExp(value: string): string {
-  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

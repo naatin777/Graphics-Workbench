@@ -3,7 +3,7 @@
 // - 最終出力が読み取り可能なJPEGとして反映されること
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -16,68 +16,64 @@ import { requireValue } from '../helpers/required.js';
 
 suite('JPEGに変換する処理', () => {
   test('編集可能なDraw.io画像はPDFを経由してJPEGへ変換する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-to-jpeg-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-jpeg-'));
 
-    try {
-      const sourcePath = path.join(workspacePath, 'source.drawio.png');
-      const outputPath = path.join(workspacePath, 'source.jpeg');
-      await writeFile(sourcePath, 'editable drawio image placeholder');
-      const drawioCalls: string[][] = [];
-      const drawio: DrawioBackend = {
-        drawioPath: 'drawio',
-        runDrawio: async (_executable, args) => {
-          drawioCalls.push(args);
-          const outputFlagIndex = args.indexOf('-o');
-          assert.ok(outputFlagIndex >= 0);
-          const pdfPath = args[outputFlagIndex + 1];
-          assert.ok(pdfPath);
-          const document = await PDFDocument.create();
-          document.addPage([32, 24]);
-          await writeFile(pdfPath, await document.save());
+    const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
+    const outputPath = path.join(workspacePath.path, 'source.jpeg');
+    await writeFile(sourcePath, 'editable drawio image placeholder');
+    const drawioCalls: string[][] = [];
+    const drawio: DrawioBackend = {
+      drawioPath: 'drawio',
+      runDrawio: async (_executable, args) => {
+        drawioCalls.push(args);
+        const outputFlagIndex = args.indexOf('-o');
+        assert.ok(outputFlagIndex >= 0);
+        const pdfPath = args[outputFlagIndex + 1];
+        assert.ok(pdfPath);
+        const document = await PDFDocument.create();
+        document.addPage([32, 24]);
+        await writeFile(pdfPath, await document.save());
+      },
+    };
+    const job: ConvertToJpegJob = {
+      sourcePath,
+      outputPath,
+      workspacePath: workspacePath.path,
+      page: 1,
+    };
+
+    await executeJpegConversion({
+      jobs: [job],
+      pdfRenderTools: {
+        runPdfToPng: async (pdfPath, pngPath, page) => {
+          assert.ok(pdfPath.endsWith('.pdf'));
+          assert.strictEqual(page, 1);
+          await sharp({
+            create: {
+              width: 32,
+              height: 24,
+              channels: 4,
+              background: '#285078',
+            },
+          })
+            .png()
+            .toFile(pngPath);
         },
-      };
-      const job: ConvertToJpegJob = {
-        sourcePath,
-        outputPath,
-        workspacePath,
-        page: 1,
-      };
+      },
+      mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
+      drawioTools: drawio,
+      runtime: { resolveConflicts: async () => 'overwrite' },
+    });
 
-      await executeJpegConversion({
-        jobs: [job],
-        pdfRenderTools: {
-          runPdfToPng: async (pdfPath, pngPath, page) => {
-            assert.ok(pdfPath.endsWith('.pdf'));
-            assert.strictEqual(page, 1);
-            await sharp({
-              create: {
-                width: 32,
-                height: 24,
-                channels: 4,
-                background: '#285078',
-              },
-            })
-              .png()
-              .toFile(pngPath);
-          },
-        },
-        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-        drawioTools: drawio,
-        runtime: { resolveConflicts: async () => 'overwrite' },
-      });
-
-      assert.strictEqual(drawioCalls.length, 1);
-      const args = requireValue(drawioCalls[0]);
-      assert.strictEqual(args[0], '-x');
-      assert.strictEqual(args[1], '-f');
-      assert.strictEqual(args[2], 'pdf');
-      assert.strictEqual(args[3], '-o');
-      assert.ok(args[4]?.endsWith('.pdf'));
-      assert.strictEqual(args[5], sourcePath);
-      await assertReadableJpeg(outputPath);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-    }
+    assert.strictEqual(drawioCalls.length, 1);
+    const args = requireValue(drawioCalls[0]);
+    assert.strictEqual(args[0], '-x');
+    assert.strictEqual(args[1], '-f');
+    assert.strictEqual(args[2], 'pdf');
+    assert.strictEqual(args[3], '-o');
+    assert.ok(args[4]?.endsWith('.pdf'));
+    assert.strictEqual(args[5], sourcePath);
+    await assertReadableJpeg(outputPath);
   });
 });
 

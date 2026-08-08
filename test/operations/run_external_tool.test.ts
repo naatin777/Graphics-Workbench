@@ -13,7 +13,7 @@
 // - platform-specific exit codes beyond non-zero
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdtempDisposable, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -105,26 +105,22 @@ suite('外部tool runner — ログredaction', () => {
   });
 
   test('processへは元のargumentが渡る', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-redaction-'));
-    const receivedPath = path.join(workspacePath, 'received.txt');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-ext-tool-redaction-'));
+    const receivedPath = path.join(workspacePath.path, 'received.txt');
 
-    try {
-      await runExternalTool({
-        toolName: 'redact-tool',
-        executable: process.execPath,
-        args: [
-          '-e',
-          `require('fs').writeFileSync(${JSON.stringify(receivedPath)}, process.argv[process.argv.length - 1])`,
-          'super-secret-token',
-        ],
-        redactArgument: (_argument, index) => (index === 2 ? '<redacted>' : _argument),
-      });
+    await runExternalTool({
+      toolName: 'redact-tool',
+      executable: process.execPath,
+      args: [
+        '-e',
+        `require('fs').writeFileSync(${JSON.stringify(receivedPath)}, process.argv[process.argv.length - 1])`,
+        'super-secret-token',
+      ],
+      redactArgument: (_argument, index) => (index === 2 ? '<redacted>' : _argument),
+    });
 
-      const received = await readFile(receivedPath, 'utf8');
-      assert.strictEqual(received, 'super-secret-token', 'process should receive the original argument');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    const received = await readFile(receivedPath, 'utf8');
+    assert.strictEqual(received, 'super-secret-token', 'process should receive the original argument');
   });
 });
 
@@ -222,10 +218,7 @@ suite('外部tool runner — タイムアウト', () => {
   });
 
   test('timeoutMsを過ぎるとchild processを終了してrejectする', async () => {
-    const startedPath = path.join(
-      await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-timeout-')),
-      'started.txt',
-    );
+    const startedPath = path.join(await mkdtemp(path.join(os.tmpdir(), 'gw-ext-tool-timeout-')), 'started.txt');
 
     try {
       await assert.rejects(
@@ -251,46 +244,42 @@ suite('外部tool runner — タイムアウト', () => {
 
 suite('外部tool runner — Cancellation', () => {
   test('AbortSignalがrunExternalToolへ渡り、child processを停止する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-cancel-'));
-    const sentinelPath = path.join(workspacePath, 'sentinel.txt');
-    const startedPath = path.join(workspacePath, 'started.txt');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-ext-tool-cancel-'));
+    const sentinelPath = path.join(workspacePath.path, 'sentinel.txt');
+    const startedPath = path.join(workspacePath.path, 'started.txt');
 
+    const controller = new AbortController();
+
+    const promise = runExternalTool({
+      toolName: 'long-tool',
+      executable: process.execPath,
+      args: [
+        '-e',
+        `require('fs').writeFileSync(${JSON.stringify(startedPath)}, 'started');
+         setTimeout(() => require('fs').writeFileSync(${JSON.stringify(sentinelPath)}, 'done'), 30000);`,
+      ],
+      signal: controller.signal,
+    });
+
+    // Wait for the child process to write the started file (observable signal)
+    await waitForFile(startedPath, 5000);
+
+    controller.abort();
+
+    await assert.rejects(promise, (error: unknown) => {
+      assert.ok(error instanceof Error);
+      return error.name === 'AbortError' || error.name === 'Canceled';
+    });
+
+    // The sentinel file should NOT exist (child was cancelled before completion)
+    let sentinelExists = false;
     try {
-      const controller = new AbortController();
-
-      const promise = runExternalTool({
-        toolName: 'long-tool',
-        executable: process.execPath,
-        args: [
-          '-e',
-          `require('fs').writeFileSync(${JSON.stringify(startedPath)}, 'started');
-           setTimeout(() => require('fs').writeFileSync(${JSON.stringify(sentinelPath)}, 'done'), 30000);`,
-        ],
-        signal: controller.signal,
-      });
-
-      // Wait for the child process to write the started file (observable signal)
-      await waitForFile(startedPath, 5000);
-
-      controller.abort();
-
-      await assert.rejects(promise, (error: unknown) => {
-        assert.ok(error instanceof Error);
-        return error.name === 'AbortError' || error.name === 'Canceled';
-      });
-
-      // The sentinel file should NOT exist (child was cancelled before completion)
-      let sentinelExists = false;
-      try {
-        await import('node:fs/promises').then((fs) => fs.stat(sentinelPath));
-        sentinelExists = true;
-      } catch {
-        sentinelExists = false;
-      }
-      assert.strictEqual(sentinelExists, false, 'sentinel file should not be created after abort');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
+      await import('node:fs/promises').then((fs) => fs.stat(sentinelPath));
+      sentinelExists = true;
+    } catch {
+      sentinelExists = false;
     }
+    assert.strictEqual(sentinelExists, false, 'sentinel file should not be created after abort');
   });
 
   test('abort後にfailure logへsecret argumentを漏らさない', async () => {
@@ -338,46 +327,42 @@ suite('外部tool runner — Cancellation', () => {
   });
 
   test('AbortSignalで外部toolの子孫プロセスも停止する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-ext-tool-tree-cancel-'));
-    const startedPath = path.join(workspacePath, 'started.txt');
-    const heartbeatPath = path.join(workspacePath, 'heartbeat.txt');
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-ext-tool-tree-cancel-'));
+    const startedPath = path.join(workspacePath.path, 'started.txt');
+    const heartbeatPath = path.join(workspacePath.path, 'heartbeat.txt');
 
-    try {
-      const controller = new AbortController();
-      const treeScript = `
-        const { spawn } = require('node:child_process');
-        const fs = require('node:fs');
-        fs.writeFileSync(process.env.GW_STARTED_PATH, 'started');
-        const child = spawn(process.execPath, ['-e', "const fs = require('node:fs'); const beat = () => fs.appendFileSync(process.env.GW_HEARTBEAT_PATH, '.'); beat(); setInterval(beat, 50);"], { stdio: 'ignore', env: process.env });
-        setTimeout(() => {}, 30000);
-      `;
-      const promise = runExternalTool({
-        toolName: 'tree-tool',
-        executable: process.execPath,
-        args: ['-e', treeScript],
-        env: { ...process.env, GW_STARTED_PATH: startedPath, GW_HEARTBEAT_PATH: heartbeatPath },
-        signal: controller.signal,
-      });
+    const controller = new AbortController();
+    const treeScript = `
+      const { spawn } = require('node:child_process');
+      const fs = require('node:fs');
+      fs.writeFileSync(process.env.GW_STARTED_PATH, 'started');
+      const child = spawn(process.execPath, ['-e', "const fs = require('node:fs'); const beat = () => fs.appendFileSync(process.env.GW_HEARTBEAT_PATH, '.'); beat(); setInterval(beat, 50);"], { stdio: 'ignore', env: process.env });
+      setTimeout(() => {}, 30000);
+    `;
+    const promise = runExternalTool({
+      toolName: 'tree-tool',
+      executable: process.execPath,
+      args: ['-e', treeScript],
+      env: { ...process.env, GW_STARTED_PATH: startedPath, GW_HEARTBEAT_PATH: heartbeatPath },
+      signal: controller.signal,
+    });
 
-      // The descendant heartbeat must grow while the tree is alive.
-      await waitForFile(heartbeatPath, 5000);
-      const beforeAbort = (await readFile(heartbeatPath)).length;
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      const stillGrowing = (await readFile(heartbeatPath)).length;
-      assert.ok(stillGrowing > beforeAbort, 'descendant heartbeat should grow before abort');
+    // The descendant heartbeat must grow while the tree is alive.
+    await waitForFile(heartbeatPath, 5000);
+    const beforeAbort = (await readFile(heartbeatPath)).length;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const stillGrowing = (await readFile(heartbeatPath)).length;
+    assert.ok(stillGrowing > beforeAbort, 'descendant heartbeat should grow before abort');
 
-      controller.abort();
-      await assert.rejects(promise);
+    controller.abort();
+    await assert.rejects(promise);
 
-      // After abort the descendant heartbeat must stop growing, which proves the
-      // descendant process was actually terminated (not merely scheduled to die).
-      const afterAbort = (await readFile(heartbeatPath)).length;
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      const later = (await readFile(heartbeatPath)).length;
-      assert.strictEqual(later, afterAbort, 'descendant heartbeat should stop after abort');
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
+    // After abort the descendant heartbeat must stop growing, which proves the
+    // descendant process was actually terminated (not merely scheduled to die).
+    const afterAbort = (await readFile(heartbeatPath)).length;
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const later = (await readFile(heartbeatPath)).length;
+    assert.strictEqual(later, afterAbort, 'descendant heartbeat should stop after abort');
   });
 });
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, mkdtempDisposable, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -31,16 +31,16 @@ const fakeBundleModule = `export async function exportToSvg() {
 
 suite('Excalidraw → PDF変換', () => {
   test('Excalidraw sceneをPDFへ変換してstagingを掃除する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-excalidraw-pdf-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-excalidraw-pdf-'));
     const { fakeBundlePath, cleanupBundle } = await writeFakeBundle();
 
     try {
-      const sourcePath = path.join(workspacePath, 'diagram.excalidraw');
+      const sourcePath = path.join(workspacePath.path, 'diagram.excalidraw');
       await copyFile(path.join(testInputDirectory, 'valid', 'excalidraw', 'background-color.excalidraw'), sourcePath);
       const originalSource = await readFile(sourcePath, 'utf8');
 
       const outputs = await convertExcalidrawToPdfFiles({
-        jobs: [createJob(sourcePath, workspacePath)],
+        jobs: [createJob(sourcePath, workspacePath.path)],
         svgToPdf: createStubSvgToPdfOptions(),
         runId: 'excalidraw-test',
         runtime: { resolveConflicts: async () => 'overwrite' },
@@ -49,7 +49,7 @@ suite('Excalidraw → PDF変換', () => {
 
       assert.deepStrictEqual(
         outputs.map(({ outputPath }) => outputPath),
-        [path.join(workspacePath, 'diagram.pdf')],
+        [path.join(workspacePath.path, 'diagram.pdf')],
       );
       assert.strictEqual(
         await PDFDocument.load(await readFile(requireValue(outputs[0]).outputPath)).then((pdf) => pdf.getPageCount()),
@@ -58,21 +58,20 @@ suite('Excalidraw → PDF変換', () => {
       assert.strictEqual(await readFile(sourcePath, 'utf8'), originalSource);
     } finally {
       await cleanupBundle();
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   test('不正なsceneは失敗し出力とstagingを残さない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-excalidraw-invalid-'));
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-excalidraw-invalid-'));
     const { fakeBundlePath, cleanupBundle } = await writeFakeBundle();
 
     try {
-      const sourcePath = path.join(workspacePath, 'broken.excalidraw');
+      const sourcePath = path.join(workspacePath.path, 'broken.excalidraw');
       await writeFile(sourcePath, '{ not json');
 
       await assert.rejects(
         convertExcalidrawToPdfFiles({
-          jobs: [createJob(sourcePath, workspacePath)],
+          jobs: [createJob(sourcePath, workspacePath.path)],
           svgToPdf: createStubSvgToPdfOptions(),
           runId: 'invalid-test',
           runtime: { resolveConflicts: async () => 'overwrite' },
@@ -81,15 +80,14 @@ suite('Excalidraw → PDF変換', () => {
         (error) => error instanceof ExcalidrawError && error.category === 'json',
       );
 
-      assert.strictEqual(existsSync(path.join(workspacePath, 'broken.pdf')), false);
+      assert.strictEqual(existsSync(path.join(workspacePath.path, 'broken.pdf')), false);
       assert.strictEqual(
-        existsSync(path.join(workspacePath, '.graphics-workbench', 'convert-excalidraw-to-pdf', 'invalid-test')),
+        existsSync(path.join(workspacePath.path, '.graphics-workbench', 'convert-excalidraw-to-pdf', 'invalid-test')),
         false,
         'staging root must be removed after a failed conversion',
       );
     } finally {
       await cleanupBundle();
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 });
@@ -126,7 +124,7 @@ async function writePdfPages(filePath: string, pageCount: number): Promise<void>
 }
 
 async function writeFakeBundle(): Promise<{ fakeBundlePath: string; cleanupBundle: () => Promise<void> }> {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-excalidraw-bundle-'));
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'gw-excalidraw-bundle-'));
   const fakeBundlePath = path.join(directory, 'fake-excalidraw-adapter.mjs');
   await writeFile(fakeBundlePath, fakeBundleModule);
   return {

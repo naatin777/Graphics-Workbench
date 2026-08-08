@@ -34,11 +34,7 @@ suite('PDFページjob純粋planner', () => {
   test('page countが0のPDFは拒否する', () => {
     assert.throws(
       () => planPdfPageJobs(source, 0, '${fileDirname}/${fileBasenameNoExtension}-${page}.png', ['.png']),
-      new RegExp(`PDF has no pages: ${escapeRegExp(source.sourcePath)}`),
+      new RegExp(`PDF has no pages: ${RegExp.escape(source.sourcePath)}`),
     );
   });
 });
-
-function escapeRegExp(value: string): string {
-  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

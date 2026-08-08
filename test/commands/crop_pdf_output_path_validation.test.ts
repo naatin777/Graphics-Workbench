@@ -12,7 +12,7 @@
 // - OSが返すfilesystem error文言
 
 import assert from 'node:assert/strict';
-import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from 'pdf-lib';
@@ -27,13 +27,13 @@ suite('PDF crop outputPath検証', () => {
     assert.ok(workspaceFolder);
 
     const sandbox = createSandbox();
-    const temporaryDirectory = await mkdtemp(
-      path.join(workspaceFolder.uri.fsPath, 'graphics-workbench-output-path-validation-'),
+    await using temporaryDirectory = await mkdtempDisposable(
+      path.join(workspaceFolder.uri.fsPath, 'gw-output-path-validation-'),
     );
     const configuration = vscode.workspace.getConfiguration('graphics-workbench');
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.pdf');
+      const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
       const document = await PDFDocument.create();
       document.addPage([100, 100]);
       await writeFile(sourcePath, await document.save());
@@ -60,11 +60,10 @@ suite('PDF crop outputPath検証', () => {
       assert.ok(createOutputChannel.notCalled);
       assert.ok(showErrorMessage.calledOnce);
       assert.match(showErrorMessage.firstCall.args[0], /invalid output path.*NUL/i);
-      await assert.rejects(access(path.join(temporaryDirectory, '.graphics-workbench')));
+      await assert.rejects(access(path.join(temporaryDirectory.path, '.graphics-workbench')));
     } finally {
       sandbox.restore();
       await configuration.update('outputPath.cropPdf', undefined, vscode.ConfigurationTarget.Workspace);
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 });

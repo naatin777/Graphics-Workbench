@@ -31,7 +31,7 @@ interface InputFixture {
 }
 
 async function setupWorkspace(): Promise<string> {
-  return mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-combine-'));
+  return mkdtemp(path.join(os.tmpdir(), 'gw-combine-'));
 }
 
 async function copyFixtureTo(workspacePath: string, name: string): Promise<string> {

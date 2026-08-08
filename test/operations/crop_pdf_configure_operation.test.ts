@@ -294,7 +294,7 @@ async function createTemporaryWorkspace(temporaryDirectories: string[]): Promise
 }
 
 async function createTemporaryRenderDirectory(temporaryDirectories: string[]): Promise<string> {
-  const renderDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-crop-render-'));
+  const renderDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-render-'));
   temporaryDirectories.push(renderDirectory);
   return renderDirectory;
 }
