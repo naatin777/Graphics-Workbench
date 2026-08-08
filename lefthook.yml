@@ -25,15 +25,22 @@ pre-push:
   parallel: false
 
   commands:
+    # Runs in Docker (see scripts/test-in-docker.sh). The container mirrors the
+    # GitHub Actions setup and reads the host-built out/ and media/ via the bind
+    # mount, so build must run on the host first (vite asset copies fail across
+    # the macOS bind mount).
     typecheck:
-      run: npm run check:all
+      run: npm run test:docker -- check:all
 
+    # Build must stay on the host: vite's pdfjs asset copy (cpSync into
+    # media/webview/pdfjs) hits EACCES across the macOS Docker bind mount.
     build:
       run: npm run build
 
     # Playwright E2E runs only when the packaged test suite (or its config)
     # changed. It packages the current runner VSIX and runs the wide packaged
-    # conversion smoke; the full wide+narrow suite is a local/release concern.
+    # conversion smoke inside Docker; the full wide+narrow suite is a
+    # local/release concern.
     playwright-smoke:
       glob: "{test/playwright/**,playwright.config.mjs}"
-      run: npm run package:vsix && npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts
+      run: npm run test:docker -- package:vsix test:playwright:smoke
