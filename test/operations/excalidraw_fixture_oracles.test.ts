@@ -13,7 +13,7 @@ import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspa
 const projectRootDirectory = path.dirname(path.dirname(testInputDirectory));
 const excalidrawBundlePath = path.join(projectRootDirectory, 'media', 'excalidraw', 'excalidraw-adapter.mjs');
 
-suite('Excalidraw fixtureの内容比較', () => {
+suite('Excalidrawテスト入力のSVG変換とPNG変換結果が、期待出力PNGと一致することを比較', () => {
   // embedded-image.excalidrawは除外する。librsvg（rsvg-convert / sharp）が半透明PNGの
   // <image>埋め込みSVGを崩して描画するため、baselineに崩れを焼き込むことになる。
   // 詳細: docs/research/2026-08-08-librsvg-semi-transparent-png-image.md
@@ -22,7 +22,7 @@ suite('Excalidraw fixtureの内容比較', () => {
   );
 
   for (const [index, fixturePath] of fixturePaths.entries()) {
-    test(`excalidraw/${path.basename(fixturePath)}をPNGへ変換すると固定正解データと一致する`, async function fixtureOracle() {
+    test(`excalidraw/${path.basename(fixturePath)}をexcalidrawToSvgでSVGへ変換し、そのSVGをPNG変換した結果が許容差付きで期待出力PNGと一致する`, async function fixtureOracle() {
       if (!existsSync(excalidrawBundlePath)) {
         this.skip();
         return;

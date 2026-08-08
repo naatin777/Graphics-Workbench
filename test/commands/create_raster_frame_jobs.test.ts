@@ -9,8 +9,8 @@ import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 const fixturePath = operationPngInputPath;
 
-suite('ラスター分割jobの出力path検証', () => {
-  test('コマンドの許容拡張子と一致しないtemplateを変換前に拒否する', async () => {
+suite('ラスター画像から出力テンプレートに従った変換処理単位を生成する処理の出力パス検証', () => {
+  test('出力templateの拡張子が.jpegで許容拡張子が.pngのみの場合、"Invalid output extension"エラーで変換前に拒否する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-frame-jobs-'));
     const sourcePath = path.join(workspacePath.path, 'source.png');
 
@@ -29,7 +29,7 @@ suite('ラスター分割jobの出力path検証', () => {
     );
   });
 
-  test('許容拡張子と一致するtemplateからjobを生成する', async () => {
+  test('出力templateの拡張子が.pngで許容拡張子が.pngの場合、変換処理単位を1件生成し出力パスの拡張子が.pngになる', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-frame-jobs-'));
     const sourcePath = path.join(workspacePath.path, 'source.png');
 

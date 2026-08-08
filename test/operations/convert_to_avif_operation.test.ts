@@ -17,8 +17,8 @@ import sharp from 'sharp';
 import { executeAvifConversion } from '../../src/operations/conversion/raster_conversion.js';
 import { requireValue } from '../helpers/required.js';
 
-suite('AVIFに変換する処理', () => {
-  test('編集可能なDraw.io画像はPDFとPNGを経由してAVIFへ変換する', async () => {
+suite('Draw.io画像をPDF・PNG経由でAVIFへ変換する', () => {
+  test('editableな.drawio.pngをDraw.io CLIへPDF出力（-x -f pdf）で渡し、そのPDFをPNGへ変換してからAVIF（heif）へ変換し、出力ファイルを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-avif-operation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');

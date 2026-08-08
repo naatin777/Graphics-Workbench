@@ -20,8 +20,8 @@ import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 
-suite('Draw.ioの複雑なpath変換', () => {
-  test('ページ名・フォルダ名・ファイル名に空白とUnicodeがあっても3ページPDFへ変換する', async () => {
+suite('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io画像のPDF変換', () => {
+  test('空白とUnicodeを含むフォルダ名・ファイル名のfixtureを、入力pathと一時作業ディレクトリ内の中間PDF出力pathをそのままDraw.io実行関数へ渡して3ページPDFへ変換し、元fixtureファイルを変更しない', async () => {
     await using testRootPath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-complex-path-'));
     const workspacePath = path.join(
       testRootPath.path,

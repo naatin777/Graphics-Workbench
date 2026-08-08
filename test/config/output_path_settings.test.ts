@@ -4,7 +4,7 @@ import { resolveOutputPathsTemplate } from '../../src/config/output/output_path_
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('outputPath設定', () => {
-  test('outputPathの設定を読み取る', () => {
+  test("outputPath.convertPngToJpegに'flat/${file}.jpeg'を設定した場合、テンプレート文字列をそのまま読み取る", () => {
     const config = fakeConfiguration({
       'outputPath.convertPngToJpeg': 'flat/${file}.jpeg',
     });
@@ -12,7 +12,7 @@ suite('outputPath設定', () => {
     assert.strictEqual(config.outputPath.convertPngToJpeg(), 'flat/${file}.jpeg');
   });
 
-  test('空のoutputPath設定をフォールバックせず読み取る', () => {
+  test("outputPath.convertPngToJpegに空白のみの'  'を設定した場合もフォールバックせず、そのまま'  'を返す", () => {
     const config = fakeConfiguration({
       'outputPath.convertPngToJpeg': '  ',
     });
@@ -20,13 +20,13 @@ suite('outputPath設定', () => {
     assert.strictEqual(config.outputPath.convertPngToJpeg(), '  ');
   });
 
-  test('pageを含むoutputPathsの設定を読み取る', () => {
+  test("outputPaths.convertPdfToPngに'pdf/${page}.png'を設定した場合、page変数を含むテンプレートをそのまま解決結果として返す", () => {
     const config = fakeConfiguration({ outputPaths: { convertPdfToPng: 'pdf/${page}.png' } });
 
     assert.strictEqual(resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'), 'pdf/${page}.png');
   });
 
-  test('outputPathsがスキーマに合わない場合は既定のテンプレートへフォールバックする', () => {
+  test("outputPathsに配列・null・数値を値に持つオブジェクトのいずれかを設定した場合、既定のテンプレート'default.png'へフォールバックする", () => {
     const invalidValues = [['invalid'], null, { convertPdfToPng: 1 }];
 
     for (const outputPaths of invalidValues) {

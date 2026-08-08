@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 import { LatexDropEditProvider } from '../../src/edit_provider/latex_drop_edit_provider.js';
 
 suite('LaTeXファイルdrag挿入', () => {
-  test('単一PDFのdropからfigure snippetを作る', async () => {
+  test('単一PDFをworkspaceのfiguresフォルダに用意し、main.texへのdrop editとして\\begin{figure}・\\centering・\\includegraphics[width=\\linewidth]{figures/sample.pdf}・\\caption{sample}・\\label{fig:sample}を含むfigure snippetを生成する', async () => {
     const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-single-');
 
     try {
@@ -34,14 +34,14 @@ suite('LaTeXファイルdrag挿入', () => {
     }
   });
 
-  test('Windowsのpath separatorをLaTeX向けに正規化する', () => {
+  test("Windows形式'figures\\sample.pdf'をLaTeX向けにフォワードスラッシュへ正規化し、\\includegraphics[width=\\linewidth]{figures/sample.pdf}を含むfigure snippetを作る", () => {
     const provider = new LatexDropEditProvider();
     const snippet = normalizeSnippetValue(provider.createSinglePdfSnippet('sample', 'figures\\sample.pdf').value);
 
     assert.ok(snippet.includes('\\includegraphics[width=\\linewidth]{figures/sample.pdf}'));
   });
 
-  test('複数PDFのdropから複数図用snippetを作る', async () => {
+  test('2つのPDFをdropした場合、2つの\\begin{minipage}にそれぞれのPDFの\\includegraphicsを配置し、\\hfillで区切った複数図用snippetを生成する', async () => {
     const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-multiple-');
 
     try {
@@ -68,7 +68,7 @@ suite('LaTeXファイルdrag挿入', () => {
     }
   });
 
-  test('URI-listの空行、comment、重複、拡張子大文字を処理する', async () => {
+  test("text/uri-listにcomment行・空行・重複・大文字拡張子'UPPER.PDF'を含む場合でも、PDFを1つの\\includegraphicsとして扱いファイル名UPPER.PDFを保持したsnippetを返す", async () => {
     const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-uri-list-');
 
     try {
@@ -93,7 +93,7 @@ suite('LaTeXファイルdrag挿入', () => {
     }
   });
 
-  test('非file・非PDF・壊れたURIを含むURI-listは部分処理しない', async () => {
+  test('text/uri-listにhttps URL・PNG画像・壊れた内容(commentのみ)が混在する場合、drop editを返さず(undefined)部分処理しない', async () => {
     const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-invalid-');
 
     try {
@@ -120,7 +120,7 @@ suite('LaTeXファイルdrag挿入', () => {
     }
   });
 
-  test('workspace外のlocal PDFはrelative pathで挿入する', async () => {
+  test("workspace外のlocal PDFをdropした場合、'../'で始まる相対パスを\\includegraphicsに含みoutside.pdfを参照したsnippetを返す", async () => {
     const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-document-');
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
@@ -146,7 +146,7 @@ suite('LaTeXファイルdrag挿入', () => {
     }
   });
 
-  test('cancel済みまたは未保存documentではsnippetを返さない', async () => {
+  test('キャンセル済みtokenではdrop editを返さず(undefined)、ディスクに保存されていない未保存documentでもsnippetを返さない(undefined)', async () => {
     const directory = await createTemporaryWorkspaceDirectory('gw-latex-drop-cancel-');
 
     try {

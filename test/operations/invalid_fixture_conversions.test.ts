@@ -22,9 +22,9 @@ const invalidCases = [
   { directory: 'webp', fileName: 'truncated.webp', outputFormat: 'png' },
 ] as const;
 
-suite('invalid fixtureの実変換エラー', () => {
+suite('不正なテスト入力の実変換エラー', () => {
   for (const [index, invalidCase] of invalidCases.entries()) {
-    test(`${invalidCase.directory}/${invalidCase.fileName}を${invalidCase.outputFormat.toUpperCase()}へ実変換すると失敗し、出力を残さない`, async () => {
+    test(`${invalidCase.directory}/${invalidCase.fileName}を実際に${invalidCase.outputFormat.toUpperCase()}へ変換すると変換失敗となり、出力ファイルを生成しない`, async () => {
       await withTestWorkspace(async (workspacePath) => {
         const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const inputPath = path.join(testInputDirectory, 'invalid', invalidCase.directory, invalidCase.fileName);

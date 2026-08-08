@@ -7,8 +7,8 @@ import { hasPdfPageContent, renderPdfPageToPng, renderPdfPageToSvg } from '../..
 const pageCount = 12;
 const renderIterations = 200;
 
-suite('MuPDF resource cleanup', () => {
-  test('PDFページを連続renderしてもWASM memoryが増え続けない', async () => {
+suite('MuPDF WASMリソースの解放', () => {
+  test('12ページのPDFを200回連続でページごとにhasPdfPageContent・PNG/SVG renderすると、render前後のプロセスRSS増加が150MiB未満に収まりWASMメモリがリークしない', async () => {
     const bytes = await createMultiPagePdf(pageCount);
 
     // Warm up the module, JIT, and first allocations before measuring.

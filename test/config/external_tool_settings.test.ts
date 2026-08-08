@@ -8,14 +8,14 @@ import {
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('外部ツールタイムアウト設定', () => {
-  test('既定値はタイムアウトなし（0を秒からミリ秒へ変換しない）', () => {
+  test('既定のタイムアウトはdrawio/mermaidともundefinedで、timeoutMillisecondsは0をundefinedのままにし86400秒を86,400,000ミリ秒へ変換する', () => {
     assert.strictEqual(defaultExternalToolTimeouts().drawio, undefined);
     assert.strictEqual(defaultExternalToolTimeouts().mermaid, undefined);
     assert.strictEqual(timeoutMilliseconds(0), undefined);
     assert.strictEqual(timeoutMilliseconds(86_400), 86_400_000);
   });
 
-  test('0を無期限として読み取る', () => {
+  test('rsvgConvertのtimeoutSecondsが0なら無期限(undefined)として読み取り、mermaidのtimeoutSeconds=5は5,000ミリ秒に変換する', () => {
     const timeouts = readExternalToolTimeouts(
       fakeConfiguration({
         'externalTools.rsvgConvert.timeoutSeconds': 0,

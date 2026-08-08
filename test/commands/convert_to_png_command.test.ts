@@ -69,13 +69,13 @@ suite('PNGに変換コマンド', () => {
     sandbox.restore();
   });
 
-  test('コマンドが登録されている', async () => {
+  test('graphics-workbench.convertToPngコマンドがVS Codeに登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
     assert.ok(commands.includes('graphics-workbench.convertToPng'));
   });
 
-  test('JPEG、WebP、AVIF、PDFを1つのbatchでPNGへ変換する', async () => {
+  test('JPEG、WebP、AVIF、2ページPDFを1回のコマンド実行でまとめてPNGへ変換し、画像は拡張子置換の.png、PDFはページごとの-1.png/-2.pngを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -105,7 +105,7 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('GIFとTIFFの先頭pageをPNGへ変換する', async () => {
+  test('GIFとTIFFのテスト入力ファイルをPNGへ変換し、それぞれpng形式で幅と高さが0より大きい', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -138,7 +138,7 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('SVGを読み取り可能なPNGへ変換する', async () => {
+  test('SVG入力から変換したPNGがpng形式で幅と高さが0より大きい', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -157,15 +157,15 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('.mmdファイルを読み取り可能なPNGへ変換する', async () => {
+  test('.mmdのMermaid入力を変換したPNGがpng形式で幅と高さが0より大きい', async () => {
     await assertMermaidFileConvertsToPng('source.mmd');
   });
 
-  test('.mermaidファイルを読み取り可能なPNGへ変換する', async () => {
+  test('.mermaidのMermaid入力を変換したPNGがpng形式で幅と高さが0より大きい', async () => {
     await assertMermaidFileConvertsToPng('source.mermaid');
   });
 
-  test('mermaid.backgroundColor=transparentのPNG出力を透過にする', async () => {
+  test('mermaid.backgroundColor=transparent設定で変換したPNG出力のhasAlphaがtrueになる', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -189,7 +189,7 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('outputPaths.convertPdfToPngが設定されている場合はpageを展開する', async () => {
+  test('outputPaths.convertPdfToPngが設定済みの場合、2ページPDFを${page}ごとに展開したto-png-source-1.pngとto-png-source-2.pngを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -220,7 +220,7 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('PNGからPNGへは変換しない', async () => {
+  test('PNG入力を変換せず、ページ分割されたsource-1.pngも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {

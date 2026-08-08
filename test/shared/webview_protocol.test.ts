@@ -8,8 +8,8 @@ import {
   type WebviewMessage,
 } from '../../src/shared/protocols/webview_protocol.js';
 
-suite('共有Webview protocol envelope', () => {
-  test('payloadなしのcontrol messageをtype-only envelopeとして受け付ける', () => {
+suite('Webviewメッセージの共通形式（type・payloadの持ち方）の判定', () => {
+  test('typeキーだけを持つreadyメッセージを受け入れ、payloadキーまで持つreadyは共通形式に適合しないため拒否する', () => {
     const ready: WebviewMessage<'ready'> = { type: 'ready' };
 
     assert.equal(isWebviewEnvelope(ready), true);
@@ -17,7 +17,7 @@ suite('共有Webview protocol envelope', () => {
     assert.equal(isWebviewMessageWithoutPayload({ type: 'ready', payload: {} }, 'ready'), false);
   });
 
-  test('payload付きmessageは指定したpayload validatorとtop-level keyを通過させる', () => {
+  test('typeとpayloadだけを持ちpayload validator（{id: string}のみ）を満たすapplyを受け入れ、requestId等の余分なトップレベルキーやpayload欠落は拒否する', () => {
     const isApplyPayload = (value: unknown): value is { id: string } => {
       return (
         typeof value === 'object' &&
@@ -43,21 +43,21 @@ suite('共有Webview protocol envelope', () => {
     assert.equal(isWebviewMessageWithPayload({ type: 'apply' }, 'apply', isApplyPayload), false);
   });
 
-  test('error envelopeはmessageだけをpayloadに許可する', () => {
+  test('errorメッセージはpayloadにmessage文字列1つだけを許可し、messageが空文字は受け入れて、code等の余分なキーやmessageが文字列でない場合は拒否する', () => {
     assert.equal(isWebviewErrorMessage({ type: 'error', payload: { message: 'failed' } }), true);
     assert.equal(isWebviewErrorMessage({ type: 'error', payload: { message: '' } }), true);
     assert.equal(isWebviewErrorMessage({ type: 'error', payload: { message: 'failed', code: 'E_FAIL' } }), false);
     assert.equal(isWebviewErrorMessage({ type: 'error', payload: { message: 42 } }), false);
   });
 
-  test('継承された必須キーを拒否する', () => {
+  test('プロトタイプチェーン経由でtypeを持つオブジェクトはtypeキーを直接持っていないため共通形式のメッセージとしてもtypeのみのメッセージとしても受け入れない', () => {
     const message = Object.create({ type: 'ready' });
 
     assert.strictEqual(isWebviewMessageWithoutPayload(message, 'ready'), false);
     assert.strictEqual(isWebviewEnvelope(message), false);
   });
 
-  test('envelope以外の値と空のtypeを拒否する', () => {
+  test('null・配列・typeが空文字・type以外の余分なキーを持つオブジェクトを共通形式のメッセージとして拒否する', () => {
     assert.equal(isWebviewEnvelope(null), false);
     assert.equal(isWebviewEnvelope([]), false);
     assert.equal(isWebviewEnvelope({ type: '' }), false);

@@ -14,8 +14,8 @@ import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');
 const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 
-suite('PDF結合operation', () => {
-  test('結合結果をstagingへ作成してSafe Modeの両方残すを適用する', async () => {
+suite('複数PDFの結合と、既存出力への反映・取り消し', () => {
+  test('出力先に既存のmerged.pdfがある状態で2つのPDFを結合し、競合解決で両方残すを選ぶと結果をmerged-1.pdfとして出力し、既存ファイルは変更せず一時作業フォルダを削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
 
     const firstPath = path.join(workspacePath.path, 'first.pdf');
@@ -39,7 +39,7 @@ suite('PDF結合operation', () => {
     await assert.rejects(access(path.join(workspacePath.path, '.graphics-workbench', 'merge-pdf', 'safe-mode')));
   });
 
-  test('上書き後のUndoで既存PDFを復元する', async () => {
+  test('出力先に既存PDFがある状態で競合解決の上書きを選んで結合し、その後のundo操作で上書き前の既存PDFの中身を復元する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
 
     const firstPath = path.join(workspacePath.path, 'first.pdf');
@@ -64,7 +64,7 @@ suite('PDF結合operation', () => {
     assert.deepStrictEqual(await readFile(outputPath), originalOutput);
   });
 
-  test('変換開始前にキャンセルされた場合は出力を作成しない', async () => {
+  test('変換開始前にabort済みsignalを渡すとAbortErrorで失敗し、出力PDFを作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
 
     const firstPath = path.join(workspacePath.path, 'first.pdf');
@@ -90,7 +90,7 @@ suite('PDF結合operation', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('preflightより先にworkspace境界を検証し、外部symlink入力を読み込まない', async () => {
+  test('入力がworkspace外のファイルへのsymlinkの場合、workspace境界検証で読み込み前に拒否し、外部ファイルを読まず出力も一時ファイルも作らない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
     await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-outside-'));
 
@@ -118,7 +118,7 @@ suite('PDF結合operation', () => {
     await assert.rejects(access(stagingRootPath));
   });
 
-  test('競合解決でキャンセルされた場合はstagingを削除し既存出力を維持する', async () => {
+  test('既存の出力ファイルに対する競合解決でキャンセルを選ぶと結合を中止し、既存出力を維持したまま一時作業フォルダを削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
 
     const firstPath = path.join(workspacePath.path, 'first.pdf');

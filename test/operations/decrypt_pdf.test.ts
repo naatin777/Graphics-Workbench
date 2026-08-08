@@ -23,8 +23,8 @@ import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const password = 'secret-password';
 
-suite('PDF復号化', () => {
-  test('mupdfで暗号化PDFを復号し、パスワードなしで読み取れる', async () => {
+suite('パスワード付きPDFの復号化', () => {
+  test('mupdfでAES-256暗号化したmulti-page-table.pdfを指定パスワードで復号し、パスワード不要で読み取れるPDFとして出力する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -53,7 +53,7 @@ suite('PDF復号化', () => {
     }
   });
 
-  test('誤ったパスワードでは復号に失敗し出力を残さない', async () => {
+  test('誤ったパスワードを渡すと復号に失敗し、出力ファイルを作成しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -70,7 +70,7 @@ suite('PDF復号化', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('出力先が既に存在する場合は何も作成しない', async () => {
+  test('出力先に既存ファイルがある場合はOutput file already existsエラーで復号前に失敗し、既存内容を変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');

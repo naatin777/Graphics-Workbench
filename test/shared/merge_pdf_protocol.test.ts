@@ -5,8 +5,8 @@ import {
   isMergePdfWebviewToHostMessage,
 } from '../../src/shared/protocols/merge_pdf_protocol.js';
 
-suite('Merge PDF Webviewプロトコル', () => {
-  test('initおよびapplyメッセージの型を受け付ける', () => {
+suite('Merge PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/apply/ready）', () => {
+  test('2つ以上のsources（各sourceId/fileName/vscode-resource URI）とpreview・labelsを持つinitメッセージと、非空sourceIdsを持つapplyメッセージを受け入れ、requestId付きreadyと空typeを拒否する', () => {
     assert.equal(
       isMergePdfHostToWebviewMessage({
         type: 'init',
@@ -53,7 +53,7 @@ suite('Merge PDF Webviewプロトコル', () => {
     assert.equal(isMergePdfWebviewToHostMessage({ type: '' }), false);
   });
 
-  test('ファイルシステムパスと未サポートのペイロードフィールドを拒否する', () => {
+  test('pdfSrcがvscode-resourceでないファイルシステムパスを持つinitと、sourceIds以外にpathsを持つapplyと、message以外のcodeを持つpreviewLoadFailedを拒否する', () => {
     assert.equal(
       isMergePdfHostToWebviewMessage({
         type: 'init',

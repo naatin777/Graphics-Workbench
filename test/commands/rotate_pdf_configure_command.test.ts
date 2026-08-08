@@ -21,8 +21,8 @@ import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 import { stubWebviewPanel, waitFor } from '../helpers/webview_panel.js';
 
-suite('Rotate PDF ConfigureコマンドのApplyエラー処理', () => {
-  test('範囲外ページをApplyするとエラー通知され、Webviewへerrorメッセージが返る', async () => {
+suite('Rotate PDF ConfigureコマンドがWebviewから送られたApplyを拒否してエラー通知する処理', () => {
+  test('ページ総数を超えるページ番号99への回転Applyを送るとホスト側のApply処理が範囲外として拒否し、エラー通知とerrorメッセージをWebviewへ送信する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
@@ -54,7 +54,7 @@ suite('Rotate PDF ConfigureコマンドのApplyエラー処理', () => {
     }
   });
 
-  test('Apply失敗後もapply lockが解放され、再度Applyできる', async () => {
+  test('範囲外のApplyが失敗した後もApply中の多重実行ガードが解放されており、続けて送った2回目のApplyも処理され再びエラー通知が発生する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(

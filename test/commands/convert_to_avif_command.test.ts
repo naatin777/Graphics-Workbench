@@ -57,13 +57,13 @@ suite('AVIFに変換コマンド', () => {
     sandbox.restore();
   });
 
-  test('コマンドが登録されている', async () => {
+  test('graphics-workbench.convertToAvifコマンドがVS Codeに登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
     assert.ok(commands.includes('graphics-workbench.convertToAvif'));
   });
 
-  test('PNG、JPEG、WebP、PDFを1つのbatchでAVIFへ変換する', async () => {
+  test('PNG、JPEG、WebP、2ページPDFを1回のコマンド実行でまとめてAVIFへ変換し、画像は拡張子置換の.avif、PDFはページごとの-1.avif/-2.avifをheif形式で生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -96,7 +96,7 @@ suite('AVIFに変換コマンド', () => {
     }
   });
 
-  test('SVGを読み取り可能なAVIFへ変換する', async () => {
+  test('SVG入力から変換したAVIFがheif形式で幅と高さが0より大きい', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -115,15 +115,15 @@ suite('AVIFに変換コマンド', () => {
     }
   });
 
-  test('.mmdファイルを読み取り可能なAVIFへ変換する', async () => {
+  test('.mmdのMermaid入力を変換したAVIFがheif形式で幅と高さが0より大きい', async () => {
     await assertMermaidFileConvertsToAvif('source.mmd');
   });
 
-  test('.mermaidファイルを読み取り可能なAVIFへ変換する', async () => {
+  test('.mermaidのMermaid入力を変換したAVIFがheif形式で幅と高さが0より大きい', async () => {
     await assertMermaidFileConvertsToAvif('source.mermaid');
   });
 
-  test('GIF、TIFFをAVIFへ変換する', async () => {
+  test('GIFとTIFFのテスト入力ファイルをそれぞれAVIFへ変換し、heif形式で幅と高さが0より大きい', async () => {
     for (const [format, fixtureFileName] of [
       ['gif', 'swirl-gradient.gif'],
       ['tiff', 'heatmap.tiff'],
@@ -132,7 +132,7 @@ suite('AVIFに変換コマンド', () => {
     }
   });
 
-  test('AVIFからAVIFへは変換しない', async () => {
+  test('AVIF入力を変換せず、ページ分割されたsource-1.avifも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -147,7 +147,7 @@ suite('AVIFに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPngToAvifが設定されている場合は指定した出力先を使う', async () => {
+  test('outputPath.convertPngToAvifが設定済みの場合、テンプレートを展開したcustom-source.avifを出力し、既定のsource.avifは作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -171,7 +171,7 @@ suite('AVIFに変換コマンド', () => {
     }
   });
 
-  test('空のpair-specific outputPath設定は既定値へfallbackする', async () => {
+  test('outputPath.convertPngToAvifが空文字の場合は既定のsource.avifへ出力する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {

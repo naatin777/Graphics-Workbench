@@ -5,8 +5,8 @@ import { degrees, PDFDocument } from 'pdf-lib';
 import { openPdfDocument } from '../../src/operations/pdf/mupdf.js';
 import { getPdfPageGeometry } from '../../src/operations/pdf/pdf_page_geometry.js';
 
-suite('PDF page geometry', () => {
-  test('reports absolute MediaBox/CropBox coordinates and normalized rotation', async () => {
+suite('PDFページのジオメトリ取得', () => {
+  test('負のオフセットや90/270度回転を持つPDFページから、絶対座標のMediaBox/CropBoxと正規化されない回転角をそのまま返す', async () => {
     const document = await PDFDocument.create();
     const page = document.addPage([600, 800]);
     page.setMediaBox(100, 200, 600, 800);

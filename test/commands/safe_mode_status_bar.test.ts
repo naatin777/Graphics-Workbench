@@ -23,7 +23,7 @@ import * as vscode from 'vscode';
 
 import { initializeSafeMode, toggleSafeModeCommand } from '../../src/commands/lifecycle/safe_mode.js';
 
-suite('Safe Modeステータスバー', () => {
+suite('Safe Modeのstatus bar項目の作成・表示文言・toggle連動・状態復元', () => {
   let sandbox: sinon.SinonSandbox;
   let storage: MemoryState;
   let statusBarItem: FakeStatusBarItem;
@@ -42,7 +42,7 @@ suite('Safe Modeステータスバー', () => {
     sandbox.restore();
   });
 
-  test('初期状態ではSafe Mode ONのステータスバー項目を作成して表示する', () => {
+  test('初期状態ではSafe Mode ONを示す文言・toggleコマンド・tooltipを持つstatus bar項目を作成して1回表示する', () => {
     initializeSafeMode(createExtensionContext(storage, subscriptions));
 
     assert.strictEqual(statusBarItem.text, '$(shield) Safe Mode: ON');
@@ -51,7 +51,7 @@ suite('Safe Modeステータスバー', () => {
     assert.strictEqual(statusBarItem.showCallCount, 1);
   });
 
-  test('toggleコマンド実行時に表示文言と永続化状態を更新する', async () => {
+  test('toggleコマンドを実行するたびにstatus barの表示文言をON/OFFで切り替え、その状態をglobalStateへ保存する', async () => {
     initializeSafeMode(createExtensionContext(storage, subscriptions));
 
     await toggleSafeModeCommand();
@@ -65,7 +65,7 @@ suite('Safe Modeステータスバー', () => {
     assert.strictEqual(storage.get('safeMode.enabled'), true);
   });
 
-  test('初期化時にglobalStateからSafe Mode OFF状態を復元する', async () => {
+  test('globalStateに保存済みのSafe Mode OFF状態を初期化時に読み取り、status barにOFF表示を復元する', async () => {
     await storage.update('safeMode.enabled', false);
 
     initializeSafeMode(createExtensionContext(storage, subscriptions));
@@ -73,7 +73,7 @@ suite('Safe Modeステータスバー', () => {
     assert.strictEqual(statusBarItem.text, '$(shield) Safe Mode: OFF');
   });
 
-  test('ステータスバー項目をsubscriptionsに登録する', () => {
+  test('初期化時に作成したstatus bar項目をExtensionContextのsubscriptionsへ登録して破棄対象にする', () => {
     initializeSafeMode(createExtensionContext(storage, subscriptions));
 
     assert.strictEqual(subscriptions.length, 1);

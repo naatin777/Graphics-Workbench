@@ -16,8 +16,8 @@ const LEGACY_TO_PDF_COMMANDS = [
   'graphics-workbench.convertSvgToPdf',
 ] as const;
 
-suite('Extension activation smoke', () => {
-  test('拡張機能をactivateすると代表commandが利用可能になる', async () => {
+suite('拡張機能のactivateとworkspace内ファイルへの変換コマンド実行', () => {
+  test('拡張機能をactivateするとcropPdf.autoやsplitPdf.allPagesなどの代表commandが登録され、cropPdf.manualと旧convert系command（convertPngToPdf・convertJpegToPdf・convertWebpToPdf・convertAvifToPdf・convertSvgToPdf）は登録されない', async () => {
     const extension = vscode.extensions.getExtension(extensionIdentity.id);
 
     assert.ok(extension);
@@ -44,7 +44,7 @@ suite('Extension activation smoke', () => {
     }
   });
 
-  test('PNGからPDFへの変換コマンドを実行してファイル変換できる', async () => {
+  test('workspace内のPNGにconvertToPdfコマンドを実行すると、同じディレクトリへ1ページのPDFが生成される', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -70,7 +70,7 @@ suite('Extension activation smoke', () => {
     }
   });
 
-  test('cropPdf.autoコマンドがworkspace内のPDFを受け付けてエラーにできる', async () => {
+  test('workspace内の2ページPDFにcropPdf.autoコマンドを実行すると、margin 0で自動クロップした2ページのdocument-crop.pdfが生成される', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
@@ -97,7 +97,7 @@ suite('Extension activation smoke', () => {
     }
   });
 
-  test('splitPdf.allPagesコマンドがworkspace内のPDFをページごとに分割できる', async () => {
+  test('workspace内の2ページPDFにsplitPdf.allPagesコマンドを実行すると、split-testディレクトリ配下へページごとに1ページのPDF（1.pdfと2.pdf）が生成される', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 

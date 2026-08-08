@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 
 import { HeavyProcessLimiter } from '../../src/operations/external_tools/heavy_process_limiter.js';
 
-suite('共有重処理キュー', () => {
-  test('同時実行数を共有し、待機中のキャンセルで開始しない', async () => {
+suite('重処理の共有実行キュー', () => {
+  test('同時実行数を1にしたリミッタで先頭タスクの実行中に待機させた2件目をキャンセルすると、開始前にキャンセルとしてrejectされ、先頭の完了後も2件目のタスク本体は実行されない', async () => {
     const limiter = new HeavyProcessLimiter(1);
     let releaseFirst!: () => void;
     let secondStarted = false;
@@ -25,7 +25,7 @@ suite('共有重処理キュー', () => {
     assert.strictEqual(secondStarted, false);
   });
 
-  test('先行タスクの失敗後も後続タスクを実行する', async () => {
+  test('同時実行数を1にしたリミッタで先頭タスクが失敗しても、その後に待機していた後続タスクが開始されて実行結果を返す', async () => {
     const limiter = new HeavyProcessLimiter(1);
     const failed = limiter.run(async () => {
       throw new Error('first failed');

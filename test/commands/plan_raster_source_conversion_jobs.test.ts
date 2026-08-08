@@ -9,8 +9,8 @@ import { getDefaultConfiguration } from '../../src/generated/extension_manifest.
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
-suite('raster source planner', () => {
-  test('raster sourceを指定形式のpage jobへ展開する', async () => {
+suite('ラスター画像を出力テンプレートに従った1ページの変換処理単位（出力パス割当て）へ展開する処理', () => {
+  test('PNGのラスター入力をページ1の変換処理単位へ展開し、出力テンプレートからsource-1.jpegの出力パスを生成する', async () => {
     const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
     await using temporaryDirectory = await mkdtempDisposable(path.join(workspace.uri.fsPath, 'gw-plan-raster-'));
 

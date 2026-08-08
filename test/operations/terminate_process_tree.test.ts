@@ -88,8 +88,8 @@ const runTest = (title: string, fn: () => void): void => {
   void test.skip(title, fn);
 };
 
-void suite('terminateProcessTree — Windows', () => {
-  runTest('taskkill /t /fを最初に起動し、child.kill()は実行しない', () => {
+void suite('terminateProcessTreeのWindows挙動', () => {
+  runTest('Windowsでは最初にtaskkill /pid /t /fを起動し、child.kill()を先に実行しない', () => {
     spawnCalls.length = 0;
     const child = createChild({});
 
@@ -99,7 +99,7 @@ void suite('terminateProcessTree — Windows', () => {
     assert.strictEqual(child.killed, 0, 'child.kill() should not be the first action');
   });
 
-  runTest('taskkillが失敗(非0 exit)した場合にchild.kill()へフォールバックする', () => {
+  runTest('taskkillが非0 exitで失敗した場合はchild.kill()をフォールバックとして呼ぶ', () => {
     spawnCalls.length = 0;
     const child = createChild({});
 
@@ -109,7 +109,7 @@ void suite('terminateProcessTree — Windows', () => {
     assert.strictEqual(child.killed, 1, 'child.kill() should be called when taskkill fails');
   });
 
-  runTest('taskkillの起動が失敗(error)した場合にchild.kill()へフォールバックする', () => {
+  runTest('taskkillの起動がerror（ENOENT等）で失敗した場合もchild.kill()をフォールバックとして呼ぶ', () => {
     spawnCalls.length = 0;
     const child = createChild({});
 
@@ -119,7 +119,7 @@ void suite('terminateProcessTree — Windows', () => {
     assert.strictEqual(child.killed, 1, 'child.kill() should be called when taskkill cannot run');
   });
 
-  runTest('taskkillが成功(exit 0)した場合はchild.kill()しない', () => {
+  runTest('taskkillがexit 0で成功した場合はchild.kill()を呼ばない', () => {
     spawnCalls.length = 0;
     const child = createChild({});
 
@@ -129,7 +129,7 @@ void suite('terminateProcessTree — Windows', () => {
     assert.strictEqual(child.killed, 0, 'child.kill() is only a fallback');
   });
 
-  runTest('childが既に終了していればtaskkillもchild.kill()もしない', () => {
+  runTest('childが既にexitしている場合はtaskkillもchild.kill()も呼ばず放置する', () => {
     spawnCalls.length = 0;
     const child = createChild({ exitCode: 1 });
 

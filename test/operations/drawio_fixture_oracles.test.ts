@@ -45,9 +45,9 @@ const invalidCases = [
   { fileName: 'truncated-embedded-image.drawio.png', workspaceSourcePath: 'broken/élément 🚧.drawio.png' },
 ] as const;
 
-suite('Draw.io fixtureの実変換比較', () => {
+suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
   for (const fixtureCase of validCases) {
-    test(`${fixtureCase.inputFileName}をPNG/SVG/PDFへ変換すると固定正解データと一致する`, async function convertsFixtureToExpectedOutputs() {
+    test(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async function convertsFixtureToExpectedOutputs() {
       const drawioPath = readDrawioExecutablePath(getExtensionConfiguration());
       if (drawioPath === '') {
         this.skip();
@@ -138,7 +138,7 @@ suite('Draw.io fixtureの実変換比較', () => {
   }
 
   for (const [index, invalidCase] of invalidCases.entries()) {
-    test(`invalid/drawio/${invalidCase.fileName}をPDFへ実変換すると失敗し、出力を残さない`, async function expectsInvalidFixtureToFailWithoutOutput() {
+    test(`invalid/drawio/${invalidCase.fileName}を実Draw.ioでPDFへ実変換すると失敗し、出力PDFを作成しない`, async function expectsInvalidFixtureToFailWithoutOutput() {
       const drawioPath = readDrawioExecutablePath(getExtensionConfiguration());
       if (drawioPath === '') {
         this.skip();

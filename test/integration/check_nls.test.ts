@@ -8,8 +8,8 @@ import * as vscode from 'vscode';
 
 const execFileAsync = promisify(execFile);
 
-suite('NLS整合性チェック', () => {
-  test('英日NLSのkeyとplaceholderを検証できる', async () => {
+suite('NLSの整合性をスクリプトとscannerで検証する', () => {
+  test('拡張機能パッケージのcheck-nls.mjsを実行し、英日NLSのkey/placeholder整合性が取れていればstdoutに「NLS consistency OK」を出力しstderrは空のままにする', async () => {
     const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
     assert.ok(extension);
 
@@ -21,7 +21,7 @@ suite('NLS整合性チェック', () => {
     assert.strictEqual(result.stderr, '');
   });
 
-  test('userMessageの置換引数をTypeScript scannerで正確に数える', async () => {
+  test('{0} {1}の2プレースホルダテンプレートに対し、userMessage呼び出しの置換引数をTypeScript scannerが数え、引数が不足する呼び出し2件だけをerrorとして検出する', async () => {
     const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
     assert.ok(extension);
 

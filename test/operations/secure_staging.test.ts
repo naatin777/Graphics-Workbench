@@ -7,8 +7,8 @@ import {
 } from '../../src/operations/lifecycle/secure_staging.js';
 import { isRecord } from '../../src/shared/protocols/protocol_utils.js';
 
-suite('機密PDF staging lifecycle', () => {
-  test('active root is preserved and an old root is removed on activation cleanup', async () => {
+suite('機密PDFの中間ディレクトリを作成し、保存期間を過ぎた古い中間ディレクトリを掃除する', () => {
+  test('作成直後のactive rootは2日後のactivation cleanupでも維持され、8日後（保存期間超過）のcleanupではactive・old rootとも削除される', async () => {
     const activeRoot = await createSecurePdfStagingRoot('test-active');
     const oldRoot = await createSecurePdfStagingRoot('test-old');
     await writeFile(

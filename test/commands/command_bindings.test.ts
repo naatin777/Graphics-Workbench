@@ -36,21 +36,21 @@ const LEGACY_PNG_TO_PDF_COMMAND = 'graphics-workbench.convertPngToPdf';
 type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
 type RecordedCall = { bindingId: string; args: unknown[] };
 
-suite('command bindingの整合性', () => {
-  test('binding集合とmanifestのpublic command集合が完全一致する', () => {
+suite('command binding集合とmanifestの整合性検証', () => {
+  test('binding集合のidとmanifestのpublic command集合のidが数・内容とも完全一致する', () => {
     const bindingIds = commandBindings.map((binding) => binding.id);
 
     assert.strictEqual(bindingIds.length, publicCommandIds.length);
     assert.deepStrictEqual(new Set(bindingIds), new Set(publicCommandIds));
   });
 
-  test('bindingのcommand IDに重複がない', () => {
+  test('全bindingのcommand IDに重複がなく一意である', () => {
     const bindingIds = commandBindings.map((binding) => binding.id);
 
     assert.strictEqual(new Set(bindingIds).size, bindingIds.length);
   });
 
-  test('各bindingのmoduleとexport名が実在する', async () => {
+  test('各bindingのmoduleをimportすると指定されたexport名の関数が実在する', async () => {
     for (const binding of commandBindings) {
       const module = await import(bindingModuleSpecifier(binding));
       assert.strictEqual(
@@ -62,7 +62,7 @@ suite('command bindingの整合性', () => {
   });
 });
 
-suite('command registration', () => {
+suite('command登録処理', () => {
   let sandbox: sinon.SinonSandbox;
 
   setup(() => {
@@ -73,7 +73,7 @@ suite('command registration', () => {
     sandbox.restore();
   });
 
-  test('bindingに定義されたcommandだけを登録し、manifest外の旧commandは登録しない', () => {
+  test('bindingに定義されたcommandだけを登録し、manifest外の旧command convertPngToPdfは登録しない', () => {
     const handlers = captureRegisteredHandlers(sandbox);
 
     registerCommandBindings(createContext(), {}, new RecordingOutputChannel(), noopResolver);
@@ -82,7 +82,7 @@ suite('command registration', () => {
     assert.ok(!handlers.has(LEGACY_PNG_TO_PDF_COMMAND), `${LEGACY_PNG_TO_PDF_COMMAND} must not be registered`);
   });
 
-  test('file adapterはuri、uris、dependenciesを渡す', async () => {
+  test('file adapterでcompressPdfを実行するとhandlerへuri、uris、dependenciesをこの順で渡す', async () => {
     const calls = recordingCalls();
     const dependencies: CommandDependencies = {};
     const uri = vscode.Uri.file('/workspace/source.pdf');
@@ -103,7 +103,7 @@ suite('command registration', () => {
     ]);
   });
 
-  test('fileWithContext adapterはExtensionContextを先頭に渡す', async () => {
+  test('fileWithContext adapterでcropPdf.configureを実行するとhandlerへExtensionContextを先頭にuri、undefined、dependenciesを渡す', async () => {
     const calls = recordingCalls();
     const dependencies: CommandDependencies = {};
     const context = createContext();
@@ -123,7 +123,7 @@ suite('command registration', () => {
     ]);
   });
 
-  test('fileWithOptions adapterは固定optionsを最後の引数として渡す', async () => {
+  test('fileWithOptions adapterでconvertToWebpPreserveAnimationを実行するとhandlerへuri、undefined、dependencies、固定optionsの順で渡す', async () => {
     const calls = recordingCalls();
     const dependencies: CommandDependencies = {};
     const uri = vscode.Uri.file('/workspace/source.gif');
@@ -145,7 +145,7 @@ suite('command registration', () => {
     ]);
   });
 
-  test('extensionCommand adapterは任意の引数とdependenciesを渡す', async () => {
+  test('extensionCommand adapterでundoLastConversionへ文字列expected-idを渡すと、handlerへその引数とdependenciesをこの順で渡す', async () => {
     const calls = recordingCalls();
     const dependencies: CommandDependencies = {};
 
@@ -163,7 +163,7 @@ suite('command registration', () => {
     ]);
   });
 
-  test('extensionCommand adapterは引数なしでもdependenciesを第二引数として渡す', async () => {
+  test('extensionCommand adapterで引数なしでundoLastConversionを実行するとhandlerへundefinedとdependenciesを渡す', async () => {
     const calls = recordingCalls();
     const dependencies: CommandDependencies = {};
 
@@ -180,7 +180,7 @@ suite('command registration', () => {
     ]);
   });
 
-  test('resolverの例外がhandlerから伝播し隠蔽されない', async () => {
+  test('command resolverが例外を投げた場合、handlerの呼び出しが"command resolution failed"エラーでrejectされ伝播する', async () => {
     const handlers = captureRegisteredHandlers(sandbox);
     const throwingResolver: CommandResolver = async () => {
       throw new Error('command resolution failed');
@@ -191,7 +191,7 @@ suite('command registration', () => {
     await assert.rejects(handlers.get('graphics-workbench.compressPdf')!(), /command resolution failed/);
   });
 
-  test('同じmoduleを共有するcommandのfirst load計測は1回だけ記録される', async () => {
+  test('convertToWebpとconvertToWebpPreserveAnimationを実行しても共通moduleのfirst load計測がoutput channelへ1回だけ記録される', async () => {
     const outputChannel = new RecordingOutputChannel();
     const handlers = captureRegisteredHandlers(sandbox);
     sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);

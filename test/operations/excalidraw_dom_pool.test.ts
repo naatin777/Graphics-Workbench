@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 
 import { ExcalidrawDomPool } from '../../src/operations/conversion/excalidraw_dom_pool.js';
 
-suite('Excalidraw DOM pool', () => {
-  test('プールサイズ内でウィンドウを使い回す', () => {
+suite('Excalidraw→SVG変換でのjsdomウィンドウの使い回し（生成・再利用・失敗時再生成・破棄）', () => {
+  test('プールサイズ2で2つを順にacquireすると別々のウィンドウが返り、両方をreleaseした後の3回目acquireで既存ウィンドウのいずれかを再利用する', () => {
     const pool = new ExcalidrawDomPool(2);
     try {
       const first = pool.acquire();
@@ -19,7 +19,7 @@ suite('Excalidraw DOM pool', () => {
     }
   });
 
-  test('プールサイズ以上は生成しない', () => {
+  test('プールサイズ2で3回連続acquireすると、3回目は既存2ウィンドウのいずれかを再利用して新規生成しない', () => {
     const pool = new ExcalidrawDomPool(2);
     try {
       const first = pool.acquire();
@@ -35,7 +35,7 @@ suite('Excalidraw DOM pool', () => {
     }
   });
 
-  test('失敗したウィンドウは次回取得時に再生成される', () => {
+  test('acquireしたウィンドウをmarkFailedしてreleaseすると、次のacquireでは失敗したウィンドウを閉じて新しいウィンドウを生成して返す', () => {
     const pool = new ExcalidrawDomPool(3);
     try {
       const first = pool.acquire();
@@ -49,7 +49,7 @@ suite('Excalidraw DOM pool', () => {
     }
   });
 
-  test('releaseはdocumentをリセットする', () => {
+  test('acquireしたウィンドウのdocument.headとbodyに要素を追加した状態でreleaseを呼ぶと、documentを空にリセットして次の変換に備える', () => {
     const pool = new ExcalidrawDomPool(1);
     try {
       const instance = pool.acquire();
@@ -61,7 +61,7 @@ suite('Excalidraw DOM pool', () => {
     }
   });
 
-  test('disposeは全てのウィンドウを閉じる', () => {
+  test('acquireしてreleaseした全ウィンドウに対してdisposeを呼ぶと、例外なくすべてのウィンドウを閉じてプールを破棄する', () => {
     const pool = new ExcalidrawDomPool(2);
     const first = pool.acquire();
     const second = pool.acquire();

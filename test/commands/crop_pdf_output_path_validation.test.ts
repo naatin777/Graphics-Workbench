@@ -22,7 +22,7 @@ import * as vscode from 'vscode';
 import { cropPdfAutoCommand } from '../../src/commands/pdf/crop_pdf_auto.js';
 
 suite('PDF crop outputPath検証', () => {
-  test('NULを含む設定では進捗表示と作業ファイル作成を開始しない', async () => {
+  test('outputPath.cropPdfにNUL文字が含まれる場合、withProgressもcreateOutputChannelも呼ばず、NULを含むエラーメッセージを表示し、.graphics-workbench作業ディレクトリも作成しない', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 

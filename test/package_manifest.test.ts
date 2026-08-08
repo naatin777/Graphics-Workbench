@@ -97,7 +97,7 @@ interface PackageJson {
 }
 
 suite('package.jsonのruntime制約', () => {
-  test('Extension Hostとrepository開発環境のNode.js制約を分離する', async () => {
+  test('package.jsonを読み、engines.nodeを未指定にしてengines.vscodeを^1.125.0とし、開発用Node.js >=22.22.2とonFail=errorをdevEngines.runtimeで分離指定する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
 
     assert.strictEqual(packageJson.engines.node, undefined);
@@ -110,8 +110,8 @@ suite('package.jsonのruntime制約', () => {
   });
 });
 
-suite('package.jsonのrepository identity', () => {
-  test('Graphics Workbenchのextension identityとrepository URLを使う', async () => {
+suite('package.jsonのリポジトリ情報（name・displayName・homepage・repository.url）', () => {
+  test('package.jsonのname/displayNameをgraphics-workbench/Graphics Workbenchとし、homepageとrepository.urlをGitHubのリポジトリURLに一致させる', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
 
     assert.strictEqual(packageJson.name, 'graphics-workbench');
@@ -125,7 +125,7 @@ suite('package.jsonのrepository identity', () => {
 });
 
 suite('package.jsonの変換メニュー定義', () => {
-  test('公開command・menu・extension登録のID一覧が整合する', async () => {
+  test('contributes.commandsのcommand ID一覧と生成済みpublicCommandIdsを一致させ、menuに載せたcommandがすべてpublic command一覧に含まれることを検証する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const manifestCommandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
     const menuCommandIds = new Set(
@@ -141,7 +141,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('commandContributionsとsubmenuContributionsがmanifestと一致する', async () => {
+  test('生成済みcommandContributionsのkey一覧をcontributes.commandsと一致させ、各commandのtitleKeyと各submenuのlabelKeyがmanifestの%キー%参照と一致することを検証する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const manifestCommandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
@@ -163,7 +163,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('未実装のmanual PDFコマンドを公開しない', async () => {
+  test('未実装のsplitPdf.manualとmergePdf.manualをcommands一覧にもmenu一覧にも含めない', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
     const menuCommandIds = new Set(
@@ -178,7 +178,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('PDFに変換コマンドだけを公開し、旧PDF変換コマンドは公開しない', async () => {
+  test('convertToPdfだけを公開し、旧形式ごとのconvertXxxToPdfコマンド（PNG/JPEG/WebP/AVIF/SVG）はcommands一覧に含めない', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
@@ -189,7 +189,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('ネイティブDraw.io用のPDFコマンドと直接出力設定を公開する', async () => {
+  test('convertDrawioToPdfとconvertDrawioToPdfDirectlyを公開し、両方をExplorer context menuに載せ、直接出力先設定のdefaultを${fileDirname}/${fileBasenameNoExtension}.pdfにする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
@@ -205,7 +205,7 @@ suite('package.jsonの変換メニュー定義', () => {
     );
   });
 
-  test('入力形式別の変換コンテキストメニュー設定を公開する', async () => {
+  test('入力形式ごとの変換コンテキストメニュー有効化設定をtype:boolean・default:true・description:%キー%で公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const { properties } = packageJson.contributes.configuration;
 
@@ -218,7 +218,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('変換メニューの各入力形式を対応する設定で制御する', async () => {
+  test('変換サブメニューと各変換commandのwhen句にグローバル有効化設定・対応する入力形式の設定・gif/tiff拡張子を含め、commandごとの指定設定で表示を制御する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -305,7 +305,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('画像を1つのPDFへ結合するコマンドを複合Draw.io画像から除外する', async () => {
+  test('画像PDF結合コマンドのwhen句にgif/tiff拡張子を含め、複合Draw.io画像（.drawio/.dioの.png/.svg）のときは非表示にしてDraw.io設定では制御しない', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const combineImagesToSinglePdf = convertMenu.find(
@@ -319,7 +319,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(!combineImagesToSinglePdf?.when?.includes(CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property));
   });
 
-  test('Explorerの変換サブメニューにPDFに変換コマンドを表示する', async () => {
+  test('変換サブメニューをExplorerに表示し、convertToPdfをmmd/mermaid/drawio/dio入力で表示し、複合Draw.io画像のエントリも追加し、旧PDF変換コマンドはどのmenuにも載せない', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -358,7 +358,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('convertToPdfのcontext menu入力を大文字小文字非依存で判定する', async () => {
+  test('変換サブメニューとconvertToPdfのwhen句にresourceExtnameとresourceFilenameの大文字小文字非依存(/i)正規表現が含まれることを検証する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -374,7 +374,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('変換サブメニューにSVGに変換コマンドを表示する', async () => {
+  test('変換サブメニューにconvertToSvgを載せ、pdf/mmd/mermaid/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -393,7 +393,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToSvg.when?.includes('dio'));
   });
 
-  test('変換サブメニューにPNGに変換コマンドを表示する', async () => {
+  test('変換サブメニューにconvertToPngを載せ、pdf/svg/mmd/mermaid/jpg/jpeg/webp/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -422,7 +422,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToPng.when?.includes('dio'));
   });
 
-  test('変換サブメニューにJPEGに変換コマンドを表示する', async () => {
+  test('変換サブメニューにconvertToJpegを載せ、pdf/png/svg/mmd/mermaid/webp/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -450,7 +450,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToJpeg.when?.includes('dio'));
   });
 
-  test('変換サブメニューにWebPに変換コマンドを表示する', async () => {
+  test('変換サブメニューにconvertToWebpを載せ、pdf/png/jpg/jpeg/svg/mmd/mermaid/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -479,7 +479,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToWebp.when?.includes('dio'));
   });
 
-  test('変換サブメニューにAVIFに変換コマンドを表示する', async () => {
+  test('変換サブメニューにconvertToAvifを載せ、pdf/png/jpg/jpeg/webp/svg/mmd/mermaid/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -508,7 +508,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToAvif.when?.includes('dio'));
   });
 
-  test('GIFのpreserve/splitコマンドを公開する', async () => {
+  test('convertToGif・convertToGifPreserveAnimation・convertToGifSeparatelyの3コマンドを公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
@@ -517,7 +517,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(commandIds.has('graphics-workbench.convertToGifSeparately'));
   });
 
-  test('WebPのpreserve/splitコマンドを公開する', async () => {
+  test('convertToWebp・convertToWebpPreserveAnimation・convertToWebpSeparatelyの3コマンドを公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
@@ -526,7 +526,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(commandIds.has('graphics-workbench.convertToWebpSeparately'));
   });
 
-  test('GIF/WebPのpreserve/splitコマンドを変換サブメニューに追加する', async () => {
+  test('GIF/WebPのアニメーション保持とフレーム分割の4コマンドを変換サブメニューに載せる', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const commands = new Set(convertMenu.map((entry) => entry.command));
@@ -537,7 +537,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(commands.has('graphics-workbench.convertToGifSeparately'));
   });
 
-  test('GIF/WebPのpreserve/splitコマンドをCommand Paletteから非表示にする', async () => {
+  test('GIF/WebPのアニメーション保持とフレーム分割コマンドをcommandPaletteでwhen=falseにして非表示にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const paletteEntries = packageJson.contributes.menus.commandPalette ?? [];
     const paletteHidden = new Set(paletteEntries.filter((e) => e.when === 'false').map((e) => e.command));
@@ -548,7 +548,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(paletteHidden.has('graphics-workbench.convertToGifSeparately'));
   });
 
-  test('WebP preserve/splitは.gifのみ、GIF preserve/splitは.webpのみに表示する', async () => {
+  test('WebPのアニメーション保持・フレーム分割は.gif入力のときだけ表示し、GIFのアニメーション保持・フレーム分割は.webp入力のときだけ表示する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((e) => e.command === command);
@@ -569,7 +569,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(!gifSeparately?.when?.includes('.gif'), 'GIF separately should not match .gif');
   });
 
-  test('通常のWebPコマンドは.gifを除外し、通常のGIFコマンドは.webpを除外する', async () => {
+  test('通常のconvertToWebpのwhen句に.gifを含めず、通常のconvertToGifのwhen句に.webpを含めない', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((e) => e.command === command);
@@ -581,7 +581,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(!gif?.when?.includes('.webp'), 'Standard GIF should not match .webp');
   });
 
-  test('日本語の変換メニューには行動ベースのラベルを使う', async () => {
+  test('package.jsonのcommand titleを%キー%参照にし、日本語ラベルが選択したファイルを各形式に変換する行動ベースの文言とGIF/WebPのアニメーション保持・フレーム分割文言であることを検証する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const jaMessages = await readJson<Record<string, string>>('package.nls.ja.json');
     const convertToPdf = packageJson.contributes.commands.find(
@@ -603,14 +603,14 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.strictEqual(jaMessages['command.convertToWebpSeparately'], 'WebP: フレーム分割');
   });
 
-  test('英語と日本語のNLSキーが一致している', async () => {
+  test('package.nls.jsonとpackage.nls.ja.jsonのキー一覧をソートして比較し、欠落や余分なキーが無いことを検証する', async () => {
     const enMessages = await readJson<Record<string, string>>('package.nls.json');
     const jaMessages = await readJson<Record<string, string>>('package.nls.ja.json');
 
     assert.deepStrictEqual(sortedKeys(jaMessages), sortedKeys(enMessages));
   });
 
-  test('WebPとAVIFのeffort設定を公開する', async () => {
+  test('convertToWebp.effortをdefault:4・範囲0-6で、convertToAvif.effortをdefault:4・範囲0-9で公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const { properties } = packageJson.contributes.configuration;
 
@@ -630,7 +630,7 @@ suite('package.jsonの変換メニュー定義', () => {
     });
   });
 
-  test('outputPathsのスキーマはadditionalPropertiesを禁止する', async () => {
+  test('outputPaths設定のスキーマにadditionalProperties:falseを指定し、定義済みのproperty名だけを受け付ける', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const outputPaths = requireValue(
       packageJson.contributes.configuration.properties['graphics-workbench.outputPaths'],
@@ -640,13 +640,13 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(outputPaths.properties, 'outputPaths must have explicit properties');
   });
 
-  test('LaTeX文書でdrag and drop / clipboard paste用に拡張機能を起動する', async () => {
+  test('onLanguage:latexをactivationEventsに含め、LaTeX文書を開いたときdrag and drop / clipboard paste用に拡張機能を起動する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
 
     assert.ok(packageJson.activationEvents?.includes('onLanguage:latex'));
   });
 
-  test('LaTeX挿入用の出力先とsnippet候補設定を公開する', async () => {
+  test('LaTeX挿入用のclipboard画像出力先設定outputPath.clipboardImageをtype:string・default:${fileDirname}/${dateNow}で公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const { properties } = packageJson.contributes.configuration;
 

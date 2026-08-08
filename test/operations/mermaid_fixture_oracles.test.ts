@@ -9,11 +9,11 @@ import { assertPdfMatches, assertRasterMatches, assertSvgStructureMatches } from
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
 
-suite('Mermaid fixtureの内容比較', () => {
+suite('Mermaidテスト入力のPNG・SVG・PDF変換結果が、各期待出力と一致する', () => {
   for (const [index, fixturePath] of listInputFixturePathsSync(path.join(testInputDirectory, 'valid', 'mermaid'))
     .filter((candidatePath) => sourceFormatForPath(candidatePath) === 'mermaid')
     .entries()) {
-    test(`mermaid/${path.basename(fixturePath)}をPNG/SVG/PDFへ変換すると固定正解データと一致する`, async () => {
+    test(`mermaid/${path.basename(fixturePath)}をPNG・SVG・PDFへそれぞれ変換し、PNGはrenderer許容差付き、SVGは構造、PDFはレンダリング比較で各固定正解データと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
         const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));

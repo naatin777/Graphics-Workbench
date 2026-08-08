@@ -46,7 +46,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     sandbox.restore();
   });
 
-  test('コマンドが登録されている', async () => {
+  test('graphics-workbench.convertImagesToSinglePdfコマンドがVS Codeに登録されている', async () => {
     const extension = vscode.extensions.getExtension(extensionIdentity.id);
     if (extension && !extension.isActive) {
       await extension.activate();
@@ -55,7 +55,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     assert.ok(commands.includes('graphics-workbench.convertImagesToSinglePdf'));
   });
 
-  test('open workspace外の入力をworkspaceとして扱わない', async () => {
+  test('入力ファイルが開いているworkspace外にある場合は変換を開始せず、workspace外であることを示すエラーメッセージを表示する', async () => {
     await using outsideDirectory = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-command-'));
 
     const sourcePath = path.join(outsideDirectory.path, 'outside.png');
@@ -67,7 +67,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     assert.match(String(showErrorMessage.firstCall.args[0]), /inside an open workspace/);
   });
 
-  test('file scheme以外の入力を拒否する', async () => {
+  test('untitledなどfileスキーム以外の入力uriは変換を開始せず、"Only local files"を含むエラーメッセージを表示する', async () => {
     await vscode.commands.executeCommand(
       'graphics-workbench.convertImagesToSinglePdf',
       vscode.Uri.parse('untitled:test.png'),
@@ -77,7 +77,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     assert.match(String(showErrorMessage.firstCall.args[0]), /Only local files/);
   });
 
-  test('単一入力で設定済み相対テンプレートをSaveダイアログなしで解決する', async () => {
+  test('単一のPNG入力で出力テンプレートが設定済みの場合、Saveダイアログを開かずにテンプレートを展開したパスへPDFを生成し、エラー通知も表示しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -108,7 +108,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('複数入力で明示的に設定されたテンプレートをSaveダイアログなしで使用する', async () => {
+  test('複数のPNG入力で出力テンプレートが設定済みの場合、Saveダイアログを開かずにテンプレートを展開したパスへ結合PDFを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -143,7 +143,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('完了した画像変換をVS Code進捗通知でM/Nとして報告する', async () => {
+  test('2枚のPNG入力の変換中にVS Code進捗通知へ「準備中」と「1/2、2/2完了」のメッセージを報告し、結合PDFを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -193,7 +193,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('テンプレート未設定の複数入力でSaveダイアログを表示する', async () => {
+  test('出力テンプレートが未設定の複数PNG入力の場合、Saveダイアログを1回表示して選択されたパスへ結合PDFを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -222,7 +222,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('プレビューは入力順を保持し、入力の移動と除外が可能', async () => {
+  test('プレビューで2番目の入力の移動ボタンと1番目の入力の除外ボタンを押した場合、残った2番目の入力だけを返す', async () => {
     const quickPick = createFakeQuickPick((pick) => {
       const second = requireValue(pick.items[1]);
       const first = requireValue(pick.items[0]);
@@ -236,7 +236,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     assert.deepStrictEqual(await previewCombineInputs(sourceUris), [sourceUris[1]]);
   });
 
-  test('プレビューキャンセル時にSaveダイアログを開かず出力も作成しない', async () => {
+  test('プレビューをキャンセルした場合、Saveダイアログを開かず出力PDFも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -260,7 +260,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('Undoを登録し、成功したステージングを削除し、上書きバックアップのみを保持する', async () => {
+  test('既存の出力PDFを上書きする変換を実行すると、変換結果をworkspace内の一時作業ディレクトリ（.graphics-workbench配下）に保存し、上書き前の旧PDFをバックアップとして保持する。Undo実行で出力PDFを旧内容へ復元し、その一時作業ディレクトリを削除する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -299,7 +299,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('キャンセル済みトークンで進捗が開始された場合はコミットせず標準通知を表示する', async () => {
+  test('キャンセル済みトークンで進捗が開始された場合、出力PDFを作成せず変換キャンセルの標準通知を表示する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {

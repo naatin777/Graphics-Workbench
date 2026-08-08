@@ -19,3 +19,4 @@ coverage/
 test/workspace/*
 !test/workspace/.gitkeep
 core
+.vscode-test-ci-host/

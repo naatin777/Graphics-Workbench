@@ -15,21 +15,21 @@ import { splitPdfByPageGroups } from '../../src/operations/pdf/split_pdf.js';
 import { invalidPreflightInputDirectory } from '../helpers/fixture_paths.js';
 
 suite('PDFページグループ分割', () => {
-  test('入力順でページ式を解析し、範囲と重複を処理する', () => {
+  test('ページ式"10, 3-5, 3, -2, 7-"を10ページのPDFで解析すると、入力順のまま範囲を展開し重複を保持したページ列を返す', () => {
     assert.deepEqual(parseSplitPdfPages('10, 3-5, 3, -2, 7-', 10), {
       ok: true,
       pages: [10, 3, 4, 5, 3, 1, 2, 7, 8, 9, 10],
     });
   });
 
-  test('不正な形式、降順、範囲外のページ式を拒否する', () => {
+  test('空の式やカンマ連続（1,,3）、降順範囲（3-1）、ページ数超過（4）のページ式は解析失敗にする', () => {
     assert.equal(parseSplitPdfPages('1,,3', 3).ok, false);
     assert.equal(parseSplitPdfPages('-', 3).ok, false);
     assert.equal(parseSplitPdfPages('3-1', 3).ok, false);
     assert.equal(parseSplitPdfPages('4', 3).ok, false);
   });
 
-  test('指定順でグループ化PDFを作成し、重複ページを保持する', async () => {
+  test('ページグループ[[3,1,3],[2]]を指定すると、group1は3→1→3の順で重複を保持し、group2は2ページ目だけのPDFとして生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
 
@@ -63,7 +63,7 @@ suite('PDFページグループ分割', () => {
     );
   });
 
-  test('ステージング作成前に不正なPDFを共通preflightで拒否する', async () => {
+  test('分割処理の事前検証で拒否され、一時領域も分割出力も作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const outputPath = path.join(workspacePath.path, 'group.pdf');
@@ -91,7 +91,7 @@ suite('PDFページグループ分割', () => {
     await assert.rejects(access(stagingRootPath));
   });
 
-  test('空のグループと範囲外のグループをコミット前に拒否する', async () => {
+  test('ページ数の範囲外グループ（[1,3]）と空グループ（[]）は出力前に拒否して出力PDFを作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const outputPath = path.join(workspacePath.path, 'group.pdf');
@@ -128,7 +128,7 @@ suite('PDFページグループ分割', () => {
     );
   });
 
-  test('定義されたプロトコルの型のみを受け付ける', () => {
+  test('split-pdfのメッセージ規約に合うinit/ready/previewLoadFailed/applyメッセージだけを受け入れ、追加キーや不正型を拒否する', () => {
     const labels: SplitPdfLabels = {
       header: {
         title: 'Split PDF',

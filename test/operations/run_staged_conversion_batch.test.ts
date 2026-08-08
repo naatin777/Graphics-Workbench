@@ -5,8 +5,8 @@ import path from 'node:path';
 
 import { runStagedConversionBatch } from '../../src/operations/lifecycle/run_staged_conversion_batch.js';
 
-suite('ステージング済み変換バッチ', () => {
-  test('成功時はcommit後もUndo登録前のoperation artifactを保持する', async () => {
+suite('変換出力を一時領域へ書き出し、全件成功後に最終出力へ反映し、失敗・中断時は一時領域を掃除する一括処理', () => {
+  test('成功時は一時出力を最終出力へ反映した後も、反映前の一時出力を保持したまま最終出力にも同じ内容を置く', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
     const outputPath = path.join(workspacePath.path, 'result.png');
     const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'fixture-raster', 'run');
@@ -28,7 +28,7 @@ suite('ステージング済み変換バッチ', () => {
     assert.strictEqual(await readFile(stagedOutputPath, 'utf8'), 'raster result');
   });
 
-  test('stage失敗時は正しいoperation rootだけをcleanupし、最終出力を作らない', async () => {
+  test('変換が失敗した場合は該当処理の一時作業ディレクトリを削除して最終出力を作らず、workspace外の既存ファイルは保持する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
     await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-outside-'));
     const outputPath = path.join(workspacePath.path, 'result.png');
@@ -57,7 +57,7 @@ suite('ステージング済み変換バッチ', () => {
     assert.strictEqual(await readFile(outsideFilePath, 'utf8'), 'keep');
   });
 
-  test('安全でないrunIdはpath構築前に拒否し、workspace内の任意directoryをcleanupしない', async () => {
+  test('安全でないrunId（../../src）はstage開始前にUnsafe runIdで拒否し、workspace内の保護ファイルを削除しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
     const protectedDirectory = path.join(workspacePath.path, 'src');
     const protectedFile = path.join(protectedDirectory, 'keep.txt');
@@ -80,7 +80,7 @@ suite('ステージング済み変換バッチ', () => {
     assert.strictEqual(await readFile(protectedFile, 'utf8'), 'keep');
   });
 
-  test('1件のstage失敗後も実行中のstageを待ってからcleanupする', async () => {
+  test('1つ目のstageが失敗しても実行中2つ目のstageの完了を待ってからcleanupし、3つ目の待機stageは開始しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
     const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'fixture-raster', 'abort-run');
     let resolveSecondStarted!: () => void;
@@ -141,7 +141,7 @@ suite('ステージング済み変換バッチ', () => {
     }
   });
 
-  test('caller cancellationでも実行中のstageがsettleするまでcleanupせず、queueを開始しない', async () => {
+  test('callerがabortしても実行中のstageがsettleするまでcleanupせず、未開始の変換は開始せずAbortErrorで終了後に一時作業ディレクトリを削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staged-batch-'));
     const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'fixture-raster', 'caller-abort-run');
     const abortController = new AbortController();

@@ -54,7 +54,7 @@ suite('直前変換の取り消し処理', () => {
     sandbox.restore();
   });
 
-  test('複数のUndo recordを保持し、直近recordのbackupを保持する', async () => {
+  test('1回目の変換を記録した後で2回目の変換を記録しても、変換1・変換2それぞれの前回内容ファイルを削除せず、どちらの変換も後から取り消せる状態を保つ', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath.path, 'first.pdf');
     const secondOutputPath = path.join(workspacePath.path, 'second.pdf');
@@ -90,7 +90,7 @@ suite('直前変換の取り消し処理', () => {
     await assert.doesNotReject(access(secondBackupPath));
   });
 
-  test('複数回のUndoを新しい変換から順に適用できる', async () => {
+  test('同じ出力に対して2つの変換を記録し、新しい変換から順に取り消す。前回内容がある変換は出力を前回内容へ戻し、前回内容の記録が無い変換は出力を削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const outputPath = path.join(workspacePath.path, 'output.pdf');
     const firstRoot = path.join(workspacePath.path, '.graphics-workbench', 'first');
@@ -119,7 +119,7 @@ suite('直前変換の取り消し処理', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('Undo成功後に対象recordのbackupとstagingを削除する', async () => {
+  test('上書き変換のUndoで出力を前回内容ファイルの内容へ復元した後、変換作業用ディレクトリごと前回ファイルを削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const outputPath = path.join(workspacePath.path, 'output.pdf');
     const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
@@ -137,7 +137,7 @@ suite('直前変換の取り消し処理', () => {
     await assert.rejects(access(previousFilePath));
   });
 
-  test('変更されていない出力を削除し、workspace内の作業ファイルは残す', async () => {
+  test('生成時から変更されていない2つの出力PDFを削除し、記録に含まれないworkspace内の作業ファイルは削除しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'output', 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'output', 'second.pdf');
@@ -158,7 +158,7 @@ suite('直前変換の取り消し処理', () => {
     await assert.doesNotReject(access(stagedOutputPath));
   });
 
-  test('出力の1つが変更されている場合はどの出力も削除しない', async () => {
+  test('変換後に出力の1つのSHA-256が変化している場合は削除を開始せず、どの出力も削除しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
@@ -176,7 +176,7 @@ suite('直前変換の取り消し処理', () => {
     await assert.doesNotReject(access(secondOutputPath));
   });
 
-  test('出力の1つが存在しない場合はどの出力も削除しない', async () => {
+  test('変換後に出力の1つが削除されて存在しない場合はUndoを中止し、残りの出力も削除しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
     const secondOutputPath = path.join(workspacePath, 'second.pdf');
@@ -193,7 +193,7 @@ suite('直前変換の取り消し処理', () => {
     await assert.doesNotReject(access(firstOutputPath));
   });
 
-  test('出力の1つがworkspace外へのsymlinkになった場合はどの出力も削除しない', async () => {
+  test('変換後に出力の1つがworkspace外の実体を指すsymlinkへ差し替えられた場合は実体パス判定で拒否し、どの出力も削除しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const outsidePath = path.join(await mkdtemp(path.join(os.tmpdir(), 'gw-undo-outside-')), 'outside.pdf');
     const firstOutputPath = path.join(workspacePath, 'first.pdf');
@@ -214,7 +214,7 @@ suite('直前変換の取り消し処理', () => {
     await assert.doesNotReject(access(outsidePath));
   });
 
-  test('上書きされた出力を取り消すと以前のファイルを復元する', async () => {
+  test('上書きされた出力のUndoで前回内容ファイルの内容を出力へコピーして復元し、作業用ディレクトリの記録が無い場合は前回ファイルも残す', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
     const previousFilePath = path.join(workspacePath, '.graphics-workbench', 'output.previous');
@@ -229,7 +229,7 @@ suite('直前変換の取り消し処理', () => {
     await assert.doesNotReject(access(previousFilePath));
   });
 
-  test('上書きした出力を取り消すと元の内容とmode/mtimeを復元する', async () => {
+  test('上書きされた出力のUndoで元の内容に加えて、変換前に記録したmodeとmtime/atimeも復元する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const stagedOutputPath = path.join(workspacePath.path, '.graphics-workbench', 'run', 'result.pdf');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -259,7 +259,7 @@ suite('直前変換の取り消し処理', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
   });
 
-  test('変換後に出力が変更されている場合は上書き前のファイルを復元しない', async () => {
+  test('変換後に出力のSHA-256が変化している場合はUndoを中止し、上書き前のファイルを復元せず編集後の内容を維持する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
     const previousFilePath = path.join(workspacePath, '.graphics-workbench', 'output.previous');

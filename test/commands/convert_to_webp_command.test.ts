@@ -57,13 +57,13 @@ suite('WebPに変換コマンド', () => {
     sandbox.restore();
   });
 
-  test('コマンドが登録されている', async () => {
+  test('graphics-workbench.convertToWebpコマンドがVS Codeに登録されている', async () => {
     const commands = await vscode.commands.getCommands(true);
 
     assert.ok(commands.includes('graphics-workbench.convertToWebp'));
   });
 
-  test('PNG、JPEG、AVIF、PDFを1つのbatchでWebPへ変換する', async () => {
+  test('PNG、JPEG、AVIF、2ページPDFを1回のコマンド実行でまとめてWebPへ変換し、画像は拡張子置換の.webp、PDFはページごとの-1.webp/-2.webpを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -96,7 +96,7 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('SVGを読み取り可能なWebPへ変換する', async () => {
+  test('SVG入力から変換したWebPがwebp形式で幅と高さが0より大きい', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -115,15 +115,15 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('.mmdファイルを読み取り可能なWebPへ変換する', async () => {
+  test('.mmdのMermaid入力を変換したWebPがwebp形式で幅と高さが0より大きい', async () => {
     await assertMermaidFileConvertsToWebp('source.mmd');
   });
 
-  test('.mermaidファイルを読み取り可能なWebPへ変換する', async () => {
+  test('.mermaidのMermaid入力を変換したWebPがwebp形式で幅と高さが0より大きい', async () => {
     await assertMermaidFileConvertsToWebp('source.mermaid');
   });
 
-  test('GIFをアニメーション保持して1つのWebPへ変換する', async () => {
+  test('convertToWebpPreserveAnimationでGIFを変換し、複数ページの1つのWebPを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -144,7 +144,7 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('GIFをフレーム分割してページ別のWebPへ変換する', async () => {
+  test('convertToWebpSeparatelyでGIFを変換し、フレームごとの01、02連番WebPを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -166,13 +166,13 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('TIFFをWebPへ変換する', async () => {
+  test('TIFFのテスト入力ファイルを変換したWebPがwebp形式で幅と高さが0より大きい', async () => {
     for (const [format, fixtureFileName] of [['tiff', 'heatmap.tiff']] as const) {
       await assertFixtureConvertsToWebp(format, fixtureFileName);
     }
   });
 
-  test('WebPからWebPへは変換しない', async () => {
+  test('WebP入力を変換せず、ページ分割されたsource-1.webpも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -187,7 +187,7 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPngToWebpが設定されている場合は指定した出力先を使う', async () => {
+  test('outputPath.convertPngToWebpが設定済みの場合、テンプレートを展開したcustom-source.webpを出力し、既定のsource.webpは作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -211,7 +211,7 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('空のpair-specific outputPath設定は既定値へfallbackする', async () => {
+  test('outputPath.convertPngToWebpが空文字の場合は既定のsource.webpへ出力する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {

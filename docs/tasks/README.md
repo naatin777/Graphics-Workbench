@@ -2,6 +2,7 @@
 
 ## Current Task
 
+- [0226: 全テスト名を処理フローの日本語訳に全面書き換える](0226-rewrite-test-names-as-flow.md) — Done
 - [0225: drop/paste edit providerをLaTeX以外の文書形式（Typst / Quarkdown）へ拡張する](0225-extend-edit-provider-insertion-formats.md) — Done
 
 ## On hold

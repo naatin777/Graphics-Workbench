@@ -9,7 +9,7 @@ import { requireValue } from '../helpers/required.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 
 suite('Draw.ioへ変換コマンド', () => {
-  test('PNGを.dioファイルへ変換する', async () => {
+  test('PNG入力を.dioファイルへ変換し、出力内容にmxfileまたはmxGraphModelが含まれる', async () => {
     await using workspacePath = await mkdtempDisposable(
       path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-to-drawio-command-'),
     );

@@ -4,23 +4,23 @@ import { readMermaidCliOptions } from '../../src/config/rendering/mermaid_cli_op
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('MermaidテーマおよびbackgroundColor設定', () => {
-  test('デフォルトはtheme=default、backgroundColor=white', () => {
+  test("設定を何も与えない場合、themeは'default'・backgroundColorは'white'を返す", () => {
     const options = readMermaidCliOptions(fakeConfiguration());
     assert.strictEqual(options.theme, 'default');
     assert.strictEqual(options.backgroundColor, 'white');
   });
 
-  test('mermaid.themeからカスタムテーマを読み取る', () => {
+  test("mermaid.themeに'dark'を設定した場合、themeとして'dark'を読み取る", () => {
     const options = readMermaidCliOptions(fakeConfiguration({ 'mermaid.theme': 'dark' }));
     assert.strictEqual(options.theme, 'dark');
   });
 
-  test('mermaid.backgroundColorからカスタムbackgroundColorを読み取る', () => {
+  test("mermaid.backgroundColorに'transparent'を設定した場合、backgroundColorとして'transparent'を読み取る", () => {
     const options = readMermaidCliOptions(fakeConfiguration({ 'mermaid.backgroundColor': 'transparent' }));
     assert.strictEqual(options.backgroundColor, 'transparent');
   });
 
-  test('themeとbackgroundColorはChrome実行パスと共に含まれる', () => {
+  test("mermaid.theme='forest'・execPath.chrome='/usr/bin/chrome'を設定した場合、theme='forest'・backgroundColor=whiteのまま・chromePath='/usr/bin/chrome'をまとめて返す", () => {
     const options = readMermaidCliOptions(
       fakeConfiguration({
         'execPath.chrome': '/usr/bin/chrome',
