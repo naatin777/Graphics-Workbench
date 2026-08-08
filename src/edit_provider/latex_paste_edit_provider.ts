@@ -25,6 +25,7 @@ import {
 } from '../operations/input/save_clipboard_image.js';
 
 import { getImageTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
+import type { InsertionFormat } from './insertion_format.js';
 
 const clipboardImageTypes = [
   { mime: 'image/png', ext: 'png' },
@@ -38,6 +39,7 @@ interface PasteQuickPickItem extends vscode.QuickPickItem {
 }
 
 export interface LatexPasteEditProviderOptions {
+  format?: InsertionFormat;
   getConfiguration?: GetConfiguration;
   resolveOutputConflicts?: (conflicts: string[]) => Promise<OutputConflictDecision>;
   recordConversionForUndo?: (outputs: CommittedConversionOutput[]) => Promise<string>;
@@ -45,12 +47,14 @@ export interface LatexPasteEditProviderOptions {
 }
 
 export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider {
+  private readonly format: InsertionFormat;
   private readonly resolveConflicts: (conflicts: string[]) => Promise<OutputConflictDecision>;
   private readonly getConfiguration: GetConfiguration;
   private readonly rememberConversion: (outputs: CommittedConversionOutput[]) => Promise<string>;
   private readonly outputChannel: LineOutputChannel | undefined;
 
   constructor(options: LatexPasteEditProviderOptions = {}) {
+    this.format = options.format ?? 'latex';
     this.getConfiguration = options.getConfiguration ?? getExtensionConfiguration;
     this.resolveConflicts = options.resolveOutputConflicts ?? resolveOutputConflicts;
     this.outputChannel = options.outputChannel;
@@ -187,7 +191,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
   }
 
   createSingleFileSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
-    const templates = getImageTemplates();
+    const templates = getImageTemplates(this.format);
     const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {
       path: relativeFilePath,

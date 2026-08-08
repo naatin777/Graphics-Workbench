@@ -29,6 +29,10 @@ type ConfigurationKey =
   | 'mermaid.backgroundColor'
   | 'insertLatex.pdfTemplate'
   | 'insertLatex.imageTemplate'
+  | 'insertTypst.pdfTemplate'
+  | 'insertTypst.imageTemplate'
+  | 'insertQuarkdown.pdfTemplate'
+  | 'insertQuarkdown.imageTemplate'
   | 'convertToWebp.effort'
   | 'convertToAvif.effort'
   | 'outputPath.cropPdf'
@@ -274,6 +278,30 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     },
   },
   'insertLatex.imageTemplate': {
+    types: ['string', 'array'],
+    items: {
+      types: ['string'],
+    },
+  },
+  'insertTypst.pdfTemplate': {
+    types: ['string', 'array'],
+    items: {
+      types: ['string'],
+    },
+  },
+  'insertTypst.imageTemplate': {
+    types: ['string', 'array'],
+    items: {
+      types: ['string'],
+    },
+  },
+  'insertQuarkdown.pdfTemplate': {
+    types: ['string', 'array'],
+    items: {
+      types: ['string'],
+    },
+  },
+  'insertQuarkdown.imageTemplate': {
     types: ['string', 'array'],
     items: {
       types: ['string'],
@@ -618,6 +646,10 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'mermaid.backgroundColor': 'string',
   'insertLatex.pdfTemplate': 'string or array of string',
   'insertLatex.imageTemplate': 'string or array of string',
+  'insertTypst.pdfTemplate': 'string or array of string',
+  'insertTypst.imageTemplate': 'string or array of string',
+  'insertQuarkdown.pdfTemplate': 'string or array of string',
+  'insertQuarkdown.imageTemplate': 'string or array of string',
   'convertToWebp.effort': 'integer',
   'convertToAvif.effort': 'integer',
   'outputPath.cropPdf': 'string',
@@ -1126,6 +1158,30 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         configurationReader,
         'insertLatex.imageTemplate',
         '\\begin{figure}[H]\n  \\centering\n  \\resizebox{\\linewidth}{!}{\\includegraphics{${path}}}\n  \\caption{${name}}\n  \\label{fig:${name}}\n\\end{figure}',
+      ),
+    },
+    insertTypst: {
+      pdfTemplate: defineConfiguration<string | string[]>(
+        configurationReader,
+        'insertTypst.pdfTemplate',
+        '#figure(image("${path}"), caption: [${name}])',
+      ),
+      imageTemplate: defineConfiguration<string | string[]>(
+        configurationReader,
+        'insertTypst.imageTemplate',
+        '#figure(image("${path}", width: 80%), caption: [${name}])',
+      ),
+    },
+    insertQuarkdown: {
+      pdfTemplate: defineConfiguration<string | string[]>(
+        configurationReader,
+        'insertQuarkdown.pdfTemplate',
+        '![${name}](${path} "${name}")',
+      ),
+      imageTemplate: defineConfiguration<string | string[]>(
+        configurationReader,
+        'insertQuarkdown.imageTemplate',
+        '![${name}](${path} "${name}")',
       ),
     },
     convertToWebp: {

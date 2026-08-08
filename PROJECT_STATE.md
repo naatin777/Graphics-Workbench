@@ -14,6 +14,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## Implemented
 
+- drop/paste edit providerをTypst / Quarkdownへ拡張（`insertTypst.*` / `insertQuarkdown.*`設定、複数drop形式別ラップ）
 - PR時CI停止（check/test/playwrightをworkflow_dispatchのみに変更、rulesetからrequired_status_checks除去）
 - Graphite廃止（check-prs-landed削除、graphite-stacked-pr/parallel-development skill削除）
 - ローカルDocker test環境（`npm run test:docker`、playwright base image + 変換ツール + 日本語フォント）

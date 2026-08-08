@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0224: PR CIを停止し、Graphite廃止し、ローカルDocker test環境を導入する](0224-stop-pr-ci-and-phase-out-graphite.md) — Done
+- [0225: drop/paste edit providerをLaTeX以外の文書形式（Typst / Quarkdown）へ拡張する](0225-extend-edit-provider-insertion-formats.md) — Done
 
 ## On hold
 
@@ -73,6 +73,7 @@ _No pending migration tasks._
 
 ## Recent Completed
 
+- [0225: drop/paste edit providerをLaTeX以外の文書形式（Typst / Quarkdown）へ拡張する](0225-extend-edit-provider-insertion-formats.md) — Done — `InsertionFormat`抽象化、`insertTypst.*` / `insertQuarkdown.*`設定、複数drop形式別ラップ（subfigure / #grid / .row）、generatorのquote修正、570 passing
 - [0220: 変換commandの境界を段階的に整理する](0220-refactor-conversion-boundaries-in-stages.md) — Done — Phase 16（Webview / Crop child process / Mermaid runner protocol境界）＋Phase 17（レビュー指摘反映: hasExactKeysのown property化、planning逐次化、PDFページplanner共通化、AVIF共通planner移行、WebP/GIF shell・planner分離、error通知一元化）
 - [0219: command登録と生成metadataの正本を整理する](0219-consolidate-command-registration-and-generated-metadata.md) — Done — command binding正本化・data-driven登録・pure manifest/config adapter分離・metadata生成・manifest検証（PR #119–#122、全CI green・マージ済み）
 - [0218: 途中移行・互換残骸を監査して削除する](0218-audit-remove-migration-compat-leftovers.md) — Done — `convertPngToPdf`内部alias・wrapper・旧NLSを削除し、canonicalへ統合。Integration Testと再発防止ルールを更新（PR #118）

@@ -727,6 +727,50 @@
           },
           "description": "%config.insertLatex.imageTemplate%"
         },
+        "graphics-workbench.insertTypst.pdfTemplate": {
+          "type": [
+            "string",
+            "array"
+          ],
+          "default": "#figure(image(\"${path}\"), caption: [${name}])",
+          "items": {
+            "type": "string"
+          },
+          "description": "%config.insertTypst.pdfTemplate%"
+        },
+        "graphics-workbench.insertTypst.imageTemplate": {
+          "type": [
+            "string",
+            "array"
+          ],
+          "default": "#figure(image(\"${path}\", width: 80%), caption: [${name}])",
+          "items": {
+            "type": "string"
+          },
+          "description": "%config.insertTypst.imageTemplate%"
+        },
+        "graphics-workbench.insertQuarkdown.pdfTemplate": {
+          "type": [
+            "string",
+            "array"
+          ],
+          "default": "![${name}](${path} \"${name}\")",
+          "items": {
+            "type": "string"
+          },
+          "description": "%config.insertQuarkdown.pdfTemplate%"
+        },
+        "graphics-workbench.insertQuarkdown.imageTemplate": {
+          "type": [
+            "string",
+            "array"
+          ],
+          "default": "![${name}](${path} \"${name}\")",
+          "items": {
+            "type": "string"
+          },
+          "description": "%config.insertQuarkdown.imageTemplate%"
+        },
         "graphics-workbench.convertToWebp.effort": {
           "type": "integer",
           "default": 4,
@@ -1232,7 +1276,9 @@
   },
   "activationEvents": [
     "onLanguage:latex",
+    "onLanguage:quarkdown",
     "onLanguage:tex",
+    "onLanguage:typst",
     "onStartupFinished"
   ],
   "icon": "assets/icon.png",
