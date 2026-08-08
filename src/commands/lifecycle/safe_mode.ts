@@ -26,31 +26,21 @@ export class SafeModeState {
 }
 
 let safeModeState: SafeModeState | undefined;
-let statusBarItem: vscode.StatusBarItem | undefined;
 
 type SafeModeContext = {
   globalState: StateStorage;
-  subscriptions: vscode.Disposable[];
 };
 
 export function initializeSafeMode(context: SafeModeContext): void {
   safeModeState = new SafeModeState(context.globalState);
-  statusBarItem = vscode.window.createStatusBarItem(
-    'graphics-workbench.safeMode',
-    vscode.StatusBarAlignment.Right,
-    100,
-  );
-  statusBarItem.command = 'graphics-workbench.toggleSafeMode';
-  statusBarItem.tooltip = userMessage('message.safeMode.tooltip');
-  updateStatusBar();
-  statusBarItem.show();
-
-  context.subscriptions.push(statusBarItem);
 }
 
 export async function toggleSafeModeCommand(): Promise<void> {
   await requireSafeModeState().toggle();
-  updateStatusBar();
+}
+
+export function getSafeModeState(): SafeModeState {
+  return requireSafeModeState();
 }
 
 export async function resolveOutputConflicts(conflicts: string[]): Promise<OutputConflictDecision> {
@@ -88,13 +78,4 @@ function requireSafeModeState(): SafeModeState {
   }
 
   return safeModeState;
-}
-
-function updateStatusBar(): void {
-  if (!statusBarItem) {
-    return;
-  }
-
-  const enabled = requireSafeModeState().isEnabled();
-  statusBarItem.text = `$(shield) ${userMessage(enabled ? 'message.safeMode.statusOn' : 'message.safeMode.statusOff')}`;
 }

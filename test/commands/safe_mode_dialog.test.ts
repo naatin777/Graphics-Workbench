@@ -5,13 +5,11 @@
 //
 // Mocked:
 // - vscode.window.showWarningMessageの戻り値
-// - vscode.window.createStatusBarItem
 // - ExtensionContext.globalState相当のkey-value storage
 //
 // Not tested:
 // - ダイアログが画面上で正しく描画されること
 // - ボタンの配置や外観
-// - status barの描画
 // - ファイルの実際の反映処理
 
 import assert from 'node:assert/strict';
@@ -30,7 +28,6 @@ suite('Safe Mode有効時に競合ダイアログの選択結果から上書き�
     sandbox = createSandbox();
     storage = new MemoryState();
     showWarningMessageStub = sandbox.stub(vscode.window, 'showWarningMessage');
-    sandbox.stub(vscode.window, 'createStatusBarItem').returns(new FakeStatusBarItem());
     initializeSafeMode(createExtensionContext(storage));
   });
 
@@ -103,7 +100,6 @@ suite('Safe Mode有効時に競合ダイアログの選択結果から上書き�
 function createExtensionContext(globalState: MemoryState): Parameters<typeof initializeSafeMode>[0] {
   return {
     globalState,
-    subscriptions: [],
   };
 }
 
@@ -122,23 +118,4 @@ class MemoryState {
 
 function isMessageItem(value: unknown): value is vscode.MessageItem {
   return typeof value === 'object' && value !== null && 'title' in value && typeof value.title === 'string';
-}
-
-class FakeStatusBarItem implements vscode.StatusBarItem {
-  readonly id = 'test.safe-mode';
-  readonly alignment = vscode.StatusBarAlignment.Right;
-  readonly priority = 100;
-  name = 'Test Safe Mode';
-  command: string | undefined;
-  text = '';
-  tooltip: vscode.StatusBarItem['tooltip'] = undefined;
-  color: vscode.StatusBarItem['color'] = undefined;
-  backgroundColor: vscode.StatusBarItem['backgroundColor'] = undefined;
-  accessibilityInformation: vscode.StatusBarItem['accessibilityInformation'] = undefined;
-
-  show(): void {}
-
-  hide(): void {}
-
-  dispose(): void {}
 }

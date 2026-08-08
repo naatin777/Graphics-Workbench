@@ -139,6 +139,11 @@
         "category": "Graphics Workbench"
       },
       {
+        "command": "graphics-workbench.openControls",
+        "title": "%command.openControls%",
+        "category": "Graphics Workbench"
+      },
+      {
         "command": "graphics-workbench.cropPdf.configure",
         "title": "%command.cropPdf.configure%",
         "category": "Graphics Workbench"

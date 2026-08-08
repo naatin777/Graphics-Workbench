@@ -59,6 +59,62 @@ export interface RunEnvironmentChecksOptions {
   probe?: ProbeTool;
 }
 
+export type FeatureAvailabilityId = 'pdf-operations' | 'images' | 'svg-to-pdf' | 'drawio' | 'mermaid';
+
+export interface FeatureAvailabilityEntry {
+  id: FeatureAvailabilityId;
+  available: boolean;
+  detail: string;
+}
+
+/** ユーザー視点の機能単位で利用可否を返す。controlsパネルの表示用。 */
+export async function runFeatureAvailabilityChecks(
+  options: RunEnvironmentChecksOptions,
+): Promise<FeatureAvailabilityEntry[]> {
+  const timeoutMs = options.timeoutMs ?? CHECK_TIMEOUT_MS;
+  const probe = options.probe ?? defaultProbe;
+
+  const builtinDetail = userMessage('message.environmentCheck.available');
+  const entries: FeatureAvailabilityEntry[] = [
+    { id: 'pdf-operations', available: true, detail: builtinDetail },
+    { id: 'images', available: true, detail: builtinDetail },
+  ];
+
+  const svgToPdf = await checkSvgToPdf(options.configuration, timeoutMs, options.signal, probe);
+  entries.push({ id: 'svg-to-pdf', available: svgToPdf.status === 'available', detail: svgToPdf.detail });
+
+  const drawio = await checkTool({
+    feature: userMessage('message.environmentCheck.feature.drawioConversion'),
+    toolLabel: userMessage('message.environmentCheck.tool.drawio'),
+    executable: readDrawioExecutablePath(options.configuration),
+    versionArgs: ['--version'],
+    settingId: 'graphics-workbench.execPath.drawio',
+    timeoutMs,
+    signal: options.signal,
+    probe,
+  });
+  entries.push({ id: 'drawio', available: drawio.status === 'available', detail: drawio.detail });
+
+  const mermaidCli = await checkTool({
+    feature: userMessage('message.environmentCheck.feature.mermaidCli'),
+    toolLabel: userMessage('message.environmentCheck.tool.mermaidCli'),
+    executable: readMermaidExecutablePath(options.configuration),
+    versionArgs: ['--version'],
+    settingId: 'graphics-workbench.execPath.mermaid',
+    timeoutMs,
+    signal: options.signal,
+    probe,
+  });
+  const chrome = await checkChrome(options.configuration, timeoutMs, options.signal, probe);
+  entries.push({
+    id: 'mermaid',
+    available: mermaidCli.status === 'available' && chrome.status === 'available',
+    detail: mermaidCli.status === 'available' ? chrome.detail : mermaidCli.detail,
+  });
+
+  return entries;
+}
+
 /** 各外部ツールを `--version` で確認し、機能単位の状態一覧を返す。 */
 export async function runEnvironmentChecks(options: RunEnvironmentChecksOptions): Promise<EnvironmentCheckEntry[]> {
   const timeoutMs = options.timeoutMs ?? CHECK_TIMEOUT_MS;
