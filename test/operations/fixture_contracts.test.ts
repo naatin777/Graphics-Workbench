@@ -6,10 +6,11 @@ import { listInputFixturePaths, testInputDirectory } from '../helpers/fixture_pa
 
 const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
   avif: 2,
-  drawio: 1,
+  drawio: 2,
   'editable-drawio-png': 1,
   'editable-drawio-svg': 1,
   eps: 2,
+  excalidraw: 3,
   gif: 2,
   jpeg: 2,
   mermaid: 3,

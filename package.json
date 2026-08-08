@@ -23,20 +23,21 @@
   "type": "module",
   "main": "./out/extension.js",
   "scripts": {
-    "clean": "node -e \"const fs = require('node:fs'); for (const p of ['out', 'media/webview']) fs.rmSync(p, { recursive: true, force: true })\"",
+    "clean": "node -e \"const fs = require('node:fs'); for (const p of ['out', 'media/webview', 'media/excalidraw']) fs.rmSync(p, { recursive: true, force: true })\"",
     "watch": "tsc --watch -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "typecheck:webview": "tsc --noEmit -p webview/tsconfig.json",
     "typecheck:webview:test": "tsc --noEmit -p webview/tsconfig.test.json",
-    "lint": "oxlint src test webview/apps webview/shared webview/*.ts scripts .github/scripts .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
+    "lint": "oxlint src test webview/apps webview/shared webview/excalidraw webview/*.ts scripts .github/scripts .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
     "lint:strict-experimental": "npm run lint -- -D all -D nursery --type-aware",
-    "lint:fix": "oxlint --fix src test webview/apps webview/shared webview/*.ts scripts .github/scripts .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
-    "format": "oxfmt --config ./oxfmt.config.ts --check src test webview/apps webview/shared package.json tsconfig.json tsconfig.test.json webview/tsconfig.json webview/tsconfig.test.json webview/*.ts scripts .github/scripts/*.mjs .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
-    "format:fix": "oxfmt --config ./oxfmt.config.ts --write src test webview/apps webview/shared package.json tsconfig.json tsconfig.test.json webview/tsconfig.json webview/tsconfig.test.json webview/*.ts scripts .github/scripts/*.mjs .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
+    "lint:fix": "oxlint --fix src test webview/apps webview/shared webview/excalidraw webview/*.ts scripts .github/scripts .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
+    "format": "oxfmt --config ./oxfmt.config.ts --check src test webview/apps webview/shared webview/excalidraw package.json tsconfig.json tsconfig.test.json webview/tsconfig.json webview/tsconfig.test.json webview/*.ts scripts .github/scripts/*.mjs .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
+    "format:fix": "oxfmt --config ./oxfmt.config.ts --write src test webview/apps webview/shared webview/excalidraw package.json tsconfig.json tsconfig.test.json webview/tsconfig.json webview/tsconfig.test.json webview/*.ts scripts .github/scripts/*.mjs .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
     "compile": "tsc -p tsconfig.json",
     "compile:test": "tsc -p tsconfig.test.json",
     "compile:webview": "npm run compile:webview:crop_pdf && npm run compile:webview:merge_pdf && npm run compile:webview:split_pdf && npm run compile:webview:rotate_pdf && npm run compile:webview:reorder_pdf",
+    "compile:excalidraw": "vite build --config webview/excalidraw/vite.config.ts",
     "compile:webview:crop_pdf": "vite build --config webview/apps/crop_pdf/vite.config.ts",
     "compile:webview:merge_pdf": "vite build --config webview/apps/merge_pdf/vite.config.ts",
     "compile:webview:split_pdf": "vite build --config webview/apps/split_pdf/vite.config.ts",
@@ -49,7 +50,7 @@
     "test:webview:split_pdf": "vitest run --config webview/apps/split_pdf/vitest.config.ts",
     "test:webview:rotate_pdf": "vitest run --config webview/apps/rotate_pdf/vitest.config.ts",
     "test:webview:reorder_pdf": "vitest run --config webview/apps/reorder_pdf/vitest.config.ts",
-    "build": "npm run clean && npm run compile && npm run compile:test && npm run compile:webview",
+    "build": "npm run clean && npm run compile && npm run compile:test && npm run compile:webview && npm run compile:excalidraw",
     "check": "npm run lint && npm run format && npm run typecheck && npm run typecheck:test && npm run typecheck:webview && npm run typecheck:webview:test",
     "check:nls": "node scripts/check-nls.mjs",
     "check:webview-warnings": "node scripts/check-webview-warnings.mjs",
@@ -71,12 +72,14 @@
   },
   "dependencies": {
     "fast-xml-parser": "^5.10.1",
+    "jsdom": "^30.0.1",
     "mupdf": "^1.28.0",
     "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
+    "@excalidraw/excalidraw": "^0.18.1",
     "@playwright/test": "^1.62.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.20.0",
@@ -87,7 +90,6 @@
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
-    "jsdom": "^30.0.1",
     "knip": "^6.31.0",
     "lefthook": "2.1.10",
     "mocha": "^11.8.0",
@@ -97,6 +99,8 @@
     "oxlint-tsgolint": "^0.25.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.2.108",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "sinon": "^22.0.0",
     "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
@@ -168,6 +172,11 @@
       {
         "command": "graphics-workbench.convertDrawioToPdfDirectly",
         "title": "%command.convertDrawioToPdfDirectly%",
+        "category": "Graphics Workbench"
+      },
+      {
+        "command": "graphics-workbench.convertExcalidrawToPdf",
+        "title": "%command.convertExcalidrawToPdf%",
         "category": "Graphics Workbench"
       },
       {
@@ -317,6 +326,11 @@
           "command": "graphics-workbench.convertDrawioToPdfDirectly",
           "group": "graphics-workbench",
           "when": "(resourceExtname =~ /^\\.(drawio|dio)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawio.enabled"
+        },
+        {
+          "command": "graphics-workbench.convertExcalidrawToPdf",
+          "group": "graphics-workbench",
+          "when": "resourceExtname =~ /^\\.excalidraw$/i && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertExcalidraw.enabled"
         },
         {
           "command": "graphics-workbench.compressPdf",
@@ -1080,6 +1094,11 @@
           "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
           "description": "%config.outputPath.convertDrawioToPdfDirectly%"
         },
+        "graphics-workbench.outputPath.convertExcalidrawToPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
+          "description": "%config.outputPath.convertExcalidrawToPdf%"
+        },
         "graphics-workbench.outputPath.convertImagesToSinglePdf": {
           "type": "string",
           "default": "",
@@ -1109,6 +1128,11 @@
           "type": "boolean",
           "default": true,
           "description": "%config.contextMenu.convertDrawio.enabled%"
+        },
+        "graphics-workbench.contextMenu.convertExcalidraw.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.contextMenu.convertExcalidraw.enabled%"
         },
         "graphics-workbench.contextMenu.convertPdf.enabled": {
           "type": "boolean",

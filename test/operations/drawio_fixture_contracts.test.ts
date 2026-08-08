@@ -17,7 +17,7 @@ suite('Draw.io fixtureの契約', () => {
     const fixturePaths = (await listInputFixturePaths(drawioDirectory)).filter(isDrawioPath);
     assert.deepStrictEqual(
       fixturePaths.map((fixturePath) => path.relative(drawioDirectory, fixturePath)),
-      ['embedded-diagram.drawio.svg', 'multi-object-diagram.drawio.png', 'unicode-page-names.drawio'],
+      ['embedded-diagram.drawio.svg', 'empty.drawio', 'multi-object-diagram.drawio.png', 'unicode-page-names.drawio'],
     );
 
     for (const fixturePath of fixturePaths) {
@@ -40,9 +40,15 @@ async function assertNativeDrawioFixture(fixturePath: string): Promise<void> {
   xmlParser.parse(source);
 
   assert.match(source, /^\s*<mxfile\b/u);
+  assert.ok(source.includes('<mxCell'));
+
+  if (!source.includes('vertex="1"') && !source.includes('edge="1"')) {
+    // Empty page fixture: only the default root cells, no content to crop.
+    return;
+  }
+
   assert.strictEqual([...source.matchAll(/<diagram\b/gu)].length, 3);
   assert.ok(source.includes('😀'));
-  assert.ok(source.includes('<mxCell'));
 }
 
 async function assertEmbeddedPngFixture(fixturePath: string): Promise<void> {

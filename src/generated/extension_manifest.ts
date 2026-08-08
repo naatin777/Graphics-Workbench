@@ -90,12 +90,14 @@ type ConfigurationKey =
   | 'outputPath.clipboardImage'
   | 'cropPdf.marginOptions'
   | 'outputPath.convertDrawioToPdfDirectly'
+  | 'outputPath.convertExcalidrawToPdf'
   | 'outputPath.convertImagesToSinglePdf'
   | 'contextMenu.enabled'
   | 'contextMenu.cropPdf.enabled'
   | 'contextMenu.splitPdf.enabled'
   | 'contextMenu.mergePdf.enabled'
   | 'contextMenu.convertDrawio.enabled'
+  | 'contextMenu.convertExcalidraw.enabled'
   | 'contextMenu.convertPdf.enabled'
   | 'contextMenu.convertPng.enabled'
   | 'contextMenu.convertJpeg.enabled'
@@ -519,6 +521,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.convertDrawioToPdfDirectly': {
     types: ['string'],
   },
+  'outputPath.convertExcalidrawToPdf': {
+    types: ['string'],
+  },
   'outputPath.convertImagesToSinglePdf': {
     types: ['string'],
   },
@@ -535,6 +540,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['boolean'],
   },
   'contextMenu.convertDrawio.enabled': {
+    types: ['boolean'],
+  },
+  'contextMenu.convertExcalidraw.enabled': {
     types: ['boolean'],
   },
   'contextMenu.convertPdf.enabled': {
@@ -671,12 +679,14 @@ const configurationExpectations: Record<ConfigurationKey, string> = {
   'outputPath.clipboardImage': 'string',
   'cropPdf.marginOptions': 'array of number',
   'outputPath.convertDrawioToPdfDirectly': 'string',
+  'outputPath.convertExcalidrawToPdf': 'string',
   'outputPath.convertImagesToSinglePdf': 'string',
   'contextMenu.enabled': 'boolean',
   'contextMenu.cropPdf.enabled': 'boolean',
   'contextMenu.splitPdf.enabled': 'boolean',
   'contextMenu.mergePdf.enabled': 'boolean',
   'contextMenu.convertDrawio.enabled': 'boolean',
+  'contextMenu.convertExcalidraw.enabled': 'boolean',
   'contextMenu.convertPdf.enabled': 'boolean',
   'contextMenu.convertPng.enabled': 'boolean',
   'contextMenu.convertJpeg.enabled': 'boolean',
@@ -834,6 +844,10 @@ export const commandContributions = {
     titleKey: 'command.convertDrawioToPdfDirectly',
     category: 'Graphics Workbench',
   },
+  'graphics-workbench.convertExcalidrawToPdf': {
+    titleKey: 'command.convertExcalidrawToPdf',
+    category: 'Graphics Workbench',
+  },
   'graphics-workbench.convertToPng': {
     titleKey: 'command.convertToPng',
     category: 'Graphics Workbench',
@@ -933,6 +947,7 @@ export const publicCommandIds = [
   'graphics-workbench.convertToPdf',
   'graphics-workbench.convertDrawioToPdf',
   'graphics-workbench.convertDrawioToPdfDirectly',
+  'graphics-workbench.convertExcalidrawToPdf',
   'graphics-workbench.convertToPng',
   'graphics-workbench.convertToJpeg',
   'graphics-workbench.convertToWebp',
@@ -999,6 +1014,7 @@ export const conversionPairs = {
     { source: 'tiff', target: 'jpeg', setting: 'convertTiffToJpeg' },
     { source: 'webp', target: 'jpeg', setting: 'convertWebpToJpeg' },
     { source: 'avif', target: 'pdf', setting: 'convertAvifToPdf' },
+    { source: 'excalidraw', target: 'pdf', setting: 'convertExcalidrawToPdf' },
     { source: 'gif', target: 'pdf', setting: 'convertGifToPdf' },
     { source: 'jpeg', target: 'pdf', setting: 'convertJpegToPdf' },
     { source: 'mermaid', target: 'pdf', setting: 'convertMermaidToPdf' },
@@ -1404,6 +1420,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.convertDrawioToPdfDirectly',
         '${fileDirname}/${fileBasenameNoExtension}.pdf',
       ),
+      convertExcalidrawToPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertExcalidrawToPdf',
+        '${fileDirname}/${fileBasenameNoExtension}.pdf',
+      ),
       convertImagesToSinglePdf: defineConfiguration<string>(
         configurationReader,
         'outputPath.convertImagesToSinglePdf',
@@ -1452,6 +1473,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       convertDrawio: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertDrawio.enabled', true),
+      },
+      convertExcalidraw: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertExcalidraw.enabled', true),
       },
       convertPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertPdf.enabled', true),

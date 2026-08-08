@@ -116,6 +116,7 @@ const formatNames: Record<string, string> = {
   Pdf: 'pdf',
   Mermaid: 'mermaid',
   Drawio: 'drawio',
+  Excalidraw: 'excalidraw',
   Eps: 'eps',
 };
 
