@@ -20,7 +20,7 @@ async function openConfigureWebview(
   configureName: string,
   headingPattern: RegExp,
 ): Promise<Frame> {
-  await expect(vscodeWindow.getByText('Safe Mode: ON', { exact: true })).toBeVisible();
+  await expect(vscodeWindow.getByRole('button', { name: /Graphics Workbench Controls/ })).toBeVisible();
 
   const explorer = vscodeWindow.getByRole('tree', { name: 'Files Explorer' });
   await expect(explorer).toBeVisible();
