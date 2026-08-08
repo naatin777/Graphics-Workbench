@@ -16,6 +16,9 @@
   },
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "file",
+  // source.fixAll.oxc applies only safe fixes (the equivalent of `oxlint --fix`).
+  // Suggestions and dangerous fixes are intentionally never auto-applied on save
+  // because they can change program behavior.
   "editor.codeActionsOnSave": {
     "source.fixAll.oxc": "explicit"
   },
