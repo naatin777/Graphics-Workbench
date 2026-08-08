@@ -2,50 +2,24 @@
 
 Status: Done
 
+## Result
+
+全106テストファイル・約660テスト名を「そのテストコードが実際に通る処理フローを日本語に翻訳した文章」に書き換え、mainへマージ済み（PR #235）。
+
+内部名称（planner / job / guard / envelope / staging / record / keep-both / newer-conversion 等）を処理内容へ展開した。
+
+## 規約の正本
+
+テスト名の粒度規約は `.opencode/skills/graphics-workbench-vscode-testing/SKILL.md` の「テスト名の粒度（処理フローの日本語訳）」節を正本とする。新規テスト追加・リネーム時はその規約に従う。
+
 ## Verification
 
-- 全106ファイル・約660テスト名を処理フローの日本語訳に書き換え
-- 内部名称（planner/job/guard/envelope/staging/record/keep-both/newer-conversion等）を処理内容へ展開
 - `npm run check:all` pass
 - Extension Host suite: 576 passing（1件は既存の環境依存flakyタイムアウトテスト、名前変更と無関係）
 - 既知のflaky: `run_external_tool.test.ts` の `timeoutMs 200` テストが本環境で失敗（ロジック未変更、名前のみ変更）
 
-## Objective
+## 進め方（記録）
 
-testディレクトリ全体（106ファイル・658テスト名）のテスト名を「テストコードが実際に通る処理フローを日本語に翻訳した文章」に書き換える。テスト名を上から読むだけで、ソースコードを開かずに処理フロー・条件分岐・正常系・キャンセル系・異常系・副作用を追える状態を目指す。
-
-## Background
-
-現行のテスト名は「要件名」「機能名」「結果の要約」が中心で、コードが実際にどう動くかはテスト本体を読まないと分からない。本タスクではテスト名をソースコードの日本語訳の粒度まで具体化する。
-
-## 基本方針
-
-- テスト名 = 機能名 / 要件の短い説明 ではない
-- テスト名 ≒ そのテストで実行されるソースコードの日本語訳
-- テスト本体（Arrange/Act/Assert）を読んでから名前を決める
-- 「正常」「invalid」「error」「fallback」「cleanup」「handles」「works」等の抽象語だけで済ませない
-- 分岐条件では何がtrue/falseでその処理へ進むかを書く
-- エラー系では失敗地点を書く（非0終了コード / ENOENT / キャンセル等）
-- ファイル操作では元・出力・既存・一時ファイルの変更前後を書く
-- 数値・ページ数・角度・順序が検証内容に重要なら名前に含める
-- describeの文脈に依存せず、it単体で意味が通じる名前
-- テスト名とassertionを一致させる（検証していない挙動を名前に入れない）
-- 1つのテストが複数の独立仕様を検証していて名前と検証が1対1にならない場合のみ分割
-
-## 非目標
-
-- 本番コード（src/）の変更
-- テストのロジック・assertionの変更
-- テストの分割を目的にした作業（名前との対応が必要な場合のみ）
-
-## 進め方
-
-1. test/のファイルをバッチに分け、並列エージェントで処理
-2. 各エージェントはテスト本体を読み、suite/test名を処理フローの日本語訳に書き換え
-3. typecheck / lint / format / テスト実行で検証
-
-## Acceptance criteria
-
-- テスト名を上から読むだけで処理フロー・条件分岐・副作用が追える
-- 抽象語だけで終わるテスト名が無い
-- 全テストがcheck:allとExtension Host suiteでpassする
+1. test/のファイルを8バッチに分け、並列エージェントでsuite/test名を書き換え
+2. 8並列エージェントで内部名称の監査 → 名前文字列のみ修正
+3. typecheck / lint / format / コンテナのExtension Hostテストで検証
