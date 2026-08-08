@@ -28,4 +28,27 @@ suite('Typst / Quarkdownクリップボード画像挿入', () => {
     assert.ok(snippet.includes('\\includegraphics{figures/edited.png}'));
     assert.ok(snippet.includes('\\caption{edited}'));
   });
+
+  test('LaTeXのファイル名をエスケープする', () => {
+    const provider = new LatexPasteEditProvider();
+    const snippet = normalizeSnippetValue(
+      provider.createSingleFileSnippet('my_file 100%', 'figures/my_file 100%.png').value,
+    );
+
+    assert.ok(snippet.includes('\\caption{my\\_file 100\\%}'));
+  });
+
+  test('パスをフォワードスラッシュへ正規化する', () => {
+    const provider = new LatexPasteEditProvider({ format: 'typst' });
+    const snippet = normalizeSnippetValue(provider.createSingleFileSnippet('edited', 'figures\\edited.png').value);
+
+    assert.ok(snippet.includes('figures/edited.png'));
+  });
+
+  test('Typstのファイル名はエスケープしない', () => {
+    const provider = new LatexPasteEditProvider({ format: 'typst' });
+    const snippet = normalizeSnippetValue(provider.createSingleFileSnippet('my_file', 'figures/my_file.png').value);
+
+    assert.ok(snippet.includes('caption: [my_file]'));
+  });
 });

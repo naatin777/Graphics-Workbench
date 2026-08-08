@@ -26,15 +26,12 @@ suite('outputPath設定', () => {
     assert.strictEqual(resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'), 'pdf/${page}.png');
   });
 
-  test('outputPathsがスキーマに合わない場合は例外にする', () => {
+  test('outputPathsがスキーマに合わない場合は既定のテンプレートへフォールバックする', () => {
     const invalidValues = [['invalid'], null, { convertPdfToPng: 1 }];
 
     for (const outputPaths of invalidValues) {
       const config = fakeConfiguration({ outputPaths });
-      assert.throws(
-        () => resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'),
-        /Invalid configuration value for graphics-workbench\.outputPaths: expected object, received/,
-      );
+      assert.strictEqual(resolveOutputPathsTemplate(config, 'convertPdfToPng', 'default.png'), 'default.png');
     }
   });
 });

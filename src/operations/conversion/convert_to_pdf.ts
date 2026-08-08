@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import sharp from 'sharp';
@@ -236,7 +236,23 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
       maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
     );
     if (animation !== undefined) {
-      await writeSourceAsPdf({ ...options, page: 1 });
+      // アニメーション（GIF / マルチページTIFF / アニメWebP）は全フレームを
+      // 1つのPDFの各ページへ展開する。最初のフレームだけに切り詰めない。
+      const animatedOptions: {
+        sourcePath: string;
+        outputPath: string;
+        workspacePath: string;
+        animation: RasterAnimationMetadata;
+        signal?: AbortSignal;
+        maxInputPixels?: number;
+      } = { sourcePath, outputPath, workspacePath, animation };
+      if (signal !== undefined) {
+        animatedOptions.signal = signal;
+      }
+      if (maxInputPixels !== undefined) {
+        animatedOptions.maxInputPixels = maxInputPixels;
+      }
+      await writeAnimatedRasterAsPdf(animatedOptions);
       return;
     }
   }
@@ -424,6 +440,81 @@ async function writeRasterImageAsPdf({
   await mkdir(path.dirname(outputPath), { recursive: true });
   signal?.throwIfAborted();
   await writeFile(outputPath, pdfBytes);
+}
+
+async function writeAnimatedRasterAsPdf(options: {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  signal?: AbortSignal;
+  maxInputPixels?: number;
+  animation: RasterAnimationMetadata;
+}): Promise<void> {
+  const { sourcePath, outputPath, workspacePath, signal, maxInputPixels, animation } = options;
+  const maxInputPixelsValue = maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
+
+  // フレームPDFは最終出力と同じstagingディレクトリへ置く。workspace外（os.tmpdir）へ
+  // 書くとassertWritablePathInWorkspaceが失敗するため。
+  const frameDirectory = path.dirname(outputPath);
+  const framePdfPaths: string[] = [];
+
+  try {
+    for (let frame = 1; frame <= animation.pages; frame += 1) {
+      signal?.throwIfAborted();
+      const framePdfPath = path.join(frameDirectory, `.graphics-workbench-frame-${frame}.pdf`);
+      await writeRasterImageAsPdf({
+        sourcePath,
+        outputPath: framePdfPath,
+        workspacePath,
+        signal,
+        maxInputPixels: maxInputPixelsValue,
+        framePage: frame,
+      });
+      framePdfPaths.push(framePdfPath);
+    }
+
+    signal?.throwIfAborted();
+    const mupdf = await loadMupdf();
+    const mergedDocument = new mupdf.PDFDocument();
+    try {
+      for (const framePdfPath of framePdfPaths) {
+        signal?.throwIfAborted();
+        await graftPdfPagesInto(mergedDocument, framePdfPath, signal);
+      }
+      signal?.throwIfAborted();
+      await assertWritablePathInWorkspace(outputPath, workspacePath);
+      await mkdir(path.dirname(outputPath), { recursive: true });
+      signal?.throwIfAborted();
+      await writeFile(outputPath, savePdfDocument(mergedDocument));
+    } finally {
+      mergedDocument.destroy();
+    }
+  } finally {
+    await removeFramePdfs(framePdfPaths);
+  }
+}
+
+async function removeFramePdfs(framePdfPaths: readonly string[]): Promise<void> {
+  await Promise.all(
+    framePdfPaths.map(async (framePdfPath) => rm(framePdfPath, { force: true, maxRetries: 20, retryDelay: 200 })),
+  );
+}
+
+async function graftPdfPagesInto(
+  mergedDocument: MupdfPdfDocumentInstance,
+  sourcePdfPath: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const sourceDocument = await openPdfDocument(await readFile(sourcePdfPath));
+  try {
+    const pageCount = sourceDocument.countPages();
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      signal?.throwIfAborted();
+      mergedDocument.graftPage(mergedDocument.countPages(), sourceDocument, pageIndex);
+    }
+  } finally {
+    sourceDocument.destroy();
+  }
 }
 
 async function writeSvgAsPdf({

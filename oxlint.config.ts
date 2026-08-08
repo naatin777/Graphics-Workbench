@@ -699,6 +699,10 @@ export default defineConfig({
       rules: {
         // Generated manifest is not boundary code; keep it free of the import rules.
         'no-restricted-imports': 'off',
+        // Generated config getters warn (via console.warn) on invalid stale values.
+        'no-console': 'off',
+        // Generated schema check casts the raw config value to the getter type.
+        'no-unsafe-type-assertion': 'off',
       },
     },
 

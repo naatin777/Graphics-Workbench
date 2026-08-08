@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { loadMupdf, normalizeRotation, openPdfDocument, savePdfDocument } from './mupdf.js';
+import { loadMupdf, normalizeRotation, openPdfDocument, savePdfDocument, type MupdfPdfPage } from './mupdf.js';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { sanitizePdfPathSegment, validatePdfJobPaths } from './pdf_job_paths.js';
@@ -95,7 +95,11 @@ async function rotatePdf(params: {
       signal?.throwIfAborted();
       outputDocument.graftPage(outputDocument.countPages(), sourceDocument, pageIndex);
       if (rotateSet.has(pageIndex)) {
-        outputDocument.loadPage(pageIndex).getObject().put('Rotate', normalizeRotation(job.angle));
+        // graftPageは既存のRotate値を引き継ぐため、現在の回転に加算する。
+        // 置換すると「90°回転済みページを90°回転」が無変化になる。
+        const page = outputDocument.loadPage(pageIndex);
+        const currentRotation = readPageRotation(page);
+        page.getObject().put('Rotate', normalizeRotation(currentRotation + job.angle));
       }
     }
   } finally {
@@ -137,4 +141,9 @@ function validatePageIndices(pageIndices: number[], pageCount: number, sourcePat
       throw new Error(`Page index ${pageIndex} is out of range for ${sourcePath}`);
     }
   }
+}
+
+function readPageRotation(page: MupdfPdfPage): number {
+  const rotate = page.getObject().getInheritable('Rotate');
+  return rotate.isNumber() ? rotate.asNumber() : 0;
 }

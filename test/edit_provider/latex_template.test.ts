@@ -60,4 +60,10 @@ suite('LaTeXテンプレートレンダラ', () => {
     const result = renderTemplate('${unknown}', ctx);
     assert.strictEqual(result, '${unknown}');
   });
+
+  test('$を含むファイル名を正しく置換する', () => {
+    const context = { path: 'figures/a$&b.pdf', name: 'a$&b', ext: 'pdf', dir: 'figures' };
+    const result = renderTemplate('![${name}](${path} "${name}")', context);
+    assert.strictEqual(result, '![a$&b](figures/a$&b.pdf "a$&b")');
+  });
 });

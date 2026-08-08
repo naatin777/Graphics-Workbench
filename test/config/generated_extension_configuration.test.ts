@@ -3,40 +3,28 @@ import assert from 'node:assert/strict';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('生成された設定スキーマ検証', () => {
-  test('列挙値を厳格に検証する', () => {
+  test('列挙値が不正ならデフォルトへフォールバックする', () => {
     const configuration = fakeConfiguration({ 'convertToPdf.svg.engine': 'puppeteer' });
 
-    assert.throws(
-      () => configuration.convertToPdf.svg.engine(),
-      /Invalid configuration value for graphics-workbench\.convertToPdf\.svg\.engine: expected one of chrome, rsvg-convert, received string\./,
-    );
+    assert.strictEqual(configuration.convertToPdf.svg.engine(), 'chrome');
   });
 
-  test('数値範囲を厳格に検証する', () => {
+  test('数値範囲が不正ならデフォルトへフォールバックする', () => {
     const configuration = fakeConfiguration({ 'convertToWebp.effort': 7 });
 
-    assert.throws(
-      () => configuration.convertToWebp.effort(),
-      /Invalid configuration value for graphics-workbench\.convertToWebp\.effort: expected integer, received number\./,
-    );
+    assert.strictEqual(configuration.convertToWebp.effort(), 4);
   });
 
-  test('配列の要素を厳格に検証する', () => {
+  test('配列の要素が不正ならデフォルトへフォールバックする', () => {
     const configuration = fakeConfiguration({ 'cropPdf.marginOptions': [0, '5'] });
 
-    assert.throws(
-      () => configuration.cropPdf.marginOptions(),
-      /Invalid configuration value for graphics-workbench\.cropPdf\.marginOptions: expected array of number, received array\./,
-    );
+    assert.deepStrictEqual(configuration.cropPdf.marginOptions(), [0, 5, 10, 20]);
   });
 
-  test('オブジェクトの未定義プロパティを拒否する', () => {
+  test('オブジェクトの未定義プロパティはデフォルトへフォールバックする', () => {
     const configuration = fakeConfiguration({ outputPaths: { unknown: 'output.png' } });
 
-    assert.throws(
-      () => configuration.outputPaths(),
-      /Invalid configuration value for graphics-workbench\.outputPaths: expected object, received object\./,
-    );
+    assert.deepStrictEqual(configuration.outputPaths(), {});
   });
 
   test('大規模入力・性能設定の既定値を提供する', () => {
@@ -48,17 +36,13 @@ suite('生成された設定スキーマ検証', () => {
     assert.strictEqual(configuration.externalTools.rsvgConvert.timeoutSeconds(), 0);
   });
 
-  test('新しい数値設定の範囲を拒否する', () => {
-    assert.throws(
-      () => fakeConfiguration({ 'preview.maxDevicePixelRatio': 0 }).preview.maxDevicePixelRatio(),
-      /Invalid configuration value for graphics-workbench\.preview\.maxDevicePixelRatio/iu,
-    );
-    assert.throws(
-      () =>
-        fakeConfiguration({
-          'externalTools.rsvgConvert.timeoutSeconds': 86401,
-        }).externalTools.rsvgConvert.timeoutSeconds(),
-      /Invalid configuration value for graphics-workbench\.externalTools\.rsvgConvert\.timeoutSeconds/iu,
-    );
+  test('新しい数値設定の範囲外はデフォルトへフォールバックする', () => {
+    const configuration = fakeConfiguration({
+      'preview.maxDevicePixelRatio': 0,
+      'externalTools.rsvgConvert.timeoutSeconds': 86401,
+    });
+
+    assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
+    assert.strictEqual(configuration.externalTools.rsvgConvert.timeoutSeconds(), 0);
   });
 });

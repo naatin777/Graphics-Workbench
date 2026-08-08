@@ -83,7 +83,9 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
     const ext = path.extname(normalizedRelativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {
       path: normalizedRelativeFilePath,
-      name: fileName,
+      // 単一ファイル挿入でもLaTeXはファイル名をエスケープする。複数dropは
+      // escapeLatex/escapeLatexLabelを適用しているため、ここでも揃える。
+      name: this.format === 'latex' ? escapeLatex(fileName) : fileName,
       ext,
       dir: path.dirname(normalizedRelativeFilePath) || '.',
     };

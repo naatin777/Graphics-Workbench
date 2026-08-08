@@ -10,12 +10,14 @@ export interface TemplateContext {
 }
 
 export function renderTemplate(template: string, context: TemplateContext): string {
+  // replaceAllのreplacement文字列は`$&`等の特殊パターンを解釈するため、
+  // ファイル名が`$`を含むと壊れる。関数置換で渡す。
   return template
-    .replaceAll('${path}', context.path)
-    .replaceAll('${name}', context.name)
-    .replaceAll('${ext}', context.ext)
-    .replaceAll('${page}', context.page === undefined ? '1' : String(context.page))
-    .replaceAll('${dir}', context.dir);
+    .replaceAll('${path}', () => context.path)
+    .replaceAll('${name}', () => context.name)
+    .replaceAll('${ext}', () => context.ext)
+    .replaceAll('${page}', () => (context.page === undefined ? '1' : String(context.page)))
+    .replaceAll('${dir}', () => context.dir);
 }
 
 export function getPdfTemplates(format: InsertionFormat): string[] {

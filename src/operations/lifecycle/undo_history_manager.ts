@@ -78,7 +78,9 @@ export class UndoHistoryManager {
       try {
         record = await createConversionUndoRecord(outputs, this.#now);
       } catch (error) {
-        await cleanupConversionArtifacts(toArtifactRoots(outputs), outputChannel);
+        // record作成に失敗しても、`.previous`（変換前のオリジナルの唯一のコピー）は
+        // 削除しない。成功パスと同じくpreserveBackups=trueでstaging rootを掃除する。
+        await cleanupConversionArtifacts(toArtifactRoots(outputs, true), outputChannel);
         throw error instanceof Error ? error : new Error(String(error));
       }
 

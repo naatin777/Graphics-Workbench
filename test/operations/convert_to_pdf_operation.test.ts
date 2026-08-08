@@ -49,6 +49,24 @@ suite('PDF変換operation（PNG入力）', () => {
     );
   });
 
+  test('page未指定のアニメーションGIFは全フレームを1つのPDFへ統合する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-to-pdf-all-'));
+
+    const sourcePath = path.join(workspacePath.path, 'source.gif');
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    await writeAnimatedGif(sourcePath);
+
+    await convertToPdfFiles({
+      jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      supportedExtensions: ['.gif'],
+      operationName: 'convert-gif-to-pdf',
+      runId: 'run',
+    });
+
+    const pdf = await PDFDocument.load(await readFile(outputPath));
+    assert.strictEqual(pdf.getPageCount(), 2);
+  });
+
   test('PNGをPDFへ変換する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-png-test-'));
     const sourcePath = path.join(workspacePath.path, 'source.png');

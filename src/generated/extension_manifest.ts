@@ -628,136 +628,16 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['string'],
   },
 };
-const configurationExpectations: Record<ConfigurationKey, string> = {
-  'execPath.drawio': 'string',
-  'execPath.mermaid': 'string',
-  'execPath.rsvgConvert': 'string',
-  'execPath.chrome': 'string',
-  'externalTools.drawio.timeoutSeconds': 'integer',
-  'externalTools.rsvgConvert.timeoutSeconds': 'integer',
-  'externalTools.mermaid.timeoutSeconds': 'integer',
-  'raster.maxInputPixels': 'integer',
-  'raster.maxAnimationPixels': 'integer',
-  'preview.maxCanvasPixels': 'integer',
-  'preview.maxDevicePixelRatio': 'number',
-  'performance.maxConcurrentHeavyProcesses': 'integer',
-  'convertToPdf.svg.engine': 'one of chrome, rsvg-convert',
-  'mermaid.theme': 'one of default, forest, dark, neutral, base',
-  'mermaid.backgroundColor': 'string',
-  'insertLatex.pdfTemplate': 'string or array of string',
-  'insertLatex.imageTemplate': 'string or array of string',
-  'insertTypst.pdfTemplate': 'string or array of string',
-  'insertTypst.imageTemplate': 'string or array of string',
-  'insertQuarkdown.pdfTemplate': 'string or array of string',
-  'insertQuarkdown.imageTemplate': 'string or array of string',
-  'convertToWebp.effort': 'integer',
-  'convertToAvif.effort': 'integer',
-  'outputPath.cropPdf': 'string',
-  outputPaths: 'object',
-  'outputPath.convertPngToPdf': 'string',
-  'outputPath.convertJpegToPdf': 'string',
-  'outputPath.convertWebpToPdf': 'string',
-  'outputPath.convertAvifToPdf': 'string',
-  'outputPath.convertSvgToPdf': 'string',
-  'outputPath.convertMermaidToPdf': 'string',
-  'outputPath.convertGifToPdf': 'string',
-  'outputPath.convertTiffToPdf': 'string',
-  'outputPath.convertPngToJpeg': 'string',
-  'outputPath.convertPngToWebp': 'string',
-  'outputPath.convertPngToAvif': 'string',
-  'outputPath.convertJpegToPng': 'string',
-  'outputPath.convertJpegToWebp': 'string',
-  'outputPath.convertJpegToAvif': 'string',
-  'outputPath.convertWebpToPng': 'string',
-  'outputPath.convertWebpToJpeg': 'string',
-  'outputPath.convertWebpToAvif': 'string',
-  'outputPath.convertAvifToPng': 'string',
-  'outputPath.convertAvifToJpeg': 'string',
-  'outputPath.convertAvifToWebp': 'string',
-  'outputPath.convertSvgToPng': 'string',
-  'outputPath.convertSvgToJpeg': 'string',
-  'outputPath.convertSvgToWebp': 'string',
-  'outputPath.convertSvgToAvif': 'string',
-  'outputPath.convertMermaidToSvg': 'string',
-  'outputPath.convertMermaidToPng': 'string',
-  'outputPath.convertMermaidToJpeg': 'string',
-  'outputPath.convertMermaidToWebp': 'string',
-  'outputPath.convertGifToJpeg': 'string',
-  'outputPath.convertTiffToJpeg': 'string',
-  'outputPath.convertGifToAvif': 'string',
-  'outputPath.convertTiffToAvif': 'string',
-  'outputPath.convertTiffToWebp': 'string',
-  'outputPath.convertGifToWebp': 'string',
-  'outputPath.convertMermaidToAvif': 'string',
-  'outputPath.convertPngToGif': 'string',
-  'outputPath.convertJpegToGif': 'string',
-  'outputPath.convertWebpToGif': 'string',
-  'outputPath.convertAvifToGif': 'string',
-  'outputPath.convertGifToPng': 'string',
-  'outputPath.convertTiffToPng': 'string',
-  'outputPath.convertTiffToGif': 'string',
-  'outputPath.convertSvgToGif': 'string',
-  'outputPath.convertMermaidToGif': 'string',
-  'outputPath.convertPngToTiff': 'string',
-  'outputPath.convertJpegToTiff': 'string',
-  'outputPath.convertWebpToTiff': 'string',
-  'outputPath.convertAvifToTiff': 'string',
-  'outputPath.convertGifToTiff': 'string',
-  'outputPath.convertSvgToTiff': 'string',
-  'outputPath.convertMermaidToTiff': 'string',
-  'outputPath.convertToDrawio': 'string',
-  'outputPath.convertToDrawioPng': 'string',
-  'outputPath.convertToDrawioSvg': 'string',
-  'outputPath.clipboardImage': 'string',
-  'cropPdf.marginOptions': 'array of number',
-  'outputPath.convertDrawioToPdfDirectly': 'string',
-  'outputPath.convertExcalidrawToPdf': 'string',
-  'outputPath.convertImagesToSinglePdf': 'string',
-  'contextMenu.enabled': 'boolean',
-  'contextMenu.cropPdf.enabled': 'boolean',
-  'contextMenu.splitPdf.enabled': 'boolean',
-  'contextMenu.mergePdf.enabled': 'boolean',
-  'contextMenu.convertDrawio.enabled': 'boolean',
-  'contextMenu.convertExcalidraw.enabled': 'boolean',
-  'contextMenu.convertPdf.enabled': 'boolean',
-  'contextMenu.convertPng.enabled': 'boolean',
-  'contextMenu.convertJpeg.enabled': 'boolean',
-  'contextMenu.convertWebp.enabled': 'boolean',
-  'contextMenu.convertAvif.enabled': 'boolean',
-  'contextMenu.convertSvg.enabled': 'boolean',
-  'contextMenu.convertMermaid.enabled': 'boolean',
-  'contextMenu.convertDrawioCreate.enabled': 'boolean',
-  'contextMenu.compressPdf.enabled': 'boolean',
-  'contextMenu.encryptPdf.enabled': 'boolean',
-  'contextMenu.decryptPdf.enabled': 'boolean',
-  'contextMenu.rotatePdf.enabled': 'boolean',
-  'contextMenu.reorderPdf.enabled': 'boolean',
-  'outputPath.reorderPdf': 'string',
-  'outputPath.rotatePdf': 'string',
-  'outputPath.compressPdf': 'string',
-  'outputPath.encryptPdf': 'string',
-  'outputPath.decryptPdf': 'string',
-};
-function configurationValueType(value: unknown): string {
-  if (Array.isArray(value)) {
-    return 'array';
+function assertConfigurationValue<Value>(key: ConfigurationKey, value: unknown, defaultValue: Value): Value {
+  if (matchesConfigurationSchema(value, configurationSchemas[key])) {
+    return value as Value;
   }
-  if (value === null) {
-    return 'null';
-  }
-  return typeof value;
-}
-
-function assertConfigurationValue<Value>(
-  key: ConfigurationKey,
-  value: unknown,
-  _defaultValue: Value,
-): asserts value is Value {
-  if (!matchesConfigurationSchema(value, configurationSchemas[key])) {
-    throw new TypeError(
-      `Invalid configuration value for graphics-workbench.${key}: expected ${configurationExpectations[key]}, received ${configurationValueType(value)}.`,
-    );
-  }
+  // 不正な設定値で拡張の起動を止めず、デフォルトへフォールバックする。
+  // 1つのstale設定が全コマンドを無効化するのを防ぐ。
+  console.warn(
+    `graphics-workbench.${key}: invalid value ${JSON.stringify(value)}, using default ${JSON.stringify(defaultValue)}`,
+  );
+  return defaultValue;
 }
 
 function defineConfiguration<Value>(
@@ -770,8 +650,7 @@ function defineConfiguration<Value>(
     if (value === undefined) {
       return defaultValue;
     }
-    assertConfigurationValue(key, value, defaultValue);
-    return value;
+    return assertConfigurationValue(key, value, defaultValue);
   };
 }
 

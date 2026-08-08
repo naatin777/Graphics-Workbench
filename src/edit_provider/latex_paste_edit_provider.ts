@@ -26,6 +26,7 @@ import {
 
 import { getImageTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
 import type { InsertionFormat } from './insertion_format.js';
+import { escapeLatex } from './latex_escape.js';
 
 const clipboardImageTypes = [
   { mime: 'image/png', ext: 'png' },
@@ -192,12 +193,14 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
 
   createSingleFileSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
     const templates = getImageTemplates(this.format);
-    const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
+    const normalizedRelativeFilePath = normalizeRelativePath(relativeFilePath);
+    const ext = path.extname(normalizedRelativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {
-      path: relativeFilePath,
-      name: fileName,
+      path: normalizedRelativeFilePath,
+      // LaTeXはファイル名をエスケープする（複数dropと同一の扱い）。
+      name: this.format === 'latex' ? escapeLatex(fileName) : fileName,
       ext,
-      dir: path.dirname(relativeFilePath) || '.',
+      dir: path.dirname(normalizedRelativeFilePath) || '.',
     };
 
     const snippet = new vscode.SnippetString();
@@ -230,6 +233,10 @@ async function readClipboardImageData(dataTransfer: vscode.DataTransfer): Promis
 function resolveUserOutputBasePath(value: string, workspacePath: string): string {
   const trimmedValue = value.trim();
   return path.isAbsolute(trimmedValue) ? path.normalize(trimmedValue) : path.resolve(workspacePath, trimmedValue);
+}
+
+function normalizeRelativePath(filePath: string): string {
+  return filePath.split(/[\\/]+/).join('/');
 }
 
 function validateOutputBasePath(value: string, workspacePath: string): string | undefined {
