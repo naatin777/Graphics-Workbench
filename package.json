@@ -1229,7 +1229,8 @@
   },
   "activationEvents": [
     "onLanguage:latex",
-    "onLanguage:tex"
+    "onLanguage:tex",
+    "onStartupFinished"
   ],
   "icon": "assets/icon.png",
   "devEngines": {

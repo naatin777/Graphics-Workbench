@@ -29,9 +29,9 @@ export function configureCommandRuntime(dependencies?: CommandDependencies): Con
 }
 
 /**
- * Stale staging cleanup used to run at startup via `onStartupFinished`. It is
- * now deferred until the first command so the extension does not wake up in
- * every VS Code window just to scan os.tmpdir().
+ * Stale staging cleanup used to scan os.tmpdir() at startup. It is now deferred
+ * until the first command so opening a VS Code window never scans the temp
+ * directory just to clean up after a previous crashed process.
  */
 let secureStagingMaintenanceStarted = false;
 

@@ -23,3 +23,20 @@ jobs:
 
       - run: npm run check:all
         shell: bash
+
+  pr-body:
+    name: PR body requirements
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Save PR body
+        shell: bash
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s' "$PR_BODY" > pr-body.txt
+
+      - name: Check required PR body sections
+        run: node scripts/check-pr-body.mjs --body pr-body.txt
+        shell: bash
