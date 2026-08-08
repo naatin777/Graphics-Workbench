@@ -64,8 +64,12 @@ function isPackageManifest(value: unknown): value is PackageManifest {
 }
 
 function quote(value: string): string {
-  const json = JSON.stringify(value);
-  return `'${json.slice(1, -1).replaceAll("'", "\\'")}'`;
+  // JSON.stringify produces double-quoted output with \" for embedded quotes.
+  // The generated code uses single-quoted strings, where `"` needs no escape.
+  // Remove the JSON quote escape after escaping single quotes for the
+  // single-quoted literal; backslash escapes (\n, \\, \uXXXX) are preserved.
+  const json = JSON.stringify(value).slice(1, -1).replaceAll("'", "\\'").replaceAll('\\"', '"');
+  return `'${json}'`;
 }
 
 function literal(value: JsonValue, indentation = ''): string {

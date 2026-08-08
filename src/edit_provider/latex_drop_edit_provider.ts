@@ -6,12 +6,19 @@ import { localeMap } from '../locale_map.js';
 
 import { escapeLatex, escapeLatexLabel } from './latex_escape.js';
 import { getPdfTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
+import type { InsertionFormat } from './insertion_format.js';
 
 function isCancellationRequested(token: vscode.CancellationToken): boolean {
   return token.isCancellationRequested;
 }
 
 export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
+  private readonly format: InsertionFormat;
+
+  constructor(format: InsertionFormat = 'latex') {
+    this.format = format;
+  }
+
   async provideDocumentDropEdits(
     document: vscode.TextDocument,
     _position: vscode.Position,
@@ -67,63 +74,118 @@ export class LatexDropEditProvider implements vscode.DocumentDropEditProvider {
       return undefined;
     }
 
-    return new vscode.DocumentDropEdit(snippet, localeMap('insertLatex'));
+    return new vscode.DocumentDropEdit(snippet, localeMap('insertFigure'));
   }
 
   createSinglePdfSnippet(fileName: string, relativeFilePath: string): vscode.SnippetString {
-    const templates = getPdfTemplates();
-    const latexRelativeFilePath = normalizeLatexPath(relativeFilePath);
-    const ext = path.extname(latexRelativeFilePath).toLowerCase().replace('.', '');
+    const templates = getPdfTemplates(this.format);
+    const normalizedRelativeFilePath = normalizeRelativePath(relativeFilePath);
+    const ext = path.extname(normalizedRelativeFilePath).toLowerCase().replace('.', '');
     const ctx: TemplateContext = {
-      path: latexRelativeFilePath,
+      path: normalizedRelativeFilePath,
       name: fileName,
       ext,
-      dir: path.dirname(latexRelativeFilePath) || '.',
+      dir: path.dirname(normalizedRelativeFilePath) || '.',
     };
     return buildTemplateSnippet(templates, ctx);
   }
 
   createMultiplePdfSnippet(fileNames: string[], relativeFilePaths: string[]): vscode.SnippetString {
-    const snippet = new vscode.SnippetString();
-    let tabstop = 1;
-
-    snippet.appendText('\\begin{figure}[H]\n\t\\centering\n');
-
-    for (const [index, relativeFilePath] of relativeFilePaths.entries()) {
-      const name = fileNames[index] ?? '';
-      const label = escapeLatexLabel(name);
-      const latexRelativeFilePath = normalizeLatexPath(relativeFilePath);
-
-      snippet.appendText('\t\\begin{minipage}');
-      snippet.appendChoice(['[t]', '[c]', '[b]'], tabstop++);
-      snippet.appendText('{');
-      snippet.appendChoice(['{0.45\\linewidth}', '{0.35\\linewidth}'], tabstop++);
-      snippet.appendText('}\n');
-      snippet.appendText('\t\t\\centering\n');
-      snippet.appendText(`\t\t\\includegraphics`);
-      snippet.appendChoice(['[width=1.0\\linewidth]', '[width=0.9\\linewidth]'], tabstop++);
-      snippet.appendText(`{${latexRelativeFilePath}}\n`);
-      snippet.appendText('\t\t\\caption{');
-      snippet.appendPlaceholder(escapeLatex(name), tabstop++);
-      snippet.appendText('}\n');
-      snippet.appendText('\t\t\\label{fig:');
-      snippet.appendPlaceholder(label, tabstop++);
-      snippet.appendText('}\n');
-      snippet.appendText('\t\\end{minipage}\n');
-
-      if (index < relativeFilePaths.length - 1) {
-        snippet.appendText('\t');
-        snippet.appendChoice(['\\hspace{0.01\\linewidth}', '\\hfill'], tabstop++);
-        snippet.appendText('\n');
-      }
-    }
-
-    snippet.appendText('\\end{figure}');
-    return snippet;
+    return this.format === 'latex'
+      ? createLatexMultiplePdfSnippet(fileNames, relativeFilePaths)
+      : createNonLatexMultiplePdfSnippet(this.format, fileNames, relativeFilePaths);
   }
 }
 
-function normalizeLatexPath(filePath: string): string {
+function createLatexMultiplePdfSnippet(fileNames: string[], relativeFilePaths: string[]): vscode.SnippetString {
+  const snippet = new vscode.SnippetString();
+  let tabstop = 1;
+
+  snippet.appendText('\\begin{figure}[H]\n\t\\centering\n');
+
+  for (const [index, relativeFilePath] of relativeFilePaths.entries()) {
+    const name = fileNames[index] ?? '';
+    const label = escapeLatexLabel(name);
+    const latexRelativeFilePath = normalizeRelativePath(relativeFilePath);
+
+    snippet.appendText('\t\\begin{minipage}');
+    snippet.appendChoice(['[t]', '[c]', '[b]'], tabstop++);
+    snippet.appendText('{');
+    snippet.appendChoice(['{0.45\\linewidth}', '{0.35\\linewidth}'], tabstop++);
+    snippet.appendText('}\n');
+    snippet.appendText('\t\t\\centering\n');
+    snippet.appendText(`\t\t\\includegraphics`);
+    snippet.appendChoice(['[width=1.0\\linewidth]', '[width=0.9\\linewidth]'], tabstop++);
+    snippet.appendText(`{${latexRelativeFilePath}}\n`);
+    snippet.appendText('\t\t\\caption{');
+    snippet.appendPlaceholder(escapeLatex(name), tabstop++);
+    snippet.appendText('}\n');
+    snippet.appendText('\t\t\\label{fig:');
+    snippet.appendPlaceholder(label, tabstop++);
+    snippet.appendText('}\n');
+    snippet.appendText('\t\\end{minipage}\n');
+
+    if (index < relativeFilePaths.length - 1) {
+      snippet.appendText('\t');
+      snippet.appendChoice(['\\hspace{0.01\\linewidth}', '\\hfill'], tabstop++);
+      snippet.appendText('\n');
+    }
+  }
+
+  snippet.appendText('\\end{figure}');
+  return snippet;
+}
+
+function createNonLatexMultiplePdfSnippet(
+  format: Exclude<InsertionFormat, 'latex'>,
+  fileNames: string[],
+  relativeFilePaths: string[],
+): vscode.SnippetString {
+  const snippet = new vscode.SnippetString();
+
+  if (format === 'typst') {
+    snippet.appendText('#grid(columns: 2,\n');
+  } else {
+    snippet.appendText('.row alignment:{spacebetween}\n');
+  }
+
+  const entries = relativeFilePaths.map((relativeFilePath, index) =>
+    renderSingleTemplate(getPdfTemplates(format), fileNames[index] ?? '', normalizeRelativePath(relativeFilePath)),
+  );
+
+  for (const [index, entry] of entries.entries()) {
+    if (format === 'typst') {
+      snippet.appendText(`  ${entry}`);
+      if (index < entries.length - 1) {
+        snippet.appendText(',');
+      }
+      snippet.appendText('\n');
+    } else {
+      snippet.appendText(`    ${entry}\n`);
+    }
+  }
+
+  if (format === 'typst') {
+    snippet.appendText(')\n');
+  } else {
+    snippet.appendText('\n');
+  }
+
+  return snippet;
+}
+
+function renderSingleTemplate(templates: string[], fileName: string, relativeFilePath: string): string {
+  const ext = path.extname(relativeFilePath).toLowerCase().replace('.', '');
+  const ctx: TemplateContext = {
+    path: relativeFilePath,
+    name: fileName,
+    ext,
+    dir: path.dirname(relativeFilePath) || '.',
+  };
+  return renderTemplate(templates[0] ?? '', ctx);
+}
+
+function normalizeRelativePath(filePath: string): string {
   return filePath.split(/[\\/]+/).join('/');
 }
 
