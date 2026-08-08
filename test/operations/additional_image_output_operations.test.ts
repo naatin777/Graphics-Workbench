@@ -19,7 +19,7 @@ const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
 
 suite('GIF/TIFFの出力経路', () => {
-  test('GIF/TIFFを各supported outputへ変換し、PDFでも先頭frame/pageだけを保持する', async () => {
+  test('GIF/TIFFを各supported outputへ変換する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-additional-image-output-'));
 
     for (const inputFormat of inputFormats) {
@@ -29,7 +29,9 @@ suite('GIF/TIFFの出力経路', () => {
       for (const outputFormat of outputFormats) {
         const outputPath = path.join(workspacePath.path, `source-${inputFormat}.${outputFormat}`);
         await convertImage(inputFormat, outputFormat, sourcePath, outputPath, workspacePath.path);
-        await assertFirstFrameOutput(outputFormat, outputPath);
+        // PDFは全フレームを1つのPDFの各ページへ展開する。それ以外のラスター出力は
+        // 先頭frame/pageのみを保持する。
+        await assertOutput(outputFormat, outputPath);
       }
     }
   });
@@ -100,13 +102,15 @@ async function writeAnimatedImageFixture(filePath: string, format: (typeof input
   await (format === 'gif' ? output.gif() : output.tiff()).toFile(filePath);
 }
 
-async function assertFirstFrameOutput(outputFormat: (typeof outputFormats)[number], filePath: string): Promise<void> {
+async function assertOutput(outputFormat: (typeof outputFormats)[number], filePath: string): Promise<void> {
   if (outputFormat === 'pdf') {
+    // アニメーションの全フレームが1つのPDFの各ページへ展開される。
     const document = await PDFDocument.load(await readFile(filePath));
-    assert.strictEqual(document.getPageCount(), 1);
-    const page = document.getPage(0);
-    assert.strictEqual(page.getWidth(), 4);
-    assert.strictEqual(page.getHeight(), 4);
+    assert.strictEqual(document.getPageCount(), 2);
+    for (const page of document.getPages()) {
+      assert.strictEqual(page.getWidth(), 4);
+      assert.strictEqual(page.getHeight(), 4);
+    }
     return;
   }
 

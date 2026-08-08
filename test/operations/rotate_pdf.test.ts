@@ -15,7 +15,7 @@ import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { degrees, PDFDocument } from 'pdf-lib';
 
 import {
   isRotatePdfHostToWebviewMessage,
@@ -43,6 +43,26 @@ suite('PDF回転', () => {
       for (const page of output.getPages()) {
         assert.strictEqual(page.getRotation().angle, 90);
       }
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
+  test('既に回転したページには角度を加算する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-pre-rotated-'));
+    const sourcePath = path.join(workspacePath, 'source.pdf');
+    const outputPath = path.join(workspacePath, 'output.pdf');
+    await writePdf(sourcePath, 1, 90);
+
+    try {
+      await rotatePdfFiles({
+        jobs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        runId: 'run',
+      });
+
+      const output = await PDFDocument.load(await readFile(outputPath));
+      assert.strictEqual(output.getPageCount(), 1);
+      assert.strictEqual(output.getPage(0).getRotation().angle, 180);
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
@@ -120,10 +140,13 @@ suite('PDF回転', () => {
   });
 });
 
-async function writePdf(filePath: string, pageCount: number): Promise<void> {
+async function writePdf(filePath: string, pageCount: number, rotation = 0): Promise<void> {
   const document = await PDFDocument.create();
   for (let index = 0; index < pageCount; index++) {
-    document.addPage([100 + index, 200]);
+    const page = document.addPage([100 + index, 200]);
+    if (rotation !== 0) {
+      page.setRotation(degrees(rotation));
+    }
   }
   await writeFile(filePath, await document.save());
 }

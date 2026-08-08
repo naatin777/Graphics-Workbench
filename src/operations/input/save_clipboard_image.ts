@@ -94,24 +94,22 @@ export async function saveClipboardImage(
 /** Finishes the operation after optional Undo registration. */
 export async function cleanupClipboardSourceArtifact(
   saved: SavedClipboardImage,
-  undoRecorded: boolean,
+  _undoRecorded: boolean,
   runtime: Pick<ConversionExecutionContext, 'outputChannel'> = {},
 ): Promise<void> {
+  // Undo記録の成否に関わらず、`.previous`（上書き前のユーザーファイルの唯一のコピー）は
+  // 削除しない。記録に失敗した場合も、元ファイルを失わないためstaging内に保持する。
   await cleanupConversionArtifacts(
     [
       {
         ...saved.artifact,
-        ...(undoRecorded
-          ? {
-              preservePaths: saved.outputs.flatMap((output) =>
-                output.previousFilePath !== undefined &&
-                output.previousFilePath !== '' &&
-                isWithin(output.previousFilePath, saved.artifact.rootPath)
-                  ? [output.previousFilePath]
-                  : [],
-              ),
-            }
-          : {}),
+        preservePaths: saved.outputs.flatMap((output) =>
+          output.previousFilePath !== undefined &&
+          output.previousFilePath !== '' &&
+          isWithin(output.previousFilePath, saved.artifact.rootPath)
+            ? [output.previousFilePath]
+            : [],
+        ),
       },
     ],
     runtime.outputChannel,

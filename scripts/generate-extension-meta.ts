@@ -299,30 +299,6 @@ function schemaTypes(schema: JsonSchema): string[] {
   return Array.isArray(schema.type) ? schema.type : [schema.type];
 }
 
-function describeConfigurationEnumValue(value: JsonValue): string {
-  if (value === null) {
-    return 'null';
-  }
-  if (typeof value === 'object') {
-    throw new Error('Configuration enums must contain primitive values');
-  }
-  return String(value);
-}
-
-function describeConfigurationSchema(schema: JsonSchema): string {
-  if (schema.enum !== undefined) {
-    return `one of ${schema.enum.map((value) => describeConfigurationEnumValue(value)).join(', ')}`;
-  }
-  return schemaTypes(schema)
-    .map((type) => {
-      if (type !== 'array') {
-        return type;
-      }
-      return schema.items === undefined ? 'array' : `array of ${describeConfigurationSchema(schema.items)}`;
-    })
-    .join(' or ');
-}
-
 function renderConfigurationSchema(schema: JsonSchema, indentation: string): string {
   if (schema.enum?.some((value) => typeof value === 'object' && value !== null)) {
     throw new Error('Configuration enums must contain primitive values');
@@ -366,17 +342,6 @@ function renderConfigurationSchemas(configurationEntries: [string, JsonSchema][]
       `  ${propertyName(fullKey.slice(extensionPrefix.length))}: ${renderConfigurationSchema(schema, '  ')},`,
   );
   return `const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {\n${schemas.join('\n')}\n};\n`;
-}
-
-function renderConfigurationExpectations(
-  configurationEntries: [string, JsonSchema][],
-  extensionPrefix: string,
-): string {
-  const expectations = configurationEntries.map(
-    ([fullKey, schema]) =>
-      `  ${propertyName(fullKey.slice(extensionPrefix.length))}: ${quote(describeConfigurationSchema(schema))},`,
-  );
-  return `const configurationExpectations: Record<ConfigurationKey, string> = {\n${expectations.join('\n')}\n};\n`;
 }
 
 function renderObjectType(name: string, schema: JsonSchema): string {
@@ -610,11 +575,9 @@ export function generate(packageJson: PackageManifest): string {
     `function matchesConfigurationType(value: unknown, type: ConfigurationSchemaType, schema: ConfigurationSchema): boolean {\n  switch (type) {\n    case 'array': {\n      if (!Array.isArray(value)) {\n        return false;\n      }\n      const { items } = schema;\n      return items === undefined || value.every((item) => matchesConfigurationSchema(item, items));\n    }\n    case 'boolean': {\n      return typeof value === 'boolean';\n    }\n    case 'integer': {\n      return typeof value === 'number' && Number.isInteger(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'number': {\n      return typeof value === 'number' && Number.isFinite(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'object': {\n      return matchesConfigurationObject(value, schema);\n    }\n    case 'string': {\n      return typeof value === 'string';\n    }\n    default: {\n      return false;\n    }\n  }\n}\n\n` +
     `function matchesConfigurationSchema(value: unknown, schema: ConfigurationSchema): boolean {\n  if (!schema.types.some((type) => matchesConfigurationType(value, type, schema))) {\n    return false;\n  }\n  return schema.enumValues === undefined || schema.enumValues.some((candidate) => candidate === value);\n}\n\n` +
     renderConfigurationSchemas(configurationEntries, extensionPrefix) +
-    renderConfigurationExpectations(configurationEntries, extensionPrefix) +
-    `function configurationValueType(value: unknown): string {\n  if (Array.isArray(value)) {\n    return 'array';\n  }\n  if (value === null) {\n    return 'null';\n  }\n  return typeof value;\n}\n\n` +
-    `function assertConfigurationValue<Value>(\n  key: ConfigurationKey,\n  value: unknown,\n  _defaultValue: Value,\n): asserts value is Value {\n  if (!matchesConfigurationSchema(value, configurationSchemas[key])) {\n    throw new TypeError(\n      \`Invalid configuration value for graphics-workbench.\${key}: expected \${configurationExpectations[key]}, received \${configurationValueType(value)}.\`,\n    );\n  }\n}\n\n` +
+    `function assertConfigurationValue<Value>(key: ConfigurationKey, value: unknown, defaultValue: Value): Value {\n  if (matchesConfigurationSchema(value, configurationSchemas[key])) {\n    return value as Value;\n  }\n  // 不正な設定値で拡張の起動を止めず、デフォルトへフォールバックする。\n  // 1つのstale設定が全コマンドを無効化するのを防ぐ。\n  console.warn(\n    \`graphics-workbench.\${key}: invalid value \${JSON.stringify(value)}, using default \${JSON.stringify(defaultValue)}\`,\n  );\n  return defaultValue;\n}\n\n` +
     `function defineConfiguration<Value>(\n  configurationReader: ConfigurationReader,\n  key: ConfigurationKey,\n  defaultValue: Value,\n): ConfigurationGetter<Value> {\n` +
-    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    assertConfigurationValue(key, value, defaultValue);\n    return value;\n  };\n` +
+    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    return assertConfigurationValue(key, value, defaultValue);\n  };\n` +
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     renderCommandContributions(packageJson) +

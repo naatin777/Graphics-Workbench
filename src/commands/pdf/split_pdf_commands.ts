@@ -11,6 +11,7 @@ import {
 } from '../../shared/protocols/split_pdf_protocol.js';
 import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
+import { assertPageTemplateForSplitOutput } from '../../config/output/page_template.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { localeMap } from '../../locale_map.js';
@@ -53,6 +54,9 @@ export async function splitPdfAllPagesCommand(
     }
 
     const outputTemplate = readSplitPdfTemplate(dependencies);
+    // 分割コマンドの出力テンプレートは本質的に${page}を持つ必要がある。
+    // 欠落すると全ページが同一パスへ衝突し、最後のページだけが残る。
+    assertPageTemplateForSplitOutput(outputTemplate, 2);
     const jobs = sourceUris.map((sourceUri) => planSplitPdfJob(sourceUri, outputTemplate));
     await runConversionLifecycle({
       operationName: 'split-pdf',

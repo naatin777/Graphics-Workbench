@@ -5,7 +5,7 @@
 // - AVIFをPDFに変換できること
 // - SVGをPDFに変換できること
 // - MermaidをPDFに変換できること
-// - GIF、TIFFを先頭フレーム・ページの1ページPDFへ変換できること
+// - GIF、TIFFを全フレーム・ページのPDFへ変換できること
 // - EPSをPDFへ変換できること
 // - PNG、JPEG、WebP、AVIF、SVG、Mermaidを1回のコマンドでPDFへ変換できること
 // - 複数PNGを1回のコマンドでPDFへ変換できること
@@ -156,11 +156,11 @@ suite('PDFに変換コマンド', () => {
     await assertMermaidFileConvertsToPdf('source.mermaid');
   });
 
-  test('GIFを先頭フレームの1ページPDFへ変換する', async () => {
+  test('GIFを全フレームのPDFへ変換する', async () => {
     await assertFixtureConvertsToPdf('gif', 'swirl-gradient.gif');
   });
 
-  test('TIFFを先頭ページの1ページPDFへ変換する', async () => {
+  test('TIFFを全ページのPDFへ変換する', async () => {
     await assertFixtureConvertsToPdf('tiff', 'heatmap.tiff');
   });
 

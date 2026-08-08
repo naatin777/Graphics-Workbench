@@ -50,4 +50,13 @@ suite('Typst / Quarkdownファイルdrag挿入', () => {
 
     assert.ok(snippet.includes('figures/sample.pdf'));
   });
+
+  test('LaTeX単一PDFのファイル名をエスケープする', () => {
+    const provider = new LatexDropEditProvider('latex');
+    const snippet = normalizeSnippetValue(
+      provider.createSinglePdfSnippet('my_file 100%', 'figures/my_file 100%.pdf').value,
+    );
+
+    assert.ok(snippet.includes('\\caption{my\\_file 100\\%}'));
+  });
 });

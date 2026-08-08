@@ -98,24 +98,30 @@ export async function undoConversionOutputs(
           await copyFile(rollbackPath, output.outputPath);
         }),
       );
+      // ロールバック復元に成功した場合のみコピーを破棄する。復元できなかった出力の
+      // 唯一の生存コピーが削除されるのを防ぐため、失敗時は保留する。
+      await removeRollbackCopies(rollbackCopies);
     } catch (rollbackError) {
       throw new Error(`Undo failed and rollback was incomplete: ${String(error)}`, { cause: rollbackError });
     }
     throw error instanceof Error ? error : new Error(String(error));
-  } finally {
-    await Promise.all(
-      rollbackCopies.map(async ({ rollbackRootPath }) =>
-        rm(rollbackRootPath, {
-          recursive: true,
-          force: true,
-          maxRetries: 20,
-          retryDelay: 200,
-        }),
-      ),
-    );
   }
 
+  await removeRollbackCopies(rollbackCopies);
   await cleanupConversionArtifacts(toArtifactRoots(record), outputChannel);
+}
+
+async function removeRollbackCopies(rollbackCopies: readonly { rollbackRootPath: string }[]): Promise<void> {
+  await Promise.all(
+    rollbackCopies.map(async ({ rollbackRootPath }) =>
+      rm(rollbackRootPath, {
+        recursive: true,
+        force: true,
+        maxRetries: 20,
+        retryDelay: 200,
+      }),
+    ),
+  );
 }
 
 async function createRollbackCopies(
