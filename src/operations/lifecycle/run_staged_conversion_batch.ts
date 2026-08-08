@@ -10,7 +10,7 @@ import {
   type CommittedConversionOutput,
   type PreparedConversionOutput,
 } from './commit_conversion_outputs.js';
-import type { ConversionExecutionContext } from './conversion_runtime.js';
+import type { ConversionExecutionContext, ResolvedConversionRuntime } from './conversion_runtime.js';
 import { sharedConversionJobLimiter } from '../external_tools/heavy_process_limiter.js';
 
 export interface StagedConversionBatch<Job extends { workspacePath: string }> {
@@ -24,7 +24,7 @@ export interface StagedConversionBatch<Job extends { workspacePath: string }> {
     job: Job,
     index: number,
     runId: string,
-    runtime: ConversionExecutionContext,
+    runtime: ResolvedConversionRuntime,
   ) => Promise<PreparedConversionOutput | PreparedConversionOutput[]>;
 }
 
@@ -38,16 +38,16 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
     stagingArtifactsForJobs(options.jobs, options.stagingOperationName ?? options.operationName, options.runId);
   const abortController = new AbortController();
   const abortFromCaller = (): void => {
-    abortController.abort(options.runtime?.signal?.reason);
+    abortController.abort(runtime.signal?.reason);
   };
 
-  if (options.runtime?.signal?.aborted === true) {
+  if (runtime.signal?.aborted === true) {
     abortFromCaller();
   } else {
-    options.runtime?.signal?.addEventListener('abort', abortFromCaller, { once: true });
+    runtime.signal?.addEventListener('abort', abortFromCaller, { once: true });
   }
 
-  const batchRuntime: ConversionExecutionContext = {
+  const batchRuntime: ResolvedConversionRuntime = {
     ...runtime,
     signal: abortController.signal,
   };
@@ -61,7 +61,7 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
         const settled = await Promise.allSettled(
           options.jobs.map(async (job, index) =>
             sharedConversionJobLimiter.run(async () => {
-              batchRuntime.signal?.throwIfAborted();
+              batchRuntime.signal.throwIfAborted();
               try {
                 const output = await options.stage(job, index, options.runId, batchRuntime);
                 completedCount += 1;
@@ -96,6 +96,6 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
       runtime.outputChannel,
     );
   } finally {
-    options.runtime?.signal?.removeEventListener('abort', abortFromCaller);
+    runtime.signal?.removeEventListener('abort', abortFromCaller);
   }
 }

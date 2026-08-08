@@ -37,15 +37,15 @@ function safeCssDimension(value: number): number {
 }
 
 function safeMaxCanvasPixels(value: number | undefined): number {
-  return Number.isSafeInteger(value) && value !== undefined && value >= 1_000_000 ? value : 40_000_000;
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1_000_000 ? value : 40_000_000;
 }
 
 function safeMaxDevicePixelRatio(value: number | undefined): number {
-  return Number.isFinite(value) && value !== undefined && value >= 1 && value <= 8 ? value : 2;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 8 ? value : 2;
 }
 
 function safeDevicePixelRatio(value: number | undefined): number {
-  return Number.isFinite(value) && value !== undefined && value > 0 ? value : 1;
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 1;
 }
 
 function canvasDimensions(

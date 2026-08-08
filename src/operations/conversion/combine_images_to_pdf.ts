@@ -15,17 +15,17 @@ import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { closeRasterPipeline, openRasterInput } from './raster_input.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import type { RsvgToolScratchOptions, RunRsvgConvert } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 import { loadMupdf, openPdfDocument, savePdfDocument } from '../pdf/mupdf.js';
 
-interface CombineImagesJob {
+interface CombineImageInput {
   sourcePath: string;
 }
 
 export interface CombineImagesToPdfOptions {
-  jobs: CombineImagesJob[];
+  jobs: CombineImageInput[];
   outputPath: string;
   workspacePath: string;
   runtime?: ConversionExecutionContext;
@@ -56,10 +56,8 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
   ]);
   runtime?.signal?.throwIfAborted();
 
-  runtime?.signal?.throwIfAborted();
-
   const runId = options.runId ?? createRunId();
-  const stagingRootPath = createStagingRoot(options.workspacePath, 'combine-images', runId);
+  const stagingRootPath = stagingRootPathFor(options.workspacePath, 'combine-images', runId);
   const artifacts: ConversionArtifactRoot[] = [{ rootPath: stagingRootPath, workspacePath: options.workspacePath }];
 
   try {
@@ -165,7 +163,7 @@ async function sourcePageCount(sourcePath: string, maxInputPixels: number): Prom
   }
 }
 
-function validateJobs(jobs: CombineImagesJob[]): void {
+function validateJobs(jobs: CombineImageInput[]): void {
   if (jobs.length === 0) {
     throw new Error('No images were selected.');
   }

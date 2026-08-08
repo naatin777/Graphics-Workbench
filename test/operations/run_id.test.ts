@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { asRunId, createRunId, isSafePathSegment } from '../../src/operations/lifecycle/run_id.js';
-import { sanitizePdfPathSegment } from '../../src/operations/pdf/pdf_job_paths.js';
+import { sanitizePdfPathSegment } from '../../src/operations/pdf/pdf_path_validation.js';
 
 suite('変換処理ごとに採番するIDが一時ディレクトリのパス要素として安全かを検証する', () => {
   test('安全な文字列の実行IDはpath segmentとして受け入れ、検証済みIDとしてそのまま返す', () => {

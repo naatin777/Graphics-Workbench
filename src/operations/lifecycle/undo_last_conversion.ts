@@ -14,7 +14,7 @@ export interface ConversionOutput {
   previousFilePath?: string;
   previousFileMetadata?: PreviousFileMetadata;
   stagingRootPath?: string;
-  stagingWorkspacePath?: string | undefined;
+  stagingWorkspacePath?: string;
 }
 
 export interface ConversionUndoRecord {

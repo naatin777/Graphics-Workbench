@@ -3,7 +3,9 @@ import path from 'node:path';
 import { isRasterImagePath, logicalSourcePathForOutputTemplate } from '../../shared/source_format.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertAnimationPixelLimit } from '../../config/raster.js';
-import { createRasterFrameJobs, readRasterAnimationMetadata, type RasterFrameJob } from './create_raster_frame_jobs.js';
+import type { RasterJob } from '../../operations/conversion/raster_conversion.js';
+import { readRasterAnimationMetadata } from '../../operations/conversion/raster_input.js';
+import { planRasterFrameJobs } from './plan_raster_frame_jobs.js';
 
 export async function planAnimationRasterSourceJobs(options: {
   sourcePath: string;
@@ -15,7 +17,7 @@ export async function planAnimationRasterSourceJobs(options: {
   maxAnimationPixels: number;
   animatedInputExtension: string;
   outputMode?: 'auto' | 'preserve' | 'split';
-}): Promise<RasterFrameJob[] | undefined> {
+}): Promise<RasterJob[] | undefined> {
   if (!isRasterImagePath(options.sourcePath)) {
     return undefined;
   }
@@ -52,7 +54,7 @@ export async function planAnimationRasterSourceJobs(options: {
     ];
   }
 
-  return createRasterFrameJobs({
+  return planRasterFrameJobs({
     sourcePath: options.sourcePath,
     workspacePath: options.workspacePath,
     workspaceName: options.workspaceName,
@@ -61,6 +63,5 @@ export async function planAnimationRasterSourceJobs(options: {
     maxInputPixels: options.maxInputPixels,
     maxAnimationPixels: options.maxAnimationPixels,
     frameMode: options.outputMode === 'split' ? 'all' : 'first',
-    createJob: (job) => job,
   });
 }

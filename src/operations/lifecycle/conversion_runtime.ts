@@ -13,3 +13,12 @@ export interface ConversionExecutionContext {
   reportProgress?: ProgressReporter;
   reportMessage?: MessageReporter;
 }
+
+/**
+ * `ConversionExecutionContext` with a guaranteed `signal`. Staging callbacks and
+ * the helpers they call only run while the batch owns an active abort signal, so
+ * callers of a resolved runtime can use `runtime.signal` without a guard.
+ */
+export interface ResolvedConversionRuntime extends ConversionExecutionContext {
+  signal: AbortSignal;
+}

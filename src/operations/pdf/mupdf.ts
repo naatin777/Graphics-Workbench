@@ -168,7 +168,7 @@ export async function hasPdfPageContent(bytes: Uint8Array, page: number): Promis
 export async function renderPdfPageToPng(
   bytes: Uint8Array,
   page: number,
-  options?: { dpi?: number; cropContent?: boolean | undefined },
+  options?: { dpi?: number; cropContent?: boolean },
 ): Promise<Uint8Array> {
   const mupdf = await loadMupdf();
   const document = await openPdfDocument(bytes);

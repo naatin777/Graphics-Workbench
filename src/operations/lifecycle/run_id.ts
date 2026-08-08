@@ -36,7 +36,7 @@ export function isSafePathSegment(value: string): value is RunId {
   return !value.includes('/') && !value.includes('\\');
 }
 
-export function createStagingRoot(workspacePath: string, operation: string, runId: string): string {
+export function stagingRootPathFor(workspacePath: string, operation: string, runId: string): string {
   assertSafePathSegment(operation, 'staging operation');
   assertSafePathSegment(runId, 'runId');
   return path.join(workspacePath, '.graphics-workbench', operation, runId);

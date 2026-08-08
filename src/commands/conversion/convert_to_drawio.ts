@@ -19,7 +19,7 @@ export async function convertToDrawioCommand(
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,
 ): Promise<void> {
-  await convertToDrawioWithDefaults(uri, uris, dependencies, (configuration) =>
+  await runDrawioConversionCommand(uri, uris, dependencies, (configuration) =>
     configuration.outputPath.convertToDrawio(),
   );
 }
@@ -29,7 +29,7 @@ export async function convertToDrawioPngCommand(
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,
 ): Promise<void> {
-  await convertToDrawioWithDefaults(uri, uris, dependencies, (configuration) =>
+  await runDrawioConversionCommand(uri, uris, dependencies, (configuration) =>
     configuration.outputPath.convertToDrawioPng(),
   );
 }
@@ -39,12 +39,12 @@ export async function convertToDrawioSvgCommand(
   uris?: vscode.Uri[],
   dependencies?: CommandDependencies,
 ): Promise<void> {
-  await convertToDrawioWithDefaults(uri, uris, dependencies, (configuration) =>
+  await runDrawioConversionCommand(uri, uris, dependencies, (configuration) =>
     configuration.outputPath.convertToDrawioSvg(),
   );
 }
 
-async function convertToDrawioWithDefaults(
+async function runDrawioConversionCommand(
   uri: vscode.Uri | undefined,
   uris: vscode.Uri[] | undefined,
   dependencies: CommandDependencies | undefined,

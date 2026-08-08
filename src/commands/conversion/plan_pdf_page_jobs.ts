@@ -1,13 +1,14 @@
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 
-export interface PdfPageJobSource {
+/** The source file location used as the base for planning per-page PDF jobs. */
+export interface PdfPageSource {
   sourcePath: string;
   workspacePath: string;
   workspaceName: string;
 }
 
-export interface PdfPageOutputJob {
+export interface PdfPageJob {
   sourcePath: string;
   workspacePath: string;
   outputPath: string;
@@ -16,11 +17,11 @@ export interface PdfPageOutputJob {
 
 /** Pure: PDFの読み込み結果（page count）だけから、pageごとのjobを生成する。 */
 export function planPdfPageJobs(
-  source: PdfPageJobSource,
+  source: PdfPageSource,
   pageCount: number,
   outputTemplate: string,
   allowedExtensions: readonly string[],
-): PdfPageOutputJob[] {
+): PdfPageJob[] {
   if (pageCount === 0) {
     throw new Error(`PDF has no pages: ${source.sourcePath}`);
   }

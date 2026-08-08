@@ -12,7 +12,7 @@ import {
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { validatePdfJobPaths } from '../pdf/pdf_job_paths.js';
+import { validatePdfPathInputs } from '../pdf/pdf_path_validation.js';
 import { toErrorMessage, isAbortError } from '../../shared/error.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
@@ -23,7 +23,7 @@ import type { RunPdfToSvg } from './tools/pdf_render_tools.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { renderPdfPageToSvg } from '../pdf/mupdf.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, createStagingRoot } from '../lifecycle/run_id.js';
+import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 
 export interface ConvertToSvgJob {
   sourcePath: string;
@@ -53,7 +53,7 @@ interface StageSvgConversionOptions {
   drawioTools: DrawioBackend;
   runPdfToSvg: RunPdfToSvg | undefined;
   maxInputPixels: number;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }
 
 interface WriteSourceAsSvgOptions {
@@ -61,7 +61,7 @@ interface WriteSourceAsSvgOptions {
   outputPath: string;
   tools: SvgRenderTools;
   maxInputPixels: number;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }
 
 interface WritePdfPageAsSvgOptions {
@@ -70,7 +70,7 @@ interface WritePdfPageAsSvgOptions {
   workspacePath: string;
   page: number | undefined;
   runPdfToSvg: RunPdfToSvg | undefined;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
 }
 
 export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Promise<CommittedConversionOutput[]> {
@@ -78,9 +78,7 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
   runtime?.signal?.throwIfAborted();
   const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
   validateJobs(options.jobs);
-  await validatePdfJobPaths(options.jobs, 'convert-to-svg');
-  runtime?.signal?.throwIfAborted();
-
+  await validatePdfPathInputs(options.jobs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -89,7 +87,7 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
     jobs: options.jobs,
     operationName: 'convert-to-svg',
     runId,
-    runtime: runtime ?? {},
+    ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       stageSvgConversion(job, index, currentRunId, {
         mermaidTools: options.mermaidTools,
@@ -108,8 +106,8 @@ async function stageSvgConversion(
   options: StageSvgConversionOptions,
 ): Promise<PreparedConversionOutput> {
   const { mermaidTools, drawioTools, runPdfToSvg, maxInputPixels, signal } = options;
-  signal?.throwIfAborted();
-  const stagingRootPath = createStagingRoot(job.workspacePath, 'convert-to-svg', runId);
+  signal.throwIfAborted();
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'convert-to-svg', runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, 'result.svg');
 
@@ -124,9 +122,9 @@ async function stageSvgConversion(
     maxInputPixels,
     signal,
   });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await validateGeneratedSvg(stagedOutputPath);
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   return {
     stagedOutputPath,
@@ -165,12 +163,12 @@ async function writeDrawioAsSvg(
   outputPath: string,
   workspacePath: string,
   drawio: DrawioBackend,
-  signal?: AbortSignal,
+  signal: AbortSignal,
 ): Promise<void> {
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   try {
     await (drawio.runDrawio ?? executeDrawio)(
@@ -195,19 +193,19 @@ async function writePdfPageAsSvg({
   runPdfToSvg,
   signal,
 }: WritePdfPageAsSvgOptions): Promise<void> {
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   try {
     if (runPdfToSvg) {
       await runPdfToSvg(sourcePath, outputPath, page, signal);
     } else {
       const pdfBytes = await readFile(sourcePath);
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       const svg = await renderPdfPageToSvg(pdfBytes, page);
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       await writeFile(outputPath, svg, 'utf8');
     }
   } catch (error) {
@@ -224,12 +222,12 @@ async function writeMermaidAsSvg(
   outputPath: string,
   workspacePath: string,
   mermaid: MermaidBackend,
-  signal?: AbortSignal,
+  signal: AbortSignal,
 ): Promise<void> {
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   try {
     await runMermaidCliWithSignal(
@@ -244,7 +242,7 @@ async function writeMermaidAsSvg(
       },
       signal,
     );
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
   } catch (error) {
     if (isAbortError(error)) {
       throw error instanceof Error ? error : new Error(String(error));

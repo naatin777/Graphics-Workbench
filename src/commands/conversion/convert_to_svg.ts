@@ -100,7 +100,7 @@ async function planSvgConversionJobs(
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return createPdfJobs(sourcePath, workspace, configuration, runtime);
+    return planPdfPageSvgJobs(sourcePath, workspace, configuration, runtime);
   }
 
   if (isNativeDrawioPath(sourcePath)) {
@@ -140,7 +140,7 @@ async function planSvgConversionJobs(
   ];
 }
 
-async function createPdfJobs(
+async function planPdfPageSvgJobs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,

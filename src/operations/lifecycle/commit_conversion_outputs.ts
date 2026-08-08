@@ -23,7 +23,7 @@ export interface PreparedConversionOutput {
   workspacePath: string;
   stagingRootPath?: string;
   /** Filesystem root that authorizes stagingRootPath and stagedOutputPath. */
-  stagingWorkspacePath?: string | undefined;
+  stagingWorkspacePath?: string;
   keepBothGroup?: {
     basePath: string;
     suffix: string;
@@ -36,7 +36,7 @@ export interface CommittedConversionOutput {
   previousFilePath?: string;
   previousFileMetadata?: PreviousFileMetadata;
   stagingRootPath?: string;
-  stagingWorkspacePath?: string | undefined;
+  stagingWorkspacePath?: string;
 }
 
 export interface PreviousFileMetadata {

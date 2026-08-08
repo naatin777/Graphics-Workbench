@@ -3,7 +3,7 @@ import { copyFile, mkdtempDisposable } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { createRasterFrameJobs } from '../../src/commands/conversion/create_raster_frame_jobs.js';
+import { planRasterFrameJobs } from '../../src/commands/conversion/plan_raster_frame_jobs.js';
 import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
@@ -16,14 +16,13 @@ suite('ラスター画像から出力テンプレートに従った変換処理�
 
     await copyFile(fixturePath, sourcePath);
     await assert.rejects(
-      createRasterFrameJobs({
+      planRasterFrameJobs({
         sourcePath,
         workspacePath: workspacePath.path,
         workspaceName: path.basename(workspacePath.path),
         outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
         allowedExtensions: ['.png'],
         maxInputPixels: getDefaultConfiguration().raster.maxInputPixels(),
-        createJob: (job) => job,
       }),
       /Invalid output extension/,
     );
@@ -34,14 +33,13 @@ suite('ラスター画像から出力テンプレートに従った変換処理�
     const sourcePath = path.join(workspacePath.path, 'source.png');
 
     await copyFile(fixturePath, sourcePath);
-    const jobs = await createRasterFrameJobs({
+    const jobs = await planRasterFrameJobs({
       sourcePath,
       workspacePath: workspacePath.path,
       workspaceName: path.basename(workspacePath.path),
       outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.png',
       allowedExtensions: ['.png'],
       maxInputPixels: getDefaultConfiguration().raster.maxInputPixels(),
-      createJob: (job) => job,
     });
 
     assert.strictEqual(jobs.length, 1);

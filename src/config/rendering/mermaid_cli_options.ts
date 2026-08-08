@@ -2,9 +2,7 @@ import type { Configuration } from '../../generated/extension_manifest.js';
 import type { MermaidBackend } from '../../operations/conversion/tools/mermaid_tools.js';
 import { readMermaidExecutablePath } from '../external_tools/external_tool_paths.js';
 
-export type MermaidConfiguration = Configuration;
-
-export function readChromeExecutablePath(configuration: MermaidConfiguration): string {
+export function readChromeExecutablePath(configuration: Configuration): string {
   return resolveChromeExecutablePath(configuration.execPath.chrome().trim());
 }
 
@@ -27,7 +25,7 @@ export function resolveChromeExecutablePath(
   return 'google-chrome';
 }
 
-export function readMermaidCliOptions(configuration: MermaidConfiguration): MermaidBackend {
+export function readMermaidCliOptions(configuration: Configuration): MermaidBackend {
   return {
     chromePath: readChromeExecutablePath(configuration),
     mermaidPath: readMermaidExecutablePath(configuration),
