@@ -4,7 +4,7 @@
 // - 固定fixtureの各分割ページが元PDFの対応ページと同じ描画内容であること
 //
 // Mocked:
-// - なし。pdf-libと実ファイルを使用する
+// - なし。mupdfと実ファイルを使用する
 //
 // Not tested:
 // - VS CodeのwithProgress UI
@@ -15,7 +15,7 @@ import { access, copyFile, mkdir, mkdtemp, mkdtempDisposable, readFile, writeFil
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { splitPdfAllPages } from '../../src/operations/pdf/split_pdf.js';
 

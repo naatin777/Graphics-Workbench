@@ -11,8 +11,8 @@ command adapterは`uri`と`uris`を受け取り、`uris`に1件以上ある場�
 - Ghostscriptは各ページの`HiResBoundingBox`取得にだけ使用する。
 - Ghostscriptへ渡すPDFパスは`execFile`の独立した引数とし、PostScriptコードへ埋め込まない。
 - Ghostscriptの`-c`、`--permit-file-read`、pdfwrite deviceは使用しない。
-- 元PDFはworkspace内のoperation stagingへコピーし、コピーを`pdf-lib`で処理する。
-- BoundingBoxとcommandから受け取ったmarginを使ってページを更新し、`pdf-lib`で完成artifactを作る。
+- 元PDFはworkspace内のoperation stagingへコピーし、コピーをmupdfで処理する。
+- BoundingBoxとcommandから受け取ったmarginを使ってページを更新し、mupdfで完成artifactを作る。
 - 複数PDFの処理は`p-limit`で同時実行数を制限する。
 
 ## Staging and commit boundary

@@ -24,10 +24,6 @@ updates:
       vscode-dependencies:
         patterns:
           - "@vscode/*"
-      production-dependencies:
-        patterns:
-          - "pdf-lib"
-          - "xml2js"
     ignore:
       - dependency-name: "@types/node"
       - dependency-name: "@types/vscode"

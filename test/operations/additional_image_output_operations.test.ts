@@ -3,7 +3,7 @@ import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 import sharp from 'sharp';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';

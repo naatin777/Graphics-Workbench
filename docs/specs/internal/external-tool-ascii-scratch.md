@@ -28,7 +28,7 @@ tool scratchはtransaction stagingの代わりではない。
 - LinuxとmacOS
 - Draw.io
 - qpdf
-- pdf-lib、sharp、Node.js file APIなどprocess内処理
+- mupdf、sharp、Node.js file APIなどprocess内処理
 - Chrome headless CLIとMermaid CLI
 
 対象追加は推測で行わず、実体probeの結果を別タスクで記録してから決める。

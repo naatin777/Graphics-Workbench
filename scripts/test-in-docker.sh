@@ -59,7 +59,7 @@ node_modules_volume="$(
 docker run --rm \
   -v "${repository_root}":/workspace \
   -v "${node_modules_volume}":/workspace/node_modules \
-  "${extra_mounts[@]}" \
+  ${extra_mounts[@]+"${extra_mounts[@]}"} \
   -w /workspace \
   -e GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR=/tmp/vscode-test-ci-data \
   "${image_name}" "$@"

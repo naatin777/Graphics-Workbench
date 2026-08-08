@@ -15,7 +15,7 @@ import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/prom
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { decryptPdfFiles } from '../../src/operations/pdf/decrypt_pdf.js';
 import { loadMupdf, openPdfDocument, savePdfDocument } from '../../src/operations/pdf/mupdf.js';

@@ -4,7 +4,7 @@
 
 ## Command and processing boundary
 
-command adapterは`uri`と`uris`を受け取り、`uris`に1件以上ある場合はそれを、ない場合は`uri`を処理coreへ渡す。workspace境界の検証はprocessing開始前に行う。PDFの読み込みと1ページPDFの生成は`pdf-lib`へ委譲する。
+command adapterは`uri`と`uris`を受け取り、`uris`に1件以上ある場合はそれを、ない場合は`uri`を処理coreへ渡す。workspace境界の検証はprocessing開始前に行う。PDFの読み込みと1ページPDFの生成はmupdfへ委譲する。
 
 ## Staging and artifact boundary
 

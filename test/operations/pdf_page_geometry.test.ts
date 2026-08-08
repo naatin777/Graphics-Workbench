@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { degrees, PDFDocument } from 'pdf-lib';
+import { degrees, PDFDocument } from '../helpers/pdf_document.js';
 
 import { openPdfDocument } from '../../src/operations/pdf/mupdf.js';
 import { getPdfPageGeometry } from '../../src/operations/pdf/pdf_page_geometry.js';

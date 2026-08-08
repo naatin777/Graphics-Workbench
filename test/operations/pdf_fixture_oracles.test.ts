@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
@@ -13,7 +13,7 @@ suite('PDFテスト入力の全ページPNG変換結果が、各ページの期�
   for (const [index, fixturePath] of listInputFixturePathsSync(
     path.join(testInputDirectory, 'valid', 'pdf'),
   ).entries()) {
-    test(`pdf/${path.basename(fixturePath)}をpdf-libで取得したページ数分だけページごとにPNG変換し、各ページの出力が固定正解PNGと一致する`, async () => {
+    test(`pdf/${path.basename(fixturePath)}を読み取ったページ数分だけページごとにPNG変換し、各ページの出力が固定正解PNGと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
         const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
