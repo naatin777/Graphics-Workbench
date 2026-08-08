@@ -17,7 +17,6 @@ Graphics Workbench の AI 開発用 `.opencode/skills/` を、現在の reposito
   - `graphics-workbench-vscode-testing`: visual review追加
   - `graphics-workbench-verify`: subsystem別minimal verification、pnpm→npm修正
   - `graphics-workbench-release`: packaging詳細をpackaging skillへ分離、pnpm→npm修正
-  - `graphite-stacked-pr`: CI economy（CIを開発の同期ステップにしない）
 - `AGENTS.md`: skill routingは不要（skillはdescriptionで自動提示される）と判断し、削除
 
 ## Non-goals

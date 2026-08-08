@@ -1,9 +1,9 @@
 ---
 name: never-disable-git-hooks
 description: >-
-  Never bypass Git hooks. Use when working with git commit, git push, gt
-  submit, or any Graphite operation that runs pre-commit / pre-push /
-  commitlint. Do NOT use --no-verify or -n. Fix the hook failure instead.
+  Never bypass Git hooks. Use when working with git commit, git push, or any
+  operation that runs pre-commit / pre-push / commitlint. Do NOT use
+  --no-verify or -n. Fix the hook failure instead.
 ---
 
 # Never disable Git hooks
@@ -15,8 +15,8 @@ Playwright smoke gates before anything reaches CI.
 
 ## Rule
 
-- Never pass `--no-verify` or `-n` to `git commit`, `git push`, `gt submit`,
-  or any other command that would bypass hooks.
+- Never pass `--no-verify` or `-n` to `git commit`, `git push`, or any other
+  command that would bypass hooks.
 - When a hook fails, treat the failure as a real problem: read the hook
   output, fix the underlying issue, and re-run the commit/push without flags.
 - Do not work around a hook failure with `--no-verify`, staging partial
