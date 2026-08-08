@@ -7,7 +7,10 @@
 declare module 'jsdom' {
   export interface JSDOMWindow {
     close: () => void;
-    document: unknown;
+    document: {
+      head: { replaceChildren: () => void };
+      body: { replaceChildren: () => void };
+    };
     navigator: unknown;
     devicePixelRatio: number;
     HTMLCanvasElement: {
