@@ -2,7 +2,7 @@
 
 ## Current Task
 
-- [0223: AI開発用skillsをrepository構成と開発パターンに合わせて整理・強化する](0223-organize-ai-development-skills.md) — Not Started
+- [0224: PR CIを停止し、Graphite廃止の手順を決める](0224-stop-pr-ci-and-phase-out-graphite.md) — In Progress
 
 ## On hold
 
@@ -32,7 +32,7 @@ Taskは小さな作業手順やPR単位ではなく、達成する成果また�
 
 ## Planned
 
-- なし
+- [0223: AI開発用skillsをrepository構成と開発パターンに合わせて整理・強化する](0223-organize-ai-development-skills.md) — Not Started（Graphite廃止・Docker移行後に対象を見直す）
 
 ## Backlog
 

@@ -1,10 +1,8 @@
 name: Playwright
 
+# CI is temporarily disabled (task 0224) while the development workflow is
+# reorganized. Re-enable with pull_request/push triggers when ready.
 on:
-  pull_request:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
