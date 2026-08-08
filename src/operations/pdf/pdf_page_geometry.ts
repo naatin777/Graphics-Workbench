@@ -28,7 +28,7 @@ function pageBox(page: MupdfPdfPage, boxName: 'MediaBox' | 'CropBox'): readonly 
   }
 
   // ponytail: mupdf getBounds() returns the rotated page-space box; read the raw
-  // stored box so the DTO keeps the same absolute PDF coordinates as pdf-lib did.
+  // stored box so the DTO keeps the same absolute PDF coordinates as before.
   return boxArray(page, boxName === 'MediaBox' ? 'CropBox' : 'MediaBox') ?? [0, 0, 612, 792];
 }
 

@@ -16,7 +16,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import sharp from 'sharp';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { convertToPdfFiles, validateSvgToPdfOptions } from '../../src/operations/conversion/convert_to_pdf.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
@@ -80,7 +80,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       operationName: 'convert-png-to-pdf',
     });
 
-    const { PDFDocument: LoadedPdfDocument } = await import('pdf-lib');
+    const { PDFDocument: LoadedPdfDocument } = await import('../helpers/pdf_document.js');
     const pdf = await LoadedPdfDocument.load(await import('node:fs/promises').then((fs) => fs.readFile(outputPath)));
     assert.strictEqual(pdf.getPageCount(), 1);
   });

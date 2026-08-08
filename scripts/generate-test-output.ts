@@ -44,11 +44,10 @@ async function generatePdfOutputs(): Promise<void> {
   for (const inputPath of await listFiles(path.join(inputDirectory, 'pdf'))) {
     const outputDataDirectory = path.join(outputDirectory, 'pdf', sourceName(inputPath));
     await mkdir(outputDataDirectory, { recursive: true });
-    const document = await import('pdf-lib').then(async ({ PDFDocument }) =>
-      PDFDocument.load(await readFile(inputPath)),
-    );
+    const { countPdfPages } = await import('../src/operations/pdf/mupdf.js');
+    const pageCount = await countPdfPages(new Uint8Array(await readFile(inputPath)));
 
-    for (let page = 1; page <= document.getPageCount(); page += 1) {
+    for (let page = 1; page <= pageCount; page += 1) {
       const outputPath = path.join(outputDataDirectory, `page-${String(page).padStart(3, '0')}.png`);
       await renderPdfPage(inputPath, page, outputPath);
     }
@@ -142,7 +141,6 @@ async function generateDrawioOutputs(drawioExecutablePath: string): Promise<void
     const pngSourcePdfPath = path.join(outputDataDirectory, 'render.pdf');
 
     await runDrawio(drawioExecutablePath, inputPath, expectedSvgPath, 'svg');
-    // oxlint-disable-next-line unicorn/prefer-ternary -- both branches run side-effectful child processes.
     if (inputPath.endsWith('.drawio') || inputPath.endsWith('.dio')) {
       await execFileAsync(drawioExecutablePath, [
         inputPath,

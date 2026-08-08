@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { hasPdfPageContent, renderPdfPageToPng, renderPdfPageToSvg } from '../../src/operations/pdf/mupdf.js';
 

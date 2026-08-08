@@ -18,7 +18,7 @@ import { access, copyFile, mkdtemp, readFile, readdir, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { convertToPdfFiles, type ConvertToPdfJob } from '../../src/operations/conversion/convert_to_pdf.js';
 import type { RunDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';

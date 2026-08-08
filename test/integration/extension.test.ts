@@ -62,7 +62,7 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
 
       await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
 
-      const { PDFDocument } = await import('pdf-lib');
+      const { PDFDocument } = await import('../helpers/pdf_document.js');
       const pdf = await PDFDocument.load(await readFile(outputPath));
       assert.strictEqual(pdf.getPageCount(), 1);
     } finally {
@@ -89,7 +89,7 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
       await vscode.commands.executeCommand('graphics-workbench.cropPdf.auto', vscode.Uri.file(sourcePath));
 
       const croppedPath = path.join(temporaryDirectory.path, 'document-crop.pdf');
-      const { PDFDocument } = await import('pdf-lib');
+      const { PDFDocument } = await import('../helpers/pdf_document.js');
       const pdf = await PDFDocument.load(await readFile(croppedPath));
       assert.strictEqual(pdf.getPageCount(), 2);
     } finally {
@@ -113,7 +113,7 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
 
       await vscode.commands.executeCommand('graphics-workbench.splitPdf.allPages', vscode.Uri.file(sourcePath));
 
-      const { PDFDocument } = await import('pdf-lib');
+      const { PDFDocument } = await import('../helpers/pdf_document.js');
       const splitOutputDir = path.join(temporaryDirectory.path, 'split-test');
       for (const page of [1, 2]) {
         const pagePath = path.join(splitOutputDir, `${page}.pdf`);

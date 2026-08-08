@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { copyFile, mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 import * as vscode from 'vscode';
 
 import { avifSpec, jpegSpec, pngSpec, tiffSpec } from '../../src/commands/conversion/convert_to_raster.js';

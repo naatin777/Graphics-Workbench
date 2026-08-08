@@ -14,7 +14,7 @@ import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, type PDFPage } from 'pdf-lib';
+import { PDFDocument, type PDFPage } from '../helpers/pdf_document.js';
 import sharp from 'sharp';
 
 import { renderPdfPageToPng } from '../../src/operations/pdf/mupdf.js';

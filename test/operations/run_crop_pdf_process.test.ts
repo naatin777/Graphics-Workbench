@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { cropPdfFile, type CropPdfFileWriter } from '../../src/operations/pdf/crop_pdf_core.js';
 import {
@@ -521,7 +521,7 @@ suite('Crop処理を子プロセスで実行してIPCの完了・失敗を確定
   suite('Crop処理のファイル書き込み・プロセス起動を差し替えて失敗時の後始末を検証する', () => {
     test('crop結果のPDF書き出しがディスク不足（ENOSPC）で失敗すると、出力先へ置き換えせず一時ファイルを削除して失敗する', async () => {
       // Real:
-      // - 実pdf-libによるsource PDFのload/save
+      // - 実mupdfによるsource PDFのload/save
       //
       // Fixture / Fake / Stub / Mock:
       // - writer.writeFileだけをENOSPC Stubへ置換

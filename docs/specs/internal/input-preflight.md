@@ -28,7 +28,7 @@
 
 ### decoder / external tool
 
-- PDFはpdf-lib、pdftocairo、Ghostscriptなど実際に使用するbackendが読み取る。
+- PDFはmupdf、pdftocairo、Ghostscriptなど実際に使用するbackendが読み取る。
 - raster入力はSharpが読み取る。
 - SVG、Mermaid、Draw.io、EPSは各rendererまたは外部toolが処理する。
 - backend errorは入力pathとoperation contextを保ったまま上位へ伝播する。

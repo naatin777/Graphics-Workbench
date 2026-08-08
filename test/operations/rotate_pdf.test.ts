@@ -4,7 +4,7 @@
 // - 出力PDFの各ページに回転角度が設定されていること
 //
 // Mocked:
-// - なし。実pdf-libと実ファイルを使用する
+// - なし。mupdfと実ファイルを使用する
 //
 // Not tested:
 // - VS CodeのwithProgress UI
@@ -15,7 +15,7 @@ import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { degrees, PDFDocument } from 'pdf-lib';
+import { degrees, PDFDocument } from '../helpers/pdf_document.js';
 
 import {
   isRotatePdfHostToWebviewMessage,
