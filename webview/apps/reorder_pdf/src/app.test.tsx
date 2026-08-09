@@ -106,7 +106,12 @@ const initMessage = {
     fileName: 'source.pdf',
     pageCount: 4,
     pdfSrc: 'vscode-resource://source.pdf',
-    resources: {},
+    resources: {
+      workerSrc: 'vscode-resource://pdf.worker.mjs',
+      cMapUrl: 'vscode-resource://cmaps/',
+      standardFontDataUrl: 'vscode-resource://standard_fonts/',
+      wasmUrl: 'vscode-resource://wasm/',
+    },
     preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
     labels,
   },

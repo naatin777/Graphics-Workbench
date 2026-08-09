@@ -1,6 +1,7 @@
 import { createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '../../../shared/pdf/render_pdf_pages';
+import { toErrorMessage } from '../../../shared/error';
 import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '../../../shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '../../../shared/ui/PageNavigator';
@@ -103,7 +104,7 @@ async function renderPreview(options: RenderPreviewOptions): Promise<void> {
     if (options.signal.aborted) {
       return;
     }
-    options.state.setRenderError(error instanceof Error ? error.message : String(error));
+    options.state.setRenderError(toErrorMessage(error));
     throw error instanceof Error ? error : new Error(String(error));
   }
 }
@@ -117,27 +118,14 @@ function renderOptions(
   return {
     preview: payload.preview,
     ...(pdfPreview !== undefined && { root: pdfPreview }),
-    resources: {
-      ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
-        ? { workerSrc: payload.resources.workerSrc }
-        : {}),
-      ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
-        ? { cMapUrl: payload.resources.cMapUrl }
-        : {}),
-      ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
-        ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
-        : {}),
-      ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
-        ? { wasmUrl: payload.resources.wasmUrl }
-        : {}),
-    },
+    resources: payload.resources,
     page: { label: payload.labels.header.pageLabel },
     signal,
     onRenderError: (error: unknown) => {
       if (signal.aborted) {
         return;
       }
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       setRenderError(message);
       vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
     },

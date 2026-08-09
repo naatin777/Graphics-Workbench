@@ -1,79 +1,76 @@
-import { hasExactKeys, isPositiveInteger, isRecord, isString } from './protocol_utils.js';
-import { isWebviewMessageWithPayload, isWebviewMessageWithoutPayload } from './webview_protocol.js';
-import type { PdfPreviewSettings } from './pdf_preview_protocol.js';
+import * as v from 'valibot';
+import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
 
-export type PreviewFormat = 'pdf' | 'tiff';
+const PreviewFormatSchema = v.union([v.literal('pdf'), v.literal('tiff')]);
+export type PreviewFormat = v.InferOutput<typeof PreviewFormatSchema>;
 
-export interface PreviewLabels {
-  title: string;
-  description: string;
-  page: {
-    label: string;
-    pages: string;
-  };
-  preview: {
-    ariaLabel: string;
-    zoomLabel: string;
-    zoomOut: string;
-    zoomIn: string;
-    renderError: string;
-  };
-}
+const PreviewLabelsSchema = v.strictObject({
+  title: v.string(),
+  description: v.string(),
+  page: v.strictObject({
+    label: v.string(),
+    pages: v.string(),
+  }),
+  preview: v.strictObject({
+    ariaLabel: v.string(),
+    zoomLabel: v.string(),
+    zoomOut: v.string(),
+    zoomIn: v.string(),
+    renderError: v.string(),
+  }),
+});
+export type PreviewLabels = v.InferOutput<typeof PreviewLabelsSchema>;
 
-export type PreviewHostToWebview =
-  | {
-      type: 'init';
-      payload: {
-        format: PreviewFormat;
-        fileName: string;
-        pageCount: number;
-        pdfData?: string;
-        resources: {
-          workerSrc?: string;
-          cMapUrl?: string;
-          standardFontDataUrl?: string;
-          wasmUrl?: string;
-        };
-        preview: PdfPreviewSettings;
-        labels: PreviewLabels;
-      };
-    }
-  | {
-      type: 'renderPageResult';
-      payload: { page: number; dataUri: string };
-    }
-  | {
-      type: 'error';
-      payload: { message: string };
-    };
+const PreviewResourcesSchema = v.strictObject({
+  workerSrc: v.optional(v.string()),
+  cMapUrl: v.optional(v.string()),
+  standardFontDataUrl: v.optional(v.string()),
+  wasmUrl: v.optional(v.string()),
+});
 
-export type PreviewWebviewToHost =
-  | { type: 'ready' }
-  | { type: 'cancel' }
-  | {
-      type: 'renderPage';
-      payload: { page: number };
-    }
-  | {
-      type: 'previewLoadFailed';
-      payload: { message: string };
-    };
+const PreviewHostToWebviewSchema = v.variant('type', [
+  v.strictObject({
+    type: v.literal('init'),
+    payload: v.strictObject({
+      format: PreviewFormatSchema,
+      fileName: v.string(),
+      pageCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
+      pdfData: v.optional(v.string()),
+      resources: PreviewResourcesSchema,
+      preview: PdfPreviewSettingsSchema,
+      labels: PreviewLabelsSchema,
+    }),
+  }),
+  v.strictObject({
+    type: v.literal('renderPageResult'),
+    payload: v.strictObject({
+      page: v.pipe(v.number(), v.integer(), v.minValue(1)),
+      dataUri: v.string(),
+    }),
+  }),
+  v.strictObject({
+    type: v.literal('error'),
+    payload: v.strictObject({ message: v.string() }),
+  }),
+]);
+export type PreviewHostToWebview = v.InferOutput<typeof PreviewHostToWebviewSchema>;
+
+const PreviewWebviewToHostSchema = v.variant('type', [
+  v.strictObject({ type: v.literal('ready') }),
+  v.strictObject({ type: v.literal('cancel') }),
+  v.strictObject({
+    type: v.literal('renderPage'),
+    payload: v.strictObject({
+      page: v.pipe(v.number(), v.integer(), v.minValue(1)),
+    }),
+  }),
+  v.strictObject({
+    type: v.literal('previewLoadFailed'),
+    payload: v.strictObject({ message: v.string() }),
+  }),
+]);
+export type PreviewWebviewToHost = v.InferOutput<typeof PreviewWebviewToHostSchema>;
 
 export function isPreviewWebviewToHostMessage(value: unknown): value is PreviewWebviewToHost {
-  return (
-    isWebviewMessageWithoutPayload(value, 'ready') ||
-    isWebviewMessageWithoutPayload(value, 'cancel') ||
-    isWebviewMessageWithPayload(value, 'renderPage', isRenderPagePayload) ||
-    isWebviewMessageWithPayload(value, 'previewLoadFailed', isPreviewMessagePayload)
-  );
-}
-
-function isRenderPagePayload(
-  value: unknown,
-): value is Extract<PreviewWebviewToHost, { type: 'renderPage' }>['payload'] {
-  return isRecord(value) && hasExactKeys(value, ['page']) && isPositiveInteger(value.page);
-}
-
-function isPreviewMessagePayload(value: unknown): value is { message: string } {
-  return isRecord(value) && hasExactKeys(value, ['message']) && isString(value.message);
+  return v.is(PreviewWebviewToHostSchema, value);
 }

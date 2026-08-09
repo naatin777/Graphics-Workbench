@@ -1,22 +1,8 @@
-import { hasExactKeys, isRecord } from './protocol_utils.js';
+import * as v from 'valibot';
 
-export interface PdfPreviewSettings {
-  maxCanvasPixels: number;
-  maxDevicePixelRatio: number;
-}
+export const PdfPreviewSettingsSchema = v.strictObject({
+  maxCanvasPixels: v.pipe(v.number(), v.integer(), v.minValue(1_000_000)),
+  maxDevicePixelRatio: v.pipe(v.number(), v.finite(), v.minValue(1), v.maxValue(8)),
+});
 
-export function isPdfPreviewSettings(value: unknown): value is PdfPreviewSettings {
-  const maxCanvasPixels = isRecord(value) ? value.maxCanvasPixels : undefined;
-  const maxDevicePixelRatio = isRecord(value) ? value.maxDevicePixelRatio : undefined;
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, ['maxCanvasPixels', 'maxDevicePixelRatio']) &&
-    typeof maxCanvasPixels === 'number' &&
-    Number.isInteger(maxCanvasPixels) &&
-    maxCanvasPixels >= 1_000_000 &&
-    typeof maxDevicePixelRatio === 'number' &&
-    Number.isFinite(maxDevicePixelRatio) &&
-    maxDevicePixelRatio >= 1 &&
-    maxDevicePixelRatio <= 8
-  );
-}
+export type PdfPreviewSettings = v.InferOutput<typeof PdfPreviewSettingsSchema>;

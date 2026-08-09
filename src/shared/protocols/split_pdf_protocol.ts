@@ -1,97 +1,6 @@
-import {
-  hasExactKeys,
-  isNonEmptyString,
-  isOptionalWebviewUri,
-  isPositiveInteger,
-  isRecord,
-  isString,
-  isWebviewUri,
-} from './protocol_utils.js';
-import { isPdfPreviewSettings, type PdfPreviewSettings } from './pdf_preview_protocol.js';
-import {
-  isWebviewErrorMessage,
-  isWebviewMessageWithPayload,
-  isWebviewMessageWithoutPayload,
-} from './webview_protocol.js';
-
-export interface SplitPdfLabels {
-  header: {
-    title: string;
-    description: string;
-  };
-  preview: {
-    title: string;
-    ariaLabel: string;
-    renderError: string;
-    applyError: string;
-    allPages: string;
-    focusedPages: string;
-    zoom: string;
-  };
-  groups: {
-    title: string;
-    label: string;
-    add: string;
-    remove: string;
-    drag: string;
-    outputOrder: string;
-  };
-  pages: {
-    title: string;
-    label: string;
-    placeholder: string;
-  };
-  output: {
-    name: string;
-    namePlaceholder: string;
-    path: string;
-  };
-  validation: {
-    pagesRequired: string;
-    pageWholeNumber: string;
-    pageOutOfRange: string;
-    invalidPages: string;
-    descendingPages: string;
-    outputNameEmpty: string;
-    outputNamePath: string;
-    outputNameDuplicate: string;
-  };
-  actions: {
-    apply: string;
-    cancel: string;
-    moveUp: string;
-    moveDown: string;
-  };
-}
-
-export type SplitPdfHostToWebview =
-  | {
-      type: 'init';
-      payload: {
-        sourceId: string;
-        fileName: string;
-        pageCount: number;
-        pdfSrc: string;
-        outputPathTemplate: string;
-        resources: {
-          workerSrc?: string;
-          cMapUrl?: string;
-          standardFontDataUrl?: string;
-          wasmUrl?: string;
-        };
-        preview: PdfPreviewSettings;
-        labels: SplitPdfLabels;
-      };
-    }
-  | {
-      type: 'error';
-      payload: { message: string };
-    };
-
-export interface SplitPdfPageGroupRow {
-  pages: number[];
-  outputName: string;
-}
+import * as v from 'valibot';
+import { isWebviewUri } from './protocol_utils.js';
+import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
 
 type SplitPdfPageParseFailureKind = 'required' | 'malformed' | 'wholeNumber' | 'descending' | 'outOfRange';
 
@@ -163,134 +72,118 @@ export function parseSplitPdfPages(raw: string, pageCount: number): SplitPdfPage
   return { ok: true, pages };
 }
 
-export type SplitPdfWebviewToHost =
-  | { type: 'ready' }
-  | {
-      type: 'apply';
-      payload: { rows: SplitPdfPageGroupRow[] };
-    }
-  | { type: 'cancel' }
-  | {
-      type: 'previewLoadFailed';
-      payload: { message: string };
-    };
+const SplitPdfLabelsSchema = v.strictObject({
+  header: v.strictObject({
+    title: v.string(),
+    description: v.string(),
+  }),
+  preview: v.strictObject({
+    title: v.string(),
+    ariaLabel: v.string(),
+    renderError: v.string(),
+    applyError: v.string(),
+    allPages: v.string(),
+    focusedPages: v.string(),
+    zoom: v.string(),
+  }),
+  groups: v.strictObject({
+    title: v.string(),
+    label: v.string(),
+    add: v.string(),
+    remove: v.string(),
+    drag: v.string(),
+    outputOrder: v.string(),
+  }),
+  pages: v.strictObject({
+    title: v.string(),
+    label: v.string(),
+    placeholder: v.string(),
+  }),
+  output: v.strictObject({
+    name: v.string(),
+    namePlaceholder: v.string(),
+    path: v.string(),
+  }),
+  validation: v.strictObject({
+    pagesRequired: v.string(),
+    pageWholeNumber: v.string(),
+    pageOutOfRange: v.string(),
+    invalidPages: v.string(),
+    descendingPages: v.string(),
+    outputNameEmpty: v.string(),
+    outputNamePath: v.string(),
+    outputNameDuplicate: v.string(),
+  }),
+  actions: v.strictObject({
+    apply: v.string(),
+    cancel: v.string(),
+    moveUp: v.string(),
+    moveDown: v.string(),
+  }),
+});
+export type SplitPdfLabels = v.InferOutput<typeof SplitPdfLabelsSchema>;
+
+const SplitPdfPageGroupRowSchema = v.strictObject({
+  pages: v.pipe(v.array(v.pipe(v.number(), v.integer(), v.minValue(1))), v.minLength(1)),
+  outputName: v.pipe(v.string(), v.nonEmpty()),
+});
+export type SplitPdfPageGroupRow = v.InferOutput<typeof SplitPdfPageGroupRowSchema>;
+
+const SplitPdfWebviewUriSchema = v.pipe(
+  v.string(),
+  v.check((value: string): boolean => isWebviewUri(value)),
+);
+
+const SplitPdfResourcesSchema = v.strictObject({
+  workerSrc: SplitPdfWebviewUriSchema,
+  cMapUrl: SplitPdfWebviewUriSchema,
+  standardFontDataUrl: SplitPdfWebviewUriSchema,
+  wasmUrl: SplitPdfWebviewUriSchema,
+});
+
+const SplitPdfInitPayloadSchema = v.strictObject({
+  sourceId: v.pipe(v.string(), v.nonEmpty()),
+  fileName: v.pipe(v.string(), v.nonEmpty()),
+  pageCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
+  pdfSrc: SplitPdfWebviewUriSchema,
+  outputPathTemplate: v.pipe(v.string(), v.nonEmpty()),
+  resources: SplitPdfResourcesSchema,
+  preview: PdfPreviewSettingsSchema,
+  labels: SplitPdfLabelsSchema,
+});
+
+const SplitPdfHostToWebviewSchema = v.variant('type', [
+  v.strictObject({
+    type: v.literal('init'),
+    payload: SplitPdfInitPayloadSchema,
+  }),
+  v.strictObject({
+    type: v.literal('error'),
+    payload: v.strictObject({ message: v.string() }),
+  }),
+]);
+export type SplitPdfHostToWebview = v.InferOutput<typeof SplitPdfHostToWebviewSchema>;
+
+const SplitPdfWebviewToHostSchema = v.variant('type', [
+  v.strictObject({ type: v.literal('ready') }),
+  v.strictObject({ type: v.literal('cancel') }),
+  v.strictObject({
+    type: v.literal('apply'),
+    payload: v.strictObject({
+      rows: v.pipe(v.array(SplitPdfPageGroupRowSchema), v.minLength(1)),
+    }),
+  }),
+  v.strictObject({
+    type: v.literal('previewLoadFailed'),
+    payload: v.strictObject({ message: v.string() }),
+  }),
+]);
+export type SplitPdfWebviewToHost = v.InferOutput<typeof SplitPdfWebviewToHostSchema>;
 
 export function isSplitPdfHostToWebviewMessage(value: unknown): value is SplitPdfHostToWebview {
-  return isWebviewErrorMessage(value) || isWebviewMessageWithPayload(value, 'init', isSplitPdfInitPayload);
-}
-
-function isSplitPdfInitPayload(value: unknown): value is Extract<SplitPdfHostToWebview, { type: 'init' }>['payload'] {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    hasExactKeys(value, [
-      'sourceId',
-      'fileName',
-      'pageCount',
-      'pdfSrc',
-      'outputPathTemplate',
-      'resources',
-      'preview',
-      'labels',
-    ]) &&
-    isNonEmptyString(value.sourceId) &&
-    isNonEmptyString(value.fileName) &&
-    isPositiveInteger(value.pageCount) &&
-    isWebviewUri(value.pdfSrc) &&
-    isNonEmptyString(value.outputPathTemplate) &&
-    isSplitPdfResources(value.resources) &&
-    isPdfPreviewSettings(value.preview) &&
-    isSplitPdfLabels(value.labels)
-  );
-}
-
-function isSplitPdfResources(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, [], ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl']) &&
-    isOptionalWebviewUri(value.workerSrc) &&
-    isOptionalWebviewUri(value.cMapUrl) &&
-    isOptionalWebviewUri(value.standardFontDataUrl) &&
-    isOptionalWebviewUri(value.wasmUrl)
-  );
+  return v.is(SplitPdfHostToWebviewSchema, value);
 }
 
 export function isSplitPdfWebviewToHostMessage(value: unknown): value is SplitPdfWebviewToHost {
-  return (
-    isWebviewMessageWithoutPayload(value, 'ready') ||
-    isWebviewMessageWithoutPayload(value, 'cancel') ||
-    isWebviewMessageWithPayload(value, 'previewLoadFailed', isSplitPdfMessagePayload) ||
-    isWebviewMessageWithPayload(value, 'apply', isSplitPdfApplyPayload)
-  );
-}
-
-function isSplitPdfMessagePayload(value: unknown): value is { message: string } {
-  return isRecord(value) && hasExactKeys(value, ['message']) && isString(value.message);
-}
-
-function isSplitPdfApplyPayload(value: unknown): value is Extract<SplitPdfWebviewToHost, { type: 'apply' }>['payload'] {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, ['rows']) &&
-    Array.isArray(value.rows) &&
-    value.rows.length > 0 &&
-    value.rows.every(isSplitPdfPageGroupRow)
-  );
-}
-
-function isSplitPdfLabels(value: unknown): value is SplitPdfLabels {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  const groups = [
-    ['header', ['title', 'description']],
-    ['preview', ['title', 'ariaLabel', 'renderError', 'applyError', 'allPages', 'focusedPages', 'zoom']],
-    ['groups', ['title', 'label', 'add', 'remove', 'drag', 'outputOrder']],
-    ['pages', ['title', 'label', 'placeholder']],
-    ['output', ['name', 'namePlaceholder', 'path']],
-    [
-      'validation',
-      [
-        'pagesRequired',
-        'pageWholeNumber',
-        'pageOutOfRange',
-        'invalidPages',
-        'descendingPages',
-        'outputNameEmpty',
-        'outputNamePath',
-        'outputNameDuplicate',
-      ],
-    ],
-    ['actions', ['apply', 'cancel', 'moveUp', 'moveDown']],
-  ] as const;
-
-  if (
-    !hasExactKeys(
-      value,
-      groups.map(([group]) => group),
-    )
-  ) {
-    return false;
-  }
-
-  return groups.every(([groupName, keys]) => {
-    const group = value[groupName];
-    return isRecord(group) && hasExactKeys(group, keys) && keys.every((key) => isString(group[key]));
-  });
-}
-
-function isSplitPdfPageGroupRow(value: unknown): value is SplitPdfPageGroupRow {
-  if (!isRecord(value) || !hasExactKeys(value, ['pages', 'outputName'])) {
-    return false;
-  }
-
-  return (
-    Array.isArray(value.pages) &&
-    value.pages.length > 0 &&
-    value.pages.every(isPositiveInteger) &&
-    isNonEmptyString(value.outputName)
-  );
+  return v.is(SplitPdfWebviewToHostSchema, value);
 }

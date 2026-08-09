@@ -1,6 +1,7 @@
 import { createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController, type PdfRenderOptions } from '../../../shared/pdf/render_pdf_pages';
+import { toErrorMessage } from '../../../shared/error';
 import { PageNavigator, scrollPageIntoView } from '../../../shared/ui/PageNavigator';
 import { ToolbarButton } from '../../../shared/ui/ToolbarButton';
 import { useCurrentPage } from '../../../shared/ui/use_current_page';
@@ -169,7 +170,7 @@ export function App(): JSX.Element {
       if (signal.aborted) {
         return;
       }
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       setRenderError(message);
       vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
     }
@@ -203,7 +204,7 @@ export function App(): JSX.Element {
         if (signal.aborted) {
           return;
         }
-        const message = error instanceof Error ? error.message : String(error);
+        const message = toErrorMessage(error);
         setRenderError(message);
         vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
       },
@@ -237,7 +238,7 @@ export function App(): JSX.Element {
         if (signal.aborted) {
           return;
         }
-        const message = error instanceof Error ? error.message : String(error);
+        const message = toErrorMessage(error);
         setRenderError(message);
       },
       root: pagesContainer,

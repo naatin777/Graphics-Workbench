@@ -2,6 +2,7 @@ import { For, Show, createEffect, createSignal, onCleanup, onMount, type JSX } f
 import { createStore } from 'solid-js/store';
 
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
+import { toErrorMessage } from '@webview-shared/error';
 
 import type { SplitPdfPageGroupRow } from '@graphics-workbench-split-pdf-protocol';
 
@@ -363,20 +364,7 @@ export function App(): JSX.Element {
     try {
       const controller = await renderPdfPages(payload.pdfSrc, pdfPages, {
         preview: payload.preview,
-        resources: {
-          ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
-            ? { workerSrc: payload.resources.workerSrc }
-            : {}),
-          ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
-            ? { cMapUrl: payload.resources.cMapUrl }
-            : {}),
-          ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
-            ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
-            : {}),
-          ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
-            ? { wasmUrl: payload.resources.wasmUrl }
-            : {}),
-        },
+        resources: payload.resources,
         ...(pdfPreview === undefined ? {} : { root: pdfPreview }),
         page: { label: labels().pages.label },
         signal,
@@ -384,7 +372,7 @@ export function App(): JSX.Element {
           if (signal.aborted) {
             return;
           }
-          const message = error instanceof Error ? error.message : String(error);
+          const message = toErrorMessage(error);
           setRenderError(message);
           setPreviewReady(false);
           vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
@@ -408,7 +396,7 @@ export function App(): JSX.Element {
       if (signal.aborted) {
         return;
       }
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       setRenderError(message);
       setPreviewReady(false);
       vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });

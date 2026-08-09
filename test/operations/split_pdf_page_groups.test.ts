@@ -217,6 +217,7 @@ suite('PDFページグループ分割', () => {
     );
     assert.equal(isSplitPdfWebviewToHostMessage({ type: 'ready' }), true);
     assert.equal(isSplitPdfWebviewToHostMessage({ type: 'ready', requestId: 'request-1' }), false);
+    assert.equal(isSplitPdfWebviewToHostMessage({ type: 'ready', payload: undefined }), false);
     assert.equal(isSplitPdfWebviewToHostMessage({ type: '' }), false);
     assert.equal(
       isSplitPdfWebviewToHostMessage({
