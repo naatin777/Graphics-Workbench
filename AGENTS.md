@@ -10,10 +10,10 @@
 
 ## 検証環境
 
-- ローカルではbuildをhost、testをDockerで実行する。GitHub ActionsのOS別jobは各runner上でnative実行する。
-- hostでは`npm run build`とtestを含まないcheckを実行できる。ローカルtestは必要なnpm scriptを選び、`npm run test:docker -- <npm-script>`で実行する。
-- ローカルで`npm test`や`npm run test:webview:*`をhostから直接実行しない。
-- ローカルのhost testは、full Playwright、release検証、またはplatform固有問題の明示的なデバッグに限る。Docker検証の代用にはしない。
+- ローカルでVS Code / Electronのwindowを開くtestは、画面を占有しないようDockerで実行する。`npm test`、coverage、packaged Playwright smokeは`npm run test:docker -- <npm-script>`を使う。
+- build、check、`test:scripts`、Webview Vitestなどwindowを開かない処理はhostで実行できる。
+- GitHub ActionsのOS別jobは各runner上でnative実行する。
+- full Playwright、visual capture、release検証、platform固有問題のデバッグをhostで実行する場合は、windowが開くことを前提に必要時だけ行う。
 
 ## スコープ
 
