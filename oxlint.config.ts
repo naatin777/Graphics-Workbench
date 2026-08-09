@@ -600,6 +600,28 @@ export default defineConfig({
       },
     },
     {
+      // opencode plugins run outside the extension's TS program, so
+      // type-aware rules cannot resolve them. Treat them as untyped JS.
+      files: ['.opencode/plugin/**/*.ts'],
+      rules: {
+        'typescript/no-unsafe-assignment': 'off',
+        'typescript/no-unsafe-call': 'off',
+        'typescript/no-unsafe-member-access': 'off',
+        'typescript/no-unsafe-argument': 'off',
+        'typescript/no-unsafe-return': 'off',
+        'typescript/no-unnecessary-condition': 'off',
+        'typescript/strict-boolean-expressions': 'off',
+        'typescript/no-confusing-void-expression': 'off',
+        'typescript/promise-function-async': 'off',
+        'typescript/strict-void-return': 'off',
+        'typescript/no-non-null-assertion': 'off',
+        'typescript/prefer-nullish-coalescing': 'off',
+        'typescript/prefer-optional-chain': 'off',
+        'unicorn/no-useless-undefined': 'off',
+        'unicorn/no-nested-ternary': 'off',
+      },
+    },
+    {
       // .mjs scripts are plain JS that do not belong to a TS program, so
       // type-aware rules cannot resolve them (single-file lint errors while
       // directory lint silently skips them). Treat them as untyped JS.
