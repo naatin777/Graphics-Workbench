@@ -396,17 +396,24 @@ async function readValidatedDigest(
   filePath: string,
   workspacePath: string,
 ): Promise<{ sha256: string; identity: FileIdentity }> {
-  await assertExistingPathInWorkspace(filePath, workspacePath);
-  await assertPathIsNotSymbolicLink(filePath);
-  const before = await readFileIdentity(filePath);
-  const sha256 = await calculateSha256(filePath);
-  await assertExistingPathInWorkspace(filePath, workspacePath);
-  await assertPathIsNotSymbolicLink(filePath);
-  const identity = await readFileIdentity(filePath);
-  if (!sameFileIdentity(before, identity)) {
-    throw new Error(`File was replaced while its contents were being verified: ${filePath}`);
+  try {
+    await assertExistingPathInWorkspace(filePath, workspacePath);
+    await assertPathIsNotSymbolicLink(filePath);
+    const before = await readFileIdentity(filePath);
+    const sha256 = await calculateSha256(filePath);
+    await assertExistingPathInWorkspace(filePath, workspacePath);
+    await assertPathIsNotSymbolicLink(filePath);
+    const identity = await readFileIdentity(filePath);
+    if (!sameFileIdentity(before, identity)) {
+      throw new Error(`File was replaced while its contents were being verified: ${filePath}`);
+    }
+    return { sha256, identity };
+  } catch (error) {
+    if (isFileNotFoundError(error)) {
+      throw new Error(`File was replaced while its contents were being verified: ${filePath}`, { cause: error });
+    }
+    throw error instanceof Error ? error : new Error(String(error), { cause: error });
   }
-  return { sha256, identity };
 }
 
 async function assertFileIdentityAtPath(

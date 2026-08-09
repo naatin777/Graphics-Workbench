@@ -22,6 +22,9 @@ export interface TiffRenderController {
   dispose: () => void;
 }
 
+const PNG_DATA_URI_PREFIX = 'data:image/png;base64,';
+const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
+
 /**
  * Renders a multi-page TIFF preview. The host renders each page to a PNG data
  * URI on demand; this client creates one frame per page, requests pages when
@@ -31,6 +34,7 @@ export function renderTiffPreview(options: TiffRenderOptions): TiffRenderControl
   const frames = new Map<number, HTMLElement>();
   const images = new Map<number, HTMLImageElement>();
   const renderedData = new Map<number, string>();
+  const objectUrls = new Map<number, string>();
   const requested = new Set<number>();
   let disposed = false;
   const firstPageReady = createFirstPageReady();
@@ -42,7 +46,7 @@ export function renderTiffPreview(options: TiffRenderOptions): TiffRenderControl
     const dataUri = renderedData.get(pageNumber);
     const image = images.get(pageNumber);
     if (dataUri !== undefined && image !== undefined) {
-      image.src = dataUri;
+      assignPageImageData(pageNumber, dataUri);
       return;
     }
     requested.add(pageNumber);
@@ -51,12 +55,12 @@ export function renderTiffPreview(options: TiffRenderOptions): TiffRenderControl
 
   const createFrame = (pageNumber: number): void => {
     const { frame, image } = createTiffPageFrame(options, pageNumber, firstPageReady.resolve);
-    const dataUri = renderedData.get(pageNumber);
-    if (dataUri !== undefined) {
-      image.src = dataUri;
-    }
     frames.set(pageNumber, frame);
     images.set(pageNumber, image);
+    const dataUri = renderedData.get(pageNumber);
+    if (dataUri !== undefined) {
+      assignPageImageData(pageNumber, dataUri);
+    }
   };
 
   const windowed = shouldUseWindowedRendering(options.pageCount, true);
@@ -103,6 +107,7 @@ export function renderTiffPreview(options: TiffRenderOptions): TiffRenderControl
           continue;
         }
         frame.remove();
+        revokePageObjectUrl(pageNumber);
         frames.delete(pageNumber);
         images.delete(pageNumber);
         renderedData.delete(pageNumber);
@@ -179,6 +184,9 @@ export function renderTiffPreview(options: TiffRenderOptions): TiffRenderControl
     removeScrollListener?.();
     options.container.replaceChildren();
     options.container.style.removeProperty('display');
+    for (const pageNumber of objectUrls.keys()) {
+      revokePageObjectUrl(pageNumber);
+    }
   };
 
   return {
@@ -188,10 +196,20 @@ export function renderTiffPreview(options: TiffRenderOptions): TiffRenderControl
         return;
       }
       requested.delete(pageNumber);
-      renderedData.set(pageNumber, dataUri);
-      images.get(pageNumber)?.setAttribute('src', dataUri);
       const image = images.get(pageNumber);
-      if (image !== undefined && pageNumber === 1) {
+      if (image === undefined) {
+        if (isPngDataUri(dataUri)) {
+          renderedData.set(pageNumber, dataUri);
+        } else {
+          options.onRenderError(new Error(`Page ${pageNumber} returned an invalid PNG data URI.`));
+        }
+        return;
+      }
+      if (!assignPageImageData(pageNumber, dataUri)) {
+        return;
+      }
+      renderedData.set(pageNumber, dataUri);
+      if (pageNumber === 1) {
         const { naturalWidth, naturalHeight } = image;
         if (naturalWidth > 0) {
           estimatedPageHeight = naturalHeight || estimatedPageHeight;
@@ -207,6 +225,33 @@ export function renderTiffPreview(options: TiffRenderOptions): TiffRenderControl
     },
     dispose: disposeController,
   };
+
+  function assignPageImageData(pageNumber: number, dataUri: string): boolean {
+    const image = images.get(pageNumber);
+    if (image === undefined) {
+      options.onRenderError(new Error(`Could not find TIFF page ${pageNumber}.`));
+      return false;
+    }
+    const objectUrl = createPngObjectUrl(dataUri);
+    if (objectUrl === undefined) {
+      options.onRenderError(new Error(`Page ${pageNumber} returned an invalid PNG data URI.`));
+      return false;
+    }
+
+    revokePageObjectUrl(pageNumber);
+    objectUrls.set(pageNumber, objectUrl);
+    image.src = objectUrl;
+    return true;
+  }
+
+  function revokePageObjectUrl(pageNumber: number): void {
+    const objectUrl = objectUrls.get(pageNumber);
+    if (objectUrl === undefined) {
+      return;
+    }
+    URL.revokeObjectURL(objectUrl);
+    objectUrls.delete(pageNumber);
+  }
 }
 
 function createTiffPageFrame(
@@ -249,4 +294,24 @@ function createFirstPageReady(): { promise: Promise<void>; resolve: () => void }
       state.resolve?.();
     },
   };
+}
+
+function isPngDataUri(dataUri: string): boolean {
+  const base64 = dataUri.startsWith(PNG_DATA_URI_PREFIX) ? dataUri.slice(PNG_DATA_URI_PREFIX.length) : '';
+  return base64.length > 0 && base64.length % 4 === 0 && BASE64_PATTERN.test(base64);
+}
+
+function createPngObjectUrl(dataUri: string): string | undefined {
+  if (!isPngDataUri(dataUri)) {
+    return undefined;
+  }
+
+  try {
+    const base64 = dataUri.slice(PNG_DATA_URI_PREFIX.length);
+    const binary = atob(base64);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    return URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+  } catch {
+    return undefined;
+  }
 }

@@ -1,6 +1,9 @@
 import { renderTiffPreview } from './tiff_preview';
 
 const requestPage = vi.fn<(page: number) => void>();
+const validPngDataUri =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+let createObjectUrl: ReturnType<typeof vi.fn>;
 
 function createController(options: Partial<Parameters<typeof renderTiffPreview>[0]> = {}) {
   const container = document.querySelector<HTMLDivElement>('#container');
@@ -26,6 +29,16 @@ describe('TIFF preview client', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="container"></div>';
     requestPage.mockReset();
+    let objectUrlId = 0;
+    createObjectUrl = vi.fn(() => `blob:test-${++objectUrlId}`);
+    vi.stubGlobal('URL', {
+      createObjectURL: createObjectUrl,
+      revokeObjectURL: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   test('creates one frame per page and requests page 1 immediately', () => {
@@ -39,20 +52,21 @@ describe('TIFF preview client', () => {
     controller.dispose();
   });
 
-  test('setPageSrc assigns the data URI to the requested page image', () => {
+  test('setPageSrc converts a valid PNG data URI to a local object URL', () => {
     const { controller, container } = createController();
 
-    controller.setPageSrc(2, 'data:image/png;base64,AAA=');
+    controller.setPageSrc(2, validPngDataUri);
 
     const image = container.querySelector<HTMLImageElement>('img[data-pdf-page="2"]');
-    expect(image?.src).toBe('data:image/png;base64,AAA=');
+    expect(image?.src).toBe('blob:test-1');
+    expect(createObjectUrl).toHaveBeenCalledWith(expect.any(Blob));
   });
 
   test('applies the current zoom when a page image loads', () => {
     let zoom = 2;
     const { controller, container } = createController({ zoom: () => zoom });
 
-    controller.setPageSrc(1, 'data:image/png;base64,AAA=');
+    controller.setPageSrc(1, validPngDataUri);
     const image = container.querySelector<HTMLImageElement>('img[data-pdf-page="1"]');
     if (!image) {
       throw new Error('Page image was not created.');
@@ -74,7 +88,7 @@ describe('TIFF preview client', () => {
       resolved = true;
     });
 
-    controller.setPageSrc(1, 'data:image/png;base64,AAA=');
+    controller.setPageSrc(1, validPngDataUri);
     const image = container.querySelector<HTMLImageElement>('img[data-pdf-page="1"]');
     if (!image) {
       throw new Error('Page image was not created.');
@@ -86,14 +100,14 @@ describe('TIFF preview client', () => {
     expect(resolved).toBe(true);
   });
 
-  test('reports image load errors through onRenderError', () => {
+  test('rejects non-PNG data URIs through onRenderError', () => {
     const onRenderError = vi.fn();
     const { controller, container } = createController({ onRenderError });
 
-    controller.setPageSrc(1, 'broken');
-    container.querySelector<HTMLImageElement>('img[data-pdf-page="1"]')?.dispatchEvent(new Event('error'));
+    controller.setPageSrc(1, 'https://attacker.example/image.png');
 
     expect(onRenderError).toHaveBeenCalledTimes(1);
+    expect(container.querySelector<HTMLImageElement>('img[data-pdf-page="1"]')?.getAttribute('src')).toBeNull();
   });
 
   test('dispose removes the abort listener and ignores later page data', () => {
@@ -104,7 +118,7 @@ describe('TIFF preview client', () => {
     controller.dispose();
 
     expect(removeEventListener).toHaveBeenCalledWith('abort', expect.any(Function));
-    expect(() => controller.setPageSrc(1, 'data:image/png;base64,AAA=')).not.toThrow();
+    expect(() => controller.setPageSrc(1, validPngDataUri)).not.toThrow();
     expect(container.querySelector<HTMLImageElement>('img[data-pdf-page="1"]')).toBeNull();
     expect(requestPage).toHaveBeenCalledTimes(1);
   });
