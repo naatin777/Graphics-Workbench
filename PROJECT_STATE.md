@@ -8,7 +8,7 @@ Graphics Workbench は、VS Code 上で PDF・画像・Draw.io・LaTeX への挿
 
 ## 現在の運用
 
-- ローカルテストはDockerで実行する（`npm run test:docker -- <script>`）。
+- canonicalなLinux検証は用途別Dockerコマンド（`check:docker` / `test:docker` / `playwright:smoke:docker` / `verify:docker`）で実行する。
 - PR時CIは停止中（`check.yml` / `test.yml` / `playwright.yml` は `workflow_dispatch` のみ）。releaseはtag時に実行。
 - branch運用はplain git + gh（Graphiteは廃止済み）。
 - AI用ルールは `.agents/skills/` のskillと `AGENTS.md`。skillはdescriptionで選択される。

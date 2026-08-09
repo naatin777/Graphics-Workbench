@@ -5,13 +5,13 @@ pre-commit:
 
   commands:
     format:
-      glob: "*.{ts,tsx,js,jsx,json,jsonc,md,html,css}"
-      exclude: "package-lock.json"
+      glob: '*.{ts,tsx,js,jsx,json,jsonc,md,html,css}'
+      exclude: 'package-lock.json'
       run: npx --no -- oxfmt --config ./oxfmt.config.ts --write {staged_files}
       stage_fixed: true
 
     lint:
-      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
+      glob: '*.{ts,tsx,js,jsx,mjs,cjs}'
       run: npx --no oxlint {staged_files}
 
 commit-msg:
@@ -25,22 +25,5 @@ pre-push:
   parallel: false
 
   commands:
-    # Runs in Docker (see scripts/test-in-docker.sh). The container mirrors the
-    # GitHub Actions setup and reads the host-built out/ and media/ via the bind
-    # mount, so build must run on the host first (vite asset copies fail across
-    # the macOS bind mount).
-    typecheck:
-      run: npm run test:docker -- check:all
-
-    # Build must stay on the host: vite's pdfjs asset copy (cpSync into
-    # media/webview/pdfjs) hits EACCES across the macOS Docker bind mount.
-    build:
-      run: npm run build
-
-    # Playwright E2E runs only when the packaged test suite (or its config)
-    # changed. It packages the current runner VSIX and runs the wide packaged
-    # conversion smoke inside Docker; the full wide+narrow suite is a
-    # local/release concern.
-    playwright-smoke:
-      glob: "{test/playwright/**,playwright.config.mjs}"
-      run: npm run test:docker -- package:vsix test:playwright:smoke
+    verify:
+      run: npm run verify:docker
