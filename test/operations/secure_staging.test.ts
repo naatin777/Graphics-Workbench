@@ -8,7 +8,7 @@ import {
 import { isRecord } from '../../src/shared/protocols/protocol_utils.js';
 
 suite('機密PDFの中間ディレクトリを作成し、保存期間を過ぎた古い中間ディレクトリを掃除する', () => {
-  test('作成直後のactive rootは2日後のactivation cleanupでも維持され、8日後（保存期間超過）のcleanupではactive・old rootとも削除される', async () => {
+  test('現プロセスのactive rootは8日後のactivation cleanupでも維持し、不在PIDを記録した24時間超過のold rootだけを削除する', async () => {
     const activeRoot = await createSecurePdfStagingRoot('test-active');
     const oldRoot = await createSecurePdfStagingRoot('test-old');
     await writeFile(
@@ -38,7 +38,7 @@ suite('機密PDFの中間ディレクトリを作成し、保存期間を過ぎ�
       await cleanupStaleSecurePdfStagingRoots(Date.now() + 2 * 24 * 60 * 60 * 1000);
       await access(activeRoot);
       await cleanupStaleSecurePdfStagingRoots(Date.now() + 8 * 24 * 60 * 60 * 1000);
-      await assert.rejects(access(activeRoot));
+      await access(activeRoot);
       await assert.rejects(access(oldRoot));
     } finally {
       const { rm } = await import('node:fs/promises');

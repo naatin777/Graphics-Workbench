@@ -19,6 +19,13 @@ export async function assertWritablePathInWorkspace(targetPath: string, workspac
   assertContained(realExistingPath, realWorkspacePath, targetPath);
 }
 
+export async function assertPathIsNotSymbolicLink(targetPath: string): Promise<void> {
+  const targetStat = await lstat(targetPath);
+  if (targetStat.isSymbolicLink()) {
+    throw new Error(`Symbolic link output cannot be replaced safely: ${targetPath}`);
+  }
+}
+
 function assertLogicalPathInWorkspace(targetPath: string, workspacePath: string): void {
   assertContained(path.resolve(targetPath), path.resolve(workspacePath), targetPath);
 }

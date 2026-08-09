@@ -18,9 +18,12 @@ import {
   mkdtemp,
   mkdtempDisposable,
   readFile,
+  readdir,
+  rename,
   rm,
   stat,
   symlink,
+  truncate,
   utimes,
   writeFile,
 } from 'node:fs/promises';
@@ -36,6 +39,7 @@ import {
 } from '../../src/commands/lifecycle/undo_last_conversion.js';
 import {
   createConversionUndoRecord,
+  UndoCleanupError,
   undoConversionOutputs,
 } from '../../src/operations/lifecycle/undo_last_conversion.js';
 import { commitStagedOutputs } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
@@ -137,6 +141,28 @@ suite('直前変換の取り消し処理', () => {
     await assert.rejects(access(previousFilePath));
   });
 
+  test('出力のUndo成功後にrollback-copy directoryの削除だけ失敗した場合はUndoを成功扱いにし、cleanup failureとしてrootを返して再試行可能にする', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-cleanup-failure-'));
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    await writeFixture(outputPath, 'generated');
+    const record = await createConversionUndoRecord([{ outputPath, workspacePath: workspacePath.path }]);
+
+    const cleanup = await undoConversionOutputs(record, undefined, {
+      removeRollbackRoot: async (targetPath, options) => {
+        if (String(targetPath).includes(`${path.sep}undo-rollback${path.sep}`)) {
+          throw new Error('injected rollback cleanup failure');
+        }
+        return rm(targetPath, options);
+      },
+    });
+
+    await assert.rejects(access(outputPath));
+    assert.strictEqual(cleanup.failures.length, 1);
+    assert.match(cleanup.failures[0]?.rootPath ?? '', /undo-rollback/);
+    assert.match(cleanup.failures[0]?.error.message ?? '', /injected rollback cleanup failure/);
+    await assert.doesNotReject(access(cleanup.failures[0]?.rootPath ?? ''));
+  });
+
   test('生成時から変更されていない2つの出力PDFを削除し、記録に含まれないworkspace内の作業ファイルは削除しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const firstOutputPath = path.join(workspacePath, 'output', 'first.pdf');
@@ -156,6 +182,116 @@ suite('直前変換の取り消し処理', () => {
     await assert.rejects(access(firstOutputPath));
     await assert.rejects(access(secondOutputPath));
     await assert.doesNotReject(access(stagedOutputPath));
+  });
+
+  test('2つの新規出力を取り消す途中で1つ目を削除した後に2つ目が外部編集された場合は、Undoを中止して削除済みの1つ目だけを元へ戻し、未処理の2つ目は外部編集後の内容を上書きしない', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
+    const firstOutputPath = path.join(workspacePath.path, 'first.pdf');
+    const secondOutputPath = path.join(workspacePath.path, 'second.pdf');
+    await writeFixture(firstOutputPath, 'first');
+    await writeFile(secondOutputPath, Buffer.alloc(8 * 1024 * 1024, 0x78));
+
+    const record = await createConversionUndoRecord([
+      { outputPath: firstOutputPath, workspacePath: workspacePath.path },
+      { outputPath: secondOutputPath, workspacePath: workspacePath.path },
+    ]);
+    const externalEdit = writeAfterPathDisappears(firstOutputPath, secondOutputPath, 'external edit');
+
+    await assert.rejects(undoConversionOutputs(record), /changed after conversion/);
+    await externalEdit;
+
+    assert.strictEqual(await readFile(firstOutputPath, 'utf8'), 'first');
+    assert.strictEqual(await readFile(secondOutputPath, 'utf8'), 'external edit');
+  });
+
+  test('Undo本処理をrollbackした後にrollback-copy directoryの削除が失敗した場合は、元のUndo失敗とcleanup rootをUndoCleanupErrorへ保持する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-failure-cleanup-'));
+    const firstOutputPath = path.join(workspacePath.path, 'first.pdf');
+    const secondOutputPath = path.join(workspacePath.path, 'second.pdf');
+    await writeFixture(firstOutputPath, 'first');
+    await writeFile(secondOutputPath, Buffer.alloc(8 * 1024 * 1024, 0x78));
+    const record = await createConversionUndoRecord([
+      { outputPath: firstOutputPath, workspacePath: workspacePath.path },
+      { outputPath: secondOutputPath, workspacePath: workspacePath.path },
+    ]);
+    const externalEdit = writeAfterPathDisappears(firstOutputPath, secondOutputPath, 'external edit');
+
+    await assert.rejects(
+      undoConversionOutputs(record, undefined, {
+        removeRollbackRoot: async () => {
+          throw new Error('injected rollback cleanup failure');
+        },
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof UndoCleanupError);
+        assert.match(error.originalError.message, /changed after conversion/);
+        assert.strictEqual(error.cleanupResult.failures.length, 1);
+        assert.match(error.cleanupResult.failures[0]?.rootPath ?? '', /undo-rollback/);
+        return true;
+      },
+    );
+    await externalEdit;
+
+    assert.strictEqual(await readFile(firstOutputPath, 'utf8'), 'first');
+    assert.strictEqual(await readFile(secondOutputPath, 'utf8'), 'external edit');
+  });
+
+  test('2つの新規出力を取り消す途中で削除済みの1つ目が外部再作成され、未処理の2つ目も外部編集された場合は、どちらも回復コピーで上書きせず外部変更後の内容を保持する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
+    const firstOutputPath = path.join(workspacePath.path, 'first.pdf');
+    const secondOutputPath = path.join(workspacePath.path, 'second.pdf');
+    await writeFixture(firstOutputPath, 'first');
+    await writeFile(secondOutputPath, Buffer.alloc(8 * 1024 * 1024, 0x78));
+
+    const record = await createConversionUndoRecord([
+      { outputPath: firstOutputPath, workspacePath: workspacePath.path },
+      { outputPath: secondOutputPath, workspacePath: workspacePath.path },
+    ]);
+    const externalEdits = (async () => {
+      await waitForPathToDisappear(firstOutputPath);
+      await writeFile(firstOutputPath, 'external replacement');
+      await writeFile(secondOutputPath, 'external edit');
+    })();
+
+    let recoveryRootPath = '';
+    await assert.rejects(undoConversionOutputs(record), (error: unknown) => {
+      assert.ok(error instanceof UndoCleanupError);
+      assert.match(error.originalError.message, /rollback was incomplete/);
+      assert.strictEqual(error.cleanupResult.failures.length, 1);
+      recoveryRootPath = error.cleanupResult.failures[0]?.rootPath ?? '';
+      assert.match(recoveryRootPath, /undo-rollback/);
+      return true;
+    });
+    await externalEdits;
+
+    assert.strictEqual(await readFile(firstOutputPath, 'utf8'), 'external replacement');
+    assert.strictEqual(await readFile(secondOutputPath, 'utf8'), 'external edit');
+    await assert.doesNotReject(access(recoveryRootPath));
+  });
+
+  test('Undo直前のSHA-256検証中に出力親directoryがworkspace外へのsymlinkへ差し替えられた場合は、境界外の同名ファイルを削除せずUndoを拒否する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-parent-race-'));
+    await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-parent-race-outside-'));
+    const outputDirectory = path.join(workspacePath.path, 'outputs');
+    const displacedDirectory = path.join(workspacePath.path, 'outputs-before-swap');
+    const outputPath = path.join(outputDirectory, 'result.pdf');
+    const outsideOutputPath = path.join(outsidePath.path, 'result.pdf');
+    await writeFixture(outputPath, '');
+    await truncate(outputPath, 128 * 1024 * 1024);
+    await writeFixture(outsideOutputPath, 'outside user file');
+    const record = await createConversionUndoRecord([{ outputPath, workspacePath: workspacePath.path }]);
+
+    const undo = undoConversionOutputs(record);
+    const swap = (async () => {
+      await waitForRollbackCopySize(workspacePath.path, 128 * 1024 * 1024);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await rename(outputDirectory, displacedDirectory);
+      await symlink(outsidePath.path, outputDirectory);
+    })();
+
+    await assert.rejects(undo, /outside the workspace|replaced while its contents were being verified/);
+    await swap;
+    assert.strictEqual(await readFile(outsideOutputPath, 'utf8'), 'outside user file');
   });
 
   test('変換後に出力の1つのSHA-256が変化している場合は削除を開始せず、どの出力も削除しない', async () => {
@@ -259,6 +395,19 @@ suite('直前変換の取り消し処理', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
   });
 
+  test('新規出力のcommit完了後からUndo履歴作成前までに出力が外部編集された場合は、commit時のSHA-256との不一致で履歴作成を拒否し、外部編集後の出力を削除可能な履歴として記録しない', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-workspace-'));
+    const stagedOutputPath = path.join(workspacePath.path, '.graphics-workbench', 'run', 'result.pdf');
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    await writeFixture(stagedOutputPath, 'generated');
+
+    const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path }]);
+    await writeFile(outputPath, 'external edit before Undo record');
+
+    await assert.rejects(createConversionUndoRecord(committed), /changed before Undo could be recorded/);
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'external edit before Undo record');
+  });
+
   test('変換後に出力のSHA-256が変化している場合はUndoを中止し、上書き前のファイルを復元せず編集後の内容を維持する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-undo-workspace-'));
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -277,4 +426,45 @@ suite('直前変換の取り消し処理', () => {
 async function writeFixture(filePath: string, contents: string): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, contents);
+}
+
+async function writeAfterPathDisappears(watchedPath: string, targetPath: string, contents: string): Promise<void> {
+  await waitForPathToDisappear(watchedPath);
+  await writeFile(targetPath, contents);
+}
+
+async function waitForPathToDisappear(watchedPath: string): Promise<void> {
+  for (;;) {
+    try {
+      await access(watchedPath);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    } catch {
+      return;
+    }
+  }
+}
+
+async function waitForRollbackCopySize(workspacePath: string, expectedSize: number): Promise<void> {
+  const rollbackBasePath = path.join(workspacePath, '.graphics-workbench', 'undo-rollback');
+  for (;;) {
+    try {
+      const roots = await readdir(rollbackBasePath);
+      for (const root of roots) {
+        if (await rollbackCopyHasExpectedSize(path.join(rollbackBasePath, root, '0.backup'), expectedSize)) {
+          return;
+        }
+      }
+    } catch {
+      // The rollback root has not been created yet.
+    }
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+}
+
+async function rollbackCopyHasExpectedSize(backupPath: string, expectedSize: number): Promise<boolean> {
+  try {
+    return (await stat(backupPath)).size === expectedSize;
+  } catch {
+    return false;
+  }
 }

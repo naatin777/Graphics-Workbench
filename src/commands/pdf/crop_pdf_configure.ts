@@ -26,6 +26,7 @@ import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
+import { runPostConversionUi } from '../lifecycle/post_conversion_ui.js';
 import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { resolveSingleConfiguredPdfUri, toWebviewDirectoryUri } from '../shared/command_input.js';
@@ -270,27 +271,29 @@ async function applyConfiguredCrop(params: {
         ),
     );
 
-    const successMessage = userMessage('message.cropPdf.success', outputs.length);
-    let undoId: string;
+    await runPostConversionUi('crop-pdf-configure', outputChannel, async () => {
+      const successMessage = userMessage('message.cropPdf.success', outputs.length);
+      let undoId: string;
 
-    try {
-      undoId = await recordConversionForUndo(outputs, outputChannel);
-    } catch (error) {
+      try {
+        undoId = await recordConversionForUndo(outputs, outputChannel);
+      } catch (error) {
+        onCompleted();
+        panel.dispose();
+        const message = error instanceof Error ? error.message : String(error);
+        await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
+        return;
+      }
+
+      const undoAction = userMessage('message.action.undo');
       onCompleted();
       panel.dispose();
-      const message = error instanceof Error ? error.message : String(error);
-      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-      return;
-    }
+      const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
-    const undoAction = userMessage('message.action.undo');
-    onCompleted();
-    panel.dispose();
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
+      if (selectedAction === undoAction) {
+        await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
+      }
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     params.outputChannel?.appendLine(`[crop-pdf-configure] failure: ${message}`);

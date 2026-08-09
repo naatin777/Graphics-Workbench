@@ -21,6 +21,7 @@ import { renderPdfPageToPng } from '../../src/operations/pdf/mupdf.js';
 import { resolveOutputPath } from '../../src/config/output/resolve_output_path.js';
 import { cropPdfWithConfiguredBox, type CropBox } from '../../src/operations/pdf/crop_pdf_configure.js';
 import { asRunId } from '../../src/operations/lifecycle/run_id.js';
+import { hashFile } from '../../src/operations/input/file_content_hash.js';
 
 import { cropConfigureFixture } from '../helpers/crop_configure_fixture.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
@@ -66,6 +67,7 @@ suite('PDF configure crop処理', () => {
       {
         outputPath,
         workspacePath,
+        sha256: await hashFile(outputPath),
         stagingRootPath: path.join(workspacePath, '.graphics-workbench', 'crop-pdf-configure', 'all-pages'),
       },
     ]);

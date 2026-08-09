@@ -74,9 +74,9 @@ OS一時scratchはworkspace境界とは別の専用境界として扱う。
 
 ## 競合
 
-パス検証から実際のファイル操作までの間にsymlinkが差し替えられる競合を、Node.jsの通常のパスAPIだけで完全に防ぐことはこのタスクの範囲外とする。
+Node.jsの標準ファイルAPIにはportableな`openat`やconditional renameがないため、最終検証と`open` / `rename`の間にある極小のTOCTOUを完全なCASとして排除することはできない。
 
-重要な書き込み直前に再検証し、検証と操作の間隔を短くする。
+長いhash / copy区間の後にpathとfile identityを再検証し、owned handleから書き込むことで、重要な書き込みまでの競合窓を実用上可能な限り短くする。厳密な排他保証が必要になった場合は、OS固有primitiveの導入を別途判断する。
 
 出力pathの重複判定は、OS名を固定条件にせず出力先の実体directoryへcase probeを行う。case-insensitive volumeでは小文字化し、すべてのvolumeではUnicodeをNFCへ正規化してから、同一batch内のrequested path、Keep Bothの予約path、available suffixを比較する。
 

@@ -24,6 +24,7 @@ import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
+import { runPostConversionUi } from '../lifecycle/post_conversion_ui.js';
 import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { resolveSingleConfiguredPdfUri, toWebviewDirectoryUri } from '../shared/command_input.js';
@@ -225,25 +226,27 @@ async function applyConfiguredReorder(params: {
     },
   );
 
-  const successMessage = userMessage('message.reorderPdf.success', 1);
-  let undoId: string;
+  await runPostConversionUi('reorder-pdf-configure', outputChannel, async () => {
+    const successMessage = userMessage('message.reorderPdf.success', 1);
+    let undoId: string;
 
-  try {
-    undoId = await recordConversionForUndo(outputs, outputChannel);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-    return;
-  }
+    try {
+      undoId = await recordConversionForUndo(outputs, outputChannel);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      panel.dispose();
+      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
+      return;
+    }
 
-  const undoAction = userMessage('message.action.undo');
-  const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
+    const undoAction = userMessage('message.action.undo');
+    panel.dispose();
+    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
-  if (selectedAction === undoAction) {
-    await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-  }
-
-  panel.dispose();
+    if (selectedAction === undoAction) {
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
+    }
+  });
 }
 
 function reorderPdfLabels(): ReorderPdfLabels {

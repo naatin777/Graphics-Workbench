@@ -3,7 +3,11 @@ import { access, chmod, mkdir, open, rename, rm, stat, utimes, writeFile, type F
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
-import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import {
+  assertExistingPathInWorkspace,
+  assertPathIsNotSymbolicLink,
+  assertWritablePathInWorkspace,
+} from '../../security/workspace_path.js';
 
 import {
   cleanupConversionArtifacts,
@@ -33,6 +37,8 @@ export interface PreparedConversionOutput {
 export interface CommittedConversionOutput {
   outputPath: string;
   workspacePath: string;
+  /** SHA-256 of the staged conversion result that was committed. */
+  sha256: string;
   previousFilePath?: string;
   previousFileMetadata?: PreviousFileMetadata;
   stagingRootPath?: string;
@@ -61,8 +67,9 @@ interface ResolvedOutput extends PreparedConversionOutput {
   existedBeforeCommit: boolean;
   contentHashBeforeConflict?: string;
   createdOutputIdentity?: FileIdentity;
-  ownedOutputHandle?: FileHandle | undefined;
-  copyCompleted?: boolean;
+  ownedOutputHandle?: FileHandle;
+  copyCompleted: boolean;
+  outputMutation: 'untouched' | 'removed' | 'replaced';
 }
 
 interface ExistingOutputSnapshot {
@@ -194,6 +201,8 @@ async function resolveOutputPaths(
       ...output,
       outputPath,
       existedBeforeCommit,
+      copyCompleted: false,
+      outputMutation: 'untouched',
       ...(contentHashBeforeConflict === undefined ? {} : { contentHashBeforeConflict }),
     });
   }
@@ -273,11 +282,27 @@ async function createBackups(
     }
 
     await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+    await assertPathIsNotSymbolicLink(output.outputPath);
     const previousFilePath = `${output.stagedOutputPath}.previous`;
     await assertWritablePathInWorkspace(previousFilePath, stagingBoundary(output));
     await mkdir(path.dirname(previousFilePath), { recursive: true });
     const previousFileMetadata = await readFileMetadata(output.outputPath);
-    await copyFileImpl(output.outputPath, previousFilePath, fsConstants.COPYFILE_EXCL, signal);
+    try {
+      await copyFileImpl(output.outputPath, previousFilePath, fsConstants.COPYFILE_EXCL, signal);
+      const expectedHash = output.contentHashBeforeConflict;
+      if (expectedHash === undefined) {
+        throw new Error(`No conflict snapshot for existing output: ${output.outputPath}`);
+      }
+      const [currentHash, backupHash] = await Promise.all([hashFile(output.outputPath), hashFile(previousFilePath)]);
+      if (currentHash !== expectedHash || backupHash !== expectedHash) {
+        throw new Error(`Output changed while creating overwrite backup: ${output.outputPath}`);
+      }
+    } catch (error) {
+      await rm(previousFilePath, { force: true }).catch(() => {
+        // Preserve the backup/copy error; later cleanup can retry when a root is tracked.
+      });
+      throw error instanceof Error ? error : new Error(String(error));
+    }
     output.previousFilePath = previousFilePath;
     output.previousFileMetadata = previousFileMetadata;
   }
@@ -287,34 +312,14 @@ async function commitResolvedOutputs(
   outputs: ResolvedOutput[],
   options: CommitConversionOutputsOptions,
 ): Promise<CommittedConversionOutput[]> {
-  const committed: ResolvedOutput[] = [];
+  const committed: { output: ResolvedOutput; sha256: string }[] = [];
   const rollbackCandidates: ResolvedOutput[] = [];
   const copyFileImpl = options.copyFile ?? copyFileWithAbort;
 
   try {
     for (const output of outputs) {
-      options.signal?.throwIfAborted();
-      await assertExistingPathInWorkspace(output.stagedOutputPath, stagingBoundary(output));
-      await assertWritablePathInWorkspace(output.outputPath, output.workspacePath);
-      await mkdir(path.dirname(output.outputPath), { recursive: true });
-      options.signal?.throwIfAborted();
-
-      if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-        await assertExistingPathInWorkspace(output.previousFilePath, stagingBoundary(output));
-
-        if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
-          throw new Error(`Output changed before overwrite: ${output.outputPath}`);
-        }
-      } else {
-        const ownedOutput = await createOwnedOutputHandle(output.outputPath);
-        output.createdOutputIdentity = ownedOutput.identity;
-        output.ownedOutputHandle = ownedOutput.handle;
-      }
-
-      rollbackCandidates.push(output);
-      await copyPreparedOutput(output, options, copyFileImpl);
-      output.copyCompleted = true;
-      committed.push(output);
+      const committedSha256 = await commitResolvedOutput(output, options, copyFileImpl, rollbackCandidates);
+      committed.push({ output, sha256: committedSha256 });
       options.signal?.throwIfAborted();
     }
   } catch (error) {
@@ -347,30 +352,76 @@ async function commitResolvedOutputs(
     await closeOwnedOutputHandles(outputs);
   }
 
-  return committed.map(
-    ({ outputPath, workspacePath, previousFilePath, previousFileMetadata, stagingRootPath, stagingWorkspacePath }) => {
-      const result: CommittedConversionOutput = { outputPath, workspacePath };
+  return committed.map((item) => toCommittedOutput(item, options));
+}
 
-      if (previousFilePath !== undefined) {
-        result.previousFilePath = previousFilePath;
-      }
+async function commitResolvedOutput(
+  output: ResolvedOutput,
+  options: CommitConversionOutputsOptions,
+  copyFileImpl: AbortableCopyFile,
+  rollbackCandidates: ResolvedOutput[],
+): Promise<string> {
+  // Known limitation: Node.js has no portable openat/conditional-rename API, so the final
+  // validation and open/rename cannot be one atomic operation. The repeated boundary and inode
+  // checks below narrow that TOCTOU window; see the file-operation security contract.
+  options.signal?.throwIfAborted();
+  await assertExistingPathInWorkspace(output.stagedOutputPath, stagingBoundary(output));
+  await assertWritablePathInWorkspace(output.outputPath, output.workspacePath);
+  await mkdir(path.dirname(output.outputPath), { recursive: true });
+  options.signal?.throwIfAborted();
+  const committedSha256 = await hashFile(output.stagedOutputPath);
+  options.signal?.throwIfAborted();
+  // Hashing a large staged result gives another process time to replace an
+  // already-validated parent directory with a symlink. Re-resolve the output
+  // boundary immediately before opening or replacing the user-visible path.
+  await assertWritablePathInWorkspace(output.outputPath, output.workspacePath);
 
-      if (previousFileMetadata !== undefined) {
-        result.previousFileMetadata = previousFileMetadata;
-      }
+  if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
+    await assertPathIsNotSymbolicLink(output.outputPath);
+    await assertExistingPathInWorkspace(output.previousFilePath, stagingBoundary(output));
 
-      if (stagingRootPath !== undefined) {
-        result.stagingRootPath = stagingRootPath;
-      }
-      if (stagingWorkspacePath !== undefined) {
-        result.stagingWorkspacePath = stagingWorkspacePath;
-      }
+    if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
+      throw new Error(`Output changed before overwrite: ${output.outputPath}`);
+    }
+  } else {
+    const ownedOutput = await createOwnedOutputHandle(output.outputPath, output.workspacePath);
+    output.createdOutputIdentity = ownedOutput.identity;
+    output.ownedOutputHandle = ownedOutput.handle;
+  }
 
-      options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] committed output: ${outputPath}`);
+  if (output.previousFilePath === undefined) {
+    rollbackCandidates.push(output);
+  }
+  await copyPreparedOutput(output, options, copyFileImpl, () => {
+    rollbackCandidates.push(output);
+  });
+  output.copyCompleted = true;
+  return committedSha256;
+}
 
-      return result;
-    },
-  );
+function toCommittedOutput(
+  { output, sha256 }: { output: ResolvedOutput; sha256: string },
+  options: CommitConversionOutputsOptions,
+): CommittedConversionOutput {
+  const { outputPath, workspacePath, previousFilePath, previousFileMetadata, stagingRootPath, stagingWorkspacePath } =
+    output;
+  const result: CommittedConversionOutput = { outputPath, workspacePath, sha256 };
+
+  if (previousFilePath !== undefined) {
+    result.previousFilePath = previousFilePath;
+  }
+  if (previousFileMetadata !== undefined) {
+    result.previousFileMetadata = previousFileMetadata;
+  }
+  if (stagingRootPath !== undefined) {
+    result.stagingRootPath = stagingRootPath;
+  }
+  if (stagingWorkspacePath !== undefined) {
+    result.stagingWorkspacePath = stagingWorkspacePath;
+  }
+
+  options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] committed output: ${outputPath}`);
+  return result;
 }
 
 function toArtifactRoots(outputs: PreparedConversionOutput[]): ConversionArtifactRoot[] {
@@ -402,35 +453,10 @@ async function rollbackCommittedOutputs(
     }
 
     try {
-      await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
-
       if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-        await assertExistingPathInWorkspace(output.previousFilePath, stagingBoundary(output));
-
-        if (
-          output.copyCompleted === true &&
-          !(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))
-        ) {
-          throw new Error('Output changed after commit; the recovery backup was preserved.');
-        }
-
-        await copyFileImpl(output.previousFilePath, output.outputPath);
-        await restoreFileMetadata(output.outputPath, output.previousFileMetadata);
+        await rollbackOverwrittenOutput(output, copyFileImpl);
       } else if (output.createdOutputIdentity !== undefined) {
-        const currentIdentity = await readFileIdentity(output.outputPath);
-
-        if (!sameFileIdentity(currentIdentity, output.createdOutputIdentity)) {
-          throw new Error('Output was replaced by another process; it was not removed.');
-        }
-
-        if (
-          output.copyCompleted === true &&
-          !(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))
-        ) {
-          throw new Error('New output changed after commit; it was not removed.');
-        }
-
-        await rmImpl(output.outputPath, { force: true });
+        await rollbackNewOutput(output, rmImpl);
       }
     } catch (error) {
       failures.push({ outputPath: output.outputPath, error: asError(error) });
@@ -440,10 +466,56 @@ async function rollbackCommittedOutputs(
   return failures;
 }
 
+async function rollbackOverwrittenOutput(output: ResolvedOutput, copyFileImpl: AbortableCopyFile): Promise<void> {
+  const { previousFilePath } = output;
+  if (previousFilePath === undefined || previousFilePath === '') {
+    throw new Error(`No recovery backup for overwritten output: ${output.outputPath}`);
+  }
+  await assertExistingPathInWorkspace(previousFilePath, stagingBoundary(output));
+
+  if (output.outputMutation === 'removed') {
+    await assertWritablePathInWorkspace(output.outputPath, output.workspacePath);
+    await copyFileImpl(previousFilePath, output.outputPath, fsConstants.COPYFILE_EXCL);
+    await restoreFileMetadata(output.outputPath, output.previousFileMetadata);
+    return;
+  }
+
+  await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+  await assertPathIsNotSymbolicLink(output.outputPath);
+  if (output.outputMutation === 'replaced') {
+    if (!(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))) {
+      throw new Error('Output changed after commit; the recovery backup was preserved.');
+    }
+
+    await copyFileImpl(previousFilePath, output.outputPath);
+    await restoreFileMetadata(output.outputPath, output.previousFileMetadata);
+    return;
+  }
+
+  if (!(await filesHaveEqualContents(output.outputPath, previousFilePath))) {
+    throw new Error('Output changed before commit; the recovery backup was preserved.');
+  }
+}
+
+async function rollbackNewOutput(output: ResolvedOutput, rmImpl: typeof rm): Promise<void> {
+  await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+  const currentIdentity = await readFileIdentity(output.outputPath);
+
+  if (output.createdOutputIdentity === undefined || !sameFileIdentity(currentIdentity, output.createdOutputIdentity)) {
+    throw new Error('Output was replaced by another process; it was not removed.');
+  }
+  if (output.copyCompleted && !(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))) {
+    throw new Error('New output changed after commit; it was not removed.');
+  }
+
+  await rmImpl(output.outputPath, { force: true });
+}
+
 async function copyPreparedOutput(
   output: ResolvedOutput,
   options: CommitConversionOutputsOptions,
   copyFileImpl: AbortableCopyFile,
+  beforeExistingOutputMutation: () => void,
 ): Promise<void> {
   if (output.previousFilePath === undefined) {
     const handle = output.ownedOutputHandle;
@@ -455,6 +527,7 @@ async function copyPreparedOutput(
     await pipeline(createReadStream(output.stagedOutputPath, { signal: options.signal }), handle.createWriteStream(), {
       signal: options.signal,
     });
+    await assertOwnedOutputStillAtPath(output);
     return;
   }
 
@@ -468,9 +541,18 @@ async function copyPreparedOutput(
     await assertWritablePathInWorkspace(temporaryPath, output.workspacePath);
     await copyFileImpl(output.stagedOutputPath, temporaryPath, undefined, options.signal);
     await assertExistingPathInWorkspace(temporaryPath, output.workspacePath);
+    options.signal?.throwIfAborted();
+
+    await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+    if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
+      throw new Error(`Output changed before atomic replacement: ${output.outputPath}`);
+    }
+    options.signal?.throwIfAborted();
+    beforeExistingOutputMutation();
 
     try {
       await renameImpl(temporaryPath, output.outputPath);
+      output.outputMutation = 'replaced';
     } catch (error) {
       if (!isWindowsRenameConflict(error)) {
         throw asError(error);
@@ -481,7 +563,10 @@ async function copyPreparedOutput(
         throw new Error(`Output changed before atomic replacement: ${output.outputPath}`, { cause: error });
       }
       await rm(output.outputPath);
+      output.outputMutation = 'removed';
+      options.signal?.throwIfAborted();
       await renameImpl(temporaryPath, output.outputPath);
+      output.outputMutation = 'replaced';
     }
   } finally {
     await rm(temporaryPath, { force: true });
@@ -634,15 +719,34 @@ async function assertConflictOutputsUnchanged(outputs: ResolvedOutput[]): Promis
   );
 }
 
-async function createOwnedOutputHandle(outputPath: string): Promise<{ handle: FileHandle; identity: FileIdentity }> {
+async function createOwnedOutputHandle(
+  outputPath: string,
+  workspacePath: string,
+): Promise<{ handle: FileHandle; identity: FileIdentity }> {
   const handle = await open(outputPath, 'wx');
 
   try {
     const outputStat = await handle.stat();
-    return { handle, identity: { dev: outputStat.dev, ino: outputStat.ino } };
+    const identity = { dev: outputStat.dev, ino: outputStat.ino };
+    await assertExistingPathInWorkspace(outputPath, workspacePath);
+    await assertPathIsNotSymbolicLink(outputPath);
+    const pathIdentity = await readFileIdentity(outputPath);
+    if (!sameFileIdentity(identity, pathIdentity)) {
+      throw new Error(`New output path was replaced while being opened: ${outputPath}`);
+    }
+    return { handle, identity };
   } catch (error) {
     await handle.close();
     throw asError(error);
+  }
+}
+
+async function assertOwnedOutputStillAtPath(output: ResolvedOutput): Promise<void> {
+  await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+  await assertPathIsNotSymbolicLink(output.outputPath);
+  const pathIdentity = await readFileIdentity(output.outputPath);
+  if (output.createdOutputIdentity === undefined || !sameFileIdentity(pathIdentity, output.createdOutputIdentity)) {
+    throw new Error(`New output path was replaced during commit: ${output.outputPath}`);
   }
 }
 
@@ -655,7 +759,7 @@ async function closeOwnedOutputHandles(outputs: ResolvedOutput[]): Promise<void>
         return;
       }
 
-      output.ownedOutputHandle = undefined;
+      delete output.ownedOutputHandle;
 
       try {
         await handle.close();
