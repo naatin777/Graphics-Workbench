@@ -20,17 +20,7 @@ export interface ConversionCommandMessages {
   failedMessage: (reason: string) => string;
 }
 
-export type OutputConversionFormat =
-  | 'PDF'
-  | 'PNG'
-  | 'JPEG'
-  | 'WebP'
-  | 'AVIF'
-  | 'GIF'
-  | 'TIFF'
-  | 'SVG'
-  | 'EPS'
-  | 'Draw.io';
+export type OutputConversionFormat = 'PDF' | 'PNG' | 'JPEG' | 'WebP' | 'AVIF' | 'GIF' | 'TIFF' | 'SVG' | 'Draw.io';
 
 export function createOutputConversionMessages(
   format: OutputConversionFormat,

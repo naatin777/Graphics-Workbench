@@ -122,16 +122,21 @@ async function cropDocumentBytes(
       throw new Error(`Could not determine all PDF page bounds: ${sourcePath}`);
     }
 
+    // oxlint-disable-next-line no-unreachable-loop -- crop each PDF page independently.
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
       signal.throwIfAborted();
-      setPageBounds(document.loadPage(pageIndex), margin, mupdf);
+      const page = document.loadPage(pageIndex);
+      try {
+        setPageBounds(page, margin, mupdf);
+      } finally {
+        page.destroy();
+      }
     }
 
     signal.throwIfAborted();
     return savePdfDocument(document);
-  } catch (error) {
+  } finally {
     document.destroy();
-    throw error instanceof Error ? error : new Error(String(error));
   }
 }
 

@@ -316,20 +316,16 @@ export function bufferToBytes(buffer: MupdfBuffer): Uint8Array {
   return Uint8Array.from(buffer.asUint8Array());
 }
 
-/** Saves a PDF document to bytes and releases the document. */
+/** Saves a PDF document to bytes. The caller owns and must destroy the document. */
 export function savePdfDocument(
   document: MupdfPdfDocumentInstance,
   options?: string | Record<string, unknown>,
 ): Uint8Array {
+  const buffer = document.saveToBuffer(options);
   try {
-    const buffer = document.saveToBuffer(options);
-    try {
-      return bufferToBytes(buffer);
-    } finally {
-      buffer.destroy();
-    }
+    return bufferToBytes(buffer);
   } finally {
-    document.destroy();
+    buffer.destroy();
   }
 }
 

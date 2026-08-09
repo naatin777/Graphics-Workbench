@@ -6,7 +6,7 @@
 
 English | [日本語](README.ja.md)
 
-Graphics Workbench lets you convert, crop, merge, reorder, and insert the PDFs and images used in papers and technical documents without leaving VS Code. It also works for general PDF and image processing beyond LaTeX.
+Graphics Workbench lets you convert, crop, merge, reorder, preview, and insert the PDFs and images used in papers and technical documents without leaving VS Code. It supports LaTeX, Typst, Quarkdown, and general PDF/image processing workflows.
 
 ## Who it is for and what it solves
 
@@ -15,9 +15,9 @@ This extension is aimed at VS Code users who work with figures in papers, report
 - Convert screenshots, plots, and figures to PDF
 - Crop the margins of figure PDFs for use in a paper
 - Combine several images into a single PDF
-- Insert figures into LaTeX as `figure` / `includegraphics` code
+- Insert figures into LaTeX, Typst, or Quarkdown snippets
 
-The value of Graphics Workbench is not any single conversion format but the whole flow: operate directly from the Explorer, edit a PDF while previewing it, resolve output conflicts safely, undo when needed, and finally place the figure into LaTeX or a technical document. There is no need to leave VS Code to run external tools by hand.
+The value of Graphics Workbench is not any single conversion format but the whole flow: operate directly from the Explorer, edit a PDF while previewing it, resolve output conflicts safely, undo when needed, and finally place the figure into LaTeX, Typst, Quarkdown, or another technical document. There is no need to leave VS Code to run external tools by hand.
 
 ## Example workflows
 
@@ -221,7 +221,7 @@ On Windows, use the Windows distributions of each tool or your organization's pa
 | Insert PDF into LaTeX       | `.pdf`                                                                                                       | LaTeX code                              | Generate `figure` / `includegraphics` code                 | None                                            |
 | Insert clipboard image      | Clipboard image                                                                                              | Image file + LaTeX code                 | Paste screenshots into LaTeX                               | Depends on output format                        |
 
-GIF/TIFF input uses only the first page/frame. Use the explicit animation preserve/split commands for multi-frame output. Same-format conversion is rejected.
+Normal raster conversions use the first GIF/TIFF page or frame. Convert to PDF preserves all GIF/TIFF pages, including multi-page TIFFs with different page sizes; the explicit animation preserve/split commands retain their own multi-frame behavior. Same-format conversion is rejected.
 
 ## Configuration
 

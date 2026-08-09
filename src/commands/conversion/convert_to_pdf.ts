@@ -42,7 +42,6 @@ const pdfImageExtensions = [
   '.svg',
   '.mmd',
   '.mermaid',
-  '.eps',
   '.drawio.png',
   '.dio.png',
   '.drawio.svg',

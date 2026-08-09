@@ -138,7 +138,11 @@ export class PDFDocument {
       page.put('Contents', content);
       document.insertPage(document.countPages(), document.addObject(page));
     }
-    return savePdfDocument(document);
+    try {
+      return savePdfDocument(document);
+    } finally {
+      document.destroy();
+    }
   }
 }
 

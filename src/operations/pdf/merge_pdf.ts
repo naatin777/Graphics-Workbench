@@ -59,9 +59,14 @@ async function buildMergedDocument(options: MergePdfOptions): Promise<{
 
   const mupdf = await loadMupdf();
   const mergedDocument = new mupdf.PDFDocument();
-  await appendSourceDocuments(mergedDocument, sourcePaths, runtime?.signal);
-  runtime?.signal?.throwIfAborted();
-  return { mergedDocument, stagingRootPath, stagedOutputPath };
+  try {
+    await appendSourceDocuments(mergedDocument, sourcePaths, runtime?.signal);
+    runtime?.signal?.throwIfAborted();
+    return { mergedDocument, stagingRootPath, stagedOutputPath };
+  } catch (error) {
+    mergedDocument.destroy();
+    throw error instanceof Error ? error : new Error(String(error));
+  }
 }
 
 async function writeMergedPdf(
@@ -84,6 +89,8 @@ async function writeMergedPdf(
   } catch (error) {
     await cleanupConversionArtifacts(artifacts, runtime?.outputChannel, error);
     throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    mergedDocument.destroy();
   }
 }
 

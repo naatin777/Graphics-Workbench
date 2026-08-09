@@ -9,7 +9,7 @@ import { localeMap } from '../../locale_map.js';
 import { countPdfPages } from '../../operations/pdf/mupdf.js';
 import { readTiffPreviewPageCount, renderTiffPreviewPage } from '../../operations/preview/tiff_preview.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
-import { getPdfJsAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
+import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
 import {
   type PreviewFormat,
@@ -83,6 +83,11 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
     // enableScripts is set explicitly (the register options do not expose it).
     webviewPanel.webview.options = {
       enableScripts: true,
+      localResourceRoots: [
+        vscode.Uri.joinPath(this.extensionUri, 'media', 'webview', 'preview'),
+        getPdfJsAssetsRoot(this.extensionUri),
+        getWebviewSharedAssetsRoot(this.extensionUri),
+      ],
     };
 
     webviewPanel.webview.html = getWebviewHtml({
@@ -94,8 +99,59 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
     });
 
     const initController = new AbortController();
+    const tiffRenderQueue: number[] = [];
+    let tiffRenderRunning = false;
+
+    const renderTiffPage = async (page: number): Promise<void> => {
+      try {
+        const rendered = await renderTiffPreviewPage(
+          document.uri.fsPath,
+          page,
+          maxInputPixels,
+          previewSettings.maxCanvasPixels,
+          initController.signal,
+        );
+        initController.signal.throwIfAborted();
+        const pageResult = {
+          type: 'renderPageResult',
+          payload: { page, dataUri: rendered.dataUri },
+        } satisfies PreviewHostToWebview;
+        // VS Code Webview.postMessage has no targetOrigin parameter.
+        // oxlint-disable-next-line unicorn/require-post-message-target-origin
+        void webviewPanel.webview.postMessage(pageResult);
+      } catch (error) {
+        if (initController.signal.aborted) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        this.dependencies.outputChannel?.appendLine(`[tiff-preview] render page failure: ${page}: ${message}`);
+        // VS Code Webview.postMessage has no targetOrigin parameter.
+        // oxlint-disable-next-line unicorn/require-post-message-target-origin
+        void webviewPanel.webview.postMessage({ type: 'error', payload: { message } });
+      }
+    };
+
+    const processTiffRenderQueue = async (): Promise<void> => {
+      if (tiffRenderRunning) {
+        return;
+      }
+      tiffRenderRunning = true;
+      try {
+        while (tiffRenderQueue.length > 0) {
+          const page = tiffRenderQueue.shift();
+          if (page === undefined) {
+            continue;
+          }
+          await renderTiffPage(page);
+        }
+      } finally {
+        tiffRenderRunning = false;
+      }
+    };
+
     webviewPanel.onDidDispose(() => {
       initController.abort();
+      tiffRenderQueue.length = 0;
     });
 
     webviewPanel.webview.onDidReceiveMessage((rawMessage: unknown) => {
@@ -137,31 +193,9 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
         if (this.format !== 'tiff') {
           return;
         }
-        void (async (): Promise<void> => {
-          try {
-            const rendered = await renderTiffPreviewPage(
-              document.uri.fsPath,
-              rawMessage.payload.page,
-              maxInputPixels,
-              previewSettings.maxCanvasPixels,
-            );
-            const pageResult = {
-              type: 'renderPageResult',
-              payload: { page: rawMessage.payload.page, dataUri: rendered.dataUri },
-            } satisfies PreviewHostToWebview;
-            // VS Code Webview.postMessage has no targetOrigin parameter.
-            // oxlint-disable-next-line unicorn/require-post-message-target-origin
-            void webviewPanel.webview.postMessage(pageResult);
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            this.dependencies.outputChannel?.appendLine(
-              `[tiff-preview] render page failure: ${rawMessage.payload.page}: ${message}`,
-            );
-            // VS Code Webview.postMessage has no targetOrigin parameter.
-            // oxlint-disable-next-line unicorn/require-post-message-target-origin
-            void webviewPanel.webview.postMessage({ type: 'error', payload: { message } });
-          }
-        })();
+        const { page } = rawMessage.payload;
+        tiffRenderQueue.push(page);
+        void processTiffRenderQueue();
         return;
       }
 
@@ -195,7 +229,7 @@ async function preparePreview(
   signal: AbortSignal,
 ): Promise<{ pageCount: number; pdfData?: string }> {
   if (format === 'tiff') {
-    return { pageCount: await readTiffPreviewPageCount(uri.fsPath, maxInputPixels) };
+    return { pageCount: await readTiffPreviewPageCount(uri.fsPath, maxInputPixels, signal) };
   }
 
   signal.throwIfAborted();

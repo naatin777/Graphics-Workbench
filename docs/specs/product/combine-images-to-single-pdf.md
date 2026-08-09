@@ -14,7 +14,6 @@
 
 - PNG、JPEG、WebP、AVIF、GIF、TIFF（ラスター画像）
 - SVG
-- EPS
 
 Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは既に `convertDrawioToPdfDirectly` で全ページを1PDFにする専用コマンドがある。
 
@@ -36,7 +35,6 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは既に `convertDr
 
 - ラスター画像: `sharp` の metadata から幅・高さを取得し、pixel = point でページサイズとする
 - SVG: `sharp` の metadata から幅・高さを取得（既存の `readSvgSize` を再利用）
-- EPS: Ghostscript で生成した中間PDFの MediaBox からサイズを取得
 
 ## 内部パイプライン
 
@@ -49,7 +47,6 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは既に `convertDr
 1. 各入力画像を既存の経路で単ページPDFへ変換する
    - ラスター画像: `writeRasterImageAsPdf`（sharp + mupdf）
    - SVG: `writeSvgAsPdf`（rsvg-convert またはChrome headless CLI）
-   - EPS: `writeEpsAsPdf`（Ghostscript pdfwrite → mupdf copy）
 2. 生成された中間PDFを mupdf の `graftPage` で1つの `PDFDocument` にマージする
 3. 結合PDFを staging へ保存し、commit する
 
@@ -83,7 +80,7 @@ outputPath 設定は `outputPath.convertImagesToSinglePdf` で提供する。未
 
 ## テスト計画
 
-- 全対象入力形式（PNG, JPEG, WebP, AVIF, GIF, TIFF, SVG, EPS）の単一→1ページPDF
+- 全対象入力形式（PNG, JPEG, WebP, AVIF, GIF, TIFF, SVG）の単一→PDF
 - 複数形式混在選択の結合
 - 1件の変換失敗時に出力しないことの確認
 - Safe Mode 競合判断の確認
@@ -95,6 +92,5 @@ outputPath 設定は `outputPath.convertImagesToSinglePdf` で提供する。未
 
 - [出力形式基準の変換仕様](output-format-conversion.md)
 - [Safe Mode仕様](safe-mode.md)
-- [EPS変換の内部契約](../internal/eps-conversion.md)
 - [変換入力job validationの内部契約](../internal/input-preflight.md)
 - [0096: 複数画像を1つのPDFへ結合する仕様を決める](../../tasks/0096-design-combine-images-to-single-pdf.md)

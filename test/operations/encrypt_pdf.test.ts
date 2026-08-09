@@ -95,6 +95,28 @@ suite('PDFのパスワード暗号化', () => {
 
     await assert.rejects(access(outputPath));
   });
+
+  test('MuPDF option parserが扱えないカンマまたは等号を含むパスワードは暗号化を開始せず明示的に拒否する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-password-validation-'));
+    const sourcePath = path.join(workspacePath, 'source.pdf');
+    const outputPath = path.join(workspacePath, 'output.pdf');
+    await writePdf(sourcePath);
+
+    try {
+      for (const invalidPassword of ['bad,password', 'bad=password']) {
+        await assert.rejects(
+          encryptPdfFiles({
+            jobs: [{ sourcePath, workspacePath, outputPath }],
+            password: invalidPassword,
+          }),
+          /passwords cannot contain/iu,
+        );
+        await assert.rejects(access(outputPath));
+      }
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
 });
 
 async function writePdf(filePath: string): Promise<void> {

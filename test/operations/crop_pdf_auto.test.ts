@@ -13,7 +13,7 @@ import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, rgb } from '../helpers/pdf_document.js';
+import { PDFDocument, degrees, rgb } from '../helpers/pdf_document.js';
 
 import { cropPdfFiles } from '../../src/operations/pdf/crop_pdf_auto.js';
 
@@ -82,6 +82,30 @@ suite('PDF自動crop処理', () => {
       width: 320,
       height: 180,
     });
+  });
+
+  test('offset MediaBoxと90度回転のページでも、検出したcontentの座標系で最終boundsを数値固定する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-geometry-test-'));
+    const sourcePath = path.join(workspacePath, 'geometry.pdf');
+    const outputPath = path.join(workspacePath, 'geometry-crop.pdf');
+    const document = await PDFDocument.create();
+    const page = document.addPage([400, 300]);
+    page.setMediaBox(100, 200, 400, 300);
+    page.setRotation(degrees(90));
+    page.drawRectangle({ x: 135.25, y: 247.5, width: 80.5, height: 41.25, color: rgb(0, 0, 0) });
+    await writeFile(sourcePath, await document.save());
+
+    await cropPdfFiles({
+      jobs: [{ sourcePath, workspacePath, outputPath }],
+      margin: 0,
+    });
+
+    const outputDocument = await PDFDocument.load(await readFile(outputPath));
+    const bounds = outputDocument.getPage(0).getMediaBox();
+    assert.ok(Math.abs(bounds.x - 135.25) <= 1);
+    assert.ok(Math.abs(bounds.y - 247.5) <= 1);
+    assert.ok(Math.abs(bounds.width - 80.5) <= 1);
+    assert.ok(Math.abs(bounds.height - 41.25) <= 1);
   });
 
   test('4つのPDFを1回のcropPdfFiles呼び出しで並列にcrop変換し、各jobの出力PDFを作成する', async () => {

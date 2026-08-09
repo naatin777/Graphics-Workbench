@@ -46,15 +46,15 @@
 
 移行先:
 
-- `graphics-workbench.execPath.ghostscript`
+- なし。v1の自動cropはMuPDFで実行し、外部crop executableの設定を持たない。
 
 理由:
 
-- 現行のcrop処理は`pdfcrop`ではなくGhostscript基準へ変更している
-- Windows path handlingなど、`pdfcrop`固有の問題を避ける
+- 現行のcrop処理は`pdfcrop`やGhostscriptではなくMuPDF基準で実行する
+- Windows path handlingなど外部crop tool固有の問題を避ける
 - 依存する外部ツールを整理する
 
-README / CHANGELOG / migration noteには、`execPath.pdfcrop`が廃止され、cropには`execPath.ghostscript`を使うことを書く。
+README / CHANGELOG / migration noteには、`execPath.pdfcrop`が廃止され、自動cropに外部tool設定がないことを書く。
 
 ### `graphics-workbench.execPath.puppeteer`
 
@@ -81,7 +81,7 @@ README / CHANGELOG / migration noteには、`execPath.pdfcrop`が廃止され、
 理由:
 
 - SVG→PDFはChromeをheadless CLIとして直接実行する
-- Mermaidは同梱mmdc CLIを使う
+- Mermaidは外部のmmdc CLIを`execPath.mermaid`またはPATHから解決して使う
 - Firefox backendは提供しない
 
 ### `graphics-workbench.puppeteer.channel`
@@ -105,7 +105,7 @@ READMEでは、詳細な互換表をすべて載せすぎず、以下を短く�
 - v1.0.0ではcommand IDが整理され、旧command IDは互換aliasとして残らない
 - 変換コマンドは`PDFに変換` / `PNGに変換`のような出力形式基準になった
 - keybindingsやtasksで旧command IDを使っている場合はmigration noteを参照する
-- `execPath.pdfcrop`は廃止され、cropには`execPath.ghostscript`を使う
+- `execPath.pdfcrop`は廃止され、自動cropはMuPDFを使う
 - Chrome実行ファイルは`execPath.chrome`へ移行した
 
 SVGとMermaidの出力形式別legacy設定は使用しない。
@@ -117,7 +117,7 @@ CHANGELOGでは、`BREAKING CHANGE`として以下を明記する。
 - 旧command IDの互換aliasを提供しない
 - 変換コマンドを出力形式基準へ統合した
 - PDF操作コマンドはサブメニュー化し、quick系は`cropPdf.auto` / `splitPdf.allPages` / `mergePdf.selectedFiles`、Webview GUI系は`cropPdf.configure` / `splitPdf.configure` / `mergePdf.configure`などの具体的なcommand IDへ移行した
-- `execPath.pdfcrop`を廃止し、`execPath.ghostscript`へ移行した
+- `execPath.pdfcrop`を廃止し、自動cropはMuPDFを使う
 - Puppeteer設定を廃止し、Chrome実行ファイルを`execPath.chrome`へ集約した
 
 ## migration noteに書く内容

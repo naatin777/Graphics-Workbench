@@ -297,13 +297,6 @@
   "config.outputPath.compressPdf": "PDF圧縮後の出力ファイル名",
   "config.outputPath.encryptPdf": "PDF暗号化後の出力ファイル名",
   "config.outputPath.decryptPdf": "PDF復号化後の出力ファイル名",
-  "quickPick.compressPdf.quality.title": "PDF圧縮の品質を選択",
-  "quickPick.compressPdf.quality.placeholder": "品質を下げるほどファイルサイズが小さくなります。",
-  "quickPick.compressPdf.quality.screen": "最小ファイルサイズ、最低品質",
-  "quickPick.compressPdf.quality.ebook": "ファイルサイズと品質のバランスが良い",
-  "quickPick.compressPdf.quality.printer": "印刷用の高品質",
-  "quickPick.compressPdf.quality.prepress": "最高品質、最大ファイルサイズ",
-  "quickPick.compressPdf.quality.default": "eBookと同等",
   "message.progress.compressPdf.title": "{0}個のPDFファイルを圧縮しています",
   "message.compressPdf.success": "{0}個のPDFファイルを圧縮しました。",
   "message.compressPdf.cancelled": "PDF圧縮はキャンセルされました。",
@@ -314,6 +307,7 @@
   "message.encryptPdf.cancelled": "PDF暗号化はキャンセルされました。",
   "message.encryptPdf.failed": "PDF暗号化に失敗しました: {0}",
   "message.encryptPdf.passwordMismatch": "パスワードが一致しません。",
+  "message.encryptPdf.passwordUnsupportedCharacters": "PDFのパスワードにはカンマまたは等号を使用できません。",
   "prompt.encryptPdf.password": "PDFを暗号化するパスワードを入力",
   "prompt.encryptPdf.passwordConfirmation": "確認のためパスワードをもう一度入力",
   "message.progress.decryptPdf.title": "{0}個のPDFファイルを復号化しています",
@@ -391,5 +385,6 @@
   "message.controls.feature.svgToPdf": "SVG → PDF",
   "message.controls.feature.drawio": "Draw.io",
   "message.controls.feature.mermaid": "Mermaid",
-  "message.controls.checkAgain": "再確認"
+  "message.controls.checkAgain": "再確認",
+  "message.controls.availabilityChecking": "確認中…"
 }

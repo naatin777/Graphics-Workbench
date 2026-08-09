@@ -124,7 +124,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs, options.supportedExtensions ?? defaultSupportedImageExtensions);
-  await validatePdfPathInputs(options.jobs, 'convert-png-to-pdf');
+  await validatePdfPathInputs(options.jobs, 'convert-to-pdf');
   runtime?.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
@@ -136,12 +136,12 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   if (options.scratchBaseCandidates !== undefined) {
     scratchOptions.scratchBaseCandidates = options.scratchBaseCandidates;
   }
-  const operationName = options.operationName ?? 'convert-png-to-pdf';
+  const operationName = options.operationName ?? 'convert-to-pdf';
 
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName,
-    stagingOperationName: 'convert-png-to-pdf',
+    stagingOperationName: 'convert-to-pdf',
     runId,
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
@@ -167,12 +167,12 @@ async function stageSourceToPdf(
   const stagedOutputPath = path.join(
     job.workspacePath,
     '.graphics-workbench',
-    'convert-png-to-pdf',
+    'convert-to-pdf',
     runId,
     `${index + 1}`,
     'result.pdf',
   );
-  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'convert-png-to-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'convert-to-pdf', runId);
 
   const writeOptions: WriteSourceAsPdfOptions = {
     sourcePath: job.sourcePath,
@@ -209,25 +209,13 @@ async function stageSourceToPdf(
   };
 }
 
-async function readRasterAnimationMetadataSafely(
-  sourcePath: string,
-  maxInputPixels: number,
-): Promise<RasterAnimationMetadata | undefined> {
-  try {
-    return await readRasterAnimationMetadata(sourcePath, maxInputPixels);
-  } catch {
-    // ponytail: libvips cannot animate multi-page TIFFs whose pages differ; fall back to the first frame/page.
-    return undefined;
-  }
-}
-
 export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promise<void> {
   const { sourcePath, outputPath, workspacePath, signal, maxInputPixels, tools, scratchOptions = {} } = options;
   const { svgToPdfTools, mermaidTools, drawioTools } = tools ?? {};
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
-    const animation = await readRasterAnimationMetadataSafely(
+    const animation = await readRasterAnimationMetadata(
       sourcePath,
       maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
     );
@@ -415,22 +403,30 @@ async function writeRasterImageAsPdf({
 
   const mupdf = await loadMupdf();
   const doc = new mupdf.PDFDocument();
-  const image = new mupdf.Image(imageBuffer);
-  const imageRef = doc.addImage(image);
-  image.destroy();
-  const page = doc.newDictionary();
-  page.put('Type', doc.newName('Page'));
-  page.put('MediaBox', [0, 0, width, height]);
-  const resources = doc.newDictionary();
-  const xobject = doc.newDictionary();
-  xobject.put('Im0', imageRef);
-  resources.put('XObject', xobject);
-  page.put('Resources', resources);
-  const content = doc.addStream(`q ${width} 0 0 ${height} 0 0 cm /Im0 Do Q`, null);
-  page.put('Contents', content);
-  doc.insertPage(0, doc.addObject(page));
-  // ponytail: doc.addPage(...) is broken in mupdf.js; build the page dict and insertPage instead.
-  const pdfBytes = savePdfDocument(doc);
+  let pdfBytes: Uint8Array;
+  try {
+    const image = new mupdf.Image(imageBuffer);
+    try {
+      const imageRef = doc.addImage(image);
+      const page = doc.newDictionary();
+      page.put('Type', doc.newName('Page'));
+      page.put('MediaBox', [0, 0, width, height]);
+      const resources = doc.newDictionary();
+      const xobject = doc.newDictionary();
+      xobject.put('Im0', imageRef);
+      resources.put('XObject', xobject);
+      page.put('Resources', resources);
+      const content = doc.addStream(`q ${width} 0 0 ${height} 0 0 cm /Im0 Do Q`, null);
+      page.put('Contents', content);
+      doc.insertPage(0, doc.addObject(page));
+      // ponytail: doc.addPage(...) is broken in mupdf.js; build the page dict and insertPage instead.
+      pdfBytes = savePdfDocument(doc);
+    } finally {
+      image.destroy();
+    }
+  } finally {
+    doc.destroy();
+  }
   signal?.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
@@ -618,15 +614,21 @@ export async function validateGeneratedPdf(outputPath: string): Promise<void> {
       throw new Error(`PDF conversion produced no pages: ${outputPath}`);
     }
 
+    // oxlint-disable-next-line no-unreachable-loop -- Validate every generated page.
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
       const page = pdfDocument.loadPage(pageIndex);
-      for (const boxName of ['MediaBox', 'CropBox', 'TrimBox'] as const) {
-        const [x1, y1, x2, y2] = page.getBounds(boxName);
-        const width = x2 - x1;
-        const height = y2 - y1;
-        if (![x1, y1, x2, y2, width, height].every((value) => Number.isFinite(value)) || width <= 0 || height <= 0) {
-          throw new Error(`PDF conversion produced invalid ${boxName} dimensions: ${outputPath}`);
+      try {
+        for (const boxName of ['MediaBox', 'CropBox', 'TrimBox'] as const) {
+          const [x1, y1, x2, y2] = page.getBounds(boxName);
+          const width = x2 - x1;
+          const height = y2 - y1;
+          // oxlint-disable-next-line max-depth -- Page, box, and dimension validation are one ownership scope.
+          if (![x1, y1, x2, y2, width, height].every((value) => Number.isFinite(value)) || width <= 0 || height <= 0) {
+            throw new Error(`PDF conversion produced invalid ${boxName} dimensions: ${outputPath}`);
+          }
         }
+      } finally {
+        page.destroy();
       }
     }
   } finally {
@@ -636,14 +638,22 @@ export async function validateGeneratedPdf(outputPath: string): Promise<void> {
 
 async function normalizePdfPageSize(outputPath: string, width: number, height: number): Promise<void> {
   const pdfDocument = await openPdfDocument(await readFile(outputPath));
-  if (pdfDocument.countPages() === 0) {
-    pdfDocument.destroy();
-    throw new Error(`Generated PDF has no pages: ${outputPath}`);
-  }
+  try {
+    if (pdfDocument.countPages() === 0) {
+      throw new Error(`Generated PDF has no pages: ${outputPath}`);
+    }
 
-  setPageSize(pdfDocument.loadPage(0), width, height);
-  const pdfBytes = savePdfDocument(pdfDocument);
-  await writeFile(outputPath, pdfBytes);
+    const page = pdfDocument.loadPage(0);
+    try {
+      setPageSize(page, width, height);
+    } finally {
+      page.destroy();
+    }
+    const pdfBytes = savePdfDocument(pdfDocument);
+    await writeFile(outputPath, pdfBytes);
+  } finally {
+    pdfDocument.destroy();
+  }
 }
 
 function setPageSize(page: MupdfPdfPage, width: number, height: number): void {

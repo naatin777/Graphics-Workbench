@@ -91,11 +91,15 @@ suite('パスワード付きPDFの復号化', () => {
 
 async function encryptWithMupdf(sourcePath: string, pdfPassword: string): Promise<void> {
   const document = await openPdfDocument(await readFile(sourcePath));
-  const encryptedBytes = savePdfDocument(
-    document,
-    `encrypt=aes-256,user-password=${pdfPassword},owner-password=${pdfPassword}`,
-  );
-  await writeFile(sourcePath, encryptedBytes);
+  try {
+    const encryptedBytes = savePdfDocument(
+      document,
+      `encrypt=aes-256,user-password=${pdfPassword},owner-password=${pdfPassword}`,
+    );
+    await writeFile(sourcePath, encryptedBytes);
+  } finally {
+    document.destroy();
+  }
 }
 
 async function writePdf(filePath: string): Promise<void> {

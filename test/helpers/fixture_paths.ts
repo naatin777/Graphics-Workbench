@@ -12,7 +12,6 @@ export const testOutputDirectory: string = path.join(testRootDirectory, 'output'
 export const testWorkspaceDirectory: string = path.join(testRootDirectory, 'workspace');
 export const testVscodeSettingsPath: string = path.join(testRootDirectory, 'vscode-settings', 'settings.json');
 export const operationPngInputPath = path.join(testInputDirectory, 'valid', 'png', 'transparent-shapes.png');
-export const operationEpsInputPath = path.join(testInputDirectory, 'valid', 'eps', 'color-swatches.eps');
 export const operationPdfInputDirectory = path.join(testInputDirectory, 'valid', 'pdf');
 export const operationDrawioInputDirectory = path.join(testInputDirectory, 'valid', 'drawio');
 export const operationPdfOutputDirectory = path.join(testOutputDirectory, 'pdf', 'pdf-operations');

@@ -6,7 +6,7 @@
 
 [English](README.md) | 日本語
 
-Graphics Workbench は、論文や技術文書で使用する PDF や画像を、VS Code から離れずに変換・トリミング・結合・並べ替え・挿入できる拡張機能です。LaTeX 以外の一般的な PDF・画像処理にも利用できます。
+Graphics Workbench は、論文や技術文書で使用する PDF や画像を、VS Code から離れずに変換・トリミング・結合・並べ替え・プレビュー・挿入できる拡張機能です。LaTeX、Typst、Quarkdownと一般的なPDF・画像処理に対応します。
 
 ## 対象ユーザーと解決する作業
 
@@ -15,9 +15,9 @@ Graphics Workbench は、論文や技術文書で使用する PDF や画像を�
 - スクリーンショットや図表を PDF に変換したい
 - 図版 PDF の余白を削除して論文に貼りたい
 - 複数の画像を 1 つの PDF にまとめたい
-- 図版を LaTeX の `figure` / `includegraphics` コードとして挿入したい
+- 図版を LaTeX、Typst、Quarkdown のsnippetとして挿入したい
 
-Graphics Workbench の独自性は、個々の変換形式ではなく、次の一連の流れにあります。Explorer から直接操作し、PDF をプレビューしながら編集し、出力競合を安全に処理し、必要に応じて Undo し、最後に LaTeX や技術文書へ配置できます。VS Code を離れて外部ツールを手で操作する必要がありません。
+Graphics Workbench の独自性は、個々の変換形式ではなく、次の一連の流れにあります。Explorer から直接操作し、PDF をプレビューしながら編集し、出力競合を安全に処理し、必要に応じて Undo し、最後に LaTeX、Typst、Quarkdown、その他の技術文書へ配置できます。VS Code を離れて外部ツールを手で操作する必要がありません。
 
 ## 代表的なワークフロー
 
@@ -221,7 +221,7 @@ WindowsではHomebrewを使用せず、各ツールのWindows向け配布物ま�
 | PDF の LaTeX 挿入               | `.pdf`                                                                                                     | LaTeX コード                            | `figure` / `includegraphics` を自動生成                  | 不要                                   |
 | クリップボード画像の LaTeX 挿入 | クリップボード画像                                                                                         | 画像ファイル + LaTeX コード             | スクリーンショット等を LaTeX に貼り付け                  | 出力形式により異なります               |
 
-GIF/TIFF入力は先頭page/frameだけを使用します。複数frameが必要な場合はanimation preserve/split commandを使用してください。同じ形式への変換は拒否します。
+通常のラスター変換ではGIF/TIFFの先頭page/frameを使用します。Convert to PDFでは複数pageをすべてPDFへ展開し、ページサイズが異なるTIFFにも対応します。アニメーション保持・分割commandはそれぞれ全frameを扱います。同じ形式への変換は拒否します。
 
 ## 設定
 

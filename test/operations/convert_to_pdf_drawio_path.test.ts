@@ -76,7 +76,7 @@ suite('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io�
         outputPath,
         workspacePath,
         sha256: await hashFile(outputPath),
-        stagingRootPath: path.join(workspacePath, '.graphics-workbench', 'convert-png-to-pdf', 'drawio-complex-path'),
+        stagingRootPath: path.join(workspacePath, '.graphics-workbench', 'convert-to-pdf', 'drawio-complex-path'),
       },
     ]);
     assert.strictEqual(drawioCalls.length, 1);

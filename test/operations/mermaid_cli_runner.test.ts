@@ -1,5 +1,5 @@
 // Test target:
-// - Mermaid rendering runs the bundled mmdc CLI as an external process.
+// - Mermaid rendering runs the externally installed/configured mmdc CLI as an external process.
 // - CLI arguments carry output, theme/background settings, and temporary config files separately.
 // - a pre-aborted signal avoids spawning mmdc; in-flight termination is covered by run_external_tool tests.
 

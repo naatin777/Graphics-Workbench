@@ -1,6 +1,6 @@
 ---
 name: graphics-workbench-external-tool
-description: Graphics Workbenchで外部CLI / renderer / converter（Draw.io、Mermaid、Chrome、Ghostscript、qpdf、pdftocairo、rsvg-convert、ImageMagick等）を扱うときの判断と手順。新しい外部CLIの統合、または既存外部CLIの失敗・OS差異のデバッグで使用する。`runExternalTool`の再利用、process実行、cross-platform、success条件、キャンセル、環境チェックを扱う。
+description: Graphics Workbenchで外部CLI / renderer / converter（Draw.io、Mermaid、Chrome、pdftocairo、rsvg-convert等）を扱うときの判断と手順。新しい外部CLIの統合、または既存外部CLIの失敗・OS差異のデバッグで使用する。`runExternalTool`の再利用、process実行、cross-platform、success条件、キャンセル、環境チェックを扱う。
 ---
 
 # 外部CLI
@@ -25,8 +25,8 @@ description: Graphics Workbenchで外部CLI / renderer / converter（Draw.io、M
 新しい外部CLIを組み込むとき、同じ問題を各commandで個別実装しない。
 
 1. dependency戦略を判断する（npm dependencyとしてbundle / system CLIとして要求 / executable pathをsettingで指定 / OS別discovery）。理由なくdependencyを増やさない（AGENTS.md）。
-2. `graphics-workbench.execPath.*`設定と`src/config/external_tools/external_tool_paths.ts`のパターンに従う。setting値が空のときOS既定名へfallbackする既存パターン(Ghostscript)を参考にする。
-3. `TOOL_ID_BY_NAME`にtoolIdを追加し、timeout設定(`externalTools.<id>.timeoutSeconds`)と対応させる。
+2. `graphics-workbench.execPath.*`設定と`src/config/external_tools/external_tool_paths.ts`のパターンに従う。setting値が空のときOS既定名へfallbackする既存パターンを参考にする。
+3. timeoutが必要なtoolは`src/config/external_tools/external_tool_settings.ts`の`ExternalToolId`、`readExternalToolTimeouts()`、`getExternalToolTimeoutMs()`と`externalTools.<id>.timeoutSeconds` manifest設定へ追加する。
 4. system dependencyなら`src/commands/shared/environment_check.ts`へ統合する。「未インストール」と「実行したが失敗」を区別し、`checkTool`パターン(probe・versionArgs・settingId)を再利用する。
 5. テスト: 純粋な引数組み立て・path解決はUnit Test、実spawn・ファイル出力・キャンセルはIntegration Test。既存のfixtureランナー(例: `run_crop_pdf_process.test.ts`のpattern)を参考にする。
 

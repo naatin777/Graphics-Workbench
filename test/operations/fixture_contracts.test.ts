@@ -9,7 +9,6 @@ const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
   drawio: 2,
   'editable-drawio-png': 1,
   'editable-drawio-svg': 1,
-  eps: 2,
   excalidraw: 3,
   gif: 2,
   jpeg: 2,

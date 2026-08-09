@@ -80,6 +80,11 @@ body,
   outline: 1px solid transparent;
 }
 
+.tiff-page {
+  content-visibility: auto;
+  contain-intrinsic-size: 300px 200px;
+}
+
 .preview--fit .preview-page {
   width: 100%;
 }

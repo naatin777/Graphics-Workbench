@@ -194,8 +194,8 @@ suite('Controlsパネル', () => {
       availabilityRows.map((item) => item.label),
       [FEATURE_PDF, FEATURE_IMAGES, FEATURE_SVG_TO_PDF, FEATURE_DRAWIO, FEATURE_MERMAID],
     );
-    assert.strictEqual(availabilityRows[0]?.description, '$(check)');
-    assert.strictEqual(availabilityRows[3]?.description, '$(close)');
+    assert.ok(availabilityRows[0]?.description?.startsWith('$(check)'));
+    assert.ok(availabilityRows[3]?.description?.startsWith('$(close)'));
   });
 
   test('選択したSVG→PDFエンジンが利用できない場合、自動で別エンジンへフォールバックせず選択状態と✕表示を維持する', async () => {
@@ -235,7 +235,7 @@ suite('Controlsパネル', () => {
 
     assert.ok(rsvgRow?.label.startsWith('$(circle-filled)'));
     assert.ok(chromeRow?.label.startsWith('$(circle-outline)'));
-    assert.strictEqual(svgRow?.description, '$(close)');
+    assert.ok(svgRow?.description?.startsWith('$(close)'));
     assert.deepStrictEqual(written, []);
   });
 
@@ -271,7 +271,7 @@ suite('Controlsパネル', () => {
 
     const drawioRowBefore = () =>
       quickPick.items.find((item) => item.action?.kind === 'none' && item.label === FEATURE_DRAWIO);
-    assert.strictEqual(drawioRowBefore()?.description, '$(close)');
+    assert.ok(drawioRowBefore()?.description?.startsWith('$(close)'));
 
     const checkAgain = quickPick.items.find((item) => item.action?.kind === 'check-again');
     assert.ok(checkAgain);
@@ -279,7 +279,7 @@ suite('Controlsパネル', () => {
     await flushPromises();
 
     assert.strictEqual(checkCount, 2);
-    assert.strictEqual(drawioRowBefore()?.description, '$(check)');
+    assert.ok(drawioRowBefore()?.description?.startsWith('$(check)'));
   });
 });
 

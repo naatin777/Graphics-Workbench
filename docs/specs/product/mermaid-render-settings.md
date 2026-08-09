@@ -26,7 +26,7 @@ CSS color 値（`white`、`#ffffff`、`rgb(255,255,255)` など）または `tra
 
 ## CLI への引き渡し
 
-同梱の`mmdc` CLIを通常の外部プロセスとして実行する。入力・出力・形式・背景色は引数配列で渡す。
+外部の`mmdc` CLIを通常の外部プロセスとして実行する。入力・出力・形式・背景色は引数配列で渡す。`graphics-workbench.execPath.mermaid`で実行ファイルを指定し、未指定時はPATHから`mmdc`を探す。
 
 ```text
 mmdc --input source.mmd --output output.png --outputFormat png \

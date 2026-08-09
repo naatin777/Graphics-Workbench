@@ -114,23 +114,28 @@ async function splitPdf(params: {
 
     const stagedPages: PreparedConversionOutput[] = [];
 
+    // oxlint-disable-next-line no-unreachable-loop -- each page is staged independently.
     for (let page = 1; page <= pageCount; page++) {
       signal.throwIfAborted();
       const pageDocument = new mupdf.PDFDocument();
-      pageDocument.graftPage(0, sourceDocument, page - 1);
+      try {
+        pageDocument.graftPage(0, sourceDocument, page - 1);
 
-      const stagedOutputPath = path.join(pagesDirectory, `${page}.pdf`);
-      await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-      signal.throwIfAborted();
-      await writeFile(stagedOutputPath, savePdfDocument(pageDocument));
-      signal.throwIfAborted();
+        const stagedOutputPath = path.join(pagesDirectory, `${page}.pdf`);
+        await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+        signal.throwIfAborted();
+        await writeFile(stagedOutputPath, savePdfDocument(pageDocument));
+        signal.throwIfAborted();
 
-      stagedPages.push({
-        stagedOutputPath,
-        outputPath: job.outputPathForPage(page),
-        workspacePath: job.workspacePath,
-        stagingRootPath,
-      });
+        stagedPages.push({
+          stagedOutputPath,
+          outputPath: job.outputPathForPage(page),
+          workspacePath: job.workspacePath,
+          stagingRootPath,
+        });
+      } finally {
+        pageDocument.destroy();
+      }
     }
 
     return stagedPages;
@@ -181,25 +186,30 @@ async function splitPdfPageGroups(params: {
 
     const stagedGroups: PreparedConversionOutput[] = [];
 
+    // oxlint-disable-next-line no-unreachable-loop -- each group is staged independently.
     for (const [groupIndex, pages] of pageGroups.entries()) {
       signal.throwIfAborted();
       const groupDocument = new mupdf.PDFDocument();
-      for (const page of pages) {
-        groupDocument.graftPage(groupDocument.countPages(), sourceDocument, page - 1);
+      try {
+        for (const page of pages) {
+          groupDocument.graftPage(groupDocument.countPages(), sourceDocument, page - 1);
+        }
+
+        const stagedOutputPath = path.join(groupsDirectory, `${groupIndex + 1}.pdf`);
+        await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+        signal.throwIfAborted();
+        await writeFile(stagedOutputPath, savePdfDocument(groupDocument));
+        signal.throwIfAborted();
+
+        stagedGroups.push({
+          stagedOutputPath,
+          outputPath: outputPathForGroup(groupIndex, pages),
+          workspacePath: job.workspacePath,
+          stagingRootPath,
+        });
+      } finally {
+        groupDocument.destroy();
       }
-
-      const stagedOutputPath = path.join(groupsDirectory, `${groupIndex + 1}.pdf`);
-      await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-      signal.throwIfAborted();
-      await writeFile(stagedOutputPath, savePdfDocument(groupDocument));
-      signal.throwIfAborted();
-
-      stagedGroups.push({
-        stagedOutputPath,
-        outputPath: outputPathForGroup(groupIndex, pages),
-        workspacePath: job.workspacePath,
-        stagingRootPath,
-      });
     }
 
     return stagedGroups;

@@ -19,7 +19,7 @@ import sharp from 'sharp';
 import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { convertToPdfFiles, validateSvgToPdfOptions } from '../../src/operations/conversion/convert_to_pdf.js';
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('入力画像をPDFへ変換する処理', () => {
@@ -67,6 +67,33 @@ suite('入力画像をPDFへ変換する処理', () => {
     assert.strictEqual(pdf.getPageCount(), 2);
   });
 
+  test('ページ寸法が異なる4ページTIFFを1jobで渡すと、先頭ページへ切り詰めず4ページPDFを生成する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tiff-to-pdf-all-'));
+
+    const sourcePath = path.join(workspacePath.path, 'source.tiff');
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    await copyFile(path.join(testInputDirectory, 'valid', 'tiff', 'heatmap.tiff'), sourcePath);
+
+    await convertToPdfFiles({
+      jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      supportedExtensions: ['.tiff'],
+      operationName: 'convert-tiff-to-pdf',
+      runId: 'run',
+    });
+
+    const pdf = await PDFDocument.load(await readFile(outputPath));
+    assert.strictEqual(pdf.getPageCount(), 4);
+    assert.deepStrictEqual(
+      [0, 1, 2, 3].map((index) => pdf.getPage(index).getSize()),
+      [
+        { width: 600, height: 480 },
+        { width: 200, height: 160 },
+        { width: 64, height: 64 },
+        { width: 640, height: 160 },
+      ],
+    );
+  });
+
   test('PNGを読み込んで1ページのPDFへ変換し、出力PDFのページ数が1であることを確認する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-png-test-'));
     const sourcePath = path.join(workspacePath.path, 'source.png');
@@ -77,7 +104,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await convertToPdfFiles({
       jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.png'],
-      operationName: 'convert-png-to-pdf',
+      operationName: 'convert-to-pdf',
     });
 
     const { PDFDocument: LoadedPdfDocument } = await import('../helpers/pdf_document.js');
@@ -106,7 +133,7 @@ suite('入力画像をPDFへ変換する処理', () => {
         jobs: [{ sourcePath, outputPath: limitedOutputPath, workspacePath: workspacePath.path }],
         maxInputPixels: 99,
         supportedExtensions: ['.png'],
-        operationName: 'convert-png-to-pdf',
+        operationName: 'convert-to-pdf',
       }),
       /Configured limit: 99 pixels|pixel limit|Input image exceeds pixel limit/,
     );
@@ -115,7 +142,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       maxInputPixels: 100,
       supportedExtensions: ['.png'],
-      operationName: 'convert-png-to-pdf',
+      operationName: 'convert-to-pdf',
     });
     await access(outputPath);
   });

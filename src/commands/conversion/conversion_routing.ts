@@ -2,7 +2,7 @@ import { conversionPairs, getDefaultConfiguration, type Configuration } from '..
 import { type SourceFormat, sourceFormatForPath } from '../../shared/source_format.js';
 import { resolveOutputPathTemplate, resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 
-type ConversionTarget = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff' | 'svg' | 'eps' | 'pdf';
+type ConversionTarget = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff' | 'svg' | 'pdf';
 
 export interface ResolveConversionTemplateOptions {
   target: ConversionTarget;
