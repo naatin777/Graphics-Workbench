@@ -14,7 +14,7 @@ import { writeSourceAsPdf, type WriteSourceAsPdfOptions } from './convert_to_pdf
 import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
-import { closeRasterPipeline, openRasterInput } from './raster_input.js';
+import { readRasterAnimationMetadata } from './raster_input.js';
 import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import type { RsvgToolScratchOptions, RunRsvgConvert } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
@@ -116,21 +116,25 @@ async function createPdfPaths(
 async function mergePdfPaths(pdfPaths: string[], runtime: ConversionExecutionContext | undefined): Promise<Uint8Array> {
   const mupdf = await loadMupdf();
   const mergedDocument = new mupdf.PDFDocument();
-  for (const pdfPath of pdfPaths) {
-    runtime?.signal?.throwIfAborted();
-    const sourceBytes = await readFile(pdfPath);
-    const sourceDocument = await openPdfDocument(sourceBytes);
-    try {
-      const pageCount = sourceDocument.countPages();
-      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-        runtime?.signal?.throwIfAborted();
-        mergedDocument.graftPage(mergedDocument.countPages(), sourceDocument, pageIndex);
+  try {
+    for (const pdfPath of pdfPaths) {
+      runtime?.signal?.throwIfAborted();
+      const sourceBytes = await readFile(pdfPath);
+      const sourceDocument = await openPdfDocument(sourceBytes);
+      try {
+        const pageCount = sourceDocument.countPages();
+        for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+          runtime?.signal?.throwIfAborted();
+          mergedDocument.graftPage(mergedDocument.countPages(), sourceDocument, pageIndex);
+        }
+      } finally {
+        sourceDocument.destroy();
       }
-    } finally {
-      sourceDocument.destroy();
     }
+    return savePdfDocument(mergedDocument);
+  } finally {
+    mergedDocument.destroy();
   }
-  return savePdfDocument(mergedDocument);
 }
 
 function buildCommitOptions(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
@@ -154,13 +158,8 @@ async function sourcePageCount(sourcePath: string, maxInputPixels: number): Prom
     return 1;
   }
 
-  const image = openRasterInput(sourcePath, maxInputPixels, undefined, true);
-  try {
-    const metadata = await image.metadata();
-    return Math.max(1, metadata.pages ?? 1);
-  } finally {
-    await closeRasterPipeline(image);
-  }
+  const animation = await readRasterAnimationMetadata(sourcePath, maxInputPixels);
+  return animation?.pages ?? 1;
 }
 
 function validateJobs(jobs: CombineImageInput[]): void {

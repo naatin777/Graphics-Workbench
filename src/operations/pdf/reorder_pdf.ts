@@ -72,30 +72,34 @@ async function reorderPdf(params: {
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal.throwIfAborted();
   const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
-  signal.throwIfAborted();
-  const pageCount = sourceDocument.countPages();
+  try {
+    signal.throwIfAborted();
+    const pageCount = sourceDocument.countPages();
 
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${job.sourcePath}`);
+    if (pageCount === 0) {
+      throw new Error(`PDF has no pages: ${job.sourcePath}`);
+    }
+
+    validatePageOrder(job.pageOrder, pageCount, job.sourcePath);
+
+    signal.throwIfAborted();
+    sourceDocument.rearrangePages(job.pageOrder.map((page) => page - 1));
+    signal.throwIfAborted();
+
+    await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+    signal.throwIfAborted();
+    await writeFile(stagedOutputPath, savePdfDocument(sourceDocument));
+    signal.throwIfAborted();
+
+    return {
+      stagedOutputPath,
+      outputPath: job.outputPath,
+      workspacePath: job.workspacePath,
+      stagingRootPath,
+    };
+  } finally {
+    sourceDocument.destroy();
   }
-
-  validatePageOrder(job.pageOrder, pageCount, job.sourcePath);
-
-  signal.throwIfAborted();
-  sourceDocument.rearrangePages(job.pageOrder.map((page) => page - 1));
-  signal.throwIfAborted();
-
-  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-  signal.throwIfAborted();
-  await writeFile(stagedOutputPath, savePdfDocument(sourceDocument));
-  signal.throwIfAborted();
-
-  return {
-    stagedOutputPath,
-    outputPath: job.outputPath,
-    workspacePath: job.workspacePath,
-    stagingRootPath,
-  };
 }
 
 function validateJobs(jobs: ReorderPdfJob[]): void {

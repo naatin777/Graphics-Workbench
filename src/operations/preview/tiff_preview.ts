@@ -7,10 +7,16 @@ export interface TiffPreviewPage {
 }
 
 /** Reads the TIFF page count. A TIFF without a page table is treated as a single page. */
-export async function readTiffPreviewPageCount(sourcePath: string, maxInputPixels: number): Promise<number> {
+export async function readTiffPreviewPageCount(
+  sourcePath: string,
+  maxInputPixels: number,
+  signal?: AbortSignal,
+): Promise<number> {
+  signal?.throwIfAborted();
   const pipeline = openRasterInput(sourcePath, maxInputPixels);
   try {
     const metadata = await pipeline.metadata();
+    signal?.throwIfAborted();
     const pages = metadata.pages ?? 1;
     if (!Number.isInteger(pages) || pages < 1) {
       throw new Error(`Could not determine TIFF page count: ${sourcePath}`);
@@ -30,10 +36,13 @@ export async function renderTiffPreviewPage(
   page: number,
   maxInputPixels: number,
   maxCanvasPixels: number,
+  signal?: AbortSignal,
 ): Promise<TiffPreviewPage> {
+  signal?.throwIfAborted();
   const pipeline = openRasterInput(sourcePath, maxInputPixels, page);
   try {
     const metadata = await pipeline.metadata();
+    signal?.throwIfAborted();
     const { width, height } = metadata;
     if (!Number.isInteger(width) || width < 1 || !Number.isInteger(height) || height < 1) {
       throw new Error(`Could not read TIFF page ${page} dimensions: ${sourcePath}`);
@@ -47,6 +56,7 @@ export async function renderTiffPreviewPage(
       png.resize(Math.max(1, Math.round(width * scale)));
     }
     const buffer = await png.toBuffer();
+    signal?.throwIfAborted();
     return { dataUri: `data:image/png;base64,${buffer.toString('base64')}`, width, height };
   } finally {
     await closeRasterPipeline(pipeline);

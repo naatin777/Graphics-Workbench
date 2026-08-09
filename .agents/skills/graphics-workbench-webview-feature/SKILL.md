@@ -17,7 +17,7 @@ Webview機能を追加・変更するとき、最も近い既存Webviewを参照
 ## host側
 
 - `startPdfConfigureSession`(共有セッション)を使う。個別にWebview panelを再実装しない。
-- `isWebviewToHostMessage`・`isApplyMessage`・`buildInitMessage`・`runApply`を定義する。
+- `isWebviewToHostMessage`・`isApplyMessage`・`buildInitMessage`・`runApply`を定義する（該当するfeatureのみ）。
 - `localResourceRoots`にapp asset、PDF.js asset、webview shared asset、入力ディレクトリを含める。
 - WebviewのCSPとasset URIは`getWebviewHtml` / `getPdfJsAssetsRoot` / `getWebviewSharedAssetsRoot`を再利用する。
 - 出力・Undo・Safe Mode・キャンセルは既存のconversion lifecycleを再利用する。
@@ -27,7 +27,7 @@ Webview機能を追加・変更するとき、最も近い既存Webviewを参照
 host↔webview messageはexternal / unknown境界として扱う。
 
 - `isWebviewToHostMessage`で型を絞り、payloadをruntime validationする。
-- `protocol_utils.ts`の`hasExactKeys`・`isString`・`isPositiveInteger`・`isWebviewUri`等を再利用する。
+- Valibot schema (`v.object` / `v.safeParse`)をprotocol境界の正本にし、`protocol_utils.ts`では残っている`hasExactKeys`・`isRecord`・`isNonEmptyString`・`isWebviewUri`だけを再利用する。
 - hostile-objectテストを無関係な内部型にまで大量追加しない。境界を越えるmessageだけを検証する。
 
 ## state設計

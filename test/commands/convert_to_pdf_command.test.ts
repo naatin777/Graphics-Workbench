@@ -6,7 +6,6 @@
 // - SVGをPDFに変換できること
 // - MermaidをPDFに変換できること
 // - GIF、TIFFを全フレーム・ページのPDFへ変換できること
-// - EPSをPDFへ変換できること
 // - PNG、JPEG、WebP、AVIF、SVG、Mermaidを1回のコマンドでPDFへ変換できること
 // - 複数PNGを1回のコマンドでPDFへ変換できること
 // - 非対応入力が含まれる場合、変換全体を開始しないこと

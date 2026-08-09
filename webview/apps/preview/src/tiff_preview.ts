@@ -1,3 +1,9 @@
+import {
+  calculatePageWindow,
+  insertPageFrameInOrder,
+  shouldUseWindowedRendering,
+} from '../../../shared/pdf/page_window';
+
 export interface TiffRenderOptions {
   container: HTMLElement;
   pageCount: number;
@@ -22,50 +28,141 @@ export interface TiffRenderController {
  * they scroll into view and applies the current preview zoom on load.
  */
 export function renderTiffPreview(options: TiffRenderOptions): TiffRenderController {
-  const frames: HTMLElement[] = [];
-  const images: HTMLImageElement[] = [];
+  const frames = new Map<number, HTMLElement>();
+  const images = new Map<number, HTMLImageElement>();
+  const renderedData = new Map<number, string>();
   const requested = new Set<number>();
   let disposed = false;
   const firstPageReady = createFirstPageReady();
 
-  options.container.replaceChildren();
-  for (let pageNumber = 1; pageNumber <= options.pageCount; pageNumber += 1) {
-    const { frame, image } = createTiffPageFrame(options, pageNumber, firstPageReady.resolve);
-    options.container.append(frame);
-    frames.push(frame);
-    images.push(image);
-  }
-
   const requestPage = (pageNumber: number): void => {
     if (disposed || requested.has(pageNumber)) {
+      return;
+    }
+    const dataUri = renderedData.get(pageNumber);
+    const image = images.get(pageNumber);
+    if (dataUri !== undefined && image !== undefined) {
+      image.src = dataUri;
       return;
     }
     requested.add(pageNumber);
     options.requestPage(pageNumber);
   };
 
-  const observer =
-    typeof IntersectionObserver === 'undefined'
-      ? undefined
-      : new IntersectionObserver(
-          (entries) => {
-            for (const entry of entries) {
-              if (!entry.isIntersecting) {
-                continue;
-              }
-              const pageNumber = entry.target instanceof HTMLElement ? Number(entry.target.dataset.pdfPage) : 0;
-              if (Number.isInteger(pageNumber) && pageNumber >= 1) {
-                requestPage(pageNumber);
-              }
-            }
-          },
-          { root: options.root ?? null, rootMargin: '200px 0px' },
-        );
+  const createFrame = (pageNumber: number): void => {
+    const { frame, image } = createTiffPageFrame(options, pageNumber, firstPageReady.resolve);
+    const dataUri = renderedData.get(pageNumber);
+    if (dataUri !== undefined) {
+      image.src = dataUri;
+    }
+    frames.set(pageNumber, frame);
+    images.set(pageNumber, image);
+  };
 
-  for (const frame of frames) {
-    observer?.observe(frame);
+  const windowed = shouldUseWindowedRendering(options.pageCount, true);
+  let observer: IntersectionObserver | undefined;
+  let pageWindow: HTMLElement | undefined;
+  let topSpacer: HTMLElement | undefined;
+  let bottomSpacer: HTMLElement | undefined;
+  let removeScrollListener: (() => void) | undefined;
+  let estimatedPageHeight = 400;
+  let windowStart = 1;
+  let windowEnd = options.pageCount;
+
+  if (windowed) {
+    pageWindow = options.container.ownerDocument.createElement('div');
+    topSpacer = options.container.ownerDocument.createElement('div');
+    bottomSpacer = options.container.ownerDocument.createElement('div');
+    topSpacer.setAttribute('aria-hidden', 'true');
+    bottomSpacer.setAttribute('aria-hidden', 'true');
+    pageWindow.className = 'tiff-page-window';
+    options.container.replaceChildren(topSpacer, pageWindow, bottomSpacer);
+    options.container.style.display = 'block';
+    pageWindow.style.display = 'grid';
+    pageWindow.style.gap = '12px';
+    pageWindow.style.justifyItems = 'center';
+
+    const updateSpacers = (): void => {
+      const stride = estimatedPageHeight + 12;
+      topSpacer?.style.setProperty('height', `${Math.max(0, windowStart - 1) * stride}px`);
+      bottomSpacer?.style.setProperty('height', `${Math.max(0, options.pageCount - windowEnd) * stride}px`);
+    };
+
+    const updateWindow = (): void => {
+      if (disposed) {
+        return;
+      }
+      const scrollTop = options.root?.scrollTop ?? 0;
+      const viewportHeight = options.root?.clientHeight ?? estimatedPageHeight * 24;
+      const range = calculatePageWindow(options.pageCount, scrollTop, viewportHeight, estimatedPageHeight);
+      windowStart = range.start;
+      windowEnd = range.end;
+
+      for (const [pageNumber, frame] of frames) {
+        if (pageNumber >= windowStart && pageNumber <= windowEnd) {
+          continue;
+        }
+        frame.remove();
+        frames.delete(pageNumber);
+        images.delete(pageNumber);
+        renderedData.delete(pageNumber);
+        requested.delete(pageNumber);
+      }
+
+      for (let pageNumber = windowStart; pageNumber <= windowEnd; pageNumber += 1) {
+        if (!frames.has(pageNumber)) {
+          createFrame(pageNumber);
+          const currentPageWindow = pageWindow;
+          const frame = frames.get(pageNumber);
+          if (currentPageWindow === undefined || frame === undefined) {
+            throw new Error(`Could not create TIFF page ${pageNumber}.`);
+          }
+          insertPageFrameInOrder(currentPageWindow, frame);
+        }
+      }
+      updateSpacers();
+      for (let pageNumber = windowStart; pageNumber <= windowEnd; pageNumber += 1) {
+        requestPage(pageNumber);
+      }
+    };
+
+    options.root?.addEventListener('scroll', updateWindow, { passive: true });
+    removeScrollListener = (): void => options.root?.removeEventListener('scroll', updateWindow);
+    updateWindow();
+  } else {
+    options.container.replaceChildren();
+    for (let pageNumber = 1; pageNumber <= options.pageCount; pageNumber += 1) {
+      createFrame(pageNumber);
+      const frame = frames.get(pageNumber);
+      if (frame === undefined) {
+        throw new Error(`Could not create TIFF page ${pageNumber}.`);
+      }
+      options.container.append(frame);
+    }
+
+    observer =
+      typeof IntersectionObserver === 'undefined'
+        ? undefined
+        : new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (!entry.isIntersecting) {
+                  continue;
+                }
+                const pageNumber = entry.target instanceof HTMLElement ? Number(entry.target.dataset.pdfPage) : 0;
+                if (Number.isInteger(pageNumber) && pageNumber >= 1) {
+                  requestPage(pageNumber);
+                }
+              }
+            },
+            { root: options.root ?? null, rootMargin: '200px 0px' },
+          );
+
+    for (const frame of frames.values()) {
+      observer?.observe(frame);
+    }
+    requestPage(1);
   }
-  requestPage(1);
 
   const abort = (): void => {
     disposeController();
@@ -79,19 +176,30 @@ export function renderTiffPreview(options: TiffRenderOptions): TiffRenderControl
     disposed = true;
     options.signal.removeEventListener('abort', abort);
     observer?.disconnect();
+    removeScrollListener?.();
+    options.container.replaceChildren();
+    options.container.style.removeProperty('display');
   };
 
   return {
     firstPageReady: firstPageReady.promise,
     setPageSrc(pageNumber, dataUri) {
-      const image = images[pageNumber - 1];
-      if (image === undefined) {
+      if (disposed) {
         return;
       }
-      image.src = dataUri;
+      requested.delete(pageNumber);
+      renderedData.set(pageNumber, dataUri);
+      images.get(pageNumber)?.setAttribute('src', dataUri);
+      const image = images.get(pageNumber);
+      if (image !== undefined && pageNumber === 1) {
+        const { naturalWidth, naturalHeight } = image;
+        if (naturalWidth > 0) {
+          estimatedPageHeight = naturalHeight || estimatedPageHeight;
+        }
+      }
     },
     applyZoom() {
-      for (const image of images) {
+      for (const image of images.values()) {
         if (image.naturalWidth > 0) {
           image.style.width = `${image.naturalWidth * options.zoom()}px`;
         }

@@ -2,7 +2,7 @@
   "name": "graphics-workbench",
   "displayName": "Graphics Workbench",
   "version": "1.0.0",
-  "description": "PDF and image tools for VS Code, including trimming, merging, splitting, conversion, Draw.io export, and LaTeX figure insertion.",
+  "description": "PDF and image tools for VS Code, including trimming, merging, splitting, conversion, Draw.io export, preview, and figure insertion for LaTeX, Typst, and Quarkdown.",
   "categories": [
     "Other"
   ],

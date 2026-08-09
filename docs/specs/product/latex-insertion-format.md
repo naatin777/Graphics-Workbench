@@ -38,7 +38,7 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 
 ### drag & drop（画像）
 
-- PNG/JPEG/WebP/AVIF/GIF/TIFF/SVG/EPS → `insert{Format}.imageTemplate` を使用
+- PNG/JPEG/WebP/AVIF/GIF/TIFF/SVG → `insert{Format}.imageTemplate` を使用
 - 複数ファイル同時 drop 時は形式別にラップする（上記に同じ）
 
 ### clipboard paste（画像）

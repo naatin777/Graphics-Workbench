@@ -63,7 +63,7 @@ export async function openControlsPanelCommand(_uri?: unknown, dependencies?: Co
 export async function showControlsPanel(deps: ControlsPanelDependencies): Promise<void> {
   const quickPick = deps.createQuickPick?.() ?? vscode.window.createQuickPick<ControlsQuickPickItem>();
   const configuration = deps.getConfiguration();
-  let availability = await deps.runChecks(configuration);
+  let availability: FeatureAvailabilityEntry[] | undefined;
 
   const refresh = (): void => {
     quickPick.items = buildControlsItems({
@@ -113,12 +113,17 @@ export async function showControlsPanel(deps: ControlsPanelDependencies): Promis
   });
   refresh();
   quickPick.show();
+
+  // Show the panel before probing external tools. Broken or slow tool
+  // installations must not make Controls look unresponsive.
+  availability = await deps.runChecks(configuration);
+  refresh();
 }
 
 export function buildControlsItems(state: {
   engine: SvgToPdfEngine;
   safeModeEnabled: boolean;
-  availability: FeatureAvailabilityEntry[];
+  availability: FeatureAvailabilityEntry[] | undefined;
 }): ControlsQuickPickItem[] {
   const engineRadio = (engine: SvgToPdfEngine, label: string): string =>
     state.engine === engine ? `$(circle-filled) ${label}` : `$(circle-outline) ${label}`;
@@ -143,11 +148,18 @@ export function buildControlsItems(state: {
       action: { kind: 'toggle-safe-mode' },
     },
     { kind: vscode.QuickPickItemKind.Separator, label: userMessage('message.controls.section.availability') },
-    ...state.availability.map((entry): ControlsQuickPickItem => ({
-      label: featureLabel(entry.id),
-      description: entry.available ? '$(check)' : '$(close)',
-      action: { kind: 'none' },
-    })),
+    ...(state.availability === undefined
+      ? FEATURE_IDS.map((id): ControlsQuickPickItem => ({
+          label: featureLabel(id),
+          description: `$(loading~spin) ${userMessage('message.controls.availabilityChecking')}`,
+          action: { kind: 'none' },
+        }))
+      : state.availability.map((entry): ControlsQuickPickItem => ({
+          label: featureLabel(entry.id),
+          description: `${entry.available ? '$(check)' : '$(close)'} ${entry.detail}`,
+          detail: entry.detail,
+          action: { kind: 'none' },
+        }))),
     {
       label: `$(refresh) ${userMessage('message.controls.checkAgain')}`,
       action: { kind: 'check-again' },
@@ -162,6 +174,8 @@ const FEATURE_LABELS: Record<FeatureAvailabilityId, LocaleKeyType> = {
   drawio: 'message.controls.feature.drawio',
   mermaid: 'message.controls.feature.mermaid',
 };
+
+const FEATURE_IDS: readonly FeatureAvailabilityId[] = ['pdf-operations', 'images', 'svg-to-pdf', 'drawio', 'mermaid'];
 
 function featureLabel(id: FeatureAvailabilityId): string {
   return userMessage(FEATURE_LABELS[id]);

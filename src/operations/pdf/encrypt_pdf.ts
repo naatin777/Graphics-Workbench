@@ -28,6 +28,7 @@ export interface EncryptPdfOptions {
 export async function encryptPdfFiles(options: EncryptPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
+  validatePassword(options.password);
   validateJobs(options.jobs);
   await validatePdfPathInputs(options.jobs, 'encrypt-pdf');
 
@@ -87,10 +88,14 @@ async function encryptPdf(params: {
   // containing `,` or `=` break mupdf's option parser. qpdf previously used a job
   // JSON to keep secrets out of argv; mupdf runs in-process, so that is not a
   // concern here, only the comma/equals limitation remains.
-  const options = `encrypt=aes-256,user-password=${password},owner-password=${password}`;
-  const encryptedBytes = savePdfDocument(document, options);
-  signal.throwIfAborted();
-  await writeFile(stagedOutputPath, encryptedBytes);
+  try {
+    const saveOptions = `encrypt=aes-256,user-password=${password},owner-password=${password}`;
+    const encryptedBytes = savePdfDocument(document, saveOptions);
+    signal.throwIfAborted();
+    await writeFile(stagedOutputPath, encryptedBytes);
+  } finally {
+    document.destroy();
+  }
 
   signal.throwIfAborted();
 
@@ -101,6 +106,12 @@ async function encryptPdf(params: {
     stagingRootPath: params.stagingRootPath,
     stagingWorkspacePath: params.stagingRootPath,
   };
+}
+
+function validatePassword(password: string): void {
+  if (password.includes(',') || password.includes('=')) {
+    throw new Error("PDF passwords cannot contain ',' or '='.");
+  }
 }
 
 function validateJobs(jobs: EncryptPdfJob[]): void {

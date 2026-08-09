@@ -1,5 +1,7 @@
 # EPS変換の内部契約
 
+> Deprecated: v1ではEPSを公開変換commandの入力・出力形式として提供しない。この文書は過去の設計案を保持するための履歴であり、現行実装の契約ではない。現行の対応形式は[出力形式基準の変換仕様](../product/output-format-conversion.md)を参照する。
+
 ## 目的
 
 EPS（Encapsulated PostScript）を既存の出力形式基準commandの入力として安全に扱うための変換経路、security境界、job validation条件を定義する。

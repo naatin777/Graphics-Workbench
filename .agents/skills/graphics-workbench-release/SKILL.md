@@ -21,9 +21,11 @@ description: Graphics Workbenchのバージョン更新、リリース前検証�
 
 ```bash
 npm run check:all
-npm test
+npm run test:docker -- test
 npm run package
 ```
+
+VS Code / Electron windowを開くtestは、ローカル画面を占有しないよう`test:docker`経由で実行する。`check:all`、headless build、script testはhostで実行してよい。
 
 変更範囲に応じてPlaywrightも実行する。
 

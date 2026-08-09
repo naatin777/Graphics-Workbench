@@ -28,9 +28,9 @@
 
 ### decoder / external tool
 
-- PDFはmupdf、pdftocairo、Ghostscriptなど実際に使用するbackendが読み取る。
+- PDFはMuPDFまたはpdftocairoなど実際に使用するbackendが読み取る。
 - raster入力はSharpが読み取る。
-- SVG、Mermaid、Draw.io、EPSは各rendererまたは外部toolが処理する。
+- SVG、Mermaid、Draw.ioは各rendererまたは外部toolが処理する。
 - backend errorは入力pathとoperation contextを保ったまま上位へ伝播する。
 
 ### output lifecycle
@@ -71,4 +71,3 @@ conversion lifecycleの`AbortSignal`を使用する。入力専用のvalidator q
 
 - [出力形式基準の変換仕様](output-format-conversion.md)
 - [ファイル操作security仕様](file-operation-security.md)
-- [EPS変換の内部契約](eps-conversion.md)

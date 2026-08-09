@@ -83,12 +83,16 @@ async function decryptPdf(params: {
   const bytes = await readFile(job.sourcePath);
   signal.throwIfAborted();
   const document = await openPdfDocument(bytes);
-  if (document.needsPassword() && document.authenticatePassword(password) === 0) {
-    throw new Error(`Invalid password for PDF file: ${job.sourcePath}`);
+  try {
+    if (document.needsPassword() && document.authenticatePassword(password) === 0) {
+      throw new Error(`Invalid password for PDF file: ${job.sourcePath}`);
+    }
+    const decryptedBytes = savePdfDocument(document, 'encrypt=none');
+    signal.throwIfAborted();
+    await writeFile(stagedOutputPath, decryptedBytes);
+  } finally {
+    document.destroy();
   }
-  const decryptedBytes = savePdfDocument(document, 'encrypt=none');
-  signal.throwIfAborted();
-  await writeFile(stagedOutputPath, decryptedBytes);
 
   signal.throwIfAborted();
 

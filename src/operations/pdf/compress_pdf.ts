@@ -18,11 +18,8 @@ export interface CompressPdfJob {
   outputPath: string;
 }
 
-export type GhostscriptQuality = 'screen' | 'ebook' | 'printer' | 'prepress' | 'default';
-
 export interface CompressPdfOptions {
   jobs: CompressPdfJob[];
-  quality: GhostscriptQuality;
   runtime?: ConversionExecutionContext;
   runId?: string;
 }
@@ -53,7 +50,6 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
       compressPdf({
         job,
         index,
-        quality: options.quality,
         runId: currentRunId,
         signal: batchRuntime.signal,
       }),
@@ -63,7 +59,6 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
 async function compressPdf(params: {
   job: CompressPdfJob;
   index: number;
-  quality: GhostscriptQuality;
   runId: string;
   signal: AbortSignal;
 }): Promise<PreparedConversionOutput> {
@@ -86,11 +81,13 @@ async function compressPdf(params: {
   await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
   signal.throwIfAborted();
 
-  // ponytail: all GhostscriptQuality levels map to the same mupdf save options; tune per quality if needed.
-  const pdfBytes = savePdfDocument(
-    await openPdfDocument(await readFile(copiedSourcePath)),
-    'garbage=4,compress=yes,compression-effort=10',
-  );
+  const document = await openPdfDocument(await readFile(copiedSourcePath));
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = savePdfDocument(document, 'garbage=4,compress=yes,compression-effort=10');
+  } finally {
+    document.destroy();
+  }
   signal.throwIfAborted();
   await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
   signal.throwIfAborted();

@@ -82,10 +82,10 @@ async function createAsciiInputScratch(options: {
     }
   }
 
-  throw new Error(`Could not create an ASCII temporary directory for ${options.toolName ?? 'Ghostscript'}.`);
+  throw new Error(`Could not create an ASCII temporary directory for ${options.toolName ?? 'external tool'}.`);
 }
 
-export async function validateAsciiScratchInput(scratch: AsciiScratch, toolName = 'Ghostscript'): Promise<void> {
+export async function validateAsciiScratchInput(scratch: AsciiScratch, toolName = 'external tool'): Promise<void> {
   const [rootStats, inputStats, realRootPath, realInputPath] = await Promise.all([
     lstat(scratch.rootPath),
     lstat(scratch.inputPath),

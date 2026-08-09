@@ -148,35 +148,39 @@ async function stageDrawioJob(options: {
     const outputs: PreparedConversionOutput[] = [];
     const usedPageNames = new Set<string>();
     const mupdf = await loadMupdf();
+    // oxlint-disable-next-line no-unreachable-loop -- emit one staged PDF per Draw.io page.
     for (let index = 0; index < pageCount; index += 1) {
       runtime.signal.throwIfAborted();
       const pageDocument = new mupdf.PDFDocument();
-      pageDocument.graftPage(0, sourceDocument, index);
-      if (pageDocument.countPages() !== 1) {
+      try {
+        pageDocument.graftPage(0, sourceDocument, index);
+        if (pageDocument.countPages() !== 1) {
+          throw new Error(`Could not copy Draw.io page ${index + 1}: ${job.sourcePath}`);
+        }
+
+        const stagedOutputPath = path.join(pageDirectory, `${index + 1}.pdf`);
+        await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+        await writeFile(stagedOutputPath, savePdfDocument(pageDocument));
+        await validateGeneratedPdf(stagedOutputPath);
+
+        const outputPath = resolveOutputPath(
+          job.outputTemplate,
+          {
+            ...outputContext,
+            page: uniquePageName(safePageName(pageNames[index], index + 1), usedPageNames),
+          },
+          { allowedExtensions: ['.pdf'] },
+        );
+        await assertWritablePathInWorkspace(outputPath, job.workspacePath);
+        outputs.push({
+          stagedOutputPath,
+          outputPath,
+          workspacePath: job.workspacePath,
+          stagingRootPath: stageRootPath,
+        });
+      } finally {
         pageDocument.destroy();
-        throw new Error(`Could not copy Draw.io page ${index + 1}: ${job.sourcePath}`);
       }
-
-      const stagedOutputPath = path.join(pageDirectory, `${index + 1}.pdf`);
-      await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-      await writeFile(stagedOutputPath, savePdfDocument(pageDocument));
-      await validateGeneratedPdf(stagedOutputPath);
-
-      const outputPath = resolveOutputPath(
-        job.outputTemplate,
-        {
-          ...outputContext,
-          page: uniquePageName(safePageName(pageNames[index], index + 1), usedPageNames),
-        },
-        { allowedExtensions: ['.pdf'] },
-      );
-      await assertWritablePathInWorkspace(outputPath, job.workspacePath);
-      outputs.push({
-        stagedOutputPath,
-        outputPath,
-        workspacePath: job.workspacePath,
-        stagingRootPath: stageRootPath,
-      });
     }
 
     return outputs;

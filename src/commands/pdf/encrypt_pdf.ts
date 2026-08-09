@@ -87,6 +87,11 @@ async function promptForPassword(): Promise<string | undefined> {
     return undefined;
   }
 
+  if (password.includes(',') || password.includes('=')) {
+    await vscode.window.showErrorMessage(userMessage('message.encryptPdf.passwordUnsupportedCharacters'));
+    return undefined;
+  }
+
   return password;
 }
 

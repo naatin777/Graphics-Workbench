@@ -47,8 +47,14 @@ export async function cropPdfFile(
   try {
     const targetPageIndexes = targetToPageIndexes(request.target, document.countPages());
 
+    // oxlint-disable-next-line no-unreachable-loop -- Every selected page must be updated.
     for (const pageIndex of targetPageIndexes) {
-      setPageCropBox(document.loadPage(pageIndex), request.cropBox);
+      const page = document.loadPage(pageIndex);
+      try {
+        setPageCropBox(page, request.cropBox);
+      } finally {
+        page.destroy();
+      }
     }
 
     const saveBuffer = document.saveToBuffer();

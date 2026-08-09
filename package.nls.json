@@ -297,13 +297,6 @@
   "config.outputPath.decryptPdf": "Output file name after decrypting the PDF",
   "config.outputPath.rotatePdf": "Output file name after rotating the PDF",
   "config.outputPath.reorderPdf": "Output file name after reordering the PDF",
-  "quickPick.compressPdf.quality.title": "Select PDF compression quality",
-  "quickPick.compressPdf.quality.placeholder": "Lower quality produces smaller files.",
-  "quickPick.compressPdf.quality.screen": "Smallest file size, lowest quality",
-  "quickPick.compressPdf.quality.ebook": "Good balance of size and quality",
-  "quickPick.compressPdf.quality.printer": "High quality for printing",
-  "quickPick.compressPdf.quality.prepress": "Highest quality, largest file size",
-  "quickPick.compressPdf.quality.default": "Equivalent to eBook",
   "message.progress.compressPdf.title": "Compressing {0} PDF file(s)",
   "message.compressPdf.success": "Compressed {0} PDF file(s).",
   "message.compressPdf.cancelled": "PDF compression was cancelled.",
@@ -314,6 +307,7 @@
   "message.encryptPdf.cancelled": "PDF encryption was cancelled.",
   "message.encryptPdf.failed": "Failed to encrypt PDF: {0}",
   "message.encryptPdf.passwordMismatch": "The passwords do not match.",
+  "message.encryptPdf.passwordUnsupportedCharacters": "PDF passwords cannot contain commas or equals signs.",
   "prompt.encryptPdf.password": "Enter the password to encrypt the PDF",
   "prompt.encryptPdf.passwordConfirmation": "Re-enter the password to confirm",
   "message.progress.decryptPdf.title": "Decrypting {0} PDF file(s)",
@@ -391,5 +385,6 @@
   "message.controls.feature.svgToPdf": "SVG → PDF",
   "message.controls.feature.drawio": "Draw.io",
   "message.controls.feature.mermaid": "Mermaid",
-  "message.controls.checkAgain": "Check again"
+  "message.controls.checkAgain": "Check again",
+  "message.controls.availabilityChecking": "Checking…"
 }

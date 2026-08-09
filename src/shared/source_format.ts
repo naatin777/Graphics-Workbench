@@ -8,7 +8,6 @@ export type SourceFormat =
   | 'avif'
   | 'gif'
   | 'tiff'
-  | 'eps'
   | 'svg'
   | 'mermaid'
   | 'drawio'
@@ -65,9 +64,6 @@ function sourceFormatForExtension(extension: string): SourceFormat | undefined {
     case '.tiff': {
       return 'tiff';
     }
-    case '.eps': {
-      return 'eps';
-    }
     case '.svg': {
       return 'svg';
     }
@@ -97,7 +93,7 @@ export function isRasterImagePath(sourcePath: string): boolean {
 }
 
 export function isSupportedImageInputPath(sourcePath: string): boolean {
-  return isRasterImagePath(sourcePath) || sourceFormatForPath(sourcePath) === 'eps';
+  return isRasterImagePath(sourcePath);
 }
 
 export function isSameSourceFormat(sourcePath: string, outputExtension: string): boolean {

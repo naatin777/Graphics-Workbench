@@ -77,46 +77,53 @@ async function rotatePdf(params: {
   signal.throwIfAborted();
   const mupdf = await loadMupdf();
   const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
-  signal.throwIfAborted();
-  const pageCount = sourceDocument.countPages();
-
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${job.sourcePath}`);
-  }
-
-  const pageIndices = job.pageIndices ?? Array.from({ length: pageCount }, (_, pageIndex) => pageIndex);
-  validatePageIndices(pageIndices, pageCount, job.sourcePath);
-
-  const outputDocument = new mupdf.PDFDocument();
-  const rotateSet = new Set(pageIndices);
-
   try {
-    for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-      signal.throwIfAborted();
-      outputDocument.graftPage(outputDocument.countPages(), sourceDocument, pageIndex);
-      if (rotateSet.has(pageIndex)) {
-        // graftPageは既存のRotate値を引き継ぐため、現在の回転に加算する。
-        // 置換すると「90°回転済みページを90°回転」が無変化になる。
-        const page = outputDocument.loadPage(pageIndex);
-        const currentRotation = readPageRotation(page);
-        page.getObject().put('Rotate', normalizeRotation(currentRotation + job.angle));
+    signal.throwIfAborted();
+    const pageCount = sourceDocument.countPages();
+
+    if (pageCount === 0) {
+      throw new Error(`PDF has no pages: ${job.sourcePath}`);
+    }
+
+    const pageIndices = job.pageIndices ?? Array.from({ length: pageCount }, (_, pageIndex) => pageIndex);
+    validatePageIndices(pageIndices, pageCount, job.sourcePath);
+
+    const outputDocument = new mupdf.PDFDocument();
+    const rotateSet = new Set(pageIndices);
+    try {
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+        signal.throwIfAborted();
+        outputDocument.graftPage(outputDocument.countPages(), sourceDocument, pageIndex);
+        if (rotateSet.has(pageIndex)) {
+          // graftPageは既存のRotate値を引き継ぐため、現在の回転に加算する。
+          // 置換すると「90°回転済みページを90°回転」が無変化になる。
+          const page = outputDocument.loadPage(pageIndex);
+          // oxlint-disable-next-line max-depth -- Each resource needs a local try/finally for deterministic disposal.
+          try {
+            const currentRotation = readPageRotation(page);
+            page.getObject().put('Rotate', normalizeRotation(currentRotation + job.angle));
+          } finally {
+            page.destroy();
+          }
+        }
       }
+      await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+      signal.throwIfAborted();
+      await writeFile(stagedOutputPath, savePdfDocument(outputDocument));
+      signal.throwIfAborted();
+
+      return {
+        stagedOutputPath,
+        outputPath: job.outputPath,
+        workspacePath: job.workspacePath,
+        stagingRootPath,
+      };
+    } finally {
+      outputDocument.destroy();
     }
   } finally {
     sourceDocument.destroy();
   }
-
-  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
-  signal.throwIfAborted();
-  await writeFile(stagedOutputPath, savePdfDocument(outputDocument));
-  signal.throwIfAborted();
-
-  return {
-    stagedOutputPath,
-    outputPath: job.outputPath,
-    workspacePath: job.workspacePath,
-    stagingRootPath,
-  };
 }
 
 function validateJobs(jobs: RotatePdfJob[]): void {

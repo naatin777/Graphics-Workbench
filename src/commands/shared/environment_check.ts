@@ -20,7 +20,7 @@ export interface EnvironmentCheckEntry {
   feature: string;
   /** 利用可能かどうか。 */
   status: 'available' | 'unavailable';
-  /** 状況の詳細（例: "Ghostscript not found"）。 */
+  /** 状況の詳細（例: "rsvg-convert not found"）。 */
   detail: string;
   /** 関連設定のID。未定義なら設定ページを開けない。 */
   settingId?: string;
@@ -80,10 +80,12 @@ export async function runFeatureAvailabilityChecks(
     { id: 'images', available: true, detail: builtinDetail },
   ];
 
-  const svgToPdf = await checkSvgToPdf(options.configuration, timeoutMs, options.signal, probe);
-  entries.push({ id: 'svg-to-pdf', available: svgToPdf.status === 'available', detail: svgToPdf.detail });
-
-  const drawio = await checkTool({
+  const chromePromise = checkChrome(options.configuration, timeoutMs, options.signal, probe);
+  const svgToPdfPromise =
+    options.configuration.convertToPdf.svg.engine() === 'chrome'
+      ? undefined
+      : checkSvgToPdf(options.configuration, timeoutMs, options.signal, probe);
+  const drawioPromise = checkTool({
     feature: userMessage('message.environmentCheck.feature.drawioConversion'),
     toolLabel: userMessage('message.environmentCheck.tool.drawio'),
     executable: readDrawioExecutablePath(options.configuration),
@@ -93,9 +95,7 @@ export async function runFeatureAvailabilityChecks(
     signal: options.signal,
     probe,
   });
-  entries.push({ id: 'drawio', available: drawio.status === 'available', detail: drawio.detail });
-
-  const mermaidCli = await checkTool({
+  const mermaidCliPromise = checkTool({
     feature: userMessage('message.environmentCheck.feature.mermaidCli'),
     toolLabel: userMessage('message.environmentCheck.tool.mermaidCli'),
     executable: readMermaidExecutablePath(options.configuration),
@@ -105,7 +105,15 @@ export async function runFeatureAvailabilityChecks(
     signal: options.signal,
     probe,
   });
-  const chrome = await checkChrome(options.configuration, timeoutMs, options.signal, probe);
+  const [drawio, mermaidCli, chrome, svgToPdf] = await Promise.all([
+    drawioPromise,
+    mermaidCliPromise,
+    chromePromise,
+    svgToPdfPromise,
+  ]);
+  const svgToPdfEntry = svgToPdf ?? { status: chrome.status, detail: chrome.detail };
+  entries.push({ id: 'svg-to-pdf', available: svgToPdfEntry.status === 'available', detail: svgToPdfEntry.detail });
+  entries.push({ id: 'drawio', available: drawio.status === 'available', detail: drawio.detail });
   entries.push({
     id: 'mermaid',
     available: mermaidCli.status === 'available' && chrome.status === 'available',

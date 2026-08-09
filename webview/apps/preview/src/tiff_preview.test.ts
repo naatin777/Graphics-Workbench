@@ -17,6 +17,7 @@ function createController(options: Partial<Parameters<typeof renderTiffPreview>[
     onRenderError: vi.fn(),
     signal,
     ...options,
+    root: options.root ?? container,
   });
   return { controller, container, signal };
 }
@@ -98,13 +99,28 @@ describe('TIFF preview client', () => {
   test('dispose removes the abort listener and ignores later page data', () => {
     const { signal } = new AbortController();
     const removeEventListener = vi.spyOn(signal, 'removeEventListener');
-    const { controller } = createController({ signal });
+    const { controller, container } = createController({ signal });
 
     controller.dispose();
 
     expect(removeEventListener).toHaveBeenCalledWith('abort', expect.any(Function));
     expect(() => controller.setPageSrc(1, 'data:image/png;base64,AAA=')).not.toThrow();
+    expect(container.querySelector<HTMLImageElement>('img[data-pdf-page="1"]')).toBeNull();
     expect(requestPage).toHaveBeenCalledTimes(1);
+  });
+
+  test('大量ページでは表示windowだけをDOMへ保持し、スクロール時にwindowを更新する', () => {
+    const { controller, container } = createController({ pageCount: 100 });
+    Object.defineProperty(container, 'clientHeight', { configurable: true, value: 600 });
+    Object.defineProperty(container, 'scrollTop', { configurable: true, writable: true, value: 7000 });
+    container.dispatchEvent(new Event('scroll'));
+
+    expect(container.querySelectorAll('.preview-page').length).toBeLessThanOrEqual(24);
+    expect(container.querySelector('[data-pdf-page="1"]')).toBeNull();
+    expect(requestPage).toHaveBeenCalledWith(1);
+    expect(requestPage.mock.calls.some(([page]) => page > 1)).toBe(true);
+
+    controller.dispose();
   });
 
   test('observes every page frame so scrolled pages are requested', () => {

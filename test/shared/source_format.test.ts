@@ -10,12 +10,11 @@ import {
 } from '../../src/shared/source_format.js';
 
 suite('source format判定', () => {
-  test('大文字小文字を無視して、拡張子（.jpg/.gif/.tiff/.eps/.mermaid等）と複合拡張子（.drawio.png/.drawio.svg/.drawio）とexcalidrawを単一のsourceFormatForPathで判定し、editable Draw.io画像は出力テンプレート用の論理パスから複合拡張子を除去する', () => {
+  test('大文字小文字を無視して、拡張子（.jpg/.gif/.tiff/.mermaid等）と複合拡張子（.drawio.png/.drawio.svg/.drawio）とexcalidrawを単一のsourceFormatForPathで判定し、editable Draw.io画像は出力テンプレート用の論理パスから複合拡張子を除去する', () => {
     assert.strictEqual(sourceFormatForPath('diagram.DIO.SVG'), 'editable-drawio-svg');
     assert.strictEqual(sourceFormatForPath('image.JPEG'), 'jpeg');
     assert.strictEqual(sourceFormatForPath('image.GIF'), 'gif');
     assert.strictEqual(sourceFormatForPath('image.tiff'), 'tiff');
-    assert.strictEqual(sourceFormatForPath('figure.EPS'), 'eps');
     assert.strictEqual(sourceFormatForPath('chart.mermaid'), 'mermaid');
     assert.strictEqual(sourceFormatForPath('diagram.drawio'), 'drawio');
     assert.strictEqual(isNativeDrawioPath('diagram.DIO'), true);

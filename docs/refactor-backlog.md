@@ -53,7 +53,7 @@
 - Area: conversion operations
 - Type: Readability
 - Concrete problem: raster operationの公開optionsには、legacy test injectionとruntime値（signal、conflict resolver、Output Channel）がまだ混在している。
-- Evidence: `src/operations/conversion/convert_to_png.ts`、`convert_to_jpeg.ts`、`convert_to_webp.ts`、`convert_to_avif.ts`の`ConvertTo*FilesOptions`。
+- Evidence: `src/operations/conversion/raster_conversion.ts`の`ExecuteRasterConversionOptions`と形式別のencoder定義。
 - Trigger: 次に形式別operationの依存を変更するとき、または同じruntime値を追加するとき。
 - Why not now: 今回はstaged batchとcommand runnerの共有境界を先に固定し、既存の安全性テストと直接operation callerを無用に書き換えない。
 - Related files: `src/operations/lifecycle/conversion_runtime.ts`, `src/operations/lifecycle/run_staged_conversion_batch.ts`, `src/operations/conversion/convert_to_*.ts`, `test/operations/convert_to_*_operation.test.ts`
@@ -93,7 +93,7 @@
 - Concrete problem: 並び替え・回転・分割・結合は`readFile`で入力全体を読み込み、`openPdfDocument` / `graftPage` / `saveToBuffer`の同期区間ではキャンセルが反映されない。大きな入力ではExtension Hostのイベントループが塞がり、キャンセルやOOM時のcleanupが遅れる。
 - Evidence: `src/operations/pdf/reorder_pdf.ts`、`rotate_pdf.ts`、`split_pdf.ts`、`merge_pdf.ts`。
 - Trigger: PDF・画像のmupdf/Sharp同期処理が原因の障害報告が再現したとき、またはキャンセル保証を「best effort」から強保証へ上げる必要が出たとき。
-- Why not now: Worker Thread / 子プロセスへの隔離は配布物パッケージ、プロセスライフサイクル、staging/Undo契約をまたぐ大規模変更。現状は外部プロセス（Ghostscript/qpdf等）がキャンセルを強保証し、mupdf系はbest effortと明記（ADR-0028）。
+- Why not now: Worker Thread / 子プロセスへの隔離は配布物パッケージ、プロセスライフサイクル、staging/Undo契約をまたぐ大規模変更。現状はDraw.io、rsvg-convert、pdftocairo、Mermaidなどの外部toolはprocess単位で終了要求を伝播できる一方、MuPDF/Sharpのprocess内処理はbest effortと明記（ADR-0028）。
 - Related files: `src/operations/pdf/*.ts`、`src/operations/lifecycle/run_staged_conversion_batch.ts`。
 - Expected test impact: mupdf系操作のキャンセル・OOM・staging/Undoの全suite。
 - Reversibility: 操作単位で1つずつ隔離できる。

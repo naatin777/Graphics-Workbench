@@ -15,14 +15,13 @@
 | `graphics-workbench.convertToAvif` | AVIF   | AVIF     |
 | `graphics-workbench.convertToGif`  | GIF    | GIF      |
 | `graphics-workbench.convertToTiff` | TIFF   | TIFF     |
-| `graphics-workbench.convertToEps`  | EPS    | EPS      |
 | `graphics-workbench.convertToSvg`  | SVG    | SVG      |
 
 Command PaletteとExplorerの`変換`サブメニューでは、出力形式基準commandを表示する。
 
 ## 入力と処理単位
 
-対応形式は、editable Draw.io画像、PNG、JPEG、WebP、AVIF、GIF、TIFF、SVG、PDF、Mermaid、EPSの組み合わせとする。GIF（`.gif`）とTIFF（`.tif`、`.tiff`）は先頭page/frameだけを入力として扱い、animationやmulti-pageの展開は行わない。EPS（`.eps`）はGhostscriptでPDFへ変換した後、目的形式へ処理する。ネイティブDraw.io（`.drawio`、`.dio`）は専用のPDF commandで扱う。対応していない入力、出力と同じ形式の入力、混在選択に含まれる非対応入力がある場合は、変換全体を開始しない。
+対応形式は、editable Draw.io画像、PNG、JPEG、WebP、AVIF、GIF、TIFF、SVG、PDF、Mermaidの組み合わせとする。通常のラスター形式変換ではGIF/TIFFの先頭page/frameを扱う。`graphics-workbench.convertToPdf` はGIF/TIFFの全page/frameを1つのPDFの各ページへ展開する。EPSは公開変換commandの入力形式として扱わない。ネイティブDraw.io（`.drawio`、`.dio`）は専用のPDF commandで扱う。対応していない入力、出力と同じ形式の入力、混在選択に含まれる非対応入力がある場合は、変換全体を開始しない。
 
 1回のcommand実行を1つの変換batchとして扱う。
 
@@ -43,7 +42,7 @@ PDFを画像またはSVGへ変換する場合はページごとに出力を作�
 
 editable Draw.io画像から画像へ変換する場合は、数式を保持するためPDFを経由する。中間結果は利用者向けの出力名へ現れない。
 
-GIF、TIFF、EPSは入力と出力の両方に対応する。通常のGIF/TIFF入力は先頭page/frameだけを扱い、GIF/WebPのanimation preserve commandとsplit commandだけが全frameを扱う。EPSの変換経路、Ghostscript実行、生成PDF検証は[EPS変換の内部契約](../internal/eps-conversion.md)で定義する。
+GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変換では先頭page/frameを扱い、GIF/WebPのanimation preserve commandとsplit commandは全frameを扱う。Convert to PDFのGIF/TIFF入力は、複数page/frameを全ページPDFへ展開する。ページ寸法が異なるTIFFも各pageを個別に読み出す。
 
 ## 設定と入力名
 
@@ -55,7 +54,7 @@ GIF、TIFF、EPSは入力と出力の両方に対応する。通常のGIF/TIFF�
 
 Mermaid（`.mmd`、`.mermaid`）は出力形式基準commandの入力として扱う。PDF、SVG、PNGなどの出力形式への対応と出力pathは、対応する形式の設定に従う。
 
-Mermaidは同梱の`mmdc` CLIを外部プロセスとして実行する。`graphics-workbench.execPath.chrome`を設定した場合はそのChrome実行ファイルを使い、未設定時はOS標準のChrome実行パスを使う。ユーザーに`mmdc`の別途installは要求しない。
+Mermaidは外部の`mmdc` CLIをプロセスとして実行する。`graphics-workbench.execPath.mermaid`で実行ファイルを指定し、未指定時は`mmdc`をPATHから探す。Chrome/Chromiumは`graphics-workbench.execPath.chrome`で指定でき、未設定時はOS標準の実行ファイルを使う。Mermaid CLIは拡張機能へ同梱せず、利用者が別途インストールする。
 
 SVGからPDFへの`chrome` backendは、同じChrome実行ファイルを`--headless --no-pdf-header-footer --print-to-pdf=...`で直接実行する。`rsvg-convert` backendは既存どおり`graphics-workbench.execPath.rsvgConvert`を使う。
 

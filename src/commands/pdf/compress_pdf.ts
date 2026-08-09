@@ -3,8 +3,7 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
-import { localeMap } from '../../locale_map.js';
-import { compressPdfFiles, type CompressPdfJob, type GhostscriptQuality } from '../../operations/pdf/compress_pdf.js';
+import { compressPdfFiles, type CompressPdfJob } from '../../operations/pdf/compress_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
@@ -13,14 +12,6 @@ import { userMessage } from '../shared/user_messages.js';
 import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { isAbortError } from '../../shared/error.js';
 import { resolveSelectedUris } from '../shared/command_input.js';
-
-const qualityOptions: { quality: GhostscriptQuality; label: string; description: string }[] = [
-  { quality: 'screen', label: 'Screen', description: localeMap('quickPick.compressPdf.quality.screen') },
-  { quality: 'ebook', label: 'eBook', description: localeMap('quickPick.compressPdf.quality.ebook') },
-  { quality: 'printer', label: 'Printer', description: localeMap('quickPick.compressPdf.quality.printer') },
-  { quality: 'prepress', label: 'Prepress', description: localeMap('quickPick.compressPdf.quality.prepress') },
-  { quality: 'default', label: 'Default', description: localeMap('quickPick.compressPdf.quality.default') },
-];
 
 export async function compressPdfCommand(
   uri?: vscode.Uri,
@@ -37,12 +28,6 @@ export async function compressPdfCommand(
 
     const configuration = configureCommandRuntime(dependencies);
     const outputTemplate = configuration.outputPath.compressPdf();
-    const quality = await selectQuality();
-
-    if (quality === undefined) {
-      return;
-    }
-
     const jobs = sourceUris.map((sourceUri) => planCompressPdfJob(sourceUri, outputTemplate));
     await runConversionLifecycle({
       operationName: 'compress-pdf',
@@ -56,7 +41,7 @@ export async function compressPdfCommand(
         cancelledMessage: userMessage('message.compressPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.compressPdf.failed', reason),
       },
-      run: async (runtime) => compressPdfFiles({ jobs, quality, runtime }),
+      run: async (runtime) => compressPdfFiles({ jobs, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -95,13 +80,4 @@ function planCompressPdfJob(sourceUri: vscode.Uri, outputTemplate: string): Comp
       sourcePath,
     }),
   };
-}
-
-async function selectQuality(): Promise<GhostscriptQuality | undefined> {
-  const selected = await vscode.window.showQuickPick(qualityOptions, {
-    title: localeMap('quickPick.compressPdf.quality.title'),
-    placeHolder: localeMap('quickPick.compressPdf.quality.placeholder'),
-  });
-
-  return selected?.quality;
 }

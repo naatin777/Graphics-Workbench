@@ -19,7 +19,6 @@ tool scratchはtransaction stagingの代わりではない。
 
 | Tool         | scratch入力 | scratch出力 | 理由                                                                                     |
 | ------------ | ----------- | ----------- | ---------------------------------------------------------------------------------------- |
-| Ghostscript  | 必須        | cropで必須  | Hindi・emojiを含む入力pathで失敗した                                                     |
 | pdftocairo   | 必須        | 必須        | Unicode入力は実測上成功したが、toolへ渡すpathを一律に隔離し、Unicode出力の文字化けを防ぐ |
 | rsvg-convert | 必須        | 必須        | 調査した非ASCII入出力pathで失敗した                                                      |
 
@@ -27,7 +26,6 @@ tool scratchはtransaction stagingの代わりではない。
 
 - LinuxとmacOS
 - Draw.io
-- qpdf
 - mupdf、sharp、Node.js file APIなどprocess内処理
 - Chrome headless CLIとMermaid CLI
 
@@ -124,7 +122,7 @@ PDF・画像として内容が妥当かを検証する生成物検証は各変�
 ## Safe ModeとUndo
 
 - Safe Modeの競合判断は論理出力に対して行う
-- `PreparedConversionOutput.stagedOutputPath`は通常workspace内transaction stagingを指す。機密PDF qpdf処理だけは、`stagingWorkspacePath`で検証された専用OS一時rootを指す
+- `PreparedConversionOutput.stagedOutputPath`はworkspace内transaction stagingを指す。この仕様のtool scratchはPDF operationのstagingやpassword処理を置き換えない
 - 上書き前backupはworkspace内に置く
 - Undoには論理出力と、`stagingWorkspacePath`を含む検証済みbackupだけを記録する
 - tool scratchとscratch内fileはUndo対象にしない
@@ -184,11 +182,6 @@ Output channelへmappingを出す場合は、意味を明示する。
 - cleanup失敗はwarningにする
 
 platform、temp候補、file APIはテストから注入できるようにし、macOSやLinuxでもWindows分岐をテストする。
-
-### Ghostscript
-
-- 論理入力がUnicodeでもtool引数はcropの`input.pdf`のASCII absolute pathになる
-- non-zero exitとcancelではscratchを残す
 
 ### pdftocairo
 

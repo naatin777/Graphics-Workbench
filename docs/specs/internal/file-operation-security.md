@@ -45,7 +45,7 @@ workspaceの `realpath` を境界として使用し、その実体内の読み�
 
 ## execPath
 
-Ghostscriptなどの `execPath` はworkspace外を許可する。
+外部toolの `execPath` はworkspace外を許可する。
 
 `execPath` はファイル入出力パスの境界検証へ渡さない。
 
@@ -61,16 +61,13 @@ OS一時scratchはworkspace境界とは別の専用境界として扱う。
 - 外部コマンドへworkspace pathを直接渡さない
 - scratchからユーザー指定outputPathへ直接書き込まない
 
-## 機密PDF用OS一時staging
+## PDF暗号化・復号のstaging
 
-暗号化・復号のqpdf処理では、平文になり得る入力copyと完成artifactをworkspaceへ置かない。
+PDFの暗号化・復号はMuPDFをExtension Host内で実行する。passwordは外部processのargvやjob fileへ渡さず、通常のworkspace内transaction staging、Safe Mode、Undoの境界で扱う。MuPDF option parserの制約により、暗号化passwordに`,`または`=`を含める入力は開始前に明示的に拒否する。
 
-- `mkdtemp`で作成した専用rootを使用し、POSIXではroot `0700`、file `0600`を設定する。WindowsではユーザーのOS一時directoryから継承したACLを使用する。
-- staging rootにPID、開始時刻、operationを記録したmanifestを置く。
-- qpdfへ渡す秘密情報はjob-json fileへ書き、process argvにはpasswordを含めない。job-json fileはqpdf実行後に必ず削除する。
-- `PreparedConversionOutput.stagingWorkspacePath`でworkspace境界と専用staging境界を分離する。
-- success時にUndoが参照するrootだけを保持し、failure・cancel・Undo後はrootを削除する。
-- activation時は現ユーザー所有のdirectoryだけを対象に、manifestのPIDが不在で、かつ24時間を超えた専用rootだけを削除する。symlink、現役PIDのroot、manifestを書き込む途中の新しいrootは削除しない。workspace全体や未知のtemporary directoryは走査しない。
+- 入力とstaged outputはworkspace境界を検証する。
+- success時にUndoが参照するstaging rootだけを保持し、failure・cancel・Undo後はrootを削除する。
+- documentは各operationの所有scopeで必ずdestroyする。
 
 ## 競合
 

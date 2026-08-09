@@ -1,6 +1,7 @@
 import { once } from 'node:events';
+import path from 'node:path';
 
-import sharp, { type Sharp } from 'sharp';
+import sharp, { type Metadata, type Sharp } from 'sharp';
 
 // Path-backed inputs must not remain open in libvips's file cache on Windows.
 sharp.cache({ files: 0 });
@@ -38,42 +39,88 @@ export async function readRasterAnimationMetadata(
   sourcePath: string,
   maxInputPixels: number,
 ): Promise<RasterAnimationMetadata | undefined> {
-  const pipeline = openRasterInput(sourcePath, maxInputPixels, undefined, true);
+  const extension = path.extname(sourcePath).toLowerCase();
+  if (extension === '.tif' || extension === '.tiff') {
+    // TIFF page dimensions are allowed to differ. Reading the header without
+    // `animated` avoids asking libvips to assemble incompatible pages.
+    return readRasterAnimationMetadataFromIndependentPages(sourcePath, maxInputPixels);
+  }
+
+  let pipeline: RasterPipeline | undefined;
 
   try {
+    pipeline = openRasterInput(sourcePath, maxInputPixels, undefined, true);
     const metadata = await pipeline.metadata();
-    const pages = metadata.pages ?? 1;
-    const { width } = metadata;
-    const pageHeight = metadata.pageHeight ?? metadata.height;
-    if (
-      !Number.isInteger(pages) ||
-      pages < 1 ||
-      !Number.isInteger(width) ||
-      width < 1 ||
-      !Number.isInteger(pageHeight) ||
-      pageHeight < 1
-    ) {
-      throw new Error(`Could not determine image animation metadata: ${sourcePath}`);
-    }
-    if (pages <= 1) {
-      return undefined;
+    return animationMetadataFromSharpMetadata(metadata, sourcePath);
+  } catch (error) {
+    if (!isRasterPageDimensionError(error)) {
+      throw error instanceof Error ? error : new Error(String(error));
     }
 
-    const result: RasterAnimationMetadata = {
-      pages,
-      width,
-      pageHeight,
-    };
-    if (metadata.delay !== undefined) {
-      result.delay = metadata.delay;
+    // libvips cannot create one animated image when TIFF pages have different
+    // dimensions. The pages can still be decoded independently with `page`,
+    // so use the non-animated header reader to preserve the page count.
+    return await readRasterAnimationMetadataFromIndependentPages(sourcePath, maxInputPixels);
+  } finally {
+    if (pipeline !== undefined) {
+      await closeRasterPipeline(pipeline);
     }
-    if (metadata.loop !== undefined) {
-      result.loop = metadata.loop;
-    }
-    return result;
+  }
+}
+
+function animationMetadataFromSharpMetadata(
+  metadata: Metadata,
+  sourcePath: string,
+): RasterAnimationMetadata | undefined {
+  const pages = metadata.pages ?? 1;
+  const { width } = metadata;
+  const pageHeight = metadata.pageHeight ?? metadata.height;
+  if (
+    !Number.isInteger(pages) ||
+    pages < 1 ||
+    !Number.isInteger(width) ||
+    width < 1 ||
+    !Number.isInteger(pageHeight) ||
+    pageHeight < 1
+  ) {
+    throw new Error(`Could not determine image animation metadata: ${sourcePath}`);
+  }
+  if (pages <= 1) {
+    return undefined;
+  }
+
+  const result: RasterAnimationMetadata = {
+    pages,
+    width,
+    pageHeight,
+  };
+  if (metadata.delay !== undefined) {
+    result.delay = metadata.delay;
+  }
+  if (metadata.loop !== undefined) {
+    result.loop = metadata.loop;
+  }
+  return result;
+}
+
+async function readRasterAnimationMetadataFromIndependentPages(
+  sourcePath: string,
+  maxInputPixels: number,
+): Promise<RasterAnimationMetadata | undefined> {
+  const pipeline = openRasterInput(sourcePath, maxInputPixels);
+  try {
+    const metadata = await pipeline.metadata();
+    return animationMetadataFromSharpMetadata(metadata, sourcePath);
   } finally {
     await closeRasterPipeline(pipeline);
   }
+}
+
+function isRasterPageDimensionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /page\s+\d+\s+differs\s+from\s+page\s+\d+|pages?\s+(?:have|has)\s+different\s+(?:dimensions|sizes)/iu.test(
+    message,
+  );
 }
 
 export async function closeRasterPipeline(pipeline: RasterPipeline): Promise<void> {

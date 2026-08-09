@@ -8,12 +8,11 @@ command adapterは`uri`と`uris`を受け取り、`uris`に1件以上ある場�
 
 ## Processing boundary
 
-- Ghostscriptは各ページの`HiResBoundingBox`取得にだけ使用する。
-- Ghostscriptへ渡すPDFパスは`execFile`の独立した引数とし、PostScriptコードへ埋め込まない。
-- Ghostscriptの`-c`、`--permit-file-read`、pdfwrite deviceは使用しない。
-- 元PDFはworkspace内のoperation stagingへコピーし、コピーをmupdfで処理する。
-- BoundingBoxとcommandから受け取ったmarginを使ってページを更新し、mupdfで完成artifactを作る。
-- 複数PDFの処理は`p-limit`で同時実行数を制限する。
+- 元PDFはworkspace内のoperation stagingへコピーし、コピーをMuPDFで処理する。
+- 各ページを白背景のDeviceRGB pixmapへrenderし、純白以外のpixel boundsを検出する。
+- 検出したpixel boundsをページのtransformの逆変換でPDF座標へ戻し、commandから受け取ったmarginを加えてCropBoxを更新する。
+- ページのoffset MediaBoxとrotationを考慮する。これはraster samplingによるpdfcrop-compatibleな挙動であり、Ghostscriptのbboxとbit-perfectに一致することは保証しない。
+- 大きな同期pixel scanのExtension Host隔離は[refactor backlog](../../refactor-backlog.md)の継続課題とする。
 
 ## Staging and commit boundary
 
