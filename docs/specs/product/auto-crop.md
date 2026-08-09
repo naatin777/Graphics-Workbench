@@ -25,6 +25,8 @@
 
 空白ページは元のページサイズを維持する。ページの分割や再結合は行わない。
 
+content検出はpdfcrop互換のsemanticsとする。ページを白背景へrenderし、純白（`#FFFFFF`）以外のvisible pixelのboundsだけを余白として取り除く。白いbackground rectangleはcontentとして扱わない。検出解像度はページごとのメモリ制限内で調整する。
+
 ## キャンセルと取り消し
 
 キャンセルされた場合は指定出力先へ結果を反映せず、キャンセルとして通知する。変換成功後は、直前の変換として[Undo仕様](undo-last-conversion.md)の対象にする。

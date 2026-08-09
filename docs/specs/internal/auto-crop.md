@@ -8,9 +8,10 @@ command adapterは`uri`と`uris`を受け取り、`uris`に1件以上ある場�
 
 ## Processing boundary
 
-- Ghostscriptは各ページの`HiResBoundingBox`取得にだけ使用する。
-- Ghostscriptへ渡すPDFパスは`execFile`の独立した引数とし、PostScriptコードへ埋め込まない。
-- Ghostscriptの`-c`、`--permit-file-read`、pdfwrite deviceは使用しない。
+- 各ページのcontent boundsはmupdfの`findVisibleContentBounds`で検出する。ページを白背景へrenderし、純白（`#FFFFFF`）以外のvisible pixelのboundsを取得する。これはpdfcrop / Ghostscript bbox互換のsemanticsで、白い描画objectは「墨」として扱わない（全面の白rectangleがcontent扱いにならない）。
+- content検出は`cropPdf.auto`、Draw.io PDFの余白除去（`renderPdfPageToPng(cropContent)`）、`hasPdfPageContent`で共通のdetectorを共有する。detectorは`DisplayList.getBounds()`を使わない（mediaboxを返すため使えない）。
+- 検出用Pixmapは5000万pixelを超えないよう解像度を下げる。メモリ保護であり、入力制限やCrop禁止の判定ではない。
+- Pixmap buffer長がDeviceRGB layout（3 bytes/pixel）と矛盾する場合はfallbackせずthrowする。
 - 元PDFはworkspace内のoperation stagingへコピーし、コピーをmupdfで処理する。
 - BoundingBoxとcommandから受け取ったmarginを使ってページを更新し、mupdfで完成artifactを作る。
 - 複数PDFの処理は`p-limit`で同時実行数を制限する。
