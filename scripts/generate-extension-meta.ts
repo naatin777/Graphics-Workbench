@@ -16,6 +16,12 @@ type JsonSchema = {
 };
 type ManifestCommand = { command: string; title?: string; category?: string };
 type ManifestMenu = { command?: string; submenu?: string; group?: string; when?: string };
+type CustomEditorContribution = {
+  viewType: string;
+  displayName?: string;
+  selector?: { filenamePattern?: string; filename?: string }[];
+  priority?: 'default' | 'option';
+};
 export type PackageManifest = {
   name: string;
   publisher?: string;
@@ -27,6 +33,7 @@ export type PackageManifest = {
     configuration: { properties: Record<string, JsonSchema> };
     menus?: Record<string, ManifestMenu[]>;
     submenus?: { id: string; label?: string }[];
+    customEditors?: CustomEditorContribution[];
   };
 };
 type ConfigNode =
@@ -429,6 +436,28 @@ export function renderSubmenuContributions(packageJson: PackageManifest): string
   );
 }
 
+export function renderCustomEditorContributions(packageJson: PackageManifest): string {
+  const customEditors = packageJson.contributes.customEditors ?? [];
+  const entries = customEditors.map((editor) => {
+    const displayNameKey = nlsKey(editor.displayName, `Custom editor ${editor.viewType}`);
+    const selectors = editor.selector ?? [];
+    const selectorEntries = selectors.map((selector) => {
+      const parts = [];
+      if (selector.filenamePattern !== undefined) {
+        parts.push(`filenamePattern: ${quote(selector.filenamePattern)}`);
+      }
+      if (selector.filename !== undefined) {
+        parts.push(`filename: ${quote(selector.filename)}`);
+      }
+      return `{ ${parts.join(', ')} }`;
+    });
+    return `  ${quote(editor.viewType)}: {\n    displayNameKey: ${quote(
+      displayNameKey,
+    )},\n    priority: ${quote(editor.priority ?? 'default')},\n    selectors: [${selectorEntries.join(', ')}],\n  },`;
+  });
+  return `export const customEditorContributions = {\n${entries.join('\n')}\n} as const;\n`;
+}
+
 export function renderExternalToolTimeoutKeys(packageJson: PackageManifest, extensionPrefix: string): string {
   const keys = Object.keys(packageJson.contributes.configuration.properties)
     .map((fullKey) => fullKey.slice(extensionPrefix.length))
@@ -500,6 +529,27 @@ export function validateManifest(packageJson: PackageManifest, extensionPrefix: 
   for (const submenuId of submenuIds) {
     if (!submenuId.startsWith(extensionPrefix)) {
       throw new Error(`Submenu ID is outside the extension namespace: ${submenuId}`);
+    }
+  }
+
+  const customEditorViewTypes = (packageJson.contributes.customEditors ?? []).map((editor) => editor.viewType);
+  assertNoDuplicateIds(customEditorViewTypes, 'contributes.customEditors');
+  for (const editor of packageJson.contributes.customEditors ?? []) {
+    if (!editor.viewType.startsWith(extensionPrefix)) {
+      throw new Error(`Custom editor viewType is outside the extension namespace: ${editor.viewType}`);
+    }
+    nlsKey(editor.displayName, `Custom editor ${editor.viewType}`);
+    const priority = editor.priority ?? 'default';
+    if (priority !== 'default' && priority !== 'option') {
+      throw new Error(`Custom editor ${editor.viewType} has an invalid priority: ${String(priority)}`);
+    }
+    if (editor.selector === undefined || editor.selector.length === 0) {
+      throw new Error(`Custom editor ${editor.viewType} must declare at least one selector.`);
+    }
+    for (const selector of editor.selector) {
+      if (selector.filenamePattern === undefined && selector.filename === undefined) {
+        throw new Error(`Custom editor ${editor.viewType} selector must match a filename pattern.`);
+      }
     }
   }
 
@@ -583,6 +633,8 @@ export function generate(packageJson: PackageManifest): string {
     renderCommandContributions(packageJson) +
     '\n' +
     renderSubmenuContributions(packageJson) +
+    '\n' +
+    renderCustomEditorContributions(packageJson) +
     '\n' +
     renderExternalToolTimeoutKeys(packageJson, extensionPrefix) +
     '\n' +

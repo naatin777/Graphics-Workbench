@@ -28,6 +28,7 @@ export function defineWebviewTestConfig(config: WebviewTestConfig): ReturnType<t
           webviewRoot,
           '../src/shared/protocols/reorder_pdf_protocol.ts',
         ),
+        '@graphics-workbench-preview-protocol': resolve(webviewRoot, '../src/shared/protocols/preview_protocol.ts'),
       },
     },
     test: {

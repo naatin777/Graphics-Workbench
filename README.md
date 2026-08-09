@@ -58,12 +58,17 @@ Convert confidently. Existing files are protected by default, and the latest gra
 
 ### PDF operations
 
+- **Preview**: view a PDF in a read-only preview (`Reopen Editor With...` → Graphics Workbench PDF Preview)
 - **Crop**: remove margins automatically or with explicit settings and a preview
 - **Split**: split a PDF into single-page PDFs
 - **Merge**: merge multiple PDFs into one (order can be reviewed)
 - **Rotate**: rotate pages by 90°, 180°, or 270°
 - **Reorder**: change the page order interactively
 - **Compress / Encrypt / Decrypt**: reduce size, or protect with a password
+
+### Preview
+
+- **TIFF preview**: view single- and multi-page TIFF files in a read-only preview (`Reopen Editor With...` → Graphics Workbench TIFF Preview)
 
 ### Conversion
 

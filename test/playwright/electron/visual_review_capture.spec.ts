@@ -32,6 +32,13 @@ import {
 import { captureMergePdfScreenshot, openMergePdfConfigure } from './helpers/merge_pdf_webview.js';
 import { captureSplitPdfScreenshot, openSplitPdfConfigure } from './helpers/split_pdf_webview.js';
 import {
+  applyPreviewTheme,
+  capturePreviewScreenshot,
+  copyTiffPreviewFixture,
+  openPreviewEditor,
+  tiffPreviewFixtureFileName,
+} from './helpers/preview_webview.js';
+import {
   attachElectronDiagnostics,
   disposeElectronTest,
   writeVscodeUserSettings,
@@ -52,6 +59,11 @@ const captureThemes = [
   { id: 'high-contrast-light', colorTheme: 'Default High Contrast Light', themeClass: 'vscode-high-contrast-light' },
   { id: 'red', colorTheme: 'Red', themeClass: 'vscode-dark' },
   { id: 'abyss', colorTheme: 'Abyss', themeClass: 'vscode-dark' },
+] as const;
+
+const previewCaptureThemes = [
+  { id: 'dark', colorTheme: 'Default Dark Modern', themeClass: 'vscode-dark' },
+  { id: 'light', colorTheme: 'Default Light Modern', themeClass: 'vscode-light' },
 ] as const;
 
 let preparedElectronTest: PreparedElectronTest | undefined;
@@ -152,6 +164,25 @@ async function captureViewportThemes(options: {
           ? await captureMergePdfScreenshot(env.app.window, body)
           : await captureSplitPdfScreenshot(env.app.window, body);
     const outputPath = await writeVisualReviewScreenshot(viewport, `${screen}-configure-${theme.id}.png`, screenshot);
+    console.log(`Visual review image written: ${outputPath}`);
+  }
+}
+
+async function capturePreviewThemes(options: {
+  body: Locator;
+  canvases: Locator;
+  env: ElectronTestEnv;
+  type: 'pdf' | 'tiff';
+  userSettingsPath: string;
+  viewport: VisualReviewViewport;
+}): Promise<void> {
+  const { body, canvases, env, type, userSettingsPath, viewport } = options;
+
+  for (const theme of previewCaptureThemes) {
+    await applyPreviewTheme(userSettingsPath, theme, body);
+    const snapshotPrefix = join(env.directories.temporaryRoot, `${type}-preview-${theme.id}`);
+    const screenshot = await capturePreviewScreenshot(env.app.window, body, canvases, { snapshotPrefix, type });
+    const outputPath = await writeVisualReviewScreenshot(viewport, `${type}-preview-${theme.id}.png`, screenshot);
     console.log(`Visual review image written: ${outputPath}`);
   }
 }
@@ -301,6 +332,110 @@ test('capture Split PDF Configure screenshots for visual review', async ({ playw
       canvases: undefined,
       env,
       screen: 'split',
+      userSettingsPath,
+      viewport: 'narrow',
+    });
+  } catch (error) {
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
+test('capture PDF preview screenshots for visual review', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(300_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(testInfo),
+      extraSettings: {
+        'workbench.editorAssociations': {
+          '*.pdf': 'graphics-workbench.pdf.preview',
+        },
+      },
+    });
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const { body, canvases } = await openPreviewEditor(env.app.window, cropConfigureFixture.fileName, {
+      waitFor: 'pdf',
+    });
+    const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
+
+    await capturePreviewThemes({
+      body,
+      canvases,
+      env,
+      type: 'pdf',
+      userSettingsPath,
+      viewport: 'wide',
+    });
+
+    await resizeToNarrow(env, body);
+    await capturePreviewThemes({
+      body,
+      canvases,
+      env,
+      type: 'pdf',
+      userSettingsPath,
+      viewport: 'narrow',
+    });
+  } catch (error) {
+    await attachDiagnostics(testInfo, env, error, consoleMessages);
+    throw error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (env) {
+      await disposeElectronTest(env.app.electronApp, env.directories.temporaryRoot);
+    }
+  }
+});
+
+test('capture TIFF preview screenshots for visual review', async ({ playwright }, testInfo) => {
+  testInfo.setTimeout(300_000);
+  let env: ElectronTestEnv | undefined;
+  const consoleMessages: string[] = [];
+
+  try {
+    env = await setupElectronTest(playwright._electron, packagedVsixPath, {
+      ...preparedOptions(testInfo),
+      extraSettings: {
+        'workbench.editorAssociations': {
+          '*.tif': 'graphics-workbench.tiff.preview',
+          '*.tiff': 'graphics-workbench.tiff.preview',
+        },
+      },
+    });
+    env.app.electronApp.on('console', (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    await copyTiffPreviewFixture(env.directories.workspacePath);
+    const { body, canvases } = await openPreviewEditor(env.app.window, tiffPreviewFixtureFileName, {
+      waitFor: 'tiff',
+    });
+    const userSettingsPath = join(env.directories.userDataDir, 'User', 'settings.json');
+
+    await capturePreviewThemes({
+      body,
+      canvases,
+      env,
+      type: 'tiff',
+      userSettingsPath,
+      viewport: 'wide',
+    });
+
+    await resizeToNarrow(env, body);
+    await capturePreviewThemes({
+      body,
+      canvases,
+      env,
+      type: 'tiff',
       userSettingsPath,
       viewport: 'narrow',
     });

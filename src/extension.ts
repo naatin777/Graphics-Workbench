@@ -9,6 +9,7 @@ import { initializeUndoHistory } from './commands/lifecycle/undo_last_conversion
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
 import { insertionDocumentSelectors, insertionFormats } from './edit_provider/insertion_format.js';
+import { registerPreviewCustomEditors } from './commands/preview/preview_custom_editor.js';
 import { getExtensionConfiguration } from './config/extension_configuration.js';
 import { extensionIdentity } from './generated/extension_manifest.js';
 import {
@@ -42,6 +43,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   registerCommands(context, dependencies, outputChannel);
+  registerPreviewCustomEditors(context, dependencies);
 
   for (const format of insertionFormats) {
     const documentSelector = insertionDocumentSelectors[format];

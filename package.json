@@ -37,20 +37,22 @@
     "format:fix": "oxfmt --config ./oxfmt.config.ts --write src test webview/apps webview/shared webview/excalidraw package.json tsconfig.json tsconfig.test.json webview/tsconfig.json webview/tsconfig.test.json webview/*.ts scripts .github/scripts/*.mjs .vscode-test.mjs playwright.config.mjs commitlint.config.ts oxfmt.config.ts oxlint.config.ts",
     "compile": "tsc -p tsconfig.json",
     "compile:test": "tsc -p tsconfig.test.json",
-    "compile:webview": "npm run compile:webview:crop_pdf && npm run compile:webview:merge_pdf && npm run compile:webview:split_pdf && npm run compile:webview:rotate_pdf && npm run compile:webview:reorder_pdf",
+    "compile:webview": "npm run compile:webview:crop_pdf && npm run compile:webview:merge_pdf && npm run compile:webview:split_pdf && npm run compile:webview:rotate_pdf && npm run compile:webview:reorder_pdf && npm run compile:webview:preview",
     "compile:excalidraw": "vite build --config webview/excalidraw/vite.config.ts",
     "compile:webview:crop_pdf": "vite build --config webview/apps/crop_pdf/vite.config.ts",
     "compile:webview:merge_pdf": "vite build --config webview/apps/merge_pdf/vite.config.ts",
     "compile:webview:split_pdf": "vite build --config webview/apps/split_pdf/vite.config.ts",
     "compile:webview:rotate_pdf": "vite build --config webview/apps/rotate_pdf/vite.config.ts",
     "compile:webview:reorder_pdf": "vite build --config webview/apps/reorder_pdf/vite.config.ts",
-    "test:webview": "npm run test:webview:crop_pdf && npm run test:webview:merge_pdf && npm run test:webview:split_pdf && npm run test:webview:rotate_pdf && npm run test:webview:reorder_pdf",
-    "test:webview:coverage": "npm run test:webview:crop_pdf -- --coverage && npm run test:webview:merge_pdf -- --coverage && npm run test:webview:split_pdf -- --coverage && npm run test:webview:rotate_pdf -- --coverage && npm run test:webview:reorder_pdf -- --coverage",
+    "compile:webview:preview": "vite build --config webview/apps/preview/vite.config.ts",
+    "test:webview": "npm run test:webview:crop_pdf && npm run test:webview:merge_pdf && npm run test:webview:split_pdf && npm run test:webview:rotate_pdf && npm run test:webview:reorder_pdf && npm run test:webview:preview",
+    "test:webview:coverage": "npm run test:webview:crop_pdf -- --coverage && npm run test:webview:merge_pdf -- --coverage && npm run test:webview:split_pdf -- --coverage && npm run test:webview:rotate_pdf -- --coverage && npm run test:webview:reorder_pdf -- --coverage && npm run test:webview:preview -- --coverage",
     "test:webview:crop_pdf": "vitest run --config webview/apps/crop_pdf/vitest.config.ts",
     "test:webview:merge_pdf": "vitest run --config webview/apps/merge_pdf/vitest.config.ts",
     "test:webview:split_pdf": "vitest run --config webview/apps/split_pdf/vitest.config.ts",
     "test:webview:rotate_pdf": "vitest run --config webview/apps/rotate_pdf/vitest.config.ts",
     "test:webview:reorder_pdf": "vitest run --config webview/apps/reorder_pdf/vitest.config.ts",
+    "test:webview:preview": "vitest run --config webview/apps/preview/vitest.config.ts",
     "build": "npm run clean && npm run compile && npm run compile:test && npm run compile:webview && npm run compile:excalidraw",
     "check": "npm run lint && npm run format && npm run typecheck && npm run typecheck:test && npm run typecheck:webview && npm run typecheck:webview:test",
     "check:nls": "node scripts/check-nls.mjs",
@@ -593,6 +595,31 @@
       {
         "id": "graphics-workbench.convert",
         "label": "%submenu.convert%"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "graphics-workbench.pdf.preview",
+        "displayName": "%customEditor.pdf.preview.displayName%",
+        "selector": [
+          {
+            "filenamePattern": "*.pdf"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "graphics-workbench.tiff.preview",
+        "displayName": "%customEditor.tiff.preview.displayName%",
+        "selector": [
+          {
+            "filenamePattern": "*.tif"
+          },
+          {
+            "filenamePattern": "*.tiff"
+          }
+        ],
+        "priority": "option"
       }
     ],
     "configuration": {
@@ -1281,6 +1308,8 @@
     }
   },
   "activationEvents": [
+    "onCustomEditor:graphics-workbench.pdf.preview",
+    "onCustomEditor:graphics-workbench.tiff.preview",
     "onLanguage:latex",
     "onLanguage:quarkdown",
     "onLanguage:tex",

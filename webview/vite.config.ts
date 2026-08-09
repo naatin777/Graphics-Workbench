@@ -68,6 +68,13 @@ export function defineWebviewConfig(config: WebviewBuildConfig): UserConfig {
           'protocols',
           'reorder_pdf_protocol.ts',
         ),
+        '@graphics-workbench-preview-protocol': resolve(
+          projectRoot,
+          'src',
+          'shared',
+          'protocols',
+          'preview_protocol.ts',
+        ),
       },
     },
 
