@@ -1,0 +1,4 @@
+interface:
+  display_name: "Graphics Workbench Fixture Oracles"
+  short_description: "固定fixtureとpixel比較で変換テストを整備"
+  default_prompt: "Use $graphics-workbench-fixture-oracles to add or strengthen fixed-input pixel oracle tests in this repository."
