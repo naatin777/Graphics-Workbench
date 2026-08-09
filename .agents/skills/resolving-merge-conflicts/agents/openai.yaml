@@ -1,4 +1,0 @@
-interface:
-  display_name: "Resolving Merge Conflicts"
-  short_description: "Resolve merge and rebase conflicts"
-  default_prompt: "Use $resolving-merge-conflicts to inspect and safely resolve the active Git conflicts."
