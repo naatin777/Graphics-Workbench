@@ -7,7 +7,6 @@ import { isRecord } from '../../shared/protocols/protocol_utils.js';
 
 const STAGING_PREFIX = 'graphics-workbench-pdf-';
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
-const MAX_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_ID = randomUUID();
 const EXTENSION_HOST_STARTED_AT = Date.now();
 
@@ -81,10 +80,9 @@ export async function cleanupStaleSecurePdfStagingRoots(now: number = Date.now()
         const startedAt = manifest?.startedAt ?? 0;
         const processIsAlive = manifest?.pid !== undefined && isProcessAlive(manifest.pid);
         const age = startedAt > 0 ? now - startedAt : await rootAge(rootPath, now);
-        // Keep young roots and roots belonging to a live extension host, but
-        // enforce an absolute retention limit so PID reuse cannot protect a
-        // sensitive directory forever.
-        if (age < STALE_AFTER_MS || (processIsAlive && age < MAX_RETENTION_MS)) {
+        // A live process can own a long-running conversion. Fixed retention is
+        // only safe after its PID is no longer active.
+        if (age < STALE_AFTER_MS || processIsAlive) {
           return;
         }
 

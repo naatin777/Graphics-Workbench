@@ -14,6 +14,13 @@
 - 作業開始時は `git worktree add` でmainを起点に新ブランチのworktreeを作成する。
 - 現在のworktreeでの直接作業は、明示的に指示された場合のみ行う。
 
+## 検証環境
+
+- ローカルでVS Code / Electronのwindowを開くtestは、画面を占有しないようDockerで実行する。`npm test`、coverage、packaged Playwright smokeは`npm run test:docker -- <npm-script>`を使う。
+- build、check、`test:scripts`、Webview Vitestなどwindowを開かない処理はhostで実行できる。
+- GitHub ActionsのOS別jobは各runner上でnative実行する。
+- full Playwright、visual capture、release検証、platform固有問題のデバッグをhostで実行する場合は、windowが開くことを前提に必要時だけ行う。
+
 ## スコープ
 
 - 1つのタスクは、検証可能な1つの目的に集中させる。
@@ -44,3 +51,9 @@
 
 - バグリスク、レビューコスト、反復的な変更コスト、テスト困難性を具体的に減らす場合のみ行う。
 - コードをきれいに見せることだけを理由に行わない。
+
+## Code Review Rules
+
+- ロールバック対象はユーザーファイルの変更開始直前に追加し、復元前に現在状態が自処理の期待する中間状態か再検証する。外部変更の疑いがある場合は上書き・削除せず、recovery copyを保持する。
+- commitとUndo記録の境界ではcommit時のdigestを引き継ぎ、記録直前の外部変更を変換結果として再定義しない。
+- cleanup失敗を成功扱いで無視して追跡情報を捨てない。残存artifactはmanifest等へ保持し、次回cleanupで再試行可能にする。

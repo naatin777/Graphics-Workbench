@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdir, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtempDisposable, readFile, rename, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -14,7 +14,7 @@ suite('クリップボード画像保存で、上書き時の退避・復旧処�
     const clipboardRoot = path.join(workspacePath.path, '.graphics-workbench', 'clipboard-paste', runId);
     const unrelatedRoot = path.join(workspacePath.path, '.graphics-workbench', 'other', 'active');
     const lines: string[] = [];
-    let copyCount = 0;
+    const controller = new AbortController();
 
     await writeFile(outputPath, 'original image');
     await mkdir(unrelatedRoot, { recursive: true });
@@ -31,29 +31,30 @@ suite('クリップボード画像保存で、上書き時の退避・復旧処�
         },
         {
           resolveConflicts: async () => 'overwrite',
+          signal: controller.signal,
           outputChannel: { appendLine: (line) => lines.push(line) },
         },
         {
           commit: {
             copyFile: async (source, destination, flags) => {
-              copyCount += 1;
+              await copyFile(source, destination, flags);
 
-              if (destination !== outputPath && !destination.endsWith('.previous') && copyCount === 2) {
-                throw new Error('injected commit copy failure');
-              }
-
-              if (destination === outputPath && copyCount === 3) {
+              if (destination === outputPath) {
                 throw new Error('injected rollback copy failure');
               }
-
-              await copyFile(source, destination, flags);
+            },
+            rename: async (source, destination) => {
+              await rename(source, destination);
+              if (destination === outputPath) {
+                controller.abort(new Error('injected post-commit failure'));
+              }
             },
           },
         },
       ),
       (error: unknown) => {
         assert.ok(error instanceof CommitRollbackError);
-        assert.match(error.originalError.message, /injected commit copy failure/);
+        assert.match(error.originalError.message, /injected post-commit failure/);
         assert.strictEqual(error.rollbackErrors[0]?.outputPath, outputPath);
         assert.match(error.rollbackErrors[0]?.error.message ?? '', /injected rollback copy failure/);
         return true;

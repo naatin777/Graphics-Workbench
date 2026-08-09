@@ -37,7 +37,7 @@ export interface SavedClipboardImage {
 }
 
 export interface SaveClipboardImageTestOverrides {
-  commit?: Pick<CommitConversionOutputsOptions, 'copyFile' | 'rm'>;
+  commit?: Pick<CommitConversionOutputsOptions, 'copyFile' | 'rename' | 'rm'>;
 }
 
 /** Saves one clipboard payload through the same staging and commit boundary as conversions. */

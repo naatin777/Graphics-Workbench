@@ -13,7 +13,7 @@
 // - Undo時のハッシュ検証・ロールバック（既存のundo_last_conversionテストが対象）
 
 import assert from 'node:assert/strict';
-import { access, mkdir, mkdtempDisposable, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtempDisposable, readFile, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -41,6 +41,38 @@ suite('Undo用に保存した変換前バックアップの記録と期限管理
     await assert.rejects(access(first.previousFilePath));
     await assert.doesNotReject(access(second.previousFilePath));
     await assert.doesNotReject(access(third.previousFilePath));
+  });
+
+  test('workspace外の機密PDF用rootにある上書き前バックアップをUndo履歴へ記録すると、生成artifactだけを削除してバックアップとmanifestを保持し、Undo後は元内容を復元してroot全体を削除する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
+    await using stagingRoot = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-secure-undo-root-'));
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    const previousFilePath = path.join(stagingRoot.path, 'output.previous');
+    const manifestPath = path.join(stagingRoot.path, 'manifest.json');
+    const generatedArtifactPath = path.join(stagingRoot.path, 'generated.pdf');
+    await writeFixture(outputPath, 'generated');
+    await writeFixture(previousFilePath, 'original');
+    await writeFixture(manifestPath, '{"operation":"decrypt"}');
+    await writeFixture(generatedArtifactPath, 'temporary generated artifact');
+    const manager = new UndoHistoryManager({ now: () => 0 });
+
+    const recordId = await manager.record([
+      {
+        outputPath,
+        workspacePath: workspacePath.path,
+        previousFilePath,
+        stagingRootPath: stagingRoot.path,
+        stagingWorkspacePath: stagingRoot.path,
+      },
+    ]);
+
+    assert.strictEqual(await readFile(previousFilePath, 'utf8'), 'original');
+    assert.strictEqual(await readFile(manifestPath, 'utf8'), '{"operation":"decrypt"}');
+    await assert.rejects(access(generatedArtifactPath));
+
+    assert.strictEqual(await manager.undo(recordId), 'done');
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
+    await assert.rejects(access(stagingRoot.path));
   });
 
   test('保存期間1000msを過ぎた変換履歴は次の変換履歴追加時に追い出してバックアップを削除する', async () => {
@@ -92,6 +124,31 @@ suite('Undo用に保存した変換前バックアップの記録と期限管理
 
     await assert.doesNotReject(access(first.previousFilePath));
     assert.strictEqual(readManifestEntries(storage).length, 1);
+  });
+
+  test('保存期限を過ぎたmanifestのrootがworkspace外を指すsymlinkへ差し替えられcleanupを拒否された場合は、失敗したrootの記録をmanifestへ残して次回初期化で再試行可能にする', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
+    await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-outside-'));
+    const rootPath = path.join(workspacePath.path, 'stale-root');
+    await symlink(outsidePath.path, rootPath);
+    const storage = new MemoryManifestStorage();
+    await storage.update(UNDO_HISTORY_MANIFEST_KEY, {
+      version: 1,
+      entries: [
+        {
+          id: 'stale-record',
+          createdAt: 0,
+          roots: [{ workspacePath: workspacePath.path, rootPath }],
+        },
+      ],
+    });
+    const manager = new UndoHistoryManager({ storage, retentionMs: 1000, now: () => 5000 });
+
+    await manager.initialize();
+
+    assert.strictEqual(readManifestEntries(storage).length, 1);
+    await assert.doesNotReject(access(rootPath));
+    await assert.doesNotReject(access(outsidePath.path));
   });
 
   test('再起動後に新しい変換履歴を追加しても、保存期限内の孤立保存先記録のバックアップは保持してマニフェストに2件記録する', async () => {

@@ -1,9 +1,18 @@
-import { copyFile, mkdir, rm } from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
+import { access, copyFile, mkdir, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import {
+  assertExistingPathInWorkspace,
+  assertPathIsNotSymbolicLink,
+  assertWritablePathInWorkspace,
+} from '../../security/workspace_path.js';
 
-import { cleanupConversionArtifacts, type ConversionArtifactRoot } from './cleanup_conversion_artifacts.js';
+import {
+  cleanupConversionArtifacts,
+  type CleanupResult,
+  type ConversionArtifactRoot,
+} from './cleanup_conversion_artifacts.js';
 import { restoreFileMetadata, type PreviousFileMetadata } from './commit_conversion_outputs.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import { hashFile } from '../input/file_content_hash.js';
@@ -11,6 +20,8 @@ import { hashFile } from '../input/file_content_hash.js';
 export interface ConversionOutput {
   outputPath: string;
   workspacePath: string;
+  /** Expected committed contents, when the output came from the commit coordinator. */
+  sha256?: string;
   previousFilePath?: string;
   previousFileMetadata?: PreviousFileMetadata;
   stagingRootPath?: string;
@@ -23,10 +34,47 @@ export interface ConversionUndoRecord {
   outputs: ConversionUndoOutput[];
 }
 
+export interface UndoConversionOutputsTestOverrides {
+  removeRollbackRoot?: typeof rm;
+}
+
+export class UndoCleanupError extends Error {
+  readonly originalError: Error;
+  readonly cleanupResult: CleanupResult;
+
+  constructor(originalError: unknown, cleanupResult: CleanupResult) {
+    const normalizedError = originalError instanceof Error ? originalError : new Error(String(originalError));
+    super(normalizedError.message, { cause: normalizedError });
+    this.name = 'UndoCleanupError';
+    this.originalError = normalizedError;
+    this.cleanupResult = cleanupResult;
+  }
+}
+
 interface ConversionUndoOutput extends ConversionOutput {
   sha256: string;
   previousSha256?: string;
 }
+
+interface RollbackCopy {
+  output: ConversionUndoOutput;
+  rollbackPath: string;
+  rollbackRootPath: string;
+}
+
+interface FileIdentity {
+  dev: number;
+  ino: number;
+}
+
+interface ValidatedUndoPaths {
+  outputIdentity: FileIdentity;
+  previousIdentity?: FileIdentity;
+}
+
+type RollbackRequirement = { kind: 'none' } | { kind: 'restore'; currentOutputIdentity?: FileIdentity };
+
+type RollbackCandidate = { phase: 'applying'; snapshot: RollbackCopy } | { phase: 'applied'; snapshot: RollbackCopy };
 
 export async function createConversionUndoRecord(
   outputs: ConversionOutput[],
@@ -47,6 +95,11 @@ export async function createConversionUndoRecord(
       uniquePaths.add(normalizedPath);
 
       await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+      await assertPathIsNotSymbolicLink(output.outputPath);
+      const currentSha256 = await calculateSha256(output.outputPath);
+      if (output.sha256 !== undefined && currentSha256 !== output.sha256) {
+        throw new Error(`Output changed before Undo could be recorded: ${output.outputPath}`);
+      }
       const previousSha256 =
         output.previousFilePath !== undefined && output.previousFilePath !== ''
           ? await recordPreviousFile(output.previousFilePath, output.stagingWorkspacePath ?? output.workspacePath)
@@ -54,7 +107,7 @@ export async function createConversionUndoRecord(
 
       return {
         ...output,
-        sha256: await calculateSha256(output.outputPath),
+        sha256: output.sha256 ?? currentSha256,
         ...(previousSha256 !== undefined && { previousSha256 }),
       };
     }),
@@ -70,64 +123,102 @@ export async function createConversionUndoRecord(
 export async function undoConversionOutputs(
   record: ConversionUndoRecord,
   outputChannel?: LineOutputChannel,
-): Promise<void> {
+  testOverrides: UndoConversionOutputsTestOverrides = {},
+): Promise<CleanupResult> {
   await Promise.all(record.outputs.map(validateUnchangedOutput));
-  const rollbackCopies = await createRollbackCopies(record);
+  const removeRollbackRoot = testOverrides.removeRollbackRoot ?? rm;
+  const rollbackCopies = await createRollbackCopies(record, outputChannel, removeRollbackRoot);
+  const rollbackCopiesByOutput = new Map(rollbackCopies.map((snapshot) => [snapshot.output, snapshot]));
+  const rollbackCandidates: RollbackCandidate[] = [];
 
   try {
     for (const output of record.outputs) {
       // 検証後の差し替え時間を短くするため、削除直前にも同じ条件を確認する。
-      await validateUnchangedOutput(output);
+      const validatedPaths = await validateUnchangedOutput(output);
+      const snapshot = rollbackCopiesByOutput.get(output);
+      if (snapshot === undefined) {
+        throw new Error(`No Undo rollback copy for output: ${output.outputPath}`);
+      }
+      const candidateIndex = rollbackCandidates.length;
+      rollbackCandidates.push({ phase: 'applying', snapshot });
+      await assertUndoPathsStillValid(output, validatedPaths);
 
       if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-        await assertExistingPathInWorkspace(
-          output.previousFilePath,
-          output.stagingWorkspacePath ?? output.workspacePath,
-        );
         await copyFile(output.previousFilePath, output.outputPath);
         await restoreFileMetadata(output.outputPath, output.previousFileMetadata);
       } else {
         await rm(output.outputPath);
       }
+
+      rollbackCandidates[candidateIndex] = { phase: 'applied', snapshot };
     }
   } catch (error) {
     try {
-      await Promise.all(
-        rollbackCopies.map(async ({ output, rollbackPath }) => {
-          await assertWritablePathInWorkspace(output.outputPath, output.workspacePath);
-          await copyFile(rollbackPath, output.outputPath);
-        }),
-      );
-      // ロールバック復元に成功した場合のみコピーを破棄する。復元できなかった出力の
-      // 唯一の生存コピーが削除されるのを防ぐため、失敗時は保留する。
-      await removeRollbackCopies(rollbackCopies);
+      await restoreRollbackCandidates(rollbackCandidates, outputChannel);
     } catch (rollbackError) {
-      throw new Error(`Undo failed and rollback was incomplete: ${String(error)}`, { cause: rollbackError });
+      const incompleteRollback = new Error(`Undo failed and rollback was incomplete: ${String(error)}`, {
+        cause: rollbackError,
+      });
+      throw new UndoCleanupError(incompleteRollback, preservedRollbackCopiesResult(rollbackCopies, rollbackError));
+    }
+    // ロールバック復元に成功した場合のみコピーを破棄する。復元できなかった出力の
+    // 唯一の生存コピーが削除されるのを防ぐため、失敗時は保留する。
+    const rollbackCleanup = await removeRollbackCopies(rollbackCopies, outputChannel, removeRollbackRoot);
+    if (rollbackCleanup.failures.length > 0) {
+      throw new UndoCleanupError(error, rollbackCleanup);
     }
     throw error instanceof Error ? error : new Error(String(error));
   }
 
-  await removeRollbackCopies(rollbackCopies);
-  await cleanupConversionArtifacts(toArtifactRoots(record), outputChannel);
+  const rollbackCleanup = await removeRollbackCopies(rollbackCopies, outputChannel, removeRollbackRoot);
+  const artifactCleanup = await cleanupConversionArtifacts(toArtifactRoots(record), outputChannel);
+  return mergeCleanupResults(rollbackCleanup, artifactCleanup);
 }
 
-async function removeRollbackCopies(rollbackCopies: readonly { rollbackRootPath: string }[]): Promise<void> {
-  await Promise.all(
-    rollbackCopies.map(async ({ rollbackRootPath }) =>
-      rm(rollbackRootPath, {
+async function removeRollbackCopies(
+  rollbackCopies: readonly { rollbackRootPath: string }[],
+  outputChannel?: LineOutputChannel,
+  rmImpl: typeof rm = rm,
+): Promise<CleanupResult> {
+  const rollbackRootPaths = new Set(rollbackCopies.map((copy) => copy.rollbackRootPath));
+  const failures: { rootPath: string; error: Error }[] = [];
+
+  for (const rollbackRootPath of rollbackRootPaths) {
+    try {
+      await rmImpl(rollbackRootPath, {
         recursive: true,
         force: true,
         maxRetries: 20,
         retryDelay: 200,
-      }),
-    ),
-  );
+      });
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      failures.push({ rootPath: rollbackRootPath, error: normalizedError });
+      appendLineBestEffort(outputChannel, `[undo] cleanup failed for ${rollbackRootPath}: ${normalizedError.message}`);
+    }
+  }
+
+  return {
+    attempted: rollbackRootPaths.size,
+    succeeded: rollbackRootPaths.size - failures.length,
+    failures,
+  };
+}
+
+function mergeCleanupResults(...results: readonly CleanupResult[]): CleanupResult {
+  return {
+    attempted: results.reduce((total, result) => total + result.attempted, 0),
+    succeeded: results.reduce((total, result) => total + result.succeeded, 0),
+    failures: results.flatMap((result) => result.failures),
+  };
 }
 
 async function createRollbackCopies(
   record: ConversionUndoRecord,
-): Promise<{ output: ConversionUndoOutput; rollbackPath: string; rollbackRootPath: string }[]> {
-  const rollbackCopies: { output: ConversionUndoOutput; rollbackPath: string; rollbackRootPath: string }[] = [];
+  outputChannel?: LineOutputChannel,
+  removeRollbackRoot: typeof rm = rm,
+): Promise<RollbackCopy[]> {
+  const rollbackCopies: RollbackCopy[] = [];
 
   try {
     const rollbackId = crypto.randomUUID();
@@ -142,38 +233,206 @@ async function createRollbackCopies(
     }
     return rollbackCopies;
   } catch (error) {
-    await Promise.all(
-      rollbackCopies.map(async ({ rollbackRootPath }) =>
-        rm(rollbackRootPath, {
-          recursive: true,
-          force: true,
-          maxRetries: 20,
-          retryDelay: 200,
-        }),
-      ),
-    );
+    const cleanupResult = await removeRollbackCopies(rollbackCopies, outputChannel, removeRollbackRoot);
+    if (cleanupResult.failures.length > 0) {
+      throw new UndoCleanupError(error, cleanupResult);
+    }
     throw error instanceof Error ? error : new Error(String(error));
   }
 }
 
-async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<void> {
-  await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+function preservedRollbackCopiesResult(
+  rollbackCopies: readonly { rollbackRootPath: string }[],
+  rollbackError: unknown,
+): CleanupResult {
+  const rootPaths = new Set(rollbackCopies.map((copy) => copy.rollbackRootPath));
+  const cause = rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError));
+  return {
+    attempted: rootPaths.size,
+    succeeded: 0,
+    failures: [...rootPaths].map((rootPath) => ({
+      rootPath,
+      error: new Error('Undo recovery copy was retained because rollback was incomplete.', { cause }),
+    })),
+  };
+}
 
-  if ((await calculateSha256(output.outputPath)) !== output.sha256) {
-    throw new Error(`Output changed after conversion: ${output.outputPath}`);
-  }
+async function restoreRollbackCandidates(
+  candidates: readonly RollbackCandidate[],
+  outputChannel?: LineOutputChannel,
+): Promise<void> {
+  const failures: { outputPath: string; error: Error }[] = [];
 
-  if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-    await assertExistingPathInWorkspace(output.previousFilePath, output.stagingWorkspacePath ?? output.workspacePath);
+  for (let index = candidates.length - 1; index >= 0; index -= 1) {
+    const candidate = candidates[index];
+    if (candidate === undefined) {
+      continue;
+    }
 
-    if ((await calculateSha256(output.previousFilePath)) !== output.previousSha256) {
-      throw new Error(`Output backup changed after conversion: ${output.previousFilePath}`);
+    const { output, rollbackPath, rollbackRootPath } = candidate.snapshot;
+    try {
+      await assertWritablePathInWorkspace(output.outputPath, output.workspacePath);
+      let requirement: RollbackRequirement;
+      if (candidate.phase === 'applied') {
+        requirement = await assertAppliedUndoStateUnchanged(output);
+      } else {
+        requirement = await rollbackRequirementForApplyingOutput(output);
+      }
+      if (requirement.kind === 'none') {
+        continue;
+      }
+
+      await assertExistingPathInWorkspace(rollbackPath, output.workspacePath);
+      await assertPathIsNotSymbolicLink(rollbackPath);
+      const flags =
+        output.previousFilePath === undefined || output.previousFilePath === '' ? fsConstants.COPYFILE_EXCL : undefined;
+      if (requirement.currentOutputIdentity === undefined) {
+        await assertWritablePathInWorkspace(output.outputPath, output.workspacePath);
+      } else {
+        await assertFileIdentityAtPath(output.outputPath, output.workspacePath, requirement.currentOutputIdentity);
+      }
+      await copyFile(rollbackPath, output.outputPath, flags);
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      failures.push({ outputPath: output.outputPath, error: normalizedError });
+      appendLineBestEffort(
+        outputChannel,
+        `[undo] rollback failed for ${output.outputPath}: ${normalizedError.message}; recovery copy: ${rollbackPath}`,
+      );
+      appendLineBestEffort(outputChannel, `[undo] preserving Undo recovery directory: ${rollbackRootPath}`);
     }
   }
+
+  if (failures.length > 0) {
+    const details = failures.map(({ outputPath, error }) => `${outputPath}: ${error.message}`).join('; ');
+    throw new Error(`Undo rollback failed: ${details}`, { cause: failures[0]?.error });
+  }
+}
+
+async function rollbackRequirementForApplyingOutput(output: ConversionUndoOutput): Promise<RollbackRequirement> {
+  if (output.previousFilePath === undefined || output.previousFilePath === '') {
+    try {
+      await access(output.outputPath);
+    } catch (error) {
+      if (isFileNotFoundError(error)) {
+        return { kind: 'restore' };
+      }
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+
+    const current = await readValidatedDigest(output.outputPath, output.workspacePath);
+    if (current.sha256 === output.sha256) {
+      return { kind: 'none' };
+    }
+    throw new Error(`Output changed while Undo was being applied: ${output.outputPath}`);
+  }
+
+  const current = await readValidatedDigest(output.outputPath, output.workspacePath);
+  if (current.sha256 === output.sha256) {
+    return { kind: 'none' };
+  }
+  if (output.previousSha256 !== undefined && current.sha256 === output.previousSha256) {
+    return { kind: 'restore', currentOutputIdentity: current.identity };
+  }
+
+  throw new Error(`Output changed while Undo was being applied: ${output.outputPath}`);
+}
+
+async function assertAppliedUndoStateUnchanged(output: ConversionUndoOutput): Promise<RollbackRequirement> {
+  if (output.previousFilePath === undefined || output.previousFilePath === '') {
+    return { kind: 'restore' };
+  }
+
+  const current = await readValidatedDigest(output.outputPath, output.workspacePath);
+  if (output.previousSha256 === undefined || current.sha256 !== output.previousSha256) {
+    throw new Error(`Output changed after Undo restoration: ${output.outputPath}`);
+  }
+  return { kind: 'restore', currentOutputIdentity: current.identity };
+}
+
+async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<ValidatedUndoPaths> {
+  let previousIdentity: FileIdentity | undefined;
+  if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
+    const previous = await readValidatedDigest(
+      output.previousFilePath,
+      output.stagingWorkspacePath ?? output.workspacePath,
+    );
+
+    if (previous.sha256 !== output.previousSha256) {
+      throw new Error(`Output backup changed after conversion: ${output.previousFilePath}`);
+    }
+    previousIdentity = previous.identity;
+  }
+
+  // Check the user-visible output last so the mutation that follows starts with
+  // the smallest practical validation-to-write window.
+  const current = await readValidatedDigest(output.outputPath, output.workspacePath);
+
+  if (current.sha256 !== output.sha256) {
+    throw new Error(`Output changed after conversion: ${output.outputPath}`);
+  }
+  return {
+    outputIdentity: current.identity,
+    ...(previousIdentity === undefined ? {} : { previousIdentity }),
+  };
+}
+
+async function assertUndoPathsStillValid(output: ConversionUndoOutput, validated: ValidatedUndoPaths): Promise<void> {
+  await assertFileIdentityAtPath(output.outputPath, output.workspacePath, validated.outputIdentity);
+  if (
+    output.previousFilePath !== undefined &&
+    output.previousFilePath !== '' &&
+    validated.previousIdentity !== undefined
+  ) {
+    await assertFileIdentityAtPath(
+      output.previousFilePath,
+      output.stagingWorkspacePath ?? output.workspacePath,
+      validated.previousIdentity,
+    );
+  }
+}
+
+async function readValidatedDigest(
+  filePath: string,
+  workspacePath: string,
+): Promise<{ sha256: string; identity: FileIdentity }> {
+  await assertExistingPathInWorkspace(filePath, workspacePath);
+  await assertPathIsNotSymbolicLink(filePath);
+  const before = await readFileIdentity(filePath);
+  const sha256 = await calculateSha256(filePath);
+  await assertExistingPathInWorkspace(filePath, workspacePath);
+  await assertPathIsNotSymbolicLink(filePath);
+  const identity = await readFileIdentity(filePath);
+  if (!sameFileIdentity(before, identity)) {
+    throw new Error(`File was replaced while its contents were being verified: ${filePath}`);
+  }
+  return { sha256, identity };
+}
+
+async function assertFileIdentityAtPath(
+  filePath: string,
+  workspacePath: string,
+  expected: FileIdentity,
+): Promise<void> {
+  await assertExistingPathInWorkspace(filePath, workspacePath);
+  await assertPathIsNotSymbolicLink(filePath);
+  if (!sameFileIdentity(await readFileIdentity(filePath), expected)) {
+    throw new Error(`File was replaced before mutation: ${filePath}`);
+  }
+}
+
+async function readFileIdentity(filePath: string): Promise<FileIdentity> {
+  const fileStat = await stat(filePath);
+  return { dev: fileStat.dev, ino: fileStat.ino };
+}
+
+function sameFileIdentity(first: FileIdentity, second: FileIdentity): boolean {
+  return first.dev === second.dev && first.ino === second.ino;
 }
 
 async function recordPreviousFile(previousFilePath: string, workspacePath: string): Promise<string> {
   await assertExistingPathInWorkspace(previousFilePath, workspacePath);
+  await assertPathIsNotSymbolicLink(previousFilePath);
   return calculateSha256(previousFilePath);
 }
 
@@ -192,4 +451,16 @@ function toArtifactRoots(record: ConversionUndoRecord): ConversionArtifactRoot[]
         ]
       : [],
   );
+}
+
+function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
+}
+
+function appendLineBestEffort(outputChannel: LineOutputChannel | undefined, line: string): void {
+  try {
+    outputChannel?.appendLine(line);
+  } catch {
+    // Diagnostics must not interrupt rollback or cleanup.
+  }
 }

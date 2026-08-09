@@ -3,37 +3,39 @@ name: never-disable-git-hooks
 description: >-
   Never bypass Git hooks. Use when working with git commit, git push, or any
   operation that runs pre-commit / pre-push / commitlint. Do NOT use
-  --no-verify or -n. Fix the hook failure instead.
+  --no-verify. Fix hook failures instead of suppressing them.
 ---
 
 # Never disable Git hooks
 
-`git commit --no-verify` and `git push --no-verify` (or `-n`) silently skip
-the repository's pre-commit, pre-push, and commitlint hooks. This project
-relies on those hooks to enforce format, lint, typecheck, build, and
-Playwright smoke gates before anything reaches CI.
+`git commit --no-verify`, `git commit -n`, and `git push --no-verify` skip
+repository hooks. This project relies on those hooks to enforce format, lint,
+typecheck, build, and conditional Playwright smoke gates before publication.
+
+`git push -n` means `--dry-run`; it does not bypass hooks and is not prohibited
+by this skill.
 
 ## Rule
 
-- Never pass `--no-verify` or `-n` to `git commit`, `git push`, or any other
-  command that would bypass hooks.
+- Never pass `--no-verify` to `git commit` or `git push`, and never pass `-n`
+  to `git commit`.
 - When a hook fails, treat the failure as a real problem: read the hook
   output, fix the underlying issue, and re-run the commit/push without flags.
-- Do not work around a hook failure with `--no-verify`, staging partial
-  changes to dodge a check, or temporarily editing hook config.
+- Selective staging is valid when it matches the intended commit. Do not
+  stage, unstage, or edit hook configuration solely to evade a failing check.
 
 ## Why
 
-Bypassing hooks pushes unverified changes to the remote, where CI then fails
-(and branch protection may still block the merge). The cost of a hook run is
-seconds; the cost of a red CI is a full retry loop.
+Bypassing hooks can publish unverified changes and defeat the repository's
+local quality gates. Hook runs may be substantial, especially pre-push, but
+their cost is intentional and must not be avoided by weakening verification.
 
 ## If a hook is genuinely broken
 
 - Pre-commit `format` auto-fixes staged files (`stage_fixed: true`), so a
   format failure usually means the fixed files were not re-staged. Stage them
   and retry.
-- Pre-push runs `npm run check:all` and `npm run build`. A failure here means
-  the code does not pass the repo gates. Fix the violation, then retry.
+- Pre-push runs Docker `check:all`, the host build, and a conditional packaged
+  Playwright smoke check. Fix the violation, then retry.
 - If a hook fails for an unrelated pre-existing reason, report it to the user
   instead of bypassing it.

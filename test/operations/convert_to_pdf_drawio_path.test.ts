@@ -16,6 +16,7 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
+import { hashFile } from '../../src/operations/input/file_content_hash.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
@@ -74,6 +75,7 @@ suite('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io�
       {
         outputPath,
         workspacePath,
+        sha256: await hashFile(outputPath),
         stagingRootPath: path.join(workspacePath, '.graphics-workbench', 'convert-png-to-pdf', 'drawio-complex-path'),
       },
     ]);

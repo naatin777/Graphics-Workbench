@@ -14,6 +14,7 @@ import {
   access,
   chmod,
   copyFile,
+  lstat,
   mkdir,
   mkdtemp,
   mkdtempDisposable,
@@ -21,6 +22,8 @@ import {
   rename,
   rm,
   stat,
+  symlink,
+  truncate,
   utimes,
   writeFile,
 } from 'node:fs/promises';
@@ -262,7 +265,7 @@ suite(
       await assert.rejects(readFile(outputPath));
     });
 
-    test('2件目出力のrollbackが失敗すると、CommitRollbackErrorに元のcommit失敗とrollback失敗した出力pathを保持し、Output Channelへ「rollback failed」を記録する', async () => {
+    test('2件目出力をcommitした直後のキャンセルで2件目のrollbackが失敗すると、CommitRollbackErrorに元のcancelとrollback失敗した出力pathを保持し、Output Channelへ「rollback failed」を記録する', async () => {
       const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
       const outputs = await Promise.all(
         ['first', 'second'].map(async (name) => {
@@ -274,27 +277,30 @@ suite(
         }),
       );
       const lines: string[] = [];
-      let copyCount = 0;
+      const controller = new AbortController();
 
       await assert.rejects(
         commitStagedOutputs(outputs, {
+          signal: controller.signal,
           resolveConflicts: async () => 'overwrite',
           operationName: 'test-rollback',
           outputChannel: { appendLine: (line) => lines.push(line) },
           copyFile: async (source, destination, flags) => {
-            copyCount += 1;
-            if (copyCount === 5) {
+            if (source === `${outputs[1]?.stagedOutputPath}.previous` && destination === outputs[1]?.outputPath) {
               throw new Error('injected rollback failure');
             }
             await copyFile(source, destination, flags);
-            if (copyCount === 4) {
-              throw new Error('injected commit failure');
+          },
+          rename: async (source, destination) => {
+            await rename(source, destination);
+            if (destination === outputs[1]?.outputPath) {
+              controller.abort();
             }
           },
         }),
         (error: unknown) => {
           assert.ok(error instanceof CommitRollbackError);
-          assert.match(error.originalError.message, /injected commit failure/);
+          assert.match(error.originalError.message, /aborted/);
           assert.strictEqual(error.rollbackErrors[0]?.outputPath, outputs[1]?.outputPath);
           return true;
         },
@@ -303,7 +309,7 @@ suite(
       assert.ok(lines.some((line) => line.includes('rollback failed') && line.includes('second.pdf')));
     });
 
-    test('出力をcommitした直後にキャンセルが発生した場合も、.previous backupから元の出力（old）へrollbackする', async () => {
+    test('上書き用の一時ファイルへのコピー完了時にキャンセルされた場合は、最終出力のrenameを開始せず元の出力（old）を維持する', async () => {
       const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
       const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
       const outputPath = path.join(workspacePath, 'sample.pdf');
@@ -311,6 +317,7 @@ suite(
       await writeFixture(stagedOutputPath, 'new');
       await writeFixture(outputPath, 'old');
       let copyCount = 0;
+      let renameCount = 0;
 
       await assert.rejects(
         commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
@@ -323,11 +330,16 @@ suite(
               controller.abort();
             }
           },
+          rename: async (source, destination) => {
+            renameCount += 1;
+            await rename(source, destination);
+          },
         }),
         /aborted/,
       );
 
       assert.strictEqual(await readFile(outputPath, 'utf8'), 'old');
+      assert.strictEqual(renameCount, 0);
     });
 
     test('commit後に他プロセスが出力を外部変更した場合、rollbackではその出力を上書きせず、外部変更を保持したまま元内容のrecovery backup（.previous）を残す', async () => {
@@ -396,6 +408,140 @@ suite(
       );
 
       assert.strictEqual(await readFile(outputPath, 'utf8'), 'changed while dialog was open');
+    });
+
+    test('workspace内の既存ファイルを指すsymlinkを出力先としてoverwriteしようとした場合は、link自体をregular fileへ置換せず拒否してlink先の内容も維持する', async () => {
+      await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+      const stagedOutputPath = path.join(workspacePath.path, '.graphics-workbench', 'result.pdf');
+      const targetPath = path.join(workspacePath.path, 'target.pdf');
+      const outputPath = path.join(workspacePath.path, 'link.pdf');
+      await writeFixture(stagedOutputPath, 'converted');
+      await writeFixture(targetPath, 'original target');
+      await symlink(targetPath, outputPath);
+
+      await assert.rejects(
+        commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path }], {
+          resolveConflicts: async () => 'overwrite',
+        }),
+        /Symbolic link output cannot be replaced safely/,
+      );
+
+      assert.strictEqual((await lstat(outputPath)).isSymbolicLink(), true);
+      assert.strictEqual(await readFile(targetPath, 'utf8'), 'original target');
+    });
+
+    test('新規出力のstaged hash中に親directoryがworkspace外へのsymlinkへ差し替えられた場合は、境界外へ変換結果を作成せずcommitを拒否する', async () => {
+      await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-parent-race-'));
+      await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-parent-race-outside-'));
+      const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
+      const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
+      const outputDirectory = path.join(workspacePath.path, 'outputs');
+      const displacedDirectory = path.join(workspacePath.path, 'outputs-before-swap');
+      const outputPath = path.join(outputDirectory, 'result.pdf');
+      const outsideOutputPath = path.join(outsidePath.path, 'result.pdf');
+      await writeFixture(stagedOutputPath, '');
+      await truncate(stagedOutputPath, 128 * 1024 * 1024);
+      await mkdir(outputDirectory);
+      let swapPromise: Promise<void> | undefined;
+
+      await assert.rejects(
+        commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath }], {
+          outputChannel: {
+            appendLine: (line) => {
+              if (line.includes('conflict decision') && swapPromise === undefined) {
+                swapPromise = new Promise((resolve) => setTimeout(resolve, 20)).then(async () => {
+                  await rename(outputDirectory, displacedDirectory);
+                  await symlink(outsidePath.path, outputDirectory);
+                });
+              }
+            },
+          },
+        }),
+        /outside the workspace|replaced during commit/,
+      );
+
+      assert.ok(swapPromise, '親directoryの差し替えが実行されたこと');
+      await swapPromise;
+      await assert.rejects(access(outsideOutputPath));
+    });
+
+    test('競合判断後の上書き前バックアップ作成中に既存出力が外部編集され、バックアップにも編集後内容がコピーされた場合は、競合表示前のSHA-256との不一致でcommitを中止して外部編集後の内容を保持する', async () => {
+      await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+      const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
+      const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
+      const outputPath = path.join(workspacePath.path, 'sample.pdf');
+      await writeFixture(stagedOutputPath, 'converted');
+      await writeFixture(outputPath, 'original');
+      let backupStarted = false;
+
+      await assert.rejects(
+        commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath }], {
+          resolveConflicts: async () => 'overwrite',
+          copyFile: async (source, destination, flags) => {
+            if (!backupStarted) {
+              backupStarted = true;
+              await writeFile(outputPath, 'external edit during backup');
+            }
+            await copyFile(source, destination, flags);
+          },
+        }),
+        /changed while creating overwrite backup/,
+      );
+
+      assert.strictEqual(await readFile(outputPath, 'utf8'), 'external edit during backup');
+    });
+
+    test('上書き用の一時ファイルへ変換結果をコピーした直後に既存出力が外部編集された場合は、最終置換前の再検証で中止して外部編集後の内容を保持する', async () => {
+      await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+      const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
+      const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
+      const outputPath = path.join(workspacePath.path, 'sample.pdf');
+      await writeFixture(stagedOutputPath, 'converted');
+      await writeFixture(outputPath, 'original');
+      let copyCount = 0;
+
+      await assert.rejects(
+        commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath }], {
+          resolveConflicts: async () => 'overwrite',
+          copyFile: async (source, destination, flags) => {
+            await copyFile(source, destination, flags);
+            copyCount += 1;
+            if (copyCount === 2) {
+              await writeFile(outputPath, 'external edit during temporary copy');
+            }
+          },
+        }),
+        /changed before atomic replacement/,
+      );
+
+      assert.strictEqual(await readFile(outputPath, 'utf8'), 'external edit during temporary copy');
+    });
+
+    test('上書き用の一時ファイルへのコピーが既存出力の外部編集後に失敗した場合は、まだ最終出力を変更していないため前回内容を復元せず外部編集後の内容を保持する', async () => {
+      await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+      const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
+      const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
+      const outputPath = path.join(workspacePath.path, 'sample.pdf');
+      await writeFixture(stagedOutputPath, 'converted');
+      await writeFixture(outputPath, 'original');
+      let copyCount = 0;
+
+      await assert.rejects(
+        commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath }], {
+          resolveConflicts: async () => 'overwrite',
+          copyFile: async (source, destination, flags) => {
+            await copyFile(source, destination, flags);
+            copyCount += 1;
+            if (copyCount === 2) {
+              await writeFile(outputPath, 'external edit before temporary copy failure');
+              throw new Error('injected temporary copy failure');
+            }
+          },
+        }),
+        /injected temporary copy failure/,
+      );
+
+      assert.strictEqual(await readFile(outputPath, 'utf8'), 'external edit before temporary copy failure');
     });
 
     test('新規出力のrollbackは対象の出力ファイルだけを削除し、workspace内の無関係なファイル（unrelated.txt）は残す', async () => {

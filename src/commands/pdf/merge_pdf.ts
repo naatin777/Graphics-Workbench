@@ -22,6 +22,7 @@ import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 import { createProgressReporters } from '../lifecycle/progress_reporting.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
+import { runPostConversionUi } from '../lifecycle/post_conversion_ui.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../../shared/error.js';
@@ -249,26 +250,27 @@ async function applyConfiguredMerge(params: {
     },
   );
 
-  const successMessage = userMessage('message.mergePdf.success', sourceUris.length);
-  let undoId: string;
+  await runPostConversionUi('merge-pdf-configure', outputChannel, async () => {
+    const successMessage = userMessage('message.mergePdf.success', sourceUris.length);
+    let undoId: string;
 
-  try {
-    undoId = await recordConversionForUndo(outputs, outputChannel);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
+    try {
+      undoId = await recordConversionForUndo(outputs, outputChannel);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      panel.dispose();
+      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
+      return;
+    }
+
+    const undoAction = userMessage('message.action.undo');
     panel.dispose();
-    return;
-  }
+    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
 
-  const undoAction = userMessage('message.action.undo');
-  const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-  if (selectedAction === undoAction) {
-    await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-  }
-
-  panel.dispose();
+    if (selectedAction === undoAction) {
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
+    }
+  });
 }
 
 function resolveConfiguredSources(sourceById: ReadonlyMap<string, vscode.Uri>, sourceIds: string[]): vscode.Uri[] {

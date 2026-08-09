@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdir, mkdtempDisposable, readFile, symlink, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtempDisposable, readFile, rename, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -48,12 +48,12 @@ suite(
       assert.match(lines[1] ?? '', /1\/1 artifact roots failed/iu);
     });
 
-    test('commit中のcopy失敗とrollback中のcopy失敗が重なった場合はCommitRollbackErrorを返し、元出力を保持したrecovery backup（result.pdf.previous）だけを残して一時作業ディレクトリのresult.pdfを削除する', async () => {
+    test('上書きcommit直後のキャンセルとrollback copy失敗が重なった場合はCommitRollbackErrorを返し、commit済み出力を残して元出力のrecovery backup（result.pdf.previous）を保持する', async () => {
       await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
       const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
       const stagedOutputPath = path.join(rootPath, 'result.pdf');
       const outputPath = path.join(workspacePath.path, 'result.pdf');
-      let copyCount = 0;
+      const controller = new AbortController();
 
       await writeFile(outputPath, 'original');
       await writeFixture(stagedOutputPath);
@@ -64,19 +64,16 @@ suite(
             [{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath: rootPath }],
             {
               resolveConflicts: async () => 'overwrite',
+              signal: controller.signal,
               copyFile: async (source, destination, flags) => {
-                copyCount += 1;
-
-                if (destination !== outputPath && !destination.endsWith('.previous') && copyCount === 2) {
-                  await copyFile(source, destination, flags);
-                  throw new Error('injected commit copy failure');
-                }
-
-                if (destination === outputPath && copyCount === 3) {
+                if (source.endsWith('.previous') && destination === outputPath) {
                   throw new Error('injected rollback copy failure');
                 }
-
                 await copyFile(source, destination, flags);
+              },
+              rename: async (source, destination) => {
+                await rename(source, destination);
+                controller.abort();
               },
             },
           ),
@@ -87,7 +84,7 @@ suite(
         },
       );
 
-      assert.strictEqual(await readFile(outputPath, 'utf8'), 'original');
+      assert.strictEqual(await readFile(outputPath, 'utf8'), 'fixture');
       assert.strictEqual(await readFile(`${stagedOutputPath}.previous`, 'utf8'), 'original');
       await assert.rejects(access(stagedOutputPath));
     });

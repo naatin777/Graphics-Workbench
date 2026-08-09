@@ -1,9 +1,16 @@
+import path from 'node:path';
+
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
-import { cleanupConversionArtifacts, type ConversionArtifactRoot } from './cleanup_conversion_artifacts.js';
+import {
+  cleanupConversionArtifacts,
+  type CleanupResult,
+  type ConversionArtifactRoot,
+} from './cleanup_conversion_artifacts.js';
 import {
   createConversionUndoRecord,
   type ConversionOutput,
   type ConversionUndoRecord,
+  UndoCleanupError,
   undoConversionOutputs,
 } from './undo_last_conversion.js';
 
@@ -104,8 +111,19 @@ export class UndoHistoryManager {
         return 'newer-conversion';
       }
 
-      await undoConversionOutputs(record, outputChannel);
+      let cleanupResult: CleanupResult;
+      try {
+        cleanupResult = await undoConversionOutputs(record, outputChannel);
+      } catch (error) {
+        const cause = error instanceof Error ? error : new Error(String(error));
+        if (cause instanceof UndoCleanupError) {
+          this.#retainCleanupFailures(record, cause.cleanupResult);
+          await this.#persistManifest(outputChannel);
+        }
+        throw cause;
+      }
       this.#records.pop();
+      this.#retainCleanupFailures(record, cleanupResult);
       await this.#evict(outputChannel);
       await this.#persistManifest(outputChannel);
       return 'done';
@@ -121,22 +139,26 @@ export class UndoHistoryManager {
       const manifest = this.#readManifest();
       const now = this.#now();
       const staleEntries = manifest.entries.filter((entry) => now - entry.createdAt > this.#retentionMs);
+      const retainedEntries = manifest.entries.filter((entry) => !staleEntries.includes(entry));
 
       if (staleEntries.length > 0) {
         for (const entry of staleEntries) {
-          await cleanupConversionArtifacts(toManifestArtifactRoots(entry), outputChannel);
+          const artifacts = toManifestArtifactRoots(entry);
+          const result = await cleanupConversionArtifacts(artifacts, outputChannel);
+          const failedRoots = failedArtifactRoots(artifacts, result);
+          if (failedRoots.length > 0) {
+            retainedEntries.push({ ...entry, roots: failedRoots.map((root) => toManifestRoot(root)) });
+          }
         }
 
         await this.#writeManifest({
           version: MANIFEST_VERSION,
-          entries: manifest.entries.filter((entry) => !staleEntries.includes(entry)),
+          entries: retainedEntries,
         });
       }
 
       const recordIds = new Set(this.#records.map((record) => record.id));
-      this.#orphanedEntries = manifest.entries.filter(
-        (entry) => !staleEntries.includes(entry) && !recordIds.has(entry.id),
-      );
+      this.#orphanedEntries = retainedEntries.filter((entry) => !recordIds.has(entry.id));
     });
   }
 
@@ -161,20 +183,23 @@ export class UndoHistoryManager {
     }
 
     for (const record of evicted) {
-      await cleanupConversionArtifacts(toArtifactRoots(record.outputs), outputChannel);
+      const artifacts = toArtifactRoots(record.outputs);
+      const result = await cleanupConversionArtifacts(artifacts, outputChannel);
+      this.#retainCleanupFailures(record, result);
     }
   }
 
   async #persistManifest(outputChannel?: LineOutputChannel): Promise<void> {
+    await this.#expireOrphans(outputChannel);
+
     if (this.#storage === undefined) {
       return;
     }
 
     try {
-      await this.#expireOrphans(outputChannel);
       await this.#writeManifest({
         version: MANIFEST_VERSION,
-        entries: [
+        entries: mergeManifestEntries([
           ...this.#records.map((record) => ({
             id: record.id,
             createdAt: record.createdAt,
@@ -190,7 +215,7 @@ export class UndoHistoryManager {
             ),
           })),
           ...this.#orphanedEntries,
-        ],
+        ]),
       });
     } catch (error) {
       outputChannel?.appendLine(
@@ -201,13 +226,49 @@ export class UndoHistoryManager {
 
   async #expireOrphans(outputChannel?: LineOutputChannel): Promise<void> {
     const now = this.#now();
+    const retained = this.#orphanedEntries.filter((entry) => now - entry.createdAt <= this.#retentionMs);
     const expired = this.#orphanedEntries.filter((entry) => now - entry.createdAt > this.#retentionMs);
 
     for (const entry of expired) {
-      await cleanupConversionArtifacts(toManifestArtifactRoots(entry), outputChannel);
+      const artifacts = toManifestArtifactRoots(entry);
+      const result = await cleanupConversionArtifacts(artifacts, outputChannel);
+      const failedRoots = failedArtifactRoots(artifacts, result);
+      if (failedRoots.length > 0) {
+        retained.push({ ...entry, roots: failedRoots.map((root) => toManifestRoot(root)) });
+      }
     }
 
-    this.#orphanedEntries = this.#orphanedEntries.filter((entry) => !expired.includes(entry));
+    this.#orphanedEntries = retained;
+  }
+
+  #retainCleanupFailures(record: ConversionUndoRecord, result: CleanupResult): void {
+    const artifacts = cleanupArtifactsForResult(record.outputs, result);
+    const failedRoots = failedArtifactRoots(artifacts, result);
+    if (failedRoots.length === 0) {
+      return;
+    }
+
+    const retainedEntry = {
+      id: record.id,
+      createdAt: record.createdAt,
+      roots: failedRoots.map((root) => toManifestRoot(root)),
+    };
+    const existingIndex = this.#orphanedEntries.findIndex((entry) => entry.id === record.id);
+    if (existingIndex === -1) {
+      this.#orphanedEntries.push(retainedEntry);
+      return;
+    }
+
+    const existingEntry = this.#orphanedEntries[existingIndex];
+    if (existingEntry === undefined) {
+      this.#orphanedEntries.push(retainedEntry);
+      return;
+    }
+
+    const [mergedEntry] = mergeManifestEntries([existingEntry, retainedEntry]);
+    if (mergedEntry !== undefined) {
+      this.#orphanedEntries[existingIndex] = mergedEntry;
+    }
   }
 
   async #writeManifest(manifest: UndoManifest): Promise<void> {
@@ -249,6 +310,36 @@ export class UndoHistoryManager {
   }
 }
 
+function cleanupArtifactsForResult(
+  outputs: readonly ConversionOutput[],
+  result: CleanupResult,
+): ConversionArtifactRoot[] {
+  const artifacts = toArtifactRoots(outputs);
+  const knownRoots = new Set(artifacts.map((artifact) => path.resolve(artifact.rootPath)));
+
+  for (const failure of result.failures) {
+    const rootPath = path.resolve(failure.rootPath);
+    if (knownRoots.has(rootPath)) {
+      continue;
+    }
+
+    const workspacePath = outputs
+      .flatMap((output) => [output.workspacePath, output.stagingWorkspacePath].filter((value) => value !== undefined))
+      .find((boundary) => isPathWithin(rootPath, boundary));
+    if (workspacePath !== undefined) {
+      artifacts.push({ rootPath, workspacePath });
+      knownRoots.add(rootPath);
+    }
+  }
+
+  return artifacts;
+}
+
+function isPathWithin(targetPath: string, parentPath: string): boolean {
+  const relativePath = path.relative(path.resolve(parentPath), path.resolve(targetPath));
+  return relativePath === '' || (!path.isAbsolute(relativePath) && !relativePath.startsWith(`..${path.sep}`));
+}
+
 function toArtifactRoots(outputs: readonly ConversionOutput[], preserveBackups = false): ConversionArtifactRoot[] {
   return outputs.flatMap((output) =>
     output.stagingRootPath !== undefined && output.stagingRootPath !== ''
@@ -257,7 +348,7 @@ function toArtifactRoots(outputs: readonly ConversionOutput[], preserveBackups =
             rootPath: output.stagingRootPath,
             workspacePath: output.stagingWorkspacePath ?? output.workspacePath,
             ...(preserveBackups && output.previousFilePath !== undefined
-              ? { preservePaths: [output.previousFilePath] }
+              ? { preservePaths: [output.previousFilePath, path.join(output.stagingRootPath, 'manifest.json')] }
               : {}),
           },
         ]
@@ -267,6 +358,41 @@ function toArtifactRoots(outputs: readonly ConversionOutput[], preserveBackups =
 
 function toManifestArtifactRoots(entry: UndoManifestEntry): ConversionArtifactRoot[] {
   return entry.roots.map((root) => ({ rootPath: root.rootPath, workspacePath: root.workspacePath }));
+}
+
+function failedArtifactRoots(
+  artifacts: readonly ConversionArtifactRoot[],
+  result: CleanupResult,
+): ConversionArtifactRoot[] {
+  const failedRootPaths = new Set(result.failures.map((failure) => path.resolve(failure.rootPath)));
+  return artifacts.filter((artifact) => failedRootPaths.has(path.resolve(artifact.rootPath)));
+}
+
+function toManifestRoot(artifact: ConversionArtifactRoot): UndoManifestRoot {
+  return { rootPath: artifact.rootPath, workspacePath: artifact.workspacePath };
+}
+
+function mergeManifestEntries(entries: readonly UndoManifestEntry[]): UndoManifestEntry[] {
+  const merged = new Map<string, UndoManifestEntry>();
+  for (const entry of entries) {
+    const current = merged.get(entry.id);
+    if (current === undefined) {
+      merged.set(entry.id, { ...entry, roots: [...entry.roots] });
+      continue;
+    }
+    const roots = new Map(
+      [...current.roots, ...entry.roots].map((root) => [
+        `${path.resolve(root.workspacePath)}\0${path.resolve(root.rootPath)}`,
+        root,
+      ]),
+    );
+    merged.set(entry.id, {
+      id: entry.id,
+      createdAt: Math.min(current.createdAt, entry.createdAt),
+      roots: [...roots.values()],
+    });
+  }
+  return [...merged.values()];
 }
 
 function isUndoManifest(value: unknown): value is UndoManifest {

@@ -11,12 +11,15 @@ suite('新規出力の取り消し時に他プロセスが置き換えた場合�
     const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const firstStagedPath = path.join(stagingRootPath, 'first.pdf');
     const secondStagedPath = path.join(stagingRootPath, 'second.pdf');
+    const thirdStagedPath = path.join(stagingRootPath, 'third.pdf');
     const firstOutputPath = path.join(workspacePath.path, 'first.pdf');
     const secondOutputPath = path.join(workspacePath.path, 'second.pdf');
+    const thirdOutputPath = path.join(workspacePath.path, 'third.pdf');
 
     await mkdir(stagingRootPath, { recursive: true });
     await writeFile(firstStagedPath, 'generated first');
-    await mkdir(secondStagedPath);
+    await writeFile(secondStagedPath, 'generated second');
+    await mkdir(thirdStagedPath);
 
     await assert.rejects(
       commitStagedOutputs(
@@ -30,6 +33,12 @@ suite('新規出力の取り消し時に他プロセスが置き換えた場合�
           {
             stagedOutputPath: secondStagedPath,
             outputPath: secondOutputPath,
+            workspacePath: workspacePath.path,
+            stagingRootPath,
+          },
+          {
+            stagedOutputPath: thirdStagedPath,
+            outputPath: thirdOutputPath,
             workspacePath: workspacePath.path,
             stagingRootPath,
           },
@@ -54,5 +63,6 @@ suite('新規出力の取り消し時に他プロセスが置き換えた場合�
 
     assert.strictEqual(await readFile(firstOutputPath, 'utf8'), 'external edit');
     await assert.rejects(readFile(secondOutputPath));
+    await assert.rejects(readFile(thirdOutputPath));
   });
 });
