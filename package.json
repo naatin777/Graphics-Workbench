@@ -719,6 +719,14 @@
           "scope": "machine",
           "description": "%config.performance.maxConcurrentHeavyProcesses%"
         },
+        "graphics-workbench.undoHistory.maxRecords": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100,
+          "scope": "machine",
+          "description": "%config.undoHistory.maxRecords%"
+        },
         "graphics-workbench.convertToPdf.svg.engine": {
           "type": "string",
           "enum": [

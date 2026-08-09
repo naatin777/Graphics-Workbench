@@ -11,6 +11,7 @@
   "config.preview.maxCanvasPixels": "Maximum total pixels for a PDF preview canvas. The preview is downscaled when necessary; output files are unaffected.",
   "config.preview.maxDevicePixelRatio": "Maximum device pixel ratio used for PDF previews.",
   "config.performance.maxConcurrentHeavyProcesses": "Maximum number of heavy external rendering processes that may run at the same time. Higher values may increase CPU and memory usage.",
+  "config.undoHistory.maxRecords": "Maximum number of recent conversions that can be undone in the current session. Older conversion backups are removed when this limit is exceeded.",
   "config.externalTools.drawio.timeoutSeconds": "Maximum Draw.io execution time in seconds. Set to 0 for no timeout.",
   "config.externalTools.rsvgConvert.timeoutSeconds": "Maximum rsvg-convert execution time in seconds. Set to 0 for no timeout.",
   "config.externalTools.mermaid.timeoutSeconds": "Maximum Mermaid execution time in seconds. Set to 0 for no timeout.",

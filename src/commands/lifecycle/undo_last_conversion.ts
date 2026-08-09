@@ -1,20 +1,21 @@
 import * as vscode from 'vscode';
 
+import { getMaxUndoRecords } from '../../config/undo_history.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import type { ConversionOutput } from '../../operations/lifecycle/undo_last_conversion.js';
-import { UndoHistoryManager, type UndoManifestStorage } from '../../operations/lifecycle/undo_history_manager.js';
+import { UndoHistoryManager } from '../../operations/lifecycle/undo_history_manager.js';
+import type { Configuration } from '../../generated/extension_manifest.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { userMessage } from '../shared/user_messages.js';
 
-let undoHistory: UndoHistoryManager = new UndoHistoryManager();
+// Undo history is session-only: the module instance starts empty on every
+// extension-host activation and is never persisted to workspaceState.
+const undoHistory: UndoHistoryManager = new UndoHistoryManager();
 
-export function initializeUndoHistory(options: {
-  workspaceState: UndoManifestStorage;
-  outputChannel?: LineOutputChannel;
-}): void {
-  undoHistory = new UndoHistoryManager({ storage: options.workspaceState });
-  void undoHistory.initialize(options.outputChannel);
+/** Applies the configured Undo history limit to the session's history manager. */
+export function applyUndoHistoryConfiguration(configuration: Configuration): void {
+  undoHistory.setMaxRecords(getMaxUndoRecords(configuration));
 }
 
 export async function recordConversionForUndo(
