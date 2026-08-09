@@ -8,6 +8,12 @@
 - `PROJECT_STATE.md`やtask archiveを事前に全読みしない。
 - 関係するskillを必要時に読み、skillのdescriptionで選択されることを前提とする。
 
+## Worktree運用
+
+- 並列作業・ブランチ競合を避けるため、実装は基本的に専用worktreeで行う。
+- 作業開始時は `git worktree add` でmainを起点に新ブランチのworktreeを作成する。
+- 現在のworktreeでの直接作業は、明示的に指示された場合のみ行う。
+
 ## スコープ
 
 - 1つのタスクは、検証可能な1つの目的に集中させる。
