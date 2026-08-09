@@ -6,12 +6,13 @@
 #   - librsvg2-bin / mermaid-cli / fonts-noto-cjk / drawio for conversion tests
 #
 # Used by scripts/test-in-docker.sh. Run tests with:
-#   npm run test:docker -- <npm-script>
+#   npm run check:docker
+#   npm run test:docker
+#   npm run playwright:smoke:docker
 #
-# The repository is bind-mounted at runtime, so no source code is COPY'd into
-# the image. Layers are ordered stable-first: package.json / package-lock.json
-# change far less often than src, so the expensive tool installs sit before the
-# npm ci layer and only re-run when package files actually change.
+# The repository is copied into the image after tools and dependencies. Source
+# changes only invalidate the final layer; the container never writes through a
+# bind mount into the host repository.
 FROM mcr.microsoft.com/playwright:v1.62.1-noble
 
 ARG DRAWIO_VERSION=31.1.5
@@ -39,10 +40,10 @@ RUN --mount=type=cache,target=/root/.npm \
   npm install --global @mermaid-js/mermaid-cli
 
 # execPath.chrome falls back to `google-chrome` on Linux when the setting is
-# empty. The bind-mounted workspace keeps the tracked {} settings, so expose the
-# base image's Chromium under that name. The wrapper adds --no-sandbox because
-# the container runs as root (puppeteer/Chromium refuse to run as root without
-# it). The test harness resolves `google-chrome` via `which` to an absolute path.
+# empty. Expose the base image's Chromium under that name. The wrapper adds
+# --no-sandbox because the container runs as root (puppeteer/Chromium refuse to
+# run as root without it). The test harness resolves `google-chrome` via `which`
+# to an absolute path.
 RUN chrome_path="$(find /ms-playwright -path '*/chrome-linux*/chrome' -type f | head -n 1)" \
   && printf '#!/usr/bin/env bash\nexec "%s" --no-sandbox --disable-dev-shm-usage "$@"\n' "${chrome_path}" > /usr/local/bin/google-chrome \
   && chmod +x /usr/local/bin/google-chrome
@@ -65,14 +66,17 @@ RUN arch="$(dpkg --print-architecture)" \
   && printf '#!/usr/bin/env bash\nexec "%s" --no-sandbox --disable-gpu --disable-dev-shm-usage "$@"\n' "${drawio_path}" > /usr/local/bin/drawio \
   && chmod +x /usr/local/bin/drawio
 
-# Linux node_modules (sharp / mupdf native builds). Only package files are
-# COPY'd, so src / test changes never re-run npm ci. The resulting node_modules
-# seeds the named volume used by scripts/test-in-docker.sh.
-COPY package.json package-lock.json ./
+# Linux node_modules (sharp / mupdf native builds). npm configuration belongs to
+# the dependency layer so a policy change invalidates npm ci as expected.
+COPY package.json package-lock.json .npmrc ./
 RUN --mount=type=cache,target=/root/.npm \
   npm ci
 
 COPY docker/test/entrypoint.sh /usr/local/bin/graphics-workbench-test
 RUN chmod +x /usr/local/bin/graphics-workbench-test
+
+# Keep this last. Source changes must not invalidate tool installation or npm
+# ci, and host-generated artifacts are excluded by .dockerignore.
+COPY . .
 
 ENTRYPOINT ["/usr/local/bin/graphics-workbench-test"]

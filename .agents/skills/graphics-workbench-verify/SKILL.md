@@ -1,6 +1,6 @@
 ---
 name: graphics-workbench-verify
-description: Graphics Workbenchの実装・修正をローカル検証するとき、testコマンドを選ぶ前に使用する。VS Code / Electronのwindowを開くtestはDockerへ隔離し、headless test、check、buildはhostで実行して、必要十分なUnit Test、Integration Test、Webview、Playwright、package smoke testを選ぶ。
+description: Graphics Workbenchの実装・修正をローカル検証するとき、testコマンドを選ぶ前に使用する。canonicalなLinux検証は用途別Dockerコマンドで実行し、必要十分なUnit Test、Integration Test、Webview、Playwright、package smoke testを選ぶ。
 ---
 
 # 変更検証
@@ -9,11 +9,9 @@ description: Graphics Workbenchの実装・修正をローカル検証すると�
 
 ## 実行環境の選択
 
-- testコマンドを実行する前に、VS Code / Electronのwindowを開くか判定する。
-- `test`、`test:coverage`、`test:coverage:run`、packaged Playwright smokeなどwindowを開くローカルtestはDockerで実行する。目的はXvfb内へ隔離し、hostの画面を占有しないこと。
-- build、check、`test:scripts`、`test:webview:*`などheadless処理はhostで実行できる。
-- GitHub ActionsのOS別jobは各runner上でnative実行する。
-- full Playwright、visual capture、release検証、platform固有問題のデバッグをhostで行う場合は、windowが開くことを前提に必要時だけ実行する。
+- canonicalなLinuxローカル検証は、用途別の `*:docker` コマンドで実行する。
+- hostではwatch、format fix、変更箇所の短い診断、native OS固有の確認を実行する。
+- release検証はGitHub Actionsの各native runnerで実行する。
 
 ## 手順
 
@@ -26,42 +24,26 @@ description: Graphics Workbenchの実装・修正をローカル検証すると�
 
 ## subsystem別のminimal verification
 
-| subsystem                                 | チェック                                                                        |
-| ----------------------------------------- | ------------------------------------------------------------------------------- |
-| TypeScript全般                            | `npm run check`(lint + format + typecheck + typecheck:test + typecheck:webview) |
-| テストコード / テスト用tsconfig変更       | 上記のcheckに含まれるtypecheck:testに加え、対象に応じて`test:scripts`か`test`   |
-| Webview / SolidJS                         | `npm run test:webview:<app>`、`npm run typecheck:webview`                       |
-| 生成metadata / package.json / NLS         | `npm run check:nls`、`npm run check:extension-meta`                             |
-| script / node test                        | `npm run test:scripts`                                                          |
-| Extension Host / VS Code API / 変換フロー | hostでbuild後、`npm run test:docker -- test`                                    |
-| Playwright / packaged VSIX                | packaged smokeはDocker、full suite / visual captureはhostで必要時のみ           |
-| packaging / dependency                    | `graphics-workbench-packaging` を参照                                           |
+| subsystem                             | チェック                           |
+| ------------------------------------- | ---------------------------------- |
+| TypeScript / metadata / script        | `npm run check:docker`             |
+| Extension Host / Webview / 変換フロー | `npm run test:docker`              |
+| coverage                              | `npm run test:coverage:docker`     |
+| packaged VSIX smoke                   | `npm run playwright:smoke:docker`  |
+| Playwright full suite                 | `npm run playwright:full:docker`   |
+| visual review capture                 | `npm run visual:capture:docker`    |
+| pre-push相当の一式                    | `npm run verify:docker`            |
+| packaging / dependency                | `graphics-workbench-packaging`参照 |
 
 ## 基本チェック
 
-通常の実装変更ではhostで次を実行できる。このコマンドにはtestを含まない。
+通常の実装変更では、まず静的チェックを実行する。
 
 ```bash
-npm run check
+npm run check:docker
 ```
 
-変更に関係するtestは、windowの有無に応じてhostかDockerで別途実行する。リポジトリはnpmを使い、`pnpm`は使わない。
-
-## windowを開くローカルtest
-
-PR時CIは停止済み（workflow_dispatchのみ）。VS Code / Electronのwindowを開くtestはDockerで実行する。
-
-```bash
-npm run test:docker -- test
-npm run test:docker -- test:coverage:run
-npm run test:docker -- package:vsix test:playwright:smoke
-```
-
-- buildはhostで実行してからDocker testを実行する（コンテナ内buildはviteのpdfjs asset copyがmacOS bind mountでEACCESになる）。
-- node_modulesはlockfileのSHA-256でkey付けされたnamed volumeが再利用される。lockfile変更で別volumeになる。
-- windowを開くscriptが含まれる場合だけXvfbが起動する。
-- Playwrightはコンテナではpackaged smokeのみ実行する。full suite（configure specのPDF描画）はhost / releaseで検証する。
-- Dockerfile / `docker/` / `scripts/test-in-docker.sh` / `entrypoint.sh` を変更した場合は、`npm run test:docker -- check:all` と `npm run test:docker -- package:vsix test:playwright:smoke` で実動作を確認する。
+表から変更に必要なruntime testを追加し、push前の一式には `npm run verify:docker` を使う。リポジトリはnpmを使い、`pnpm`は使わない。
 
 ## テスト境界の選択
 
