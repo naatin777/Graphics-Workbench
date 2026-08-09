@@ -1,11 +1,19 @@
 ---
 name: graphics-workbench-verify
-description: Graphics Workbenchの変更内容に応じて、必要十分な型チェック、lint、format、ローカライズ確認、Unit Test、Integration Test、VS Code Electron、Webview、Playwright、package smoke testを選択して実行する。テスト境界の選択とローカルDockerでの実行方法も含む。実装や修正の完了前に使用する。
+description: Graphics Workbenchの実装・修正をローカル検証するとき、testコマンドを選ぶ前に使用する。buildとtestの実行環境を最初に決め、ローカルtestはDocker、buildとtestを含まないcheckはhostで実行し、必要十分なUnit Test、Integration Test、VS Code Electron、Webview、Playwright、package smoke testを選ぶ。
 ---
 
 # 変更検証
 
 現在の差分から、変更を検証できる最小限のチェックを選択する。「とりあえず全テスト」を既定にしない。
+
+## 実行環境の絶対ルール
+
+- **buildはhost、ローカルtestはDocker**とする。
+- hostでは`npm run build`とtestを含まないcheckを実行できる。
+- ローカルtestは変更に関係するnpm scriptを選び、`npm run test:docker -- <npm-script>`で実行する。
+- ローカルで`npm test`、`npm run test:scripts`、`npm run test:webview:*`、`npm run test:playwright:smoke`をhostから直接実行しない。
+- GitHub ActionsのOS別jobは各runner上でnative実行する。ローカルでもfull Playwright、release検証、platform固有問題のデバッグだけはhost実行を許可するが、Docker検証の代用にはしない。
 
 ## 手順
 
@@ -21,27 +29,27 @@ description: Graphics Workbenchの変更内容に応じて、必要十分な型�
 | subsystem                                 | チェック                                                                        |
 | ----------------------------------------- | ------------------------------------------------------------------------------- |
 | TypeScript全般                            | `npm run check`(lint + format + typecheck + typecheck:test + typecheck:webview) |
-| テストコード / テスト用tsconfig変更       | 上記のcheckに含まれるtypecheck:testに加え、`npm run compile:test`               |
-| Webview / SolidJS                         | 該当Webviewの `npm run test:webview:<app>`、`npm run typecheck:webview`         |
+| テストコード / テスト用tsconfig変更       | 上記のcheckに含まれるtypecheck:testに加え、Dockerの`test:scripts`または`test`   |
+| Webview / SolidJS                         | `npm run test:docker -- test:webview:<app>`、`npm run typecheck:webview`        |
 | 生成metadata / package.json / NLS         | `npm run check:nls`、`npm run check:extension-meta`                             |
-| script / node test                        | `npm run test:scripts`                                                          |
-| Extension Host / VS Code API / 変換フロー | 関連するIntegration Test(`npm test -- --grep ...`)                              |
-| Playwright / packaged VSIX                | `npm run package:vsix` + `npm run test:playwright:vsix`(必要時のみ)             |
+| script / node test                        | `npm run test:docker -- test:scripts`                                           |
+| Extension Host / VS Code API / 変換フロー | hostでbuild後、`npm run test:docker -- test`                                    |
+| Playwright / packaged VSIX                | `npm run test:docker -- package:vsix test:playwright:smoke`(必要時のみ)         |
 | packaging / dependency                    | `graphics-workbench-packaging` を参照                                           |
 
 ## 基本チェック
 
-通常の実装変更では実行する。
+通常の実装変更ではhostで次を実行できる。このコマンドにはtestを含まない。
 
 ```bash
 npm run check
 ```
 
-(リポジトリはnpmを使う。`pnpm`ではない。)
+変更に関係するtestは後述のDocker経路で別途実行する。リポジトリはnpmを使い、`pnpm`は使わない。
 
 ## ローカルDockerでの実行
 
-PR時CIは停止済み（workflow_dispatchのみ）。ローカルテストは基本的にDockerで実行する。
+PR時CIは停止済み（workflow_dispatchのみ）。ローカルtestはDockerで実行する。
 
 ```bash
 npm run test:docker -- check:all
@@ -50,7 +58,7 @@ npm run test:docker -- test
 npm run test:docker -- package:vsix test:playwright:smoke
 ```
 
-- **buildはhost、testはDocker**。`npm run build`をhostで実行してからDockerでテストする（コンテナ内buildはviteのpdfjs asset copyがmacOS bind mountでEACCESになる）。
+- **buildはhost、testはDocker**。個別testでは`npm run build`をhostで実行してからDockerでtestを実行する（コンテナ内buildはviteのpdfjs asset copyがmacOS bind mountでEACCESになる）。
 - node_modulesはlockfileのSHA-256でkey付けされたnamed volumeが再利用される。lockfile変更で別volumeになる。
 - GUIが必要なscript（`test` / `test:coverage` / `test:coverage:run` / `test:playwright:vsix` / `test:playwright:smoke` / `visual:capture`）が含まれる場合だけXvfbが起動する。
 - Playwrightはコンテナではpackaged smokeのみ実行する。full suite（configure specのPDF描画）はhost / releaseで検証する。

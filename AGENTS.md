@@ -8,6 +8,13 @@
 - `PROJECT_STATE.md`やtask archiveを事前に全読みしない。
 - 関係するskillを必要時に読み、skillのdescriptionで選択されることを前提とする。
 
+## 検証環境
+
+- ローカルではbuildをhost、testをDockerで実行する。GitHub ActionsのOS別jobは各runner上でnative実行する。
+- hostでは`npm run build`とtestを含まないcheckを実行できる。ローカルtestは必要なnpm scriptを選び、`npm run test:docker -- <npm-script>`で実行する。
+- ローカルで`npm test`や`npm run test:webview:*`をhostから直接実行しない。
+- ローカルのhost testは、full Playwright、release検証、またはplatform固有問題の明示的なデバッグに限る。Docker検証の代用にはしない。
+
 ## スコープ
 
 - 1つのタスクは、検証可能な1つの目的に集中させる。
