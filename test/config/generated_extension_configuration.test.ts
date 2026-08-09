@@ -27,13 +27,22 @@ suite('生成された設定スキーマ検証', () => {
     assert.deepStrictEqual(configuration.outputPaths(), {});
   });
 
-  test('設定を何も与えない場合、maxCanvasPixels=40,000,000・maxDevicePixelRatio=2・maxConcurrentHeavyProcesses=2・rsvgConvertタイムアウト0秒の既定値を返す', () => {
+  test('設定を何も与えない場合、maxCanvasPixels=40,000,000・maxDevicePixelRatio=2・maxConcurrentHeavyProcesses=2・undoHistory.maxRecords=10・rsvgConvertタイムアウト0秒の既定値を返す', () => {
     const configuration = fakeConfiguration();
 
     assert.strictEqual(configuration.preview.maxCanvasPixels(), 40_000_000);
     assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
     assert.strictEqual(configuration.performance.maxConcurrentHeavyProcesses(), 2);
+    assert.strictEqual(configuration.undoHistory.maxRecords(), 10);
     assert.strictEqual(configuration.externalTools.rsvgConvert.timeoutSeconds(), 0);
+  });
+
+  test('undoHistory.maxRecordsに範囲外の0と非整数の1.5を設定した場合、default値10へフォールバックする', () => {
+    const outOfBounds = fakeConfiguration({ 'undoHistory.maxRecords': 0 });
+    assert.strictEqual(outOfBounds.undoHistory.maxRecords(), 10);
+
+    const nonInteger = fakeConfiguration({ 'undoHistory.maxRecords': 1.5 });
+    assert.strictEqual(nonInteger.undoHistory.maxRecords(), 10);
   });
 
   test('preview.maxDevicePixelRatioに範囲外の0、rsvgConvert.timeoutSecondsに範囲外の86,401を設定した場合、それぞれdefaultの2と0へフォールバックする', () => {

@@ -2,6 +2,7 @@ import { configureExternalToolTimeouts } from '../../config/external_tools/exter
 import { getExtensionConfiguration } from '../../config/extension_configuration.js';
 import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { getMaxConcurrentHeavyProcesses } from '../../config/performance.js';
+import { applyUndoHistoryConfiguration } from '../lifecycle/undo_last_conversion.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { cleanupStaleSecurePdfStagingRoots } from '../../operations/lifecycle/secure_staging.js';
 import {
@@ -11,13 +12,15 @@ import {
 
 import type { CommandDependencies } from './command_dependencies.js';
 
-/** Applies external tool timeouts and process limiter concurrency from the given configuration. */
+/** Applies external tool timeouts, process limiter concurrency, and Undo history limits from the given configuration. */
 export function applyRuntimeConfiguration(configuration: Configuration): void {
   configureExternalToolTimeouts(configuration);
 
   const concurrency = getMaxConcurrentHeavyProcesses(configuration);
   sharedHeavyProcessLimiter.setConcurrency(concurrency);
   sharedConversionJobLimiter.setConcurrency(concurrency);
+
+  applyUndoHistoryConfiguration(configuration);
 }
 
 /** Reads the extension configuration and applies its runtime settings. */

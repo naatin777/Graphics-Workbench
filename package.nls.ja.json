@@ -11,6 +11,7 @@
   "config.preview.maxCanvasPixels": "PDFプレビューのキャンバスに許可する合計ピクセル数です。必要な場合はプレビューだけ縮小し、出力ファイルには影響しません。",
   "config.preview.maxDevicePixelRatio": "PDFプレビューで使用するデバイスピクセル比の上限です。",
   "config.performance.maxConcurrentHeavyProcesses": "同時に実行できる重い外部レンダリングプロセス数の上限です。値を増やすとCPUとメモリ使用量が増える可能性があります。",
+  "config.undoHistory.maxRecords": "現在のセッションで取り消せる直近の変換数の上限です。この上限を超えると、より古い変換のバックアップが削除されます。",
   "config.externalTools.drawio.timeoutSeconds": "Draw.ioの最大実行時間（秒）。0でタイムアウトなし。",
   "config.externalTools.rsvgConvert.timeoutSeconds": "rsvg-convertの最大実行時間（秒）。0でタイムアウトなし。",
   "config.externalTools.mermaid.timeoutSeconds": "Mermaidの最大実行時間（秒）。0でタイムアウトなし。",

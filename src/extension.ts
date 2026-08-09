@@ -5,7 +5,6 @@ import type { CommandDependencies } from './commands/shared/command_dependencies
 import { applyRuntimeConfiguration } from './commands/shared/command_runtime.js';
 import { initializeSafeMode } from './commands/lifecycle/safe_mode.js';
 import { initializeControlsPanel } from './commands/lifecycle/controls_panel.js';
-import { initializeUndoHistory } from './commands/lifecycle/undo_last_conversion.js';
 import { LatexDropEditProvider } from './edit_provider/latex_drop_edit_provider.js';
 import { LatexPasteEditProvider } from './edit_provider/latex_paste_edit_provider.js';
 import { insertionDocumentSelectors, insertionFormats } from './edit_provider/insertion_format.js';
@@ -22,7 +21,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   initializeSafeMode(context);
   initializeControlsPanel(context);
   const outputChannel = vscode.window.createOutputChannel(extensionIdentity.displayName);
-  initializeUndoHistory({ workspaceState: context.workspaceState, outputChannel });
   const dependencies = { getConfiguration: getExtensionConfiguration, outputChannel } satisfies CommandDependencies;
   context.subscriptions.push(outputChannel);
 
@@ -31,6 +29,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (
         event.affectsConfiguration('graphics-workbench.performance.maxConcurrentHeavyProcesses') ||
+        event.affectsConfiguration('graphics-workbench.undoHistory.maxRecords') ||
         event.affectsConfiguration('graphics-workbench.externalTools')
       ) {
         applyRuntimeConfiguration(getExtensionConfiguration());

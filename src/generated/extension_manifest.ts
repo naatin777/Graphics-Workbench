@@ -24,6 +24,7 @@ type ConfigurationKey =
   | 'preview.maxCanvasPixels'
   | 'preview.maxDevicePixelRatio'
   | 'performance.maxConcurrentHeavyProcesses'
+  | 'undoHistory.maxRecords'
   | 'convertToPdf.svg.engine'
   | 'mermaid.theme'
   | 'mermaid.backgroundColor'
@@ -259,6 +260,11 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['integer'],
     minimum: 1,
     maximum: 16,
+  },
+  'undoHistory.maxRecords': {
+    types: ['integer'],
+    minimum: 1,
+    maximum: 100,
   },
   'convertToPdf.svg.engine': {
     types: ['string'],
@@ -1027,6 +1033,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'performance.maxConcurrentHeavyProcesses',
         2,
       ),
+    },
+    undoHistory: {
+      maxRecords: defineConfiguration<number>(configurationReader, 'undoHistory.maxRecords', 10),
     },
     convertToPdf: {
       svg: {
