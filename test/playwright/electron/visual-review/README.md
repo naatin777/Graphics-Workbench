@@ -40,17 +40,25 @@ artifacts/
         │   ├── merge-configure-dark.png
         │   ├── merge-configure-light.png
         │   ├── split-configure-dark.png
-        │   └── split-configure-light.png
+        │   ├── split-configure-light.png
+        │   ├── pdf-preview-dark.png
+        │   ├── pdf-preview-light.png
+        │   ├── tiff-preview-dark.png
+        │   └── tiff-preview-light.png
         └── narrow/
             ├── crop-configure-dark.png
             ├── crop-configure-light.png
             ├── merge-configure-dark.png
             ├── merge-configure-light.png
             ├── split-configure-dark.png
-            └── split-configure-light.png
+            ├── split-configure-light.png
+            ├── pdf-preview-dark.png
+            ├── pdf-preview-light.png
+            ├── tiff-preview-dark.png
+            └── tiff-preview-light.png
 ```
 
-全テーマ（dark / light / high-contrast / high-contrast-light / red / abyss）について、wideとnarrowが同じ命名規則で生成される。
+全テーマ（dark / light / high-contrast / high-contrast-light / red / abyss）について、wideとnarrowが同じ命名規則で生成される。Configure画面（crop / merge / split）は全テーマ、Custom Editor preview（pdf / tiff）はdark / lightの2テーマで撮影する。previewは`workbench.editorAssociations`でCustom Editorをデフォルト指定した状態でファイルを開いて撮影する。
 
 ## generated画像とreference画像
 

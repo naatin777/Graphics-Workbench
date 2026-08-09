@@ -93,6 +93,12 @@ interface PackageJson {
     };
     menus: Record<string, { command?: string; submenu?: string; when?: string }[]>;
     submenus: { id: string; label: string }[];
+    customEditors?: {
+      viewType: string;
+      displayName: string;
+      selector: { filenamePattern?: string }[];
+      priority: string;
+    }[];
   };
 }
 
@@ -640,6 +646,27 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(outputPaths.properties, 'outputPaths must have explicit properties');
   });
 
+  test('PDFとTIFFのCustom Editorをpriority:optionで登録し、displayNameを%キー%参照・selectorを拡張子パターンにする', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+    const customEditors = packageJson.contributes.customEditors ?? [];
+    const pdfEditor = customEditors.find((editor) => editor.viewType === 'graphics-workbench.pdf.preview');
+    const tiffEditor = customEditors.find((editor) => editor.viewType === 'graphics-workbench.tiff.preview');
+
+    assert.ok(pdfEditor, 'PDF preview custom editor is missing');
+    assert.strictEqual(pdfEditor.priority, 'option');
+    assert.strictEqual(pdfEditor.displayName, '%customEditor.pdf.preview.displayName%');
+    assert.deepStrictEqual(pdfEditor.selector, [{ filenamePattern: '*.pdf' }]);
+
+    assert.ok(tiffEditor, 'TIFF preview custom editor is missing');
+    assert.strictEqual(tiffEditor.priority, 'option');
+    assert.strictEqual(tiffEditor.displayName, '%customEditor.tiff.preview.displayName%');
+    assert.deepStrictEqual(tiffEditor.selector, [{ filenamePattern: '*.tif' }, { filenamePattern: '*.tiff' }]);
+
+    for (const editor of customEditors) {
+      assert.match(editor.viewType, /^graphics-workbench\./u);
+    }
+  });
+
   test('onLanguage:latexをactivationEventsに含め、LaTeX文書を開いたときdrag and drop / clipboard paste用に拡張機能を起動する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
 
@@ -713,7 +740,8 @@ function isPackageJson(value: unknown): value is PackageJson {
     isRecord(configuration) &&
     isConfigurationProperties(configuration.properties) &&
     isMenuRecord(contributes.menus) &&
-    isSubmenuArray(contributes.submenus)
+    isSubmenuArray(contributes.submenus) &&
+    isCustomEditorArray(contributes.customEditors)
   );
 }
 
@@ -771,6 +799,22 @@ function isSubmenuArray(value: unknown): value is PackageJson['contributes']['su
   return (
     Array.isArray(value) &&
     value.every((entry) => isRecord(entry) && typeof entry.id === 'string' && typeof entry.label === 'string')
+  );
+}
+
+function isCustomEditorArray(value: unknown): value is PackageJson['contributes']['customEditors'] {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.every(
+        (entry) =>
+          isRecord(entry) &&
+          typeof entry.viewType === 'string' &&
+          typeof entry.displayName === 'string' &&
+          typeof entry.priority === 'string' &&
+          Array.isArray(entry.selector) &&
+          entry.selector.every((selector) => isRecord(selector) && typeof selector.filenamePattern === 'string'),
+      ))
   );
 }
 

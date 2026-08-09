@@ -123,7 +123,7 @@ export async function waitForWebviewViewportResize(body: Locator, expectedMaxWid
 export async function captureCropPdfScreenshot(
   page: Page,
   body: Locator,
-  canvasFallback?: { canvases: Locator; snapshotPrefix: string },
+  canvasFallback?: { canvases: Locator; previewSelector?: string; snapshotPrefix: string },
 ): Promise<Buffer> {
   await body.evaluate((element) => {
     const document = element.ownerDocument;
@@ -153,8 +153,8 @@ export async function captureCropPdfScreenshot(
     });
   }
 
-  const { canvases, snapshotPrefix } = canvasFallback;
-  const previewBounds = await body.locator('.pdf-preview').boundingBox();
+  const { canvases, previewSelector = '.pdf-preview', snapshotPrefix } = canvasFallback;
+  const previewBounds = await body.locator(previewSelector).boundingBox();
 
   if (!previewBounds) {
     throw new Error('PDF preview has no visible bounds.');

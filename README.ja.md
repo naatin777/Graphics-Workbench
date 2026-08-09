@@ -58,12 +58,17 @@ Convert confidently. Existing files are protected by default, and the latest gra
 
 ### PDF 操作
 
+- **プレビュー**: PDF を読み取り専用で表示（「Reopen Editor With...」→ Graphics Workbench PDF Preview）
 - **余白のトリミング**: 自動、またはプレビューで余白を指定して削除
 - **分割**: PDF をページごとに単一ページ PDF として分割
 - **結合**: 複数の PDF を 1 つに結合（並べ替えも可能）
 - **回転**: ページを 90° / 180° / 270° で回転
 - **並べ替え**: ページ順をプレビューしながら変更
 - **圧縮 / 暗号化 / 復号化**: サイズ削減やパスワード保護
+
+### プレビュー
+
+- **TIFF プレビュー**: 単一・複数ページの TIFF ファイルを読み取り専用で表示（「Reopen Editor With...」→ Graphics Workbench TIFF Preview）
 
 ### 変換
 

@@ -900,6 +900,19 @@ export const submenuContributions = {
 
 export type SubmenuId = keyof typeof submenuContributions;
 
+export const customEditorContributions = {
+  'graphics-workbench.pdf.preview': {
+    displayNameKey: 'customEditor.pdf.preview.displayName',
+    priority: 'option',
+    selectors: [{ filenamePattern: '*.pdf' }],
+  },
+  'graphics-workbench.tiff.preview': {
+    displayNameKey: 'customEditor.tiff.preview.displayName',
+    priority: 'option',
+    selectors: [{ filenamePattern: '*.tif' }, { filenamePattern: '*.tiff' }],
+  },
+} as const;
+
 export const externalToolTimeoutConfigurationKeys = {
   drawio: 'externalTools.drawio.timeoutSeconds',
   mermaid: 'externalTools.mermaid.timeoutSeconds',

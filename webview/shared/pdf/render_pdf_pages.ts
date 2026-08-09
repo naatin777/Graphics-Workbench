@@ -437,13 +437,14 @@ async function loadPdfJs(workerSrc?: string): Promise<PdfJs> {
   return pdfjsModule;
 }
 
-interface PdfRenderOptions {
+export interface PdfRenderOptions {
   resources?: {
     workerSrc?: string;
     cMapUrl?: string;
     standardFontDataUrl?: string;
     wasmUrl?: string;
   };
+  data?: Uint8Array | string;
   root?: Element;
   page?: {
     label?: string;
@@ -471,9 +472,9 @@ function createAbortError(): Error {
 }
 
 function createDocumentOptions(pdfSrc: string, options: PdfRenderOptions): Parameters<PdfJs['getDocument']>[0] {
-  const { resources } = options;
+  const { resources, data } = options;
   return {
-    url: pdfSrc,
+    ...(data === undefined ? { url: pdfSrc } : { data }),
     cMapPacked: true,
     useWorkerFetch: false,
     cMapUrl: nonEmptyOrDefault(resources?.cMapUrl, `${sharedPdfJsAssetsPath}/cmaps/`),
