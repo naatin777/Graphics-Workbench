@@ -12,7 +12,14 @@ export interface MupdfPdfObject {
   put(key: string | number, value: unknown): unknown;
 }
 
-interface MupdfPixmap {
+/**
+ * Memory guard for the content-detection probe: giant pages lower the
+ * detection resolution instead of being rejected or scanned at full size.
+ * It is not a processing limit.
+ */
+const MAX_CONTENT_RENDER_PIXELS = 50_000_000;
+
+export interface MupdfPixmap {
   getWidth(): number;
   getHeight(): number;
   getPixels(): Uint8ClampedArray;
@@ -143,14 +150,14 @@ export async function countPdfPages(bytes: Uint8Array): Promise<number> {
   }
 }
 
-/** Returns whether the given 1-based page draws any non-white content. */
+/** Returns whether the given 1-based page draws any visible (non-white) content. */
 export async function hasPdfPageContent(bytes: Uint8Array, page: number): Promise<boolean> {
   const mupdf = await loadMupdf();
   const document = await openPdfDocument(bytes);
   try {
     const pageObject = document.loadPage(page - 1);
     try {
-      return findPageContentBounds(mupdf, pageObject) !== undefined;
+      return findVisibleContentBounds(pageObject, mupdf) !== undefined;
     } finally {
       pageObject.destroy();
     }
@@ -176,7 +183,7 @@ export async function renderPdfPageToPng(
     const pageObject = document.loadPage(page - 1);
     try {
       if (options?.cropContent === true) {
-        const bounds = findPageContentBounds(mupdf, pageObject);
+        const bounds = findVisibleContentBounds(pageObject, mupdf);
         if (bounds !== undefined) {
           pageObject.setPageBox('CropBox', bounds);
         }
@@ -197,45 +204,73 @@ export async function renderPdfPageToPng(
   }
 }
 
-function findPageContentBounds(mupdf: MupdfModule, pageObject: MupdfPdfPage): MupdfRect | undefined {
-  const probeDpi = 72;
-  const probePixmap = pageObject.toPixmap(
-    mupdf.Matrix.scale(probeDpi / 72, probeDpi / 72),
-    mupdf.ColorSpace.DeviceRGB,
-    false,
-  );
+/**
+ * Returns the visible content bounds of a page in PDF coordinates, or
+ * `undefined` for a page with no visible content.
+ *
+ * Semantics follow pdfcrop / Ghostscript's bbox device: the page is rendered
+ * onto a white background and only pixels that are not pure white count as
+ * content, so a full-page white rectangle does not make the whole page content.
+ * `DisplayList.getBounds()` cannot be used for this: it returns the display
+ * list's mediabox (`fz_bound_display_list` returns `list->mediabox`), i.e. the
+ * page box, not the drawn content bounds.
+ */
+export function findVisibleContentBounds(page: MupdfPdfPage, mupdf: MupdfModule): MupdfRect | undefined {
+  const mediabox = page.getBounds('MediaBox');
+  const width = mediabox[2] - mediabox[0];
+  const height = mediabox[3] - mediabox[1];
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return undefined;
+  }
+
+  // Cap the probe so giant pages reduce the detection resolution instead of
+  // consuming unbounded memory (a memory guard, not a processing limit).
+  const pixelCount = Math.ceil(width) * Math.ceil(height);
+  const scale = pixelCount > MAX_CONTENT_RENDER_PIXELS ? Math.sqrt(MAX_CONTENT_RENDER_PIXELS / pixelCount) : 1;
+  const probePixmap = page.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, false);
   try {
-    const bounds = findNonWhiteBounds(probePixmap);
-    if (bounds === undefined) {
+    const pixelBounds = findVisiblePixelBounds(probePixmap);
+    if (pixelBounds === undefined) {
       return undefined;
     }
-    const mediabox = pageObject.getBounds('MediaBox');
-    const scale = 72 / probeDpi;
-    return [bounds.x0 * scale, mediabox[3] - bounds.y1 * scale, bounds.x1 * scale, mediabox[3] - bounds.y0 * scale];
+    const [minX, minY, maxX, maxY] = pixelBounds;
+    const deviceRect: MupdfRect = [minX / scale, minY / scale, maxX / scale, maxY / scale];
+    // Map device (pixel) coordinates back to PDF space via the inverse page
+    // transform, so offset MediaBoxes and page rotation are handled instead of
+    // assuming a (0,0) mediabox origin and an unrotated page.
+    return mupdf.Rect.transform(deviceRect, mupdf.Matrix.invert(page.getTransform()));
   } finally {
     probePixmap.destroy();
   }
 }
 
-function findNonWhiteBounds(pixmap: MupdfPixmap): { x0: number; y0: number; x1: number; y1: number } | undefined {
+/**
+ * Returns the bounds of the visible (non-pure-white) pixels in a DeviceRGB
+ * pixmap without alpha, or `undefined` when every pixel is pure white.
+ * The pixmap must match the 3-bytes-per-pixel DeviceRGB layout; a buffer whose
+ * length contradicts that layout is an invariant violation and fails fast
+ * instead of being reported as an empty page.
+ */
+export function findVisiblePixelBounds(pixmap: MupdfPixmap): [number, number, number, number] | undefined {
   const width = pixmap.getWidth();
   const height = pixmap.getHeight();
   const pixels = pixmap.getPixels();
-  const channels = Math.floor(pixels.length / (width * height));
-  if (channels !== 3) {
-    return undefined;
+  const expectedPixelBytes = width * height * 3;
+  if (pixels.length !== expectedPixelBytes) {
+    throw new Error(
+      `Rendered PDF pixmap buffer length ${pixels.length} does not match the DeviceRGB layout (${expectedPixelBytes} bytes for ${width}x${height}).`,
+    );
   }
+
+  const bytes = new DataView(pixels.buffer, pixels.byteOffset, pixels.byteLength);
   let minX = width;
   let minY = height;
   let maxX = -1;
   let maxY = -1;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const index = (y * width + x) * channels;
-      const red = readPixelChannel(pixels, index);
-      const green = readPixelChannel(pixels, index + 1);
-      const blue = readPixelChannel(pixels, index + 2);
-      if (red < 250 || green < 250 || blue < 250) {
+      const index = (y * width + x) * 3;
+      if (bytes.getUint8(index) !== 255 || bytes.getUint8(index + 1) !== 255 || bytes.getUint8(index + 2) !== 255) {
         minX = Math.min(minX, x);
         maxX = Math.max(maxX, x);
         minY = Math.min(minY, y);
@@ -246,16 +281,7 @@ function findNonWhiteBounds(pixmap: MupdfPixmap): { x0: number; y0: number; x1: 
   if (maxX === -1) {
     return undefined;
   }
-  return { x0: minX, y0: minY, x1: maxX + 1, y1: maxY + 1 };
-}
-
-/** RGB pixmaps are 3 channels/pixel; an out-of-bounds read means the declared dimensions are inconsistent with the buffer. */
-function readPixelChannel(pixels: Uint8ClampedArray, index: number): number {
-  const value = pixels[index];
-  if (value === undefined) {
-    throw new Error('Rendered PDF pixmap buffer is smaller than its declared dimensions.');
-  }
-  return value;
+  return [minX, minY, maxX + 1, maxY + 1];
 }
 
 /** Renders a PDF page to an SVG string. `page` is 1-based. */

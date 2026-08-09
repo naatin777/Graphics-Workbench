@@ -11,6 +11,7 @@ import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_bat
 import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import {
+  findVisibleContentBounds,
   loadMupdf,
   openPdfDocument,
   savePdfDocument,
@@ -33,8 +34,6 @@ export interface CropPdfOptions {
 }
 
 type Rect = [number, number, number, number];
-
-const MAX_CONTENT_RENDER_PIXELS = 50_000_000;
 
 export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
@@ -144,9 +143,9 @@ async function cropDocumentBytes(
 function setPageBounds(page: MupdfPdfPage, margin: number, mupdf: MupdfModule): void {
   const pageObject = page.getObject();
   const mediaBox = readRawMediaBox(pageObject);
-  const contentBounds = contentBoundsForPage(page, mupdf);
+  const contentBounds = findVisibleContentBounds(page, mupdf);
 
-  if (contentBounds === null || isEmptyBox(contentBounds)) {
+  if (contentBounds === undefined || isEmptyBox(contentBounds)) {
     if (mediaBox !== null) {
       pageObject.put('CropBox', mediaBox);
     }
@@ -186,67 +185,6 @@ function toFiniteNumber(value: unknown): number | null {
   const number = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(number) ? number : null;
 }
-function contentBoundsForPage(page: MupdfPdfPage, mupdf: MupdfModule): Rect | null {
-  const [x0, y0, x1, y1] = page.getBounds('MediaBox');
-  const width = x1 - x0;
-  const height = y1 - y0;
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-    return null;
-  }
-
-  // ponytail: mupdf's page.toDisplayList().getBounds() returns the mediabox, not the content
-  // bounds (fz_bound_display_list returns list->mediabox). Detect content by rendering the
-  // page to a transparent pixmap and scanning for non-transparent pixels.
-  const pixelCount = Math.ceil(width) * Math.ceil(height);
-  const scale = pixelCount > MAX_CONTENT_RENDER_PIXELS ? Math.sqrt(MAX_CONTENT_RENDER_PIXELS / pixelCount) : 1;
-  const pixmap = page.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, true);
-  try {
-    const pixmapWidth = pixmap.getWidth();
-    const pixmapHeight = pixmap.getHeight();
-    if (pixmapWidth <= 0 || pixmapHeight <= 0) {
-      return null;
-    }
-
-    const pixelBounds = contentPixelBounds(pixmapWidth, pixmapHeight, pixmap.getPixels());
-    if (pixelBounds === null) {
-      return null;
-    }
-
-    const [minX, minY, maxX, maxY] = pixelBounds;
-    const deviceRect: Rect = [minX / scale, minY / scale, maxX / scale, maxY / scale];
-    return mupdf.Rect.transform(deviceRect, mupdf.Matrix.invert(page.getTransform()));
-  } finally {
-    pixmap.destroy();
-  }
-}
-
-function contentPixelBounds(
-  pixmapWidth: number,
-  pixmapHeight: number,
-  pixels: Uint8ClampedArray,
-): [number, number, number, number] | null {
-  let minX = pixmapWidth;
-  let minY = pixmapHeight;
-  let maxX = -1;
-  let maxY = -1;
-  for (let y = 0; y < pixmapHeight; y += 1) {
-    let index = y * pixmapWidth * 4;
-    for (let x = 0; x < pixmapWidth; x += 1) {
-      if ((pixels[index + 3] ?? 0) > 0) {
-        minX = Math.min(minX, x);
-        maxX = Math.max(maxX, x);
-        minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y);
-      }
-      index += 4;
-    }
-  }
-  if (maxX < 0) {
-    return null;
-  }
-  return [minX, minY, maxX + 1, maxY + 1];
-}
-
 function validateJobs(jobs: CropPdfJob[]): void {
   if (jobs.length === 0) {
     throw new Error('No PDF files were selected.');
