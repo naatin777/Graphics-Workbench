@@ -221,7 +221,10 @@ function findNonWhiteBounds(pixmap: MupdfPixmap): { x0: number; y0: number; x1: 
   const width = pixmap.getWidth();
   const height = pixmap.getHeight();
   const pixels = pixmap.getPixels();
-  const channels = Math.max(1, Math.floor(pixels.length / (width * height)));
+  const channels = Math.floor(pixels.length / (width * height));
+  if (channels !== 3) {
+    return undefined;
+  }
   let minX = width;
   let minY = height;
   let maxX = -1;
@@ -229,9 +232,9 @@ function findNonWhiteBounds(pixmap: MupdfPixmap): { x0: number; y0: number; x1: 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const index = (y * width + x) * channels;
-      const red = pixels[index] ?? 0;
-      const green = pixels[index + 1] ?? 0;
-      const blue = pixels[index + 2] ?? 0;
+      const red = readPixelChannel(pixels, index);
+      const green = readPixelChannel(pixels, index + 1);
+      const blue = readPixelChannel(pixels, index + 2);
       if (red < 250 || green < 250 || blue < 250) {
         minX = Math.min(minX, x);
         maxX = Math.max(maxX, x);
@@ -244,6 +247,15 @@ function findNonWhiteBounds(pixmap: MupdfPixmap): { x0: number; y0: number; x1: 
     return undefined;
   }
   return { x0: minX, y0: minY, x1: maxX + 1, y1: maxY + 1 };
+}
+
+/** RGB pixmaps are 3 channels/pixel; an out-of-bounds read means the declared dimensions are inconsistent with the buffer. */
+function readPixelChannel(pixels: Uint8ClampedArray, index: number): number {
+  const value = pixels[index];
+  if (value === undefined) {
+    throw new Error('Rendered PDF pixmap buffer is smaller than its declared dimensions.');
+  }
+  return value;
 }
 
 /** Renders a PDF page to an SVG string. `page` is 1-based. */

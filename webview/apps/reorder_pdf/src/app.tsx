@@ -6,6 +6,7 @@ import {
   type ReorderPdfLabels,
 } from '@graphics-workbench-reorder-pdf-protocol';
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
+import { toErrorMessage } from '@webview-shared/error';
 import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNavigator';
@@ -143,20 +144,7 @@ export function App(): JSX.Element {
     try {
       renderController = await renderPdfPages(payload.pdfSrc, pdfPages, {
         virtualize: false,
-        resources: {
-          ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
-            ? { workerSrc: payload.resources.workerSrc }
-            : {}),
-          ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
-            ? { cMapUrl: payload.resources.cMapUrl }
-            : {}),
-          ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
-            ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
-            : {}),
-          ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
-            ? { wasmUrl: payload.resources.wasmUrl }
-            : {}),
-        },
+        resources: payload.resources,
         preview: payload.preview,
         page: { label: currentLabels.preview.ariaLabel },
         root: pdfPages,
@@ -167,7 +155,7 @@ export function App(): JSX.Element {
           }
           vscode.sendMessage({
             type: 'previewLoadFailed',
-            payload: { message: error instanceof Error ? error.message : String(error) },
+            payload: { message: toErrorMessage(error) },
           });
         },
       });
@@ -185,7 +173,7 @@ export function App(): JSX.Element {
       if (controller.signal.aborted || generation !== previewGeneration) {
         return;
       }
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
       setApplyError(currentLabels.preview.renderError);
     }

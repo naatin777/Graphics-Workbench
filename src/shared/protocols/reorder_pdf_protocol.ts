@@ -1,170 +1,89 @@
-import {
-  hasExactKeys,
-  isNonEmptyString,
-  isOptionalWebviewUri,
-  isPositiveInteger,
-  isRecord,
-  isString,
-  isWebviewUri,
-} from './protocol_utils.js';
-import { isPdfPreviewSettings, type PdfPreviewSettings } from './pdf_preview_protocol.js';
-import {
-  isWebviewErrorMessage,
-  isWebviewMessageWithPayload,
-  isWebviewMessageWithoutPayload,
-} from './webview_protocol.js';
+import * as v from 'valibot';
+import { isWebviewUri } from './protocol_utils.js';
+import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
 
-export interface ReorderPdfLabels {
-  header: {
-    title: string;
-    description: string;
-  };
-  preview: {
-    title: string;
-    ariaLabel: string;
-    renderError: string;
-    applyError: string;
-  };
-  order: {
-    title: string;
-    moveUp: string;
-    moveDown: string;
-    positionLabel: string;
-  };
-  validation: {
-    orderRequired: string;
-    orderInvalid: string;
-  };
-  actions: {
-    apply: string;
-    cancel: string;
-  };
-}
+const ReorderPdfWebviewUriSchema = v.pipe(
+  v.string(),
+  v.check((value: string): boolean => isWebviewUri(value)),
+);
 
-export type ReorderPdfHostToWebview =
-  | {
-      type: 'init';
-      payload: {
-        sourceId: string;
-        fileName: string;
-        pageCount: number;
-        pdfSrc: string;
-        resources: {
-          workerSrc?: string;
-          cMapUrl?: string;
-          standardFontDataUrl?: string;
-          wasmUrl?: string;
-        };
-        preview: PdfPreviewSettings;
-        labels: ReorderPdfLabels;
-      };
-    }
-  | {
-      type: 'error';
-      payload: { message: string };
-    };
+const ReorderPdfLabelsSchema = v.strictObject({
+  header: v.strictObject({
+    title: v.string(),
+    description: v.string(),
+  }),
+  preview: v.strictObject({
+    title: v.string(),
+    ariaLabel: v.string(),
+    renderError: v.string(),
+    applyError: v.string(),
+  }),
+  order: v.strictObject({
+    title: v.string(),
+    moveUp: v.string(),
+    moveDown: v.string(),
+    positionLabel: v.string(),
+  }),
+  validation: v.strictObject({
+    orderRequired: v.string(),
+    orderInvalid: v.string(),
+  }),
+  actions: v.strictObject({
+    apply: v.string(),
+    cancel: v.string(),
+  }),
+});
+export type ReorderPdfLabels = v.InferOutput<typeof ReorderPdfLabelsSchema>;
 
-export type ReorderPdfWebviewToHost =
-  | { type: 'ready' }
-  | {
-      type: 'apply';
-      payload: {
-        /** 1-based page numbers in the desired output order. */
-        order: number[];
-      };
-    }
-  | { type: 'cancel' }
-  | {
-      type: 'previewLoadFailed';
-      payload: { message: string };
-    };
+const ReorderPdfResourcesSchema = v.strictObject({
+  workerSrc: ReorderPdfWebviewUriSchema,
+  cMapUrl: ReorderPdfWebviewUriSchema,
+  standardFontDataUrl: ReorderPdfWebviewUriSchema,
+  wasmUrl: ReorderPdfWebviewUriSchema,
+});
+
+const ReorderPdfInitPayloadSchema = v.strictObject({
+  sourceId: v.pipe(v.string(), v.nonEmpty()),
+  fileName: v.pipe(v.string(), v.nonEmpty()),
+  pageCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
+  pdfSrc: ReorderPdfWebviewUriSchema,
+  resources: ReorderPdfResourcesSchema,
+  preview: PdfPreviewSettingsSchema,
+  labels: ReorderPdfLabelsSchema,
+});
+
+const ReorderPdfHostToWebviewSchema = v.variant('type', [
+  v.strictObject({
+    type: v.literal('init'),
+    payload: ReorderPdfInitPayloadSchema,
+  }),
+  v.strictObject({
+    type: v.literal('error'),
+    payload: v.strictObject({ message: v.string() }),
+  }),
+]);
+export type ReorderPdfHostToWebview = v.InferOutput<typeof ReorderPdfHostToWebviewSchema>;
+
+const ReorderPdfWebviewToHostSchema = v.variant('type', [
+  v.strictObject({ type: v.literal('ready') }),
+  v.strictObject({ type: v.literal('cancel') }),
+  v.strictObject({
+    type: v.literal('apply'),
+    payload: v.strictObject({
+      order: v.pipe(v.array(v.pipe(v.number(), v.integer(), v.minValue(1))), v.minLength(1)),
+    }),
+  }),
+  v.strictObject({
+    type: v.literal('previewLoadFailed'),
+    payload: v.strictObject({ message: v.string() }),
+  }),
+]);
+export type ReorderPdfWebviewToHost = v.InferOutput<typeof ReorderPdfWebviewToHostSchema>;
 
 export function isReorderPdfHostToWebviewMessage(value: unknown): value is ReorderPdfHostToWebview {
-  return isWebviewErrorMessage(value) || isWebviewMessageWithPayload(value, 'init', isReorderPdfInitPayload);
-}
-
-function isReorderPdfInitPayload(
-  value: unknown,
-): value is Extract<ReorderPdfHostToWebview, { type: 'init' }>['payload'] {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    hasExactKeys(value, ['sourceId', 'fileName', 'pageCount', 'pdfSrc', 'resources', 'preview', 'labels']) &&
-    isNonEmptyString(value.sourceId) &&
-    isNonEmptyString(value.fileName) &&
-    isPositiveInteger(value.pageCount) &&
-    isWebviewUri(value.pdfSrc) &&
-    isReorderPdfResources(value.resources) &&
-    isPdfPreviewSettings(value.preview) &&
-    isReorderPdfLabels(value.labels)
-  );
-}
-
-function isReorderPdfResources(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, [], ['workerSrc', 'cMapUrl', 'standardFontDataUrl', 'wasmUrl']) &&
-    isOptionalWebviewUri(value.workerSrc) &&
-    isOptionalWebviewUri(value.cMapUrl) &&
-    isOptionalWebviewUri(value.standardFontDataUrl) &&
-    isOptionalWebviewUri(value.wasmUrl)
-  );
+  return v.is(ReorderPdfHostToWebviewSchema, value);
 }
 
 export function isReorderPdfWebviewToHostMessage(value: unknown): value is ReorderPdfWebviewToHost {
-  return (
-    isWebviewMessageWithoutPayload(value, 'ready') ||
-    isWebviewMessageWithoutPayload(value, 'cancel') ||
-    isWebviewMessageWithPayload(value, 'previewLoadFailed', isReorderPdfMessagePayload) ||
-    isWebviewMessageWithPayload(value, 'apply', isReorderPdfApplyPayload)
-  );
-}
-
-function isReorderPdfMessagePayload(value: unknown): value is { message: string } {
-  return isRecord(value) && hasExactKeys(value, ['message']) && isString(value.message);
-}
-
-function isReorderPdfApplyPayload(
-  value: unknown,
-): value is Extract<ReorderPdfWebviewToHost, { type: 'apply' }>['payload'] {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    hasExactKeys(value, ['order']) &&
-    Array.isArray(value.order) &&
-    value.order.length > 0 &&
-    value.order.every(isPositiveInteger)
-  );
-}
-
-function isReorderPdfLabels(value: unknown): value is ReorderPdfLabels {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  const groups = [
-    ['header', ['title', 'description']],
-    ['preview', ['title', 'ariaLabel', 'renderError', 'applyError']],
-    ['order', ['title', 'moveUp', 'moveDown', 'positionLabel']],
-    ['validation', ['orderRequired', 'orderInvalid']],
-    ['actions', ['apply', 'cancel']],
-  ] as const;
-
-  if (
-    !hasExactKeys(
-      value,
-      groups.map(([group]) => group),
-    )
-  ) {
-    return false;
-  }
-
-  return groups.every(([groupName, keys]) => {
-    const group = value[groupName];
-    return isRecord(group) && hasExactKeys(group, keys) && keys.every((key) => isString(group[key]));
-  });
+  return v.is(ReorderPdfWebviewToHostSchema, value);
 }

@@ -30,12 +30,10 @@ export function App(): JSX.Element {
       setPdfOptions({
         preview: payload.preview,
         resources: {
-          ...(payload.workerSrc !== undefined && payload.workerSrc !== '' ? { workerSrc: payload.workerSrc } : {}),
-          ...(payload.cMapUrl !== undefined && payload.cMapUrl !== '' ? { cMapUrl: payload.cMapUrl } : {}),
-          ...(payload.standardFontDataUrl !== undefined && payload.standardFontDataUrl !== ''
-            ? { standardFontDataUrl: payload.standardFontDataUrl }
-            : {}),
-          ...(payload.wasmUrl !== undefined && payload.wasmUrl !== '' ? { wasmUrl: payload.wasmUrl } : {}),
+          workerSrc: payload.workerSrc,
+          cMapUrl: payload.cMapUrl,
+          standardFontDataUrl: payload.standardFontDataUrl,
+          wasmUrl: payload.wasmUrl,
         },
       });
       setLabels(payload.labels);

@@ -1,6 +1,7 @@
 import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderFirstPdfPage } from '@webview-shared/pdf/render_pdf_pages';
+import { toErrorMessage } from '@webview-shared/error';
 
 import type { ExtensionToWebviewMessage, MergePdfLabels, MergePdfSource } from './messages';
 import { vscode } from './vscode';
@@ -51,7 +52,7 @@ export function PreviewThumbnail(props: {
         if (abortController.signal.aborted) {
           return;
         }
-        const message = error instanceof Error ? error.message : String(error);
+        const message = toErrorMessage(error);
         setStatus('error');
         props.onError();
         vscode.sendMessage({ type: 'previewLoadFailed', payload: { message } });
