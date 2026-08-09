@@ -12,6 +12,7 @@ import { localeMap } from '../../src/locale_map.js';
 import { mergePdfConfigureCommand } from '../../src/commands/pdf/merge_pdf.js';
 
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { testCommandDependencies } from '../helpers/command_dependencies.js';
 import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 
@@ -152,10 +153,12 @@ suite('PDF結合コマンド', () => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
 
-      await mergePdfConfigureCommand({ extensionUri: vscode.Uri.file(compiledTestDirectory) }, undefined, [
-        vscode.Uri.file(firstPdfPath),
-        vscode.Uri.file(linkedPdfPath),
-      ]);
+      await mergePdfConfigureCommand(
+        { extensionUri: vscode.Uri.file(compiledTestDirectory) },
+        undefined,
+        [vscode.Uri.file(firstPdfPath), vscode.Uri.file(linkedPdfPath)],
+        testCommandDependencies(),
+      );
 
       assert.strictEqual(createWebviewPanel.called, false);
       assert.strictEqual(showErrorMessage.calledOnce, true);

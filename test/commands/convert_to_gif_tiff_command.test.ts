@@ -6,23 +6,24 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { convertToGifCommand, convertToTiffCommand } from '../../src/commands/conversion/convert_to_raster.js';
+import { convertToRasterCommand } from '../../src/commands/conversion/convert_to_raster.js';
+import { liveCommandDependencies } from '../helpers/command_dependencies.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('GIF/TIFFに変換コマンド', () => {
   test('2フレームのGIF入力をTIFFへ変換し、出力が1ページのTIFFになる', async () => {
-    await assertAnimatedInputIsSplit('gif', 'tiff', convertToTiffCommand);
+    await assertAnimatedInputIsSplit('gif', 'tiff', { target: 'tiff' });
   });
 
   test('2ページのTIFF入力をGIFへ変換し、出力が1ページのGIFになる', async () => {
-    await assertAnimatedInputIsSplit('tiff', 'gif', convertToGifCommand);
+    await assertAnimatedInputIsSplit('tiff', 'gif', { target: 'gif' });
   });
 });
 
 async function assertAnimatedInputIsSplit(
   format: 'gif' | 'tiff',
   outputFormat: 'gif' | 'tiff',
-  command: (uri?: vscode.Uri, uris?: vscode.Uri[]) => Promise<void>,
+  options: { target: 'gif' | 'tiff' },
 ): Promise<void> {
   await using workspacePath = await mkdtempDisposable(
     path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, `gw-${format}-command-`),
@@ -38,7 +39,7 @@ async function assertAnimatedInputIsSplit(
     const sourcePath = path.join(workspacePath.path, `source.${format}`);
     await writeAnimatedImage(sourcePath, format);
     await workspaceConfiguration.update(`outputPath.${key}`, template, vscode.ConfigurationTarget.Workspace);
-    await command(vscode.Uri.file(sourcePath), undefined);
+    await convertToRasterCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies(), options);
 
     const outputPath = path.join(workspacePath.path, `source.${outputFormat}`);
     const metadata = await sharp(await readFile(outputPath)).metadata();

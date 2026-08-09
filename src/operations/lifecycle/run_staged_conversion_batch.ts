@@ -12,12 +12,13 @@ import {
 } from './commit_conversion_outputs.js';
 import type { ConversionExecutionContext, ResolvedConversionRuntime } from './conversion_runtime.js';
 import { sharedConversionJobLimiter } from '../external_tools/heavy_process_limiter.js';
+import { createRunId } from './run_id.js';
 
 export interface StagedConversionBatch<Job extends { workspacePath: string }> {
   jobs: Job[];
   operationName: string;
   stagingOperationName?: string;
-  runId: string;
+  runId?: string | undefined;
   artifactRoots?: readonly ConversionArtifactRoot[];
   runtime?: ConversionExecutionContext;
   stage: (
@@ -33,9 +34,10 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
   options: StagedConversionBatch<Job>,
 ): Promise<CommittedConversionOutput[]> {
   const runtime = options.runtime ?? {};
+  const runId = options.runId ?? createRunId();
   const artifacts =
     options.artifactRoots ??
-    stagingArtifactsForJobs(options.jobs, options.stagingOperationName ?? options.operationName, options.runId);
+    stagingArtifactsForJobs(options.jobs, options.stagingOperationName ?? options.operationName, runId);
   const abortController = new AbortController();
   const abortFromCaller = (): void => {
     abortController.abort(runtime.signal?.reason);
@@ -63,7 +65,7 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
             sharedConversionJobLimiter.run(async () => {
               batchRuntime.signal.throwIfAborted();
               try {
-                const output = await options.stage(job, index, options.runId, batchRuntime);
+                const output = await options.stage(job, index, runId, batchRuntime);
                 completedCount += 1;
                 options.runtime?.reportProgress?.(completedCount, options.jobs.length);
                 return output;

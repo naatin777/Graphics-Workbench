@@ -10,7 +10,11 @@ import path from 'node:path';
 import { PDFDocument } from '../helpers/pdf_document.js';
 import sharp from 'sharp';
 
-import { executeJpegConversion, type RasterJob } from '../../src/operations/conversion/raster_conversion.js';
+import {
+  executeRasterConversion,
+  rasterFormatSpecs,
+  type RasterJob,
+} from '../../src/operations/conversion/raster_conversion.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
 
@@ -42,7 +46,9 @@ suite('編集可能なDraw.io画像をPDF中間経由でJPEGへ変換する処�
       page: 1,
     };
 
-    await executeJpegConversion({
+    await executeRasterConversion({
+      spec: rasterFormatSpecs.jpeg,
+      maxInputPixels: 1_000_000_000,
       jobs: [job],
       pdfRenderTools: {
         runPdfToPng: async (pdfPath, pngPath, page) => {

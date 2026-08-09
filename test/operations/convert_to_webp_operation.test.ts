@@ -14,8 +14,9 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { executeWebpConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { requireValue } from '../helpers/required.js';
+import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 
 suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
   test('2フレーム・delay[100,250]・loop3のアニメーションGIFをアニメーション設定つきの1jobでWebPへ変換し、pages=2・pageHeight=8・delay・loopのメタデータを保持して出力する', async () => {
@@ -25,7 +26,9 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
     const outputPath = path.join(workspacePath.path, 'source.webp');
     await writeAnimatedGifFixture(sourcePath);
 
-    await executeWebpConversion({
+    await executeRasterConversion({
+      spec: rasterFormatSpecs.webp,
+      maxInputPixels: 1_000_000_000,
       jobs: [
         {
           sourcePath,
@@ -36,8 +39,8 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
       ],
       pdfRenderTools: {},
       mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-      drawioTools: { drawioPath: 'drawio' },
-      webp: { effort: 0 },
+      drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
+      outputOptions: { effort: 0 },
       runtime: {},
       runId: 'animation-test',
     });
@@ -59,12 +62,14 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
     await writeFile(sourcePath, 'not an image');
 
     await assert.rejects(
-      executeWebpConversion({
+      executeRasterConversion({
+        spec: rasterFormatSpecs.webp,
+        maxInputPixels: 1_000_000_000,
         jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, animation: { pages: 2, pageHeight: 8 } }],
         pdfRenderTools: {},
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-        drawioTools: { drawioPath: 'drawio' },
-        webp: { effort: 0 },
+        drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
+        outputOptions: { effort: 0 },
         runtime: {},
         runId: 'animation-failure-test',
       }),
@@ -82,7 +87,9 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
     const pdfToPngCalls: { sourcePath: string; outputPath: string; page: number }[] = [];
     await writeFile(sourcePath, 'editable drawio image placeholder');
 
-    await executeWebpConversion({
+    await executeRasterConversion({
+      spec: rasterFormatSpecs.webp,
+      maxInputPixels: 1_000_000_000,
       jobs: [
         {
           sourcePath,
@@ -114,7 +121,7 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
           await writeFile(requireValue(args[outputIndex]), '%PDF-1.7\n');
         },
       },
-      webp: {
+      outputOptions: {
         effort: 0,
       },
       runtime: {},

@@ -37,7 +37,22 @@ type ConfigurationKey =
   | 'convertToWebp.effort'
   | 'convertToAvif.effort'
   | 'outputPath.cropPdf'
-  | 'outputPaths'
+  | 'outputPath.convertDrawioToPagePdfs'
+  | 'outputPath.convertDrawioToPng'
+  | 'outputPath.convertDrawioToJpeg'
+  | 'outputPath.convertDrawioToWebp'
+  | 'outputPath.convertDrawioToAvif'
+  | 'outputPath.convertDrawioToSvg'
+  | 'outputPath.convertDrawioToGif'
+  | 'outputPath.convertDrawioToTiff'
+  | 'outputPath.convertPdfToPng'
+  | 'outputPath.convertPdfToJpeg'
+  | 'outputPath.convertPdfToWebp'
+  | 'outputPath.convertPdfToAvif'
+  | 'outputPath.convertPdfToSvg'
+  | 'outputPath.convertPdfToGif'
+  | 'outputPath.convertPdfToTiff'
+  | 'outputPath.splitPdf'
   | 'outputPath.convertPngToPdf'
   | 'outputPath.convertJpegToPdf'
   | 'outputPath.convertWebpToPdf'
@@ -94,9 +109,9 @@ type ConfigurationKey =
   | 'outputPath.convertToDrawioSvg'
   | 'outputPath.clipboardImage'
   | 'cropPdf.marginOptions'
-  | 'outputPath.convertDrawioToPdfDirectly'
+  | 'outputPath.convertDrawioToSinglePdf'
   | 'outputPath.convertExcalidrawToPdf'
-  | 'outputPath.convertImagesToSinglePdf'
+  | 'outputPath.combineImagesToPdf'
   | 'contextMenu.enabled'
   | 'contextMenu.cropPdf.enabled'
   | 'contextMenu.splitPdf.enabled'
@@ -326,59 +341,53 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.cropPdf': {
     types: ['string'],
   },
-  outputPaths: {
-    types: ['object'],
-    properties: {
-      convertDrawioToPdf: {
-        types: ['string'],
-      },
-      convertDrawioToPng: {
-        types: ['string'],
-      },
-      convertDrawioToJpeg: {
-        types: ['string'],
-      },
-      convertDrawioToWebp: {
-        types: ['string'],
-      },
-      convertDrawioToAvif: {
-        types: ['string'],
-      },
-      convertDrawioToSvg: {
-        types: ['string'],
-      },
-      convertDrawioToGif: {
-        types: ['string'],
-      },
-      convertDrawioToTiff: {
-        types: ['string'],
-      },
-      convertPdfToPng: {
-        types: ['string'],
-      },
-      convertPdfToJpeg: {
-        types: ['string'],
-      },
-      convertPdfToWebp: {
-        types: ['string'],
-      },
-      convertPdfToAvif: {
-        types: ['string'],
-      },
-      convertPdfToSvg: {
-        types: ['string'],
-      },
-      convertPdfToGif: {
-        types: ['string'],
-      },
-      convertPdfToTiff: {
-        types: ['string'],
-      },
-      splitPdf: {
-        types: ['string'],
-      },
-    },
-    additionalProperties: false,
+  'outputPath.convertDrawioToPagePdfs': {
+    types: ['string'],
+  },
+  'outputPath.convertDrawioToPng': {
+    types: ['string'],
+  },
+  'outputPath.convertDrawioToJpeg': {
+    types: ['string'],
+  },
+  'outputPath.convertDrawioToWebp': {
+    types: ['string'],
+  },
+  'outputPath.convertDrawioToAvif': {
+    types: ['string'],
+  },
+  'outputPath.convertDrawioToSvg': {
+    types: ['string'],
+  },
+  'outputPath.convertDrawioToGif': {
+    types: ['string'],
+  },
+  'outputPath.convertDrawioToTiff': {
+    types: ['string'],
+  },
+  'outputPath.convertPdfToPng': {
+    types: ['string'],
+  },
+  'outputPath.convertPdfToJpeg': {
+    types: ['string'],
+  },
+  'outputPath.convertPdfToWebp': {
+    types: ['string'],
+  },
+  'outputPath.convertPdfToAvif': {
+    types: ['string'],
+  },
+  'outputPath.convertPdfToSvg': {
+    types: ['string'],
+  },
+  'outputPath.convertPdfToGif': {
+    types: ['string'],
+  },
+  'outputPath.convertPdfToTiff': {
+    types: ['string'],
+  },
+  'outputPath.splitPdf': {
+    types: ['string'],
   },
   'outputPath.convertPngToPdf': {
     types: ['string'],
@@ -552,13 +561,13 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
       minimum: 0,
     },
   },
-  'outputPath.convertDrawioToPdfDirectly': {
+  'outputPath.convertDrawioToSinglePdf': {
     types: ['string'],
   },
   'outputPath.convertExcalidrawToPdf': {
     types: ['string'],
   },
-  'outputPath.convertImagesToSinglePdf': {
+  'outputPath.combineImagesToPdf': {
     types: ['string'],
   },
   'contextMenu.enabled': {
@@ -660,58 +669,6 @@ function defineConfiguration<Value>(
   };
 }
 
-type OutputPathsToPdf = {
-  readonly convertDrawioToPdf?: string;
-};
-
-type OutputPathsToPng = {
-  readonly convertDrawioToPng?: string;
-  readonly convertPdfToPng?: string;
-};
-
-type OutputPathsToJpeg = {
-  readonly convertDrawioToJpeg?: string;
-  readonly convertPdfToJpeg?: string;
-};
-
-type OutputPathsToWebp = {
-  readonly convertDrawioToWebp?: string;
-  readonly convertPdfToWebp?: string;
-};
-
-type OutputPathsToAvif = {
-  readonly convertDrawioToAvif?: string;
-  readonly convertPdfToAvif?: string;
-};
-
-type OutputPathsToSvg = {
-  readonly convertDrawioToSvg?: string;
-  readonly convertPdfToSvg?: string;
-};
-
-type OutputPathsToGif = {
-  readonly convertDrawioToGif?: string;
-  readonly convertPdfToGif?: string;
-};
-
-type OutputPathsToTiff = {
-  readonly convertDrawioToTiff?: string;
-  readonly convertPdfToTiff?: string;
-};
-
-type OutputPathsToOther = {
-  readonly splitPdf?: string;
-};
-
-export type OutputPaths = OutputPathsToPdf &
-  OutputPathsToPng &
-  OutputPathsToJpeg &
-  OutputPathsToWebp &
-  OutputPathsToAvif &
-  OutputPathsToSvg &
-  OutputPathsToGif &
-  OutputPathsToTiff &
-  OutputPathsToOther;
 export const commandContributions = {
   'graphics-workbench.cropPdf.auto': {
     titleKey: 'command.cropPdf.auto',
@@ -723,10 +680,6 @@ export const commandContributions = {
   },
   'graphics-workbench.toggleSafeMode': {
     titleKey: 'command.toggleSafeMode',
-    category: 'Graphics Workbench',
-  },
-  'graphics-workbench.checkEnvironment': {
-    titleKey: 'command.checkEnvironment',
     category: 'Graphics Workbench',
   },
   'graphics-workbench.openControls': {
@@ -757,12 +710,12 @@ export const commandContributions = {
     titleKey: 'command.convertToPdf',
     category: 'Graphics Workbench',
   },
-  'graphics-workbench.convertDrawioToPdf': {
-    titleKey: 'command.convertDrawioToPdf',
+  'graphics-workbench.convertDrawioToPagePdfs': {
+    titleKey: 'command.convertDrawioToPagePdfs',
     category: 'Graphics Workbench',
   },
-  'graphics-workbench.convertDrawioToPdfDirectly': {
-    titleKey: 'command.convertDrawioToPdfDirectly',
+  'graphics-workbench.convertDrawioToSinglePdf': {
+    titleKey: 'command.convertDrawioToSinglePdf',
     category: 'Graphics Workbench',
   },
   'graphics-workbench.convertExcalidrawToPdf': {
@@ -825,8 +778,8 @@ export const commandContributions = {
     titleKey: 'command.convertToDrawioSvg',
     category: 'Graphics Workbench',
   },
-  'graphics-workbench.convertImagesToSinglePdf': {
-    titleKey: 'command.convertImagesToSinglePdf',
+  'graphics-workbench.combineImagesToPdf': {
+    titleKey: 'command.combineImagesToPdf',
     category: 'Graphics Workbench',
   },
   'graphics-workbench.compressPdf': {
@@ -859,7 +812,6 @@ export const publicCommandIds = [
   'graphics-workbench.cropPdf.auto',
   'graphics-workbench.undoLastConversion',
   'graphics-workbench.toggleSafeMode',
-  'graphics-workbench.checkEnvironment',
   'graphics-workbench.openControls',
   'graphics-workbench.cropPdf.configure',
   'graphics-workbench.splitPdf.allPages',
@@ -867,8 +819,8 @@ export const publicCommandIds = [
   'graphics-workbench.mergePdf.selectedFiles',
   'graphics-workbench.mergePdf.configure',
   'graphics-workbench.convertToPdf',
-  'graphics-workbench.convertDrawioToPdf',
-  'graphics-workbench.convertDrawioToPdfDirectly',
+  'graphics-workbench.convertDrawioToPagePdfs',
+  'graphics-workbench.convertDrawioToSinglePdf',
   'graphics-workbench.convertExcalidrawToPdf',
   'graphics-workbench.convertToPng',
   'graphics-workbench.convertToJpeg',
@@ -884,7 +836,7 @@ export const publicCommandIds = [
   'graphics-workbench.convertToDrawio',
   'graphics-workbench.convertToDrawioPng',
   'graphics-workbench.convertToDrawioSvg',
-  'graphics-workbench.convertImagesToSinglePdf',
+  'graphics-workbench.combineImagesToPdf',
   'graphics-workbench.compressPdf',
   'graphics-workbench.encryptPdf',
   'graphics-workbench.decryptPdf',
@@ -925,85 +877,410 @@ export const externalToolTimeoutConfigurationKeys = {
   rsvgConvert: 'externalTools.rsvgConvert.timeoutSeconds',
 } as const;
 
-export const conversionPairs = {
-  flat: [
-    { source: 'gif', target: 'avif', setting: 'convertGifToAvif' },
-    { source: 'jpeg', target: 'avif', setting: 'convertJpegToAvif' },
-    { source: 'mermaid', target: 'avif', setting: 'convertMermaidToAvif' },
-    { source: 'png', target: 'avif', setting: 'convertPngToAvif' },
-    { source: 'svg', target: 'avif', setting: 'convertSvgToAvif' },
-    { source: 'tiff', target: 'avif', setting: 'convertTiffToAvif' },
-    { source: 'webp', target: 'avif', setting: 'convertWebpToAvif' },
-    { source: 'avif', target: 'gif', setting: 'convertAvifToGif' },
-    { source: 'jpeg', target: 'gif', setting: 'convertJpegToGif' },
-    { source: 'mermaid', target: 'gif', setting: 'convertMermaidToGif' },
-    { source: 'png', target: 'gif', setting: 'convertPngToGif' },
-    { source: 'svg', target: 'gif', setting: 'convertSvgToGif' },
-    { source: 'tiff', target: 'gif', setting: 'convertTiffToGif' },
-    { source: 'webp', target: 'gif', setting: 'convertWebpToGif' },
-    { source: 'avif', target: 'jpeg', setting: 'convertAvifToJpeg' },
-    { source: 'gif', target: 'jpeg', setting: 'convertGifToJpeg' },
-    { source: 'mermaid', target: 'jpeg', setting: 'convertMermaidToJpeg' },
-    { source: 'png', target: 'jpeg', setting: 'convertPngToJpeg' },
-    { source: 'svg', target: 'jpeg', setting: 'convertSvgToJpeg' },
-    { source: 'tiff', target: 'jpeg', setting: 'convertTiffToJpeg' },
-    { source: 'webp', target: 'jpeg', setting: 'convertWebpToJpeg' },
-    { source: 'avif', target: 'pdf', setting: 'convertAvifToPdf' },
-    { source: 'excalidraw', target: 'pdf', setting: 'convertExcalidrawToPdf' },
-    { source: 'gif', target: 'pdf', setting: 'convertGifToPdf' },
-    { source: 'jpeg', target: 'pdf', setting: 'convertJpegToPdf' },
-    { source: 'mermaid', target: 'pdf', setting: 'convertMermaidToPdf' },
-    { source: 'png', target: 'pdf', setting: 'convertPngToPdf' },
-    { source: 'svg', target: 'pdf', setting: 'convertSvgToPdf' },
-    { source: 'tiff', target: 'pdf', setting: 'convertTiffToPdf' },
-    { source: 'webp', target: 'pdf', setting: 'convertWebpToPdf' },
-    { source: 'avif', target: 'png', setting: 'convertAvifToPng' },
-    { source: 'gif', target: 'png', setting: 'convertGifToPng' },
-    { source: 'jpeg', target: 'png', setting: 'convertJpegToPng' },
-    { source: 'mermaid', target: 'png', setting: 'convertMermaidToPng' },
-    { source: 'svg', target: 'png', setting: 'convertSvgToPng' },
-    { source: 'tiff', target: 'png', setting: 'convertTiffToPng' },
-    { source: 'webp', target: 'png', setting: 'convertWebpToPng' },
-    { source: 'mermaid', target: 'svg', setting: 'convertMermaidToSvg' },
-    { source: 'avif', target: 'tiff', setting: 'convertAvifToTiff' },
-    { source: 'gif', target: 'tiff', setting: 'convertGifToTiff' },
-    { source: 'jpeg', target: 'tiff', setting: 'convertJpegToTiff' },
-    { source: 'mermaid', target: 'tiff', setting: 'convertMermaidToTiff' },
-    { source: 'png', target: 'tiff', setting: 'convertPngToTiff' },
-    { source: 'svg', target: 'tiff', setting: 'convertSvgToTiff' },
-    { source: 'webp', target: 'tiff', setting: 'convertWebpToTiff' },
-    { source: 'avif', target: 'webp', setting: 'convertAvifToWebp' },
-    { source: 'gif', target: 'webp', setting: 'convertGifToWebp' },
-    { source: 'jpeg', target: 'webp', setting: 'convertJpegToWebp' },
-    { source: 'mermaid', target: 'webp', setting: 'convertMermaidToWebp' },
-    { source: 'png', target: 'webp', setting: 'convertPngToWebp' },
-    { source: 'svg', target: 'webp', setting: 'convertSvgToWebp' },
-    { source: 'tiff', target: 'webp', setting: 'convertTiffToWebp' },
-  ],
-  plural: [
-    { source: 'drawio', target: 'avif', setting: 'convertDrawioToAvif' },
-    { source: 'pdf', target: 'avif', setting: 'convertPdfToAvif' },
-    { source: 'drawio', target: 'gif', setting: 'convertDrawioToGif' },
-    { source: 'pdf', target: 'gif', setting: 'convertPdfToGif' },
-    { source: 'drawio', target: 'jpeg', setting: 'convertDrawioToJpeg' },
-    { source: 'pdf', target: 'jpeg', setting: 'convertPdfToJpeg' },
-    { source: 'drawio', target: 'pdf', setting: 'convertDrawioToPdf' },
-    { source: 'drawio', target: 'png', setting: 'convertDrawioToPng' },
-    { source: 'pdf', target: 'png', setting: 'convertPdfToPng' },
-    { source: 'drawio', target: 'svg', setting: 'convertDrawioToSvg' },
-    { source: 'pdf', target: 'svg', setting: 'convertPdfToSvg' },
-    { source: 'drawio', target: 'tiff', setting: 'convertDrawioToTiff' },
-    { source: 'pdf', target: 'tiff', setting: 'convertPdfToTiff' },
-    { source: 'drawio', target: 'webp', setting: 'convertDrawioToWebp' },
-    { source: 'pdf', target: 'webp', setting: 'convertPdfToWebp' },
-  ],
-} as const;
+export const conversionPairs = [
+  {
+    source: 'drawio',
+    target: 'avif',
+    setting: 'convertDrawioToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}/${page}.avif',
+  },
+  {
+    source: 'gif',
+    target: 'avif',
+    setting: 'convertGifToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.avif',
+  },
+  {
+    source: 'jpeg',
+    target: 'avif',
+    setting: 'convertJpegToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.avif',
+  },
+  {
+    source: 'mermaid',
+    target: 'avif',
+    setting: 'convertMermaidToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.avif',
+  },
+  {
+    source: 'pdf',
+    target: 'avif',
+    setting: 'convertPdfToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}-${page}.avif',
+  },
+  {
+    source: 'png',
+    target: 'avif',
+    setting: 'convertPngToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.avif',
+  },
+  {
+    source: 'svg',
+    target: 'avif',
+    setting: 'convertSvgToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.avif',
+  },
+  {
+    source: 'tiff',
+    target: 'avif',
+    setting: 'convertTiffToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.avif',
+  },
+  {
+    source: 'webp',
+    target: 'avif',
+    setting: 'convertWebpToAvif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.avif',
+  },
+  {
+    source: 'avif',
+    target: 'gif',
+    setting: 'convertAvifToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.gif',
+  },
+  {
+    source: 'drawio',
+    target: 'gif',
+    setting: 'convertDrawioToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}/${page}.gif',
+  },
+  {
+    source: 'jpeg',
+    target: 'gif',
+    setting: 'convertJpegToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.gif',
+  },
+  {
+    source: 'mermaid',
+    target: 'gif',
+    setting: 'convertMermaidToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.gif',
+  },
+  {
+    source: 'pdf',
+    target: 'gif',
+    setting: 'convertPdfToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}-${page}.gif',
+  },
+  {
+    source: 'png',
+    target: 'gif',
+    setting: 'convertPngToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.gif',
+  },
+  {
+    source: 'svg',
+    target: 'gif',
+    setting: 'convertSvgToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.gif',
+  },
+  {
+    source: 'tiff',
+    target: 'gif',
+    setting: 'convertTiffToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.gif',
+  },
+  {
+    source: 'webp',
+    target: 'gif',
+    setting: 'convertWebpToGif',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.gif',
+  },
+  {
+    source: 'avif',
+    target: 'jpeg',
+    setting: 'convertAvifToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+  },
+  {
+    source: 'drawio',
+    target: 'jpeg',
+    setting: 'convertDrawioToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg',
+  },
+  {
+    source: 'gif',
+    target: 'jpeg',
+    setting: 'convertGifToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+  },
+  {
+    source: 'mermaid',
+    target: 'jpeg',
+    setting: 'convertMermaidToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+  },
+  {
+    source: 'pdf',
+    target: 'jpeg',
+    setting: 'convertPdfToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}-${page}.jpeg',
+  },
+  {
+    source: 'png',
+    target: 'jpeg',
+    setting: 'convertPngToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+  },
+  {
+    source: 'svg',
+    target: 'jpeg',
+    setting: 'convertSvgToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+  },
+  {
+    source: 'tiff',
+    target: 'jpeg',
+    setting: 'convertTiffToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+  },
+  {
+    source: 'webp',
+    target: 'jpeg',
+    setting: 'convertWebpToJpeg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
+  },
+  {
+    source: 'avif',
+    target: 'pdf',
+    setting: 'convertAvifToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'excalidraw',
+    target: 'pdf',
+    setting: 'convertExcalidrawToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'gif',
+    target: 'pdf',
+    setting: 'convertGifToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'jpeg',
+    target: 'pdf',
+    setting: 'convertJpegToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'mermaid',
+    target: 'pdf',
+    setting: 'convertMermaidToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'png',
+    target: 'pdf',
+    setting: 'convertPngToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'svg',
+    target: 'pdf',
+    setting: 'convertSvgToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'tiff',
+    target: 'pdf',
+    setting: 'convertTiffToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'webp',
+    target: 'pdf',
+    setting: 'convertWebpToPdf',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.pdf',
+  },
+  {
+    source: 'avif',
+    target: 'png',
+    setting: 'convertAvifToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.png',
+  },
+  {
+    source: 'drawio',
+    target: 'png',
+    setting: 'convertDrawioToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}/${page}.png',
+  },
+  {
+    source: 'gif',
+    target: 'png',
+    setting: 'convertGifToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.png',
+  },
+  {
+    source: 'jpeg',
+    target: 'png',
+    setting: 'convertJpegToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.png',
+  },
+  {
+    source: 'mermaid',
+    target: 'png',
+    setting: 'convertMermaidToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.png',
+  },
+  {
+    source: 'pdf',
+    target: 'png',
+    setting: 'convertPdfToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
+  },
+  {
+    source: 'svg',
+    target: 'png',
+    setting: 'convertSvgToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.png',
+  },
+  {
+    source: 'tiff',
+    target: 'png',
+    setting: 'convertTiffToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.png',
+  },
+  {
+    source: 'webp',
+    target: 'png',
+    setting: 'convertWebpToPng',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.png',
+  },
+  {
+    source: 'drawio',
+    target: 'svg',
+    setting: 'convertDrawioToSvg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}/${page}.svg',
+  },
+  {
+    source: 'mermaid',
+    target: 'svg',
+    setting: 'convertMermaidToSvg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.svg',
+  },
+  {
+    source: 'pdf',
+    target: 'svg',
+    setting: 'convertPdfToSvg',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}-${page}.svg',
+  },
+  {
+    source: 'avif',
+    target: 'tiff',
+    setting: 'convertAvifToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.tiff',
+  },
+  {
+    source: 'drawio',
+    target: 'tiff',
+    setting: 'convertDrawioToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}/${page}.tiff',
+  },
+  {
+    source: 'gif',
+    target: 'tiff',
+    setting: 'convertGifToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.tiff',
+  },
+  {
+    source: 'jpeg',
+    target: 'tiff',
+    setting: 'convertJpegToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.tiff',
+  },
+  {
+    source: 'mermaid',
+    target: 'tiff',
+    setting: 'convertMermaidToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.tiff',
+  },
+  {
+    source: 'pdf',
+    target: 'tiff',
+    setting: 'convertPdfToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}-${page}.tiff',
+  },
+  {
+    source: 'png',
+    target: 'tiff',
+    setting: 'convertPngToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.tiff',
+  },
+  {
+    source: 'svg',
+    target: 'tiff',
+    setting: 'convertSvgToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.tiff',
+  },
+  {
+    source: 'webp',
+    target: 'tiff',
+    setting: 'convertWebpToTiff',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.tiff',
+  },
+  {
+    source: 'avif',
+    target: 'webp',
+    setting: 'convertAvifToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.webp',
+  },
+  {
+    source: 'drawio',
+    target: 'webp',
+    setting: 'convertDrawioToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}/${page}.webp',
+  },
+  {
+    source: 'gif',
+    target: 'webp',
+    setting: 'convertGifToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.webp',
+  },
+  {
+    source: 'jpeg',
+    target: 'webp',
+    setting: 'convertJpegToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.webp',
+  },
+  {
+    source: 'mermaid',
+    target: 'webp',
+    setting: 'convertMermaidToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.webp',
+  },
+  {
+    source: 'pdf',
+    target: 'webp',
+    setting: 'convertPdfToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}-${page}.webp',
+  },
+  {
+    source: 'png',
+    target: 'webp',
+    setting: 'convertPngToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.webp',
+  },
+  {
+    source: 'svg',
+    target: 'webp',
+    setting: 'convertSvgToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.webp',
+  },
+  {
+    source: 'tiff',
+    target: 'webp',
+    setting: 'convertTiffToWebp',
+    defaultValue: '${fileDirname}/${fileBasenameNoExtension}.webp',
+  },
+] as const;
 
 // oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.
 function createConfigurationInternal(configurationReader: ConfigurationReader) {
   return {
     execPath: {
-      drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', ''),
+      drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', 'drawio'),
       mermaid: defineConfiguration<string>(configurationReader, 'execPath.mermaid', 'mmdc'),
       rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
       chrome: defineConfiguration<string>(configurationReader, 'execPath.chrome', ''),
@@ -1101,6 +1378,86 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         configurationReader,
         'outputPath.cropPdf',
         '${fileDirname}/${fileBasenameNoExtension}-crop.pdf',
+      ),
+      convertDrawioToPagePdfs: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertDrawioToPagePdfs',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf',
+      ),
+      convertDrawioToPng: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertDrawioToPng',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.png',
+      ),
+      convertDrawioToJpeg: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertDrawioToJpeg',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg',
+      ),
+      convertDrawioToWebp: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertDrawioToWebp',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.webp',
+      ),
+      convertDrawioToAvif: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertDrawioToAvif',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.avif',
+      ),
+      convertDrawioToSvg: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertDrawioToSvg',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.svg',
+      ),
+      convertDrawioToGif: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertDrawioToGif',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.gif',
+      ),
+      convertDrawioToTiff: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertDrawioToTiff',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.tiff',
+      ),
+      convertPdfToPng: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertPdfToPng',
+        '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
+      ),
+      convertPdfToJpeg: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertPdfToJpeg',
+        '${fileDirname}/${fileBasenameNoExtension}-${page}.jpeg',
+      ),
+      convertPdfToWebp: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertPdfToWebp',
+        '${fileDirname}/${fileBasenameNoExtension}-${page}.webp',
+      ),
+      convertPdfToAvif: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertPdfToAvif',
+        '${fileDirname}/${fileBasenameNoExtension}-${page}.avif',
+      ),
+      convertPdfToSvg: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertPdfToSvg',
+        '${fileDirname}/${fileBasenameNoExtension}-${page}.svg',
+      ),
+      convertPdfToGif: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertPdfToGif',
+        '${fileDirname}/${fileBasenameNoExtension}-${page}.gif',
+      ),
+      convertPdfToTiff: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.convertPdfToTiff',
+        '${fileDirname}/${fileBasenameNoExtension}-${page}.tiff',
+      ),
+      splitPdf: defineConfiguration<string>(
+        configurationReader,
+        'outputPath.splitPdf',
+        '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf',
       ),
       convertPngToPdf: defineConfiguration<string>(
         configurationReader,
@@ -1377,9 +1734,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.clipboardImage',
         '${fileDirname}/${dateNow}',
       ),
-      convertDrawioToPdfDirectly: defineConfiguration<string>(
+      convertDrawioToSinglePdf: defineConfiguration<string>(
         configurationReader,
-        'outputPath.convertDrawioToPdfDirectly',
+        'outputPath.convertDrawioToSinglePdf',
         '${fileDirname}/${fileBasenameNoExtension}.pdf',
       ),
       convertExcalidrawToPdf: defineConfiguration<string>(
@@ -1387,11 +1744,7 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.convertExcalidrawToPdf',
         '${fileDirname}/${fileBasenameNoExtension}.pdf',
       ),
-      convertImagesToSinglePdf: defineConfiguration<string>(
-        configurationReader,
-        'outputPath.convertImagesToSinglePdf',
-        '',
-      ),
+      combineImagesToPdf: defineConfiguration<string>(configurationReader, 'outputPath.combineImagesToPdf', ''),
       reorderPdf: defineConfiguration<string>(
         configurationReader,
         'outputPath.reorderPdf',
@@ -1418,7 +1771,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         '${fileDirname}/${fileBasenameNoExtension}-decrypted.pdf',
       ),
     },
-    outputPaths: defineConfiguration<OutputPaths>(configurationReader, 'outputPaths', {}),
     cropPdf: {
       marginOptions: defineConfiguration<number[]>(configurationReader, 'cropPdf.marginOptions', [0, 5, 10, 20]),
     },

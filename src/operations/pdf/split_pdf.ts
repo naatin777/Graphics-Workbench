@@ -10,7 +10,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 export interface SplitPdfJob {
@@ -45,12 +45,10 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<Commit
   await validatePdfPathInputs(options.jobs, 'split-pdf');
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
-
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'split-pdf',
-    runId,
+    runId: options.runId,
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       splitPdf({ job, index, runId: currentRunId, signal: batchRuntime.signal }),
@@ -64,12 +62,10 @@ export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions)
   await validatePdfPathInputs(options.jobs, 'split-pdf');
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
-
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'split-pdf',
-    runId,
+    runId: options.runId,
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       splitPdfPageGroups({ job, index, runId: currentRunId, signal: batchRuntime.signal }),

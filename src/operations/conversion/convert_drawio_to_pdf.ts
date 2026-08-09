@@ -14,11 +14,11 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 import { loadMupdf, openPdfDocument, savePdfDocument } from '../pdf/mupdf.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
-import { executeDrawio, type RunDrawio } from './tools/drawio_tools.js';
+import type { RunDrawio } from './tools/drawio_tools.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import { validateGeneratedPdf } from './convert_to_pdf.js';
 
 export interface DrawioPdfJob {
@@ -34,7 +34,7 @@ export interface ConvertDrawioToPdfOptions {
   outputMode: 'page-pdfs' | 'single-pdf';
   runId?: string;
   runtime?: ConversionExecutionContext;
-  runDrawio?: RunDrawio;
+  runDrawio: RunDrawio;
 }
 
 export async function convertDrawioToPdfFiles(
@@ -46,12 +46,10 @@ export async function convertDrawioToPdfFiles(
 
   options.runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
-
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName,
-    runId,
+    runId: options.runId,
     ...(options.runtime !== undefined && { runtime: options.runtime }),
     stage: async (job, index, currentRunId, runtime) =>
       stageDrawioJob({
@@ -61,7 +59,7 @@ export async function convertDrawioToPdfFiles(
         operationName,
         outputMode: options.outputMode,
         drawioPath: options.drawioPath,
-        ...(options.runDrawio !== undefined && { runDrawio: options.runDrawio }),
+        runDrawio: options.runDrawio,
         runtime,
       }),
   });
@@ -74,7 +72,7 @@ async function stageDrawioJob(options: {
   operationName: string;
   outputMode: 'page-pdfs' | 'single-pdf';
   drawioPath: string;
-  runDrawio?: RunDrawio;
+  runDrawio: RunDrawio;
   runtime: ResolvedConversionRuntime;
 }): Promise<PreparedConversionOutput[]> {
   const { job, index: jobIndex, runId, operationName, outputMode, drawioPath, runDrawio, runtime } = options;
@@ -94,7 +92,7 @@ async function stageDrawioJob(options: {
     stageDirectory,
     workspacePath: job.workspacePath,
     drawioPath,
-    ...(runDrawio !== undefined && { runDrawio }),
+    runDrawio,
     runtime,
   });
   await assertHasDrawioContent(conversionInputPath);
@@ -194,7 +192,7 @@ async function prepareDrawioInput(options: {
   stageDirectory: string;
   workspacePath: string;
   drawioPath: string;
-  runDrawio?: RunDrawio;
+  runDrawio: RunDrawio;
   runtime: ResolvedConversionRuntime;
 }): Promise<string> {
   const drawioSourcePath = path.join(options.stageDirectory, 'source.drawio');
@@ -261,9 +259,9 @@ async function runDrawioCommand(
   executable: string,
   args: string[],
   runtime: ResolvedConversionRuntime,
-  runDrawio?: RunDrawio,
+  runDrawio: RunDrawio,
 ): Promise<void> {
-  await (runDrawio ?? executeDrawio)(executable, args, runtime.signal, runtime.outputChannel);
+  await runDrawio(executable, args, runtime.signal, runtime.outputChannel);
 }
 
 async function validateJobPaths(
@@ -306,7 +304,7 @@ function validateJobs(jobs: DrawioPdfJob[], outputMode: 'page-pdfs' | 'single-pd
     }
 
     if (outputMode === 'page-pdfs' && !job.outputTemplate.includes('${page}')) {
-      throw new Error('outputPaths.convertDrawioToPdf must contain ${page} for split Draw.io conversion.');
+      throw new Error('outputPath.convertDrawioToPagePdfs must contain ${page} for split Draw.io conversion.');
     }
   }
 }

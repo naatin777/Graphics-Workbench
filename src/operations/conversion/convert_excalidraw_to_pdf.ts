@@ -8,7 +8,7 @@ import type { RsvgToolScratchOptions } from '../external_tools/run_rsvg_convert_
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { validateGeneratedPdf, writeSourceAsPdf } from './convert_to_pdf.js';
 import { excalidrawToSvg, type ExcalidrawToSvgOptions } from './excalidraw_adapter.js';
@@ -24,6 +24,7 @@ export interface ExcalidrawPdfJob {
 export interface ConvertExcalidrawToPdfOptions {
   jobs: ExcalidrawPdfJob[];
   svgToPdf: SvgToPdfBackend;
+  maxInputPixels: number;
   runId?: string;
   runtime?: ConversionExecutionContext;
   bundleUrl?: string;
@@ -37,7 +38,6 @@ export async function convertExcalidrawToPdfFiles(
   await validateJobPaths(options.jobs, operationName);
   options.runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
   const scratchOptions: RsvgToolScratchOptions = { platform: process.platform };
   if (options.runtime?.outputChannel !== undefined) {
     scratchOptions.outputChannel = options.runtime.outputChannel;
@@ -46,7 +46,7 @@ export async function convertExcalidrawToPdfFiles(
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName,
-    runId,
+    runId: options.runId,
     ...(options.runtime !== undefined && { runtime: options.runtime }),
     stage: async (job, index, currentRunId, runtime) =>
       stageExcalidrawJob({
@@ -55,6 +55,7 @@ export async function convertExcalidrawToPdfFiles(
         runId: currentRunId,
         operationName,
         svgToPdf: options.svgToPdf,
+        maxInputPixels: options.maxInputPixels,
         scratchOptions,
         ...(options.bundleUrl !== undefined && { bundleUrl: options.bundleUrl }),
         runtime,
@@ -68,11 +69,22 @@ async function stageExcalidrawJob(options: {
   runId: string;
   operationName: string;
   svgToPdf: SvgToPdfBackend;
+  maxInputPixels: number;
   scratchOptions: RsvgToolScratchOptions;
   bundleUrl?: string;
   runtime: ResolvedConversionRuntime;
 }): Promise<PreparedConversionOutput> {
-  const { job, index: jobIndex, runId, operationName, svgToPdf, scratchOptions, bundleUrl, runtime } = options;
+  const {
+    job,
+    index: jobIndex,
+    runId,
+    operationName,
+    svgToPdf,
+    maxInputPixels,
+    scratchOptions,
+    bundleUrl,
+    runtime,
+  } = options;
   const stageRootPath = stagingRootPathFor(job.workspacePath, operationName, runId);
   const stageDirectory = path.join(
     stageRootPath,
@@ -105,6 +117,7 @@ async function stageExcalidrawJob(options: {
     sourcePath: svgPath,
     outputPath: stagedOutputPath,
     workspacePath: job.workspacePath,
+    maxInputPixels,
     signal: runtime.signal,
     scratchOptions,
     tools: { svgToPdfTools: svgToPdf },

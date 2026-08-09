@@ -4,45 +4,46 @@ import * as vscode from 'vscode';
 import {
   type CropBox,
   type CropConfigureHostToWebview,
+  type CropConfigureWebviewToHost,
   type CropPdfLabels,
   type PdfPageGeometry,
   type CropTarget,
   isCropConfigureMessage,
 } from '../../shared/protocols/crop_pdf_protocol.js';
+import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
-import { OperationCancelledError, isAbortError } from '../../shared/error.js';
-import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
+import { isAbortError } from '../../shared/error.js';
 import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
-import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
-import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
+import {
+  createPdfJsResources,
+  getPdfJsAssetsRoot,
+  getWebviewSharedAssetsRoot,
+} from '../../presentation/webview/pdfjs_assets.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { inspectCropPdfMetadata } from '../../operations/pdf/run_crop_pdf_metadata.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
-import { createProgressReporters } from '../lifecycle/progress_reporting.js';
-import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
-import { runPostConversionUi } from '../lifecycle/post_conversion_ui.js';
+import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
+import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { configureCommandRuntime } from '../shared/command_runtime.js';
-import { resolveSingleConfiguredPdfUri, toWebviewDirectoryUri } from '../shared/command_input.js';
+import { resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
+import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 
 export async function cropPdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
   try {
     await runCropPdfConfigureCommand(context, uri, uris, dependencies);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    outputChannel?.appendLine(`[crop-pdf-configure] failure: ${message}`);
+    outputChannel.appendLine(`[crop-pdf-configure] failure: ${message}`);
     if (isAbortError(error)) {
       await vscode.window.showInformationMessage(userMessage('message.cropPdf.cancelled'));
       return;
@@ -53,11 +54,11 @@ export async function cropPdfConfigureCommand(
 
 async function runCropPdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
   const inputUri = resolveSingleConfiguredPdfUri(uri, uris, 'cropPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
@@ -75,121 +76,47 @@ async function runCropPdfConfigureCommand(
     },
     async (progress, token) =>
       withCancellationSignal(token, async (signal) => {
-        signal.throwIfAborted();
         progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
-        signal.throwIfAborted();
         return inspectCropPdfMetadata(inputUri.fsPath, signal);
       }),
   );
-  const configuration = configureCommandRuntime(dependencies);
+  const configuration = dependencies.getConfiguration();
   const outputTemplate = configuration.outputPath.cropPdf();
   const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
   const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
-  const initMessage: CropConfigureHostToWebview = {
-    type: 'init',
-    payload: {
-      pdfSrc: '',
-      resources: {
-        workerSrc: '',
-        cMapUrl: '',
-        standardFontDataUrl: '',
-        wasmUrl: '',
-      },
-      preview: readPdfPreviewSettings(configuration),
-      fileName: path.basename(inputUri.fsPath),
-      pageCount: pdf.pageCount,
-      initialPage: 1,
-      pageGeometry: pdf.pages,
-      initialCropBox: initialCropBoxForPages(pdf.pages),
-      labels: cropPdfLabels(),
-    },
-  };
-  const panel = vscode.window.createWebviewPanel(
-    'graphics-workbench.cropPdf.configure',
-    `Crop PDF: ${path.basename(inputUri.fsPath)}`,
-    vscode.ViewColumn.Active,
-    {
-      enableScripts: true,
+
+  const panelTitle = localeMap('submenu.cropPdf');
+  const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'crop_pdf');
+  startPdfConfigureSession({
+    panel: {
+      id: 'graphics-workbench.cropPdf.configure',
+      title: panelTitle,
+      appRoot,
       localResourceRoots: [
-        vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'crop_pdf'),
+        appRoot,
         pdfJsAssetsRoot,
         webviewSharedAssetsRoot,
         vscode.Uri.file(path.dirname(inputUri.fsPath)),
       ],
     },
-  );
-  let isApplying = false;
-  let operationState: 'idle' | 'running' | 'completed' = 'idle';
-  const operationController = new AbortController();
-  context.subscriptions.push(
-    new vscode.Disposable(() => {
-      if (operationState === 'running') {
-        operationController.abort(
-          new OperationCancelledError('Crop Configure was cancelled during extension shutdown.'),
-        );
-      }
-    }),
-  );
-
-  panel.webview.html = getWebviewHtml({
-    webview: panel.webview,
-    extensionUri: context.extensionUri,
-    title: 'Crop PDF',
-    appName: 'crop_pdf',
-    locale: vscode.env.language,
-  });
-  initMessage.payload.pdfSrc = panel.webview.asWebviewUri(inputUri).toString();
-  initMessage.payload.resources.workerSrc = panel.webview
-    .asWebviewUri(vscode.Uri.joinPath(pdfJsAssetsRoot, 'pdf.worker.mjs'))
-    .toString();
-  initMessage.payload.resources.cMapUrl = toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'cmaps');
-  initMessage.payload.resources.standardFontDataUrl = toWebviewDirectoryUri(
-    panel.webview,
-    pdfJsAssetsRoot,
-    'standard_fonts',
-  );
-  initMessage.payload.resources.wasmUrl = toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'wasm');
-
-  panel.onDidDispose(() => {
-    if (operationState === 'running') {
-      operationController.abort(new OperationCancelledError('Crop Configure panel was closed.'));
-    }
-  });
-
-  panel.webview.onDidReceiveMessage((message: unknown) => {
-    if (!isCropConfigureMessage(message)) {
-      return;
-    }
-
-    if (message.type === 'ready') {
-      // VS Code Webview.postMessage has no browser targetOrigin parameter.
-      // oxlint-disable-next-line unicorn/require-post-message-target-origin
-      void panel.webview.postMessage(initMessage);
-      return;
-    }
-
-    if (message.type === 'cancel') {
-      if (operationState === 'running') {
-        operationController.abort(new OperationCancelledError('Crop Configure was cancelled.'));
-      }
-      panel.dispose();
-      return;
-    }
-
-    if (message.type === 'previewLoadFailed') {
-      outputChannel?.appendLine(`[crop-pdf-configure] preview failure: ${message.payload.message}`);
-      void vscode.window.showErrorMessage(message.payload.message);
-      return;
-    }
-
-    if (isApplying) {
-      return;
-    }
-
-    isApplying = true;
-    operationState = 'running';
-    void (async (): Promise<void> => {
-      try {
+    webview: {
+      title: panelTitle,
+      appName: 'crop_pdf',
+      extensionUri: context.extensionUri,
+      locale: vscode.env.language,
+    },
+    message: {
+      isWebviewToHostMessage: isCropConfigureMessage,
+      isApplyMessage: isCropApplyMessage,
+      buildInitMessage: (panel) =>
+        buildCropPdfInitMessage({
+          panel,
+          pdfJsAssetsRoot,
+          inputUri,
+          pdf,
+          preview: readPdfPreviewSettings(configuration),
+        }),
+      runApply: async (message, { panel, signal }) => {
         await applyConfiguredCrop({
           inputUri,
           workspaceFolder,
@@ -200,18 +127,56 @@ async function runCropPdfConfigureCommand(
             pageGeometry: pdf.pages,
           },
           panel,
-          operationSignal: operationController.signal,
-          onCompleted: () => {
-            operationState = 'completed';
-          },
-          ...(outputChannel !== undefined && { outputChannel }),
+          signal,
+          outputChannel,
         });
-      } finally {
-        isApplying = false;
-        operationState = 'completed';
-      }
-    })();
+      },
+      onPreviewLoadFailed: (message, channel) => {
+        if (message.type === 'previewLoadFailed') {
+          channel?.appendLine(`[crop-pdf-configure] preview failure: ${message.payload.message}`);
+          void vscode.window.showErrorMessage(message.payload.message);
+        }
+      },
+    },
+    error: {
+      operationName: 'crop-pdf-configure',
+      cancelledMessage: userMessage('message.cropPdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.cropPdf.failed', reason),
+    },
+    outputChannel,
+    extensionShutdown: { context },
   });
+}
+
+function isCropApplyMessage(
+  message: CropConfigureWebviewToHost,
+): message is Extract<CropConfigureWebviewToHost, { type: 'apply' }> {
+  return message.type === 'apply';
+}
+
+function buildCropPdfInitMessage(params: {
+  panel: vscode.WebviewPanel;
+  pdfJsAssetsRoot: vscode.Uri;
+  inputUri: vscode.Uri;
+  pdf: Awaited<ReturnType<typeof inspectCropPdfMetadata>>;
+  preview: PdfPreviewSettings;
+}): CropConfigureHostToWebview {
+  const { panel, pdfJsAssetsRoot, inputUri, pdf, preview } = params;
+
+  return {
+    type: 'init',
+    payload: {
+      pdfSrc: panel.webview.asWebviewUri(inputUri).toString(),
+      resources: createPdfJsResources(panel.webview, pdfJsAssetsRoot),
+      preview,
+      fileName: path.basename(inputUri.fsPath),
+      pageCount: pdf.pageCount,
+      initialPage: 1,
+      pageGeometry: pdf.pages,
+      initialCropBox: initialCropBoxForPages(pdf.pages),
+      labels: cropPdfLabels(),
+    },
+  };
 }
 
 async function applyConfiguredCrop(params: {
@@ -224,88 +189,43 @@ async function applyConfiguredCrop(params: {
     pageGeometry: PdfPageGeometry[];
   };
   panel: vscode.WebviewPanel;
-  operationSignal: AbortSignal;
-  onCompleted: () => void;
+  signal: AbortSignal;
   outputChannel?: LineOutputChannel;
 }): Promise<void> {
-  try {
-    const { inputUri, workspaceFolder, outputTemplate, crop, panel, operationSignal, onCompleted, outputChannel } =
-      params;
-    const sourcePath = inputUri.fsPath;
-    const outputPath = resolvePdfOutputPath(outputTemplate, {
-      workspacePath: workspaceFolder.uri.fsPath,
-      workspaceName: workspaceFolder.name,
-      sourcePath,
-    });
-    validateCropBoxForTarget(crop.cropBox, crop.target, crop.pageGeometry);
+  const { inputUri, workspaceFolder, outputTemplate, crop, panel, signal, outputChannel } = params;
+  const sourcePath = inputUri.fsPath;
+  const outputPath = resolvePdfOutputPath(outputTemplate, {
+    workspacePath: workspaceFolder.uri.fsPath,
+    workspaceName: workspaceFolder.name,
+    sourcePath,
+  });
+  validateCropBoxForTarget(crop.cropBox, crop.target, crop.pageGeometry);
 
-    const outputs = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: userMessage('message.progress.cropPdf.title', 1),
-        cancellable: true,
-      },
-      async (progress, token) =>
-        withCancellationSignal(
-          token,
-          async (signal) => {
-            progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
-            const runtime: ConversionExecutionContext = {
-              signal,
-              ...createProgressReporters(progress),
-              ...(outputChannel !== undefined && { outputChannel }),
-              resolveConflicts: resolveOutputConflicts,
-            };
-            return cropPdfWithConfiguredBox({
-              job: {
-                sourcePath,
-                workspacePath: workspaceFolder.uri.fsPath,
-                outputPath,
-                cropBox: crop.cropBox,
-                target: crop.target,
-              },
-              runtime,
-            });
-          },
-          operationSignal,
-        ),
-    );
-
-    await runPostConversionUi('crop-pdf-configure', outputChannel, async () => {
-      const successMessage = userMessage('message.cropPdf.success', outputs.length);
-      let undoId: string;
-
-      try {
-        undoId = await recordConversionForUndo(outputs, outputChannel);
-      } catch (error) {
-        onCompleted();
-        panel.dispose();
-        const message = error instanceof Error ? error.message : String(error);
-        await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-        return;
-      }
-
-      const undoAction = userMessage('message.action.undo');
-      onCompleted();
-      panel.dispose();
-      const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-      if (selectedAction === undoAction) {
-        await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-      }
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    params.outputChannel?.appendLine(`[crop-pdf-configure] failure: ${message}`);
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.cropPdf.cancelled'));
-      return;
-    }
-
-    // oxlint-disable-next-line unicorn/require-post-message-target-origin -- Webview.postMessage has no targetOrigin parameter.
-    void params.panel.webview.postMessage({ type: 'error', payload: { message } });
-    await vscode.window.showErrorMessage(userMessage('message.cropPdf.failed', message));
-  }
+  await runConfiguredPdfConversion({
+    operationName: 'crop-pdf-configure',
+    messages: {
+      progressTitle: userMessage('message.progress.cropPdf.title', 1),
+      prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
+      successMessage: (count) => userMessage('message.cropPdf.success', count),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage('message.cropPdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.cropPdf.failed', reason),
+    },
+    ...(outputChannel !== undefined && { outputChannel }),
+    panel,
+    signal,
+    run: async (runtime) =>
+      cropPdfWithConfiguredBox({
+        job: {
+          sourcePath,
+          workspacePath: workspaceFolder.uri.fsPath,
+          outputPath,
+          cropBox: crop.cropBox,
+          target: crop.target,
+        },
+        runtime,
+      }),
+  });
 }
 
 function validateCropBoxForTarget(cropBox: CropBox, target: CropTarget, pageGeometry: PdfPageGeometry[]): void {

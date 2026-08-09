@@ -5,7 +5,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import { isRasterImagePath, sourceFormatForPath } from '../../src/shared/source_format.js';
-import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
@@ -42,7 +42,9 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
         );
         const page = await secondPageIfAnimated(sourcePath);
 
-        await executePngConversion({
+        await executeRasterConversion({
+          spec: rasterFormatSpecs.png,
+          maxInputPixels: 1_000_000_000,
           jobs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
           pdfRenderTools,
           mermaidTools,
@@ -69,7 +71,9 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
       const outputPath = path.join(workspacePath, 'unsupported-output.png');
 
       await assert.rejects(
-        executePngConversion({
+        executeRasterConversion({
+          spec: rasterFormatSpecs.png,
+          maxInputPixels: 1_000_000_000,
           jobs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,

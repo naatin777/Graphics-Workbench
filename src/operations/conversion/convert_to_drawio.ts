@@ -5,19 +5,16 @@ import { XMLParser } from 'fast-xml-parser';
 import sharp from 'sharp';
 
 import { isMermaidPath } from '../../shared/source_format.js';
-import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 
 import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
-import { executeDrawio, type RunDrawio } from './tools/drawio_tools.js';
+import type { RunDrawio } from './tools/drawio_tools.js';
 import type { RunPdfToSvg } from './tools/pdf_render_tools.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { closeRasterPipeline, openRasterInput } from './raster_input.js';
-import type { MermaidBackend } from './tools/mermaid_tools.js';
-import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
-import { countPdfPages, renderPdfPageToSvg } from '../pdf/mupdf.js';
+import { countPdfPages } from '../pdf/mupdf.js';
 
 interface DrawioInput {
   sourcePath: string;
@@ -30,19 +27,18 @@ export interface ConvertToDrawioJob {
   workspacePath: string;
 }
 
-type RunMermaid = (sourcePath: string, outputPath: string, signal?: AbortSignal) => Promise<void>;
+type RunMermaid = (sourcePath: string, outputPath: string, signal: AbortSignal) => Promise<void>;
 export interface ConvertToDrawioOptions {
   jobs: ConvertToDrawioJob[];
   tools: {
-    mermaidTools?: MermaidBackend;
     drawioPath: string;
-    runPdfToSvg?: RunPdfToSvg;
-    runMermaid?: RunMermaid;
-    runDrawio?: RunDrawio;
+    runPdfToSvg: RunPdfToSvg;
+    runMermaid: RunMermaid;
+    runDrawio: RunDrawio;
   };
   runtime?: ConversionExecutionContext;
   runId?: string;
-  maxInputPixels?: number;
+  maxInputPixels: number;
 }
 
 export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Promise<CommittedConversionOutput[]> {
@@ -64,12 +60,10 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
   }
 
   options.runtime?.signal?.throwIfAborted();
-  const runId = options.runId ?? createRunId();
-
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'convert-to-drawio',
-    runId,
+    runId: options.runId,
     ...(options.runtime !== undefined && { runtime: options.runtime }),
     stage: async (job, _index, currentRunId, runtime) => stageDrawio(job, currentRunId, runtime, options),
   });
@@ -105,7 +99,7 @@ async function stageDrawio(
         workspacePath: job.workspacePath,
         format: drawioExtension(job.outputPath).slice(1),
         drawioPath: options.tools.drawioPath,
-        ...(options.tools.runDrawio !== undefined && { runDrawio: options.tools.runDrawio }),
+        runDrawio: options.tools.runDrawio,
         runtime,
       }));
   if (drawioExtension(job.outputPath) !== '.drawio') {
@@ -136,21 +130,11 @@ async function stageDrawioInput(
   }
   if (isMermaidPath(input.sourcePath)) {
     const svgPath = path.join(stageDirectory, `${inputIndex}.svg`);
-    await (
-      options.tools.runMermaid ??
-      (async (source, output, signal): Promise<void> =>
-        executeMermaid(source, output, signal, options.tools.mermaidTools))
-    )(input.sourcePath, svgPath, runtime.signal);
+    await options.tools.runMermaid(input.sourcePath, svgPath, runtime.signal);
     return [await svgPage(svgPath, input)];
   }
 
-  return [
-    await rasterPage(
-      input.sourcePath,
-      input,
-      options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
-    ),
-  ];
+  return [await rasterPage(input.sourcePath, input, options.maxInputPixels)];
 }
 
 async function stagePdfDrawioInput(
@@ -169,11 +153,7 @@ async function stagePdfDrawioInput(
   for (let page = 1; page <= pageCount; page += 1) {
     runtime.signal.throwIfAborted();
     const svgPath = path.join(stageDirectory, `${inputIndex}-${page}.svg`);
-    await (
-      options.tools.runPdfToSvg ??
-      (async (source, output, currentPage, signal): Promise<void> =>
-        renderPdfPageToSvgFile(source, output, currentPage, signal))
-    )(input.sourcePath, svgPath, page, runtime.signal);
+    await options.tools.runPdfToSvg(input.sourcePath, svgPath, page, runtime.signal);
     pages.push(await svgPage(svgPath, input, page));
   }
   return pages;
@@ -196,7 +176,7 @@ async function exportEditableDrawioImage(options: {
   workspacePath: string;
   format: string;
   drawioPath: string;
-  runDrawio?: RunDrawio;
+  runDrawio: RunDrawio;
   runtime: ResolvedConversionRuntime;
 }): Promise<void> {
   const args = [
@@ -209,12 +189,7 @@ async function exportEditableDrawioImage(options: {
       ? ['--embed-diagram', options.xmlPath]
       : [options.xmlPath]),
   ];
-  await (options.runDrawio ?? executeDrawio)(
-    options.drawioPath,
-    args,
-    options.runtime.signal,
-    options.runtime.outputChannel,
-  );
+  await options.runDrawio(options.drawioPath, args, options.runtime.signal, options.runtime.outputChannel);
   await assertExistingPathInWorkspace(options.outputPath, options.workspacePath);
 }
 
@@ -399,52 +374,4 @@ function uniquePageName(value: string, used: Set<string>): string {
 
 function escapeXml(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-}
-
-async function renderPdfPageToSvgFile(
-  sourcePath: string,
-  outputPath: string,
-  page: number,
-  signal?: AbortSignal,
-): Promise<void> {
-  signal?.throwIfAborted();
-  const pdfBytes = await readFile(sourcePath);
-  signal?.throwIfAborted();
-  const svg = await renderPdfPageToSvg(pdfBytes, page);
-  signal?.throwIfAborted();
-  await writeFile(outputPath, svg, 'utf8');
-}
-
-async function executeMermaid(
-  sourcePath: string,
-  outputPath: string,
-  signal: AbortSignal | undefined,
-  options?: MermaidBackend,
-): Promise<void> {
-  signal?.throwIfAborted();
-  await runMermaidCliWithSignal(
-    {
-      sourcePath,
-      outputPath: asSvgOutputPath(outputPath),
-      outputFormat: 'svg',
-      mermaidPath: options?.mermaidPath ?? '',
-      chromePath: options?.chromePath ?? '',
-      theme: options?.theme ?? 'default',
-      backgroundColor: options?.backgroundColor ?? 'white',
-    },
-    signal,
-  );
-  signal?.throwIfAborted();
-}
-
-function asSvgOutputPath(outputPath: string): `${string}.svg` {
-  if (!isSvgOutputPath(outputPath)) {
-    throw new Error(`Mermaid SVG output path must end with .svg: ${outputPath}`);
-  }
-
-  return outputPath;
-}
-
-function isSvgOutputPath(outputPath: string): outputPath is `${string}.svg` {
-  return outputPath.toLowerCase().endsWith('.svg');
 }

@@ -46,7 +46,7 @@ GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変�
 
 ## 設定と入力名
 
-出力形式基準のoutputPath設定を明示した場合はそれを使い、空、空白のみ、または未設定の場合は既存の形式別設定へfallbackする。既存設定はこの仕様で削除しない。legacy設定の廃止時期は、利用実態を確認したうえで次のmajor version前に決める。
+変換ごとに`outputPath.convertXToY`を1つだけ正本とする。複数ページ・複数frameの出力も同じ設定で`${page}`を使う。`outputPaths` objectや別名の設定は読まない。
 
 テンプレート変数は利用者が選択した論理入力を基準に展開する。editable Draw.io画像はDraw.io入力として扱い、`.drawio`などの接尾辞を除いた論理入力名を使用する。
 
@@ -62,10 +62,10 @@ SVGからPDFへの`chrome` backendは、同じChrome実行ファイルを`--head
 
 ネイティブDraw.io（`.drawio`、`.dio`）は、出力形式基準commandとは別に次のPDF commandを提供する。
 
-- `graphics-workbench.convertDrawioToPdf`: Draw.ioの各ページをページ名ごとの単一ページPDFへ分割する。
-- `graphics-workbench.convertDrawioToPdfDirectly`: Draw.ioの全ページを1つのPDFへ出力する。
+- `graphics-workbench.convertDrawioToPagePdfs`: Draw.ioの各ページをページ名ごとの単一ページPDFへ分割する。
+- `graphics-workbench.convertDrawioToSinglePdf`: Draw.ioの全ページを1つのPDFへ出力する。
 
-分割commandは`outputPath.convertDrawioToPdf`の`${page}`へDraw.ioのページ名を設定する。Windowsで使用できない文字や端の空白は出力ファイル名用に正規化する。直接commandは`outputPath.convertDrawioToPdfDirectly`を使う。いずれもDraw.io Desktop CLIを使い、出力は通常のstaging、Safe Mode、Undo、cancellationの対象とする。
+分割commandは`outputPath.convertDrawioToPagePdfs`の`${page}`へDraw.ioのページ名を設定する。Windowsで使用できない文字や端の空白は出力ファイル名用に正規化する。単一PDF commandは`outputPath.convertDrawioToSinglePdf`を使う。いずれもDraw.io Desktop CLIを使い、出力は通常のstaging、Safe Mode、Undo、cancellationの対象とする。
 
 ## 移行
 

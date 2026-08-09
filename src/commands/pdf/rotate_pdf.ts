@@ -14,16 +14,15 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { isAbortError } from '../../shared/error.js';
 import { resolveSelectedUris } from '../shared/command_input.js';
 
 export async function rotatePdfCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
   try {
     const sourceUris = resolveSelectedUris(uri, uris);
 
@@ -37,12 +36,12 @@ export async function rotatePdfCommand(
       return;
     }
 
-    const configuration = configureCommandRuntime(dependencies);
+    const configuration = dependencies.getConfiguration();
     const outputTemplate = configuration.outputPath.rotatePdf();
     const jobs = sourceUris.map((sourceUri) => planRotatePdfJob(sourceUri, outputTemplate, angle));
     await runConversionLifecycle({
       operationName: 'rotate-pdf',
-      ...(outputChannel !== undefined && { outputChannel }),
+      outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
         progressTitle: userMessage('message.progress.rotatePdf.title', jobs.length),

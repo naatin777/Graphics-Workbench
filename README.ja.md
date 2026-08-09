@@ -227,23 +227,23 @@ WindowsではHomebrewを使用せず、各ツールのWindows向け配布物ま�
 
 主な設定項目は以下の通りです。
 
-| 設定                                                       | 既定値                                          | 説明                                                                                                                    |
-| ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `graphics-workbench.outputPath.clipboardImage`             | `${fileDirname}/${dateNow}`                     | クリップボード画像を貼り付けるときに表示する既定の保存先です。貼り付け時に編集でき、拡張子は自動で追加されます          |
-| `graphics-workbench.insertLatex.pdfTemplate`               | `\begin{figure}[H]...`                          | PDF drag&drop時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます |
-| `graphics-workbench.insertLatex.imageTemplate`             | `\begin{figure}[H]...`                          | 画像ペースト時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます  |
-| `graphics-workbench.execPath.drawio`                       | 空文字                                          | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                      |
-| `graphics-workbench.execPath.rsvgConvert`                  | `rsvg-convert`                                  | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
-| `graphics-workbench.execPath.chrome`                       | 空文字                                          | mmdcとChrome方式のSVGからPDF変換で使うChrome実行ファイルのパスです。未指定時はOS標準のコマンドまたは場所を使います      |
-| `graphics-workbench.execPath.mermaid`                      | `mmdc`                                          | `@mermaid-js/mermaid-cli`の`mmdc`実行ファイルのパスです                                                                 |
-| `graphics-workbench.convertToPdf.svg.engine`               | `chrome`                                        | SVGをPDFへ変換するときのバックエンドです。`chrome` または `rsvg-convert` を選択できます                                 |
-| `graphics-workbench.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Draw.ioの全ページを1つのPDFへ出力するパスです                                                                           |
-| `graphics-workbench.convertToWebp.effort`                  | `4`                                             | WebP出力のエンコードeffortです                                                                                          |
-| `graphics-workbench.convertToAvif.effort`                  | `4`                                             | AVIF出力のエンコードeffortです                                                                                          |
+| 設定                                                     | 既定値                                          | 説明                                                                                                                    |
+| -------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.outputPath.clipboardImage`           | `${fileDirname}/${dateNow}`                     | クリップボード画像を貼り付けるときに表示する既定の保存先です。貼り付け時に編集でき、拡張子は自動で追加されます          |
+| `graphics-workbench.insertLatex.pdfTemplate`             | `\begin{figure}[H]...`                          | PDF drag&drop時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます |
+| `graphics-workbench.insertLatex.imageTemplate`           | `\begin{figure}[H]...`                          | 画像ペースト時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます  |
+| `graphics-workbench.execPath.drawio`                     | 空文字                                          | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                      |
+| `graphics-workbench.execPath.rsvgConvert`                | `rsvg-convert`                                  | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
+| `graphics-workbench.execPath.chrome`                     | 空文字                                          | mmdcとChrome方式のSVGからPDF変換で使うChrome実行ファイルのパスです。未指定時はOS標準のコマンドまたは場所を使います      |
+| `graphics-workbench.execPath.mermaid`                    | `mmdc`                                          | `@mermaid-js/mermaid-cli`の`mmdc`実行ファイルのパスです                                                                 |
+| `graphics-workbench.convertToPdf.svg.engine`             | `chrome`                                        | SVGをPDFへ変換するときのバックエンドです。`chrome` または `rsvg-convert` を選択できます                                 |
+| `graphics-workbench.outputPath.convertDrawioToSinglePdf` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Draw.ioの全ページを1つのPDFへ出力するパスです                                                                           |
+| `graphics-workbench.convertToWebp.effort`                | `4`                                             | WebP出力のエンコードeffortです                                                                                          |
+| `graphics-workbench.convertToAvif.effort`                | `4`                                             | AVIF出力のエンコードeffortです                                                                                          |
 
 出力ファイル名や LaTeX snippet の候補も VS Code の設定から変更できます。
 
-command IDは`convertToPdf`などの出力形式基準ですが、出力先設定は入力形式と出力形式のpairを基準にします。単一出力は`outputPath.convertPngToPdf`などを使い、`${page}`を含む複数出力は`outputPaths` objectの`convertPdfToPng`などを使います。出力形式基準の`outputPath.convertToPdf`とcommand基準の`outputPaths.convertToPdf`は使用しません。
+command IDは`convertToPdf`などの出力形式基準ですが、変換の出力先はすべて`outputPath.convertPngToPdf`や`outputPath.convertPdfToPng`のような入力・出力pair設定を使います。複数ページのテンプレートも同じ設定で`${page}`を使います。
 
 ## Output パネル
 

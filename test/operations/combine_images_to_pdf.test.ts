@@ -52,6 +52,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         jobs: [{ sourcePath }],
         outputPath,
         workspacePath,
+        maxInputPixels: 1_000_000_000,
       });
 
       const pdfBytes = await readFile(outputPath);
@@ -99,6 +100,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         jobs: sourcePaths.map((sourcePath) => ({ sourcePath })),
         outputPath,
         workspacePath,
+        maxInputPixels: 1_000_000_000,
         runtime: { reportProgress: (completed, total) => progress.push([completed, total]) },
       });
 
@@ -128,6 +130,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           jobs: [{ sourcePath }],
           outputPath,
           workspacePath,
+          maxInputPixels: 1_000_000_000,
           runtime: { signal: controller.signal },
         }),
         /aborted|cancelled/i,
@@ -153,6 +156,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         jobs: sourcePaths.map((sourcePath) => ({ sourcePath })),
         outputPath,
         workspacePath,
+        maxInputPixels: 1_000_000_000,
       });
 
       const document = await PDFDocument.load(await readFile(outputPath));
@@ -193,12 +197,16 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           assert.ok(stagedPath);
           await writeFile(stagedPath, await sourcePdf.save());
         },
+        runChrome: async () => {
+          throw new Error('chrome must not run for rsvg-convert engine');
+        },
       };
 
       await combineImagesToPdf({
         jobs: [{ sourcePath }],
         outputPath,
         workspacePath,
+        maxInputPixels: 1_000_000_000,
         tools: { svgToPdfTools },
         platform: 'linux',
       });
@@ -224,6 +232,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           jobs: [{ sourcePath: fixture.sourcePath }],
           outputPath,
           workspacePath,
+          maxInputPixels: 1_000_000_000,
           tools: {
             svgToPdfTools: createStubSvgToPdfOptions(),
           },
@@ -248,6 +257,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         jobs: fixtures.map((fixture) => ({ sourcePath: fixture.sourcePath })),
         outputPath,
         workspacePath,
+        maxInputPixels: 1_000_000_000,
         tools: {
           svgToPdfTools: createStubSvgToPdfOptions(),
         },
@@ -269,6 +279,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           jobs: [],
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
+          maxInputPixels: 1_000_000_000,
         }),
         /No images/,
       );
@@ -289,6 +300,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           jobs: [{ sourcePath }],
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
+          maxInputPixels: 1_000_000_000,
         }),
         /unsupported image format|Input file contains|not a valid|invalid/i,
       );
@@ -310,6 +322,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
             jobs: [{ sourcePath }],
             outputPath: path.join(workspacePath, `${fileName}.output.pdf`),
             workspacePath,
+            maxInputPixels: 1_000_000_000,
           }),
           /Unsupported image input:/,
         );
@@ -331,6 +344,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           jobs: [{ sourcePath }],
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
+          maxInputPixels: 1_000_000_000,
         }),
         /File operation is outside the workspace:/,
       );
@@ -436,6 +450,9 @@ function createStubSvgToPdfOptions(): SvgToPdfBackend {
       const sourcePdf = await PDFDocument.create();
       sourcePdf.addPage([1, 1]);
       await writeFile(outputPath, await sourcePdf.save());
+    },
+    runChrome: async () => {
+      throw new Error('chrome must not run for rsvg-convert engine');
     },
   };
 }

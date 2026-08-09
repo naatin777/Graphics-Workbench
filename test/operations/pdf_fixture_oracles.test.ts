@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
 
-import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
@@ -25,7 +25,9 @@ suite('PDFテスト入力の全ページPNG変換結果が、各ページの期�
           outputPath: path.join(outputDirectory, `page-${String(pageIndex + 1).padStart(3, '0')}.png`),
         }));
 
-        await executePngConversion({
+        await executeRasterConversion({
+          spec: rasterFormatSpecs.png,
+          maxInputPixels: 1_000_000_000,
           jobs: cases.map(({ outputPath, page }) => ({ sourcePath, outputPath, workspacePath, page })),
           pdfRenderTools,
           mermaidTools,

@@ -10,7 +10,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 export const PDF_ROTATION_ANGLES = [90, 180, 270] as const;
@@ -38,12 +38,10 @@ export async function rotatePdfFiles(options: RotatePdfOptions): Promise<Committ
   await validatePdfPathInputs(options.jobs, 'rotate-pdf');
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
-
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'rotate-pdf',
-    runId,
+    runId: options.runId,
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       rotatePdf({ job, index, runId: currentRunId, signal: batchRuntime.signal }),

@@ -9,11 +9,10 @@ import {
   submenuContributions,
   type SubmenuId,
 } from '../src/generated/extension_manifest.js';
-import { requireValue } from './helpers/required.js';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-const COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND = 'graphics-workbench.convertImagesToSinglePdf';
+const COMBINE_IMAGES_TO_PDF_COMMAND = 'graphics-workbench.combineImagesToPdf';
 const CONVERT_SUBMENU = 'graphics-workbench.convert';
 const CONTEXT_MENU_ENABLED = 'config.graphics-workbench.contextMenu.enabled';
 const COMPOUND_DRAWIO_MATCH = 'resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i';
@@ -52,17 +51,6 @@ const CONVERSION_CONTEXT_MENU_SETTINGS = {
     description: 'config.contextMenu.convertMermaid.enabled',
   },
 } as const;
-const UNIMPLEMENTED_MANUAL_COMMANDS = [
-  'graphics-workbench.splitPdf.manual',
-  'graphics-workbench.mergePdf.manual',
-] as const;
-const LEGACY_TO_PDF_COMMANDS = [
-  'graphics-workbench.convertPngToPdf',
-  'graphics-workbench.convertJpegToPdf',
-  'graphics-workbench.convertWebpToPdf',
-  'graphics-workbench.convertAvifToPdf',
-  'graphics-workbench.convertSvgToPdf',
-] as const;
 
 interface PackageJson {
   name: string;
@@ -169,44 +157,25 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('未実装のsplitPdf.manualとmergePdf.manualをcommands一覧にもmenu一覧にも含めない', async () => {
-    const packageJson = await readJson<PackageJson>('package.json');
-    const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
-    const menuCommandIds = new Set(
-      Object.values(packageJson.contributes.menus)
-        .flatMap((entries) => entries.map((entry) => entry.command))
-        .filter((command): command is string => command !== undefined),
-    );
-
-    for (const command of UNIMPLEMENTED_MANUAL_COMMANDS) {
-      assert.ok(!commandIds.has(command), `${command} should not be public`);
-      assert.ok(!menuCommandIds.has(command), `${command} should not be in menus`);
-    }
-  });
-
-  test('convertToPdfだけを公開し、旧形式ごとのconvertXxxToPdfコマンド（PNG/JPEG/WebP/AVIF/SVG）はcommands一覧に含めない', async () => {
+  test('入力形式を統合したconvertToPdfコマンドを公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
     assert.ok(commandIds.has('graphics-workbench.convertToPdf'));
-
-    for (const legacyCommand of LEGACY_TO_PDF_COMMANDS) {
-      assert.ok(!commandIds.has(legacyCommand), `${legacyCommand} should not be public`);
-    }
   });
 
-  test('convertDrawioToPdfとconvertDrawioToPdfDirectlyを公開し、両方をExplorer context menuに載せ、直接出力先設定のdefaultを${fileDirname}/${fileBasenameNoExtension}.pdfにする', async () => {
+  test('convertDrawioToPagePdfsとconvertDrawioToSinglePdfを公開し、両方をExplorer context menuに載せる', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const { properties } = packageJson.contributes.configuration;
 
-    assert.ok(commandIds.has('graphics-workbench.convertDrawioToPdf'));
-    assert.ok(commandIds.has('graphics-workbench.convertDrawioToPdfDirectly'));
-    assert.ok(explorerContext.some((entry) => entry.command === 'graphics-workbench.convertDrawioToPdf'));
-    assert.ok(explorerContext.some((entry) => entry.command === 'graphics-workbench.convertDrawioToPdfDirectly'));
+    assert.ok(commandIds.has('graphics-workbench.convertDrawioToPagePdfs'));
+    assert.ok(commandIds.has('graphics-workbench.convertDrawioToSinglePdf'));
+    assert.ok(explorerContext.some((entry) => entry.command === 'graphics-workbench.convertDrawioToPagePdfs'));
+    assert.ok(explorerContext.some((entry) => entry.command === 'graphics-workbench.convertDrawioToSinglePdf'));
     assert.strictEqual(
-      properties['graphics-workbench.outputPath.convertDrawioToPdfDirectly']?.default,
+      properties['graphics-workbench.outputPath.convertDrawioToSinglePdf']?.default,
       '${fileDirname}/${fileBasenameNoExtension}.pdf',
     );
   });
@@ -284,9 +253,9 @@ suite('package.jsonの変換メニュー定義', () => {
         CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
       ],
-      'graphics-workbench.convertDrawioToPdf': [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
-      'graphics-workbench.convertDrawioToPdfDirectly': [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
-      [COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND]: [
+      'graphics-workbench.convertDrawioToPagePdfs': [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
+      'graphics-workbench.convertDrawioToSinglePdf': [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
+      [COMBINE_IMAGES_TO_PDF_COMMAND]: [
         CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
         CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
@@ -314,9 +283,7 @@ suite('package.jsonの変換メニュー定義', () => {
   test('画像PDF結合コマンドのwhen句にgif/tiff拡張子を含め、複合Draw.io画像（.drawio/.dioの.png/.svg）のときは非表示にしてDraw.io設定では制御しない', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
-    const combineImagesToSinglePdf = convertMenu.find(
-      (entry) => entry.command === COMBINE_IMAGES_TO_SINGLE_PDF_COMMAND,
-    );
+    const combineImagesToSinglePdf = convertMenu.find((entry) => entry.command === COMBINE_IMAGES_TO_PDF_COMMAND);
 
     assert.ok(combineImagesToSinglePdf?.when?.includes(CONTEXT_MENU_ENABLED));
     assert.ok(combineImagesToSinglePdf?.when?.includes(COMPOUND_DRAWIO_NOT_MATCH));
@@ -325,7 +292,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(!combineImagesToSinglePdf?.when?.includes(CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property));
   });
 
-  test('変換サブメニューをExplorerに表示し、convertToPdfをmmd/mermaid/drawio/dio入力で表示し、複合Draw.io画像のエントリも追加し、旧PDF変換コマンドはどのmenuにも載せない', async () => {
+  test('変換サブメニューをExplorerに表示し、convertToPdfをmmd/mermaid/drawio/dio入力で表示し、複合Draw.io画像のエントリも追加する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -351,17 +318,6 @@ suite('package.jsonの変換メニュー定義', () => {
           entry.when.includes('svg'),
       ),
     );
-
-    const menuCommandIds = new Set(
-      Object.entries(packageJson.contributes.menus)
-        .filter(([menuId]) => menuId !== 'commandPalette')
-        .flatMap(([, entries]) => entries.map((entry) => entry.command))
-        .filter((command): command is string => command !== undefined),
-    );
-
-    for (const legacyCommand of LEGACY_TO_PDF_COMMANDS) {
-      assert.ok(!menuCommandIds.has(legacyCommand), `${legacyCommand} should not be in menus`);
-    }
   });
 
   test('変換サブメニューとconvertToPdfのwhen句にresourceExtnameとresourceFilenameの大文字小文字非依存(/i)正規表現が含まれることを検証する', async () => {
@@ -636,14 +592,18 @@ suite('package.jsonの変換メニュー定義', () => {
     });
   });
 
-  test('outputPaths設定のスキーマにadditionalProperties:falseを指定し、定義済みのproperty名だけを受け付ける', async () => {
+  test('複数出力もoutputPath.convertXToYとoutputPath.splitPdfの個別設定で定義する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
-    const outputPaths = requireValue(
-      packageJson.contributes.configuration.properties['graphics-workbench.outputPaths'],
-    );
+    const { properties } = packageJson.contributes.configuration;
 
-    assert.deepStrictEqual(outputPaths.additionalProperties, false);
-    assert.ok(outputPaths.properties, 'outputPaths must have explicit properties');
+    assert.strictEqual(
+      properties['graphics-workbench.outputPath.convertPdfToPng']?.default,
+      '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
+    );
+    assert.strictEqual(
+      properties['graphics-workbench.outputPath.splitPdf']?.default,
+      '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf',
+    );
   });
 
   test('PDFとTIFFのCustom Editorをpriority:optionで登録し、displayNameを%キー%参照・selectorを拡張子パターンにする', async () => {

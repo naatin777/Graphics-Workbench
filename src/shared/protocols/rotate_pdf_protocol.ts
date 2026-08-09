@@ -1,14 +1,8 @@
 import * as v from 'valibot';
-import { isWebviewUri } from './protocol_utils.js';
-import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
+import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
 
 export const PDF_ROTATION_ANGLES = [90, 180, 270] as const;
 export type PdfRotationAngle = (typeof PDF_ROTATION_ANGLES)[number];
-
-const RotatePdfWebviewUriSchema = v.pipe(
-  v.string(),
-  v.check((value: string): boolean => isWebviewUri(value)),
-);
 
 const RotatePdfLabelsSchema = v.strictObject({
   header: v.strictObject({
@@ -41,19 +35,12 @@ const RotatePdfLabelsSchema = v.strictObject({
 });
 export type RotatePdfLabels = v.InferOutput<typeof RotatePdfLabelsSchema>;
 
-const RotatePdfResourcesSchema = v.strictObject({
-  workerSrc: RotatePdfWebviewUriSchema,
-  cMapUrl: RotatePdfWebviewUriSchema,
-  standardFontDataUrl: RotatePdfWebviewUriSchema,
-  wasmUrl: RotatePdfWebviewUriSchema,
-});
-
 const RotatePdfInitPayloadSchema = v.strictObject({
   sourceId: v.pipe(v.string(), v.nonEmpty()),
   fileName: v.pipe(v.string(), v.nonEmpty()),
   pageCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
-  pdfSrc: RotatePdfWebviewUriSchema,
-  resources: RotatePdfResourcesSchema,
+  pdfSrc: WebviewUriSchema,
+  resources: PdfJsResourcesSchema,
   preview: PdfPreviewSettingsSchema,
   labels: RotatePdfLabelsSchema,
 });

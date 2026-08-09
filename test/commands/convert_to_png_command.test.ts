@@ -189,7 +189,7 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('outputPaths.convertPdfToPngが設定済みの場合、2ページPDFを${page}ごとに展開したto-png-source-1.pngとto-png-source-2.pngを生成する', async () => {
+  test('outputPath.convertPdfToPngが設定済みの場合、2ページPDFを${page}ごとに展開したto-png-source-1.pngとto-png-source-2.pngを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -200,9 +200,8 @@ suite('PNGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPaths': {
-            convertPdfToPng: '${fileDirname}/to-png-${fileBasenameNoExtension}-${page}.png',
-          },
+          'graphics-workbench.outputPath.convertPdfToPng':
+            '${fileDirname}/to-png-${fileBasenameNoExtension}-${page}.png',
         },
         async () => {
           const commandExecution = vscode.commands.executeCommand(

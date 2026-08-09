@@ -1,7 +1,7 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { countPdfPages } from '../../operations/pdf/mupdf.js';
+import { countPdfPages, renderPdfPageToSvg } from '../../operations/pdf/mupdf.js';
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
@@ -11,9 +11,7 @@ import {
   isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
-import { getMaxInputPixels } from '../../config/raster.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
-import { resolveOutputPathsTemplate } from '../../config/output/output_path_settings.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
@@ -26,18 +24,15 @@ import type { ConversionExecutionContext } from '../../operations/lifecycle/conv
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
-import { configureCommandRuntime, buildDrawioCommandOptions } from '../shared/command_runtime.js';
+import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
 import { isAbortError } from '../../shared/error.js';
 
-const defaultPdfOutputPath = '${fileDirname}/${fileBasenameNoExtension}-${page}.svg';
-const defaultDrawioOutputPath = '${fileDirname}/${fileBasenameNoExtension}/${page}.svg';
-
 export async function convertToSvgCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
   try {
     const sourceUris = resolveSelectedUris(uri, uris);
 
@@ -45,13 +40,13 @@ export async function convertToSvgCommand(
       throw new Error('No files were selected.');
     }
 
-    const configuration = configureCommandRuntime(dependencies);
-    const maxInputPixels = getMaxInputPixels(configuration);
+    const configuration = dependencies.getConfiguration();
+    const maxInputPixels = configuration.raster.maxInputPixels();
     const mermaidTools = readMermaidCliOptions(configuration);
     const drawioTools = buildDrawioCommandOptions(configuration);
     await runConversionLifecycle({
       operationName: 'convert-to-svg',
-      ...(outputChannel !== undefined && { outputChannel }),
+      outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('SVG', sourceUris.length),
       run: async (runtime) => {
@@ -66,6 +61,12 @@ export async function convertToSvgCommand(
           mermaidTools,
           drawioTools,
           runtime,
+          runPdfToSvg: async (sourcePath, outputPath, page, signal) => {
+            signal.throwIfAborted();
+            const svg = await renderPdfPageToSvg(await readFile(sourcePath), page);
+            signal.throwIfAborted();
+            await writeFile(outputPath, svg, 'utf8');
+          },
         });
       },
     });
@@ -104,7 +105,7 @@ async function planSvgConversionJobs(
   }
 
   if (isNativeDrawioPath(sourcePath)) {
-    const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertDrawioToSvg', defaultDrawioOutputPath);
+    const outputTemplate = resolveConversionTemplate({ target: 'svg', sourcePath, configuration });
     const outputPath = resolveOutputPath(
       outputTemplate,
       {
@@ -154,7 +155,7 @@ async function planPdfPageSvgJobs(
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }
 
-  const outputTemplate = resolveOutputPathsTemplate(configuration, 'convertPdfToSvg', defaultPdfOutputPath);
+  const outputTemplate = resolveConversionTemplate({ target: 'svg', sourcePath, configuration });
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
   const jobs: ConvertToSvgJob[] = [];
@@ -187,6 +188,5 @@ function outputTemplateForSource(sourcePath: string, configuration: Configuratio
     target: 'svg',
     sourcePath,
     configuration,
-    pluralFallback: defaultDrawioOutputPath,
   });
 }

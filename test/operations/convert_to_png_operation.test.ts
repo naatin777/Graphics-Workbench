@@ -10,8 +10,12 @@ import path from 'node:path';
 import { PDFDocument } from '../helpers/pdf_document.js';
 import sharp from 'sharp';
 
-import { executePngConversion, type RasterJob } from '../../src/operations/conversion/raster_conversion.js';
-import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
+import {
+  executeRasterConversion,
+  rasterFormatSpecs,
+  type RasterJob,
+} from '../../src/operations/conversion/raster_conversion.js';
+import { executeDrawio, type DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', () => {
@@ -21,7 +25,9 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
     for (const format of ['gif', 'webp', 'tiff'] as const) {
       const sourcePath = path.join(workspacePath.path, `source.${format}`);
       await writeAnimatedRaster(sourcePath, format);
-      await executePngConversion({
+      await executeRasterConversion({
+        spec: rasterFormatSpecs.png,
+        maxInputPixels: 1_000_000_000,
         jobs: [1, 2].map((page) => ({
           sourcePath,
           outputPath: path.join(workspacePath.path, `${format}-${page}.png`),
@@ -30,7 +36,7 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
         })),
         pdfRenderTools: {},
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-        drawioTools: { drawioPath: 'drawio' },
+        drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
         runtime: { resolveConflicts: async () => 'overwrite' },
       });
 
@@ -74,7 +80,9 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
       page: 1,
     };
 
-    await executePngConversion({
+    await executeRasterConversion({
+      spec: rasterFormatSpecs.png,
+      maxInputPixels: 1_000_000_000,
       jobs: [job],
       pdfRenderTools: {
         runPdfToPng: async (pdfPath, pngPath, page) => {

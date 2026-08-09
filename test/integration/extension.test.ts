@@ -8,16 +8,8 @@ import * as vscode from 'vscode';
 import { operationPdfInputDirectory, operationPngInputPath } from '../helpers/fixture_paths.js';
 import { extensionIdentity } from '../../src/generated/extension_manifest.js';
 
-const LEGACY_TO_PDF_COMMANDS = [
-  'graphics-workbench.convertPngToPdf',
-  'graphics-workbench.convertJpegToPdf',
-  'graphics-workbench.convertWebpToPdf',
-  'graphics-workbench.convertAvifToPdf',
-  'graphics-workbench.convertSvgToPdf',
-] as const;
-
 suite('拡張機能のactivateとworkspace内ファイルへの変換コマンド実行', () => {
-  test('拡張機能をactivateするとcropPdf.autoやsplitPdf.allPagesなどの代表commandが登録され、cropPdf.manualと旧convert系command（convertPngToPdf・convertJpegToPdf・convertWebpToPdf・convertAvifToPdf・convertSvgToPdf）は登録されない', async () => {
+  test('拡張機能をactivateするとcropPdf.autoやsplitPdf.allPagesなどの代表commandが登録される', async () => {
     const extension = vscode.extensions.getExtension(extensionIdentity.id);
 
     assert.ok(extension);
@@ -32,15 +24,10 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
       'graphics-workbench.mergePdf.configure',
       'graphics-workbench.splitPdf.configure',
       'graphics-workbench.convertToPdf',
-      'graphics-workbench.convertDrawioToPdf',
-      'graphics-workbench.convertDrawioToPdfDirectly',
+      'graphics-workbench.convertDrawioToPagePdfs',
+      'graphics-workbench.convertDrawioToSinglePdf',
     ]) {
       assert.ok(commands.includes(command), `Expected command to be registered: ${command}`);
-    }
-    assert.ok(!commands.includes('graphics-workbench.cropPdf.manual'));
-
-    for (const legacyCommand of LEGACY_TO_PDF_COMMANDS) {
-      assert.ok(!commands.includes(legacyCommand), `Legacy command should not be registered: ${legacyCommand}`);
     }
   });
 

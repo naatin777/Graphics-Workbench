@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { sourceFormatForPath } from '../../src/shared/source_format.js';
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
-import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertPdfMatches, assertRasterMatches, assertSvgStructureMatches } from '../helpers/content_assertions.js';
@@ -22,7 +22,9 @@ suite('Mermaidテスト入力のPNG・SVG・PDF変換結果が、各期待出力
         const actualSvgPath = path.join(outputDirectory, 'actual.svg');
         const actualPdfPath = path.join(outputDirectory, 'actual.pdf');
         const expectedDirectory = path.join(testOutputDirectory, 'mermaid', sourceName(fixturePath));
-        await executePngConversion({
+        await executeRasterConversion({
+          spec: rasterFormatSpecs.png,
+          maxInputPixels: 1_000_000_000,
           jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,
@@ -34,7 +36,11 @@ suite('Mermaidテスト入力のPNG・SVG・PDF変換結果が、各期待出力
           jobs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
           mermaidTools,
           drawioTools,
+          runPdfToSvg: () => {
+            throw new Error('mermaid fixture must not include PDF input for SVG conversion');
+          },
           runId: `mermaid-${index}-svg`,
+          maxInputPixels: 1_000_000_000,
         });
         await convertToPdfFiles({
           jobs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
@@ -43,6 +49,7 @@ suite('Mermaidテスト入力のPNG・SVG・PDF変換結果が、各期待出力
           runtime: { resolveConflicts: async () => 'overwrite' },
           operationName: `mermaid-${index}-to-pdf`,
           runId: `mermaid-${index}-pdf`,
+          maxInputPixels: 1_000_000_000,
         });
 
         const rendererComparison = { rendererVariance: true } as const;

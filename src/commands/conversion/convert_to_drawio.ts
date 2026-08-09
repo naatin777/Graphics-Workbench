@@ -1,23 +1,33 @@
 import * as vscode from 'vscode';
+import { readFile, writeFile } from 'node:fs/promises';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/conversion/convert_to_drawio.js';
+import { renderPdfPageToSvg } from '../../operations/pdf/mupdf.js';
+import { runMermaidCliWithSignal } from '../../operations/conversion/tools/run_mermaid_cli.js';
+import { executeDrawio } from '../../operations/conversion/tools/drawio_tools.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
-import { configureCommandRuntime } from '../shared/command_runtime.js';
 
 const drawioExtensions = ['.drawio', '.dio', '.drawio.png', '.dio.png', '.drawio.svg', '.dio.svg'] as const;
 
+function assertSvgOutputPath(outputPath: string): string {
+  if (!outputPath.toLowerCase().endsWith('.svg')) {
+    throw new Error(`Mermaid SVG output path must end with .svg: ${outputPath}`);
+  }
+
+  return outputPath;
+}
+
 export async function convertToDrawioCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
   await runDrawioConversionCommand(uri, uris, dependencies, (configuration) =>
     configuration.outputPath.convertToDrawio(),
@@ -25,9 +35,9 @@ export async function convertToDrawioCommand(
 }
 
 export async function convertToDrawioPngCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
   await runDrawioConversionCommand(uri, uris, dependencies, (configuration) =>
     configuration.outputPath.convertToDrawioPng(),
@@ -35,9 +45,9 @@ export async function convertToDrawioPngCommand(
 }
 
 export async function convertToDrawioSvgCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
   await runDrawioConversionCommand(uri, uris, dependencies, (configuration) =>
     configuration.outputPath.convertToDrawioSvg(),
@@ -47,7 +57,7 @@ export async function convertToDrawioSvgCommand(
 async function runDrawioConversionCommand(
   uri: vscode.Uri | undefined,
   uris: vscode.Uri[] | undefined,
-  dependencies: CommandDependencies | undefined,
+  dependencies: CommandDependencies,
   setting: (configuration: Configuration) => string,
 ): Promise<void> {
   try {
@@ -55,7 +65,7 @@ async function runDrawioConversionCommand(
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
-    const configuration = configureCommandRuntime(dependencies);
+    const configuration = dependencies.getConfiguration();
     const [first] = sourceUris;
     if (first === undefined) {
       throw new Error('No files were selected.');
@@ -92,7 +102,7 @@ async function runDrawioConversionCommand(
     ];
     await runConversionLifecycle({
       operationName: 'convert-to-drawio',
-      ...(dependencies?.outputChannel !== undefined && { outputChannel: dependencies.outputChannel }),
+      outputChannel: dependencies.outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('Draw.io', sourceUris.length),
       run: async (runtime) =>
@@ -100,9 +110,30 @@ async function runDrawioConversionCommand(
           jobs,
           tools: {
             drawioPath,
-            mermaidTools: readMermaidCliOptions(configuration),
+            runPdfToSvg: async (sourcePath, toolOutputPath, page, signal) => {
+              signal.throwIfAborted();
+              const svg = await renderPdfPageToSvg(await readFile(sourcePath), page);
+              signal.throwIfAborted();
+              await writeFile(toolOutputPath, svg, 'utf8');
+            },
+            runMermaid: async (sourcePath, toolOutputPath, signal) => {
+              const mermaidTools = readMermaidCliOptions(configuration);
+              await runMermaidCliWithSignal(
+                {
+                  sourcePath,
+                  outputPath: assertSvgOutputPath(toolOutputPath),
+                  outputFormat: 'svg',
+                  mermaidPath: mermaidTools.mermaidPath,
+                  chromePath: mermaidTools.chromePath,
+                  theme: mermaidTools.theme,
+                  backgroundColor: mermaidTools.backgroundColor,
+                },
+                signal,
+              );
+            },
+            runDrawio: executeDrawio,
           },
-          maxInputPixels: getMaxInputPixels(configuration),
+          maxInputPixels: configuration.raster.maxInputPixels(),
           runtime,
         }),
     });

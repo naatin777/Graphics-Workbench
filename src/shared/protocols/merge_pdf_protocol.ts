@@ -1,16 +1,10 @@
 import * as v from 'valibot';
-import { isWebviewUri } from './protocol_utils.js';
-import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
-
-const MergePdfWebviewUriSchema = v.pipe(
-  v.string(),
-  v.check((value: string): boolean => isWebviewUri(value)),
-);
+import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
 
 const MergePdfSourceSchema = v.strictObject({
   sourceId: v.pipe(v.string(), v.nonEmpty()),
   fileName: v.pipe(v.string(), v.nonEmpty()),
-  pdfSrc: MergePdfWebviewUriSchema,
+  pdfSrc: WebviewUriSchema,
 });
 export type MergePdfSource = v.InferOutput<typeof MergePdfSourceSchema>;
 
@@ -50,10 +44,7 @@ const MergePdfInitPayloadSchema = v.strictObject({
       (sources: MergePdfSource[]): boolean => new Set(sources.map((source) => source.sourceId)).size === sources.length,
     ),
   ),
-  workerSrc: MergePdfWebviewUriSchema,
-  cMapUrl: MergePdfWebviewUriSchema,
-  standardFontDataUrl: MergePdfWebviewUriSchema,
-  wasmUrl: MergePdfWebviewUriSchema,
+  resources: PdfJsResourcesSchema,
   preview: PdfPreviewSettingsSchema,
   labels: MergePdfLabelsSchema,
 });

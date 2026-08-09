@@ -9,7 +9,6 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId } from '../lifecycle/run_id.js';
 import { createSecurePdfStagingRoot } from '../lifecycle/secure_staging.js';
 
 export interface EncryptPdfJob {
@@ -40,14 +39,13 @@ export async function encryptPdfFiles(options: EncryptPdfOptions): Promise<Commi
 
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
   const stagingRootPath = await createSecurePdfStagingRoot('encrypt-pdf');
 
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'encrypt-pdf',
     stagingOperationName: 'encrypt-pdf',
-    runId,
+    runId: options.runId,
     artifactRoots: [{ rootPath: stagingRootPath, workspacePath: stagingRootPath }],
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, _runId, batchRuntime) =>

@@ -126,7 +126,7 @@ Unsupported environments (Alpine Linux / musl, ARM32, and other environments wit
 
 Some features need external tools in addition to the VS Code extension. Install what you need for the features you use. Executable paths can be set in VS Code settings (`graphics-workbench.execPath.*`).
 
-Run **Graphics Workbench: Check Environment** from the command palette to see per-feature availability and open the related settings by picking an item. A missing tool does not fail the whole check.
+Open **Graphics Workbench Controls** from the status bar to see per-feature availability. Select an external-tool row to open its related setting, or select **Check again** to refresh the results. A missing tool does not fail the whole check.
 
 | Tool                     | Purpose                                            | Required by                                                             | Notes                                                                                            |
 | ------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
@@ -227,23 +227,23 @@ Normal raster conversions use the first GIF/TIFF page or frame. Convert to PDF p
 
 Main settings:
 
-| Setting                                                    | Default                                         | Description                                                                                                                       |
-| ---------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `graphics-workbench.outputPath.clipboardImage`             | `${fileDirname}/${dateNow}`                     | Default output path shown when pasting a clipboard image. It can be edited during paste, and the extension is added automatically |
-| `graphics-workbench.insertLatex.pdfTemplate`               | `\begin{figure}[H]...`                          | LaTeX template for PDF drop. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices                  |
-| `graphics-workbench.insertLatex.imageTemplate`             | `\begin{figure}[H]...`                          | LaTeX template for image paste. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices               |
-| `graphics-workbench.execPath.drawio`                       | empty string                                    | Path to Draw.io Desktop. If empty, the OS default command is used                                                                 |
-| `graphics-workbench.execPath.rsvgConvert`                  | `rsvg-convert`                                  | Path to the `rsvg-convert` executable                                                                                             |
-| `graphics-workbench.execPath.chrome`                       | empty string                                    | Chrome executable for mmdc and Chrome SVG-to-PDF; uses the standard OS command/location when empty                                |
-| `graphics-workbench.execPath.mermaid`                      | `mmdc`                                          | Path to the `mmdc` executable from `@mermaid-js/mermaid-cli`                                                                      |
-| `graphics-workbench.convertToPdf.svg.engine`               | `chrome`                                        | SVG to PDF backend. Choose `chrome` or `rsvg-convert`                                                                             |
-| `graphics-workbench.outputPath.convertDrawioToPdfDirectly` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Output path for the one-PDF Draw.io command                                                                                       |
-| `graphics-workbench.convertToWebp.effort`                  | `4`                                             | Encoding effort for WebP output                                                                                                   |
-| `graphics-workbench.convertToAvif.effort`                  | `4`                                             | Encoding effort for AVIF output                                                                                                   |
+| Setting                                                  | Default                                         | Description                                                                                                                       |
+| -------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.outputPath.clipboardImage`           | `${fileDirname}/${dateNow}`                     | Default output path shown when pasting a clipboard image. It can be edited during paste, and the extension is added automatically |
+| `graphics-workbench.insertLatex.pdfTemplate`             | `\begin{figure}[H]...`                          | LaTeX template for PDF drop. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices                  |
+| `graphics-workbench.insertLatex.imageTemplate`           | `\begin{figure}[H]...`                          | LaTeX template for image paste. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices               |
+| `graphics-workbench.execPath.drawio`                     | `drawio`                                        | Command or path for Draw.io Desktop                                                                                               |
+| `graphics-workbench.execPath.rsvgConvert`                | `rsvg-convert`                                  | Path to the `rsvg-convert` executable                                                                                             |
+| `graphics-workbench.execPath.chrome`                     | empty string                                    | Chrome executable for mmdc and Chrome SVG-to-PDF; uses the standard OS command/location when empty                                |
+| `graphics-workbench.execPath.mermaid`                    | `mmdc`                                          | Path to the `mmdc` executable from `@mermaid-js/mermaid-cli`                                                                      |
+| `graphics-workbench.convertToPdf.svg.engine`             | `chrome`                                        | SVG to PDF backend. Choose `chrome` or `rsvg-convert`                                                                             |
+| `graphics-workbench.outputPath.convertDrawioToSinglePdf` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Output path for the one-PDF Draw.io command                                                                                       |
+| `graphics-workbench.convertToWebp.effort`                | `4`                                             | Encoding effort for WebP output                                                                                                   |
+| `graphics-workbench.convertToAvif.effort`                | `4`                                             | Encoding effort for AVIF output                                                                                                   |
 
 Output paths and LaTeX snippet candidates can also be changed from VS Code settings.
 
-Command IDs use output-format names such as `convertToPdf`, but output paths use input/output pair names. Use `outputPath.convertPngToPdf` for a single output and an `outputPaths` entry such as `convertPdfToPng` when the template includes `${page}`. Format-based `outputPath.convertToPdf` settings and command-based `outputPaths.convertToPdf` entries are not used.
+Command IDs use output-format names such as `convertToPdf`, while every conversion output path uses one input/output pair setting such as `outputPath.convertPngToPdf` or `outputPath.convertPdfToPng`. Multi-page templates use `${page}` in that same setting.
 
 ## Output Panel
 

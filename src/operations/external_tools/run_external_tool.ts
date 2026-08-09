@@ -40,11 +40,6 @@ const decodeOutput = (accumulator: OutputAccumulator): string => Buffer.concat(a
 
 const TERMINATION_GRACE_MS = 250;
 const TERMINATION_WATCHDOG_MS = 5_000;
-const TOOL_ID_BY_NAME: Readonly<Record<string, ExternalToolId>> = {
-  drawio: 'drawio',
-  'rsvg-convert': 'rsvgConvert',
-  mermaid: 'mermaid',
-};
 
 export interface ExternalToolResult {
   stdout: string;
@@ -74,11 +69,10 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
     throw createAbortError();
   }
 
-  const toolId = options.toolId ?? TOOL_ID_BY_NAME[options.toolName.toLowerCase()];
   const timeoutMs =
     options.timeoutMs === 0
       ? undefined
-      : (options.timeoutMs ?? (toolId === undefined ? undefined : getExternalToolTimeoutMs(toolId)));
+      : (options.timeoutMs ?? (options.toolId === undefined ? undefined : getExternalToolTimeoutMs(options.toolId)));
 
   return sharedHeavyProcessLimiter.run(
     async () =>

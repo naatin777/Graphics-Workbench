@@ -18,7 +18,6 @@ import {
   isRasterImagePath,
   isSameSourceFormat,
 } from '../../shared/source_format.js';
-import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 import {
   closeRasterPipeline,
   isRasterInputPixelLimitError,
@@ -40,8 +39,8 @@ import {
   type RsvgToolScratchOptions,
 } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
-import { executeDrawio, type DrawioBackend } from './tools/drawio_tools.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
+import type { DrawioBackend } from './tools/drawio_tools.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 
@@ -65,8 +64,8 @@ export interface WriteSourceAsPdfOptions {
   sourcePath: string;
   outputPath: string;
   workspacePath: string;
-  signal?: AbortSignal;
-  maxInputPixels?: number;
+  signal: AbortSignal;
+  maxInputPixels: number;
   page?: number;
   tools?: {
     svgToPdfTools?: SvgToPdfBackend;
@@ -82,7 +81,7 @@ interface StageSourceToPdfOptions {
   mermaidTools: MermaidBackend | undefined;
   drawioTools: DrawioBackend | undefined;
   scratchOptions: RsvgToolScratchOptions;
-  maxInputPixels: number | undefined;
+  maxInputPixels: number;
 }
 
 interface WriteRasterImageAsPdfOptions {
@@ -98,7 +97,7 @@ interface WriteSvgAsPdfOptions {
   sourcePath: string;
   outputPath: string;
   workspacePath: string;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
   svgToPdf: SvgToPdfBackend | undefined;
   scratchOptions: RsvgToolScratchOptions;
 }
@@ -114,20 +113,19 @@ export interface ConvertToPdfFilesOptions {
     drawioTools?: DrawioBackend;
   };
   platform?: NodeJS.Platform;
-  maxInputPixels?: number;
+  maxInputPixels: number;
   scratchBaseCandidates?: readonly string[];
   operationName?: string;
 }
 
 export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
+  const { maxInputPixels } = options;
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs, options.supportedExtensions ?? defaultSupportedImageExtensions);
   await validatePdfPathInputs(options.jobs, 'convert-to-pdf');
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
   const platform = options.platform ?? process.platform;
   const scratchOptions: RsvgToolScratchOptions = { platform };
   if (runtime?.outputChannel !== undefined) {
@@ -142,7 +140,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
     jobs: options.jobs,
     operationName,
     stagingOperationName: 'convert-to-pdf',
-    runId,
+    runId: options.runId,
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       stageSourceToPdf(job, index, currentRunId, {
@@ -180,10 +178,8 @@ async function stageSourceToPdf(
     workspacePath: job.workspacePath,
     scratchOptions,
     signal,
+    maxInputPixels,
   };
-  if (maxInputPixels !== undefined) {
-    writeOptions.maxInputPixels = maxInputPixels;
-  }
   if (job.page !== undefined) {
     writeOptions.page = job.page;
   }
@@ -215,28 +211,18 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
-    const animation = await readRasterAnimationMetadata(
-      sourcePath,
-      maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
-    );
+    const animation = await readRasterAnimationMetadata(sourcePath, maxInputPixels);
     if (animation !== undefined) {
       // アニメーション（GIF / マルチページTIFF / アニメWebP）は全フレームを
       // 1つのPDFの各ページへ展開する。最初のフレームだけに切り詰めない。
-      const animatedOptions: {
-        sourcePath: string;
-        outputPath: string;
-        workspacePath: string;
-        animation: RasterAnimationMetadata;
-        signal?: AbortSignal;
-        maxInputPixels?: number;
-      } = { sourcePath, outputPath, workspacePath, animation };
-      if (signal !== undefined) {
-        animatedOptions.signal = signal;
-      }
-      if (maxInputPixels !== undefined) {
-        animatedOptions.maxInputPixels = maxInputPixels;
-      }
-      await writeAnimatedRasterAsPdf(animatedOptions);
+      await writeAnimatedRasterAsPdf({
+        sourcePath,
+        outputPath,
+        workspacePath,
+        animation,
+        signal,
+        maxInputPixels,
+      });
       return;
     }
   }
@@ -275,7 +261,7 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
     outputPath,
     workspacePath,
     signal,
-    maxInputPixels: maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
+    maxInputPixels,
     framePage: options.page,
   });
 }
@@ -284,35 +270,31 @@ async function writeDrawioAsPdf(
   sourcePath: string,
   outputPath: string,
   workspacePath: string,
-  signal?: AbortSignal,
+  signal: AbortSignal,
   drawio?: DrawioBackend,
 ): Promise<void> {
   if (drawio === undefined) {
     throw new Error('Draw.io executable is not configured. Set graphics-workbench.execPath.drawio.');
   }
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
-  await (drawio.runDrawio ?? executeDrawio)(
-    drawio.drawioPath,
-    ['-x', '-f', 'pdf', '-o', outputPath, sourcePath],
-    signal,
-  );
+  await drawio.runDrawio(drawio.drawioPath, ['-x', '-f', 'pdf', '-o', outputPath, sourcePath], signal);
 }
 
 async function writeMermaidAsPdf(
   sourcePath: string,
   outputPath: string,
   workspacePath: string,
-  signal?: AbortSignal,
+  signal: AbortSignal,
   mermaid?: MermaidBackend,
 ): Promise<void> {
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   try {
     await runMermaidCliWithSignal(
@@ -438,12 +420,11 @@ async function writeAnimatedRasterAsPdf(options: {
   sourcePath: string;
   outputPath: string;
   workspacePath: string;
-  signal?: AbortSignal;
-  maxInputPixels?: number;
+  signal: AbortSignal;
+  maxInputPixels: number;
   animation: RasterAnimationMetadata;
 }): Promise<void> {
   const { sourcePath, outputPath, workspacePath, signal, maxInputPixels, animation } = options;
-  const maxInputPixelsValue = maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
 
   // フレームPDFは最終出力と同じstagingディレクトリへ置く。workspace外（os.tmpdir）へ
   // 書くとassertWritablePathInWorkspaceが失敗するため。
@@ -452,31 +433,31 @@ async function writeAnimatedRasterAsPdf(options: {
 
   try {
     for (let frame = 1; frame <= animation.pages; frame += 1) {
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       const framePdfPath = path.join(frameDirectory, `.graphics-workbench-frame-${frame}.pdf`);
       await writeRasterImageAsPdf({
         sourcePath,
         outputPath: framePdfPath,
         workspacePath,
         signal,
-        maxInputPixels: maxInputPixelsValue,
+        maxInputPixels,
         framePage: frame,
       });
       framePdfPaths.push(framePdfPath);
     }
 
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
     const mupdf = await loadMupdf();
     const mergedDocument = new mupdf.PDFDocument();
     try {
       for (const framePdfPath of framePdfPaths) {
-        signal?.throwIfAborted();
+        signal.throwIfAborted();
         await graftPdfPagesInto(mergedDocument, framePdfPath, signal);
       }
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       await assertWritablePathInWorkspace(outputPath, workspacePath);
       await mkdir(path.dirname(outputPath), { recursive: true });
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       await writeFile(outputPath, savePdfDocument(mergedDocument));
     } finally {
       mergedDocument.destroy();
@@ -495,13 +476,13 @@ async function removeFramePdfs(framePdfPaths: readonly string[]): Promise<void> 
 async function graftPdfPagesInto(
   mergedDocument: MupdfPdfDocumentInstance,
   sourcePdfPath: string,
-  signal?: AbortSignal,
+  signal: AbortSignal,
 ): Promise<void> {
   const sourceDocument = await openPdfDocument(await readFile(sourcePdfPath));
   try {
     const pageCount = sourceDocument.countPages();
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-      signal?.throwIfAborted();
+      signal.throwIfAborted();
       mergedDocument.graftPage(mergedDocument.countPages(), sourceDocument, pageIndex);
     }
   } finally {
@@ -521,20 +502,22 @@ async function writeSvgAsPdf({
     engine: 'chrome',
     rsvgConvertPath: 'rsvg-convert',
     chromePath: '',
+    runRsvgConvert: executeRsvgConvert,
+    runChrome: executeChrome,
   };
   const size = await readSvgSize(sourcePath);
   validateSvgToPdfOptions(options);
 
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   await (options.engine === 'rsvg-convert'
     ? writeSvgAsPdfWithRsvgConvert(sourcePath, outputPath, options, scratchOptions, signal)
     : writeSvgAsPdfWithChrome(sourcePath, outputPath, options, signal));
 
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await normalizePdfPageSize(outputPath, size.width, size.height);
 }
 
@@ -555,24 +538,25 @@ async function writeSvgAsPdfWithRsvgConvert(
   outputPath: string,
   options: SvgToPdfBackend,
   scratchOptions: RsvgToolScratchOptions,
-  signal?: AbortSignal,
+  signal: AbortSignal,
 ): Promise<void> {
   await runRsvgConvertWithAsciiScratch({
     executable: options.rsvgConvertPath,
     sourcePath,
     outputPath,
-    run: options.runRsvgConvert ?? executeRsvgConvert,
+    run: options.runRsvgConvert,
     scratch: scratchOptions,
-    ...(signal !== undefined && { signal }),
+    signal,
   });
 }
 
-async function executeRsvgConvert(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
+export async function executeRsvgConvert(executable: string, args: string[], signal: AbortSignal): Promise<void> {
   await runExternalTool({
+    toolId: 'rsvgConvert',
     toolName: 'rsvg-convert',
     executable,
     args,
-    ...(signal === undefined ? {} : { signal }),
+    signal,
   });
 }
 
@@ -580,22 +564,22 @@ async function writeSvgAsPdfWithChrome(
   sourcePath: string,
   outputPath: string,
   options: SvgToPdfBackend,
-  signal?: AbortSignal,
+  signal: AbortSignal,
 ): Promise<void> {
-  signal?.throwIfAborted();
-  await (options.runChrome ?? executeChrome)(
+  signal.throwIfAborted();
+  await options.runChrome(
     options.chromePath,
     ['--headless', '--no-pdf-header-footer', `--print-to-pdf=${outputPath}`, pathToFileURL(sourcePath).href],
     signal,
   );
 }
 
-async function executeChrome(executable: string, args: string[], signal?: AbortSignal): Promise<void> {
+export async function executeChrome(executable: string, args: string[], signal: AbortSignal): Promise<void> {
   await runExternalTool({
     toolName: 'chrome',
     executable,
     args,
-    ...(signal === undefined ? {} : { signal }),
+    signal,
   });
 }
 

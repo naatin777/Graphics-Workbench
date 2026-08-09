@@ -15,10 +15,12 @@ suite('Merge PDFのWebviewとホスト間で送受信するメッセージ形式
             { sourceId: 'source-1', fileName: 'first.pdf', pdfSrc: 'vscode-resource://first.pdf' },
             { sourceId: 'source-2', fileName: 'second.pdf', pdfSrc: 'vscode-resource://second.pdf' },
           ],
-          workerSrc: 'vscode-resource://pdf.worker.mjs',
-          cMapUrl: 'vscode-resource://cmaps/',
-          standardFontDataUrl: 'vscode-resource://standard_fonts/',
-          wasmUrl: 'vscode-resource://wasm/',
+          resources: {
+            workerSrc: 'vscode-resource://pdf.worker.mjs',
+            cMapUrl: 'vscode-resource://cmaps/',
+            standardFontDataUrl: 'vscode-resource://standard_fonts/',
+            wasmUrl: 'vscode-resource://wasm/',
+          },
           preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
           labels: {
             header: { title: 'Merge PDFs' },

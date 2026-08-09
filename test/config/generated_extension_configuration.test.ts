@@ -21,15 +21,10 @@ suite('生成された設定スキーマ検証', () => {
     assert.deepStrictEqual(configuration.cropPdf.marginOptions(), [0, 5, 10, 20]);
   });
 
-  test('outputPathsに未定義プロパティunknownのみを含むオブジェクトを設定した場合、既定の{}へフォールバックする', () => {
-    const configuration = fakeConfiguration({ outputPaths: { unknown: 'output.png' } });
-
-    assert.deepStrictEqual(configuration.outputPaths(), {});
-  });
-
-  test('設定を何も与えない場合、maxCanvasPixels=40,000,000・maxDevicePixelRatio=2・maxConcurrentHeavyProcesses=2・undoHistory.maxRecords=10・rsvgConvertタイムアウト0秒の既定値を返す', () => {
+  test('設定を何も与えない場合、Draw.io commandと各runtime設定のmanifest既定値を返す', () => {
     const configuration = fakeConfiguration();
 
+    assert.strictEqual(configuration.execPath.drawio(), 'drawio');
     assert.strictEqual(configuration.preview.maxCanvasPixels(), 40_000_000);
     assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
     assert.strictEqual(configuration.performance.maxConcurrentHeavyProcesses(), 2);

@@ -7,13 +7,9 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 import sharp from 'sharp';
 
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
-import {
-  executeAvifConversion,
-  executeJpegConversion,
-  executePngConversion,
-  executeWebpConversion,
-} from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { requireValue } from '../helpers/required.js';
+import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 
 const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
@@ -52,6 +48,7 @@ async function convertImage(
       jobs: [job],
       supportedExtensions: [`.${inputFormat}`],
       operationName: 'convert-additional-image-to-pdf',
+      maxInputPixels: 100_000_000,
     });
     return;
   }
@@ -60,20 +57,17 @@ async function convertImage(
     jobs: [job],
     pdfRenderTools: {},
     mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-    drawioTools: { drawioPath: 'drawio' },
+    drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
     runtime,
+    maxInputPixels: 100_000_000,
     runId: `${inputFormat}-${outputFormat}`,
   };
 
-  if (outputFormat === 'png') {
-    await executePngConversion(common);
-  } else if (outputFormat === 'jpeg') {
-    await executeJpegConversion(common);
-  } else if (outputFormat === 'webp') {
-    await executeWebpConversion({ ...common, webp: { effort: 0 } });
-  } else {
-    await executeAvifConversion({ ...common, avif: { effort: 0 } });
-  }
+  await executeRasterConversion({
+    ...common,
+    spec: rasterFormatSpecs[outputFormat],
+    ...((outputFormat === 'webp' || outputFormat === 'avif') && { outputOptions: { effort: 0 } }),
+  });
 }
 
 async function writeAnimatedImageFixture(filePath: string, format: (typeof inputFormats)[number]): Promise<void> {

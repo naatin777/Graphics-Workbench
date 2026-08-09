@@ -45,6 +45,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     await writeFile(pdfPath, await pdf.save());
     const calls: number[] = [];
     await convertToDrawioFiles({
+      maxInputPixels: 1_000_000_000,
       jobs: [
         { inputs: [{ sourcePath: imagePath }, { sourcePath: pdfPath }], outputPath, workspacePath: workspacePath.path },
       ],
@@ -53,6 +54,12 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
         runPdfToSvg: async (_source, output, page) => {
           calls.push(page);
           await writeFile(output, '<svg width="100" height="50"/>');
+        },
+        runMermaid: async () => {
+          throw new Error('mermaid input must not be used in this test');
+        },
+        runDrawio: async () => {
+          throw new Error('drawio export must not be used for .drawio output');
         },
       },
       runId: 'test',
@@ -84,6 +91,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
 
     const outputPath = path.join(workspacePath.path, 'result.drawio');
     await convertToDrawioFiles({
+      maxInputPixels: 1_000_000_000,
       jobs: [
         {
           inputs: inputs.map(([name]) => ({ sourcePath: path.join(workspacePath.path, name) })),
@@ -91,7 +99,18 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
           workspacePath: workspacePath.path,
         },
       ],
-      tools: { drawioPath: 'drawio' },
+      tools: {
+        drawioPath: 'drawio',
+        runPdfToSvg: async () => {
+          throw new Error('pdf input must not be used in this test');
+        },
+        runMermaid: async () => {
+          throw new Error('mermaid input must not be used in this test');
+        },
+        runDrawio: async () => {
+          throw new Error('drawio export must not be used for .drawio output');
+        },
+      },
       runId: 'raster-frames',
       runtime: { resolveConflicts: async () => 'overwrite' },
     });
@@ -114,9 +133,16 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
       const outputPath = path.join(workspacePath.path, `result${extension}`);
       let call: { executable: string; args: string[] } | undefined;
       await convertToDrawioFiles({
+        maxInputPixels: 1_000_000_000,
         jobs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath: workspacePath.path }],
         tools: {
           drawioPath: '/custom/drawio',
+          runPdfToSvg: async () => {
+            throw new Error('pdf input must not be used in this test');
+          },
+          runMermaid: async () => {
+            throw new Error('mermaid input must not be used in this test');
+          },
           runDrawio: async (executable, args) => {
             call = { executable, args };
             const generatedOutputPath = requireValue(args[args.indexOf('--output') + 1]);
@@ -164,9 +190,16 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
 
     await assert.rejects(
       convertToDrawioFiles({
+        maxInputPixels: 1_000_000_000,
         jobs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath: workspacePath.path }],
         tools: {
           drawioPath: 'drawio',
+          runPdfToSvg: async () => {
+            throw new Error('pdf input must not be used in this test');
+          },
+          runMermaid: async () => {
+            throw new Error('mermaid input must not be used in this test');
+          },
           runDrawio: async () => {
             throw new Error('Draw.io export failed');
           },

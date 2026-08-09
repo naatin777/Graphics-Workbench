@@ -39,6 +39,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       })),
       supportedExtensions: ['.gif'],
       operationName: 'convert-gif-to-pdf',
+      maxInputPixels: 1_000_000_000,
     });
 
     await Promise.all(
@@ -60,6 +61,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.gif'],
       operationName: 'convert-gif-to-pdf',
+      maxInputPixels: 1_000_000_000,
       runId: 'run',
     });
 
@@ -78,6 +80,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.tiff'],
       operationName: 'convert-tiff-to-pdf',
+      maxInputPixels: 1_000_000_000,
       runId: 'run',
     });
 
@@ -105,6 +108,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.png'],
       operationName: 'convert-to-pdf',
+      maxInputPixels: 1_000_000_000,
     });
 
     const { PDFDocument: LoadedPdfDocument } = await import('../helpers/pdf_document.js');
@@ -159,6 +163,7 @@ suite('入力画像をPDFへ変換する処理', () => {
         jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
         supportedExtensions: ['.drawio.png'],
         operationName: 'convert-to-pdf',
+        maxInputPixels: 1_000_000_000,
         tools: {
           drawioTools: {
             drawioPath: 'drawio',
@@ -185,6 +190,7 @@ suite('入力画像をPDFへ変換する処理', () => {
         jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
         supportedExtensions: ['.drawio.png'],
         operationName: 'convert-to-pdf',
+        maxInputPixels: 1_000_000_000,
       }),
       /Draw\.io executable is not configured/,
     );
@@ -206,11 +212,15 @@ suite('入力画像をPDFへ変換する処理', () => {
       jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.svg'],
       operationName: 'convert-svg-to-pdf',
+      maxInputPixels: 1_000_000_000,
       tools: {
         svgToPdfTools: {
           engine: 'chrome',
           rsvgConvertPath: 'rsvg-convert',
           chromePath: '/opt/google-chrome',
+          runRsvgConvert: async () => {
+            throw new Error('rsvg-convert must not run for chrome engine');
+          },
           runChrome: async (executable, args) => {
             calls.push({ executable, args });
             const pdf = await PDFDocument.create();
@@ -241,6 +251,12 @@ suite('入力画像をPDFへ変換する処理', () => {
           engine: 'chrome',
           rsvgConvertPath: 'rsvg-convert',
           chromePath: '',
+          runRsvgConvert: async () => {
+            throw new Error('rsvg-convert must not run for chrome engine');
+          },
+          runChrome: async () => {
+            throw new Error('chrome must not run when not configured');
+          },
         }),
       /Chrome executable is not configured/,
     );

@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
 
 import { logicalSourcePathForOutputTemplate } from '../../shared/source_format.js';
-import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
-import { getMaxInputPixels } from '../../config/raster.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -12,16 +10,15 @@ import { readSvgToPdfOptions } from './convert_to_pdf.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { resolveSelectedUris } from '../shared/command_input.js';
 import { localeMap } from '../../locale_map.js';
 
 export async function combineImagesToPdfCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
 
   try {
     const sourceUris = resolveSelectedUris(uri, uris);
@@ -30,16 +27,19 @@ export async function combineImagesToPdfCommand(
       throw new Error('No files were selected.');
     }
 
-    const previewedUris = sourceUris.length > 1 ? await previewCombineInputs(sourceUris) : sourceUris;
+    const previewedUris =
+      sourceUris.length > 1
+        ? await previewCombineInputs(sourceUris, () => vscode.window.createQuickPick<CombinePreviewItem>())
+        : sourceUris;
     if (previewedUris === undefined) {
       return;
     }
 
     const workspaceFolder = requireSingleWorkspace(previewedUris);
     const workspacePath = workspaceFolder.uri.fsPath;
-    const configuration = configureCommandRuntime(dependencies);
-    const outputTemplate = configuration.outputPath.convertImagesToSinglePdf();
-    const defaultOutputTemplate = getDefaultConfiguration().outputPath.convertPngToPdf();
+    const configuration = dependencies.getConfiguration();
+    const outputTemplate = configuration.outputPath.combineImagesToPdf();
+    const defaultOutputTemplate = '${fileDirname}/${fileBasenameNoExtension}.pdf';
     const outputPath = await chooseCombineOutputPath(
       previewedUris,
       workspaceFolder,
@@ -58,7 +58,7 @@ export async function combineImagesToPdfCommand(
 
     await runConversionLifecycle({
       operationName: 'combine-images-to-pdf',
-      ...(outputChannel !== undefined && { outputChannel }),
+      outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('PDF', jobs.length),
       run: async (runtime) =>
@@ -67,7 +67,7 @@ export async function combineImagesToPdfCommand(
           outputPath,
           workspacePath,
           runtime,
-          maxInputPixels: getMaxInputPixels(configuration),
+          maxInputPixels: configuration.raster.maxInputPixels(),
           tools: { svgToPdfTools },
           platform: process.platform,
         }),
@@ -89,7 +89,7 @@ export type CombineQuickPickFactory = () => vscode.QuickPick<CombinePreviewItem>
 
 export async function previewCombineInputs(
   sourceUris: vscode.Uri[],
-  createQuickPick: CombineQuickPickFactory = () => vscode.window.createQuickPick<CombinePreviewItem>(),
+  createQuickPick: CombineQuickPickFactory,
 ): Promise<vscode.Uri[] | undefined> {
   const quickPick = createQuickPick();
   const removeButton = { iconPath: new vscode.ThemeIcon('close'), tooltip: localeMap('quickPick.combine.remove') };

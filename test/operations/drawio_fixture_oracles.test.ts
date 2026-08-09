@@ -7,7 +7,8 @@ import { promisify } from 'node:util';
 import { isEditableDrawioImagePath } from '../../src/shared/source_format.js';
 import { readDrawioExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
-import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
 import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
@@ -75,19 +76,25 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
         const renderedExpectedSvgPath = path.join(outputDirectory, 'expected-svg.png');
         const expectedDirectory = path.join(testOutputDirectory, 'drawio', fixtureCase.id);
 
-        const drawioTools = { drawioPath };
-        await executePngConversion({
+        const drawioTools = { drawioPath, runDrawio: executeDrawio };
+        await executeRasterConversion({
+          spec: rasterFormatSpecs.png,
           jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           runtime,
           pdfRenderTools: configuredTools.pdfRenderTools,
           mermaidTools: configuredTools.mermaidTools,
           drawioTools,
+          maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
           runId: `drawio-${fixtureCase.id}-png`,
         });
         await convertToSvgFiles({
           jobs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
           mermaidTools: configuredTools.mermaidTools,
           drawioTools,
+          runPdfToSvg: () => {
+            throw new Error('drawio fixture must not include PDF input for SVG conversion');
+          },
+          maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
           runId: `drawio-${fixtureCase.id}-svg`,
         });
 
@@ -96,6 +103,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
               jobs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
               supportedExtensions: ['.drawio', '.drawio.png', '.drawio.svg'],
               tools: { drawioTools },
+              maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
               runtime,
               operationName: `drawio-${fixtureCase.id}-to-pdf`,
               runId: `drawio-${fixtureCase.id}-pdf`,
@@ -111,6 +119,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
               ],
               drawioPath,
               outputMode: 'single-pdf',
+              runDrawio: executeDrawio,
               runtime,
               runId: `drawio-${fixtureCase.id}-native-pdf`,
             }));
@@ -159,6 +168,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
           ],
           drawioPath,
           outputMode: 'single-pdf',
+          runDrawio: executeDrawio,
           runId: `drawio-invalid-${index}`,
         });
 

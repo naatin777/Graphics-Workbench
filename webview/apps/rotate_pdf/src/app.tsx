@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, onCleanup, onMount, type JSX } from 'solid-js';
+import { createEffect, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
 import {
   isRotatePdfHostToWebviewMessage,
@@ -15,14 +15,20 @@ import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNaviga
 import { useCurrentPage } from '@webview-shared/ui/use_current_page';
 
 import { vscode } from './vscode';
-import { defaultLabels } from './labels';
 
 function cancel(): void {
   vscode.sendMessage({ type: 'cancel' });
 }
 
 export function App(): JSX.Element {
-  const [labels, setLabels] = createSignal<RotatePdfLabels>(defaultLabels);
+  const [labelsValue, setLabels] = createSignal<RotatePdfLabels>();
+  const labels = (): RotatePdfLabels => {
+    const value = labelsValue();
+    if (value === undefined) {
+      throw new Error('Rotate PDF labels were not initialized.');
+    }
+    return value;
+  };
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [angle, setAngle] = createSignal<PdfRotationAngle>(90);
@@ -65,7 +71,7 @@ export function App(): JSX.Element {
       }
 
       const { payload } = message;
-      setLabels({ ...defaultLabels, ...payload.labels });
+      setLabels(payload.labels);
       setFileName(payload.fileName);
       setPageCount(payload.pageCount);
       setApplyError('');
@@ -118,13 +124,13 @@ export function App(): JSX.Element {
     };
 
     window.addEventListener('message', onMessage);
-    pdfPages?.addEventListener('click', onPageClick);
-    pdfPages?.addEventListener('keydown', onPageKeyDown);
+    globalThis.addEventListener('click', onPageClick);
+    globalThis.addEventListener('keydown', onPageKeyDown);
     vscode.sendMessage({ type: 'ready' });
     onCleanup(() => {
       window.removeEventListener('message', onMessage);
-      pdfPages?.removeEventListener('click', onPageClick);
-      pdfPages?.removeEventListener('keydown', onPageKeyDown);
+      globalThis.removeEventListener('click', onPageClick);
+      globalThis.removeEventListener('keydown', onPageKeyDown);
     });
   });
 
@@ -272,101 +278,105 @@ export function App(): JSX.Element {
   }
 
   return (
-    <div class='rotate'>
-      <header class='rotate__header'>
-        <h1>{labels().header.title}</h1>
-        <p class='rotate__description'>{labels().header.description}</p>
-        <p class='rotate__file'>{fileName()}</p>
-      </header>
+    <Show when={labelsValue()}>
+      {(_labels) => (
+        <div class='rotate'>
+          <header class='rotate__header'>
+            <h1>{labels().header.title}</h1>
+            <p class='rotate__description'>{labels().header.description}</p>
+            <p class='rotate__file'>{fileName()}</p>
+          </header>
 
-      <SplitPane
-        left={
-          <section
-            class='rotate__preview'
-            aria-label={labels().preview.ariaLabel}
-          >
-            <div class='rotate__preview-toolbar'>
-              <span>{labels().preview.title}</span>
-              <button
-                type='button'
-                class='gw-button gw-button--secondary gw-button--small'
-                onClick={toggleSelectAll}
-                aria-label={labels().rotation.selectAllAriaLabel}
+          <SplitPane
+            left={
+              <section
+                class='rotate__preview'
+                aria-label={labels().preview.ariaLabel}
               >
-                {labels().rotation.selectAll}
-              </button>
-            </div>
-            <div
-              ref={(element) => {
-                pdfPages = element;
-              }}
-              class='rotate__pages'
-              aria-label={labels().preview.ariaLabel}
-            />
-            <PageNavigator
-              currentPage={currentPage()}
-              pageCount={pageCount()}
-              onPrevious={() => {
-                scrollToPage(currentPage() - 1);
-              }}
-              onNext={() => {
-                scrollToPage(currentPage() + 1);
-              }}
-            />
-          </section>
-        }
-        right={
-          <section class='rotate__panel'>
-            <fieldset class='rotate__angle'>
-              <legend>{labels().rotation.title}</legend>
-              <div
-                class='gw-radio-group'
-                role='radiogroup'
-                aria-label={labels().rotation.angleLabel}
-              >
-                <For each={PDF_ROTATION_ANGLES}>
-                  {(value) => (
-                    <label class='gw-radio-option'>
-                      <input
-                        type='radio'
-                        name='rotate-angle'
-                        value={value}
-                        checked={angle() === value}
-                        onChange={() => {
-                          setAngle(value);
-                        }}
-                      />
-                      <span>{value}°</span>
-                    </label>
-                  )}
-                </For>
-              </div>
-            </fieldset>
+                <div class='rotate__preview-toolbar'>
+                  <span>{labels().preview.title}</span>
+                  <button
+                    type='button'
+                    class='gw-button gw-button--secondary gw-button--small'
+                    onClick={toggleSelectAll}
+                    aria-label={labels().rotation.selectAllAriaLabel}
+                  >
+                    {labels().rotation.selectAll}
+                  </button>
+                </div>
+                <div
+                  ref={(element) => {
+                    pdfPages = element;
+                  }}
+                  class='rotate__pages'
+                  aria-label={labels().preview.ariaLabel}
+                />
+                <PageNavigator
+                  currentPage={currentPage()}
+                  pageCount={pageCount()}
+                  onPrevious={() => {
+                    scrollToPage(currentPage() - 1);
+                  }}
+                  onNext={() => {
+                    scrollToPage(currentPage() + 1);
+                  }}
+                />
+              </section>
+            }
+            right={
+              <section class='rotate__panel'>
+                <fieldset class='rotate__angle'>
+                  <legend>{labels().rotation.title}</legend>
+                  <div
+                    class='gw-radio-group'
+                    role='radiogroup'
+                    aria-label={labels().rotation.angleLabel}
+                  >
+                    <For each={PDF_ROTATION_ANGLES}>
+                      {(value) => (
+                        <label class='gw-radio-option'>
+                          <input
+                            type='radio'
+                            name='rotate-angle'
+                            value={value}
+                            checked={angle() === value}
+                            onChange={() => {
+                              setAngle(value);
+                            }}
+                          />
+                          <span>{value}°</span>
+                        </label>
+                      )}
+                    </For>
+                  </div>
+                </fieldset>
 
-            <p class='rotate__selection'>
-              {labels().preview.description} {selectedPages().size}/{pageCount()}
-            </p>
+                <p class='rotate__selection'>
+                  {labels().preview.description} {selectedPages().size}/{pageCount()}
+                </p>
 
-            {applyError() !== '' && <p role='alert'>{applyError()}</p>}
+                {applyError() !== '' && <p role='alert'>{applyError()}</p>}
 
-            <div class='rotate__actions'>
-              <Button
-                variant='primary'
-                disabled={!previewReady()}
-                onClick={apply}
-              >
-                {labels().actions.apply}
-              </Button>
-              <Button
-                variant='secondary'
-                onClick={cancel}
-              >
-                {labels().actions.cancel}
-              </Button>
-            </div>
-          </section>
-        }
-      />
-    </div>
+                <div class='rotate__actions'>
+                  <Button
+                    variant='primary'
+                    disabled={!previewReady()}
+                    onClick={apply}
+                  >
+                    {labels().actions.apply}
+                  </Button>
+                  <Button
+                    variant='secondary'
+                    onClick={cancel}
+                  >
+                    {labels().actions.cancel}
+                  </Button>
+                </div>
+              </section>
+            }
+          />
+        </div>
+      )}
+    </Show>
   );
 }

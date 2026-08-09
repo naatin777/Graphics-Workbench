@@ -27,15 +27,18 @@ suite('mmdc CLI実行', () => {
     const outputPath = path.join(workspacePath.path, 'output.svg');
 
     await writeFile(sourcePath, await readFile(operationMermaidInputPath));
-    await runMermaidCliWithSignal({
-      sourcePath,
-      outputPath,
-      outputFormat: 'svg',
-      mermaidPath: readMermaidExecutablePath(getExtensionConfiguration()),
-      chromePath: readChromeExecutablePath(getExtensionConfiguration()),
-      theme: 'default',
-      backgroundColor: 'white',
-    });
+    await runMermaidCliWithSignal(
+      {
+        sourcePath,
+        outputPath,
+        outputFormat: 'svg',
+        mermaidPath: readMermaidExecutablePath(getExtensionConfiguration()),
+        chromePath: readChromeExecutablePath(getExtensionConfiguration()),
+        theme: 'default',
+        backgroundColor: 'white',
+      },
+      new AbortController().signal,
+    );
 
     const svg = await readFile(outputPath, 'utf8');
     assert.ok(svg.includes('<svg'));

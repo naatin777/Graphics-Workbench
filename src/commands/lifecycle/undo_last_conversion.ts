@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 
-import { getMaxUndoRecords } from '../../config/undo_history.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import type { ConversionOutput } from '../../operations/lifecycle/undo_last_conversion.js';
 import { UndoHistoryManager } from '../../operations/lifecycle/undo_history_manager.js';
@@ -15,7 +14,7 @@ const undoHistory: UndoHistoryManager = new UndoHistoryManager();
 
 /** Applies the configured Undo history limit to the session's history manager. */
 export function applyUndoHistoryConfiguration(configuration: Configuration): void {
-  undoHistory.setMaxRecords(getMaxUndoRecords(configuration));
+  undoHistory.setMaxRecords(configuration.undoHistory.maxRecords());
 }
 
 export async function recordConversionForUndo(
@@ -26,10 +25,10 @@ export async function recordConversionForUndo(
 }
 
 export async function undoLastConversionCommand(
-  expectedId?: string,
-  dependencies?: CommandDependencies,
+  expectedId: string | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
 
   try {
     const outcome = await undoHistory.undo(expectedId, outputChannel);

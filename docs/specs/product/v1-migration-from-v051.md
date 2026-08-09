@@ -15,18 +15,18 @@
 
 ## command IDの移行
 
-| v0.5.1 command ID                       | v1.0.0で使うcommand ID                      | 備考                                                                                                                          |
-| --------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `graphics-workbench.cropPdf`            | `graphics-workbench.cropPdf.auto`           | quick系の自動crop。Webview GUIで細かく指定するcropは `graphics-workbench.cropPdf.configure` として別入口にする。              |
-| `graphics-workbench.splitPdf`           | `graphics-workbench.splitPdf.allPages`      | quick系の全ページsplit。Webview GUIでページを選択するsplitは `graphics-workbench.splitPdf.configure` として別入口にする。     |
-| `graphics-workbench.mergePdf`           | `graphics-workbench.mergePdf.selectedFiles` | quick系の選択PDF結合。Webview GUIで順序やページを指定するmergeは `graphics-workbench.mergePdf.configure` として別入口にする。 |
-| `graphics-workbench.convertDrawioToPdf` | `graphics-workbench.convertDrawioToPdf`     | v1でもnative Draw.ioのページ分割command IDを維持する。editable Draw.io画像だけが`convertToPdf`へ統合される。                  |
-| `graphics-workbench.convertPdfToPng`    | `graphics-workbench.convertToPng`           | PDF入力をPNG出力形式コマンドへ統合する。                                                                                      |
-| `graphics-workbench.convertPdfToJpeg`   | `graphics-workbench.convertToJpeg`          | PDF入力をJPEG出力形式コマンドへ統合する。                                                                                     |
-| `graphics-workbench.convertPdfToSvg`    | `graphics-workbench.convertToSvg`           | PDF入力をSVG出力形式コマンドへ統合する。                                                                                      |
-| `graphics-workbench.convertPngToPdf`    | `graphics-workbench.convertToPdf`           | PNG入力をPDF出力形式コマンドへ統合する。                                                                                      |
-| `graphics-workbench.convertJpegToPdf`   | `graphics-workbench.convertToPdf`           | JPEG入力をPDF出力形式コマンドへ統合する。                                                                                     |
-| `graphics-workbench.convertSvgToPdf`    | `graphics-workbench.convertToPdf`           | SVG入力をPDF出力形式コマンドへ統合する。                                                                                      |
+| v0.5.1 command ID                       | v1.0.0で使うcommand ID                       | 備考                                                                                                                          |
+| --------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.cropPdf`            | `graphics-workbench.cropPdf.auto`            | quick系の自動crop。Webview GUIで細かく指定するcropは `graphics-workbench.cropPdf.configure` として別入口にする。              |
+| `graphics-workbench.splitPdf`           | `graphics-workbench.splitPdf.allPages`       | quick系の全ページsplit。Webview GUIでページを選択するsplitは `graphics-workbench.splitPdf.configure` として別入口にする。     |
+| `graphics-workbench.mergePdf`           | `graphics-workbench.mergePdf.selectedFiles`  | quick系の選択PDF結合。Webview GUIで順序やページを指定するmergeは `graphics-workbench.mergePdf.configure` として別入口にする。 |
+| `graphics-workbench.convertDrawioToPdf` | `graphics-workbench.convertDrawioToPagePdfs` | native Draw.ioの各ページを個別PDFへ変換する。editable Draw.io画像は`convertToPdf`へ統合される。                               |
+| `graphics-workbench.convertPdfToPng`    | `graphics-workbench.convertToPng`            | PDF入力をPNG出力形式コマンドへ統合する。                                                                                      |
+| `graphics-workbench.convertPdfToJpeg`   | `graphics-workbench.convertToJpeg`           | PDF入力をJPEG出力形式コマンドへ統合する。                                                                                     |
+| `graphics-workbench.convertPdfToSvg`    | `graphics-workbench.convertToSvg`            | PDF入力をSVG出力形式コマンドへ統合する。                                                                                      |
+| `graphics-workbench.convertPngToPdf`    | `graphics-workbench.convertToPdf`            | PNG入力をPDF出力形式コマンドへ統合する。                                                                                      |
+| `graphics-workbench.convertJpegToPdf`   | `graphics-workbench.convertToPdf`            | JPEG入力をPDF出力形式コマンドへ統合する。                                                                                     |
+| `graphics-workbench.convertSvgToPdf`    | `graphics-workbench.convertToPdf`            | SVG入力をPDF出力形式コマンドへ統合する。                                                                                      |
 
 ## 旧command IDの互換alias
 

@@ -2,7 +2,6 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
 import {
@@ -27,7 +26,7 @@ export interface SaveClipboardImageRequest {
   kind: ClipboardPasteKind;
   outputBasePath: string;
   workspacePath: string;
-  maxInputPixels?: number;
+  maxInputPixels: number;
   runId?: string;
 }
 
@@ -138,7 +137,7 @@ async function saveClipboardImageAsPdf(
     runId,
     runtime,
     supportedExtensions: [`.${request.data.type.ext}`] as const,
-    maxInputPixels: request.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels(),
+    maxInputPixels: request.maxInputPixels,
   };
   return convertToPdfFiles(convertOptions);
 }

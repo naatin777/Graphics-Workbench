@@ -29,9 +29,8 @@ import {
 } from '../../src/commands/shared/command_registrations.js';
 import type { CommandDependencies } from '../../src/commands/shared/command_dependencies.js';
 import { publicCommandIds } from '../../src/generated/extension_manifest.js';
+import { testCommandDependencies } from '../helpers/command_dependencies.js';
 import { RecordingOutputChannel } from '../helpers/recording_output_channel.js';
-
-const LEGACY_PNG_TO_PDF_COMMAND = 'graphics-workbench.convertPngToPdf';
 
 type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
 type RecordedCall = { bindingId: string; args: unknown[] };
@@ -73,18 +72,17 @@ suite('command登録処理', () => {
     sandbox.restore();
   });
 
-  test('bindingに定義されたcommandだけを登録し、manifest外の旧command convertPngToPdfは登録しない', () => {
+  test('bindingに定義されたcommandだけを登録する', () => {
     const handlers = captureRegisteredHandlers(sandbox);
 
-    registerCommandBindings(createContext(), {}, new RecordingOutputChannel(), noopResolver);
+    registerCommandBindings(createContext(), testCommandDependencies(), new RecordingOutputChannel(), noopResolver);
 
     assert.deepStrictEqual(new Set(handlers.keys()), new Set(commandBindings.map((binding) => binding.id)));
-    assert.ok(!handlers.has(LEGACY_PNG_TO_PDF_COMMAND), `${LEGACY_PNG_TO_PDF_COMMAND} must not be registered`);
   });
 
   test('file adapterでcompressPdfを実行するとhandlerへuri、uris、dependenciesをこの順で渡す', async () => {
     const calls = recordingCalls();
-    const dependencies: CommandDependencies = {};
+    const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.pdf');
     const uris = [uri];
 
@@ -105,7 +103,7 @@ suite('command登録処理', () => {
 
   test('fileWithContext adapterでcropPdf.configureを実行するとhandlerへExtensionContextを先頭にuri、undefined、dependenciesを渡す', async () => {
     const calls = recordingCalls();
-    const dependencies: CommandDependencies = {};
+    const dependencies = testCommandDependencies();
     const context = createContext();
     const uri = vscode.Uri.file('/workspace/source.pdf');
 
@@ -125,7 +123,7 @@ suite('command登録処理', () => {
 
   test('fileWithOptions adapterでconvertToWebpPreserveAnimationを実行するとhandlerへuri、undefined、dependencies、固定optionsの順で渡す', async () => {
     const calls = recordingCalls();
-    const dependencies: CommandDependencies = {};
+    const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.gif');
 
     await invokeBoundCommand(
@@ -140,14 +138,14 @@ suite('command登録処理', () => {
     assert.deepStrictEqual(calls.recorded, [
       {
         bindingId: 'graphics-workbench.convertToWebpPreserveAnimation',
-        args: [uri, undefined, dependencies, { outputMode: 'preserve' }],
+        args: [uri, undefined, dependencies, { target: 'webp', outputMode: 'preserve' }],
       },
     ]);
   });
 
   test('extensionCommand adapterでundoLastConversionへ文字列expected-idを渡すと、handlerへその引数とdependenciesをこの順で渡す', async () => {
     const calls = recordingCalls();
-    const dependencies: CommandDependencies = {};
+    const dependencies = testCommandDependencies();
 
     await invokeBoundCommand(
       sandbox,
@@ -165,7 +163,7 @@ suite('command登録処理', () => {
 
   test('extensionCommand adapterで引数なしでundoLastConversionを実行するとhandlerへundefinedとdependenciesを渡す', async () => {
     const calls = recordingCalls();
-    const dependencies: CommandDependencies = {};
+    const dependencies = testCommandDependencies();
 
     await invokeBoundCommand(
       sandbox,
@@ -186,7 +184,7 @@ suite('command登録処理', () => {
       throw new Error('command resolution failed');
     };
 
-    registerCommandBindings(createContext(), {}, new RecordingOutputChannel(), throwingResolver);
+    registerCommandBindings(createContext(), testCommandDependencies(), new RecordingOutputChannel(), throwingResolver);
 
     await assert.rejects(handlers.get('graphics-workbench.compressPdf')!(), /command resolution failed/);
   });
@@ -196,7 +194,7 @@ suite('command登録処理', () => {
     const handlers = captureRegisteredHandlers(sandbox);
     sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
-    registerCommands(createContext(), {}, outputChannel);
+    registerCommands(createContext(), testCommandDependencies(), outputChannel);
 
     await handlers.get('graphics-workbench.convertToWebp')!();
     await handlers.get('graphics-workbench.convertToWebpPreserveAnimation')!();

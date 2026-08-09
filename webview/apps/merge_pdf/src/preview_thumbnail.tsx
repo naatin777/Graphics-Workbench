@@ -6,19 +6,7 @@ import { toErrorMessage } from '@webview-shared/error';
 import type { ExtensionToWebviewMessage, MergePdfLabels, MergePdfSource } from './messages';
 import { vscode } from './vscode';
 
-export type PdfOptions = Partial<
-  Pick<
-    Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'],
-    'workerSrc' | 'cMapUrl' | 'standardFontDataUrl' | 'wasmUrl' | 'preview'
-  >
-> & {
-  resources?: {
-    workerSrc?: string;
-    cMapUrl?: string;
-    standardFontDataUrl?: string;
-    wasmUrl?: string;
-  };
-};
+export type PdfOptions = Pick<Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'], 'preview' | 'resources'>;
 
 export function PreviewThumbnail(props: {
   source: MergePdfSource;

@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 
-import { assertAnimationPixelLimit, getMaxAnimationPixels } from '../../src/config/raster.js';
+import { assertAnimationPixelLimit } from '../../src/config/raster.js';
 import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('ラスターアニメーションpixel上限設定', () => {
   test('設定なしの場合は500,000,000を、マニフェスト既定設定からも同じ既定値(maxAnimationPixels)を読み取る', () => {
-    assert.strictEqual(getMaxAnimationPixels(fakeConfiguration()), 500_000_000);
+    assert.strictEqual(fakeConfiguration().raster.maxAnimationPixels(), 500_000_000);
     assert.strictEqual(
-      getMaxAnimationPixels(getDefaultConfiguration()),
+      getDefaultConfiguration().raster.maxAnimationPixels(),
       getDefaultConfiguration().raster.maxAnimationPixels(),
     );
   });

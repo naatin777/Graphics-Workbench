@@ -5,7 +5,8 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { executeGifConversion, executeTiffConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
+import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 
 suite('GIF/TIFFの各フレームを静止画像として出力する', () => {
   test('アニメーションGIFをTIFFへ・アニメーションTIFFをGIFへ、各フレームをページ指定で独立した単一フレームの静止画像として出力する', async () => {
@@ -18,17 +19,19 @@ suite('GIF/TIFFの各フレームを静止画像として出力する', () => {
     const common = {
       pdfRenderTools: {},
       mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-      drawioTools: { drawioPath: 'drawio' },
+      drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
+      maxInputPixels: 1_000_000_000,
       runtime: {},
     };
 
-    for (const [format, convert, sourcePath] of [
-      ['gif', executeGifConversion, tiffSourcePath],
-      ['tiff', executeTiffConversion, gifSourcePath],
+    for (const [format, spec, sourcePath] of [
+      ['gif', rasterFormatSpecs.gif, tiffSourcePath],
+      ['tiff', rasterFormatSpecs.tiff, gifSourcePath],
     ] as const) {
       const outputPaths = [1, 2].map((page) => path.join(workspacePath.path, `${format}-${page}.${format}`));
-      await convert({
+      await executeRasterConversion({
         ...common,
+        spec,
         jobs: outputPaths.map((outputPath, index) => ({
           sourcePath,
           outputPath,

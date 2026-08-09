@@ -27,6 +27,7 @@ suite('クリップボード画像保存で、上書き時の退避・復旧処�
           kind: 'image',
           outputBasePath: outputPath,
           workspacePath: workspacePath.path,
+          maxInputPixels: 1_000_000_000,
           runId,
         },
         {
