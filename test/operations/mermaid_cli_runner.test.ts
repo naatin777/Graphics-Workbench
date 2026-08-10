@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
-import { readChromeExecutablePath } from '../../src/config/rendering/mermaid_cli_options.js';
+import { resolveChromeExecutablePath } from '../../src/config/rendering/mermaid_cli_options.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 import {
   createMermaidCliArgs,
@@ -32,7 +32,7 @@ suite('mmdc CLI実行', () => {
         outputPath,
         outputFormat: 'svg',
         mermaidPath: getExtensionConfiguration().execPath.mermaid(),
-        chromePath: readChromeExecutablePath(getExtensionConfiguration()),
+        chromePath: resolveChromeExecutablePath(getExtensionConfiguration()),
         theme: 'default',
         backgroundColor: 'white',
       },

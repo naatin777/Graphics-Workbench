@@ -1,4 +1,4 @@
-import { readChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
+import { resolveChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { runExternalTool } from '../../operations/external_tools/run_external_tool.js';
 
@@ -68,7 +68,7 @@ export async function runFeatureAvailabilityChecks(
 
   const chromePromise = check({
     toolLabel: userMessage('message.environmentCheck.tool.browser'),
-    executable: readChromeExecutablePath(options.configuration),
+    executable: resolveChromeExecutablePath(options.configuration),
     versionArgs: ['--version'],
     settingId: 'graphics-workbench.execPath.chrome',
   });

@@ -98,7 +98,7 @@ suite('command登録処理', () => {
     );
 
     assert.deepStrictEqual(calls.recorded, [
-      { bindingId: 'graphics-workbench.compressPdf', args: [[uri], dependencies] },
+      { bindingId: 'graphics-workbench.compressPdf', args: [[uri], dependencies, undefined] },
     ]);
   });
 

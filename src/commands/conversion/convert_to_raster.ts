@@ -1,8 +1,7 @@
 import type * as vscode from 'vscode';
-import { readFile, writeFile } from 'node:fs/promises';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
-import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
+import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
 import {
   executeRasterConversion,
   rasterFormatSpecs,
@@ -10,12 +9,11 @@ import {
   type RasterFormatSpec,
   type RasterJob,
 } from '../../operations/conversion/raster_conversion.js';
-import { renderPdfPageToPng } from '../../operations/pdf/mupdf.js';
 import type { DrawioBackend } from '../../operations/conversion/tools/drawio_tools.js';
 import type { MermaidBackend } from '../../operations/conversion/tools/mermaid_tools.js';
-import type { PdfRenderBackend } from '../../operations/conversion/tools/pdf_render_tools.js';
+import { createPdfRenderBackend, type PdfRenderBackend } from '../../operations/conversion/tools/pdf_render_tools.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
+import { createDrawioBackend } from '../shared/command_runtime.js';
 
 import { planRasterConversionJobs } from './plan_conversion_jobs.js';
 import { runRasterConversionCommand, type RasterConversionContext } from './run_raster_conversion_command.js';
@@ -34,22 +32,11 @@ interface RasterBackendTools {
 
 type RasterPlanContext = RasterConversionContext<RasterBackendTools>;
 
-function readBackendTools(configuration: Configuration, spec: RasterFormatSpec): RasterBackendTools {
+function createRasterBackendTools(configuration: Configuration, spec: RasterFormatSpec): RasterBackendTools {
   const tools: RasterBackendTools = {
-    mermaidTools: readMermaidCliOptions(configuration),
-    drawioTools: buildDrawioCommandOptions(configuration),
-    pdfRenderTools: {
-      runPdfToPng: async (sourcePath, outputPath, page, signal, cropContent) => {
-        signal.throwIfAborted();
-        const pdfBytes = await readFile(sourcePath);
-        signal.throwIfAborted();
-        const png = await renderPdfPageToPng(pdfBytes, page, {
-          ...(cropContent !== undefined && { cropContent }),
-        });
-        signal.throwIfAborted();
-        await writeFile(outputPath, png);
-      },
-    },
+    mermaidTools: createMermaidBackend(configuration),
+    drawioTools: createDrawioBackend(configuration),
+    pdfRenderTools: createPdfRenderBackend(),
   };
   if (spec.target === 'avif') {
     tools.outputOptions = { effort: configuration.convertToAvif.effort() };
@@ -84,7 +71,7 @@ async function runRasterCommand(options: {
     operationName: spec.operationName,
     outputLabel: spec.outputLabel,
     animated,
-    prepare: (configuration) => readBackendTools(configuration, spec),
+    prepare: (configuration) => createRasterBackendTools(configuration, spec),
     plan,
     execute: async (jobs, context) =>
       executeRasterConversion({

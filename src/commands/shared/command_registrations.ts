@@ -76,9 +76,7 @@ function registerCommand(
         vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
           const command = await resolve(binding, outputChannel);
           const sourceUris = resolveSelectedUris(uri, uris);
-          return binding.options === undefined
-            ? command(sourceUris, dependencies)
-            : command(sourceUris, dependencies, binding.options);
+          return command(sourceUris, dependencies, binding.options);
         }),
       );
       break;

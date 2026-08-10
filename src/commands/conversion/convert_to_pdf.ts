@@ -7,7 +7,7 @@ import {
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
-import { readChromeExecutablePath, readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
+import { createMermaidBackend, resolveChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import {
@@ -24,7 +24,7 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
+import { createDrawioBackend } from '../shared/command_runtime.js';
 import { isAbortError } from '../../shared/error.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 
@@ -63,10 +63,10 @@ async function convertSelectedSourcesToPdf(
 
     const configuration = dependencies.getConfiguration();
     const maxInputPixels = configuration.raster.maxInputPixels();
-    const svgToPdfTools = readSvgToPdfOptions(configuration);
+    const svgToPdfTools = createSvgToPdfBackend(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
-    const mermaidTools = readMermaidCliOptions(configuration);
-    const drawioTools = buildDrawioCommandOptions(configuration);
+    const mermaidTools = createMermaidBackend(configuration);
+    const drawioTools = createDrawioBackend(configuration);
     const plannedJobs: ConvertToPdfJob[] = [];
     for (const sourceUri of sourceUris) {
       plannedJobs.push(
@@ -129,11 +129,11 @@ export function outputTemplateForSource(sourceUri: vscode.Uri, configuration: Co
   return resolveConversionTemplate({ target: 'pdf', sourcePath, configuration });
 }
 
-export function readSvgToPdfOptions(configuration: Configuration): SvgToPdfBackend {
+export function createSvgToPdfBackend(configuration: Configuration): SvgToPdfBackend {
   return {
     engine: configuration.convertToPdf.svg.engine(),
     rsvgConvertPath: configuration.execPath.rsvgConvert(),
-    chromePath: readChromeExecutablePath(configuration),
+    chromePath: resolveChromeExecutablePath(configuration),
     runRsvgConvert: executeRsvgConvert,
     runChrome: executeChrome,
   };

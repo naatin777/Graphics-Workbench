@@ -18,7 +18,7 @@ export function applyRuntimeConfiguration(configuration: Configuration): void {
   applyUndoHistoryConfiguration(configuration);
 }
 
-/** Builds Draw.io command options from the configured executable path. */
-export function buildDrawioCommandOptions(configuration: Configuration): DrawioBackend {
+/** Creates the Draw.io backend from the configured executable path and the real process runner. */
+export function createDrawioBackend(configuration: Configuration): DrawioBackend {
   return { drawioPath: configuration.execPath.drawio(), runDrawio: executeDrawio };
 }

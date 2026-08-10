@@ -6,7 +6,7 @@ import { combineImagesToPdf } from '../../operations/conversion/combine_images_t
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { readSvgToPdfOptions } from './convert_to_pdf.js';
+import { createSvgToPdfBackend } from './convert_to_pdf.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
@@ -49,7 +49,7 @@ export async function combineImagesToPdfCommand(
 
     await assertWritablePathInWorkspace(outputPath, workspacePath);
 
-    const svgToPdfTools = readSvgToPdfOptions(configuration);
+    const svgToPdfTools = createSvgToPdfBackend(configuration);
     const jobs = previewedUris.map((sourceUri) => ({ sourcePath: sourceUri.fsPath }));
 
     await runConversionLifecycle({
