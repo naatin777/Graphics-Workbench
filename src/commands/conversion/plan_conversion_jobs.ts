@@ -3,16 +3,10 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
-import {
-  isEditableDrawioImagePath,
-  isNativeDrawioPath,
-  logicalSourcePathForOutputTemplate,
-} from '../../shared/source_format.js';
-import { resolveOutputPathsTemplate, type OutputPathKey } from '../../config/output/output_path_settings.js';
+import { isEditableDrawioImagePath, logicalSourcePathForOutputTemplate } from '../../shared/source_format.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import type { RasterJob } from '../../operations/conversion/raster_conversion.js';
+import type { RasterFormatSpec, RasterJob } from '../../operations/conversion/raster_conversion.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import type { OutputConversionFormat } from '../lifecycle/run_output_conversion.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 import { planAnimationRasterSourceJobs } from './plan_animation_raster_source_jobs.js';
@@ -20,27 +14,6 @@ import { planPdfPageConversionJobs } from './plan_pdf_page_conversion_jobs.js';
 import { planRasterSourceConversionJobs } from './plan_raster_source_conversion_jobs.js';
 
 import { assertLocalFileUri } from '../shared/command_input.js';
-
-export type RasterConversionTarget = 'png' | 'jpeg' | 'avif' | 'tiff' | 'webp' | 'gif';
-
-export interface RasterFormatSpec {
-  target: RasterConversionTarget;
-  operationName: string;
-  outputLabel: OutputConversionFormat;
-  label: string;
-  /** The format's own extensions; used for both same-format rejection and output validation. */
-  extensions: readonly string[];
-  settings: {
-    drawio: OutputPathKey;
-    pdf: OutputPathKey;
-  };
-  defaults: {
-    pdf: string;
-    drawio: string;
-    split?: string;
-  };
-  animatedInputExtension?: string;
-}
 
 export interface PlanRasterConversionOptions {
   configuration: Configuration;
@@ -127,7 +100,11 @@ async function planPdfPageRasterJobs(
   spec: RasterFormatSpec,
   options: PlanRasterConversionOptions,
 ): Promise<RasterJob[]> {
-  const outputTemplate = resolveOutputPathsTemplate(options.configuration, spec.settings.pdf, spec.defaults.pdf);
+  const outputTemplate = resolveConversionTemplate({
+    target: spec.target,
+    sourcePath,
+    configuration: options.configuration,
+  });
   return planPdfPageConversionJobs({
     sourcePath,
     workspacePath: workspace.uri.fsPath,
@@ -144,16 +121,12 @@ function outputTemplateForSource(
   spec: RasterFormatSpec,
   options: PlanRasterConversionOptions,
 ): string {
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    return resolveOutputPathsTemplate(options.configuration, spec.settings.drawio, spec.defaults.drawio);
-  }
-
   return resolveConversionTemplate({
     target: spec.target,
     sourcePath,
     configuration: options.configuration,
-    ...(options.outputMode === 'split' && spec.defaults.split !== undefined
-      ? { splitDefault: spec.defaults.split }
+    ...(options.outputMode === 'split' && spec.splitOutputTemplate !== undefined
+      ? { templateOverride: spec.splitOutputTemplate }
       : {}),
   });
 }

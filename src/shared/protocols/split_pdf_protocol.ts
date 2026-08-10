@@ -1,6 +1,5 @@
 import * as v from 'valibot';
-import { isWebviewUri } from './protocol_utils.js';
-import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
+import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
 
 type SplitPdfPageParseFailureKind = 'required' | 'malformed' | 'wholeNumber' | 'descending' | 'outOfRange';
 
@@ -129,25 +128,13 @@ const SplitPdfPageGroupRowSchema = v.strictObject({
 });
 export type SplitPdfPageGroupRow = v.InferOutput<typeof SplitPdfPageGroupRowSchema>;
 
-const SplitPdfWebviewUriSchema = v.pipe(
-  v.string(),
-  v.check((value: string): boolean => isWebviewUri(value)),
-);
-
-const SplitPdfResourcesSchema = v.strictObject({
-  workerSrc: SplitPdfWebviewUriSchema,
-  cMapUrl: SplitPdfWebviewUriSchema,
-  standardFontDataUrl: SplitPdfWebviewUriSchema,
-  wasmUrl: SplitPdfWebviewUriSchema,
-});
-
 const SplitPdfInitPayloadSchema = v.strictObject({
   sourceId: v.pipe(v.string(), v.nonEmpty()),
   fileName: v.pipe(v.string(), v.nonEmpty()),
   pageCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
-  pdfSrc: SplitPdfWebviewUriSchema,
+  pdfSrc: WebviewUriSchema,
   outputPathTemplate: v.pipe(v.string(), v.nonEmpty()),
-  resources: SplitPdfResourcesSchema,
+  resources: PdfJsResourcesSchema,
   preview: PdfPreviewSettingsSchema,
   labels: SplitPdfLabelsSchema,
 });

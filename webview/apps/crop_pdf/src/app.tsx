@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController } from '../../../shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '../../../shared/error';
@@ -10,54 +10,13 @@ import { useCurrentPage } from '../../../shared/ui/use_current_page';
 
 import { parseCropBox, parseTarget } from './crop_input';
 import type { CropPdfLabels, ExtensionToWebviewMessage, WebviewToExtensionMessage } from './messages';
-import { applyPreviewZoom, capturePreviewZoomAnchor, clampPreviewZoom, restorePreviewZoomAnchor } from './preview_zoom';
+import {
+  applyPreviewZoom,
+  capturePreviewZoomAnchor,
+  clampPreviewZoom,
+  restorePreviewZoomAnchor,
+} from '@webview-shared/pdf/preview_zoom';
 import { vscode } from './vscode';
-
-const defaultLabels: CropPdfLabels = {
-  header: {
-    title: 'Custom Crop',
-    description: 'Adjust the PDF crop area.',
-    pageLabel: 'Page',
-    pages: 'pages',
-  },
-  preview: {
-    title: 'Preview',
-    ariaLabel: 'PDF preview',
-    zoomLabel: 'Preview zoom',
-    zoomOut: 'Zoom out',
-    zoomIn: 'Zoom in',
-    renderError: 'Could not display the PDF',
-    applyError: 'PDF preview must render before applying.',
-  },
-  cropBox: {
-    settingsLabel: 'Crop settings',
-    title: 'Crop box',
-    left: 'Left',
-    bottom: 'Bottom',
-    right: 'Right',
-    top: 'Top',
-    currentPageSize: 'Page size',
-  },
-  targetPages: {
-    applyTo: 'Apply to',
-    all: 'All pages',
-    pages: 'Pages',
-    inputLabel: 'Pages',
-    placeholder: '1, 3–5',
-  },
-  validation: {
-    cropBoxNumber: '{0} must be a number.',
-    cropBoxSize: 'Crop box must have positive width and height.',
-    pagesRequired: 'At least one page must be selected.',
-    pageWholeNumber: 'Page must be a whole number: {0}',
-    pageOutOfRange: 'Selected page is out of range: {0}',
-  },
-  actions: {
-    apply: 'Apply',
-    processing: 'Processing…',
-    cancel: 'Cancel',
-  },
-};
 
 type CropInitPayload = Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'];
 type PageSize = { width: number; height: number; x: number; y: number };
@@ -206,7 +165,14 @@ export function App(): JSX.Element {
   const [targetType, setTargetType] = createSignal<'all' | 'selected'>('all');
   const [selectedPages, setSelectedPages] = createSignal('1');
   const [previewZoom, setPreviewZoom] = createSignal(1);
-  const [labels, setLabels] = createSignal(defaultLabels);
+  const [labelsValue, setLabels] = createSignal<CropPdfLabels>();
+  const labels = (): CropPdfLabels => {
+    const value = labelsValue();
+    if (value === undefined) {
+      throw new Error('Crop PDF labels were not initialized.');
+    }
+    return value;
+  };
   const [renderError, setRenderError] = createSignal('');
   const [inputError, setInputError] = createSignal('');
   const [isApplying, setIsApplying] = createSignal(false);
@@ -260,21 +226,11 @@ export function App(): JSX.Element {
 
   onMount(() => {
     const handleMessage = (event: MessageEvent<ExtensionToWebviewMessage>): void => {
-      if (!pdfPages) {
-        return;
-      }
-
       if (event.data.type === 'error') {
         setIsApplying(false);
         setInputError(event.data.payload.message);
         return;
       }
-
-      renderAbortController?.abort();
-      void renderController?.dispose();
-      renderController = undefined;
-      const abortController = new AbortController();
-      renderAbortController = abortController;
 
       const { initialPage } = event.data.payload;
       const totalPages = event.data.payload.pageCount;
@@ -290,11 +246,21 @@ export function App(): JSX.Element {
       setInputError('');
       setRenderError('');
       setIsApplying(false);
+      const pages = pdfPages;
+      if (pages === undefined) {
+        return;
+      }
+
+      renderAbortController?.abort();
+      void renderController?.dispose();
+      renderController = undefined;
+      const abortController = new AbortController();
+      renderAbortController = abortController;
       const { payload } = event.data;
       renderPromise = renderPreview({
         payload,
         pdf: {
-          pages: pdfPages,
+          pages,
           preview: pdfPreview,
           zoom: previewZoom,
         },
@@ -411,214 +377,218 @@ export function App(): JSX.Element {
   };
 
   return (
-    <main class='app'>
-      <h1 class='sr-only'>{labels().header.title}</h1>
-      <p class='sr-only'>
-        {fileName()} · {pageCount()} {labels().header.pages}. {labels().header.description}
-      </p>
+    <Show when={labelsValue()}>
+      {(_labels) => (
+        <main class='app'>
+          <h1 class='sr-only'>{labels().header.title}</h1>
+          <p class='sr-only'>
+            {fileName()} · {pageCount()} {labels().header.pages}. {labels().header.description}
+          </p>
 
-      <div class='workspace'>
-        <SplitPane
-          left={
-            <section
-              ref={(element) => {
-                pdfPreview = element;
-              }}
-              aria-label={labels().preview.ariaLabel}
-              class='pdf-preview'
-              classList={{ 'pdf-preview--fit': previewZoom() <= 1 }}
-              onWheel={zoomWithWheel}
-            >
-              <div class='pdf-preview__toolbar'>
-                <div>
-                  <h2>{labels().preview.title}</h2>
-                </div>
-                <div
-                  class='zoom'
-                  aria-label={labels().preview.zoomLabel}
-                >
-                  <ToolbarButton
-                    icon='codicon-zoom-out'
-                    label={labels().preview.zoomOut}
-                    onClick={zoomOut}
-                  />
-                  <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
-                  <ToolbarButton
-                    icon='codicon-zoom-in'
-                    label={labels().preview.zoomIn}
-                    onClick={zoomIn}
-                  />
-                </div>
-              </div>
-              <div
-                ref={(element) => {
-                  pdfPages = element;
-                }}
-                class='pdf-preview__pages'
-              />
-              <PageNavigator
-                currentPage={currentPage()}
-                pageCount={pageCount()}
-                onPrevious={goToPreviousPage}
-                onNext={goToNextPage}
-              />
-              {renderError() ? (
-                <p
-                  class='pdf-preview__error'
-                  role='alert'
-                >
-                  {labels().preview.renderError}: {renderError()}
-                </p>
-              ) : undefined}
-            </section>
-          }
-          right={
-            <section
-              aria-label={labels().cropBox.settingsLabel}
-              aria-busy={isApplying()}
-              class='panel'
-            >
-              <div class='panel__group'>
-                <h2>{labels().cropBox.title}</h2>
-
-                <div class='crop-grid'>
-                  <label class='field'>
-                    <span class='field__label'>{labels().cropBox.left}</span>
-                    <input
-                      class='gw-input'
-                      disabled={isApplying()}
-                      inputmode='decimal'
-                      type='number'
-                      value={cropBox().left}
-                      onInput={(event) => {
-                        setCropBox({ ...cropBox(), left: event.currentTarget.value });
-                      }}
-                    />
-                  </label>
-
-                  <label class='field'>
-                    <span class='field__label'>{labels().cropBox.bottom}</span>
-                    <input
-                      class='gw-input'
-                      disabled={isApplying()}
-                      inputmode='decimal'
-                      type='number'
-                      value={cropBox().bottom}
-                      onInput={(event) => {
-                        setCropBox({ ...cropBox(), bottom: event.currentTarget.value });
-                      }}
-                    />
-                  </label>
-
-                  <label class='field'>
-                    <span class='field__label'>{labels().cropBox.right}</span>
-                    <input
-                      class='gw-input'
-                      disabled={isApplying()}
-                      inputmode='decimal'
-                      type='number'
-                      value={cropBox().right}
-                      onInput={(event) => {
-                        setCropBox({ ...cropBox(), right: event.currentTarget.value });
-                      }}
-                    />
-                  </label>
-
-                  <label class='field'>
-                    <span class='field__label'>{labels().cropBox.top}</span>
-                    <input
-                      class='gw-input'
-                      disabled={isApplying()}
-                      inputmode='decimal'
-                      type='number'
-                      value={cropBox().top}
-                      onInput={(event) => {
-                        setCropBox({ ...cropBox(), top: event.currentTarget.value });
-                      }}
-                    />
-                  </label>
-                </div>
-
-                <p class='panel__hint'>
-                  {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt
-                </p>
-              </div>
-
-              <fieldset class='gw-radio-group'>
-                <legend>{labels().targetPages.applyTo}</legend>
-
-                <label class='gw-radio-option'>
-                  <input
-                    checked={targetType() === 'all'}
-                    disabled={isApplying()}
-                    name='target'
-                    type='radio'
-                    onChange={() => {
-                      setTargetType('all');
-                    }}
-                  />
-                  {labels().targetPages.all}
-                </label>
-
-                <label class='gw-radio-option'>
-                  <input
-                    checked={targetType() === 'selected'}
-                    disabled={isApplying()}
-                    name='target'
-                    type='radio'
-                    onChange={() => {
-                      setTargetType('selected');
-                    }}
-                  />
-                  {labels().targetPages.pages}
-                </label>
-
-                <label class='field'>
-                  <span class='field__label'>{labels().targetPages.inputLabel}</span>
-                  <input
-                    class='gw-input'
-                    disabled={isApplying() || targetType() !== 'selected'}
-                    placeholder={labels().targetPages.placeholder}
-                    type='text'
-                    value={selectedPages()}
-                    onInput={(event) => {
-                      setSelectedPages(event.currentTarget.value);
-                    }}
-                  />
-                </label>
-              </fieldset>
-
-              {inputError() ? (
-                <p
-                  class='panel__error'
-                  role='alert'
-                >
-                  {inputError()}
-                </p>
-              ) : undefined}
-
-              <div class='actions gw-actions'>
-                <Button
-                  variant='primary'
-                  disabled={isApplying()}
-                  onClick={() => {
-                    void applyCrop();
+          <div class='workspace'>
+            <SplitPane
+              left={
+                <section
+                  ref={(element) => {
+                    pdfPreview = element;
                   }}
+                  aria-label={labels().preview.ariaLabel}
+                  class='pdf-preview'
+                  classList={{ 'pdf-preview--fit': previewZoom() <= 1 }}
+                  onWheel={zoomWithWheel}
                 >
-                  {isApplying() ? labels().actions.processing : labels().actions.apply}
-                </Button>
-                <Button
-                  variant='secondary'
-                  onClick={cancel}
+                  <div class='pdf-preview__toolbar'>
+                    <div>
+                      <h2>{labels().preview.title}</h2>
+                    </div>
+                    <div
+                      class='zoom'
+                      aria-label={labels().preview.zoomLabel}
+                    >
+                      <ToolbarButton
+                        icon='codicon-zoom-out'
+                        label={labels().preview.zoomOut}
+                        onClick={zoomOut}
+                      />
+                      <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
+                      <ToolbarButton
+                        icon='codicon-zoom-in'
+                        label={labels().preview.zoomIn}
+                        onClick={zoomIn}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    ref={(element) => {
+                      pdfPages = element;
+                    }}
+                    class='pdf-preview__pages'
+                  />
+                  <PageNavigator
+                    currentPage={currentPage()}
+                    pageCount={pageCount()}
+                    onPrevious={goToPreviousPage}
+                    onNext={goToNextPage}
+                  />
+                  {renderError() ? (
+                    <p
+                      class='pdf-preview__error'
+                      role='alert'
+                    >
+                      {labels().preview.renderError}: {renderError()}
+                    </p>
+                  ) : undefined}
+                </section>
+              }
+              right={
+                <section
+                  aria-label={labels().cropBox.settingsLabel}
+                  aria-busy={isApplying()}
+                  class='panel'
                 >
-                  {labels().actions.cancel}
-                </Button>
-              </div>
-            </section>
-          }
-        />
-      </div>
-    </main>
+                  <div class='panel__group'>
+                    <h2>{labels().cropBox.title}</h2>
+
+                    <div class='crop-grid'>
+                      <label class='field'>
+                        <span class='field__label'>{labels().cropBox.left}</span>
+                        <input
+                          class='gw-input'
+                          disabled={isApplying()}
+                          inputmode='decimal'
+                          type='number'
+                          value={cropBox().left}
+                          onInput={(event) => {
+                            setCropBox({ ...cropBox(), left: event.currentTarget.value });
+                          }}
+                        />
+                      </label>
+
+                      <label class='field'>
+                        <span class='field__label'>{labels().cropBox.bottom}</span>
+                        <input
+                          class='gw-input'
+                          disabled={isApplying()}
+                          inputmode='decimal'
+                          type='number'
+                          value={cropBox().bottom}
+                          onInput={(event) => {
+                            setCropBox({ ...cropBox(), bottom: event.currentTarget.value });
+                          }}
+                        />
+                      </label>
+
+                      <label class='field'>
+                        <span class='field__label'>{labels().cropBox.right}</span>
+                        <input
+                          class='gw-input'
+                          disabled={isApplying()}
+                          inputmode='decimal'
+                          type='number'
+                          value={cropBox().right}
+                          onInput={(event) => {
+                            setCropBox({ ...cropBox(), right: event.currentTarget.value });
+                          }}
+                        />
+                      </label>
+
+                      <label class='field'>
+                        <span class='field__label'>{labels().cropBox.top}</span>
+                        <input
+                          class='gw-input'
+                          disabled={isApplying()}
+                          inputmode='decimal'
+                          type='number'
+                          value={cropBox().top}
+                          onInput={(event) => {
+                            setCropBox({ ...cropBox(), top: event.currentTarget.value });
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    <p class='panel__hint'>
+                      {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt
+                    </p>
+                  </div>
+
+                  <fieldset class='gw-radio-group'>
+                    <legend>{labels().targetPages.applyTo}</legend>
+
+                    <label class='gw-radio-option'>
+                      <input
+                        checked={targetType() === 'all'}
+                        disabled={isApplying()}
+                        name='target'
+                        type='radio'
+                        onChange={() => {
+                          setTargetType('all');
+                        }}
+                      />
+                      {labels().targetPages.all}
+                    </label>
+
+                    <label class='gw-radio-option'>
+                      <input
+                        checked={targetType() === 'selected'}
+                        disabled={isApplying()}
+                        name='target'
+                        type='radio'
+                        onChange={() => {
+                          setTargetType('selected');
+                        }}
+                      />
+                      {labels().targetPages.pages}
+                    </label>
+
+                    <label class='field'>
+                      <span class='field__label'>{labels().targetPages.inputLabel}</span>
+                      <input
+                        class='gw-input'
+                        disabled={isApplying() || targetType() !== 'selected'}
+                        placeholder={labels().targetPages.placeholder}
+                        type='text'
+                        value={selectedPages()}
+                        onInput={(event) => {
+                          setSelectedPages(event.currentTarget.value);
+                        }}
+                      />
+                    </label>
+                  </fieldset>
+
+                  {inputError() ? (
+                    <p
+                      class='panel__error'
+                      role='alert'
+                    >
+                      {inputError()}
+                    </p>
+                  ) : undefined}
+
+                  <div class='actions gw-actions'>
+                    <Button
+                      variant='primary'
+                      disabled={isApplying()}
+                      onClick={() => {
+                        void applyCrop();
+                      }}
+                    >
+                      {isApplying() ? labels().actions.processing : labels().actions.apply}
+                    </Button>
+                    <Button
+                      variant='secondary'
+                      onClick={cancel}
+                    >
+                      {labels().actions.cancel}
+                    </Button>
+                  </div>
+                </section>
+              }
+            />
+          </div>
+        </main>
+      )}
+    </Show>
   );
 }
 

@@ -10,13 +10,12 @@ import {
   type CommitConversionOutputsOptions,
   type CommittedConversionOutput,
 } from '../lifecycle/commit_conversion_outputs.js';
-import { writeSourceAsPdf, type WriteSourceAsPdfOptions } from './convert_to_pdf.js';
-import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
+import { writeSourceAsPdf, executeChrome, executeRsvgConvert, type WriteSourceAsPdfOptions } from './convert_to_pdf.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { readRasterAnimationMetadata } from './raster_input.js';
 import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
-import type { RsvgToolScratchOptions, RunRsvgConvert } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
+import type { RsvgToolScratchOptions } from '../external_tools/run_rsvg_convert_with_ascii_scratch.js';
 import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 import { loadMupdf, openPdfDocument, savePdfDocument } from '../pdf/mupdf.js';
 
@@ -29,12 +28,10 @@ export interface CombineImagesToPdfOptions {
   outputPath: string;
   workspacePath: string;
   runtime?: ConversionExecutionContext;
-  maxInputPixels?: number;
+  maxInputPixels: number;
   runId?: string;
   tools?: {
     svgToPdfTools?: SvgToPdfBackend;
-    rsvgConvertPath?: string;
-    runRsvgConvert?: RunRsvgConvert;
   };
   platform?: NodeJS.Platform;
   scratchBaseCandidates?: readonly string[];
@@ -42,7 +39,6 @@ export interface CombineImagesToPdfOptions {
 
 export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  const configuredMaxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
   runtime?.signal?.throwIfAborted();
   validateJobs(options.jobs);
 
@@ -62,7 +58,7 @@ export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Pr
 
   try {
     await mkdir(stagingRootPath, { recursive: true });
-    const pdfPaths = await createPdfPaths(options, configuredMaxInputPixels, stagingRootPath);
+    const pdfPaths = await createPdfPaths(options, options.maxInputPixels, stagingRootPath);
     const mergedBytes = await mergePdfPaths(pdfPaths, runtime);
 
     runtime?.signal?.throwIfAborted();
@@ -98,13 +94,11 @@ async function createPdfPaths(
         outputPath: pdfPath,
         workspacePath: options.workspacePath,
         maxInputPixels,
+        signal: options.runtime?.signal ?? new AbortController().signal,
         tools: { svgToPdfTools: svgToPdfOptions(options) },
         scratchOptions: scratchOptions(options),
         ...(pageCount > 1 ? { page } : {}),
       };
-      if (options.runtime?.signal !== undefined) {
-        writeOptions.signal = options.runtime.signal;
-      }
       await writeSourceAsPdf(writeOptions);
       pdfPaths.push(pdfPath);
     }
@@ -176,20 +170,15 @@ function validateJobs(jobs: CombineImageInput[]): void {
 }
 
 function svgToPdfOptions(options: CombineImagesToPdfOptions): SvgToPdfBackend {
-  if (options.tools?.svgToPdfTools !== undefined) {
-    if (options.tools.runRsvgConvert === undefined) {
-      return options.tools.svgToPdfTools;
+  return (
+    options.tools?.svgToPdfTools ?? {
+      engine: 'rsvg-convert',
+      rsvgConvertPath: 'rsvg-convert',
+      chromePath: '',
+      runRsvgConvert: executeRsvgConvert,
+      runChrome: executeChrome,
     }
-
-    return { ...options.tools.svgToPdfTools, runRsvgConvert: options.tools.runRsvgConvert };
-  }
-
-  return {
-    engine: 'rsvg-convert',
-    rsvgConvertPath: options.tools?.rsvgConvertPath ?? 'rsvg-convert',
-    chromePath: '',
-    ...(options.tools?.runRsvgConvert !== undefined && { runRsvgConvert: options.tools.runRsvgConvert }),
-  };
+  );
 }
 
 function scratchOptions(options: CombineImagesToPdfOptions): RsvgToolScratchOptions {

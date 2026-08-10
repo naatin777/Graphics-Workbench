@@ -81,7 +81,7 @@
 - Trigger: output path naming policyを変更するとき。
 - Why not now: ADR-0021でpair-specific設定を正本とし、形式基準設定をmanifestと実装から外した。
 - Related files: `package.json`、`package.nls.json`、`package.nls.ja.json`、`src/config/output/output_path_settings.ts`、`src/commands/conversion/convert_*.ts`。
-- Expected test impact: pair-specific singular outputと`outputPaths` page outputの回帰確認が必要。
+- Expected test impact: pair-specific `outputPath.convertXToY`の単一・page出力を確認する。
 - Reversibility: ADR-0021を置き換え、設定migrationを別taskとして扱う。
 
 ---

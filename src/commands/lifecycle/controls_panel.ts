@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
-import { getExtensionConfiguration } from '../../config/extension_configuration.js';
 import { extensionIdentity, type Configuration } from '../../generated/extension_manifest.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import {
+  environmentProbe,
   runFeatureAvailabilityChecks,
   type FeatureAvailabilityEntry,
   type FeatureAvailabilityId,
@@ -20,6 +20,7 @@ export type SvgToPdfEngine = 'chrome' | 'rsvg-convert';
 export type ControlsItemAction =
   | { kind: 'set-engine'; engine: SvgToPdfEngine }
   | { kind: 'toggle-safe-mode' }
+  | { kind: 'open-setting'; settingId: string }
   | { kind: 'check-again' }
   | { kind: 'none' };
 
@@ -32,7 +33,8 @@ export interface ControlsPanelDependencies {
   getSafeMode: () => SafeModeState;
   runChecks: (configuration: Configuration) => Promise<FeatureAvailabilityEntry[]>;
   writeEngine: (engine: SvgToPdfEngine) => Promise<void>;
-  createQuickPick?: () => vscode.QuickPick<ControlsQuickPickItem>;
+  openSetting: (settingId: string) => Promise<void>;
+  createQuickPick: () => vscode.QuickPick<ControlsQuickPickItem>;
 }
 
 /** ツールバー（status bar）にアイコンのみのControlsボタンを配置する。 */
@@ -45,23 +47,27 @@ export function initializeControlsPanel(context: { subscriptions: vscode.Disposa
   context.subscriptions.push(statusBarItem);
 }
 
-export async function openControlsPanelCommand(_uri?: unknown, dependencies?: CommandDependencies): Promise<void> {
-  const configuration = dependencies?.getConfiguration?.() ?? getExtensionConfiguration();
+export async function openControlsPanelCommand(_uri: unknown, dependencies: CommandDependencies): Promise<void> {
+  const configuration = dependencies.getConfiguration();
   await showControlsPanel({
     getConfiguration: () => configuration,
     getSafeMode: getSafeModeState,
-    runChecks: async (config) => runFeatureAvailabilityChecks({ configuration: config }),
+    runChecks: async (config) => runFeatureAvailabilityChecks({ configuration: config, probe: environmentProbe }),
     writeEngine: async (engine) => {
       await vscode.workspace
         .getConfiguration(extensionIdentity.configurationNamespace)
         .update('convertToPdf.svg.engine', engine, vscode.ConfigurationTarget.Global);
     },
+    openSetting: async (settingId) => {
+      await vscode.commands.executeCommand('workbench.action.openSettings', settingId);
+    },
+    createQuickPick: () => vscode.window.createQuickPick<ControlsQuickPickItem>(),
   });
 }
 
 /** Controlsパネル（QuickPickのポップオーバー）を表示する。 */
 export async function showControlsPanel(deps: ControlsPanelDependencies): Promise<void> {
-  const quickPick = deps.createQuickPick?.() ?? vscode.window.createQuickPick<ControlsQuickPickItem>();
+  const quickPick = deps.createQuickPick();
   const configuration = deps.getConfiguration();
   let availability: FeatureAvailabilityEntry[] | undefined;
 
@@ -82,6 +88,11 @@ export async function showControlsPanel(deps: ControlsPanelDependencies): Promis
       case 'toggle-safe-mode': {
         await deps.getSafeMode().toggle();
         break;
+      }
+      case 'open-setting': {
+        quickPick.hide();
+        await deps.openSetting(action.settingId);
+        return;
       }
       case 'check-again': {
         quickPick.busy = true;
@@ -158,7 +169,8 @@ export function buildControlsItems(state: {
           label: featureLabel(entry.id),
           description: `${entry.available ? '$(check)' : '$(close)'} ${entry.detail}`,
           detail: entry.detail,
-          action: { kind: 'none' },
+          action:
+            entry.settingId === undefined ? { kind: 'none' } : { kind: 'open-setting', settingId: entry.settingId },
         }))),
     {
       label: `$(refresh) ${userMessage('message.controls.checkAgain')}`,

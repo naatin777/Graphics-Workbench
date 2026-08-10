@@ -13,37 +13,33 @@ import { localeMap } from '../../locale_map.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { mergePdf } from '../../operations/pdf/merge_pdf.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
-import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
-import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
-import { createProgressReporters } from '../lifecycle/progress_reporting.js';
-import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { recordConversionForUndo } from '../lifecycle/undo_last_conversion.js';
-import { runPostConversionUi } from '../lifecycle/post_conversion_ui.js';
+import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
+import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../../shared/error.js';
-import { configureCommandRuntime } from '../shared/command_runtime.js';
-import { toWebviewDirectoryUri } from '../shared/command_input.js';
-import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
+import {
+  createPdfJsResources,
+  getPdfJsAssetsRoot,
+  getWebviewSharedAssetsRoot,
+} from '../../presentation/webview/pdfjs_assets.js';
 
 export async function mergePdfSelectedFilesCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
   try {
     const sourceUris = resolveSelectedPdfUris(uri, uris);
 
     if (sourceUris.length < 2) {
       throw new Error('Select at least two PDF files.');
     }
-
-    configureCommandRuntime(dependencies);
 
     const workspace = await requireCommonWorkspace(sourceUris);
     const outputUri = await vscode.window.showSaveDialog({
@@ -58,7 +54,7 @@ export async function mergePdfSelectedFilesCommand(
 
     await runConversionLifecycle({
       operationName: 'merge-pdf',
-      ...(outputChannel !== undefined && { outputChannel }),
+      outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
         progressTitle: userMessage('message.progress.mergePdf.title', sourceUris.length),
@@ -89,11 +85,11 @@ export async function mergePdfSelectedFilesCommand(
 
 export async function mergePdfConfigureCommand(
   context: Pick<vscode.ExtensionContext, 'extensionUri'>,
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
 
   try {
     const sourceUris = resolveSelectedPdfUris(uri, uris);
@@ -103,7 +99,7 @@ export async function mergePdfConfigureCommand(
     }
 
     const workspace = await requireCommonWorkspace(sourceUris);
-    const configuration = configureCommandRuntime(dependencies);
+    const configuration = dependencies.getConfiguration();
     const panelTitle = localeMap('submenu.mergePdf');
     const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview', 'merge_pdf');
     const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
@@ -144,7 +140,7 @@ export async function mergePdfConfigureCommand(
             workspace,
             panel,
             signal,
-            ...(outputChannel !== undefined && { outputChannel }),
+            outputChannel,
           });
         },
         onPreviewLoadFailed: (message, channel) => {
@@ -158,11 +154,11 @@ export async function mergePdfConfigureCommand(
         cancelledMessage: userMessage('message.mergePdf.cancelled'),
         failedMessage: (reason) => userMessage('message.mergePdf.failed', reason),
       },
-      ...(outputChannel !== undefined && { outputChannel }),
+      outputChannel,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    outputChannel?.appendLine(`[merge-pdf-configure] failure: ${message}`);
+    outputChannel.appendLine(`[merge-pdf-configure] failure: ${message}`);
     await vscode.window.showErrorMessage(userMessage('message.mergePdf.failed', message));
   }
 }
@@ -189,10 +185,7 @@ function buildMergePdfInitMessage(params: {
         fileName: path.basename(sourceUri.fsPath),
         pdfSrc: panel.webview.asWebviewUri(sourceUri).toString(),
       })),
-      workerSrc: panel.webview.asWebviewUri(vscode.Uri.joinPath(pdfJsAssetsRoot, 'pdf.worker.mjs')).toString(),
-      cMapUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'cmaps'),
-      standardFontDataUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'standard_fonts'),
-      wasmUrl: toWebviewDirectoryUri(panel.webview, pdfJsAssetsRoot, 'wasm'),
+      resources: createPdfJsResources(panel.webview, pdfJsAssetsRoot),
       preview,
       labels: buildMergePdfLabels(),
     },
@@ -220,56 +213,26 @@ async function applyConfiguredMerge(params: {
     return;
   }
 
-  signal.throwIfAborted();
-
-  const outputs = await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: userMessage('message.progress.mergePdf.title', sourceUris.length),
-      cancellable: true,
+  await runConfiguredPdfConversion({
+    operationName: 'merge-pdf-configure',
+    messages: {
+      progressTitle: userMessage('message.progress.mergePdf.title', sourceUris.length),
+      prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
+      successMessage: () => userMessage('message.mergePdf.success', sourceUris.length),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage('message.mergePdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.mergePdf.failed', reason),
     },
-    async (progress, token) => {
-      return withCancellationSignal(
-        token,
-        async (applySignal) => {
-          const runtime: ConversionExecutionContext = {
-            signal: applySignal,
-            ...createProgressReporters(progress),
-            ...(outputChannel !== undefined && { outputChannel }),
-            resolveConflicts: resolveOutputConflicts,
-          };
-          return await mergePdf({
-            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
-            outputPath: outputUri.fsPath,
-            workspacePath: workspace.uri.fsPath,
-            runtime,
-          });
-        },
-        signal,
-      );
-    },
-  );
-
-  await runPostConversionUi('merge-pdf-configure', outputChannel, async () => {
-    const successMessage = userMessage('message.mergePdf.success', sourceUris.length);
-    let undoId: string;
-
-    try {
-      undoId = await recordConversionForUndo(outputs, outputChannel);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      panel.dispose();
-      await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, message));
-      return;
-    }
-
-    const undoAction = userMessage('message.action.undo');
-    panel.dispose();
-    const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
-
-    if (selectedAction === undoAction) {
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
-    }
+    ...(outputChannel !== undefined && { outputChannel }),
+    panel,
+    signal,
+    run: async (runtime) =>
+      mergePdf({
+        sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
+        outputPath: outputUri.fsPath,
+        workspacePath: workspace.uri.fsPath,
+        runtime,
+      }),
   });
 }
 

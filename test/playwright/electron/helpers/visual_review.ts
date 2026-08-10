@@ -19,21 +19,11 @@ function visualReviewViewportDirectory(viewport: VisualReviewViewport): string {
 
 /**
  * Prepares the generated output directory for this OS/CPU before a capture run.
- * Only this platform-arch tree is cleared: the `wide/` and `narrow/` PNGs for
- * this run plus any legacy flat PNGs left directly under the platform-arch
- * directory. The artifacts of other platforms or architectures are never
- * touched.
+ * Only the `wide/` and `narrow/` PNGs for this platform and architecture are cleared.
  */
 export async function initializeVisualReviewOutput(): Promise<void> {
   const environmentDirectory = visualReviewEnvironmentDirectory();
   await mkdir(environmentDirectory, { recursive: true });
-
-  const legacyEntries = await readdir(environmentDirectory).catch(() => []);
-  await Promise.all(
-    legacyEntries
-      .filter((entry) => entry.toLowerCase().endsWith('.png'))
-      .map((entry) => rm(join(environmentDirectory, entry), { force: true })),
-  );
 
   for (const viewport of ['wide', 'narrow'] as const) {
     const viewportDirectory = visualReviewViewportDirectory(viewport);

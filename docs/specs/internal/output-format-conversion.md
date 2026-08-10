@@ -10,11 +10,10 @@ command層は選択された入力をbatchとして受け取り、入力ごと�
 
 command IDは`convertToPdf`などの出力形式基準とする。出力path templateは入力形式と出力形式のpairを基準にする。
 
-- `${page}`を含まない単一出力は`outputPath.convertXToY`から読む。
-- `${page}`を含む複数出力は`outputPaths` objectの`convertXToY` entryから読む。
-- `outputPath.convertToY`と`outputPaths` object内の`convertToY` entryは読まない。
+- 単一出力と`${page}`を含む複数出力のどちらも`outputPath.convertXToY`から読む。
+- `outputPaths` objectや別名の設定は読まない。
 
-この命名と粒度は[ADR-0021](../../adr/0021-use-pair-specific-output-path-settings.md)を正本とする。
+現在の正本はpackage manifestとproduct specificationであり、ADR-0021は過去の設計背景として参照する。
 
 templateの`${file}`、`${fileBasename}`、`${fileBasenameNoExtension}`などのsource系変数は、変換対象として扱う論理入力pathを基準にする。editable Draw.io画像（`.drawio.png`、`.dio.png`、`.drawio.svg`、`.dio.svg`）ではwrapper suffixを除いたpathを使用する。通常の入力では元の入力pathをそのまま使用し、元ファイルpath専用の追加template変数は提供しない。
 

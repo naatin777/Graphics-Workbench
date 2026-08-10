@@ -39,7 +39,6 @@ export type PackageManifest = {
 type ConfigNode =
   | { kind: 'branch'; children: Map<string, ConfigNode> }
   | { kind: 'config'; key: string; schema: JsonSchema };
-type ObjectProperty = [key: string, schema: JsonSchema];
 type ObjectType = { name: string; schema: JsonSchema };
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -114,8 +113,6 @@ function pascalCase(value: string): string {
     .join('');
 }
 
-type ConversionNamespace = 'outputPath' | 'outputPaths';
-
 const formatNames: Record<string, string> = {
   Png: 'png',
   Jpeg: 'jpeg',
@@ -135,7 +132,7 @@ type ConversionPair = {
   source: string | null;
   target: string;
   setting: string;
-  namespace: ConversionNamespace;
+  defaultValue: string;
 };
 
 function sortConversionPairs(pairs: ConversionPair[]): void {
@@ -146,7 +143,7 @@ function sortConversionPairs(pairs: ConversionPair[]): void {
   );
 }
 
-function conversionPairFromKey(key: string, namespace: ConversionNamespace): ConversionPair | undefined {
+function conversionPairFromKey(key: string, schema: JsonSchema): ConversionPair | undefined {
   const match = /^convert([A-Za-z]+)To([A-Za-z]+)$/u.exec(key);
   if (match === null) {
     return undefined;
@@ -159,53 +156,44 @@ function conversionPairFromKey(key: string, namespace: ConversionNamespace): Con
   if (target === undefined) {
     return undefined;
   }
-  return { source: formatNames[sourceName] ?? null, target, setting: key, namespace };
+  if (typeof schema.default !== 'string') {
+    throw new Error(`Conversion output path ${key} must have a string default`);
+  }
+  return { source: formatNames[sourceName] ?? null, target, setting: key, defaultValue: schema.default };
 }
 
 function renderConversionPairs(packageJson: PackageManifest): string {
   const { properties } = packageJson.contributes.configuration;
-  const flatPairs: ConversionPair[] = [];
-  const pluralPairs: ConversionPair[] = [];
+  const pairs: ConversionPair[] = [];
   const extensionPrefix = `${packageJson.name}.`;
 
-  for (const [fullKey] of Object.entries(properties)) {
+  for (const [fullKey, schema] of Object.entries(properties)) {
     const key = fullKey.slice(extensionPrefix.length);
     if (!key.startsWith('outputPath.')) {
       continue;
     }
-    const pair = conversionPairFromKey(key.slice('outputPath.'.length), 'outputPath');
+    const pair = conversionPairFromKey(key.slice('outputPath.'.length), schema);
     if (pair !== undefined) {
-      flatPairs.push(pair);
+      pairs.push(pair);
     }
   }
 
-  const pluralProperties = properties[`${extensionPrefix}outputPaths`]?.properties;
-  if (pluralProperties !== undefined) {
-    for (const key of Object.keys(pluralProperties)) {
-      const pair = conversionPairFromKey(key, 'outputPaths');
-      if (pair !== undefined) {
-        pluralPairs.push(pair);
-      }
-    }
-  }
+  sortConversionPairs(pairs);
 
-  sortConversionPairs(flatPairs);
-  sortConversionPairs(pluralPairs);
-
-  const renderPairs = (pairs: ConversionPair[]): string =>
-    pairs
-      .map((pair) => {
-        const source = pair.source === null ? 'null' : quote(pair.source);
-        return `    { source: ${source}, target: ${quote(pair.target)}, setting: ${quote(pair.setting)} },`;
-      })
-      .join('\n');
-
-  return (
-    `export const conversionPairs = {\n` +
-    `  flat: [\n${renderPairs(flatPairs)}\n  ],\n` +
-    `  plural: [\n${renderPairs(pluralPairs)}\n  ],\n` +
-    `} as const;\n`
-  );
+  const rendered = pairs
+    .map((pair) => {
+      const source = pair.source === null ? 'null' : quote(pair.source);
+      return [
+        '  {',
+        `    source: ${source},`,
+        `    target: ${quote(pair.target)},`,
+        `    setting: ${quote(pair.setting)},`,
+        `    defaultValue: ${quote(pair.defaultValue)},`,
+        '  },',
+      ].join('\n');
+    })
+    .join('\n');
+  return `export const conversionPairs = [\n${rendered}\n] as const;\n`;
 }
 
 function schemaType(schema: JsonSchema, typeName: string): string {
@@ -353,37 +341,12 @@ function renderConfigurationSchemas(configurationEntries: [string, JsonSchema][]
 
 function renderObjectType(name: string, schema: JsonSchema): string {
   const properties = Object.entries(schema.properties ?? {});
-  if (name !== 'OutputPaths') {
-    const members = properties.map(
-      ([key, property]) => `  readonly ${propertyName(key)}?: ${schemaType(property, `${name}${pascalCase(key)}`)};`,
-    );
-    return `export type ${name} = {
+  const members = properties.map(
+    ([key, property]) => `  readonly ${propertyName(key)}?: ${schemaType(property, `${name}${pascalCase(key)}`)};`,
+  );
+  return `export type ${name} = {
 ${members.join('\n')}
 };
-`;
-  }
-
-  const groups = new Map<string, ObjectProperty[]>();
-  for (const [key, property] of properties) {
-    const destination = /^convert[A-Za-z]+To([A-Z][a-z]+)$/u.exec(key)?.[1] ?? 'Other';
-    const group = groups.get(destination) ?? [];
-    group.push([key, property]);
-    groups.set(destination, group);
-  }
-
-  const groupTypes = [...groups.entries()].map(([destination, group]) => {
-    const groupName = `${name}To${destination}`;
-    const members = group.map(
-      ([key, property]) =>
-        `  readonly ${propertyName(key)}?: ${schemaType(property, `${groupName}${pascalCase(key)}`)};`,
-    );
-    return `type ${groupName} = {
-${members.join('\n')}
-};
-`;
-  });
-  const outputType = [...groups.keys()].map((destination) => `${name}To${destination}`).join(' &\n  ');
-  return `${groupTypes.join('\n')}\nexport type ${name} = ${outputType};
 `;
 }
 

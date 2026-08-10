@@ -2,8 +2,7 @@ import { For, Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js'
 
 import { Button } from '@webview-shared/ui/Button';
 
-import type { ExtensionToWebviewMessage, MergePdfSource } from './messages';
-import { defaultLabels } from './labels';
+import type { ExtensionToWebviewMessage, MergePdfLabels, MergePdfSource } from './messages';
 import { SourceCard } from './source_card';
 import type { PdfOptions } from './preview_thumbnail';
 import { SplitPane } from '@webview-shared/SplitPane';
@@ -11,8 +10,22 @@ import { vscode } from './vscode';
 
 export function App(): JSX.Element {
   const [sources, setSources] = createSignal<MergePdfSource[]>([]);
-  const [pdfOptions, setPdfOptions] = createSignal<PdfOptions>({});
-  const [labels, setLabels] = createSignal(defaultLabels);
+  const [pdfOptionsValue, setPdfOptions] = createSignal<PdfOptions>();
+  const pdfOptions = (): PdfOptions => {
+    const value = pdfOptionsValue();
+    if (value === undefined) {
+      throw new Error('Merge PDF preview options were not initialized.');
+    }
+    return value;
+  };
+  const [labelsValue, setLabels] = createSignal<MergePdfLabels>();
+  const labels = (): MergePdfLabels => {
+    const value = labelsValue();
+    if (value === undefined) {
+      throw new Error('Merge PDF labels were not initialized.');
+    }
+    return value;
+  };
   const [hostError, setHostError] = createSignal('');
   const [previewErrors, setPreviewErrors] = createSignal(new Set<string>());
   const [draggedSourceId, setDraggedSourceId] = createSignal('');
@@ -29,12 +42,7 @@ export function App(): JSX.Element {
       setSources([...payload.sources]);
       setPdfOptions({
         preview: payload.preview,
-        resources: {
-          workerSrc: payload.workerSrc,
-          cMapUrl: payload.cMapUrl,
-          standardFontDataUrl: payload.standardFontDataUrl,
-          wasmUrl: payload.wasmUrl,
-        },
+        resources: payload.resources,
       });
       setLabels(payload.labels);
       setHostError('');
@@ -153,88 +161,92 @@ export function App(): JSX.Element {
   };
 
   return (
-    <main class='app'>
-      <h1 class='sr-only'>{labels().header.title}</h1>
+    <Show when={labelsValue()}>
+      {(_labels) => (
+        <main class='app'>
+          <h1 class='sr-only'>{labels().header.title}</h1>
 
-      <div class='workspace'>
-        <SplitPane
-          left={
-            <section
-              class='panel source-panel'
-              aria-labelledby='source-list-title'
-            >
-              <div class='panel__header'>
-                <div>
-                  <h2 id='source-list-title'>{labels().sources.list}</h2>
-                </div>
-              </div>
+          <div class='workspace'>
+            <SplitPane
+              left={
+                <section
+                  class='panel source-panel'
+                  aria-labelledby='source-list-title'
+                >
+                  <div class='panel__header'>
+                    <div>
+                      <h2 id='source-list-title'>{labels().sources.list}</h2>
+                    </div>
+                  </div>
 
-              <Show when={hostError()}>
-                <p
-                  class='panel__error'
-                  role='alert'
-                >
-                  {hostError()}
-                </p>
-              </Show>
+                  <Show when={hostError()}>
+                    <p
+                      class='panel__error'
+                      role='alert'
+                    >
+                      {hostError()}
+                    </p>
+                  </Show>
 
-              <div class='source-grid'>
-                <For each={sources()}>
-                  {(source, index) => (
-                    <SourceCard
-                      source={source}
-                      index={index}
-                      sourceCount={sources().length}
-                      labels={labels()}
-                      options={pdfOptions()}
-                      dropTargetId={dropTargetId()}
-                      handlers={{
-                        onMove: moveSource,
-                        onDragStart: startDragging,
-                        onDragOver: handleDragOver,
-                        onDrop: handleDrop,
-                        onDragEnd: clearDragState,
-                        onRemove: removeSource,
-                        onPreviewError: () => {
-                          setPreviewErrors((current) => new Set(current).add(source.sourceId));
-                        },
-                      }}
-                    />
-                  )}
-                </For>
-              </div>
-            </section>
-          }
-          right={
-            <aside
-              class='panel action-panel'
-              aria-labelledby='actions-title'
-            >
-              <h2 id='actions-title'>{labels().controls.actions}</h2>
-              <p class='action-panel__count'>
-                {sources().length} {labels().sources.count}
-              </p>
-              <p class='action-panel__hint'>{labels().preview.title}</p>
-              <div class='actions gw-actions'>
-                <Button
-                  variant='primary'
-                  disabled={sources().length < 2}
-                  onClick={apply}
+                  <div class='source-grid'>
+                    <For each={sources()}>
+                      {(source, index) => (
+                        <SourceCard
+                          source={source}
+                          index={index}
+                          sourceCount={sources().length}
+                          labels={labels()}
+                          options={pdfOptions()}
+                          dropTargetId={dropTargetId()}
+                          handlers={{
+                            onMove: moveSource,
+                            onDragStart: startDragging,
+                            onDragOver: handleDragOver,
+                            onDrop: handleDrop,
+                            onDragEnd: clearDragState,
+                            onRemove: removeSource,
+                            onPreviewError: () => {
+                              setPreviewErrors((current) => new Set(current).add(source.sourceId));
+                            },
+                          }}
+                        />
+                      )}
+                    </For>
+                  </div>
+                </section>
+              }
+              right={
+                <aside
+                  class='panel action-panel'
+                  aria-labelledby='actions-title'
                 >
-                  {labels().actions.apply}
-                </Button>
-                <Button
-                  variant='secondary'
-                  onClick={cancel}
-                >
-                  {labels().actions.cancel}
-                </Button>
-              </div>
-            </aside>
-          }
-        />
-      </div>
-    </main>
+                  <h2 id='actions-title'>{labels().controls.actions}</h2>
+                  <p class='action-panel__count'>
+                    {sources().length} {labels().sources.count}
+                  </p>
+                  <p class='action-panel__hint'>{labels().preview.title}</p>
+                  <div class='actions gw-actions'>
+                    <Button
+                      variant='primary'
+                      disabled={sources().length < 2}
+                      onClick={apply}
+                    >
+                      {labels().actions.apply}
+                    </Button>
+                    <Button
+                      variant='secondary'
+                      onClick={cancel}
+                    >
+                      {labels().actions.cancel}
+                    </Button>
+                  </div>
+                </aside>
+              }
+            />
+          </div>
+        </main>
+      )}
+    </Show>
   );
 }
 

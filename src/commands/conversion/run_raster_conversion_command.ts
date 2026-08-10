@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import type { Configuration } from '../../generated/extension_manifest.js';
 import type { CommittedConversionOutput } from '../../operations/lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
-import { getMaxAnimationPixels, getMaxInputPixels } from '../../config/raster.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import {
@@ -12,35 +11,31 @@ import {
   runConversionLifecycle,
 } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { resolveSelectedUris } from '../shared/command_input.js';
 import { userMessage } from '../shared/user_messages.js';
 
 export interface RasterConversionContext<Prepared> {
   configuration: Configuration;
   maxInputPixels: number;
+  maxAnimationPixels?: number;
   prepared: Prepared;
   runtime: ConversionExecutionContext;
 }
 
-export interface AnimatedRasterConversionContext<Prepared> extends RasterConversionContext<Prepared> {
-  maxAnimationPixels: number;
-}
-
-interface RasterConversionCommandOptions<Context, Job, Prepared> {
+export interface RasterConversionCommandOptions<Job, Prepared> {
   uri?: vscode.Uri | undefined;
   uris?: vscode.Uri[] | undefined;
-  dependencies?: CommandDependencies | undefined;
+  dependencies: CommandDependencies;
   operationName: string;
   outputLabel: OutputConversionFormat;
+  animated: boolean;
   prepare: (configuration: Configuration) => Prepared;
-  createContext: (base: RasterConversionContext<Prepared>) => Context;
-  plan: (sourceUri: vscode.Uri, context: Context) => Promise<Job[]>;
-  execute: (jobs: Job[], context: Context) => Promise<CommittedConversionOutput[]>;
+  plan: (sourceUri: vscode.Uri, context: RasterConversionContext<Prepared>) => Promise<Job[]>;
+  execute: (jobs: Job[], context: RasterConversionContext<Prepared>) => Promise<CommittedConversionOutput[]>;
 }
 
-async function runRasterConversionCommand<Context, Job, Prepared>(
-  options: RasterConversionCommandOptions<Context, Job, Prepared>,
+export async function runRasterConversionCommand<Job, Prepared>(
+  options: RasterConversionCommandOptions<Job, Prepared>,
 ): Promise<void> {
   const sourceUris = resolveSelectedUris(options.uri, options.uris);
   if (sourceUris.length === 0) {
@@ -50,17 +45,23 @@ async function runRasterConversionCommand<Context, Job, Prepared>(
     return;
   }
 
-  const outputChannel = options.dependencies?.outputChannel;
+  const outputChannel = options.dependencies.outputChannel;
   await runConversionLifecycle({
     operationName: options.operationName,
-    ...(outputChannel !== undefined && { outputChannel }),
+    outputChannel,
     resolveConflicts: resolveOutputConflicts,
     messages: createOutputConversionMessages(options.outputLabel, sourceUris.length),
     run: async (runtime) => {
-      const configuration = configureCommandRuntime(options.dependencies);
-      const maxInputPixels = getMaxInputPixels(configuration);
+      const configuration = options.dependencies.getConfiguration();
+      const maxInputPixels = configuration.raster.maxInputPixels();
       const prepared = options.prepare(configuration);
-      const context = options.createContext({ configuration, maxInputPixels, prepared, runtime });
+      const context: RasterConversionContext<Prepared> = {
+        configuration,
+        maxInputPixels,
+        prepared,
+        runtime,
+        ...(options.animated && { maxAnimationPixels: configuration.raster.maxAnimationPixels() }),
+      };
       const plannedJobs: Job[] = [];
       for (const sourceUri of sourceUris) {
         runtime.signal?.throwIfAborted();
@@ -68,62 +69,5 @@ async function runRasterConversionCommand<Context, Job, Prepared>(
       }
       return options.execute(plannedJobs, context);
     },
-  });
-}
-
-export interface SimpleRasterConversionCommandOptions<Job, Prepared> {
-  uri?: vscode.Uri | undefined;
-  uris?: vscode.Uri[] | undefined;
-  dependencies?: CommandDependencies | undefined;
-  operationName: string;
-  outputLabel: OutputConversionFormat;
-  prepare: (configuration: Configuration) => Prepared;
-  plan: (sourceUri: vscode.Uri, context: RasterConversionContext<Prepared>) => Promise<Job[]>;
-  execute: (jobs: Job[], context: RasterConversionContext<Prepared>) => Promise<CommittedConversionOutput[]>;
-}
-
-export async function runSimpleRasterConversionCommand<Job, Prepared>(
-  options: SimpleRasterConversionCommandOptions<Job, Prepared>,
-): Promise<void> {
-  return runRasterConversionCommand({
-    uri: options.uri,
-    uris: options.uris,
-    dependencies: options.dependencies,
-    operationName: options.operationName,
-    outputLabel: options.outputLabel,
-    prepare: options.prepare,
-    createContext: (base) => base,
-    plan: options.plan,
-    execute: options.execute,
-  });
-}
-
-export interface AnimatedRasterConversionCommandOptions<Job, Prepared> {
-  uri?: vscode.Uri | undefined;
-  uris?: vscode.Uri[] | undefined;
-  dependencies?: CommandDependencies | undefined;
-  operationName: string;
-  outputLabel: OutputConversionFormat;
-  prepare: (configuration: Configuration) => Prepared;
-  plan: (sourceUri: vscode.Uri, context: AnimatedRasterConversionContext<Prepared>) => Promise<Job[]>;
-  execute: (jobs: Job[], context: AnimatedRasterConversionContext<Prepared>) => Promise<CommittedConversionOutput[]>;
-}
-
-export async function runAnimatedRasterConversionCommand<Job, Prepared>(
-  options: AnimatedRasterConversionCommandOptions<Job, Prepared>,
-): Promise<void> {
-  return runRasterConversionCommand({
-    uri: options.uri,
-    uris: options.uris,
-    dependencies: options.dependencies,
-    operationName: options.operationName,
-    outputLabel: options.outputLabel,
-    prepare: options.prepare,
-    createContext: (base) => ({
-      ...base,
-      maxAnimationPixels: getMaxAnimationPixels(base.configuration),
-    }),
-    plan: options.plan,
-    execute: options.execute,
   });
 }

@@ -31,6 +31,8 @@ export interface PdfConfigureSessionOptions<TMessage extends { type: string }, T
     failedMessage: (reason: string) => string;
   };
   outputChannel?: LineOutputChannel;
+  /** When provided, aborts an in-flight apply when the extension host shuts down. */
+  extensionShutdown?: { context: vscode.ExtensionContext };
 }
 
 export interface PdfConfigureSession {
@@ -63,6 +65,16 @@ export function startPdfConfigureSession<TMessage extends { type: string }, TApp
   panel.onDidDispose(() => {
     operationController.abort(new OperationCancelledError(`${options.error.operationName} panel was closed.`));
   });
+
+  if (options.extensionShutdown !== undefined) {
+    options.extensionShutdown.context.subscriptions.push(
+      new vscode.Disposable(() => {
+        operationController.abort(
+          new OperationCancelledError(`${options.error.operationName} was cancelled during extension shutdown.`),
+        );
+      }),
+    );
+  }
 
   let isApplying = false;
   panel.webview.onDidReceiveMessage((rawMessage: unknown) => {

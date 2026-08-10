@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { excalidrawToSvg } from '../../src/operations/conversion/excalidraw_adapter.js';
-import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
@@ -41,7 +41,9 @@ suite('Excalidrawテスト入力のSVG変換とPNG変換結果が、期待出力
           svgPath,
           bundleUrl: pathToFileURL(excalidrawBundlePath).href,
         });
-        await executePngConversion({
+        await executeRasterConversion({
+          spec: rasterFormatSpecs.png,
+          maxInputPixels: 1_000_000_000,
           jobs: [{ sourcePath: svgPath, outputPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,

@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { createEffect, createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
 import {
   isReorderPdfHostToWebviewMessage,
@@ -13,7 +13,6 @@ import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNaviga
 import { useCurrentPage } from '@webview-shared/ui/use_current_page';
 
 import { vscode } from './vscode';
-import { defaultLabels } from './labels';
 
 function cancel(): void {
   vscode.sendMessage({ type: 'cancel' });
@@ -33,7 +32,14 @@ function createToolbarButton(className: string, label: string, icon: string): HT
 }
 
 export function App(): JSX.Element {
-  const [labels, setLabels] = createSignal<ReorderPdfLabels>(defaultLabels);
+  const [labelsValue, setLabels] = createSignal<ReorderPdfLabels>();
+  const labels = (): ReorderPdfLabels => {
+    const value = labelsValue();
+    if (value === undefined) {
+      throw new Error('Reorder PDF labels were not initialized.');
+    }
+    return value;
+  };
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [applyError, setApplyError] = createSignal('');
@@ -79,7 +85,7 @@ export function App(): JSX.Element {
       }
 
       const { payload } = message;
-      setLabels({ ...defaultLabels, ...payload.labels });
+      setLabels(payload.labels);
       setFileName(payload.fileName);
       setPageCount(payload.pageCount);
       setApplyError('');
@@ -109,11 +115,11 @@ export function App(): JSX.Element {
     };
 
     window.addEventListener('message', onMessage);
-    pdfPages?.addEventListener('click', onControlClick);
+    globalThis.addEventListener('click', onControlClick);
     vscode.sendMessage({ type: 'ready' });
     onCleanup(() => {
       window.removeEventListener('message', onMessage);
-      pdfPages?.removeEventListener('click', onControlClick);
+      globalThis.removeEventListener('click', onControlClick);
     });
   });
 
@@ -267,64 +273,68 @@ export function App(): JSX.Element {
   }
 
   return (
-    <div class='reorder'>
-      <header class='reorder__header'>
-        <h1>{labels().header.title}</h1>
-        <p class='reorder__description'>{labels().header.description}</p>
-        <p class='reorder__file'>{fileName()}</p>
-      </header>
+    <Show when={labelsValue()}>
+      {(_labels) => (
+        <div class='reorder'>
+          <header class='reorder__header'>
+            <h1>{labels().header.title}</h1>
+            <p class='reorder__description'>{labels().header.description}</p>
+            <p class='reorder__file'>{fileName()}</p>
+          </header>
 
-      <SplitPane
-        left={
-          <section class='reorder__preview'>
-            <div class='reorder__preview-toolbar'>
-              <span>{labels().preview.title}</span>
-            </div>
-            <div
-              ref={(element) => {
-                pdfPages = element;
-              }}
-              class='reorder__pages'
-              aria-label={labels().preview.ariaLabel}
-            />
-            <PageNavigator
-              currentPage={currentPage()}
-              pageCount={pageCount()}
-              onPrevious={() => {
-                scrollToPdfPage(currentPage() - 1);
-              }}
-              onNext={() => {
-                scrollToPdfPage(currentPage() + 1);
-              }}
-            />
-          </section>
-        }
-        right={
-          <section class='reorder__panel'>
-            <p class='reorder__selection'>
-              {pageCount()} {labels().order.positionLabel}
-            </p>
+          <SplitPane
+            left={
+              <section class='reorder__preview'>
+                <div class='reorder__preview-toolbar'>
+                  <span>{labels().preview.title}</span>
+                </div>
+                <div
+                  ref={(element) => {
+                    pdfPages = element;
+                  }}
+                  class='reorder__pages'
+                  aria-label={labels().preview.ariaLabel}
+                />
+                <PageNavigator
+                  currentPage={currentPage()}
+                  pageCount={pageCount()}
+                  onPrevious={() => {
+                    scrollToPdfPage(currentPage() - 1);
+                  }}
+                  onNext={() => {
+                    scrollToPdfPage(currentPage() + 1);
+                  }}
+                />
+              </section>
+            }
+            right={
+              <section class='reorder__panel'>
+                <p class='reorder__selection'>
+                  {pageCount()} {labels().order.positionLabel}
+                </p>
 
-            {applyError() !== '' && <p role='alert'>{applyError()}</p>}
+                {applyError() !== '' && <p role='alert'>{applyError()}</p>}
 
-            <div class='reorder__actions'>
-              <Button
-                variant='primary'
-                disabled={!previewReady()}
-                onClick={apply}
-              >
-                {labels().actions.apply}
-              </Button>
-              <Button
-                variant='secondary'
-                onClick={cancel}
-              >
-                {labels().actions.cancel}
-              </Button>
-            </div>
-          </section>
-        }
-      />
-    </div>
+                <div class='reorder__actions'>
+                  <Button
+                    variant='primary'
+                    disabled={!previewReady()}
+                    onClick={apply}
+                  >
+                    {labels().actions.apply}
+                  </Button>
+                  <Button
+                    variant='secondary'
+                    onClick={cancel}
+                  >
+                    {labels().actions.cancel}
+                  </Button>
+                </div>
+              </section>
+            }
+          />
+        </div>
+      )}
+    </Show>
   );
 }

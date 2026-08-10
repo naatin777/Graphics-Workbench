@@ -48,11 +48,10 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 
 ## 既存の詳細設定との関係
 
-既存の `figure.placementOptions`、`figure.alignmentOptions`、`figure.graphicsOptions`、`subfigure.*` 設定は、テンプレート方式に移行した後も互換のために残す。
+テンプレート方式への移行時に個別設定（`figure.placementOptions`、`figure.alignmentOptions`、`figure.graphicsOptions`、`subfigure.*`）は削除済みで、テンプレート設定のみを正本とする。
 
-テンプレートがデフォルト値のままの場合、既存の個別設定が反映される（後方互換）。
-
-テンプレートがカスタマイズされた場合は、テンプレートの内容が優先され、個別設定は無視される。
+- 既存の個別設定は読まない（実装・マニフェストに存在しない）。
+- テンプレートがデフォルト値のままでも、個別設定へのフォールバックは行わない。
 
 ## テンプレートのバリデーション
 
@@ -107,7 +106,6 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 - 複数ファイル drop → 形式別ラップ（LaTeX=`subfigure`、Typst=`#grid`、Quarkdown=`.row`）が正しく生成される
 - clipboard paste → 保存先パスが `${path}` に展開される
 - テンプレート空文字 → エラーまたはデフォルトフォールバック
-- 後方互換：テンプレート未設定時は既存の個別設定が使われる
 
 ## 対象外
 

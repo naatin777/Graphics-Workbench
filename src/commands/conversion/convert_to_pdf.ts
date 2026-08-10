@@ -1,8 +1,6 @@
-import path from 'node:path';
-
 import * as vscode from 'vscode';
 
-import { getDefaultConfiguration, type Configuration } from '../../generated/extension_manifest.js';
+import type { Configuration } from '../../generated/extension_manifest.js';
 
 import {
   isEditableDrawioImagePath,
@@ -10,12 +8,13 @@ import {
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
 import { readRsvgConvertExecutablePath } from '../../config/external_tools/external_tool_paths.js';
-import { getMaxInputPixels } from '../../config/raster.js';
 import { readChromeExecutablePath, readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   convertToPdfFiles,
+  executeChrome,
+  executeRsvgConvert,
   validateSvgToPdfOptions,
   type ConvertToPdfJob,
 } from '../../operations/conversion/convert_to_pdf.js';
@@ -26,9 +25,10 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { configureCommandRuntime, buildDrawioCommandOptions } from '../shared/command_runtime.js';
+import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
 import { isAbortError } from '../../shared/error.js';
 import { resolveSelectedUris } from '../shared/command_input.js';
+import { resolveConversionTemplate } from './conversion_routing.js';
 
 const pdfImageExtensions = [
   '.png',
@@ -49,19 +49,19 @@ const pdfImageExtensions = [
 ] as const;
 
 export async function convertToPdfCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
   await convertSelectedSourcesToPdf(uri, uris, dependencies, outputChannel);
 }
 
 async function convertSelectedSourcesToPdf(
   uri: vscode.Uri | undefined,
   uris: vscode.Uri[] | undefined,
-  dependencies?: CommandDependencies,
-  outputChannel?: LineOutputChannel,
+  dependencies: CommandDependencies,
+  outputChannel: LineOutputChannel,
 ): Promise<void> {
   try {
     const sourceUris = resolveSelectedUris(uri, uris);
@@ -70,13 +70,8 @@ async function convertSelectedSourcesToPdf(
       throw new Error('No files were selected.');
     }
 
-    const configuration = configureCommandRuntime(dependencies);
-    const defaultConfiguration = getDefaultConfiguration();
-    const maxInputPixels = getMaxInputPixels(configuration);
-    const outputTemplate = resolveOutputPathTemplate(
-      configuration.outputPath.convertPngToPdf(),
-      defaultConfiguration.outputPath.convertPngToPdf(),
-    );
+    const configuration = dependencies.getConfiguration();
+    const maxInputPixels = configuration.raster.maxInputPixels();
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
     const mermaidTools = readMermaidCliOptions(configuration);
@@ -86,7 +81,7 @@ async function convertSelectedSourcesToPdf(
       plannedJobs.push(
         ...(await planToPdfConversionJobs(
           sourceUri,
-          outputTemplateForSource(sourceUri, outputTemplate, configuration, defaultConfiguration),
+          outputTemplateForSource(sourceUri, configuration),
           logicalSourcePathForOutputTemplate(sourceUri.fsPath),
           pdfImageExtensions,
         )),
@@ -95,7 +90,7 @@ async function convertSelectedSourcesToPdf(
     const jobs = plannedJobs;
     await runConversionLifecycle({
       operationName: 'convert-to-pdf',
-      ...(outputChannel !== undefined && { outputChannel }),
+      outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
         progressTitle: userMessage('message.progress.convertToPdf.title', jobs.length),
@@ -130,72 +125,17 @@ async function convertSelectedSourcesToPdf(
   }
 }
 
-export function outputTemplateForSource(
-  sourceUri: vscode.Uri,
-  pngOutputTemplate: string,
-  configuration = configureCommandRuntime(),
-  defaultConfiguration = getDefaultConfiguration(),
-): string {
+export function outputTemplateForSource(sourceUri: vscode.Uri, configuration: Configuration): string {
   const sourcePath = sourceUri.fsPath;
-  const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath)) {
-    return configuration.outputPath.convertDrawioToPdfDirectly();
+    return resolveOutputPathTemplate(
+      configuration.outputPath.convertDrawioToSinglePdf(),
+      '${fileDirname}/${fileBasenameNoExtension}.pdf',
+    );
   }
 
-  switch (extension) {
-    case '.png': {
-      return pngOutputTemplate;
-    }
-    case '.jpg':
-    case '.jpeg': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertJpegToPdf(),
-        defaultConfiguration.outputPath.convertJpegToPdf(),
-      );
-    }
-    case '.webp': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertWebpToPdf(),
-        defaultConfiguration.outputPath.convertWebpToPdf(),
-      );
-    }
-    case '.avif': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertAvifToPdf(),
-        defaultConfiguration.outputPath.convertAvifToPdf(),
-      );
-    }
-    case '.svg': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertSvgToPdf(),
-        defaultConfiguration.outputPath.convertSvgToPdf(),
-      );
-    }
-    case '.mmd':
-    case '.mermaid': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertMermaidToPdf(),
-        defaultConfiguration.outputPath.convertMermaidToPdf(),
-      );
-    }
-    case '.gif': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertGifToPdf(),
-        defaultConfiguration.outputPath.convertGifToPdf(),
-      );
-    }
-    case '.tif':
-    case '.tiff': {
-      return resolveOutputPathTemplate(
-        configuration.outputPath.convertTiffToPdf(),
-        defaultConfiguration.outputPath.convertTiffToPdf(),
-      );
-    }
-    default: {
-      throw new Error(`Unsupported PDF input format: ${sourcePath}`);
-    }
-  }
+  return resolveConversionTemplate({ target: 'pdf', sourcePath, configuration });
 }
 
 export function readSvgToPdfOptions(configuration: Configuration): SvgToPdfBackend {
@@ -203,6 +143,8 @@ export function readSvgToPdfOptions(configuration: Configuration): SvgToPdfBacke
     engine: configuration.convertToPdf.svg.engine(),
     rsvgConvertPath: readRsvgConvertExecutablePath(configuration),
     chromePath: readChromeExecutablePath(configuration),
+    runRsvgConvert: executeRsvgConvert,
+    runChrome: executeChrome,
   };
 }
 

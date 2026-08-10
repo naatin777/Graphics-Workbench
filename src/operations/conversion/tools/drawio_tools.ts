@@ -4,25 +4,28 @@ import { runExternalTool } from '../../external_tools/run_external_tool.js';
 export type RunDrawio = (
   executable: string,
   args: string[],
-  signal?: AbortSignal,
+  signal: AbortSignal,
   outputChannel?: LineOutputChannel,
 ) => Promise<void>;
 
 export interface DrawioBackend {
   drawioPath: string;
-  runDrawio?: RunDrawio;
+  runDrawio: RunDrawio;
 }
 
 export async function executeDrawio(
   executable: string,
   args: string[],
-  signal?: AbortSignal,
+  signal: AbortSignal,
   outputChannel?: LineOutputChannel,
 ): Promise<void> {
-  const toolOptions: Parameters<typeof runExternalTool>[0] = { toolName: 'drawio', executable, args };
-  if (signal !== undefined) {
-    toolOptions.signal = signal;
-  }
+  const toolOptions: Parameters<typeof runExternalTool>[0] = {
+    toolId: 'drawio',
+    toolName: 'drawio',
+    executable,
+    args,
+    signal,
+  };
   if (outputChannel !== undefined) {
     toolOptions.outputChannel = outputChannel;
   }

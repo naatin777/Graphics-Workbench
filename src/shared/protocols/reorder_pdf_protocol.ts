@@ -1,11 +1,5 @@
 import * as v from 'valibot';
-import { isWebviewUri } from './protocol_utils.js';
-import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
-
-const ReorderPdfWebviewUriSchema = v.pipe(
-  v.string(),
-  v.check((value: string): boolean => isWebviewUri(value)),
-);
+import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
 
 const ReorderPdfLabelsSchema = v.strictObject({
   header: v.strictObject({
@@ -35,19 +29,12 @@ const ReorderPdfLabelsSchema = v.strictObject({
 });
 export type ReorderPdfLabels = v.InferOutput<typeof ReorderPdfLabelsSchema>;
 
-const ReorderPdfResourcesSchema = v.strictObject({
-  workerSrc: ReorderPdfWebviewUriSchema,
-  cMapUrl: ReorderPdfWebviewUriSchema,
-  standardFontDataUrl: ReorderPdfWebviewUriSchema,
-  wasmUrl: ReorderPdfWebviewUriSchema,
-});
-
 const ReorderPdfInitPayloadSchema = v.strictObject({
   sourceId: v.pipe(v.string(), v.nonEmpty()),
   fileName: v.pipe(v.string(), v.nonEmpty()),
   pageCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
-  pdfSrc: ReorderPdfWebviewUriSchema,
-  resources: ReorderPdfResourcesSchema,
+  pdfSrc: WebviewUriSchema,
+  resources: PdfJsResourcesSchema,
   preview: PdfPreviewSettingsSchema,
   labels: ReorderPdfLabelsSchema,
 });

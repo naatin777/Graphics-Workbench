@@ -7,6 +7,7 @@ import path from 'node:path';
 import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
+import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { requireValue } from '../helpers/required.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
@@ -179,6 +180,7 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
       ],
       drawioPath,
       outputMode: 'single-pdf',
+      runDrawio: executeDrawio,
       runId: 'real-cli-test',
       runtime: { resolveConflicts: async () => 'overwrite' },
     });

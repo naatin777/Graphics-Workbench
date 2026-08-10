@@ -6,16 +6,16 @@
 
 ## コマンド
 
-| Command ID                                    | 表示名               | 出力形式 |
-| --------------------------------------------- | -------------------- | -------- |
-| `graphics-workbench.convertImagesToSinglePdf` | 画像を1つのPDFに結合 | PDF      |
+| Command ID                              | 表示名               | 出力形式 |
+| --------------------------------------- | -------------------- | -------- |
+| `graphics-workbench.combineImagesToPdf` | 画像を1つのPDFに結合 | PDF      |
 
 ## 対象入力形式
 
 - PNG、JPEG、WebP、AVIF、GIF、TIFF（ラスター画像）
 - SVG
 
-Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは既に `convertDrawioToPdfDirectly` で全ページを1PDFにする専用コマンドがある。
+Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは`convertDrawioToSinglePdf`で全ページを1PDFにする専用コマンドがある。
 
 ## 入力と順序
 
@@ -69,7 +69,7 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは既に `convertDr
 
 ## 設定
 
-outputPath 設定は `outputPath.convertImagesToSinglePdf` で提供する。未設定の場合は保存ダイアログ（複数選択時）またはデフォルトテンプレート（単一選択時）を使用する。
+outputPath 設定は `outputPath.combineImagesToPdf` で提供する。未設定の場合は保存ダイアログ（複数選択時）またはデフォルトテンプレート（単一選択時）を使用する。
 
 ## 対象外
 

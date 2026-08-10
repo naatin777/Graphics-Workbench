@@ -20,6 +20,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { cropPdfAutoCommand } from '../../src/commands/pdf/crop_pdf_auto.js';
+import { liveCommandDependencies } from '../helpers/command_dependencies.js';
 
 suite('PDF crop outputPath検証', () => {
   test('outputPath.cropPdfにNUL文字が含まれる場合、withProgressもcreateOutputChannelも呼ばず、NULを含むエラーメッセージを表示し、.graphics-workbench作業ディレクトリも作成しない', async () => {
@@ -54,7 +55,7 @@ suite('PDF crop outputPath検証', () => {
         .rejects(new Error('withProgress must not be called for an invalid output path.'));
       const createOutputChannel = sandbox.stub(vscode.window, 'createOutputChannel');
 
-      await cropPdfAutoCommand(vscode.Uri.file(sourcePath));
+      await cropPdfAutoCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies());
 
       assert.ok(withProgress.notCalled);
       assert.ok(createOutputChannel.notCalled);

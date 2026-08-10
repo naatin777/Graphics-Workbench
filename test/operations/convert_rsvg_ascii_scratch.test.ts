@@ -84,6 +84,7 @@ suite(
           platform: 'win32',
           scratchBaseCandidates: [paths.scratchBasePath],
           runId: 'windows-rsvg-pdf',
+          maxInputPixels: 1_000_000_000,
         });
 
         const requiredInputPath = requiredPath(toolInputPath, 'tool入力path');
@@ -116,6 +117,7 @@ suite(
             platform: 'win32',
             scratchBaseCandidates: [paths.scratchBasePath],
             runId: 'windows-rsvg-alias',
+            maxInputPixels: 1_000_000_000,
           }),
         );
 
@@ -146,6 +148,7 @@ suite(
             platform: 'win32',
             scratchBaseCandidates: [paths.scratchBasePath],
             runId: 'windows-rsvg-empty',
+            maxInputPixels: 1_000_000_000,
           }),
         );
 
@@ -165,6 +168,9 @@ function createSvgToPdfOptions(runRsvgConvert: RunRsvgConvert): RsvgToPdfOptions
     rsvgConvertPath: 'rsvg-convert',
     chromePath: '',
     runRsvgConvert,
+    runChrome: async () => {
+      throw new Error('chrome must not run for rsvg-convert engine');
+    },
   };
 }
 

@@ -17,8 +17,8 @@ export interface MermaidCliRunRequest {
 }
 
 /** Runs the external mmdc CLI (from @mermaid-js/mermaid-cli) as a child process. */
-export async function runMermaidCliWithSignal(request: MermaidCliRunRequest, signal?: AbortSignal): Promise<void> {
-  signal?.throwIfAborted();
+export async function runMermaidCliWithSignal(request: MermaidCliRunRequest, signal: AbortSignal): Promise<void> {
+  signal.throwIfAborted();
   if (request.mermaidPath === '') {
     throw new Error('Mermaid CLI is not configured. Set graphics-workbench.execPath.mermaid.');
   }
@@ -30,17 +30,18 @@ export async function runMermaidCliWithSignal(request: MermaidCliRunRequest, sig
   const mermaidConfigPath = path.join(configDirectory.path, 'mermaid-config.json');
   const chromeConfigPath = path.join(configDirectory.path, 'chrome-config.json');
 
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await writeFile(mermaidConfigPath, JSON.stringify({ theme: request.theme }), 'utf8');
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await writeFile(chromeConfigPath, JSON.stringify({ headless: true, executablePath: request.chromePath }), 'utf8');
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
 
   await runExternalTool({
+    toolId: 'mermaid',
     toolName: 'mermaid',
     executable: request.mermaidPath,
     args: createMermaidCliArgs(request, mermaidConfigPath, chromeConfigPath),
-    ...(signal === undefined ? {} : { signal }),
+    signal,
   });
 }
 

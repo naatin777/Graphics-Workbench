@@ -96,7 +96,7 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
 
       await withWorkspaceSettings(
-        { 'graphics-workbench.outputPaths.splitPdf': '${fileDirname}/${page}.png' },
+        { 'graphics-workbench.outputPath.splitPdf': '${fileDirname}/${page}.png' },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.splitPdf.configure', vscode.Uri.file(sourcePath));
         },

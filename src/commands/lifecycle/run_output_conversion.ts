@@ -36,14 +36,31 @@ export function createOutputConversionMessages(
   };
 }
 
+export interface ConversionLifecycleCallbacks {
+  /** Parent cancellation signal (e.g. a Configure panel session) forwarded into the operation. */
+  signal?: AbortSignal;
+  /** Runs instead of the default success notification after Undo is recorded. */
+  onSuccess?: (options: {
+    outputs: CommittedConversionOutput[];
+    undoId: string;
+    successMessage: string;
+  }) => Promise<void>;
+  /** Runs instead of the default undo-unavailable warning. */
+  onUndoUnavailable?: (options: { successMessage: string; reason: string }) => Promise<void>;
+  /** Runs after the failure notification so callers can route the error (e.g. to a Webview). */
+  onError?: (error: unknown) => Promise<void>;
+}
+
 /** Owns progress, cancellation, Undo registration, and user notifications for output conversion. */
-export async function runConversionLifecycle(options: {
-  operationName: string;
-  messages: ConversionCommandMessages;
-  outputChannel?: LineOutputChannel;
-  resolveConflicts?: ConversionExecutionContext['resolveConflicts'];
-  run: (runtime: ConversionExecutionContext) => Promise<CommittedConversionOutput[]>;
-}): Promise<void> {
+export async function runConversionLifecycle(
+  options: {
+    operationName: string;
+    messages: ConversionCommandMessages;
+    outputChannel?: LineOutputChannel;
+    resolveConflicts?: ConversionExecutionContext['resolveConflicts'];
+    run: (runtime: ConversionExecutionContext) => Promise<CommittedConversionOutput[]>;
+  } & ConversionLifecycleCallbacks,
+): Promise<void> {
   let outputs: CommittedConversionOutput[];
 
   try {
@@ -54,20 +71,24 @@ export async function runConversionLifecycle(options: {
         cancellable: true,
       },
       async (progress, token) =>
-        withCancellationSignal(token, async (signal) => {
-          progress.report({ message: options.messages.prepareMessage });
-          const runtimeOptions: ConversionExecutionContext = {
-            signal,
-            ...createProgressReporters(progress),
-          };
-          if (options.outputChannel !== undefined) {
-            runtimeOptions.outputChannel = options.outputChannel;
-          }
-          if (options.resolveConflicts !== undefined) {
-            runtimeOptions.resolveConflicts = options.resolveConflicts;
-          }
-          return options.run(runtimeOptions);
-        }),
+        withCancellationSignal(
+          token,
+          async (signal) => {
+            progress.report({ message: options.messages.prepareMessage });
+            const runtimeOptions: ConversionExecutionContext = {
+              signal,
+              ...createProgressReporters(progress),
+            };
+            if (options.outputChannel !== undefined) {
+              runtimeOptions.outputChannel = options.outputChannel;
+            }
+            if (options.resolveConflicts !== undefined) {
+              runtimeOptions.resolveConflicts = options.resolveConflicts;
+            }
+            return options.run(runtimeOptions);
+          },
+          options.signal,
+        ),
     );
   } catch (error) {
     if (isAbortError(error)) {
@@ -79,6 +100,7 @@ export async function runConversionLifecycle(options: {
     const reason = toErrorMessage(error);
     options.outputChannel?.appendLine(`[${options.operationName}] failure: ${reason}`);
     await vscode.window.showErrorMessage(options.messages.failedMessage(reason));
+    await options.onError?.(error);
     return;
   }
 
@@ -90,7 +112,29 @@ export async function runConversionLifecycle(options: {
   } catch (error) {
     const reason = toErrorMessage(error);
     options.outputChannel?.appendLine(`[${options.operationName}] Undo record failed: ${reason}`);
+    if (options.onUndoUnavailable !== undefined) {
+      try {
+        await options.onUndoUnavailable({ successMessage, reason });
+      } catch (uiError) {
+        options.outputChannel?.appendLine(
+          `[${options.operationName}] undo-unavailable notification failed: ${toErrorMessage(uiError)}`,
+        );
+      }
+      return;
+    }
     await vscode.window.showWarningMessage(options.messages.undoUnavailableMessage(successMessage, reason));
+    return;
+  }
+
+  if (options.onSuccess !== undefined) {
+    try {
+      await options.onSuccess({ outputs, undoId, successMessage });
+    } catch (error) {
+      // The conversion already succeeded; a UI failure here must not be reported as a conversion failure.
+      options.outputChannel?.appendLine(
+        `[${options.operationName}] success notification failed: ${toErrorMessage(error)}`,
+      );
+    }
     return;
   }
 

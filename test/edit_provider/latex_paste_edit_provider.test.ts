@@ -12,6 +12,7 @@ import {
 } from '../../src/commands/lifecycle/undo_last_conversion.js';
 import { LatexPasteEditProvider } from '../../src/edit_provider/latex_paste_edit_provider.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { liveCommandDependencies } from '../helpers/command_dependencies.js';
 
 suite('LaTeXクリップボード画像挿入', () => {
   test("clipboardのPNGを'画像形式で貼り付け'選択と入力名'edited'でedited.pngとして保存し、\\includegraphics{edited.png}と\\caption{edited}を含むfigure snippetを返す", async () => {
@@ -184,7 +185,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         assert.deepStrictEqual(await readFile(backupPaths[0] ?? ''), existingPdf);
         await assert.rejects(access(stagedRootFromLines(outputLines)));
 
-        await undoLastConversionCommand();
+        await undoLastConversionCommand(undefined, liveCommandDependencies());
         assert.deepStrictEqual(await readFile(existingPdfPath), existingPdf);
         await assert.rejects(access(conversionRoot));
 
@@ -204,7 +205,7 @@ suite('LaTeXクリップボード画像挿入', () => {
         assert.ok(keepBothEdits);
         assert.ok(await readFile(path.join(directory.path, 'pasted-1.pdf')));
         await assert.rejects(access(stagedRootFromLines(outputLines, 'keep-both: ')));
-        await undoLastConversionCommand();
+        await undoLastConversionCommand(undefined, liveCommandDependencies());
         await assert.rejects(access(path.join(directory.path, 'pasted-1.pdf')));
         assert.deepStrictEqual(await readFile(existingPdfPath), existingPdf);
       } finally {

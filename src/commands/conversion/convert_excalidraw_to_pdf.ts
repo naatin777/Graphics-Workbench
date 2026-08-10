@@ -9,18 +9,17 @@ import { validateSvgToPdfOptions } from '../../operations/conversion/convert_to_
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveSelectedUris } from '../shared/command_input.js';
-import { configureCommandRuntime } from '../shared/command_runtime.js';
 import { userMessage } from '../shared/user_messages.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
 
 export async function convertExcalidrawToPdfCommand(
-  uri?: vscode.Uri,
-  uris?: vscode.Uri[],
-  dependencies?: CommandDependencies,
+  uri: vscode.Uri | undefined,
+  uris: vscode.Uri[] | undefined,
+  dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies?.outputChannel;
+  const outputChannel = dependencies.outputChannel;
 
   try {
     const sourceUris = resolveSelectedUris(uri, uris);
@@ -28,7 +27,7 @@ export async function convertExcalidrawToPdfCommand(
       throw new Error('No Excalidraw files were selected.');
     }
 
-    const configuration = configureCommandRuntime(dependencies);
+    const configuration = dependencies.getConfiguration();
     const outputTemplate = configuration.outputPath.convertExcalidrawToPdf();
     const svgToPdfTools = readSvgToPdfOptions(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
@@ -36,7 +35,7 @@ export async function convertExcalidrawToPdfCommand(
 
     await runConversionLifecycle({
       operationName: 'convert-excalidraw-to-pdf',
-      ...(outputChannel !== undefined && { outputChannel }),
+      outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
         progressTitle: userMessage('message.progress.convertExcalidrawToPdf.title', jobs.length),
@@ -46,7 +45,13 @@ export async function convertExcalidrawToPdfCommand(
         cancelledMessage: userMessage('message.convertExcalidrawToPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.convertExcalidrawToPdf.failed', reason),
       },
-      run: async (runtime) => convertExcalidrawToPdfFiles({ jobs, svgToPdf: svgToPdfTools, runtime }),
+      run: async (runtime) =>
+        convertExcalidrawToPdfFiles({
+          jobs,
+          svgToPdf: svgToPdfTools,
+          maxInputPixels: configuration.raster.maxInputPixels(),
+          runtime,
+        }),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

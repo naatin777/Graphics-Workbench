@@ -3,7 +3,6 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
-import { getMaxInputPixels } from '../../config/raster.js';
 import { customEditorContributions } from '../../generated/extension_manifest.js';
 import { localeMap } from '../../locale_map.js';
 import { countPdfPages } from '../../operations/pdf/mupdf.js';
@@ -20,7 +19,6 @@ import {
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { assertLocalFileUri, toWebviewDirectoryUri } from '../shared/command_input.js';
-import { configureCommandRuntime } from '../shared/command_runtime.js';
 
 const pdfPreviewViewType = 'graphics-workbench.pdf.preview';
 const tiffPreviewViewType = 'graphics-workbench.tiff.preview';
@@ -74,9 +72,9 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
       return;
     }
 
-    const configuration = configureCommandRuntime(this.dependencies);
+    const configuration = this.dependencies.getConfiguration();
     const previewSettings = readPdfPreviewSettings(configuration);
-    const maxInputPixels = getMaxInputPixels(configuration);
+    const maxInputPixels = configuration.raster.maxInputPixels();
     const pdfJsAssetsRoot = getPdfJsAssetsRoot(this.extensionUri);
 
     // Custom editor webviews are sandboxed without script execution unless
@@ -124,7 +122,7 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
           return;
         }
         const message = error instanceof Error ? error.message : String(error);
-        this.dependencies.outputChannel?.appendLine(`[tiff-preview] render page failure: ${page}: ${message}`);
+        this.dependencies.outputChannel.appendLine(`[tiff-preview] render page failure: ${page}: ${message}`);
         // VS Code Webview.postMessage has no targetOrigin parameter.
         // oxlint-disable-next-line unicorn/require-post-message-target-origin
         void webviewPanel.webview.postMessage({ type: 'error', payload: { message } });
@@ -180,7 +178,7 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
               return;
             }
             const message = error instanceof Error ? error.message : String(error);
-            this.dependencies.outputChannel?.appendLine(`[${this.format}-preview] init failure: ${message}`);
+            this.dependencies.outputChannel.appendLine(`[${this.format}-preview] init failure: ${message}`);
             // VS Code Webview.postMessage has no targetOrigin parameter.
             // oxlint-disable-next-line unicorn/require-post-message-target-origin
             void webviewPanel.webview.postMessage({ type: 'error', payload: { message } });
@@ -200,7 +198,7 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
       }
 
       if (rawMessage.type === 'previewLoadFailed') {
-        this.dependencies.outputChannel?.appendLine(
+        this.dependencies.outputChannel.appendLine(
           `[${this.format}-preview] preview failure: ${rawMessage.payload.message}`,
         );
         void vscode.window.showErrorMessage(rawMessage.payload.message);

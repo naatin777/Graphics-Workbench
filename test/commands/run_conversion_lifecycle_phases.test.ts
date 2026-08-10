@@ -18,7 +18,8 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { localeMap } from '../../src/locale_map.js';
-import { convertToPngCommand } from '../../src/commands/conversion/convert_to_raster.js';
+import { convertToRasterCommand } from '../../src/commands/conversion/convert_to_raster.js';
+import { liveCommandDependencies } from '../helpers/command_dependencies.js';
 
 import { requireValue } from '../helpers/required.js';
 
@@ -40,7 +41,9 @@ suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗と
       sandbox.stub(vscode.window, 'showInformationMessage').rejects(new Error('UI failed after conversion.'));
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
-      await convertToPngCommand(vscode.Uri.file(sourcePath));
+      await convertToRasterCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies(), {
+        target: 'png',
+      });
 
       assert.ok(showErrorMessage.notCalled, '成功後のUI失敗を変換失敗として表示してはいけない');
       await access(path.join(temporaryDirectory.path, 'source.png'));
@@ -68,7 +71,9 @@ suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗と
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').rejects(new Error('Undo UI failed.'));
 
-      await convertToPngCommand(vscode.Uri.file(sourcePath));
+      await convertToRasterCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies(), {
+        target: 'png',
+      });
 
       assert.ok(showErrorMessage.notCalled, 'Undo実行失敗を変換失敗として表示してはいけない');
       await access(path.join(temporaryDirectory.path, 'source.png'));
@@ -97,7 +102,9 @@ suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗と
         .resolves(localeMap('message.action.revealInExplorer') as unknown as vscode.MessageItem);
       const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').resolves(undefined);
 
-      await convertToPngCommand(vscode.Uri.file(sourcePath));
+      await convertToRasterCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies(), {
+        target: 'png',
+      });
 
       const revealCall = executeCommand.getCalls().find((call) => call.args[0] === 'revealInExplorer');
       assert.ok(revealCall, 'revealInExplorerが呼ばれること');

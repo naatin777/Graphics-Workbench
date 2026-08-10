@@ -10,7 +10,6 @@ import { recordConversionForUndo } from '../commands/lifecycle/undo_last_convers
 import { userMessage } from '../commands/shared/user_messages.js';
 import { isAbortError } from '../shared/error.js';
 import { resolveOutputPath } from '../config/output/resolve_output_path.js';
-import { getMaxInputPixels } from '../config/raster.js';
 import { localeMap } from '../locale_map.js';
 import type {
   CommittedConversionOutput,
@@ -143,7 +142,7 @@ export class LatexPasteEditProvider implements vscode.DocumentPasteEditProvider 
             kind: pickedItem.pasteKind,
             outputBasePath: outputPath,
             workspacePath,
-            maxInputPixels: getMaxInputPixels(configuration),
+            maxInputPixels: configuration.raster.maxInputPixels(),
           },
           {
             signal,

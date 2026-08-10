@@ -34,6 +34,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { outputTemplateForSource } from '../../src/commands/conversion/convert_to_pdf.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 
 import { logicalSourcePathForOutputTemplate } from '../../src/shared/source_format.js';
 
@@ -244,24 +245,24 @@ suite('PDFに変換コマンド', () => {
     );
   });
 
-  test('editableなDraw.io画像の出力テンプレートは、convertDrawioToPdfDirectly未設定なら既定、設定済みならその設定値を返す', async () => {
+  test('editableなDraw.io画像の出力テンプレートは、convertDrawioToSinglePdf未設定なら既定、設定済みならその設定値を返す', async () => {
     const sourceUri = vscode.Uri.file(path.join('workspace', 'source.drawio.png'));
 
-    await withWorkspaceSettings({ 'graphics-workbench.outputPath.convertDrawioToPdfDirectly': undefined }, async () => {
+    await withWorkspaceSettings({ 'graphics-workbench.outputPath.convertDrawioToSinglePdf': undefined }, async () => {
       assert.strictEqual(
-        outputTemplateForSource(sourceUri, 'unused.pdf'),
+        outputTemplateForSource(sourceUri, getExtensionConfiguration()),
         '${fileDirname}/${fileBasenameNoExtension}.pdf',
       );
     });
 
     await withWorkspaceSettings(
       {
-        'graphics-workbench.outputPath.convertDrawioToPdfDirectly':
+        'graphics-workbench.outputPath.convertDrawioToSinglePdf':
           '${fileDirname}/direct-${fileBasenameNoExtension}.pdf',
       },
       async () => {
         assert.strictEqual(
-          outputTemplateForSource(sourceUri, 'unused.pdf'),
+          outputTemplateForSource(sourceUri, getExtensionConfiguration()),
           '${fileDirname}/direct-${fileBasenameNoExtension}.pdf',
         );
       },

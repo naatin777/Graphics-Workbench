@@ -18,6 +18,11 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 
 import { convertToSvgFiles } from '../../src/operations/conversion/convert_to_svg.js';
 import { requireValue } from '../helpers/required.js';
+import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
+
+function stubRunPdfToSvg(sourcePath: string, outputPath: string, _page: number, _signal: AbortSignal): Promise<void> {
+  throw new Error(`PDF to SVG must not run in this test: ${sourcePath} -> ${outputPath}`);
+}
 
 suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
   test('編集可能なDraw.io画像をDraw.io CLIへ-f svgオプションで一時作業ディレクトリ内のresult.svgへ出力させ、その結果を最終出力先へ反映する', async () => {
@@ -53,6 +58,8 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
         },
       },
       runId: 'test-run',
+      runPdfToSvg: stubRunPdfToSvg,
+      maxInputPixels: 1_000_000_000,
     });
 
     assert.strictEqual(drawioCalls.length, 1);
@@ -86,6 +93,8 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
           },
         },
         runId: 'invalid-output',
+        runPdfToSvg: stubRunPdfToSvg,
+        maxInputPixels: 1_000_000_000,
       }),
       /non-SVG output/,
     );
@@ -122,6 +131,8 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
           },
         },
         runId: 'test-run',
+        runPdfToSvg: stubRunPdfToSvg,
+        maxInputPixels: 1_000_000_000,
       }),
       /Draw\.io CLI failed: spawn drawio ENOENT\ndrawio missing/,
     );
@@ -140,11 +151,12 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
       convertToSvgFiles({
         jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, page: 1 }],
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
-        drawioTools: { drawioPath: 'drawio' },
+        drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
         runPdfToSvg: async (_sourcePath, toolOutputPath) => {
           await writeFile(toolOutputPath, '');
         },
         runId: 'empty-output',
+        maxInputPixels: 1_000_000_000,
       }),
       /empty output/,
     );
@@ -178,11 +190,13 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
         },
         drawioTools: {
           drawioPath: 'drawio',
+          runDrawio: executeDrawio,
         },
         runPdfToSvg: async () => {
           throw errorWithStderr('Command failed: pdf-render', 'syntax error');
         },
         runId: 'test-run',
+        maxInputPixels: 1_000_000_000,
       }),
       /PDF to SVG conversion failed: Command failed: pdf-render\nsyntax error/,
     );

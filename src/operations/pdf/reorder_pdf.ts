@@ -10,7 +10,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 
 interface ReorderPdfJob {
@@ -34,12 +34,10 @@ export async function reorderPdfFiles(options: ReorderPdfOptions): Promise<Commi
   await validatePdfPathInputs(options.jobs, 'reorder-pdf');
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
-
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'reorder-pdf',
-    runId,
+    runId: options.runId,
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       reorderPdf({ job, index, runId: currentRunId, signal: batchRuntime.signal }),

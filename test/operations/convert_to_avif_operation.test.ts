@@ -14,7 +14,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { executeAvifConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('Draw.io画像をPDF・PNG経由でAVIFへ変換する', () => {
@@ -27,7 +27,9 @@ suite('Draw.io画像をPDF・PNG経由でAVIFへ変換する', () => {
     const pdfToPngCalls: { sourcePath: string; outputPath: string; page: number }[] = [];
     await writeFile(sourcePath, 'editable drawio image placeholder');
 
-    await executeAvifConversion({
+    await executeRasterConversion({
+      spec: rasterFormatSpecs.avif,
+      maxInputPixels: 1_000_000_000,
       jobs: [
         {
           sourcePath,
@@ -66,7 +68,7 @@ suite('Draw.io画像をPDF・PNG経由でAVIFへ変換する', () => {
           await writeFile(requireValue(args[outputIndex]), '%PDF-1.7\n');
         },
       },
-      avif: {
+      outputOptions: {
         effort: 0,
       },
       runtime: {},

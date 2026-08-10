@@ -15,6 +15,7 @@ import {
   sharedConversionJobLimiter,
   sharedHeavyProcessLimiter,
 } from './operations/external_tools/heavy_process_limiter.js';
+import { cleanupStaleSecurePdfStagingRoots } from './operations/lifecycle/secure_staging.js';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const activatedAt = Date.now();
@@ -25,6 +26,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(outputChannel);
 
   applyRuntimeConfiguration(getExtensionConfiguration());
+  void cleanupStaleSecurePdfStagingRoots();
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (

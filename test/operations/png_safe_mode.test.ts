@@ -38,6 +38,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
 
     const outputs = await convertToPdfFiles({
       jobs,
+      maxInputPixels: 1_000_000_000,
       runId: 'batch-success',
       runtime: { resolveConflicts: async () => 'overwrite' },
     });
@@ -64,6 +65,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
 
     const outputs = await convertToPdfFiles({
       jobs,
+      maxInputPixels: 1_000_000_000,
       runtime: {
         resolveConflicts: async (conflicts) => {
           decisions.push(conflicts);
@@ -89,6 +91,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     await assert.rejects(
       convertToPdfFiles({
         jobs,
+        maxInputPixels: 1_000_000_000,
         runtime: { resolveConflicts: async () => 'cancel' },
       }),
       /cancelled/,
@@ -110,6 +113,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     await assert.rejects(
       convertToPdfFiles({
         jobs,
+        maxInputPixels: 1_000_000_000,
         runtime: { resolveConflicts: async () => 'overwrite' },
       }),
     );
@@ -124,6 +128,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
 
     const outputs = await convertToPdfFiles({
       jobs,
+      maxInputPixels: 1_000_000_000,
       runtime: { resolveConflicts: async () => 'overwrite' },
     });
     const undoRecord = await createConversionUndoRecord(outputs);
@@ -143,6 +148,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     await assert.rejects(
       convertToPdfFiles({
         jobs,
+        maxInputPixels: 1_000_000_000,
         runtime: {
           signal: abortController.signal,
           resolveConflicts: async () => 'overwrite',
@@ -163,6 +169,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
 
     const outputs = await convertToPdfFiles({
       jobs,
+      maxInputPixels: 1_000_000_000,
       supportedExtensions: editableDrawioImageExtensions,
       tools: {
         drawioTools: {
@@ -190,6 +197,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
 
     const outputs = await convertToPdfFiles({
       jobs,
+      maxInputPixels: 1_000_000_000,
       supportedExtensions: editableDrawioImageExtensions,
       tools: {
         drawioTools: {
@@ -215,6 +223,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
 
     const outputs = await convertToPdfFiles({
       jobs,
+      maxInputPixels: 1_000_000_000,
       supportedExtensions: editableDrawioImageExtensions,
       tools: {
         drawioTools: {

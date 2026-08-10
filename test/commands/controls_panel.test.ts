@@ -5,6 +5,7 @@
 // - 選択したエンジンが利用できない場合、自動で別エンジンへフォールバックしないこと
 // - Safe ModeのON/OFFが既存設定（globalState）と同期すること
 // - Feature availabilityが機能単位で✓/✕表示されること
+// - 外部toolのavailability行から関連するVS Code Settingsを開けること
 // - Check againでavailabilityを再チェックして表示を更新すること
 //
 // Mocked:
@@ -198,6 +199,43 @@ suite('Controlsパネル', () => {
     assert.ok(availabilityRows[3]?.description?.startsWith('$(close)'));
   });
 
+  test('外部toolのavailability行を選択すると、その行に対応するVS Code Settingsを開く', async () => {
+    const quickPick = createFakeQuickPick();
+    const openedSettings: string[] = [];
+    const entries: FeatureAvailabilityEntry[] = [
+      { id: 'pdf-operations', available: true, detail: 'ok' },
+      { id: 'images', available: true, detail: 'ok' },
+      {
+        id: 'svg-to-pdf',
+        available: false,
+        detail: 'missing',
+        settingId: 'graphics-workbench.execPath.rsvgConvert',
+      },
+      { id: 'drawio', available: true, detail: 'ok', settingId: 'graphics-workbench.execPath.drawio' },
+      { id: 'mermaid', available: true, detail: 'ok', settingId: 'graphics-workbench.execPath.mermaid' },
+    ];
+
+    await showControlsPanel(
+      createDependencies({
+        quickPick,
+        engine: 'rsvg-convert',
+        availability: entries,
+        openSetting: async (settingId) => {
+          openedSettings.push(settingId);
+        },
+      }),
+    );
+
+    const svgRow = quickPick.items.find(
+      (item) => item.action?.kind === 'open-setting' && item.label === FEATURE_SVG_TO_PDF,
+    );
+    assert.ok(svgRow);
+    quickPick.triggerSelection(svgRow);
+    await flushPromises();
+
+    assert.deepStrictEqual(openedSettings, ['graphics-workbench.execPath.rsvgConvert']);
+  });
+
   test('選択したSVG→PDFエンジンが利用できない場合、自動で別エンジンへフォールバックせず選択状態と✕表示を維持する', async () => {
     const quickPick = createFakeQuickPick();
     const storage = new MemoryState();
@@ -289,8 +327,9 @@ function createDependencies(overrides: {
   engine?: SvgToPdfEngine;
   availability?: FeatureAvailabilityEntry[] | ((engine: SvgToPdfEngine) => FeatureAvailabilityEntry[]);
   writeEngine?: (engine: SvgToPdfEngine) => Promise<void>;
+  openSetting?: (settingId: string) => Promise<void>;
 }): ControlsPanelDependencies {
-  const { quickPick, safeMode, engine = 'chrome', availability, writeEngine } = overrides;
+  const { quickPick, safeMode, engine = 'chrome', availability, writeEngine, openSetting } = overrides;
   const values: Record<string, unknown> = { 'convertToPdf.svg.engine': engine };
   return {
     getConfiguration: () => fakeConfiguration(values),
@@ -309,6 +348,7 @@ function createDependencies(overrides: {
       }
       values['convertToPdf.svg.engine'] = nextEngine;
     },
+    openSetting: openSetting ?? (async () => {}),
     createQuickPick: () => quickPick,
   };
 }

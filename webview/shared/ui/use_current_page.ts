@@ -19,6 +19,7 @@ export function useCurrentPage(options: {
   const [currentPage, setCurrentPage] = createSignal(0);
   let observer: IntersectionObserver | undefined;
   let lastScheduled: number | undefined;
+  let connectedContainer: HTMLElement | undefined;
 
   const compute = (): void => {
     const container = options.scrollContainer();
@@ -75,11 +76,22 @@ export function useCurrentPage(options: {
     });
   };
 
-  onMount(() => {
+  const disconnect = (): void => {
+    observer?.disconnect();
+    observer = undefined;
+    connectedContainer?.removeEventListener('scroll', scheduleCompute);
+    connectedContainer = undefined;
+    window.removeEventListener('resize', scheduleCompute);
+  };
+
+  const connect = (): void => {
     const container = options.scrollContainer();
-    if (!container) {
+    if (!container || container === connectedContainer) {
       return;
     }
+
+    disconnect();
+    connectedContainer = container;
 
     if (typeof IntersectionObserver === 'function') {
       observer = new IntersectionObserver(
@@ -96,21 +108,25 @@ export function useCurrentPage(options: {
     compute();
     container.addEventListener('scroll', scheduleCompute, { passive: true });
     window.addEventListener('resize', scheduleCompute);
+  };
 
-    onCleanup(() => {
-      observer?.disconnect();
-      observer = undefined;
-      container.removeEventListener('scroll', scheduleCompute);
-      window.removeEventListener('resize', scheduleCompute);
-      if (lastScheduled !== undefined) {
-        cancelAnimationFrame(lastScheduled);
-        lastScheduled = undefined;
-      }
-    });
+  onMount(() => {
+    connect();
+  });
+
+  onCleanup(() => {
+    disconnect();
+    if (lastScheduled !== undefined) {
+      cancelAnimationFrame(lastScheduled);
+      lastScheduled = undefined;
+    }
   });
 
   return {
     currentPage,
-    recompute: compute,
+    recompute: () => {
+      connect();
+      compute();
+    },
   };
 }

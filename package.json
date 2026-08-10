@@ -143,11 +143,6 @@
         "category": "Graphics Workbench"
       },
       {
-        "command": "graphics-workbench.checkEnvironment",
-        "title": "%command.checkEnvironment%",
-        "category": "Graphics Workbench"
-      },
-      {
         "command": "graphics-workbench.openControls",
         "title": "%command.openControls%",
         "category": "Graphics Workbench"
@@ -183,13 +178,13 @@
         "category": "Graphics Workbench"
       },
       {
-        "command": "graphics-workbench.convertDrawioToPdf",
-        "title": "%command.convertDrawioToPdf%",
+        "command": "graphics-workbench.convertDrawioToPagePdfs",
+        "title": "%command.convertDrawioToPagePdfs%",
         "category": "Graphics Workbench"
       },
       {
-        "command": "graphics-workbench.convertDrawioToPdfDirectly",
-        "title": "%command.convertDrawioToPdfDirectly%",
+        "command": "graphics-workbench.convertDrawioToSinglePdf",
+        "title": "%command.convertDrawioToSinglePdf%",
         "category": "Graphics Workbench"
       },
       {
@@ -268,8 +263,8 @@
         "category": "Graphics Workbench"
       },
       {
-        "command": "graphics-workbench.convertImagesToSinglePdf",
-        "title": "%command.convertImagesToSinglePdf%",
+        "command": "graphics-workbench.combineImagesToPdf",
+        "title": "%command.combineImagesToPdf%",
         "category": "Graphics Workbench"
       },
       {
@@ -336,12 +331,12 @@
           "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.pdf$/i && config.graphics-workbench.contextMenu.convertPdf.enabled) || (resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled) || (resourceExtname =~ /^\\.(mmd|mermaid)$/i && config.graphics-workbench.contextMenu.convertMermaid.enabled) || (resourceExtname =~ /^\\.(drawio|dio)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled) || (resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i && config.graphics-workbench.contextMenu.convertDrawio.enabled))"
         },
         {
-          "command": "graphics-workbench.convertDrawioToPdf",
+          "command": "graphics-workbench.convertDrawioToPagePdfs",
           "group": "graphics-workbench",
           "when": "(resourceExtname =~ /^\\.(drawio|dio)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawio.enabled"
         },
         {
-          "command": "graphics-workbench.convertDrawioToPdfDirectly",
+          "command": "graphics-workbench.convertDrawioToSinglePdf",
           "group": "graphics-workbench",
           "when": "(resourceExtname =~ /^\\.(drawio|dio)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawio.enabled"
         },
@@ -498,7 +493,7 @@
           "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.convertDrawioCreate.enabled && (resourceExtname =~ /^\\.(pdf|png|jpe?g|webp|avif|gif|tiff?|svg|mmd|mermaid)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i)"
         },
         {
-          "command": "graphics-workbench.convertImagesToSinglePdf",
+          "command": "graphics-workbench.combineImagesToPdf",
           "group": "graphics-workbench.convert@14",
           "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertPng.enabled) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i && config.graphics-workbench.contextMenu.convertJpeg.enabled) || (resourceExtname =~ /^\\.webp$/i && config.graphics-workbench.contextMenu.convertWebp.enabled) || (resourceExtname =~ /^\\.avif$/i && config.graphics-workbench.contextMenu.convertAvif.enabled) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i) || (resourceExtname =~ /^\\.svg$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.contextMenu.convertSvg.enabled))"
         }
@@ -521,15 +516,15 @@
           "when": "false"
         },
         {
-          "command": "graphics-workbench.convertDrawioToPdf",
+          "command": "graphics-workbench.convertDrawioToPagePdfs",
           "when": "false"
         },
         {
-          "command": "graphics-workbench.convertDrawioToPdfDirectly",
+          "command": "graphics-workbench.convertDrawioToSinglePdf",
           "when": "false"
         },
         {
-          "command": "graphics-workbench.convertImagesToSinglePdf",
+          "command": "graphics-workbench.combineImagesToPdf",
           "when": "false"
         },
         {
@@ -634,7 +629,7 @@
       "properties": {
         "graphics-workbench.execPath.drawio": {
           "type": "string",
-          "default": "",
+          "default": "drawio",
           "scope": "machine",
           "description": "%config.execPath.drawio%"
         },
@@ -838,62 +833,85 @@
           "default": "${fileDirname}/${fileBasenameNoExtension}-crop.pdf",
           "description": "%config.outputPath.cropPdf%"
         },
-        "graphics-workbench.outputPaths": {
-          "type": "object",
-          "properties": {
-            "convertDrawioToPdf": {
-              "type": "string"
-            },
-            "convertDrawioToPng": {
-              "type": "string"
-            },
-            "convertDrawioToJpeg": {
-              "type": "string"
-            },
-            "convertDrawioToWebp": {
-              "type": "string"
-            },
-            "convertDrawioToAvif": {
-              "type": "string"
-            },
-            "convertDrawioToSvg": {
-              "type": "string"
-            },
-            "convertDrawioToGif": {
-              "type": "string"
-            },
-            "convertDrawioToTiff": {
-              "type": "string"
-            },
-            "convertPdfToPng": {
-              "type": "string"
-            },
-            "convertPdfToJpeg": {
-              "type": "string"
-            },
-            "convertPdfToWebp": {
-              "type": "string"
-            },
-            "convertPdfToAvif": {
-              "type": "string"
-            },
-            "convertPdfToSvg": {
-              "type": "string"
-            },
-            "convertPdfToGif": {
-              "type": "string"
-            },
-            "convertPdfToTiff": {
-              "type": "string"
-            },
-            "splitPdf": {
-              "type": "string",
-              "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf"
-            }
-          },
-          "additionalProperties": false,
-          "default": {},
-          "description": "%config.outputPaths%"
+        "graphics-workbench.outputPath.convertDrawioToPagePdfs": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf",
+          "description": "%config.outputPath.convertDrawioToPagePdfs%"
+        },
+        "graphics-workbench.outputPath.convertDrawioToPng": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.png",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertDrawioToJpeg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertDrawioToWebp": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.webp",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertDrawioToAvif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.avif",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertDrawioToSvg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.svg",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertDrawioToGif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.gif",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertDrawioToTiff": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.tiff",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertPdfToPng": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.png",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertPdfToJpeg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.jpeg",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertPdfToWebp": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.webp",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertPdfToAvif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.avif",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertPdfToSvg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.svg",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertPdfToGif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.gif",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.convertPdfToTiff": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.tiff",
+          "description": "%config.outputPath.pair%"
+        },
+        "graphics-workbench.outputPath.splitPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf",
+          "description": "%config.outputPath.splitPdf%"
         },
         "graphics-workbench.outputPath.convertPngToPdf": {
           "type": "string",
@@ -1184,20 +1202,20 @@
           ],
           "description": "%config.cropPdf.marginOptions%"
         },
-        "graphics-workbench.outputPath.convertDrawioToPdfDirectly": {
+        "graphics-workbench.outputPath.convertDrawioToSinglePdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertDrawioToPdfDirectly%"
+          "description": "%config.outputPath.convertDrawioToSinglePdf%"
         },
         "graphics-workbench.outputPath.convertExcalidrawToPdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
           "description": "%config.outputPath.convertExcalidrawToPdf%"
         },
-        "graphics-workbench.outputPath.convertImagesToSinglePdf": {
+        "graphics-workbench.outputPath.combineImagesToPdf": {
           "type": "string",
           "default": "",
-          "description": "%config.outputPath.convertImagesToSinglePdf%"
+          "description": "%config.outputPath.combineImagesToPdf%"
         },
         "graphics-workbench.contextMenu.enabled": {
           "type": "boolean",

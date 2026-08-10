@@ -8,7 +8,7 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { openPdfDocument, savePdfDocument } from './mupdf.js';
 
@@ -38,13 +38,11 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
 
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
-
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'compress-pdf',
     stagingOperationName: 'compress-pdf',
-    runId,
+    runId: options.runId,
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       compressPdf({

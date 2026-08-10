@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { XMLParser } from 'fast-xml-parser';
@@ -9,7 +9,6 @@ import {
   isSameSourceFormat,
   sourceFormatForPath,
 } from '../../shared/source_format.js';
-import { getDefaultConfiguration } from '../../generated/extension_manifest.js';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { validatePdfPathInputs } from '../pdf/pdf_path_validation.js';
@@ -17,13 +16,12 @@ import { toErrorMessage, isAbortError } from '../../shared/error.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { executeDrawio, type DrawioBackend } from './tools/drawio_tools.js';
+import type { DrawioBackend } from './tools/drawio_tools.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import type { RunPdfToSvg } from './tools/pdf_render_tools.js';
 import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
-import { renderPdfPageToSvg } from '../pdf/mupdf.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
-import { createRunId, stagingRootPathFor } from '../lifecycle/run_id.js';
+import { stagingRootPathFor } from '../lifecycle/run_id.js';
 
 export interface ConvertToSvgJob {
   sourcePath: string;
@@ -37,21 +35,21 @@ export interface ConvertToSvgFilesOptions {
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   runtime?: ConversionExecutionContext;
-  runPdfToSvg?: RunPdfToSvg;
+  runPdfToSvg: RunPdfToSvg;
   runId?: string;
-  maxInputPixels?: number;
+  maxInputPixels: number;
 }
 
 interface SvgRenderTools {
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
-  runPdfToSvg: RunPdfToSvg | undefined;
+  runPdfToSvg: RunPdfToSvg;
 }
 
 interface StageSvgConversionOptions {
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
-  runPdfToSvg: RunPdfToSvg | undefined;
+  runPdfToSvg: RunPdfToSvg;
   maxInputPixels: number;
   signal: AbortSignal;
 }
@@ -69,24 +67,22 @@ interface WritePdfPageAsSvgOptions {
   outputPath: string;
   workspacePath: string;
   page: number | undefined;
-  runPdfToSvg: RunPdfToSvg | undefined;
+  runPdfToSvg: RunPdfToSvg;
   signal: AbortSignal;
 }
 
 export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
-  const maxInputPixels = options.maxInputPixels ?? getDefaultConfiguration().raster.maxInputPixels();
+  const { maxInputPixels } = options;
   validateJobs(options.jobs);
   await validatePdfPathInputs(options.jobs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
 
-  const runId = options.runId ?? createRunId();
-
   return runStagedConversionBatch({
     jobs: options.jobs,
     operationName: 'convert-to-svg',
-    runId,
+    runId: options.runId,
     ...(runtime !== undefined && { runtime }),
     stage: async (job, index, currentRunId, batchRuntime) =>
       stageSvgConversion(job, index, currentRunId, {
@@ -171,11 +167,7 @@ async function writeDrawioAsSvg(
   signal.throwIfAborted();
 
   try {
-    await (drawio.runDrawio ?? executeDrawio)(
-      drawio.drawioPath,
-      ['-x', '-f', 'svg', '-o', outputPath, sourcePath],
-      signal,
-    );
+    await drawio.runDrawio(drawio.drawioPath, ['-x', '-f', 'svg', '-o', outputPath, sourcePath], signal);
   } catch (error) {
     if (isAbortError(error)) {
       throw error instanceof Error ? error : new Error(String(error));
@@ -199,15 +191,7 @@ async function writePdfPageAsSvg({
   signal.throwIfAborted();
 
   try {
-    if (runPdfToSvg) {
-      await runPdfToSvg(sourcePath, outputPath, page, signal);
-    } else {
-      const pdfBytes = await readFile(sourcePath);
-      signal.throwIfAborted();
-      const svg = await renderPdfPageToSvg(pdfBytes, page);
-      signal.throwIfAborted();
-      await writeFile(outputPath, svg, 'utf8');
-    }
+    await runPdfToSvg(sourcePath, outputPath, page, signal);
   } catch (error) {
     if (isAbortError(error)) {
       throw error instanceof Error ? error : new Error(String(error));

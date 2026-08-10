@@ -43,6 +43,7 @@ import {
   undoConversionOutputs,
 } from '../../src/operations/lifecycle/undo_last_conversion.js';
 import { commitStagedOutputs } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
+import { liveCommandDependencies } from '../helpers/command_dependencies.js';
 
 suite('直前変換の取り消し処理', () => {
   let sandbox: SinonSandbox;
@@ -117,9 +118,9 @@ suite('直前変換の取り消し処理', () => {
       },
     ]);
 
-    await undoLastConversionCommand(secondRecordId);
+    await undoLastConversionCommand(secondRecordId, liveCommandDependencies());
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'first');
-    await undoLastConversionCommand(firstRecordId);
+    await undoLastConversionCommand(firstRecordId, liveCommandDependencies());
     await assert.rejects(access(outputPath));
   });
 

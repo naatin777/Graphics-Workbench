@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { renderPdfPages, type PdfRenderController, type PdfRenderOptions } from '../../../shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '../../../shared/error';
@@ -13,23 +13,13 @@ import type {
   WebviewToExtensionMessage,
 } from './messages';
 import { renderTiffPreview, type TiffRenderController } from './tiff_preview';
+import {
+  applyPreviewZoom,
+  capturePreviewZoomAnchor,
+  clampPreviewZoom,
+  restorePreviewZoomAnchor,
+} from '@webview-shared/pdf/preview_zoom';
 import { vscode } from './vscode';
-
-const defaultLabels: PreviewLabels = {
-  title: 'Preview',
-  description: 'Preview the file contents.',
-  page: {
-    label: 'Page',
-    pages: 'pages',
-  },
-  preview: {
-    ariaLabel: 'Preview',
-    zoomLabel: 'Preview zoom',
-    zoomOut: 'Zoom out',
-    zoomIn: 'Zoom in',
-    renderError: 'Could not display the preview',
-  },
-};
 
 /** Decodes the base64-encoded PDF bytes sent over Webview postMessage. */
 function decodeBase64PdfData(value: string): Uint8Array {
@@ -44,7 +34,14 @@ function decodeBase64PdfData(value: string): Uint8Array {
 export function App(): JSX.Element {
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
-  const [labels, setLabels] = createSignal(defaultLabels);
+  const [labelsValue, setLabels] = createSignal<PreviewLabels>();
+  const labels = (): PreviewLabels => {
+    const value = labelsValue();
+    if (value === undefined) {
+      throw new Error('Preview labels were not initialized.');
+    }
+    return value;
+  };
   const [renderError, setRenderError] = createSignal('');
   const [previewZoom, setPreviewZoom] = createSignal(1);
 
@@ -162,7 +159,7 @@ export function App(): JSX.Element {
       }
       pdfRenderController = controller;
       await controller.firstPageReady;
-      applyPdfPreviewZoom();
+      applyPreviewZoom(pagesContainer, previewZoom());
       requestAnimationFrame(() => {
         recomputeCurrentPage();
       });
@@ -247,30 +244,21 @@ export function App(): JSX.Element {
     tiffRenderController = controller;
   };
 
-  const applyPdfPreviewZoom = (): void => {
-    if (!pagesContainer) {
-      return;
-    }
-    const zoom = previewZoom();
-    for (const canvas of pagesContainer.querySelectorAll<HTMLCanvasElement>('canvas[data-pdf-page]')) {
-      const width = Number(canvas.dataset.pdfWidth);
-      const height = Number(canvas.dataset.pdfHeight);
-      if (!Number.isFinite(width) || !Number.isFinite(height)) {
-        continue;
-      }
-      canvas.style.width = `${width * zoom}px`;
-      canvas.style.height = `${height * zoom}px`;
-    }
-  };
-
-  const updatePreviewZoom = (value: number): void => {
-    const nextZoom = Math.min(4, Math.max(0.25, Math.round(value * 100) / 100));
+  const updatePreviewZoom = (
+    value: number,
+    anchorTarget?: EventTarget | null,
+    clientX?: number,
+    clientY?: number,
+  ): void => {
+    const nextZoom = clampPreviewZoom(value);
     if (nextZoom === previewZoom()) {
       return;
     }
+    const anchor = capturePreviewZoomAnchor(pagesContainer, anchorTarget, clientX, clientY);
     setPreviewZoom(nextZoom);
     tiffRenderController?.applyZoom();
-    applyPdfPreviewZoom();
+    applyPreviewZoom(pagesContainer, nextZoom);
+    restorePreviewZoomAnchor(pagesContainer, anchor);
     requestAnimationFrame(() => {
       recomputeCurrentPage();
     });
@@ -289,67 +277,71 @@ export function App(): JSX.Element {
       return;
     }
     event.preventDefault();
-    updatePreviewZoom(previewZoom() + (event.deltaY < 0 ? 0.1 : -0.1));
+    updatePreviewZoom(previewZoom() + (event.deltaY < 0 ? 0.1 : -0.1), event.target, event.clientX, event.clientY);
   };
 
   return (
-    <main class='app'>
-      <h1 class='sr-only'>{labels().title}</h1>
-      <p class='sr-only'>
-        {fileName()} · {pageCount()} {labels().page.pages}. {labels().description}
-      </p>
+    <Show when={labelsValue()}>
+      {(_labels) => (
+        <main class='app'>
+          <h1 class='sr-only'>{labels().title}</h1>
+          <p class='sr-only'>
+            {fileName()} · {pageCount()} {labels().page.pages}. {labels().description}
+          </p>
 
-      <div class='workspace'>
-        <section
-          ref={(element) => {
-            previewElement = element;
-          }}
-          aria-label={labels().preview.ariaLabel}
-          class='preview'
-          classList={{ 'preview--fit': previewZoom() <= 1 }}
-          onWheel={zoomWithWheel}
-        >
-          <div class='preview__toolbar'>
-            <h2>{fileName()}</h2>
-            <div
-              class='zoom'
-              aria-label={labels().preview.zoomLabel}
+          <div class='workspace'>
+            <section
+              ref={(element) => {
+                previewElement = element;
+              }}
+              aria-label={labels().preview.ariaLabel}
+              class='preview'
+              classList={{ 'preview--fit': previewZoom() <= 1 }}
+              onWheel={zoomWithWheel}
             >
-              <ToolbarButton
-                icon='codicon-zoom-out'
-                label={labels().preview.zoomOut}
-                onClick={zoomOut}
+              <div class='preview__toolbar'>
+                <h2>{fileName()}</h2>
+                <div
+                  class='zoom'
+                  aria-label={labels().preview.zoomLabel}
+                >
+                  <ToolbarButton
+                    icon='codicon-zoom-out'
+                    label={labels().preview.zoomOut}
+                    onClick={zoomOut}
+                  />
+                  <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
+                  <ToolbarButton
+                    icon='codicon-zoom-in'
+                    label={labels().preview.zoomIn}
+                    onClick={zoomIn}
+                  />
+                </div>
+              </div>
+              <div
+                ref={(element) => {
+                  pagesContainer = element;
+                }}
+                class='preview__pages'
               />
-              <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
-              <ToolbarButton
-                icon='codicon-zoom-in'
-                label={labels().preview.zoomIn}
-                onClick={zoomIn}
+              <PageNavigator
+                currentPage={currentPage()}
+                pageCount={pageCount()}
+                onPrevious={goToPreviousPage}
+                onNext={goToNextPage}
               />
-            </div>
+              {renderError() ? (
+                <p
+                  class='preview__error'
+                  role='alert'
+                >
+                  {labels().preview.renderError}: {renderError()}
+                </p>
+              ) : undefined}
+            </section>
           </div>
-          <div
-            ref={(element) => {
-              pagesContainer = element;
-            }}
-            class='preview__pages'
-          />
-          <PageNavigator
-            currentPage={currentPage()}
-            pageCount={pageCount()}
-            onPrevious={goToPreviousPage}
-            onNext={goToNextPage}
-          />
-          {renderError() ? (
-            <p
-              class='preview__error'
-              role='alert'
-            >
-              {labels().preview.renderError}: {renderError()}
-            </p>
-          ) : undefined}
-        </section>
-      </div>
-    </main>
+        </main>
+      )}
+    </Show>
   );
 }

@@ -42,6 +42,7 @@ suite('Excalidraw sceneをSVG経由でPDFへ変換する', () => {
       const outputs = await convertExcalidrawToPdfFiles({
         jobs: [createJob(sourcePath, workspacePath.path)],
         svgToPdf: createStubSvgToPdfOptions(),
+        maxInputPixels: 1_000_000_000,
         runId: 'excalidraw-test',
         runtime: { resolveConflicts: async () => 'overwrite' },
         bundleUrl: fakeBundlePath,
@@ -73,6 +74,7 @@ suite('Excalidraw sceneをSVG経由でPDFへ変換する', () => {
         convertExcalidrawToPdfFiles({
           jobs: [createJob(sourcePath, workspacePath.path)],
           svgToPdf: createStubSvgToPdfOptions(),
+          maxInputPixels: 1_000_000_000,
           runId: 'invalid-test',
           runtime: { resolveConflicts: async () => 'overwrite' },
           bundleUrl: fakeBundlePath,
@@ -106,6 +108,9 @@ function createStubSvgToPdfOptions(): SvgToPdfBackend {
     engine: 'chrome',
     rsvgConvertPath: 'rsvg-convert',
     chromePath: 'chrome',
+    runRsvgConvert: async () => {
+      throw new Error('rsvg-convert must not run for chrome engine');
+    },
     runChrome: async (_executable, args) => {
       const outputArg = args.find((arg) => arg.startsWith('--print-to-pdf='));
       const outputPath = outputArg?.slice('--print-to-pdf='.length);

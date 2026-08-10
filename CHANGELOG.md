@@ -3,7 +3,8 @@
 ## 1.0.0
 
 - BREAKING CHANGE: conversion commands are organized by output format; old pair-specific command IDs have no compatibility aliases.
-- BREAKING CHANGE: native Draw.io PDF page conversion keeps `graphics-workbench.convertDrawioToPdf`; editable Draw.io images use output-format conversion commands.
+- BREAKING CHANGE: native Draw.io commands are now `graphics-workbench.convertDrawioToPagePdfs` and `graphics-workbench.convertDrawioToSinglePdf`; image aggregation is `graphics-workbench.combineImagesToPdf`.
+- BREAKING CHANGE: conversion output settings now use only `graphics-workbench.outputPath.convertXToY`; the `outputPaths` object and old public names are no longer read.
 - Same-format conversion is rejected. Normal raster conversions use the first GIF/TIFF page or frame, while Convert to PDF preserves all GIF/TIFF pages in the output PDF, including TIFFs whose page dimensions differ.
 - RAW output support was removed.
 - Generated raster, SVG, Draw.io, and PDF outputs are validated before commit.

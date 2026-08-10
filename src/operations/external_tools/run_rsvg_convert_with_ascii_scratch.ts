@@ -16,7 +16,7 @@ export interface RsvgToolScratchOptions {
   outputChannel?: LineOutputChannel;
 }
 
-export type RunRsvgConvert = (executable: string, args: string[], signal?: AbortSignal) => Promise<void>;
+export type RunRsvgConvert = (executable: string, args: string[], signal: AbortSignal) => Promise<void>;
 
 export async function runRsvgConvertWithAsciiScratch(options: {
   executable: string;
@@ -24,7 +24,7 @@ export async function runRsvgConvertWithAsciiScratch(options: {
   outputPath: string;
   run: RunRsvgConvert;
   scratch: RsvgToolScratchOptions;
-  signal?: AbortSignal;
+  signal: AbortSignal;
 }): Promise<void> {
   if (options.scratch.platform !== 'win32') {
     await options.run(options.executable, rsvgConvertArgs(options.sourcePath, options.outputPath), options.signal);
@@ -37,19 +37,17 @@ export async function runRsvgConvertWithAsciiScratch(options: {
     inputFileName: 'input.svg',
     outputFileName: 'output.pdf',
     toolName: 'rsvg-convert',
+    signal: options.signal,
   };
-  if (options.signal !== undefined) {
-    scratchArgs.signal = options.signal;
-  }
   if (options.scratch.outputChannel !== undefined) {
     scratchArgs.outputChannel = options.scratch.outputChannel;
   }
   const scratch = await createAsciiInputOutputScratch(scratchArgs);
 
   try {
-    options.signal?.throwIfAborted();
+    options.signal.throwIfAborted();
     await copyFileWithAbort(options.sourcePath, scratch.inputPath, undefined, options.signal);
-    options.signal?.throwIfAborted();
+    options.signal.throwIfAborted();
     await validateAsciiScratchInput(scratch, 'rsvg-convert');
 
     options.scratch.outputChannel?.appendLine(`[scratch] logical input: ${options.sourcePath}`);
@@ -58,11 +56,11 @@ export async function runRsvgConvertWithAsciiScratch(options: {
     options.scratch.outputChannel?.appendLine(`[scratch] staged output: ${options.outputPath}`);
 
     await options.run(options.executable, rsvgConvertArgs(scratch.inputPath, scratch.outputPath), options.signal);
-    options.signal?.throwIfAborted();
+    options.signal.throwIfAborted();
     await validateAsciiScratchOutput(scratch);
-    options.signal?.throwIfAborted();
+    options.signal.throwIfAborted();
     await copyFileWithAbort(scratch.outputPath, options.outputPath, undefined, options.signal);
-    options.signal?.throwIfAborted();
+    options.signal.throwIfAborted();
     await removeSuccessfulScratch(scratch, options.scratch.outputChannel);
   } catch (error) {
     options.scratch.outputChannel?.appendLine(`[scratch] retained after failure: ${scratch.rootPath}`);

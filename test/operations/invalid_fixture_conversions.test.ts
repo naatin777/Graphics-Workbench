@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 
-import { executePngConversion } from '../../src/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../helpers/test_workspace.js';
@@ -36,7 +36,9 @@ suite('不正なテスト入力の実変換エラー', () => {
           'invalid conversion outputs',
           `${index}.${invalidCase.outputFormat}`,
         );
-        const conversion = executePngConversion({
+        const conversion = executeRasterConversion({
+          spec: rasterFormatSpecs.png,
+          maxInputPixels: 1_000_000_000,
           jobs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,

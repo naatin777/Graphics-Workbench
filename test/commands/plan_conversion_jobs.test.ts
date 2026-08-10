@@ -5,18 +5,18 @@ import path from 'node:path';
 import { PDFDocument } from '../helpers/pdf_document.js';
 import * as vscode from 'vscode';
 
-import { avifSpec, jpegSpec, pngSpec, tiffSpec } from '../../src/commands/conversion/convert_to_raster.js';
+import { rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { planRasterConversionJobs } from '../../src/commands/conversion/plan_conversion_jobs.js';
-import { configureCommandRuntime } from '../../src/commands/shared/command_runtime.js';
+import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
 const simpleFormats = [
-  { spec: pngSpec, extension: 'png', unsupportedLabel: 'PNG' },
-  { spec: jpegSpec, extension: 'jpeg', unsupportedLabel: 'JPEG' },
-  { spec: avifSpec, extension: 'avif', unsupportedLabel: 'AVIF' },
-  { spec: tiffSpec, extension: 'tiff', unsupportedLabel: 'TIFF' },
+  { spec: rasterFormatSpecs.png, extension: 'png', unsupportedLabel: 'PNG' },
+  { spec: rasterFormatSpecs.jpeg, extension: 'jpeg', unsupportedLabel: 'JPEG' },
+  { spec: rasterFormatSpecs.avif, extension: 'avif', unsupportedLabel: 'AVIF' },
+  { spec: rasterFormatSpecs.tiff, extension: 'tiff', unsupportedLabel: 'TIFF' },
 ] as const;
 
 const maxInputPixels = getDefaultConfiguration().raster.maxInputPixels();
@@ -38,7 +38,7 @@ suite(
         await writeFile(sourcePath, await document.save());
 
         const jobs = await planRasterConversionJobs(vscode.Uri.file(sourcePath), spec, {
-          configuration: configureCommandRuntime(),
+          configuration: getExtensionConfiguration(),
           maxInputPixels,
         });
 
@@ -72,7 +72,7 @@ suite(
 
         await assert.rejects(
           planRasterConversionJobs(vscode.Uri.file(sourcePath), spec, {
-            configuration: configureCommandRuntime(),
+            configuration: getExtensionConfiguration(),
             maxInputPixels,
           }),
           new RegExp(`Unsupported input for ${unsupportedLabel} conversion: ${RegExp.escape(sourcePath)}`),
@@ -87,8 +87,8 @@ suite(
       const sourcePath = path.join(temporaryDirectory.path, 'source.png');
       await copyFile(operationPngInputPath, sourcePath);
 
-      const jobs = await planRasterConversionJobs(vscode.Uri.file(sourcePath), avifSpec, {
-        configuration: configureCommandRuntime(),
+      const jobs = await planRasterConversionJobs(vscode.Uri.file(sourcePath), rasterFormatSpecs.avif, {
+        configuration: getExtensionConfiguration(),
         maxInputPixels,
       });
 
