@@ -1,4 +1,4 @@
-export type RunPdfToPng = (
+type RunPdfToPng = (
   sourcePath: string,
   outputPath: string,
   page: number,
