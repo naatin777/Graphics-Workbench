@@ -4,6 +4,7 @@ import type { Configuration } from '../../generated/extension_manifest.js';
 import { isDrawioPath } from '../../shared/source_format.js';
 import { assertPageTemplateForSplitOutput } from '../../config/output/page_template.js';
 import type { CommittedConversionOutput } from '../../operations/lifecycle/commit_conversion_outputs.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import {
   convertDrawioToPagePdfs,
   convertDrawioToSinglePdf,
@@ -33,7 +34,8 @@ export async function convertDrawioToPagePdfsCommand(
       cancelled: 'message.convertDrawioToPagePdfs.cancelled',
       failed: 'message.convertDrawioToPagePdfs.failed',
     },
-    run: async (inputs, drawioPath) => convertDrawioToPagePdfs({ inputs, drawioPath, runDrawio: executeDrawio }),
+    run: async (inputs, drawioPath, runtime) =>
+      convertDrawioToPagePdfs({ inputs, drawioPath, runDrawio: executeDrawio, runtime }),
   });
 }
 
@@ -50,7 +52,8 @@ export async function convertDrawioToSinglePdfCommand(
       cancelled: 'message.convertDrawioToSinglePdf.cancelled',
       failed: 'message.convertDrawioToSinglePdf.failed',
     },
-    run: async (inputs, drawioPath) => convertDrawioToSinglePdf({ inputs, drawioPath, runDrawio: executeDrawio }),
+    run: async (inputs, drawioPath, runtime) =>
+      convertDrawioToSinglePdf({ inputs, drawioPath, runDrawio: executeDrawio, runtime }),
   });
 }
 
@@ -67,7 +70,11 @@ async function runDrawioToPdfLifecycle(
       cancelled: LocaleKeyType;
       failed: LocaleKeyType;
     };
-    run: (inputs: DrawioPdfInput[], drawioPath: string) => Promise<CommittedConversionOutput[]>;
+    run: (
+      inputs: DrawioPdfInput[],
+      drawioPath: string,
+      runtime: ConversionExecutionContext,
+    ) => Promise<CommittedConversionOutput[]>;
   },
 ): Promise<void> {
   try {
@@ -93,7 +100,7 @@ async function runDrawioToPdfLifecycle(
         cancelledMessage: userMessage(options.messageKeys.cancelled),
         failedMessage: (reason) => userMessage(options.messageKeys.failed, reason),
       },
-      run: async (_runtime) => options.run(inputs, drawioPath),
+      run: async (runtime) => options.run(inputs, drawioPath, runtime),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
