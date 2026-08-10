@@ -56,8 +56,8 @@ export async function runConversionLifecycle(
   options: {
     operationName: string;
     messages: ConversionCommandMessages;
-    outputChannel?: LineOutputChannel;
-    resolveConflicts?: ConversionExecutionContext['resolveConflicts'];
+    outputChannel: LineOutputChannel;
+    resolveConflicts: NonNullable<ConversionExecutionContext['resolveConflicts']>;
     run: (runtime: ConversionExecutionContext) => Promise<CommittedConversionOutput[]>;
   } & ConversionLifecycleCallbacks,
 ): Promise<void> {
@@ -77,14 +77,10 @@ export async function runConversionLifecycle(
             progress.report({ message: options.messages.prepareMessage });
             const runtimeOptions: ConversionExecutionContext = {
               signal,
+              outputChannel: options.outputChannel,
+              resolveConflicts: options.resolveConflicts,
               ...createProgressReporters(progress),
             };
-            if (options.outputChannel !== undefined) {
-              runtimeOptions.outputChannel = options.outputChannel;
-            }
-            if (options.resolveConflicts !== undefined) {
-              runtimeOptions.resolveConflicts = options.resolveConflicts;
-            }
             return options.run(runtimeOptions);
           },
           options.signal,
@@ -92,13 +88,13 @@ export async function runConversionLifecycle(
     );
   } catch (error) {
     if (isAbortError(error)) {
-      options.outputChannel?.appendLine(`[${options.operationName}] cancellation requested`);
+      options.outputChannel.appendLine(`[${options.operationName}] cancellation requested`);
       await vscode.window.showInformationMessage(options.messages.cancelledMessage);
       return;
     }
 
     const reason = toErrorMessage(error);
-    options.outputChannel?.appendLine(`[${options.operationName}] failure: ${reason}`);
+    options.outputChannel.appendLine(`[${options.operationName}] failure: ${reason}`);
     await vscode.window.showErrorMessage(options.messages.failedMessage(reason));
     await options.onError?.(error);
     return;
@@ -111,12 +107,12 @@ export async function runConversionLifecycle(
     undoId = await recordConversionForUndo(outputs, options.outputChannel);
   } catch (error) {
     const reason = toErrorMessage(error);
-    options.outputChannel?.appendLine(`[${options.operationName}] Undo record failed: ${reason}`);
+    options.outputChannel.appendLine(`[${options.operationName}] Undo record failed: ${reason}`);
     if (options.onUndoUnavailable !== undefined) {
       try {
         await options.onUndoUnavailable({ successMessage, reason });
       } catch (uiError) {
-        options.outputChannel?.appendLine(
+        options.outputChannel.appendLine(
           `[${options.operationName}] undo-unavailable notification failed: ${toErrorMessage(uiError)}`,
         );
       }
@@ -131,7 +127,7 @@ export async function runConversionLifecycle(
       await options.onSuccess({ outputs, undoId, successMessage });
     } catch (error) {
       // The conversion already succeeded; a UI failure here must not be reported as a conversion failure.
-      options.outputChannel?.appendLine(
+      options.outputChannel.appendLine(
         `[${options.operationName}] success notification failed: ${toErrorMessage(error)}`,
       );
     }
@@ -149,7 +145,7 @@ export async function runConversionLifecycle(
     }
   } catch (error) {
     // The conversion already succeeded; a UI failure here must not be reported as a conversion failure.
-    options.outputChannel?.appendLine(
+    options.outputChannel.appendLine(
       `[${options.operationName}] success notification failed: ${toErrorMessage(error)}`,
     );
   }

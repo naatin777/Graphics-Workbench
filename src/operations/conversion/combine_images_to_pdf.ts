@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { isRasterImagePath, sourceFormatForPath } from '../../shared/source_format.js';
+import { isRasterFormat, isRasterImagePath, sourceFormatForPath } from '../../shared/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
 import { cleanupConversionArtifacts, type ConversionArtifactRoot } from '../lifecycle/cleanup_conversion_artifacts.js';
@@ -163,7 +163,7 @@ function validateJobs(jobs: CombineImageInput[]): void {
 
   for (const job of jobs) {
     const format = sourceFormatForPath(job.sourcePath);
-    if (!isRasterImagePath(job.sourcePath) && format !== 'svg') {
+    if (!isRasterFormat(format) && format !== 'svg') {
       throw new Error(`Unsupported image input: ${job.sourcePath}`);
     }
   }

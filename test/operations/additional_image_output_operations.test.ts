@@ -14,6 +14,9 @@ import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tool
 const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
 
+function stubRunPdfToPng(): never {
+  throw new Error('PDF to PNG rendering must not run in this test.');
+}
 suite('GIF/TIFFを各出力形式へ変換する', () => {
   test('2フレームのGIF/TIFFをPDFへ変換すると全フレームを2ページへ展開し、PNG/JPEG/WebP/AVIFへ変換すると先頭フレームだけを4x4の赤画像として出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-additional-image-output-'));
@@ -55,7 +58,7 @@ async function convertImage(
 
   const common = {
     jobs: [job],
-    pdfRenderTools: {},
+    pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
     mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
     drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
     runtime,

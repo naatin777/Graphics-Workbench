@@ -1,4 +1,5 @@
 import type * as vscode from 'vscode';
+import { readFile, writeFile } from 'node:fs/promises';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
@@ -9,6 +10,7 @@ import {
   type RasterFormatSpec,
   type RasterJob,
 } from '../../operations/conversion/raster_conversion.js';
+import { renderPdfPageToPng } from '../../operations/pdf/mupdf.js';
 import type { DrawioBackend } from '../../operations/conversion/tools/drawio_tools.js';
 import type { MermaidBackend } from '../../operations/conversion/tools/mermaid_tools.js';
 import type { PdfRenderBackend } from '../../operations/conversion/tools/pdf_render_tools.js';
@@ -36,7 +38,18 @@ function readBackendTools(configuration: Configuration, spec: RasterFormatSpec):
   const tools: RasterBackendTools = {
     mermaidTools: readMermaidCliOptions(configuration),
     drawioTools: buildDrawioCommandOptions(configuration),
-    pdfRenderTools: {},
+    pdfRenderTools: {
+      runPdfToPng: async (sourcePath, outputPath, page, signal, cropContent) => {
+        signal.throwIfAborted();
+        const pdfBytes = await readFile(sourcePath);
+        signal.throwIfAborted();
+        const png = await renderPdfPageToPng(pdfBytes, page, {
+          ...(cropContent !== undefined && { cropContent }),
+        });
+        signal.throwIfAborted();
+        await writeFile(outputPath, png);
+      },
+    },
   };
   if (spec.target === 'avif') {
     tools.outputOptions = { effort: configuration.convertToAvif.effort() };
@@ -47,8 +60,7 @@ function readBackendTools(configuration: Configuration, spec: RasterFormatSpec):
 }
 
 async function runRasterCommand(options: {
-  uri?: vscode.Uri | undefined;
-  uris?: vscode.Uri[] | undefined;
+  sourceUris: vscode.Uri[];
   dependencies: CommandDependencies;
   spec: RasterFormatSpec;
   outputMode?: 'auto' | 'preserve' | 'split' | undefined;
@@ -67,8 +79,7 @@ async function runRasterCommand(options: {
     });
 
   return runRasterConversionCommand<RasterJob, RasterBackendTools>({
-    uri: options.uri,
-    uris: options.uris,
+    sourceUris: options.sourceUris,
     dependencies: options.dependencies,
     operationName: spec.operationName,
     outputLabel: spec.outputLabel,
@@ -92,15 +103,13 @@ async function runRasterCommand(options: {
 }
 
 export async function convertToRasterCommand(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
   options?: ConvertToRasterCommandOptions,
 ): Promise<void> {
   const { target = 'png', outputMode } = options ?? {};
   await runRasterCommand({
-    uri,
-    uris,
+    sourceUris,
     dependencies,
     spec: rasterFormatSpecs[target],
     outputMode,

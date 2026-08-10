@@ -34,13 +34,12 @@ import { withCancellationSignal } from '../lifecycle/progress_cancellation.js';
 
 export async function cropPdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
   try {
-    await runCropPdfConfigureCommand(context, uri, uris, dependencies);
+    await runCropPdfConfigureCommand(context, sourceUris, dependencies);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel.appendLine(`[crop-pdf-configure] failure: ${message}`);
@@ -54,12 +53,11 @@ export async function cropPdfConfigureCommand(
 
 async function runCropPdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
-  const inputUri = resolveSingleConfiguredPdfUri(uri, uris, 'cropPdf.configure');
+  const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'cropPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
   if (!workspaceFolder) {
@@ -190,7 +188,7 @@ async function applyConfiguredCrop(params: {
   };
   panel: vscode.WebviewPanel;
   signal: AbortSignal;
-  outputChannel?: LineOutputChannel;
+  outputChannel: LineOutputChannel;
 }): Promise<void> {
   const { inputUri, workspaceFolder, outputTemplate, crop, panel, signal, outputChannel } = params;
   const sourcePath = inputUri.fsPath;
@@ -211,7 +209,7 @@ async function applyConfiguredCrop(params: {
       cancelledMessage: userMessage('message.cropPdf.cancelled'),
       failedMessage: (reason) => userMessage('message.cropPdf.failed', reason),
     },
-    ...(outputChannel !== undefined && { outputChannel }),
+    outputChannel,
     panel,
     signal,
     run: async (runtime) =>

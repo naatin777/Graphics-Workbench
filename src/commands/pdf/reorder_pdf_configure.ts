@@ -31,14 +31,13 @@ import {
 
 export async function reorderPdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
 
   try {
-    await runReorderPdfConfigureCommand(context, uri, uris, dependencies);
+    await runReorderPdfConfigureCommand(context, sourceUris, dependencies);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel.appendLine(`[reorder-pdf-configure] failure: ${message}`);
@@ -53,12 +52,11 @@ export async function reorderPdfConfigureCommand(
 
 async function runReorderPdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
-  const inputUri = resolveSingleConfiguredPdfUri(uri, uris, 'reorderPdf.configure');
+  const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'reorderPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
   if (!workspaceFolder) {
@@ -176,7 +174,7 @@ async function applyConfiguredReorder(params: {
   order: number[];
   panel: vscode.WebviewPanel;
   signal: AbortSignal;
-  outputChannel?: LineOutputChannel;
+  outputChannel: LineOutputChannel;
 }): Promise<void> {
   const { inputUri, workspacePath, outputPath, pageCount, order, panel, signal, outputChannel } = params;
 
@@ -200,7 +198,7 @@ async function applyConfiguredReorder(params: {
       cancelledMessage: userMessage('message.reorderPdf.cancelled'),
       failedMessage: (reason) => userMessage('message.reorderPdf.failed', reason),
     },
-    ...(outputChannel !== undefined && { outputChannel }),
+    outputChannel,
     panel,
     signal,
     run: async (runtime) =>

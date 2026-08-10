@@ -3,7 +3,8 @@
 // - bindingのcommand IDに重複がないこと
 // - 各bindingのmodule/export名が実在すること
 // - registerCommandBindingsがbinding集合と正確に一致するcommandだけを登録すること
-// - adapterごとに正しい引数が渡されること（file / fileWithContext / fileWithOptions / extensionCommand）
+// - adapterごとに正しい引数が渡されること（file / fileWithContext / extensionCommand）
+// - file adapterがVS Codeの(uri, uris)入力をsourceUris[]へ正規化して渡すこと
 // - fileWithContextがExtensionContextを渡すこと
 // - fixed optionsがWebP/GIF commandへ渡されること
 // - 同じmoduleを共有するcommandのfirst load計測が重複しないこと
@@ -80,7 +81,7 @@ suite('command登録処理', () => {
     assert.deepStrictEqual(new Set(handlers.keys()), new Set(commandBindings.map((binding) => binding.id)));
   });
 
-  test('file adapterでcompressPdfを実行するとhandlerへuri、uris、dependenciesをこの順で渡す', async () => {
+  test('file adapterでcompressPdfを実行するとhandlerへ正規化したsourceUris、dependenciesをこの順で渡す', async () => {
     const calls = recordingCalls();
     const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.pdf');
@@ -97,11 +98,11 @@ suite('command登録処理', () => {
     );
 
     assert.deepStrictEqual(calls.recorded, [
-      { bindingId: 'graphics-workbench.compressPdf', args: [uri, uris, dependencies] },
+      { bindingId: 'graphics-workbench.compressPdf', args: [[uri], dependencies] },
     ]);
   });
 
-  test('fileWithContext adapterでcropPdf.configureを実行するとhandlerへExtensionContextを先頭にuri、undefined、dependenciesを渡す', async () => {
+  test('fileWithContext adapterでcropPdf.configureを実行するとhandlerへExtensionContextを先頭に正規化したsourceUris、dependenciesを渡す', async () => {
     const calls = recordingCalls();
     const dependencies = testCommandDependencies();
     const context = createContext();
@@ -117,11 +118,11 @@ suite('command登録処理', () => {
     );
 
     assert.deepStrictEqual(calls.recorded, [
-      { bindingId: 'graphics-workbench.cropPdf.configure', args: [context, uri, undefined, dependencies] },
+      { bindingId: 'graphics-workbench.cropPdf.configure', args: [context, [uri], dependencies] },
     ]);
   });
 
-  test('fileWithOptions adapterでconvertToWebpPreserveAnimationを実行するとhandlerへuri、undefined、dependencies、固定optionsの順で渡す', async () => {
+  test('file adapter（options付き）でconvertToWebpPreserveAnimationを実行するとhandlerへ正規化したsourceUris、dependencies、固定optionsの順で渡す', async () => {
     const calls = recordingCalls();
     const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.gif');
@@ -138,7 +139,7 @@ suite('command登録処理', () => {
     assert.deepStrictEqual(calls.recorded, [
       {
         bindingId: 'graphics-workbench.convertToWebpPreserveAnimation',
-        args: [uri, undefined, dependencies, { target: 'webp', outputMode: 'preserve' }],
+        args: [[uri], dependencies, { target: 'webp', outputMode: 'preserve' }],
       },
     ]);
   });

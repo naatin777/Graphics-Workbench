@@ -82,6 +82,11 @@ function sourceFormatForExtension(extension: string): SourceFormat | undefined {
 
 export function isRasterImagePath(sourcePath: string): boolean {
   const format = sourceFormatForPath(sourcePath);
+  return isRasterFormat(format);
+}
+
+/** Returns true when the resolved format is a raster image format. */
+export function isRasterFormat(format: SourceFormat | undefined): boolean {
   return (
     format === 'png' ||
     format === 'jpeg' ||
@@ -90,10 +95,6 @@ export function isRasterImagePath(sourcePath: string): boolean {
     format === 'gif' ||
     format === 'tiff'
   );
-}
-
-export function isSupportedImageInputPath(sourcePath: string): boolean {
-  return isRasterImagePath(sourcePath);
 }
 
 export function isSameSourceFormat(sourcePath: string, outputExtension: string): boolean {

@@ -8,6 +8,7 @@ import {
   isNativeDrawioPath,
   isSameSourceFormat,
   sourceFormatForPath,
+  type SourceFormat,
 } from '../../shared/source_format.js';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
@@ -278,15 +279,17 @@ function validateJobs(jobs: ConvertToSvgJob[]): void {
   }
 }
 
-function isSupportedSourcePath(sourcePath: string): boolean {
-  const extension = path.extname(sourcePath).toLowerCase();
+const supportedSvgInputFormats = new Set<SourceFormat>([
+  'pdf',
+  'mermaid',
+  'drawio',
+  'editable-drawio-png',
+  'editable-drawio-svg',
+]);
 
-  return (
-    extension === '.pdf' ||
-    sourceFormatForPath(sourcePath) === 'mermaid' ||
-    isEditableDrawioImagePath(sourcePath) ||
-    isNativeDrawioPath(sourcePath)
-  );
+function isSupportedSourcePath(sourcePath: string): boolean {
+  const format = sourceFormatForPath(sourcePath);
+  return format !== undefined && supportedSvgInputFormats.has(format);
 }
 
 function asSvgOutputPath(outputPath: string): `${string}.svg` {

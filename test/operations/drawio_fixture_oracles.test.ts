@@ -5,7 +5,6 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import { isEditableDrawioImagePath } from '../../src/shared/source_format.js';
-import { readDrawioExecutablePath } from '../../src/config/external_tools/external_tool_paths.js';
 import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
 import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
@@ -49,7 +48,7 @@ const invalidCases = [
 suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
   for (const fixtureCase of validCases) {
     test(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async function convertsFixtureToExpectedOutputs() {
-      const drawioPath = readDrawioExecutablePath(getExtensionConfiguration());
+      const drawioPath = getExtensionConfiguration().execPath.drawio();
       if (drawioPath === '') {
         this.skip();
         return;
@@ -148,7 +147,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
 
   for (const [index, invalidCase] of invalidCases.entries()) {
     test(`invalid/drawio/${invalidCase.fileName}を実Draw.ioでPDFへ実変換すると失敗し、出力PDFを作成しない`, async function expectsInvalidFixtureToFailWithoutOutput() {
-      const drawioPath = readDrawioExecutablePath(getExtensionConfiguration());
+      const drawioPath = getExtensionConfiguration().execPath.drawio();
       if (drawioPath === '') {
         this.skip();
         return;

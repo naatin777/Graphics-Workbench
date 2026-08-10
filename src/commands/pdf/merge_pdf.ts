@@ -29,13 +29,12 @@ import {
 } from '../../presentation/webview/pdfjs_assets.js';
 
 export async function mergePdfSelectedFilesCommand(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
   try {
-    const sourceUris = resolveSelectedPdfUris(uri, uris);
+    assertPdfUris(sourceUris);
 
     if (sourceUris.length < 2) {
       throw new Error('Select at least two PDF files.');
@@ -85,14 +84,13 @@ export async function mergePdfSelectedFilesCommand(
 
 export async function mergePdfConfigureCommand(
   context: Pick<vscode.ExtensionContext, 'extensionUri'>,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
 
   try {
-    const sourceUris = resolveSelectedPdfUris(uri, uris);
+    assertPdfUris(sourceUris);
 
     if (sourceUris.length < 2) {
       throw new Error('Select at least two PDF files.');
@@ -198,7 +196,7 @@ async function applyConfiguredMerge(params: {
   workspace: vscode.WorkspaceFolder;
   panel: vscode.WebviewPanel;
   signal: AbortSignal;
-  outputChannel?: LineOutputChannel;
+  outputChannel: LineOutputChannel;
 }): Promise<void> {
   const { sourceById, sourceIds, workspace, panel, signal, outputChannel } = params;
 
@@ -223,7 +221,7 @@ async function applyConfiguredMerge(params: {
       cancelledMessage: userMessage('message.mergePdf.cancelled'),
       failedMessage: (reason) => userMessage('message.mergePdf.failed', reason),
     },
-    ...(outputChannel !== undefined && { outputChannel }),
+    outputChannel,
     panel,
     signal,
     run: async (runtime) =>
@@ -291,17 +289,8 @@ function buildMergePdfLabels(): MergePdfLabels {
   };
 }
 
-function resolveSelectedPdfUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
-  let candidates: vscode.Uri[] = [];
-  if (uris !== undefined && uris.length > 0) {
-    candidates = uris;
-  } else if (uri !== undefined) {
-    candidates = [uri];
-  }
-  const uniqueUris = new Map(candidates.map((candidate) => [candidate.toString(), candidate]));
-  const selected = [...uniqueUris.values()];
-
-  for (const candidate of selected) {
+function assertPdfUris(sourceUris: readonly vscode.Uri[]): void {
+  for (const candidate of sourceUris) {
     if (candidate.scheme !== 'file') {
       throw new Error(`Only local PDF files are supported: ${candidate.toString()}`);
     }
@@ -310,8 +299,6 @@ function resolveSelectedPdfUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.U
       throw new Error(`Only PDF files can be merged: ${candidate.fsPath}`);
     }
   }
-
-  return selected;
 }
 
 async function requireCommonWorkspace(sourceUris: vscode.Uri[]): Promise<vscode.WorkspaceFolder> {

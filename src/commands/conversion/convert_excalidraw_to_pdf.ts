@@ -8,21 +8,18 @@ import {
 import { validateSvgToPdfOptions } from '../../operations/conversion/convert_to_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { resolveSelectedUris } from '../shared/command_input.js';
 import { userMessage } from '../shared/user_messages.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { readSvgToPdfOptions } from './convert_to_pdf.js';
 
 export async function convertExcalidrawToPdfCommand(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
 
   try {
-    const sourceUris = resolveSelectedUris(uri, uris);
     if (sourceUris.length === 0) {
       throw new Error('No Excalidraw files were selected.');
     }

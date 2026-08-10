@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -6,11 +6,12 @@ import {
   isMermaidPath,
   isNativeDrawioPath,
   isSameSourceFormat,
-  isSupportedImageInputPath,
+  sourceFormatForPath,
+  type SourceFormat,
 } from '../../shared/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { isAbortError, toErrorMessage } from '../../shared/error.js';
-import { countPdfPages, hasPdfPageContent, renderPdfPageToPng } from '../pdf/mupdf.js';
+import { countPdfPages, hasPdfPageContent } from '../pdf/mupdf.js';
 
 import {
   isRasterInputPixelLimitError,
@@ -101,18 +102,6 @@ export interface RasterJob {
   animation?: RasterAnimationMetadata;
 }
 
-interface ExecuteRasterConversionBatchOptions {
-  jobs: RasterJob[];
-  runtime: ConversionExecutionContext;
-  pdfRenderTools: PdfRenderBackend;
-  mermaidTools: MermaidBackend;
-  drawioTools: DrawioBackend;
-  maxInputPixels: number;
-  runId?: string;
-  spec: RasterFormatSpec;
-  outputOptions?: AvifOutputOptions | WebpOutputOptions;
-}
-
 interface RasterStageContext {
   runId: string;
   runtime: ResolvedConversionRuntime;
@@ -138,33 +127,6 @@ interface RasterRenderRequest {
   page?: number;
   animation?: RasterAnimationMetadata;
   cropContent?: boolean;
-}
-
-async function executeRasterConversionBatch(
-  options: ExecuteRasterConversionBatchOptions,
-): Promise<CommittedConversionOutput[]> {
-  options.runtime.signal?.throwIfAborted();
-  validateJobs(options.jobs, options.spec);
-  await validateJobPaths(options.jobs, options.spec.operationName);
-  options.runtime.signal?.throwIfAborted();
-
-  return runStagedConversionBatch({
-    jobs: options.jobs,
-    operationName: options.spec.operationName,
-    runId: options.runId,
-    runtime: options.runtime,
-    stage: async (job, index, stageRunId, stageRuntime) =>
-      stageRasterConversion(job, index, {
-        runId: stageRunId,
-        runtime: stageRuntime,
-        pdfRenderTools: options.pdfRenderTools,
-        mermaidTools: options.mermaidTools,
-        drawioTools: options.drawioTools,
-        spec: options.spec,
-        ...(options.outputOptions !== undefined && { outputOptions: options.outputOptions }),
-        maxInputPixels: options.maxInputPixels,
-      }),
-  });
 }
 
 async function stageRasterConversion(
@@ -283,17 +245,13 @@ async function writePdfPageAsRaster(request: RasterRenderRequest, context: Raste
   await mkdir(path.dirname(pngPath), { recursive: true });
   context.runtime.signal.throwIfAborted();
 
-  if (context.pdfRenderTools.runPdfToPng) {
-    await context.pdfRenderTools.runPdfToPng(request.sourcePath, pngPath, request.page ?? 1, context.runtime.signal);
-  } else {
-    const pdfBytes = await readFile(request.sourcePath);
-    context.runtime.signal.throwIfAborted();
-    const png = await renderPdfPageToPng(pdfBytes, request.page ?? 1, {
-      ...(request.cropContent !== undefined && { cropContent: request.cropContent }),
-    });
-    context.runtime.signal.throwIfAborted();
-    await writeFile(pngPath, png);
-  }
+  await context.pdfRenderTools.runPdfToPng(
+    request.sourcePath,
+    pngPath,
+    request.page ?? 1,
+    context.runtime.signal,
+    request.cropContent,
+  );
   context.runtime.signal.throwIfAborted();
 
   await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
@@ -438,17 +396,24 @@ async function validateGeneratedRaster(outputPath: string, outputExtension: stri
   }
 }
 
-function isSupportedSourcePath(sourcePath: string): boolean {
-  const extension = path.extname(sourcePath).toLowerCase();
+const supportedRasterInputFormats = new Set<SourceFormat>([
+  'pdf',
+  'svg',
+  'mermaid',
+  'png',
+  'jpeg',
+  'webp',
+  'avif',
+  'gif',
+  'tiff',
+  'drawio',
+  'editable-drawio-png',
+  'editable-drawio-svg',
+]);
 
-  return (
-    extension === '.pdf' ||
-    extension === '.svg' ||
-    isMermaidPath(sourcePath) ||
-    isSupportedImageInputPath(sourcePath) ||
-    isEditableDrawioImagePath(sourcePath) ||
-    isNativeDrawioPath(sourcePath)
-  );
+function isSupportedSourcePath(sourcePath: string): boolean {
+  const format = sourceFormatForPath(sourcePath);
+  return format !== undefined && supportedRasterInputFormats.has(format);
 }
 
 function asPngOutputPath(outputPath: string): `${string}.png` {
@@ -486,7 +451,26 @@ export interface ExecuteRasterConversionOptions {
 export async function executeRasterConversion(
   options: ExecuteRasterConversionOptions,
 ): Promise<CommittedConversionOutput[]> {
-  return executeRasterConversionBatch({
-    ...options,
+  options.runtime.signal?.throwIfAborted();
+  validateJobs(options.jobs, options.spec);
+  await validateJobPaths(options.jobs, options.spec.operationName);
+  options.runtime.signal?.throwIfAborted();
+
+  return runStagedConversionBatch({
+    jobs: options.jobs,
+    operationName: options.spec.operationName,
+    runId: options.runId,
+    runtime: options.runtime,
+    stage: async (job, index, stageRunId, stageRuntime) =>
+      stageRasterConversion(job, index, {
+        runId: stageRunId,
+        runtime: stageRuntime,
+        pdfRenderTools: options.pdfRenderTools,
+        mermaidTools: options.mermaidTools,
+        drawioTools: options.drawioTools,
+        spec: options.spec,
+        ...(options.outputOptions !== undefined && { outputOptions: options.outputOptions }),
+        maxInputPixels: options.maxInputPixels,
+      }),
   });
 }

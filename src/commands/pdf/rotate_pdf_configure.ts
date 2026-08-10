@@ -32,14 +32,13 @@ import {
 
 export async function rotatePdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
 
   try {
-    await runRotatePdfConfigureCommand(context, uri, uris, dependencies);
+    await runRotatePdfConfigureCommand(context, sourceUris, dependencies);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel.appendLine(`[rotate-pdf-configure] failure: ${message}`);
@@ -54,12 +53,11 @@ export async function rotatePdfConfigureCommand(
 
 async function runRotatePdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
-  const inputUri = resolveSingleConfiguredPdfUri(uri, uris, 'rotatePdf.configure');
+  const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'rotatePdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
   if (!workspaceFolder) {
@@ -179,7 +177,7 @@ async function applyConfiguredRotation(params: {
   pageIndices: number[];
   panel: vscode.WebviewPanel;
   signal: AbortSignal;
-  outputChannel?: LineOutputChannel;
+  outputChannel: LineOutputChannel;
 }): Promise<void> {
   const { inputUri, workspacePath, outputPath, pageCount, angle, pageIndices, panel, signal, outputChannel } = params;
 
@@ -199,7 +197,7 @@ async function applyConfiguredRotation(params: {
       cancelledMessage: userMessage('message.rotatePdf.cancelled'),
       failedMessage: (reason) => userMessage('message.rotatePdf.failed', reason),
     },
-    ...(outputChannel !== undefined && { outputChannel }),
+    outputChannel,
     panel,
     signal,
     run: async (runtime) =>

@@ -10,17 +10,10 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../../shared/error.js';
-import { resolveSelectedUris } from '../shared/command_input.js';
 
-export async function compressPdfCommand(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
-  dependencies: CommandDependencies,
-): Promise<void> {
+export async function compressPdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const outputChannel = dependencies.outputChannel;
   try {
-    const sourceUris = resolveSelectedUris(uri, uris);
-
     if (sourceUris.length === 0) {
       throw new Error('No PDF files were selected.');
     }

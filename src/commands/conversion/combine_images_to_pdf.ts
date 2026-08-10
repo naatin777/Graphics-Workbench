@@ -10,19 +10,15 @@ import { readSvgToPdfOptions } from './convert_to_pdf.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { resolveSelectedUris } from '../shared/command_input.js';
 import { localeMap } from '../../locale_map.js';
 
 export async function combineImagesToPdfCommand(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
 
   try {
-    const sourceUris = resolveSelectedUris(uri, uris);
-
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }

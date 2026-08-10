@@ -6,7 +6,7 @@ import type { CommandId } from '../../generated/extension_manifest.js';
  * 各adapterはbindingのmodule/exportNameをlazy loadし、固定された引数へ変換して呼び出す。
  * 新しい呼び出し形が必要な場合だけadapterを追加し、自由なコード文字列は受け付けない。
  */
-type CommandAdapter = 'file' | 'fileWithContext' | 'fileWithOptions' | 'extensionCommand';
+type CommandAdapter = 'file' | 'fileWithContext' | 'extensionCommand';
 
 export interface CommandBinding {
   /** package.json の contributes.commands に存在するpublic command ID。 */
@@ -123,42 +123,42 @@ export const commandBindings = [
     id: 'graphics-workbench.convertToPng',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'png' },
   },
   {
     id: 'graphics-workbench.convertToJpeg',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'jpeg' },
   },
   {
     id: 'graphics-workbench.convertToWebp',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'webp', outputMode: 'auto' },
   },
   {
     id: 'graphics-workbench.convertToWebpPreserveAnimation',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'webp', outputMode: 'preserve' },
   },
   {
     id: 'graphics-workbench.convertToWebpSeparately',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'webp', outputMode: 'split' },
   },
   {
     id: 'graphics-workbench.convertToAvif',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'avif' },
   },
   {
@@ -171,28 +171,28 @@ export const commandBindings = [
     id: 'graphics-workbench.convertToGif',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'gif', outputMode: 'auto' },
   },
   {
     id: 'graphics-workbench.convertToGifPreserveAnimation',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'gif', outputMode: 'preserve' },
   },
   {
     id: 'graphics-workbench.convertToGifSeparately',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'gif', outputMode: 'split' },
   },
   {
     id: 'graphics-workbench.convertToTiff',
     module: '../conversion/convert_to_raster.js',
     exportName: 'convertToRasterCommand',
-    adapter: 'fileWithOptions',
+    adapter: 'file',
     options: { target: 'tiff' },
   },
   {

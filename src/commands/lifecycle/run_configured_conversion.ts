@@ -17,7 +17,7 @@ import { runConversionLifecycle, type ConversionCommandMessages } from './run_ou
 export async function runConfiguredPdfConversion(options: {
   operationName: string;
   messages: ConversionCommandMessages;
-  outputChannel?: LineOutputChannel;
+  outputChannel: LineOutputChannel;
   panel: vscode.WebviewPanel;
   signal: AbortSignal;
   run: (runtime: ConversionExecutionContext) => Promise<CommittedConversionOutput[]>;
@@ -25,7 +25,7 @@ export async function runConfiguredPdfConversion(options: {
   await runConversionLifecycle({
     operationName: options.operationName,
     messages: options.messages,
-    ...(options.outputChannel !== undefined && { outputChannel: options.outputChannel }),
+    outputChannel: options.outputChannel,
     resolveConflicts: resolveOutputConflicts,
     signal: options.signal,
     onSuccess: async ({ undoId, successMessage }) => {

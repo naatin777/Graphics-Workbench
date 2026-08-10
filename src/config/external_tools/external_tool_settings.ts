@@ -31,7 +31,3 @@ export function getExternalToolTimeoutMs(toolId: ExternalToolId): number | undef
 export function timeoutMilliseconds(seconds: number): number | undefined {
   return seconds === 0 ? undefined : seconds * 1000;
 }
-
-export function defaultExternalToolTimeouts(): ExternalToolTimeouts {
-  return defaultTimeouts;
-}

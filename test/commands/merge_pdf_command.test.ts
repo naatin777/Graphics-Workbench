@@ -155,7 +155,6 @@ suite('PDF結合コマンド', () => {
 
       await mergePdfConfigureCommand(
         { extensionUri: vscode.Uri.file(compiledTestDirectory) },
-        undefined,
         [vscode.Uri.file(firstPdfPath), vscode.Uri.file(linkedPdfPath)],
         testCommandDependencies(),
       );

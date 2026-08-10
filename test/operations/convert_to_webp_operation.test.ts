@@ -18,6 +18,9 @@ import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations
 import { requireValue } from '../helpers/required.js';
 import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 
+function stubRunPdfToPng(): never {
+  throw new Error('PDF to PNG rendering must not run in this test.');
+}
 suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
   test('2フレーム・delay[100,250]・loop3のアニメーションGIFをアニメーション設定つきの1jobでWebPへ変換し、pages=2・pageHeight=8・delay・loopのメタデータを保持して出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-webp-animation-'));
@@ -37,7 +40,7 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
           animation: { pages: 2, pageHeight: 8, delay: [100, 250], loop: 3 },
         },
       ],
-      pdfRenderTools: {},
+      pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
       mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
       drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
       outputOptions: { effort: 0 },
@@ -66,7 +69,7 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
         spec: rasterFormatSpecs.webp,
         maxInputPixels: 1_000_000_000,
         jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, animation: { pages: 2, pageHeight: 8 } }],
-        pdfRenderTools: {},
+        pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
         outputOptions: { effort: 0 },
