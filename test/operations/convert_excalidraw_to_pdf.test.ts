@@ -9,7 +9,7 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 
 import {
   convertExcalidrawToPdfFiles,
-  type ExcalidrawPdfJob,
+  type ExcalidrawPdfInput,
 } from '../../src/operations/conversion/convert_excalidraw_to_pdf.js';
 import { ExcalidrawError } from '../../src/operations/conversion/excalidraw_scene.js';
 import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/svg_to_pdf_tools.js';
@@ -40,7 +40,7 @@ suite('Excalidraw sceneをSVG経由でPDFへ変換する', () => {
       const originalSource = await readFile(sourcePath, 'utf8');
 
       const outputs = await convertExcalidrawToPdfFiles({
-        jobs: [createJob(sourcePath, workspacePath.path)],
+        inputs: [createJob(sourcePath, workspacePath.path)],
         svgToPdf: createStubSvgToPdfOptions(),
         maxInputPixels: 1_000_000_000,
         runId: 'excalidraw-test',
@@ -72,7 +72,7 @@ suite('Excalidraw sceneをSVG経由でPDFへ変換する', () => {
 
       await assert.rejects(
         convertExcalidrawToPdfFiles({
-          jobs: [createJob(sourcePath, workspacePath.path)],
+          inputs: [createJob(sourcePath, workspacePath.path)],
           svgToPdf: createStubSvgToPdfOptions(),
           maxInputPixels: 1_000_000_000,
           runId: 'invalid-test',
@@ -86,7 +86,7 @@ suite('Excalidraw sceneをSVG経由でPDFへ変換する', () => {
       assert.strictEqual(
         existsSync(path.join(workspacePath.path, '.graphics-workbench', 'convert-excalidraw-to-pdf', 'invalid-test')),
         false,
-        'staging root must be removed after a failed conversion',
+        'staging root must be removed after a failed input',
       );
     } finally {
       await cleanupBundle();
@@ -94,7 +94,7 @@ suite('Excalidraw sceneをSVG経由でPDFへ変換する', () => {
   });
 });
 
-function createJob(sourcePath: string, workspacePath: string): ExcalidrawPdfJob {
+function createJob(sourcePath: string, workspacePath: string): ExcalidrawPdfInput {
   return {
     sourcePath,
     outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.pdf',

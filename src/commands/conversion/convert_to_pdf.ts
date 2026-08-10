@@ -8,14 +8,13 @@ import {
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
 import { createMermaidBackend, resolveChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
-import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import {
   convertToPdfFiles,
   executeChrome,
   executeRsvgConvert,
   validateSvgToPdfOptions,
-  type ConvertToPdfJob,
+  type PdfInput,
 } from '../../operations/conversion/convert_to_pdf.js';
 import type { SvgToPdfBackend } from '../../operations/conversion/tools/svg_to_pdf_tools.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
@@ -24,7 +23,7 @@ import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { createDrawioBackend } from '../shared/command_runtime.js';
+import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
 import { isAbortError } from '../../shared/error.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 
@@ -67,10 +66,10 @@ async function convertSelectedSourcesToPdf(
     validateSvgToPdfOptions(svgToPdfTools);
     const mermaidTools = createMermaidBackend(configuration);
     const drawioTools = createDrawioBackend(configuration);
-    const plannedJobs: ConvertToPdfJob[] = [];
+    const plannedInputs: PdfInput[] = [];
     for (const sourceUri of sourceUris) {
-      plannedJobs.push(
-        ...(await planToPdfConversionJobs(
+      plannedInputs.push(
+        ...(await planToPdfInputs(
           sourceUri,
           outputTemplateForSource(sourceUri, configuration),
           logicalSourcePathForOutputTemplate(sourceUri.fsPath),
@@ -78,13 +77,13 @@ async function convertSelectedSourcesToPdf(
         )),
       );
     }
-    const jobs = plannedJobs;
+    const inputs = plannedInputs;
     await runConversionLifecycle({
       operationName: 'convert-to-pdf',
       outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
-        progressTitle: userMessage('message.progress.convertToPdf.title', jobs.length),
+        progressTitle: userMessage('message.progress.convertToPdf.title', inputs.length),
         prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
         successMessage: (count) => userMessage('message.convertToPdf.success', count),
         undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
@@ -93,7 +92,7 @@ async function convertSelectedSourcesToPdf(
       },
       run: async (runtime) =>
         convertToPdfFiles({
-          jobs,
+          inputs,
           maxInputPixels,
           supportedExtensions: pdfImageExtensions,
           tools: {
@@ -120,10 +119,7 @@ export function outputTemplateForSource(sourceUri: vscode.Uri, configuration: Co
   const sourcePath = sourceUri.fsPath;
 
   if (isEditableDrawioImagePath(sourcePath)) {
-    return resolveOutputPathTemplate(
-      configuration.outputPath.convertDrawioToSinglePdf(),
-      '${fileDirname}/${fileBasenameNoExtension}.pdf',
-    );
+    return configuration.outputPath.convertDrawioToSinglePdf();
   }
 
   return resolveConversionTemplate({ target: 'pdf', sourcePath, configuration });
@@ -139,12 +135,12 @@ export function createSvgToPdfBackend(configuration: Configuration): SvgToPdfBac
   };
 }
 
-async function planToPdfConversionJobs(
+async function planToPdfInputs(
   sourceUri: vscode.Uri,
   outputTemplate: string,
   templateSourcePath: string,
   supportedExtensions: readonly string[],
-): Promise<ConvertToPdfJob[]> {
+): Promise<PdfInput[]> {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local image files are supported: ${sourceUri.toString()}`);
   }

@@ -11,14 +11,14 @@ import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { createSecurePdfStagingRoot } from '../lifecycle/secure_staging.js';
 
-export interface DecryptPdfJob {
+export interface DecryptPdfInput {
   sourcePath: string;
   workspacePath: string;
   outputPath: string;
 }
 
 export interface DecryptPdfOptions {
-  jobs: DecryptPdfJob[];
+  inputs: DecryptPdfInput[];
   password: string;
   runtime?: ConversionExecutionContext;
   runId?: string;
@@ -27,13 +27,13 @@ export interface DecryptPdfOptions {
 export async function decryptPdfFiles(options: DecryptPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
-  validateJobs(options.jobs);
-  await validatePdfPathInputs(options.jobs, 'decrypt-pdf');
+  validateConversions(options.inputs);
+  await validatePdfPathInputs(options.inputs, 'decrypt-pdf');
 
   runtime?.signal?.throwIfAborted();
 
   if (!runtime?.resolveConflicts) {
-    await assertOutputsDoNotExist(options.jobs);
+    await assertOutputsDoNotExist(options.inputs);
   }
 
   runtime?.signal?.throwIfAborted();
@@ -41,15 +41,15 @@ export async function decryptPdfFiles(options: DecryptPdfOptions): Promise<Commi
   const stagingRootPath = await createSecurePdfStagingRoot('decrypt-pdf');
 
   return runStagedConversionBatch({
-    jobs: options.jobs,
+    inputs: options.inputs,
     operationName: 'decrypt-pdf',
     stagingOperationName: 'decrypt-pdf',
     runId: options.runId,
     artifactRoots: [{ rootPath: stagingRootPath, workspacePath: stagingRootPath }],
     ...(runtime !== undefined && { runtime }),
-    stage: async (job, index, _runId, batchRuntime) =>
+    stage: async (input, index, _runId, batchRuntime) =>
       decryptPdf({
-        job,
+        input,
         index,
         password: options.password,
         stagingRootPath,
@@ -59,31 +59,31 @@ export async function decryptPdfFiles(options: DecryptPdfOptions): Promise<Commi
 }
 
 async function decryptPdf(params: {
-  job: DecryptPdfJob;
+  input: DecryptPdfInput;
   index: number;
   password: string;
   stagingRootPath: string;
   signal: AbortSignal;
 }): Promise<PreparedConversionOutput> {
-  const { job, password, signal } = params;
+  const { input, password, signal } = params;
   signal.throwIfAborted();
 
-  const itemName = `${params.index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
+  const itemName = `${params.index + 1}-${sanitizePdfPathSegment(path.basename(input.sourcePath, path.extname(input.sourcePath)))}`;
   const workDirectory = path.join(params.stagingRootPath, itemName);
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
-  await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
+  await assertExistingPathInWorkspace(input.sourcePath, input.workspacePath);
   await assertWritablePathInWorkspace(workDirectory, params.stagingRootPath);
   signal.throwIfAborted();
   await mkdir(workDirectory, { recursive: true });
   signal.throwIfAborted();
 
-  const bytes = await readFile(job.sourcePath);
+  const bytes = await readFile(input.sourcePath);
   signal.throwIfAborted();
   const document = await openPdfDocument(bytes);
   try {
     if (document.needsPassword() && document.authenticatePassword(password) === 0) {
-      throw new Error(`Invalid password for PDF file: ${job.sourcePath}`);
+      throw new Error(`Invalid password for PDF file: ${input.sourcePath}`);
     }
     const decryptedBytes = savePdfDocument(document, 'encrypt=none');
     signal.throwIfAborted();
@@ -96,39 +96,39 @@ async function decryptPdf(params: {
 
   return {
     stagedOutputPath,
-    outputPath: job.outputPath,
-    workspacePath: job.workspacePath,
+    outputPath: input.outputPath,
+    workspacePath: input.workspacePath,
     stagingRootPath: params.stagingRootPath,
     stagingWorkspacePath: params.stagingRootPath,
   };
 }
 
-function validateJobs(jobs: DecryptPdfJob[]): void {
-  if (jobs.length === 0) {
+function validateConversions(inputs: DecryptPdfInput[]): void {
+  if (inputs.length === 0) {
     throw new Error('No PDF files were selected.');
   }
 
-  for (const job of jobs) {
-    if (path.extname(job.sourcePath).toLowerCase() !== '.pdf') {
-      throw new Error(`Only PDF files can be decrypted: ${job.sourcePath}`);
+  for (const input of inputs) {
+    if (path.extname(input.sourcePath).toLowerCase() !== '.pdf') {
+      throw new Error(`Only PDF files can be decrypted: ${input.sourcePath}`);
     }
   }
 }
 
-async function assertOutputsDoNotExist(jobs: DecryptPdfJob[]): Promise<void> {
+async function assertOutputsDoNotExist(inputs: DecryptPdfInput[]): Promise<void> {
   const normalizedOutputs = new Set<string>();
 
-  for (const job of jobs) {
-    const normalizedOutput = path.resolve(job.outputPath);
+  for (const input of inputs) {
+    const normalizedOutput = path.resolve(input.outputPath);
 
     if (normalizedOutputs.has(normalizedOutput)) {
-      throw new Error(`Multiple inputs resolve to the same output: ${job.outputPath}`);
+      throw new Error(`Multiple inputs resolve to the same output: ${input.outputPath}`);
     }
     normalizedOutputs.add(normalizedOutput);
 
     try {
-      await access(job.outputPath);
-      throw new Error(`Output file already exists: ${job.outputPath}`);
+      await access(input.outputPath);
+      throw new Error(`Output file already exists: ${input.outputPath}`);
     } catch (error) {
       if (isFileNotFoundError(error)) {
         continue;

@@ -203,7 +203,7 @@ async function applyConfiguredReorder(params: {
     signal,
     run: async (runtime) =>
       reorderPdfFiles({
-        jobs: [{ sourcePath: inputUri.fsPath, workspacePath, outputPath, pageOrder: order }],
+        inputs: [{ sourcePath: inputUri.fsPath, workspacePath, outputPath, pageOrder: order }],
         runtime,
       }),
   });

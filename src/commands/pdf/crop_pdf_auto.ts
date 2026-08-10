@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { localeMap } from '../../locale_map.js';
-import { cropPdfFiles, type CropPdfJob } from '../../operations/pdf/crop_pdf_auto.js';
+import { cropPdfFiles, type CropPdfInput } from '../../operations/pdf/crop_pdf_auto.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
@@ -28,20 +28,20 @@ export async function cropPdfAutoCommand(sourceUris: vscode.Uri[], dependencies:
     }
 
     const outputTemplate = configuration.outputPath.cropPdf();
-    const jobs = sourceUris.map((sourceUri) => planCropPdfJob(sourceUri, outputTemplate));
+    const inputs = sourceUris.map((sourceUri) => planCropPdfInput(sourceUri, outputTemplate));
     await runConversionLifecycle({
       operationName: 'crop-pdf',
       outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
-        progressTitle: userMessage('message.progress.cropPdf.title', jobs.length),
+        progressTitle: userMessage('message.progress.cropPdf.title', inputs.length),
         prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
         successMessage: (count) => userMessage('message.cropPdf.success', count),
         undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
         cancelledMessage: userMessage('message.cropPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.cropPdf.failed', reason),
       },
-      run: async (runtime) => cropPdfFiles({ jobs, margin: selectedMargin, runtime }),
+      run: async (runtime) => cropPdfFiles({ inputs, margin: selectedMargin, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -54,7 +54,7 @@ export async function cropPdfAutoCommand(sourceUris: vscode.Uri[], dependencies:
   }
 }
 
-function planCropPdfJob(sourceUri: vscode.Uri, outputTemplate: string): CropPdfJob {
+function planCropPdfInput(sourceUri: vscode.Uri, outputTemplate: string): CropPdfInput {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local PDF files are supported: ${sourceUri.toString()}`);
   }

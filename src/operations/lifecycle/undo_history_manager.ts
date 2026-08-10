@@ -11,7 +11,7 @@ import {
 
 const DEFAULT_UNDO_RECORDS_LIMIT = 10;
 
-export type UndoOutcome = 'no-record' | 'newer-conversion' | 'done';
+export type UndoOutcome = 'no-record' | 'newer-input' | 'done';
 
 /**
  * Owns the in-memory Undo history and the lifecycle of its staged backups.
@@ -64,7 +64,7 @@ export class UndoHistoryManager {
       }
 
       if (expectedId !== undefined && expectedId !== '' && expectedId !== record.id) {
-        return 'newer-conversion';
+        return 'newer-input';
       }
 
       await undoConversionOutputs(record, outputChannel);

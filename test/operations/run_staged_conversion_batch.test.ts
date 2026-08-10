@@ -13,7 +13,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
     const stagedOutputPath = path.join(stagingRootPath, 'result.png');
 
     const outputs = await runStagedConversionBatch({
-      jobs: [{ workspacePath: workspacePath.path }],
+      inputs: [{ workspacePath: workspacePath.path }],
       operationName: 'fixture-raster',
       runId: 'run',
       stage: async () => {
@@ -40,7 +40,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
 
     await assert.rejects(
       runStagedConversionBatch({
-        jobs: [{ workspacePath: workspacePath.path }],
+        inputs: [{ workspacePath: workspacePath.path }],
         operationName: 'fixture-raster',
         runId: 'failed-run',
         stage: async () => {
@@ -67,7 +67,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
 
     await assert.rejects(
       runStagedConversionBatch({
-        jobs: [{ workspacePath: workspacePath.path }],
+        inputs: [{ workspacePath: workspacePath.path }],
         operationName: 'fixture-raster',
         runId: '../../src',
         stage: async () => {
@@ -96,7 +96,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
 
     try {
       batch = runStagedConversionBatch({
-        jobs: [
+        inputs: [
           { workspacePath: workspacePath.path },
           { workspacePath: workspacePath.path },
           { workspacePath: workspacePath.path },
@@ -159,7 +159,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
 
     try {
       batch = runStagedConversionBatch({
-        jobs: [
+        inputs: [
           { workspacePath: workspacePath.path },
           { workspacePath: workspacePath.path },
           { workspacePath: workspacePath.path },

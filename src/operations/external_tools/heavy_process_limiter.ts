@@ -105,5 +105,5 @@ export class HeavyProcessLimiter {
 }
 
 export const sharedHeavyProcessLimiter = new HeavyProcessLimiter(2);
-/** Shared conversion-stage queue retained for staged-batch cancellation semantics. */
+/** Shared input-stage queue retained for staged-batch cancellation semantics. */
 export const sharedConversionJobLimiter = new HeavyProcessLimiter(2);

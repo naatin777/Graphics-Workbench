@@ -30,7 +30,7 @@ suite('PDF全ページ分割', () => {
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
 
     await splitPdfAllPages({
-      jobs: [
+      inputs: [
         {
           sourcePath,
           workspacePath: workspacePath.path,
@@ -76,7 +76,7 @@ suite('PDF全ページ分割', () => {
     await Promise.all(sourcePaths.map((sourcePath) => copyFile(fixturePath(path.basename(sourcePath)), sourcePath)));
 
     await splitPdfAllPages({
-      jobs: sourcePaths.map((sourcePath) => ({
+      inputs: sourcePaths.map((sourcePath) => ({
         sourcePath,
         workspacePath: workspacePath.path,
         outputPathForPage: (page: number) =>
@@ -112,7 +112,7 @@ suite('PDF全ページ分割', () => {
 
     await assert.rejects(
       splitPdfAllPages({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             workspacePath,
@@ -135,7 +135,7 @@ suite('PDF全ページ分割', () => {
 
     await assert.rejects(
       splitPdfAllPages({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             workspacePath,
@@ -159,7 +159,7 @@ suite('PDF全ページ分割', () => {
 
     await assert.rejects(
       splitPdfAllPages({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             workspacePath,

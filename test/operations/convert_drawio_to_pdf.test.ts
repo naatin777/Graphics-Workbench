@@ -6,7 +6,10 @@ import path from 'node:path';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
 
-import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
+import {
+  convertDrawioToPagePdfs,
+  convertDrawioToSinglePdf,
+} from '../../src/operations/conversion/convert_drawio_to_pdf.js';
 import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { requireValue } from '../helpers/required.js';
@@ -24,8 +27,8 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
     const originalSource = await readFile(sourcePath, 'utf8');
     const calls: string[][] = [];
 
-    const outputs = await convertDrawioToPdfFiles({
-      jobs: [
+    const outputs = await convertDrawioToPagePdfs({
+      inputs: [
         {
           sourcePath,
           outputTemplate: '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf',
@@ -34,7 +37,6 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
         },
       ],
       drawioPath: 'drawio',
-      outputMode: 'page-pdfs',
       runId: 'split-test',
       runtime: { resolveConflicts: async () => 'overwrite' },
       runDrawio: async (_executable, args) => {
@@ -97,8 +99,8 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
     const outputPath = path.join(workspacePath.path, 'all-pages.pdf');
     await copyFile(drawioFixturePath, sourcePath);
 
-    const outputs = await convertDrawioToPdfFiles({
-      jobs: [
+    const outputs = await convertDrawioToSinglePdf({
+      inputs: [
         {
           sourcePath,
           outputTemplate: '${fileDirname}/all-pages.pdf',
@@ -107,7 +109,6 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
         },
       ],
       drawioPath: 'drawio',
-      outputMode: 'single-pdf',
       runId: 'direct-test',
       runtime: { resolveConflicts: async () => 'overwrite' },
       runDrawio: async (_executable, args) => {
@@ -131,8 +132,8 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
       '<mxfile><diagram name="CON"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="2" parent="1" vertex="1"><mxGeometry width="10" height="10" as="geometry"/></mxCell></root></mxGraphModel></diagram><diagram name="con"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="2" parent="1" vertex="1"><mxGeometry width="10" height="10" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>',
     );
 
-    const outputs = await convertDrawioToPdfFiles({
-      jobs: [
+    const outputs = await convertDrawioToPagePdfs({
+      inputs: [
         {
           sourcePath,
           outputTemplate: '${fileDirname}/${page}.pdf',
@@ -141,7 +142,6 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
         },
       ],
       drawioPath: 'drawio',
-      outputMode: 'page-pdfs',
       runId: 'names-test',
       runtime: { resolveConflicts: async () => 'overwrite' },
       runDrawio: async (_executable, args) => {
@@ -169,8 +169,8 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
     const outputPath = path.join(workspacePath.path, 'all-pages.pdf');
     await copyFile(drawioFixturePath, sourcePath);
 
-    const outputs = await convertDrawioToPdfFiles({
-      jobs: [
+    const outputs = await convertDrawioToSinglePdf({
+      inputs: [
         {
           sourcePath,
           outputTemplate: '${fileDirname}/all-pages.pdf',
@@ -179,7 +179,6 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
         },
       ],
       drawioPath,
-      outputMode: 'single-pdf',
       runDrawio: executeDrawio,
       runId: 'real-cli-test',
       runtime: { resolveConflicts: async () => 'overwrite' },
@@ -200,8 +199,8 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
     let cliCalled = false;
 
     await assert.rejects(
-      convertDrawioToPdfFiles({
-        jobs: [
+      convertDrawioToSinglePdf({
+        inputs: [
           {
             sourcePath,
             outputTemplate: '${fileDirname}/empty.pdf',
@@ -210,7 +209,6 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
           },
         ],
         drawioPath: 'drawio',
-        outputMode: 'single-pdf',
         runId: 'empty-test',
         runtime: { resolveConflicts: async () => 'overwrite' },
         runDrawio: async () => {

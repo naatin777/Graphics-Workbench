@@ -28,7 +28,7 @@ suite('PDFテスト入力の全ページPNG変換結果が、各ページの期�
         await executeRasterConversion({
           spec: rasterFormatSpecs.png,
           maxInputPixels: 1_000_000_000,
-          jobs: cases.map(({ outputPath, page }) => ({ sourcePath, outputPath, workspacePath, page })),
+          inputs: cases.map(({ outputPath, page }) => ({ sourcePath, outputPath, workspacePath, page })),
           pdfRenderTools,
           mermaidTools,
           drawioTools,

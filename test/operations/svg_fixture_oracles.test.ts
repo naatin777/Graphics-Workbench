@@ -21,7 +21,7 @@ suite('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
         await executeRasterConversion({
           spec: rasterFormatSpecs.png,
           maxInputPixels: 1_000_000_000,
-          jobs: [{ sourcePath, outputPath, workspacePath }],
+          inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,
           drawioTools,

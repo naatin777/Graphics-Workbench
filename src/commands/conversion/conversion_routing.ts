@@ -1,6 +1,5 @@
 import { conversionPairs, type Configuration } from '../../generated/extension_manifest.js';
 import { type SourceFormat, sourceFormatForPath } from '../../shared/source_format.js';
-import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 
 type ConversionTarget = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff' | 'svg' | 'pdf';
 
@@ -11,7 +10,7 @@ export interface ResolveConversionTemplateOptions {
   templateOverride?: string;
 }
 
-/** Resolves the output template for a conversion pair derived from package.json. */
+/** Resolves the output template for a input pair derived from package.json. */
 export function resolveConversionTemplate(options: ResolveConversionTemplateOptions): string {
   const { target, sourcePath, configuration, templateOverride } = options;
   if (templateOverride !== undefined) {
@@ -22,7 +21,7 @@ export function resolveConversionTemplate(options: ResolveConversionTemplateOpti
   const pair = conversionPairs.find((candidate) => candidate.target === target && candidate.source === source);
 
   if (pair !== undefined) {
-    return resolveOutputPathTemplate(configuration.outputPath[pair.setting](), pair.defaultValue);
+    return configuration.outputPath[pair.setting]();
   }
 
   throw new Error(`Unsupported ${target} input format: ${sourcePath}`);

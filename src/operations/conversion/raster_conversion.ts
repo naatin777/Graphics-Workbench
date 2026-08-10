@@ -94,7 +94,7 @@ export const rasterFormatSpecs = {
   },
 } as const satisfies Record<RasterConversionTarget, RasterFormatSpec>;
 
-export interface RasterJob {
+export interface RasterInput {
   sourcePath: string;
   outputPath: string;
   workspacePath: string;
@@ -130,53 +130,53 @@ interface RasterRenderRequest {
 }
 
 async function stageRasterConversion(
-  job: RasterJob,
+  input: RasterInput,
   index: number,
   context: RasterStageContext,
 ): Promise<PreparedConversionOutput> {
   context.runtime.signal.throwIfAborted();
   const resultExtension = context.spec.target;
-  const stagingRootPath = stagingRootPathFor(job.workspacePath, context.spec.operationName, context.runId);
+  const stagingRootPath = stagingRootPathFor(input.workspacePath, context.spec.operationName, context.runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, `result.${resultExtension}`);
 
-  await writeSourceAsRaster(job, { stageDirectory, stagedOutputPath, stagingRootPath }, context);
+  await writeSourceAsRaster(input, { stageDirectory, stagedOutputPath, stagingRootPath }, context);
   context.runtime.signal.throwIfAborted();
   await validateGeneratedRaster(stagedOutputPath, resultExtension);
   context.runtime.signal.throwIfAborted();
 
   return {
     stagedOutputPath,
-    outputPath: job.outputPath,
-    workspacePath: job.workspacePath,
+    outputPath: input.outputPath,
+    workspacePath: input.workspacePath,
     stagingRootPath,
   };
 }
 
 async function writeSourceAsRaster(
-  job: RasterJob,
+  input: RasterInput,
   paths: RasterStagePaths,
   context: RasterStageContext,
 ): Promise<void> {
-  const { sourcePath } = job;
+  const { sourcePath } = input;
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
-    await writeDrawioAsRaster(job, paths, context);
+    await writeDrawioAsRaster(input, paths, context);
     return;
   }
 
   const request: RasterRenderRequest = {
     sourcePath,
     outputPath: paths.stagedOutputPath,
-    workspacePath: job.workspacePath,
+    workspacePath: input.workspacePath,
     stageDirectory: paths.stageDirectory,
   };
-  if (job.page !== undefined) {
-    request.page = job.page;
+  if (input.page !== undefined) {
+    request.page = input.page;
   }
-  if (job.animation !== undefined) {
-    request.animation = job.animation;
+  if (input.animation !== undefined) {
+    request.animation = input.animation;
   }
 
   if (extension === '.pdf') {
@@ -193,19 +193,19 @@ async function writeSourceAsRaster(
 }
 
 async function writeDrawioAsRaster(
-  job: RasterJob,
+  input: RasterInput,
   paths: RasterStagePaths,
   context: RasterStageContext,
 ): Promise<void> {
   context.runtime.signal.throwIfAborted();
   const pdfPath = path.join(paths.stageDirectory, 'drawio.pdf');
-  await assertWritablePathInWorkspace(pdfPath, job.workspacePath);
+  await assertWritablePathInWorkspace(pdfPath, input.workspacePath);
   await mkdir(path.dirname(pdfPath), { recursive: true });
   context.runtime.signal.throwIfAborted();
 
   await context.drawioTools.runDrawio(
     context.drawioTools.drawioPath,
-    ['-x', '-f', 'pdf', '-o', pdfPath, job.sourcePath],
+    ['-x', '-f', 'pdf', '-o', pdfPath, input.sourcePath],
     context.runtime.signal,
   );
 
@@ -213,8 +213,8 @@ async function writeDrawioAsRaster(
   // page to its drawn content. Without an explicit page, use the first page
   // that actually contains content. The page scan needs a real PDF.
   const pdfBytes = await readFile(pdfPath);
-  let page = job.page ?? 1;
-  if (job.page === undefined) {
+  let page = input.page ?? 1;
+  if (input.page === undefined) {
     const pageCount = await countPdfPages(pdfBytes);
     for (let candidate = 1; candidate <= pageCount; candidate += 1) {
       context.runtime.signal.throwIfAborted();
@@ -229,7 +229,7 @@ async function writeDrawioAsRaster(
     {
       sourcePath: pdfPath,
       outputPath: paths.stagedOutputPath,
-      workspacePath: job.workspacePath,
+      workspacePath: input.workspacePath,
       stageDirectory: paths.stageDirectory,
       page,
       cropContent: true,
@@ -354,35 +354,35 @@ function animationEncoderOptions(animation: RasterAnimationMetadata | undefined)
   return options;
 }
 
-async function validateJobPaths(jobs: RasterJob[], stagingDirectoryName: string): Promise<void> {
+async function validateInputPaths(inputs: RasterInput[], stagingDirectoryName: string): Promise<void> {
   await Promise.all(
-    jobs.flatMap((job) => [
-      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
-      assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
+    inputs.flatMap((input) => [
+      assertExistingPathInWorkspace(input.sourcePath, input.workspacePath),
+      assertWritablePathInWorkspace(input.outputPath, input.workspacePath),
       assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.graphics-workbench', stagingDirectoryName),
-        job.workspacePath,
+        path.join(input.workspacePath, '.graphics-workbench', stagingDirectoryName),
+        input.workspacePath,
       ),
     ]),
   );
 }
 
-function validateJobs(jobs: RasterJob[], spec: RasterFormatSpec): void {
-  if (jobs.length === 0) {
+function validateConversions(inputs: RasterInput[], spec: RasterFormatSpec): void {
+  if (inputs.length === 0) {
     throw new Error('No files were selected.');
   }
 
-  for (const job of jobs) {
+  for (const input of inputs) {
     if (
-      !isEditableDrawioImagePath(job.sourcePath) &&
-      !isNativeDrawioPath(job.sourcePath) &&
-      isSameSourceFormat(job.sourcePath, spec.target)
+      !isEditableDrawioImagePath(input.sourcePath) &&
+      !isNativeDrawioPath(input.sourcePath) &&
+      isSameSourceFormat(input.sourcePath, spec.target)
     ) {
-      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+      throw new Error(`Input and output formats must differ: ${input.sourcePath}`);
     }
 
-    if (!isSupportedSourcePath(job.sourcePath)) {
-      throw new Error(`Unsupported input for ${spec.outputLabel} conversion: ${job.sourcePath}`);
+    if (!isSupportedSourcePath(input.sourcePath)) {
+      throw new Error(`Unsupported input for ${spec.outputLabel} input: ${input.sourcePath}`);
     }
   }
 }
@@ -392,7 +392,7 @@ async function validateGeneratedRaster(outputPath: string, outputExtension: stri
   const expectedFormat = outputExtension === 'avif' ? 'heif' : outputExtension;
 
   if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
-    throw new Error(`Raster conversion produced invalid ${outputExtension.toUpperCase()} output: ${outputPath}`);
+    throw new Error(`Raster input produced invalid ${outputExtension.toUpperCase()} output: ${outputPath}`);
   }
 }
 
@@ -437,7 +437,7 @@ interface WebpOutputOptions {
 }
 
 export interface ExecuteRasterConversionOptions {
-  jobs: RasterJob[];
+  inputs: RasterInput[];
   runtime: ConversionExecutionContext;
   pdfRenderTools: PdfRenderBackend;
   mermaidTools: MermaidBackend;
@@ -452,17 +452,17 @@ export async function executeRasterConversion(
   options: ExecuteRasterConversionOptions,
 ): Promise<CommittedConversionOutput[]> {
   options.runtime.signal?.throwIfAborted();
-  validateJobs(options.jobs, options.spec);
-  await validateJobPaths(options.jobs, options.spec.operationName);
+  validateConversions(options.inputs, options.spec);
+  await validateInputPaths(options.inputs, options.spec.operationName);
   options.runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
-    jobs: options.jobs,
+    inputs: options.inputs,
     operationName: options.spec.operationName,
     runId: options.runId,
     runtime: options.runtime,
-    stage: async (job, index, stageRunId, stageRuntime) =>
-      stageRasterConversion(job, index, {
+    stage: async (input, index, stageRunId, stageRuntime) =>
+      stageRasterConversion(input, index, {
         runId: stageRunId,
         runtime: stageRuntime,
         pdfRenderTools: options.pdfRenderTools,

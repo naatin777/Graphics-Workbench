@@ -5,7 +5,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import { isEditableDrawioImagePath } from '../../src/shared/source_format.js';
-import { convertDrawioToPdfFiles } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
+import { convertDrawioToSinglePdf } from '../../src/operations/conversion/convert_drawio_to_pdf.js';
 import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { convertToPdfFiles } from '../../src/operations/conversion/convert_to_pdf.js';
@@ -78,7 +78,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
         const drawioTools = { drawioPath, runDrawio: executeDrawio };
         await executeRasterConversion({
           spec: rasterFormatSpecs.png,
-          jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
+          inputs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           runtime,
           pdfRenderTools: configuredTools.pdfRenderTools,
           mermaidTools: configuredTools.mermaidTools,
@@ -87,11 +87,11 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
           runId: `drawio-${fixtureCase.id}-png`,
         });
         await convertToSvgFiles({
-          jobs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
+          inputs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
           mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           runPdfToSvg: () => {
-            throw new Error('drawio fixture must not include PDF input for SVG conversion');
+            throw new Error('drawio fixture must not include PDF input for SVG input');
           },
           maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
           runId: `drawio-${fixtureCase.id}-svg`,
@@ -99,7 +99,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
 
         await (isEditableDrawioImagePath(sourcePath)
           ? convertToPdfFiles({
-              jobs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
+              inputs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
               supportedExtensions: ['.drawio', '.drawio.png', '.drawio.svg'],
               tools: { drawioTools },
               maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
@@ -107,8 +107,8 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
               operationName: `drawio-${fixtureCase.id}-to-pdf`,
               runId: `drawio-${fixtureCase.id}-pdf`,
             })
-          : convertDrawioToPdfFiles({
-              jobs: [
+          : convertDrawioToSinglePdf({
+              inputs: [
                 {
                   sourcePath,
                   outputTemplate: `\${workspaceFolder}/${fixtureCase.outputDirectory}/actual.pdf`,
@@ -117,7 +117,6 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
                 },
               ],
               drawioPath,
-              outputMode: 'single-pdf',
               runDrawio: executeDrawio,
               runtime,
               runId: `drawio-${fixtureCase.id}-native-pdf`,
@@ -156,8 +155,8 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'invalid', 'drawio', invalidCase.fileName);
         const sourcePath = await copyInputToWorkspace(inputPath, invalidCase.workspaceSourcePath);
-        const conversion = convertDrawioToPdfFiles({
-          jobs: [
+        const input = convertDrawioToSinglePdf({
+          inputs: [
             {
               sourcePath,
               outputTemplate: `\${workspaceFolder}/invalid-output-${index}.pdf`,
@@ -166,12 +165,11 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
             },
           ],
           drawioPath,
-          outputMode: 'single-pdf',
           runDrawio: executeDrawio,
           runId: `drawio-invalid-${index}`,
         });
 
-        await assert.rejects(conversion, invalidCase.fileName);
+        await assert.rejects(input, invalidCase.fileName);
         await assert.rejects(access(path.join(workspacePath, `invalid-output-${index}.pdf`)));
       });
     });

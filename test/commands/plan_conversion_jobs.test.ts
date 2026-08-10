@@ -75,7 +75,7 @@ suite(
             configuration: getExtensionConfiguration(),
             maxInputPixels,
           }),
-          new RegExp(`Unsupported input for ${unsupportedLabel} conversion: ${RegExp.escape(sourcePath)}`),
+          new RegExp(`Unsupported input for ${unsupportedLabel} input: ${RegExp.escape(sourcePath)}`),
         );
       });
     }

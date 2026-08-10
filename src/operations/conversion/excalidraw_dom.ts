@@ -28,7 +28,7 @@ const domPool = new ExcalidrawDomPool(3);
  * Runs `run` with a minimal browser DOM for @excalidraw/excalidraw.
  *
  * A pooled jsdom window is used, browser globals are installed for the
- * duration of the conversion, and the original global state is restored
+ * duration of the input, and the original global state is restored
  * afterwards. The window itself stays alive in the pool for reuse.
  */
 export async function withExcalidrawDom<T>(

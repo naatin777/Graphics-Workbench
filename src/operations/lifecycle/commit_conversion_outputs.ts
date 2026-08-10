@@ -37,7 +37,7 @@ export interface PreparedConversionOutput {
 export interface CommittedConversionOutput {
   outputPath: string;
   workspacePath: string;
-  /** SHA-256 of the staged conversion result that was committed. */
+  /** SHA-256 of the staged input result that was committed. */
   sha256: string;
   previousFilePath?: string;
   previousFileMetadata?: PreviousFileMetadata;
@@ -130,7 +130,7 @@ export async function commitStagedOutputs(
       conflicts.map(({ output }) => output),
       options.resolveConflicts,
     );
-    options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] conflict decision: ${decision}`);
+    options.outputChannel?.appendLine(`[${options.operationName ?? 'input'}] conflict decision: ${decision}`);
     resolvedOutputs = await resolveOutputPaths(outputs, decision, conflicts, normalizePath);
 
     options.signal?.throwIfAborted();
@@ -329,12 +329,12 @@ async function commitResolvedOutputs(
     if (rollbackErrors.length > 0) {
       for (const failure of rollbackErrors) {
         options.outputChannel?.appendLine(
-          `[${options.operationName ?? 'conversion'}] rollback failed for ${failure.outputPath}: ${failure.error.message}`,
+          `[${options.operationName ?? 'input'}] rollback failed for ${failure.outputPath}: ${failure.error.message}`,
         );
         const output = outputs.find((item) => item.outputPath === failure.outputPath);
         if (output?.previousFilePath !== undefined) {
           options.outputChannel?.appendLine(
-            `[${options.operationName ?? 'conversion'}] preserving recovery backup for ${failure.outputPath}: ${output.previousFilePath}`,
+            `[${options.operationName ?? 'input'}] preserving recovery backup for ${failure.outputPath}: ${output.previousFilePath}`,
           );
         }
       }
@@ -420,7 +420,7 @@ function toCommittedOutput(
     result.stagingWorkspacePath = stagingWorkspacePath;
   }
 
-  options.outputChannel?.appendLine(`[${options.operationName ?? 'conversion'}] committed output: ${outputPath}`);
+  options.outputChannel?.appendLine(`[${options.operationName ?? 'input'}] committed output: ${outputPath}`);
   return result;
 }
 
@@ -621,7 +621,7 @@ function assertUniqueRequestedOutputs(outputs: PreparedConversionOutput[], norma
     const normalizedPath = normalizePath(output.outputPath);
 
     if (normalizedPaths.has(normalizedPath)) {
-      throw new Error(`Multiple conversions resolve to the same output: ${output.outputPath}`);
+      throw new Error(`Multiple inputs resolve to the same output: ${output.outputPath}`);
     }
 
     normalizedPaths.add(normalizedPath);

@@ -48,7 +48,7 @@ async function convertImage(
 
   if (outputFormat === 'pdf') {
     await convertToPdfFiles({
-      jobs: [job],
+      inputs: [job],
       supportedExtensions: [`.${inputFormat}`],
       operationName: 'convert-additional-image-to-pdf',
       maxInputPixels: 100_000_000,
@@ -57,7 +57,7 @@ async function convertImage(
   }
 
   const common = {
-    jobs: [job],
+    inputs: [job],
     pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
     mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
     drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },

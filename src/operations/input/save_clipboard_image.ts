@@ -39,7 +39,7 @@ export interface SaveClipboardImageTestOverrides {
   commit?: Pick<CommitConversionOutputsOptions, 'copyFile' | 'rename' | 'rm'>;
 }
 
-/** Saves one clipboard payload through the same staging and commit boundary as conversions. */
+/** Saves one clipboard payload through the same staging and commit boundary as inputs. */
 export async function saveClipboardImage(
   request: SaveClipboardImageRequest,
   runtime: ConversionExecutionContext,
@@ -127,7 +127,7 @@ async function saveClipboardImageAsPdf(
   runtime: ConversionExecutionContext,
 ): Promise<CommittedConversionOutput[]> {
   const convertOptions: ConvertToPdfFilesOptions = {
-    jobs: [
+    inputs: [
       {
         sourcePath: stagedImage.stagedOutputPath,
         outputPath: appendExtension(request.outputBasePath, 'pdf'),

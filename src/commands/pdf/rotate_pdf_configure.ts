@@ -202,7 +202,7 @@ async function applyConfiguredRotation(params: {
     signal,
     run: async (runtime) =>
       rotatePdfFiles({
-        jobs: [
+        inputs: [
           {
             sourcePath: inputUri.fsPath,
             workspacePath,

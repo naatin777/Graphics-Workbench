@@ -15,7 +15,7 @@ import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options
 import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
-import { convertToSvgFiles, type ConvertToSvgJob } from '../../operations/conversion/convert_to_svg.js';
+import { convertToSvgFiles, type SvgInput } from '../../operations/conversion/convert_to_svg.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -24,7 +24,7 @@ import type { ConversionExecutionContext } from '../../operations/lifecycle/conv
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertLocalFileUri } from '../shared/command_input.js';
-import { createDrawioBackend } from '../shared/command_runtime.js';
+import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
 import { isAbortError } from '../../shared/error.js';
 
 export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
@@ -44,13 +44,13 @@ export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies
       resolveConflicts: resolveOutputConflicts,
       messages: createOutputConversionMessages('SVG', sourceUris.length),
       run: async (runtime) => {
-        const jobs: ConvertToSvgJob[] = [];
+        const inputs: SvgInput[] = [];
         for (const sourceUri of sourceUris) {
           runtime.signal?.throwIfAborted();
-          jobs.push(...(await planSvgConversionJobs(sourceUri, configuration, runtime)));
+          inputs.push(...(await planSvgInputs(sourceUri, configuration, runtime)));
         }
         return convertToSvgFiles({
-          jobs,
+          inputs,
           maxInputPixels,
           mermaidTools,
           drawioTools,
@@ -75,11 +75,11 @@ export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies
   }
 }
 
-async function planSvgConversionJobs(
+async function planSvgInputs(
   sourceUri: vscode.Uri,
   configuration: Configuration,
   runtime?: ConversionExecutionContext,
-): Promise<ConvertToSvgJob[]> {
+): Promise<SvgInput[]> {
   assertLocalFileUri(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
   if (!workspace) {
@@ -90,12 +90,12 @@ async function planSvgConversionJobs(
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (extension === '.svg' && !isEditableDrawioImagePath(sourcePath)) {
-    throw new Error(`Unsupported input for SVG conversion: ${sourcePath}`);
+    throw new Error(`Unsupported input for SVG input: ${sourcePath}`);
   }
 
   if (extension === '.pdf') {
     await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return planPdfPageSvgJobs(sourcePath, workspace, configuration, runtime);
+    return planPdfPageSvgInputs(sourcePath, workspace, configuration, runtime);
   }
 
   if (isNativeDrawioPath(sourcePath)) {
@@ -135,12 +135,12 @@ async function planSvgConversionJobs(
   ];
 }
 
-async function planPdfPageSvgJobs(
+async function planPdfPageSvgInputs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
   runtime?: ConversionExecutionContext,
-): Promise<ConvertToSvgJob[]> {
+): Promise<SvgInput[]> {
   runtime?.signal?.throwIfAborted();
   runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const pageCount = await countPdfPages(await readFile(sourcePath));
@@ -152,12 +152,12 @@ async function planPdfPageSvgJobs(
   const outputTemplate = resolveConversionTemplate({ target: 'svg', sourcePath, configuration });
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
-  const jobs: ConvertToSvgJob[] = [];
+  const inputs: SvgInput[] = [];
 
   for (let index = 0; index < pageCount; index += 1) {
     runtime?.signal?.throwIfAborted();
     const page = index + 1;
-    jobs.push({
+    inputs.push({
       sourcePath,
       workspacePath: workspace.uri.fsPath,
       outputPath: resolveOutputPath(
@@ -174,7 +174,7 @@ async function planPdfPageSvgJobs(
     });
   }
 
-  return jobs;
+  return inputs;
 }
 
 function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {

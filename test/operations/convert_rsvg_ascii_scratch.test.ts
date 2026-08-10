@@ -71,7 +71,7 @@ suite(
         const pdfBytes = await readFile(pdfFixturePath);
 
         await convertToPdfFilesWithScratch({
-          jobs: [createJob(paths)],
+          inputs: [createJob(paths)],
           supportedExtensions: ['.svg'],
           tools: {
             svgToPdfTools: createSvgToPdfOptions(async (executable, args) => {
@@ -105,7 +105,7 @@ suite(
       try {
         await assert.rejects(
           convertToPdfFilesWithScratch({
-            jobs: [createJob(paths)],
+            inputs: [createJob(paths)],
             supportedExtensions: ['.svg'],
             tools: {
               svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
@@ -137,7 +137,7 @@ suite(
       try {
         await assert.rejects(
           convertToPdfFilesWithScratch({
-            jobs: [createJob(paths)],
+            inputs: [createJob(paths)],
             supportedExtensions: ['.svg'],
             tools: {
               svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {

@@ -38,7 +38,7 @@ suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗と
       const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
       await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
 
-      sandbox.stub(vscode.window, 'showInformationMessage').rejects(new Error('UI failed after conversion.'));
+      sandbox.stub(vscode.window, 'showInformationMessage').rejects(new Error('UI failed after input.'));
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
       await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });

@@ -52,7 +52,7 @@ suite('PDF configure crop処理', () => {
     const before = await captureWorkspaceSnapshot(workspacePath);
 
     const outputs = await cropPdfWithConfiguredBox({
-      job: {
+      input: {
         sourcePath,
         workspacePath,
         outputPath,
@@ -117,7 +117,7 @@ suite('PDF configure crop処理', () => {
     const before = await captureWorkspaceSnapshot(workspacePath);
 
     await cropPdfWithConfiguredBox({
-      job: {
+      input: {
         sourcePath,
         workspacePath,
         outputPath,
@@ -173,7 +173,7 @@ suite('PDF configure crop処理', () => {
 
     await assert.rejects(
       cropPdfWithConfiguredBox({
-        job: {
+        input: {
           sourcePath,
           workspacePath,
           outputPath,
@@ -249,7 +249,7 @@ suite('PDF configure crop処理', () => {
 
         assert.strictEqual(outputPath, expectedPath);
         const outputs = await cropPdfWithConfiguredBox({
-          job: {
+          input: {
             sourcePath,
             workspacePath,
             outputPath,

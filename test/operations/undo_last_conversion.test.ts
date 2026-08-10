@@ -198,7 +198,7 @@ suite('直前変換の取り消し処理', () => {
     ]);
     const externalEdit = writeAfterPathDisappears(firstOutputPath, secondOutputPath, 'external edit');
 
-    await assert.rejects(undoConversionOutputs(record), /changed after conversion/);
+    await assert.rejects(undoConversionOutputs(record), /changed after input/);
     await externalEdit;
 
     assert.strictEqual(await readFile(firstOutputPath, 'utf8'), 'first');
@@ -225,7 +225,7 @@ suite('直前変換の取り消し処理', () => {
       }),
       (error: unknown) => {
         assert.ok(error instanceof UndoCleanupError);
-        assert.match(error.originalError.message, /changed after conversion/);
+        assert.match(error.originalError.message, /changed after input/);
         assert.strictEqual(error.cleanupResult.failures.length, 1);
         assert.match(error.cleanupResult.failures[0]?.rootPath ?? '', /undo-rollback/);
         return true;
@@ -308,7 +308,7 @@ suite('直前変換の取り消し処理', () => {
     ]);
     await writeFile(secondOutputPath, 'edited');
 
-    await assert.rejects(undoConversionOutputs(record), /changed after conversion/);
+    await assert.rejects(undoConversionOutputs(record), /changed after input/);
     await assert.doesNotReject(access(firstOutputPath));
     await assert.doesNotReject(access(secondOutputPath));
   });
@@ -419,7 +419,7 @@ suite('直前変換の取り消し処理', () => {
     const record = await createConversionUndoRecord([{ outputPath, workspacePath, previousFilePath }]);
     await writeFile(outputPath, 'edited');
 
-    await assert.rejects(undoConversionOutputs(record), /changed after conversion/);
+    await assert.rejects(undoConversionOutputs(record), /changed after input/);
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'edited');
   });
 });

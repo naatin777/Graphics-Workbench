@@ -21,7 +21,7 @@ import type { CropBox, CropTarget } from './crop_pdf_core.js';
 
 export type { CropBox } from './crop_pdf_core.js';
 
-interface CropPdfConfigureJob {
+interface ConfiguredCropPdfInput {
   sourcePath: string;
   workspacePath: string;
   outputPath: string;
@@ -30,7 +30,7 @@ interface CropPdfConfigureJob {
 }
 
 export interface CropPdfConfigureOptions {
-  job: CropPdfConfigureJob;
+  input: ConfiguredCropPdfInput;
   runtime?: ConversionExecutionContext;
   createRunId?: () => RunId;
 }
@@ -38,7 +38,7 @@ export interface CropPdfConfigureOptions {
 export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
-  await validatePdfPathInputs([options.job], 'crop-pdf-configure');
+  await validatePdfPathInputs([options.input], 'crop-pdf-configure');
 
   runtime?.outputChannel?.appendLine('[crop-pdf-configure] operation-started');
 
@@ -46,8 +46,10 @@ export async function cropPdfWithConfiguredBox(options: CropPdfConfigureOptions)
 
   const runId = options.createRunId?.() ?? createRunId();
   assertSafePathSegment(runId, 'runId');
-  const stagingRootPath = stagingRootPathFor(options.job.workspacePath, 'crop-pdf-configure', runId);
-  const artifacts: ConversionArtifactRoot[] = [{ rootPath: stagingRootPath, workspacePath: options.job.workspacePath }];
+  const stagingRootPath = stagingRootPathFor(options.input.workspacePath, 'crop-pdf-configure', runId);
+  const artifacts: ConversionArtifactRoot[] = [
+    { rootPath: stagingRootPath, workspacePath: options.input.workspacePath },
+  ];
 
   try {
     const preparedOutput = await prepareConfiguredCropOutput(options, runId);
@@ -90,29 +92,29 @@ async function prepareConfiguredCropOutput(
   options: CropPdfConfigureOptions,
   runId: RunId,
 ): Promise<PreparedConversionOutput> {
-  const { job, runtime } = options;
+  const { input, runtime } = options;
   const signal = runtime?.signal;
-  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'crop-pdf-configure', runId);
+  const stagingRootPath = stagingRootPathFor(input.workspacePath, 'crop-pdf-configure', runId);
   const workDirectory = path.join(stagingRootPath, 'item-1');
   const copiedSourcePath = path.join(workDirectory, 'input.pdf');
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
   signal?.throwIfAborted();
-  await assertWritablePathInWorkspace(workDirectory, job.workspacePath);
+  await assertWritablePathInWorkspace(workDirectory, input.workspacePath);
   await mkdir(workDirectory, { recursive: true });
-  await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
-  await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
-  await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
+  await assertWritablePathInWorkspace(copiedSourcePath, input.workspacePath);
+  await copyFileWithAbort(input.sourcePath, copiedSourcePath, undefined, signal);
+  await assertExistingPathInWorkspace(copiedSourcePath, input.workspacePath);
 
   signal?.throwIfAborted();
-  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+  await assertWritablePathInWorkspace(stagedOutputPath, input.workspacePath);
   signal?.throwIfAborted();
   await runCropPdfProcess(
     {
       sourcePath: copiedSourcePath,
       stagedOutputPath,
-      cropBox: job.cropBox,
-      target: job.target,
+      cropBox: input.cropBox,
+      target: input.target,
     },
     signal,
     {
@@ -120,13 +122,13 @@ async function prepareConfiguredCropOutput(
     },
   );
   signal?.throwIfAborted();
-  await assertExistingPathInWorkspace(stagedOutputPath, job.workspacePath);
+  await assertExistingPathInWorkspace(stagedOutputPath, input.workspacePath);
   runtime?.outputChannel?.appendLine('[crop-pdf-configure] staging-validated');
 
   return {
     stagedOutputPath,
-    outputPath: job.outputPath,
-    workspacePath: job.workspacePath,
+    outputPath: input.outputPath,
+    workspacePath: input.workspacePath,
     stagingRootPath,
   };
 }

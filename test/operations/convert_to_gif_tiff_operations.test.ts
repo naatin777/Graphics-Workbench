@@ -35,7 +35,7 @@ suite('GIF/TIFFの各フレームを静止画像として出力する', () => {
       await executeRasterConversion({
         ...common,
         spec,
-        jobs: outputPaths.map((outputPath, index) => ({
+        inputs: outputPaths.map((outputPath, index) => ({
           sourcePath,
           outputPath,
           workspacePath: workspacePath.path,

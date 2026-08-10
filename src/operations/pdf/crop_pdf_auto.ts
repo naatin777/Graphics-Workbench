@@ -20,14 +20,14 @@ import {
   type MupdfPdfPage,
 } from './mupdf.js';
 
-export interface CropPdfJob {
+export interface CropPdfInput {
   sourcePath: string;
   workspacePath: string;
   outputPath: string;
 }
 
 export interface CropPdfOptions {
-  jobs: CropPdfJob[];
+  inputs: CropPdfInput[];
   margin: number;
   runtime?: ConversionExecutionContext;
   runId?: string;
@@ -38,27 +38,27 @@ type Rect = [number, number, number, number];
 export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
-  validateJobs(options.jobs);
+  validateConversions(options.inputs);
   validateMargin(options.margin);
-  await validatePdfPathInputs(options.jobs, 'crop-pdf');
+  await validatePdfPathInputs(options.inputs, 'crop-pdf');
 
   runtime?.signal?.throwIfAborted();
 
   if (!runtime?.resolveConflicts) {
-    await assertOutputsDoNotExist(options.jobs);
+    await assertOutputsDoNotExist(options.inputs);
   }
 
   runtime?.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
-    jobs: options.jobs,
+    inputs: options.inputs,
     operationName: 'crop-pdf-auto',
     stagingOperationName: 'crop-pdf',
     runId: options.runId,
     ...(runtime !== undefined && { runtime }),
-    stage: async (job, index, currentRunId, batchRuntime) =>
+    stage: async (input, index, currentRunId, batchRuntime) =>
       convertPdf({
-        job,
+        input,
         index,
         margin: options.margin,
         runId: currentRunId,
@@ -68,39 +68,39 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
 }
 
 async function convertPdf(params: {
-  job: CropPdfJob;
+  input: CropPdfInput;
   index: number;
   margin: number;
   runId: string;
   signal: AbortSignal;
 }): Promise<PreparedConversionOutput> {
-  const { job, index, margin, runId, signal } = params;
+  const { input, index, margin, runId, signal } = params;
   signal.throwIfAborted();
-  const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'crop-pdf', runId);
+  const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(input.sourcePath, path.extname(input.sourcePath)))}`;
+  const stagingRootPath = stagingRootPathFor(input.workspacePath, 'crop-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
-  const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
+  const copiedSourcePath = path.join(workDirectory, path.basename(input.sourcePath));
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
-  await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
-  await assertWritablePathInWorkspace(workDirectory, job.workspacePath);
+  await assertExistingPathInWorkspace(input.sourcePath, input.workspacePath);
+  await assertWritablePathInWorkspace(workDirectory, input.workspacePath);
   signal.throwIfAborted();
   await mkdir(workDirectory, { recursive: true });
-  await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
+  await assertWritablePathInWorkspace(copiedSourcePath, input.workspacePath);
   signal.throwIfAborted();
-  await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
+  await copyFileWithAbort(input.sourcePath, copiedSourcePath, undefined, signal);
 
-  const pdfBytes = await cropDocumentBytes(await readFile(copiedSourcePath), margin, job.sourcePath, signal);
+  const pdfBytes = await cropDocumentBytes(await readFile(copiedSourcePath), margin, input.sourcePath, signal);
   signal.throwIfAborted();
-  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+  await assertWritablePathInWorkspace(stagedOutputPath, input.workspacePath);
   signal.throwIfAborted();
   await writeFile(stagedOutputPath, pdfBytes);
   signal.throwIfAborted();
 
   return {
     stagedOutputPath,
-    outputPath: job.outputPath,
-    workspacePath: job.workspacePath,
+    outputPath: input.outputPath,
+    workspacePath: input.workspacePath,
     stagingRootPath,
   };
 }
@@ -183,14 +183,14 @@ function toFiniteNumber(value: unknown): number | null {
   const number = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(number) ? number : null;
 }
-function validateJobs(jobs: CropPdfJob[]): void {
-  if (jobs.length === 0) {
+function validateConversions(inputs: CropPdfInput[]): void {
+  if (inputs.length === 0) {
     throw new Error('No PDF files were selected.');
   }
 
-  for (const job of jobs) {
-    if (path.extname(job.sourcePath).toLowerCase() !== '.pdf') {
-      throw new Error(`Only PDF files can be cropped: ${job.sourcePath}`);
+  for (const input of inputs) {
+    if (path.extname(input.sourcePath).toLowerCase() !== '.pdf') {
+      throw new Error(`Only PDF files can be cropped: ${input.sourcePath}`);
     }
   }
 }
@@ -201,20 +201,20 @@ function validateMargin(margin: number): void {
   }
 }
 
-async function assertOutputsDoNotExist(jobs: CropPdfJob[]): Promise<void> {
+async function assertOutputsDoNotExist(inputs: CropPdfInput[]): Promise<void> {
   const normalizedOutputs = new Set<string>();
 
-  for (const job of jobs) {
-    const normalizedOutput = path.resolve(job.outputPath);
+  for (const input of inputs) {
+    const normalizedOutput = path.resolve(input.outputPath);
 
     if (normalizedOutputs.has(normalizedOutput)) {
-      throw new Error(`Multiple inputs resolve to the same output: ${job.outputPath}`);
+      throw new Error(`Multiple inputs resolve to the same output: ${input.outputPath}`);
     }
     normalizedOutputs.add(normalizedOutput);
 
     try {
-      await access(job.outputPath);
-      throw new Error(`Output file already exists: ${job.outputPath}`);
+      await access(input.outputPath);
+      throw new Error(`Output file already exists: ${input.outputPath}`);
     } catch (error) {
       if (isFileNotFoundError(error)) {
         continue;

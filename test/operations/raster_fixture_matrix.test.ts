@@ -45,7 +45,7 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
         await executeRasterConversion({
           spec: rasterFormatSpecs.png,
           maxInputPixels: 1_000_000_000,
-          jobs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
+          inputs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
           pdfRenderTools,
           mermaidTools,
           drawioTools,
@@ -74,7 +74,7 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
         executeRasterConversion({
           spec: rasterFormatSpecs.png,
           maxInputPixels: 1_000_000_000,
-          jobs: [{ sourcePath, outputPath, workspacePath }],
+          inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,
           drawioTools,

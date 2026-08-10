@@ -31,7 +31,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await writeAnimatedGif(sourcePath);
 
     await convertToPdfFiles({
-      jobs: outputPaths.map((outputPath, index) => ({
+      inputs: outputPaths.map((outputPath, index) => ({
         sourcePath,
         outputPath,
         workspacePath: workspacePath.path,
@@ -58,7 +58,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await writeAnimatedGif(sourcePath);
 
     await convertToPdfFiles({
-      jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.gif'],
       operationName: 'convert-gif-to-pdf',
       maxInputPixels: 1_000_000_000,
@@ -77,7 +77,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await copyFile(path.join(testInputDirectory, 'valid', 'tiff', 'heatmap.tiff'), sourcePath);
 
     await convertToPdfFiles({
-      jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.tiff'],
       operationName: 'convert-tiff-to-pdf',
       maxInputPixels: 1_000_000_000,
@@ -105,7 +105,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await copyFile(operationPngInputPath, sourcePath);
 
     await convertToPdfFiles({
-      jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.png'],
       operationName: 'convert-to-pdf',
       maxInputPixels: 1_000_000_000,
@@ -134,7 +134,7 @@ suite('入力画像をPDFへ変換する処理', () => {
 
     await assert.rejects(
       convertToPdfFiles({
-        jobs: [{ sourcePath, outputPath: limitedOutputPath, workspacePath: workspacePath.path }],
+        inputs: [{ sourcePath, outputPath: limitedOutputPath, workspacePath: workspacePath.path }],
         maxInputPixels: 99,
         supportedExtensions: ['.png'],
         operationName: 'convert-to-pdf',
@@ -143,7 +143,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     );
 
     await convertToPdfFiles({
-      jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       maxInputPixels: 100,
       supportedExtensions: ['.png'],
       operationName: 'convert-to-pdf',
@@ -160,7 +160,7 @@ suite('入力画像をPDFへ変換する処理', () => {
 
     await assert.rejects(
       convertToPdfFiles({
-        jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
         supportedExtensions: ['.drawio.png'],
         operationName: 'convert-to-pdf',
         maxInputPixels: 1_000_000_000,
@@ -187,7 +187,7 @@ suite('入力画像をPDFへ変換する処理', () => {
 
     await assert.rejects(
       convertToPdfFiles({
-        jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
         supportedExtensions: ['.drawio.png'],
         operationName: 'convert-to-pdf',
         maxInputPixels: 1_000_000_000,
@@ -209,7 +209,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     );
 
     await convertToPdfFiles({
-      jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       supportedExtensions: ['.svg'],
       operationName: 'convert-svg-to-pdf',
       maxInputPixels: 1_000_000_000,

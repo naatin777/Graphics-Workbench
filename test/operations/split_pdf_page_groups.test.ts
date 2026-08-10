@@ -36,7 +36,7 @@ suite('PDFページグループ分割', () => {
     await writePdf(sourcePath, [101, 102, 103]);
 
     await splitPdfByPageGroups({
-      jobs: [
+      inputs: [
         {
           sourcePath,
           workspacePath: workspacePath.path,
@@ -74,7 +74,7 @@ suite('PDFページグループ分割', () => {
 
     await assert.rejects(
       splitPdfByPageGroups({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             workspacePath: workspacePath.path,
@@ -100,7 +100,7 @@ suite('PDFページグループ分割', () => {
 
     await assert.rejects(
       splitPdfByPageGroups({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             workspacePath: workspacePath.path,
@@ -115,7 +115,7 @@ suite('PDFページグループ分割', () => {
 
     await assert.rejects(
       splitPdfByPageGroups({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             workspacePath: workspacePath.path,

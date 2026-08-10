@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { localeMap } from '../../locale_map.js';
-import { decryptPdfFiles, type DecryptPdfJob } from '../../operations/pdf/decrypt_pdf.js';
+import { decryptPdfFiles, type DecryptPdfInput } from '../../operations/pdf/decrypt_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
@@ -27,20 +27,20 @@ export async function decryptPdfCommand(sourceUris: vscode.Uri[], dependencies: 
 
     const configuration = dependencies.getConfiguration();
     const outputTemplate = configuration.outputPath.decryptPdf();
-    const jobs = sourceUris.map((sourceUri) => planDecryptPdfJob(sourceUri, outputTemplate));
+    const inputs = sourceUris.map((sourceUri) => planDecryptPdfInput(sourceUri, outputTemplate));
     await runConversionLifecycle({
       operationName: 'decrypt-pdf',
       outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
-        progressTitle: userMessage('message.progress.decryptPdf.title', jobs.length),
+        progressTitle: userMessage('message.progress.decryptPdf.title', inputs.length),
         prepareMessage: userMessage('message.progress.prepareDecryptPdf'),
         successMessage: (count) => userMessage('message.decryptPdf.success', count),
         undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
         cancelledMessage: userMessage('message.decryptPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.decryptPdf.failed', reason),
       },
-      run: async (runtime) => decryptPdfFiles({ jobs, password, runtime }),
+      run: async (runtime) => decryptPdfFiles({ inputs, password, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -61,7 +61,7 @@ async function promptForPassword(): Promise<string | undefined> {
   });
 }
 
-function planDecryptPdfJob(sourceUri: vscode.Uri, outputTemplate: string): DecryptPdfJob {
+function planDecryptPdfInput(sourceUri: vscode.Uri, outputTemplate: string): DecryptPdfInput {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local PDF files are supported: ${sourceUri.toString()}`);
   }

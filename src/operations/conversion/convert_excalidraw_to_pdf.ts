@@ -14,7 +14,7 @@ import { validateGeneratedPdf, writeSourceAsPdf } from './convert_to_pdf.js';
 import { excalidrawToSvg, type ExcalidrawToSvgOptions } from './excalidraw_adapter.js';
 import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 
-export interface ExcalidrawPdfJob {
+export interface ExcalidrawPdfInput {
   sourcePath: string;
   outputTemplate: string;
   workspacePath: string;
@@ -22,7 +22,7 @@ export interface ExcalidrawPdfJob {
 }
 
 export interface ConvertExcalidrawToPdfOptions {
-  jobs: ExcalidrawPdfJob[];
+  inputs: ExcalidrawPdfInput[];
   svgToPdf: SvgToPdfBackend;
   maxInputPixels: number;
   runId?: string;
@@ -34,8 +34,8 @@ export async function convertExcalidrawToPdfFiles(
   options: ConvertExcalidrawToPdfOptions,
 ): Promise<CommittedConversionOutput[]> {
   const operationName = 'convert-excalidraw-to-pdf';
-  validateJobs(options.jobs);
-  await validateJobPaths(options.jobs, operationName);
+  validateInputs(options.inputs);
+  await validateInputPaths(options.inputs, operationName);
   options.runtime?.signal?.throwIfAborted();
 
   const scratchOptions: RsvgToolScratchOptions = { platform: process.platform };
@@ -44,13 +44,13 @@ export async function convertExcalidrawToPdfFiles(
   }
 
   return runStagedConversionBatch({
-    jobs: options.jobs,
+    inputs: options.inputs,
     operationName,
     runId: options.runId,
     ...(options.runtime !== undefined && { runtime: options.runtime }),
-    stage: async (job, index, currentRunId, runtime) =>
-      stageExcalidrawJob({
-        job,
+    stage: async (input, index, currentRunId, runtime) =>
+      stageExcalidrawInput({
+        input,
         index,
         runId: currentRunId,
         operationName,
@@ -63,8 +63,8 @@ export async function convertExcalidrawToPdfFiles(
   });
 }
 
-async function stageExcalidrawJob(options: {
-  job: ExcalidrawPdfJob;
+async function stageExcalidrawInput(options: {
+  input: ExcalidrawPdfInput;
   index: number;
   runId: string;
   operationName: string;
@@ -75,7 +75,7 @@ async function stageExcalidrawJob(options: {
   runtime: ResolvedConversionRuntime;
 }): Promise<PreparedConversionOutput> {
   const {
-    job,
+    input,
     index: jobIndex,
     runId,
     operationName,
@@ -85,38 +85,38 @@ async function stageExcalidrawJob(options: {
     bundleUrl,
     runtime,
   } = options;
-  const stageRootPath = stagingRootPathFor(job.workspacePath, operationName, runId);
+  const stageRootPath = stagingRootPathFor(input.workspacePath, operationName, runId);
   const stageDirectory = path.join(
     stageRootPath,
-    `${jobIndex + 1}-${safeName(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`,
+    `${jobIndex + 1}-${safeName(path.basename(input.sourcePath, path.extname(input.sourcePath)))}`,
   );
   const svgPath = path.join(stageDirectory, 'source.svg');
   const stagedOutputPath = path.join(stageDirectory, 'result.pdf');
 
   runtime.signal.throwIfAborted();
-  await assertWritablePathInWorkspace(stageDirectory, job.workspacePath);
+  await assertWritablePathInWorkspace(stageDirectory, input.workspacePath);
   await mkdir(stageDirectory, { recursive: true });
 
-  const svgOptions: ExcalidrawToSvgOptions = { sourcePath: job.sourcePath, svgPath, signal: runtime.signal };
+  const svgOptions: ExcalidrawToSvgOptions = { sourcePath: input.sourcePath, svgPath, signal: runtime.signal };
   if (bundleUrl !== undefined) {
     svgOptions.bundleUrl = bundleUrl;
   }
   await excalidrawToSvg(svgOptions);
   runtime.signal.throwIfAborted();
-  await assertExistingPathInWorkspace(svgPath, job.workspacePath);
+  await assertExistingPathInWorkspace(svgPath, input.workspacePath);
 
   const outputPath = resolveOutputPath(
-    job.outputTemplate,
-    { sourcePath: job.sourcePath, workspacePath: job.workspacePath, workspaceName: job.workspaceName },
+    input.outputTemplate,
+    { sourcePath: input.sourcePath, workspacePath: input.workspacePath, workspaceName: input.workspaceName },
     { allowedExtensions: ['.pdf'] },
   );
-  await assertWritablePathInWorkspace(outputPath, job.workspacePath);
-  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+  await assertWritablePathInWorkspace(outputPath, input.workspacePath);
+  await assertWritablePathInWorkspace(stagedOutputPath, input.workspacePath);
 
   await writeSourceAsPdf({
     sourcePath: svgPath,
     outputPath: stagedOutputPath,
-    workspacePath: job.workspacePath,
+    workspacePath: input.workspacePath,
     maxInputPixels,
     signal: runtime.signal,
     scratchOptions,
@@ -125,37 +125,37 @@ async function stageExcalidrawJob(options: {
   runtime.signal.throwIfAborted();
   await validateGeneratedPdf(stagedOutputPath);
 
-  return { stagedOutputPath, outputPath, workspacePath: job.workspacePath, stagingRootPath: stageRootPath };
+  return { stagedOutputPath, outputPath, workspacePath: input.workspacePath, stagingRootPath: stageRootPath };
 }
 
-async function validateJobPaths(jobs: ExcalidrawPdfJob[], operationName: string): Promise<void> {
+async function validateInputPaths(inputs: ExcalidrawPdfInput[], operationName: string): Promise<void> {
   await Promise.all(
-    jobs.flatMap((job) => [
-      assertExistingPathInWorkspace(job.sourcePath, job.workspacePath),
+    inputs.flatMap((input) => [
+      assertExistingPathInWorkspace(input.sourcePath, input.workspacePath),
       assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.graphics-workbench', operationName),
-        job.workspacePath,
+        path.join(input.workspacePath, '.graphics-workbench', operationName),
+        input.workspacePath,
       ),
       assertWritablePathInWorkspace(
         resolveOutputPath(
-          job.outputTemplate,
-          { sourcePath: job.sourcePath, workspacePath: job.workspacePath, workspaceName: job.workspaceName },
+          input.outputTemplate,
+          { sourcePath: input.sourcePath, workspacePath: input.workspacePath, workspaceName: input.workspaceName },
           { allowedExtensions: ['.pdf'] },
         ),
-        job.workspacePath,
+        input.workspacePath,
       ),
     ]),
   );
 }
 
-function validateJobs(jobs: ExcalidrawPdfJob[]): void {
-  if (jobs.length === 0) {
+function validateInputs(inputs: ExcalidrawPdfInput[]): void {
+  if (inputs.length === 0) {
     throw new Error('No Excalidraw files were selected.');
   }
 
-  for (const job of jobs) {
-    if (!isExcalidrawPath(job.sourcePath)) {
-      throw new Error(`Only Excalidraw files are supported: ${job.sourcePath}`);
+  for (const input of inputs) {
+    if (!isExcalidrawPath(input.sourcePath)) {
+      throw new Error(`Only Excalidraw files are supported: ${input.sourcePath}`);
     }
   }
 }

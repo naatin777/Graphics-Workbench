@@ -25,7 +25,7 @@ suite('PDF自動crop処理', () => {
     await writeFixturePdf(sourcePath);
 
     await cropPdfFiles({
-      jobs: [{ sourcePath, workspacePath, outputPath }],
+      inputs: [{ sourcePath, workspacePath, outputPath }],
       margin: 5,
       runId: 'run',
     });
@@ -65,7 +65,7 @@ suite('PDF自動crop処理', () => {
     await writeFile(sourcePath, await document.save());
 
     await cropPdfFiles({
-      jobs: [{ sourcePath, workspacePath, outputPath }],
+      inputs: [{ sourcePath, workspacePath, outputPath }],
       margin: 20,
     });
 
@@ -96,7 +96,7 @@ suite('PDF自動crop処理', () => {
     await writeFile(sourcePath, await document.save());
 
     await cropPdfFiles({
-      jobs: [{ sourcePath, workspacePath, outputPath }],
+      inputs: [{ sourcePath, workspacePath, outputPath }],
       margin: 0,
     });
 
@@ -110,7 +110,7 @@ suite('PDF自動crop処理', () => {
 
   test('4つのPDFを1回のcropPdfFiles呼び出しで並列にcrop変換し、各jobの出力PDFを作成する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
-    const jobs = await Promise.all(
+    const inputs = await Promise.all(
       ['first', 'second', 'third', 'fourth'].map(async (name) => {
         const sourcePath = path.join(workspacePath, `${name}.pdf`);
         await writeSinglePagePdf(sourcePath);
@@ -124,12 +124,12 @@ suite('PDF自動crop処理', () => {
     );
 
     await cropPdfFiles({
-      jobs,
+      inputs,
       margin: 0,
     });
 
-    for (const job of jobs) {
-      const outputDocument = await PDFDocument.load(await readFile(job.outputPath));
+    for (const input of inputs) {
+      const outputDocument = await PDFDocument.load(await readFile(input.outputPath));
       assert.strictEqual(outputDocument.getPageCount(), 1);
     }
   });
@@ -143,7 +143,7 @@ suite('PDF自動crop処理', () => {
 
     await assert.rejects(
       cropPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         margin: 0,
       }),
       /Output file already exists/,
@@ -161,7 +161,7 @@ suite('PDF自動crop処理', () => {
 
     await assert.rejects(
       cropPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         margin: 0,
       }),
       /outside the workspace/,
@@ -177,7 +177,7 @@ suite('PDF自動crop処理', () => {
 
     await assert.rejects(
       cropPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         margin: 0,
       }),
       /outside the workspace/,
@@ -194,7 +194,7 @@ suite('PDF自動crop処理', () => {
 
     await assert.rejects(
       cropPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         margin: 0,
         runtime: { signal: abortController.signal },
       }),
@@ -210,7 +210,7 @@ suite('PDF自動crop処理', () => {
     const outputPath = path.join(workspacePath, 'broken-crop.pdf');
     await writeFile(sourcePath, '%PDF-1.7\nnot a real pdf');
 
-    await assert.rejects(cropPdfFiles({ jobs: [{ sourcePath, workspacePath, outputPath }], margin: 0 }));
+    await assert.rejects(cropPdfFiles({ inputs: [{ sourcePath, workspacePath, outputPath }], margin: 0 }));
 
     await assert.rejects(access(outputPath));
   });

@@ -665,6 +665,10 @@ function defineConfiguration<Value>(
     if (value === undefined) {
       return defaultValue;
     }
+    // outputPath template settings treat a blank value as "use the manifest default".
+    if (key.startsWith('outputPath.') && typeof value === 'string' && value.trim() === '') {
+      return defaultValue;
+    }
     return assertConfigurationValue(key, value, defaultValue);
   };
 }

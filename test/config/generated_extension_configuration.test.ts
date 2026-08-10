@@ -39,6 +39,12 @@ suite('生成された設定スキーマ検証', () => {
     assert.strictEqual(configuration.execPath.rsvgConvert(), '');
   });
 
+  test('outputPath.splitPdfを明示的に空文字へ変更した場合は、manifest既定のページ分割テンプレートへフォールバックする', () => {
+    const configuration = fakeConfiguration({ 'outputPath.splitPdf': '   ' });
+
+    assert.strictEqual(configuration.outputPath.splitPdf(), '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf');
+  });
+
   test('undoHistory.maxRecordsに範囲外の0と非整数の1.5を設定した場合、default値10へフォールバックする', () => {
     const outOfBounds = fakeConfiguration({ 'undoHistory.maxRecords': 0 });
     assert.strictEqual(outOfBounds.undoHistory.maxRecords(), 10);

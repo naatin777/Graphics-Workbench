@@ -60,7 +60,7 @@ suite('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io�
 
     const outputs = await convertToPdfFiles({
       maxInputPixels: 1_000_000_000,
-      jobs: [
+      inputs: [
         {
           sourcePath,
           outputPath,
