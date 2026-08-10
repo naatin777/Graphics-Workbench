@@ -11,7 +11,7 @@ import {
   isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
-import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
+import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
@@ -24,7 +24,7 @@ import type { ConversionExecutionContext } from '../../operations/lifecycle/conv
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { assertLocalFileUri } from '../shared/command_input.js';
-import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
+import { createDrawioBackend } from '../shared/command_runtime.js';
 import { isAbortError } from '../../shared/error.js';
 
 export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
@@ -36,8 +36,8 @@ export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies
 
     const configuration = dependencies.getConfiguration();
     const maxInputPixels = configuration.raster.maxInputPixels();
-    const mermaidTools = readMermaidCliOptions(configuration);
-    const drawioTools = buildDrawioCommandOptions(configuration);
+    const mermaidTools = createMermaidBackend(configuration);
+    const drawioTools = createDrawioBackend(configuration);
     await runConversionLifecycle({
       operationName: 'convert-to-svg',
       outputChannel,

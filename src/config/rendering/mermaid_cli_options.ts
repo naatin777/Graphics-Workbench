@@ -1,14 +1,12 @@
 import type { Configuration } from '../../generated/extension_manifest.js';
 import type { MermaidBackend } from '../../operations/conversion/tools/mermaid_tools.js';
 
-export function readChromeExecutablePath(configuration: Configuration): string {
-  return resolveChromeExecutablePath(configuration.execPath.chrome().trim());
-}
-
+/** Resolves the Chrome executable path, falling back to the platform default when the setting is blank. */
 export function resolveChromeExecutablePath(
-  configuredPath: string,
+  configuration: Configuration,
   platform: NodeJS.Platform = process.platform,
 ): string {
+  const configuredPath = configuration.execPath.chrome().trim();
   if (configuredPath !== '') {
     return configuredPath;
   }
@@ -24,9 +22,9 @@ export function resolveChromeExecutablePath(
   return 'google-chrome';
 }
 
-export function readMermaidCliOptions(configuration: Configuration): MermaidBackend {
+export function createMermaidBackend(configuration: Configuration): MermaidBackend {
   return {
-    chromePath: readChromeExecutablePath(configuration),
+    chromePath: resolveChromeExecutablePath(configuration),
     mermaidPath: configuration.execPath.mermaid(),
     theme: configuration.mermaid.theme(),
     backgroundColor: configuration.mermaid.backgroundColor(),

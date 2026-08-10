@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
-import { readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
+import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
 import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/conversion/convert_to_drawio.js';
 import { renderPdfPageToSvg } from '../../operations/pdf/mupdf.js';
 import { runMermaidCliWithSignal } from '../../operations/conversion/tools/run_mermaid_cli.js';
@@ -111,7 +111,7 @@ async function runDrawioConversionCommand(
               await writeFile(toolOutputPath, svg, 'utf8');
             },
             runMermaid: async (sourcePath, toolOutputPath, signal) => {
-              const mermaidTools = readMermaidCliOptions(configuration);
+              const mermaidTools = createMermaidBackend(configuration);
               await runMermaidCliWithSignal(
                 {
                   sourcePath,
