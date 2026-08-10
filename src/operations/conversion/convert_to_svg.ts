@@ -246,6 +246,7 @@ async function validateGeneratedSvg(outputPath: string): Promise<void> {
   }
 
   try {
+    // oxlint-disable-next-line typescript/no-restricted-types -- 外部SVG出力の未検証パース結果。直後のinチェックで検証する境界。
     const parsed: unknown = new XMLParser({ ignoreAttributes: false }).parse(content);
     if (typeof parsed !== 'object' || parsed === null || !('svg' in parsed) || parsed.svg === undefined) {
       throw new Error(`SVG input produced non-SVG output: ${outputPath}`);

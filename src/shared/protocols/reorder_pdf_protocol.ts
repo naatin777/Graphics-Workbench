@@ -67,10 +67,12 @@ const ReorderPdfWebviewToHostSchema = v.variant('type', [
 ]);
 export type ReorderPdfWebviewToHost = v.InferOutput<typeof ReorderPdfWebviewToHostSchema>;
 
+// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
 export function isReorderPdfHostToWebviewMessage(value: unknown): value is ReorderPdfHostToWebview {
   return v.is(ReorderPdfHostToWebviewSchema, value);
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
 export function isReorderPdfWebviewToHostMessage(value: unknown): value is ReorderPdfWebviewToHost {
   return v.is(ReorderPdfWebviewToHostSchema, value);
 }

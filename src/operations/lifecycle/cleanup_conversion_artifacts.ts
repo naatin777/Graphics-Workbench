@@ -45,6 +45,7 @@ export function stagingArtifactsForInputs(
 export async function cleanupConversionArtifacts(
   artifacts: readonly ConversionArtifactRoot[],
   outputChannel?: LineOutputChannel,
+  // oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値をそのまま受け取る境界パラメータ。
   failure?: unknown,
 ): Promise<CleanupResult> {
   const inheritedPreservePaths = getCleanupPreservePaths(failure);
@@ -93,6 +94,7 @@ export async function withStagingCleanup<T>(
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値の型ガード。
 function getCleanupPreservePaths(error: unknown): readonly string[] {
   if (!isCleanupPreservingError(error)) {
     return [];
@@ -101,12 +103,13 @@ function getCleanupPreservePaths(error: unknown): readonly string[] {
   return error.cleanupPreservePaths ?? [];
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値の型ガード。
 function isCleanupPreservingError(error: unknown): error is CleanupPreservingError {
   if (typeof error !== 'object' || error === null || !('cleanupPreservePaths' in error)) {
     return false;
   }
 
-  const preservePaths = (error as { cleanupPreservePaths?: unknown }).cleanupPreservePaths;
+  const preservePaths = error.cleanupPreservePaths;
   return (
     preservePaths === undefined ||
     (Array.isArray(preservePaths) && preservePaths.every((value): value is string => typeof value === 'string'))
@@ -211,6 +214,7 @@ function normalizeComparisonPath(value: string): string {
   return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値の型ガード。
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }

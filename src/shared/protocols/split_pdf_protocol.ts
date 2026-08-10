@@ -167,10 +167,12 @@ const SplitPdfWebviewToHostSchema = v.variant('type', [
 ]);
 export type SplitPdfWebviewToHost = v.InferOutput<typeof SplitPdfWebviewToHostSchema>;
 
+// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
 export function isSplitPdfHostToWebviewMessage(value: unknown): value is SplitPdfHostToWebview {
   return v.is(SplitPdfHostToWebviewSchema, value);
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
 export function isSplitPdfWebviewToHostMessage(value: unknown): value is SplitPdfWebviewToHost {
   return v.is(SplitPdfWebviewToHostSchema, value);
 }

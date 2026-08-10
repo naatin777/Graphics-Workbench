@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-restricted-types -- jsdomのuntyped APIを宣言するambient module境界。 */
 /**
  * Minimal ambient types for the jsdom surface used by the Excalidraw converter.
  *

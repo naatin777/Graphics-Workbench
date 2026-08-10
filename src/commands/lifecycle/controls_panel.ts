@@ -47,7 +47,7 @@ export function initializeControlsPanel(context: { subscriptions: vscode.Disposa
   context.subscriptions.push(statusBarItem);
 }
 
-export async function openControlsPanelCommand(_uri: unknown, dependencies: CommandDependencies): Promise<void> {
+export async function openControlsPanelCommand(dependencies: CommandDependencies): Promise<void> {
   const configuration = dependencies.getConfiguration();
   await showControlsPanel({
     getConfiguration: () => configuration,

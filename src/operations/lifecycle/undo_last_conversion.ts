@@ -42,6 +42,7 @@ export class UndoCleanupError extends Error {
   readonly originalError: Error;
   readonly cleanupResult: CleanupResult;
 
+  // oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値を正規化して保持する。
   constructor(originalError: unknown, cleanupResult: CleanupResult) {
     const normalizedError = originalError instanceof Error ? originalError : new Error(String(originalError));
     super(normalizedError.message, { cause: normalizedError });
@@ -243,6 +244,7 @@ async function createRollbackCopies(
 
 function preservedRollbackCopiesResult(
   rollbackCopies: readonly { rollbackRootPath: string }[],
+  // oxlint-disable-next-line typescript/no-restricted-types -- ロールバック復元のcatchから渡される任意のthrow値。
   rollbackError: unknown,
 ): CleanupResult {
   const rootPaths = new Set(rollbackCopies.map((copy) => copy.rollbackRootPath));
@@ -460,6 +462,7 @@ function toArtifactRoots(record: ConversionUndoRecord): ConversionArtifactRoot[]
   );
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値の型ガード。
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }

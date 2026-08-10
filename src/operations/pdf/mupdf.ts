@@ -6,10 +6,11 @@ export interface MupdfPdfObject {
   isNumber(): boolean;
   length: number;
   asNumber(): number;
+  // oxlint-disable-next-line typescript/no-restricted-types -- mupdfネイティブバインディング: PDFオブジェクトのJS値は種類によって型が動的に決まる。
   asJS(): unknown;
   get(indexOrName: number | string): MupdfPdfObject;
   getInheritable(name: string): MupdfPdfObject;
-  put(key: string | number, value: unknown): unknown;
+  put(key: string | number, value: MupdfPdfObject | number[] | number): MupdfPdfObject;
 }
 
 /**
@@ -46,17 +47,17 @@ interface MupdfPdfDocumentReader {
   loadPage(index: number): MupdfPdfPage;
   needsPassword(): boolean;
   authenticatePassword(password: string): number;
-  saveToBuffer(options?: string | Record<string, unknown>): MupdfBuffer;
+  saveToBuffer(options?: string): MupdfBuffer;
   destroy(): void;
 }
 
 export interface MupdfPdfDocumentInstance extends MupdfPdfDocumentReader {
   graftPage(toIndex: number, sourceDocument: MupdfPdfDocumentInstance, sourcePageIndex: number): void;
   rearrangePages(pages: number[]): void;
-  addImage(image: unknown): MupdfPdfObject;
+  addImage(image: MupdfImage): MupdfPdfObject;
   newDictionary(): MupdfPdfObject;
   newName(value: string): MupdfPdfObject;
-  addStream(data: string | Uint8Array, obj: unknown): MupdfPdfObject;
+  addStream(data: string | Uint8Array, obj: MupdfPdfObject | null): MupdfPdfObject;
   insertPage(atIndex: number, obj: MupdfPdfObject): void;
   addObject(obj: MupdfPdfObject): MupdfPdfObject;
 }
@@ -105,7 +106,7 @@ interface MupdfDocument {
   asPDF(): MupdfPdfDocumentInstance | null;
   destroy(): void;
   countPages(): number;
-  loadPage(index: number): unknown;
+  loadPage(index: number): MupdfPdfPage;
   needsPassword(): boolean;
   authenticatePassword(password: string): number;
   getMetaData(key: string): string | undefined;
@@ -116,6 +117,7 @@ let mupdfModule: MupdfModule | undefined;
 /** Loads the MuPDF.js WASM module once. mupdf must be loaded dynamically because its ESM build uses top-level await, which cannot be `require()`d by the extension-host test runner. */
 export async function loadMupdf(): Promise<MupdfModule> {
   if (mupdfModule === undefined) {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- mupdf.jsのESMは型が未解決で、default exportをこの境界で確定する。
     const imported = (await import('mupdf')) as { default: MupdfModule };
     mupdfModule = imported.default;
   }
@@ -317,10 +319,7 @@ export function bufferToBytes(buffer: MupdfBuffer): Uint8Array {
 }
 
 /** Saves a PDF document to bytes. The caller owns and must destroy the document. */
-export function savePdfDocument(
-  document: MupdfPdfDocumentInstance,
-  options?: string | Record<string, unknown>,
-): Uint8Array {
+export function savePdfDocument(document: MupdfPdfDocumentInstance, options?: string): Uint8Array {
   const buffer = document.saveToBuffer(options);
   try {
     return bufferToBytes(buffer);

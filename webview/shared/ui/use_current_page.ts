@@ -14,7 +14,6 @@ import { createSignal, onCleanup, onMount, type Accessor } from 'solid-js';
 export function useCurrentPage(options: {
   scrollContainer: () => HTMLElement | undefined;
   getPageElements: () => HTMLElement[];
-  resetKey?: Accessor<unknown>;
 }): { currentPage: Accessor<number>; recompute: () => void } {
   const [currentPage, setCurrentPage] = createSignal(0);
   let observer: IntersectionObserver | undefined;

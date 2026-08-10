@@ -152,6 +152,7 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
       tiffRenderQueue.length = 0;
     });
 
+    // oxlint-disable-next-line typescript/no-restricted-types -- VS Code webview境界から届く未検証メッセージ。
     webviewPanel.webview.onDidReceiveMessage((rawMessage: unknown) => {
       if (!isPreviewWebviewToHostMessage(rawMessage)) {
         return;

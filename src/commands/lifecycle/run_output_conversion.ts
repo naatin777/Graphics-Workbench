@@ -48,6 +48,7 @@ export interface ConversionLifecycleCallbacks {
   /** Runs instead of the default undo-unavailable warning. */
   onUndoUnavailable?: (options: { successMessage: string; reason: string }) => Promise<void>;
   /** Runs after the failure notification so callers can route the error (e.g. to a Webview). */
+  // oxlint-disable-next-line typescript/no-restricted-types -- catch由来エラーを通知するコールバック。
   onError?: (error: unknown) => Promise<void>;
 }
 

@@ -140,10 +140,12 @@ async function checkTool(params: {
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: catch由来の値を識別する。
 function isExecutableNotFound(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && Reflect.get(error, 'code') === 'ENOENT';
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: catch由来の値を識別する。
 function isTimeout(error: unknown): boolean {
   return error instanceof Error && /timed out|did not terminate/u.test(error.message);
 }

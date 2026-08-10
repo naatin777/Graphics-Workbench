@@ -163,7 +163,7 @@ export function App(): JSX.Element {
       requestAnimationFrame(() => {
         recomputeCurrentPage();
       });
-    } catch (error: unknown) {
+    } catch (error) {
       if (signal.aborted) {
         return;
       }
@@ -197,7 +197,7 @@ export function App(): JSX.Element {
         },
       },
       signal,
-      onRenderError: (error: unknown) => {
+      onRenderError: (error) => {
         if (signal.aborted) {
           return;
         }
@@ -231,7 +231,7 @@ export function App(): JSX.Element {
         };
         vscode.sendMessage(message);
       },
-      onRenderError: (error: unknown) => {
+      onRenderError: (error) => {
         if (signal.aborted) {
           return;
         }

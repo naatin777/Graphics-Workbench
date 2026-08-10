@@ -5,10 +5,12 @@ export class OperationCancelledError extends Error {
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchが投げる値は任意の型を取り得る。
 export function isAbortError(error: unknown): boolean {
   return error instanceof OperationCancelledError || (error instanceof Error && error.name === 'AbortError');
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchが投げる値は任意の型を取り得る。
 export function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const stderr = 'stderr' in error && typeof error.stderr === 'string' ? error.stderr.trim() : '';

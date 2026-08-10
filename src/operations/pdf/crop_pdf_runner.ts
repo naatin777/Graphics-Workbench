@@ -18,6 +18,7 @@ process.on('disconnect', () => {
   }
 });
 
+// oxlint-disable-next-line typescript/no-restricted-types -- child processから届くIPCメッセージの検証境界。
 process.on('message', (message: unknown) => {
   if (requestReceived) {
     sendResult(
@@ -36,6 +37,7 @@ process.on('message', (message: unknown) => {
   void runRequest(message);
 });
 
+// oxlint-disable-next-line typescript/no-restricted-types -- child processから届くIPCメッセージの検証境界。
 async function runRequest(message: unknown): Promise<void> {
   let requestId = readRequestId(message);
 
@@ -97,6 +99,7 @@ function sendResult(message: CropPdfProcessMessage, disconnectAfterSend: boolean
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- IPCメッセージからrequestIdを安全に読み出す境界。
 function readRequestId(value: unknown): string {
   if (typeof value === 'object' && value !== null && 'requestId' in value) {
     const { requestId } = value;

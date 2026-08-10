@@ -4,8 +4,9 @@ import { createConfiguration, extensionIdentity, type Configuration } from '../g
 
 export function getExtensionConfiguration(): Configuration {
   return createConfiguration({
+    // oxlint-disable-next-line typescript/no-restricted-types -- ConfigurationReaderインターフェースがunknownを要求する。
     get(key: string): unknown {
-      return vscode.workspace.getConfiguration(extensionIdentity.configurationNamespace).get<unknown>(key);
+      return vscode.workspace.getConfiguration(extensionIdentity.configurationNamespace).get(key);
     },
   });
 }

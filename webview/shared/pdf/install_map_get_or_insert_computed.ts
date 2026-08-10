@@ -1,15 +1,17 @@
 function installMapGetOrInsertComputed(): void {
-  const mapPrototype = Map.prototype as Map<unknown, unknown> & {
-    getOrInsertComputed?: (key: unknown, callback: (key: unknown) => unknown) => unknown;
+  type MapWithGetOrInsertComputed<K, V> = Map<K, V> & {
+    getOrInsertComputed?: (key: K, callback: (key: K) => V) => V;
   };
+
+  const mapPrototype = Map.prototype as MapWithGetOrInsertComputed<never, never>;
 
   if (!mapPrototype.getOrInsertComputed) {
     Object.defineProperty(mapPrototype, 'getOrInsertComputed', {
       configurable: true,
       writable: true,
-      value(this: Map<unknown, unknown>, key: unknown, callback: (key: unknown) => unknown) {
+      value<K, V>(this: MapWithGetOrInsertComputed<K, V>, key: K, callback: (key: K) => V) {
         if (this.has(key)) {
-          return this.get(key);
+          return this.get(key) as V;
         }
 
         const value = callback(key);

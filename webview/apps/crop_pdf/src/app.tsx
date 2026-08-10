@@ -59,7 +59,7 @@ async function renderPreview(options: RenderPreviewOptions): Promise<void> {
     await controller.firstPageReady;
     applyPreviewZoom(options.pdf.pages, options.pdf.zoom());
     updatePreviewPageSize(options);
-  } catch (error: unknown) {
+  } catch (error) {
     if (options.signal.aborted) {
       return;
     }
@@ -80,7 +80,7 @@ function renderOptions(
     resources: payload.resources,
     page: { label: payload.labels.header.pageLabel },
     signal,
-    onRenderError: (error: unknown) => {
+    onRenderError: (error) => {
       if (signal.aborted) {
         return;
       }
