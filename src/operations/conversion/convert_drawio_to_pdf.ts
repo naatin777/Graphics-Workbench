@@ -32,7 +32,7 @@ interface ConvertDrawioToPdfOptions {
   inputs: DrawioPdfInput[];
   drawioPath: string;
   runId?: string;
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runDrawio: RunDrawio;
 }
 
@@ -44,13 +44,13 @@ export async function convertDrawioToPagePdfs(
   validatePagePdfInputs(options.inputs);
   await validateInputPaths(options.inputs, operationName);
 
-  options.runtime?.signal?.throwIfAborted();
+  options.runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName,
     runId: options.runId,
-    ...(options.runtime !== undefined && { runtime: options.runtime }),
+    runtime: options.runtime,
     stage: async (input, index, currentRunId, runtime) =>
       splitDrawioPdfPages(input, index, currentRunId, operationName, options.drawioPath, options.runDrawio, runtime),
   });
@@ -64,13 +64,13 @@ export async function convertDrawioToSinglePdf(
   validateInputs(options.inputs);
   await validateInputPaths(options.inputs, operationName);
 
-  options.runtime?.signal?.throwIfAborted();
+  options.runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName,
     runId: options.runId,
-    ...(options.runtime !== undefined && { runtime: options.runtime }),
+    runtime: options.runtime,
     stage: async (input, index, currentRunId, runtime) =>
       keepSinglePdf(input, index, currentRunId, operationName, options.drawioPath, options.runDrawio, runtime),
   });

@@ -166,6 +166,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
           ],
           drawioPath,
           runDrawio: executeDrawio,
+          runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `drawio-invalid-${index}`,
         });
 

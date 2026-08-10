@@ -36,8 +36,9 @@ function registerExtensionCommand(
   dependencies: CommandDependencies,
 ): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand(binding.id, async () => {
-      return binding.handler(dependencies);
+    // oxlint-disable-next-line typescript/no-restricted-types -- VS Codeが渡すコマンド引数は未検証の外部境界。
+    vscode.commands.registerCommand(binding.id, async (...args: unknown[]) => {
+      return binding.handler(dependencies, ...args);
     }),
   );
 }

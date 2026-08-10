@@ -107,7 +107,7 @@ suite('command登録処理', () => {
     assert.deepStrictEqual(called.calls[0], [[uri], dependencies, { target: 'webp', outputMode: 'preserve' }]);
   });
 
-  test('extensionCommand bindingのhandlerがdependenciesのみを受ける', async () => {
+  test('extensionCommand bindingのhandlerがVS Codeから渡された任意引数とdependenciesを正しい順で受ける', async () => {
     const handlers = captureRegisteredHandlers(sandbox);
     const dependencies = testCommandDependencies();
 
@@ -116,9 +116,9 @@ suite('command登録処理', () => {
     const called = captureHandlerCalls(binding);
     registerCommands(createContext(), dependencies);
 
-    await handlers.get(binding.id)!();
+    await handlers.get(binding.id)!('undo-record-id');
 
-    assert.deepStrictEqual(called.calls, [[dependencies]]);
+    assert.deepStrictEqual(called.calls, [[dependencies, 'undo-record-id']]);
   });
 });
 

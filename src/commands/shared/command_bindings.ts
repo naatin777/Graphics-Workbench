@@ -56,7 +56,8 @@ export interface FileWithContextCommandBinding {
 export interface ExtensionCommandBinding {
   kind: 'extensionCommand';
   id: CommandId;
-  handler: (dependencies: CommandDependencies) => Promise<void>;
+  // oxlint-disable-next-line typescript/no-restricted-types -- VS Codeから渡されるコマンド引数は未検証の外部境界。
+  handler: (dependencies: CommandDependencies, ...args: unknown[]) => Promise<void>;
 }
 
 export type CommandBinding = FileCommandBinding | FileWithContextCommandBinding | ExtensionCommandBinding;
@@ -133,8 +134,8 @@ export const commandBindings = [
   fileBinding('graphics-workbench.convertToDrawioSvg', convertToDrawioSvgCommand),
   fileBinding('graphics-workbench.combineImagesToPdf', combineImagesToPdfCommand),
   // Lifecycle
-  extensionCommandBinding('graphics-workbench.undoLastConversion', async (dependencies) =>
-    undoLastConversionCommand(undefined, dependencies),
+  extensionCommandBinding('graphics-workbench.undoLastConversion', async (dependencies, ...args) =>
+    undoLastConversionCommand(typeof args[0] === 'string' ? args[0] : undefined, dependencies),
   ),
   extensionCommandBinding('graphics-workbench.toggleSafeMode', async () => toggleSafeModeCommand()),
   extensionCommandBinding('graphics-workbench.openControls', openControlsPanelCommand),
