@@ -132,7 +132,7 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
       },
     ]);
 
-    assert.strictEqual(await manager.undo(firstRecordId), 'newer-conversion');
+    assert.strictEqual(await manager.undo(firstRecordId), 'newer-input');
     await assert.doesNotReject(access(firstOutputPath));
     await assert.doesNotReject(access(secondOutputPath));
   });

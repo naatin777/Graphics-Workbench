@@ -46,7 +46,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     const calls: number[] = [];
     await convertToDrawioFiles({
       maxInputPixels: 1_000_000_000,
-      jobs: [
+      inputs: [
         { inputs: [{ sourcePath: imagePath }, { sourcePath: pdfPath }], outputPath, workspacePath: workspacePath.path },
       ],
       tools: {
@@ -92,7 +92,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     const outputPath = path.join(workspacePath.path, 'result.drawio');
     await convertToDrawioFiles({
       maxInputPixels: 1_000_000_000,
-      jobs: [
+      inputs: [
         {
           inputs: inputs.map(([name]) => ({ sourcePath: path.join(workspacePath.path, name) })),
           outputPath,
@@ -134,7 +134,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
       let call: { executable: string; args: string[] } | undefined;
       await convertToDrawioFiles({
         maxInputPixels: 1_000_000_000,
-        jobs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath: workspacePath.path }],
+        inputs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath: workspacePath.path }],
         tools: {
           drawioPath: '/custom/drawio',
           runPdfToSvg: async () => {
@@ -191,7 +191,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     await assert.rejects(
       convertToDrawioFiles({
         maxInputPixels: 1_000_000_000,
-        jobs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath: workspacePath.path }],
+        inputs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath: workspacePath.path }],
         tools: {
           drawioPath: 'drawio',
           runPdfToSvg: async () => {

@@ -8,10 +8,10 @@ export interface ConversionProgressReporters {
 }
 
 /**
- * Wires conversion progress into a determinate VS Code progress bar.
+ * Wires input progress into a determinate VS Code progress bar.
  *
  * Each completed item advances the bar by an equal share of the total, so the
- * bar reflects how many conversion steps have finished. Progress reporters
+ * bar reflects how many input steps have finished. Progress reporters
  * that cannot measure total steps simply report messages (indeterminate).
  */
 export function createProgressReporters(

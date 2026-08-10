@@ -16,7 +16,7 @@ import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 export const PDF_ROTATION_ANGLES = [90, 180, 270] as const;
 export type PdfRotationAngle = (typeof PDF_ROTATION_ANGLES)[number];
 
-export interface RotatePdfJob {
+export interface RotatePdfInput {
   sourcePath: string;
   workspacePath: string;
   outputPath: string;
@@ -26,7 +26,7 @@ export interface RotatePdfJob {
 }
 
 export interface RotatePdfOptions {
-  jobs: RotatePdfJob[];
+  inputs: RotatePdfInput[];
   runtime?: ConversionExecutionContext;
   runId?: string;
 }
@@ -34,44 +34,44 @@ export interface RotatePdfOptions {
 export async function rotatePdfFiles(options: RotatePdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
-  validateJobs(options.jobs);
-  await validatePdfPathInputs(options.jobs, 'rotate-pdf');
+  validateConversions(options.inputs);
+  await validatePdfPathInputs(options.inputs, 'rotate-pdf');
   runtime?.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
-    jobs: options.jobs,
+    inputs: options.inputs,
     operationName: 'rotate-pdf',
     runId: options.runId,
     ...(runtime !== undefined && { runtime }),
-    stage: async (job, index, currentRunId, batchRuntime) =>
-      rotatePdf({ job, index, runId: currentRunId, signal: batchRuntime.signal }),
+    stage: async (input, index, currentRunId, batchRuntime) =>
+      rotatePdf({ input, index, runId: currentRunId, signal: batchRuntime.signal }),
   });
 }
 
 async function rotatePdf(params: {
-  job: RotatePdfJob;
+  input: RotatePdfInput;
   index: number;
   runId: string;
   signal: AbortSignal;
 }): Promise<PreparedConversionOutput> {
-  const { job, index, runId, signal } = params;
+  const { input, index, runId, signal } = params;
   signal.throwIfAborted();
 
-  const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(job.sourcePath, path.extname(job.sourcePath)))}`;
-  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'rotate-pdf', runId);
+  const itemName = `${index + 1}-${sanitizePdfPathSegment(path.basename(input.sourcePath, path.extname(input.sourcePath)))}`;
+  const stagingRootPath = stagingRootPathFor(input.workspacePath, 'rotate-pdf', runId);
   const workDirectory = path.join(stagingRootPath, itemName);
-  const copiedSourcePath = path.join(workDirectory, path.basename(job.sourcePath));
+  const copiedSourcePath = path.join(workDirectory, path.basename(input.sourcePath));
   const stagedOutputPath = path.join(workDirectory, 'result.pdf');
 
-  await assertExistingPathInWorkspace(job.sourcePath, job.workspacePath);
-  await assertWritablePathInWorkspace(workDirectory, job.workspacePath);
+  await assertExistingPathInWorkspace(input.sourcePath, input.workspacePath);
+  await assertWritablePathInWorkspace(workDirectory, input.workspacePath);
   signal.throwIfAborted();
   await mkdir(workDirectory, { recursive: true });
-  await assertWritablePathInWorkspace(copiedSourcePath, job.workspacePath);
+  await assertWritablePathInWorkspace(copiedSourcePath, input.workspacePath);
   signal.throwIfAborted();
-  await copyFileWithAbort(job.sourcePath, copiedSourcePath, undefined, signal);
+  await copyFileWithAbort(input.sourcePath, copiedSourcePath, undefined, signal);
 
-  await assertExistingPathInWorkspace(copiedSourcePath, job.workspacePath);
+  await assertExistingPathInWorkspace(copiedSourcePath, input.workspacePath);
   signal.throwIfAborted();
   const mupdf = await loadMupdf();
   const sourceDocument = await openPdfDocument(await readFile(copiedSourcePath));
@@ -80,11 +80,11 @@ async function rotatePdf(params: {
     const pageCount = sourceDocument.countPages();
 
     if (pageCount === 0) {
-      throw new Error(`PDF has no pages: ${job.sourcePath}`);
+      throw new Error(`PDF has no pages: ${input.sourcePath}`);
     }
 
-    const pageIndices = job.pageIndices ?? Array.from({ length: pageCount }, (_, pageIndex) => pageIndex);
-    validatePageIndices(pageIndices, pageCount, job.sourcePath);
+    const pageIndices = input.pageIndices ?? Array.from({ length: pageCount }, (_, pageIndex) => pageIndex);
+    validatePageIndices(pageIndices, pageCount, input.sourcePath);
 
     const outputDocument = new mupdf.PDFDocument();
     const rotateSet = new Set(pageIndices);
@@ -99,21 +99,21 @@ async function rotatePdf(params: {
           // oxlint-disable-next-line max-depth -- Each resource needs a local try/finally for deterministic disposal.
           try {
             const currentRotation = readPageRotation(page);
-            page.getObject().put('Rotate', normalizeRotation(currentRotation + job.angle));
+            page.getObject().put('Rotate', normalizeRotation(currentRotation + input.angle));
           } finally {
             page.destroy();
           }
         }
       }
-      await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+      await assertWritablePathInWorkspace(stagedOutputPath, input.workspacePath);
       signal.throwIfAborted();
       await writeFile(stagedOutputPath, savePdfDocument(outputDocument));
       signal.throwIfAborted();
 
       return {
         stagedOutputPath,
-        outputPath: job.outputPath,
-        workspacePath: job.workspacePath,
+        outputPath: input.outputPath,
+        workspacePath: input.workspacePath,
         stagingRootPath,
       };
     } finally {
@@ -124,18 +124,18 @@ async function rotatePdf(params: {
   }
 }
 
-function validateJobs(jobs: RotatePdfJob[]): void {
-  if (jobs.length === 0) {
+function validateConversions(inputs: RotatePdfInput[]): void {
+  if (inputs.length === 0) {
     throw new Error('No PDF files were selected.');
   }
 
-  for (const job of jobs) {
-    if (path.extname(job.sourcePath).toLowerCase() !== '.pdf') {
-      throw new Error(`Only PDF files can be rotated: ${job.sourcePath}`);
+  for (const input of inputs) {
+    if (path.extname(input.sourcePath).toLowerCase() !== '.pdf') {
+      throw new Error(`Only PDF files can be rotated: ${input.sourcePath}`);
     }
 
-    if (!PDF_ROTATION_ANGLES.includes(job.angle)) {
-      throw new Error(`Unsupported rotation angle: ${job.angle}`);
+    if (!PDF_ROTATION_ANGLES.includes(input.angle)) {
+      throw new Error(`Unsupported rotation angle: ${input.angle}`);
     }
   }
 }

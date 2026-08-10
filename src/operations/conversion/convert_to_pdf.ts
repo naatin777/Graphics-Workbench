@@ -53,7 +53,7 @@ export function validateSvgToPdfOptions(options: SvgToPdfBackend): void {
   }
 }
 
-export interface ConvertToPdfJob {
+export interface PdfInput {
   sourcePath: string;
   outputPath: string;
   workspacePath: string;
@@ -103,7 +103,7 @@ interface WriteSvgAsPdfOptions {
 }
 
 export interface ConvertToPdfFilesOptions {
-  jobs: ConvertToPdfJob[];
+  inputs: PdfInput[];
   runtime?: ConversionExecutionContext;
   runId?: string;
   supportedExtensions?: readonly string[];
@@ -122,8 +122,8 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   const { runtime } = options;
   const { maxInputPixels } = options;
   runtime?.signal?.throwIfAborted();
-  validateJobs(options.jobs, options.supportedExtensions ?? defaultSupportedImageExtensions);
-  await validatePdfPathInputs(options.jobs, 'convert-to-pdf');
+  validateConversions(options.inputs, options.supportedExtensions ?? defaultSupportedImageExtensions);
+  await validatePdfPathInputs(options.inputs, 'convert-to-pdf');
   runtime?.signal?.throwIfAborted();
 
   const platform = options.platform ?? process.platform;
@@ -137,13 +137,13 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
   const operationName = options.operationName ?? 'convert-to-pdf';
 
   return runStagedConversionBatch({
-    jobs: options.jobs,
+    inputs: options.inputs,
     operationName,
     stagingOperationName: 'convert-to-pdf',
     runId: options.runId,
     ...(runtime !== undefined && { runtime }),
-    stage: async (job, index, currentRunId, batchRuntime) =>
-      stageSourceToPdf(job, index, currentRunId, {
+    stage: async (input, index, currentRunId, batchRuntime) =>
+      stageSourceToPdf(input, index, currentRunId, {
         signal: batchRuntime.signal,
         svgToPdfTools: options.tools?.svgToPdfTools,
         mermaidTools: options.tools?.mermaidTools,
@@ -155,7 +155,7 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
 }
 
 async function stageSourceToPdf(
-  job: ConvertToPdfJob,
+  input: PdfInput,
   index: number,
   runId: string,
   options: StageSourceToPdfOptions,
@@ -163,25 +163,25 @@ async function stageSourceToPdf(
   const { signal, svgToPdfTools, mermaidTools, drawioTools, scratchOptions, maxInputPixels } = options;
   signal.throwIfAborted();
   const stagedOutputPath = path.join(
-    job.workspacePath,
+    input.workspacePath,
     '.graphics-workbench',
     'convert-to-pdf',
     runId,
     `${index + 1}`,
     'result.pdf',
   );
-  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'convert-to-pdf', runId);
+  const stagingRootPath = stagingRootPathFor(input.workspacePath, 'convert-to-pdf', runId);
 
   const writeOptions: WriteSourceAsPdfOptions = {
-    sourcePath: job.sourcePath,
+    sourcePath: input.sourcePath,
     outputPath: stagedOutputPath,
-    workspacePath: job.workspacePath,
+    workspacePath: input.workspacePath,
     scratchOptions,
     signal,
     maxInputPixels,
   };
-  if (job.page !== undefined) {
-    writeOptions.page = job.page;
+  if (input.page !== undefined) {
+    writeOptions.page = input.page;
   }
   if (svgToPdfTools !== undefined) {
     writeOptions.tools = { ...writeOptions.tools, svgToPdfTools };
@@ -199,8 +199,8 @@ async function stageSourceToPdf(
 
   return {
     stagedOutputPath,
-    outputPath: job.outputPath,
-    workspacePath: job.workspacePath,
+    outputPath: input.outputPath,
+    workspacePath: input.workspacePath,
     stagingRootPath,
   };
 }
@@ -589,13 +589,13 @@ export async function validateGeneratedPdf(outputPath: string): Promise<void> {
   try {
     pdfDocument = await openPdfDocument(await readFile(outputPath));
   } catch (error) {
-    throw new Error(`PDF conversion produced an unparsable PDF: ${toErrorMessage(error)}`, { cause: error });
+    throw new Error(`PDF input produced an unparsable PDF: ${toErrorMessage(error)}`, { cause: error });
   }
 
   try {
     const pageCount = pdfDocument.countPages();
     if (pageCount === 0) {
-      throw new Error(`PDF conversion produced no pages: ${outputPath}`);
+      throw new Error(`PDF input produced no pages: ${outputPath}`);
     }
 
     // oxlint-disable-next-line no-unreachable-loop -- Validate every generated page.
@@ -608,7 +608,7 @@ export async function validateGeneratedPdf(outputPath: string): Promise<void> {
           const height = y2 - y1;
           // oxlint-disable-next-line max-depth -- Page, box, and dimension validation are one ownership scope.
           if (![x1, y1, x2, y2, width, height].every((value) => Number.isFinite(value)) || width <= 0 || height <= 0) {
-            throw new Error(`PDF conversion produced invalid ${boxName} dimensions: ${outputPath}`);
+            throw new Error(`PDF input produced invalid ${boxName} dimensions: ${outputPath}`);
           }
         }
       } finally {
@@ -645,20 +645,20 @@ function setPageSize(page: MupdfPdfPage, width: number, height: number): void {
   page.setPageBox('CropBox', [0, 0, width, height]);
 }
 
-function validateJobs(jobs: ConvertToPdfJob[], supportedExtensions: readonly string[]): void {
-  if (jobs.length === 0) {
+function validateConversions(inputs: PdfInput[], supportedExtensions: readonly string[]): void {
+  if (inputs.length === 0) {
     throw new Error('No image files were selected.');
   }
 
   const supportedExtensionSet = new Set(supportedExtensions.map((extension) => extension.toLowerCase()));
 
-  for (const job of jobs) {
-    if (isSameSourceFormat(job.sourcePath, '.pdf')) {
-      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+  for (const input of inputs) {
+    if (isSameSourceFormat(input.sourcePath, '.pdf')) {
+      throw new Error(`Input and output formats must differ: ${input.sourcePath}`);
     }
 
-    if (!isSupportedSourcePath(job.sourcePath, supportedExtensionSet)) {
-      throw new Error(`Unsupported image format: ${job.sourcePath}`);
+    if (!isSupportedSourcePath(input.sourcePath, supportedExtensionSet)) {
+      throw new Error(`Unsupported image format: ${input.sourcePath}`);
     }
   }
 }

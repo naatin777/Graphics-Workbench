@@ -24,7 +24,7 @@ interface CombineImageInput {
 }
 
 export interface CombineImagesToPdfOptions {
-  jobs: CombineImageInput[];
+  inputs: CombineImageInput[];
   outputPath: string;
   workspacePath: string;
   runtime?: ConversionExecutionContext;
@@ -40,10 +40,10 @@ export interface CombineImagesToPdfOptions {
 export async function combineImagesToPdf(options: CombineImagesToPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
-  validateJobs(options.jobs);
+  validateInputs(options.inputs);
 
   await Promise.all([
-    ...options.jobs.map(async (job) => assertExistingPathInWorkspace(job.sourcePath, options.workspacePath)),
+    ...options.inputs.map(async (input) => assertExistingPathInWorkspace(input.sourcePath, options.workspacePath)),
     assertWritablePathInWorkspace(options.outputPath, options.workspacePath),
     assertWritablePathInWorkspace(
       path.join(options.workspacePath, '.graphics-workbench', 'combine-images'),
@@ -83,14 +83,14 @@ async function createPdfPaths(
   stagingRootPath: string,
 ): Promise<string[]> {
   const pdfPaths: string[] = [];
-  for (const [index, job] of options.jobs.entries()) {
+  for (const [index, input] of options.inputs.entries()) {
     options.runtime?.signal?.throwIfAborted();
-    const pageCount = await sourcePageCount(job.sourcePath, maxInputPixels);
+    const pageCount = await sourcePageCount(input.sourcePath, maxInputPixels);
     for (let page = 1; page <= pageCount; page += 1) {
       options.runtime?.signal?.throwIfAborted();
       const pdfPath = path.join(stagingRootPath, `page-${index + 1}-${page}.pdf`);
       const writeOptions: WriteSourceAsPdfOptions = {
-        sourcePath: job.sourcePath,
+        sourcePath: input.sourcePath,
         outputPath: pdfPath,
         workspacePath: options.workspacePath,
         maxInputPixels,
@@ -102,7 +102,7 @@ async function createPdfPaths(
       await writeSourceAsPdf(writeOptions);
       pdfPaths.push(pdfPath);
     }
-    options.runtime?.reportProgress?.(index + 1, options.jobs.length);
+    options.runtime?.reportProgress?.(index + 1, options.inputs.length);
   }
   return pdfPaths;
 }
@@ -156,15 +156,15 @@ async function sourcePageCount(sourcePath: string, maxInputPixels: number): Prom
   return animation?.pages ?? 1;
 }
 
-function validateJobs(jobs: CombineImageInput[]): void {
-  if (jobs.length === 0) {
+function validateInputs(inputs: CombineImageInput[]): void {
+  if (inputs.length === 0) {
     throw new Error('No images were selected.');
   }
 
-  for (const job of jobs) {
-    const format = sourceFormatForPath(job.sourcePath);
+  for (const input of inputs) {
+    const format = sourceFormatForPath(input.sourcePath);
     if (!isRasterFormat(format) && format !== 'svg') {
-      throw new Error(`Unsupported image input: ${job.sourcePath}`);
+      throw new Error(`Unsupported image input: ${input.sourcePath}`);
     }
   }
 }

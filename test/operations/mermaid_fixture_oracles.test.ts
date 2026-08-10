@@ -25,7 +25,7 @@ suite('Mermaidテスト入力のPNG・SVG・PDF変換結果が、各期待出力
         await executeRasterConversion({
           spec: rasterFormatSpecs.png,
           maxInputPixels: 1_000_000_000,
-          jobs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
+          inputs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,
           drawioTools,
@@ -33,17 +33,17 @@ suite('Mermaidテスト入力のPNG・SVG・PDF変換結果が、各期待出力
           runId: `mermaid-${index}-png`,
         });
         await convertToSvgFiles({
-          jobs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
+          inputs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
           mermaidTools,
           drawioTools,
           runPdfToSvg: () => {
-            throw new Error('mermaid fixture must not include PDF input for SVG conversion');
+            throw new Error('mermaid fixture must not include PDF input for SVG input');
           },
           runId: `mermaid-${index}-svg`,
           maxInputPixels: 1_000_000_000,
         });
         await convertToPdfFiles({
-          jobs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
+          inputs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
           supportedExtensions: ['.mmd', '.mermaid'],
           tools: { mermaidTools },
           runtime: { resolveConflicts: async () => 'overwrite' },

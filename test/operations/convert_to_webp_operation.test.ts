@@ -32,7 +32,7 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
     await executeRasterConversion({
       spec: rasterFormatSpecs.webp,
       maxInputPixels: 1_000_000_000,
-      jobs: [
+      inputs: [
         {
           sourcePath,
           outputPath,
@@ -68,7 +68,7 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
       executeRasterConversion({
         spec: rasterFormatSpecs.webp,
         maxInputPixels: 1_000_000_000,
-        jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, animation: { pages: 2, pageHeight: 8 } }],
+        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, animation: { pages: 2, pageHeight: 8 } }],
         pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
@@ -93,7 +93,7 @@ suite('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
     await executeRasterConversion({
       spec: rasterFormatSpecs.webp,
       maxInputPixels: 1_000_000_000,
-      jobs: [
+      inputs: [
         {
           sourcePath,
           outputPath,

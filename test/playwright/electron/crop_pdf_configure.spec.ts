@@ -424,7 +424,7 @@ test('package済みmoduleでMergeとSplitが動く', async ({ playwright }, test
       isPackagedSplitPdfModule,
     );
     const splitOutputs = await splitModule.splitPdfAllPages({
-      jobs: [
+      inputs: [
         {
           sourcePath: env.files.inputPath,
           workspacePath: env.directories.workspacePath,

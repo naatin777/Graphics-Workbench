@@ -1,6 +1,6 @@
 import { isAbortError } from '../../shared/error.js';
 import {
-  stagingArtifactsForJobs,
+  stagingArtifactsForInputs,
   type ConversionArtifactRoot,
   withStagingCleanup,
 } from './cleanup_conversion_artifacts.js';
@@ -14,15 +14,15 @@ import type { ConversionExecutionContext, ResolvedConversionRuntime } from './co
 import { sharedConversionJobLimiter } from '../external_tools/heavy_process_limiter.js';
 import { createRunId } from './run_id.js';
 
-export interface StagedConversionBatch<Job extends { workspacePath: string }> {
-  jobs: Job[];
+export interface StagedConversionBatch<Conversion extends { workspacePath: string }> {
+  inputs: Conversion[];
   operationName: string;
   stagingOperationName?: string;
   runId?: string | undefined;
   artifactRoots?: readonly ConversionArtifactRoot[];
   runtime?: ConversionExecutionContext;
   stage: (
-    job: Job,
+    input: Conversion,
     index: number,
     runId: string,
     runtime: ResolvedConversionRuntime,
@@ -30,14 +30,14 @@ export interface StagedConversionBatch<Job extends { workspacePath: string }> {
 }
 
 /** Runs the shared staging/commit lifecycle; source dispatch stays with each operation. */
-export async function runStagedConversionBatch<Job extends { workspacePath: string }>(
-  options: StagedConversionBatch<Job>,
+export async function runStagedConversionBatch<Conversion extends { workspacePath: string }>(
+  options: StagedConversionBatch<Conversion>,
 ): Promise<CommittedConversionOutput[]> {
   const runtime = options.runtime ?? {};
   const runId = options.runId ?? createRunId();
   const artifacts =
     options.artifactRoots ??
-    stagingArtifactsForJobs(options.jobs, options.stagingOperationName ?? options.operationName, runId);
+    stagingArtifactsForInputs(options.inputs, options.stagingOperationName ?? options.operationName, runId);
   const abortController = new AbortController();
   const abortFromCaller = (): void => {
     abortController.abort(runtime.signal?.reason);
@@ -61,13 +61,13 @@ export async function runStagedConversionBatch<Job extends { workspacePath: stri
       async () => {
         let completedCount = 0;
         const settled = await Promise.allSettled(
-          options.jobs.map(async (job, index) =>
+          options.inputs.map(async (input, index) =>
             sharedConversionJobLimiter.run(async () => {
               batchRuntime.signal.throwIfAborted();
               try {
-                const output = await options.stage(job, index, runId, batchRuntime);
+                const output = await options.stage(input, index, runId, batchRuntime);
                 completedCount += 1;
-                options.runtime?.reportProgress?.(completedCount, options.jobs.length);
+                options.runtime?.reportProgress?.(completedCount, options.inputs.length);
                 return output;
               } catch (error) {
                 const stageError = error instanceof Error ? error : new Error(String(error));

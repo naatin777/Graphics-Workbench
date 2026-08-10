@@ -24,7 +24,7 @@ import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { stagingRootPathFor } from '../lifecycle/run_id.js';
 
-export interface ConvertToSvgJob {
+export interface SvgInput {
   sourcePath: string;
   outputPath: string;
   workspacePath: string;
@@ -32,7 +32,7 @@ export interface ConvertToSvgJob {
 }
 
 export interface ConvertToSvgFilesOptions {
-  jobs: ConvertToSvgJob[];
+  inputs: SvgInput[];
   mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   runtime?: ConversionExecutionContext;
@@ -56,7 +56,7 @@ interface StageSvgConversionOptions {
 }
 
 interface WriteSourceAsSvgOptions {
-  job: ConvertToSvgJob;
+  input: SvgInput;
   outputPath: string;
   tools: SvgRenderTools;
   maxInputPixels: number;
@@ -76,17 +76,17 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
   const { runtime } = options;
   runtime?.signal?.throwIfAborted();
   const { maxInputPixels } = options;
-  validateJobs(options.jobs);
-  await validatePdfPathInputs(options.jobs, 'convert-to-svg');
+  validateConversions(options.inputs);
+  await validatePdfPathInputs(options.inputs, 'convert-to-svg');
   runtime?.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
-    jobs: options.jobs,
+    inputs: options.inputs,
     operationName: 'convert-to-svg',
     runId: options.runId,
     ...(runtime !== undefined && { runtime }),
-    stage: async (job, index, currentRunId, batchRuntime) =>
-      stageSvgConversion(job, index, currentRunId, {
+    stage: async (input, index, currentRunId, batchRuntime) =>
+      stageSvgConversion(input, index, currentRunId, {
         mermaidTools: options.mermaidTools,
         drawioTools: options.drawioTools,
         runPdfToSvg: options.runPdfToSvg,
@@ -97,19 +97,19 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
 }
 
 async function stageSvgConversion(
-  job: ConvertToSvgJob,
+  input: SvgInput,
   index: number,
   runId: string,
   options: StageSvgConversionOptions,
 ): Promise<PreparedConversionOutput> {
   const { mermaidTools, drawioTools, runPdfToSvg, maxInputPixels, signal } = options;
   signal.throwIfAborted();
-  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'convert-to-svg', runId);
+  const stagingRootPath = stagingRootPathFor(input.workspacePath, 'convert-to-svg', runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, 'result.svg');
 
   await writeSourceAsSvg({
-    job,
+    input,
     outputPath: stagedOutputPath,
     tools: {
       mermaidTools,
@@ -125,34 +125,34 @@ async function stageSvgConversion(
 
   return {
     stagedOutputPath,
-    outputPath: job.outputPath,
-    workspacePath: job.workspacePath,
+    outputPath: input.outputPath,
+    workspacePath: input.workspacePath,
     stagingRootPath,
   };
 }
 
-async function writeSourceAsSvg({ job, outputPath, tools, signal }: WriteSourceAsSvgOptions): Promise<void> {
+async function writeSourceAsSvg({ input, outputPath, tools, signal }: WriteSourceAsSvgOptions): Promise<void> {
   const { mermaidTools, drawioTools, runPdfToSvg } = tools;
-  const extension = path.extname(job.sourcePath).toLowerCase();
+  const extension = path.extname(input.sourcePath).toLowerCase();
 
-  if (isEditableDrawioImagePath(job.sourcePath) || isNativeDrawioPath(job.sourcePath)) {
-    await writeDrawioAsSvg(job.sourcePath, outputPath, job.workspacePath, drawioTools, signal);
+  if (isEditableDrawioImagePath(input.sourcePath) || isNativeDrawioPath(input.sourcePath)) {
+    await writeDrawioAsSvg(input.sourcePath, outputPath, input.workspacePath, drawioTools, signal);
     return;
   }
 
   if (extension === '.pdf') {
     await writePdfPageAsSvg({
-      sourcePath: job.sourcePath,
+      sourcePath: input.sourcePath,
       outputPath,
-      workspacePath: job.workspacePath,
-      page: job.page,
+      workspacePath: input.workspacePath,
+      page: input.page,
       runPdfToSvg,
       signal,
     });
     return;
   }
 
-  await writeMermaidAsSvg(job.sourcePath, outputPath, job.workspacePath, mermaidTools, signal);
+  await writeMermaidAsSvg(input.sourcePath, outputPath, input.workspacePath, mermaidTools, signal);
 }
 
 async function writeDrawioAsSvg(
@@ -198,7 +198,7 @@ async function writePdfPageAsSvg({
       throw error instanceof Error ? error : new Error(String(error));
     }
 
-    throw new Error(`PDF to SVG conversion failed: ${toErrorMessage(error)}`, { cause: error });
+    throw new Error(`PDF to SVG input failed: ${toErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -242,39 +242,39 @@ async function validateGeneratedSvg(outputPath: string): Promise<void> {
   const content = source.trim();
 
   if (content.length === 0) {
-    throw new Error(`SVG conversion produced empty output: ${outputPath}`);
+    throw new Error(`SVG input produced empty output: ${outputPath}`);
   }
 
   try {
     const parsed: unknown = new XMLParser({ ignoreAttributes: false }).parse(content);
     if (typeof parsed !== 'object' || parsed === null || !('svg' in parsed) || parsed.svg === undefined) {
-      throw new Error(`SVG conversion produced non-SVG output: ${outputPath}`);
+      throw new Error(`SVG input produced non-SVG output: ${outputPath}`);
     }
   } catch (error) {
     if (error instanceof Error && error.message.includes('non-SVG output')) {
       throw error;
     }
 
-    throw new Error(`SVG conversion produced invalid SVG output: ${outputPath}`, { cause: error });
+    throw new Error(`SVG input produced invalid SVG output: ${outputPath}`, { cause: error });
   }
 }
 
-function validateJobs(jobs: ConvertToSvgJob[]): void {
-  if (jobs.length === 0) {
+function validateConversions(inputs: SvgInput[]): void {
+  if (inputs.length === 0) {
     throw new Error('No files were selected.');
   }
 
-  for (const job of jobs) {
+  for (const input of inputs) {
     if (
-      !isEditableDrawioImagePath(job.sourcePath) &&
-      !isNativeDrawioPath(job.sourcePath) &&
-      isSameSourceFormat(job.sourcePath, '.svg')
+      !isEditableDrawioImagePath(input.sourcePath) &&
+      !isNativeDrawioPath(input.sourcePath) &&
+      isSameSourceFormat(input.sourcePath, '.svg')
     ) {
-      throw new Error(`Input and output formats must differ: ${job.sourcePath}`);
+      throw new Error(`Input and output formats must differ: ${input.sourcePath}`);
     }
 
-    if (!isSupportedSourcePath(job.sourcePath)) {
-      throw new Error(`Unsupported input for SVG conversion: ${job.sourcePath}`);
+    if (!isSupportedSourcePath(input.sourcePath)) {
+      throw new Error(`Unsupported input for SVG input: ${input.sourcePath}`);
     }
   }
 }

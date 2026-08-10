@@ -13,9 +13,8 @@ import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_prot
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput } from '../../config/output/page_template.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
-import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { localeMap } from '../../locale_map.js';
-import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfJob } from '../../operations/pdf/split_pdf.js';
+import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfInput } from '../../operations/pdf/split_pdf.js';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
@@ -34,10 +33,8 @@ import {
   getWebviewSharedAssetsRoot,
 } from '../../presentation/webview/pdfjs_assets.js';
 
-const defaultSplitPdfTemplate = '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf';
-
 function readSplitPdfTemplate(dependencies: CommandDependencies): string {
-  return resolveOutputPathTemplate(dependencies.getConfiguration().outputPath.splitPdf(), defaultSplitPdfTemplate);
+  return dependencies.getConfiguration().outputPath.splitPdf();
 }
 
 export async function splitPdfAllPagesCommand(
@@ -54,20 +51,20 @@ export async function splitPdfAllPagesCommand(
     // 分割コマンドの出力テンプレートは本質的に${page}を持つ必要がある。
     // 欠落すると全ページが同一パスへ衝突し、最後のページだけが残る。
     assertPageTemplateForSplitOutput(outputTemplate, 2);
-    const jobs = sourceUris.map((sourceUri) => planSplitPdfJob(sourceUri, outputTemplate));
+    const inputs = sourceUris.map((sourceUri) => planSplitPdfInput(sourceUri, outputTemplate));
     await runConversionLifecycle({
       operationName: 'split-pdf',
       outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
-        progressTitle: userMessage('message.progress.splitPdf.title', jobs.length),
+        progressTitle: userMessage('message.progress.splitPdf.title', inputs.length),
         prepareMessage: userMessage('message.progress.preparePdfSplit'),
         successMessage: (count) => userMessage('message.splitPdf.success', count),
         undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
         cancelledMessage: userMessage('message.splitPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.splitPdf.failed', reason),
       },
-      run: async (runtime) => splitPdfAllPages({ jobs, runtime }),
+      run: async (runtime) => splitPdfAllPages({ inputs, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -80,7 +77,7 @@ export async function splitPdfAllPagesCommand(
   }
 }
 
-function planSplitPdfJob(sourceUri: vscode.Uri, outputTemplate: string): SplitPdfJob {
+function planSplitPdfInput(sourceUri: vscode.Uri, outputTemplate: string): SplitPdfInput {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local PDF files are supported: ${sourceUri.toString()}`);
   }
@@ -296,7 +293,7 @@ async function applyConfiguredSplit(params: {
     signal,
     run: async (runtime) =>
       splitPdfByPageGroups({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             workspacePath,

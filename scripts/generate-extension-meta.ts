@@ -590,7 +590,7 @@ export function generate(packageJson: PackageManifest): string {
     renderConfigurationSchemas(configurationEntries, extensionPrefix) +
     `function assertConfigurationValue<Value>(key: ConfigurationKey, value: unknown, defaultValue: Value): Value {\n  if (matchesConfigurationSchema(value, configurationSchemas[key])) {\n    return value as Value;\n  }\n  // 不正な設定値で拡張の起動を止めず、デフォルトへフォールバックする。\n  // 1つのstale設定が全コマンドを無効化するのを防ぐ。\n  console.warn(\n    \`graphics-workbench.\${key}: invalid value \${JSON.stringify(value)}, using default \${JSON.stringify(defaultValue)}\`,\n  );\n  return defaultValue;\n}\n\n` +
     `function defineConfiguration<Value>(\n  configurationReader: ConfigurationReader,\n  key: ConfigurationKey,\n  defaultValue: Value,\n): ConfigurationGetter<Value> {\n` +
-    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    return assertConfigurationValue(key, value, defaultValue);\n  };\n` +
+    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    // outputPath template settings treat a blank value as "use the manifest default".\n    if (key.startsWith('outputPath.') && typeof value === 'string' && value.trim() === '') {\n      return defaultValue;\n    }\n    return assertConfigurationValue(key, value, defaultValue);\n  };\n` +
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     renderCommandContributions(packageJson) +

@@ -214,7 +214,7 @@ async function applyConfiguredCrop(params: {
     signal,
     run: async (runtime) =>
       cropPdfWithConfiguredBox({
-        job: {
+        input: {
           sourcePath,
           workspacePath: workspaceFolder.uri.fsPath,
           outputPath,

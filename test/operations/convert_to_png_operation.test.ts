@@ -13,7 +13,7 @@ import sharp from 'sharp';
 import {
   executeRasterConversion,
   rasterFormatSpecs,
-  type RasterJob,
+  type RasterInput,
 } from '../../src/operations/conversion/raster_conversion.js';
 import { executeDrawio, type DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
@@ -31,7 +31,7 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
       await executeRasterConversion({
         spec: rasterFormatSpecs.png,
         maxInputPixels: 1_000_000_000,
-        jobs: [1, 2].map((page) => ({
+        inputs: [1, 2].map((page) => ({
           sourcePath,
           outputPath: path.join(workspacePath.path, `${format}-${page}.png`),
           workspacePath: workspacePath.path,
@@ -76,7 +76,7 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
         await writeFile(pdfPath, await document.save());
       },
     };
-    const job: RasterJob = {
+    const job: RasterInput = {
       sourcePath,
       outputPath,
       workspacePath: workspacePath.path,
@@ -86,7 +86,7 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
     await executeRasterConversion({
       spec: rasterFormatSpecs.png,
       maxInputPixels: 1_000_000_000,
-      jobs: [job],
+      inputs: [job],
       pdfRenderTools: {
         runPdfToPng: async (pdfPath, pngPath, page) => {
           assert.ok(pdfPath.endsWith('.pdf'));

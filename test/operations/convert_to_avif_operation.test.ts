@@ -30,7 +30,7 @@ suite('Draw.io画像をPDF・PNG経由でAVIFへ変換する', () => {
     await executeRasterConversion({
       spec: rasterFormatSpecs.avif,
       maxInputPixels: 1_000_000_000,
-      jobs: [
+      inputs: [
         {
           sourcePath,
           outputPath,

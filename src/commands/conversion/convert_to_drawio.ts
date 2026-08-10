@@ -4,7 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
-import { convertToDrawioFiles, type ConvertToDrawioJob } from '../../operations/conversion/convert_to_drawio.js';
+import { convertToDrawioFiles, type DrawioComposeInput } from '../../operations/conversion/convert_to_drawio.js';
 import { renderPdfPageToSvg } from '../../operations/pdf/mupdf.js';
 import { runMermaidCliWithSignal } from '../../operations/conversion/tools/run_mermaid_cli.js';
 import { executeDrawio } from '../../operations/conversion/tools/drawio_tools.js';
@@ -80,7 +80,7 @@ async function runDrawioConversionCommand(
       { allowedExtensions: drawioExtensions },
     );
     const drawioPath = configuration.execPath.drawio();
-    const jobs: ConvertToDrawioJob[] = [
+    const composeInputs: DrawioComposeInput[] = [
       {
         inputs: sourceUris.map((sourceUri) => {
           assertLocalFileUri(sourceUri);
@@ -101,7 +101,7 @@ async function runDrawioConversionCommand(
       messages: createOutputConversionMessages('Draw.io', sourceUris.length),
       run: async (runtime) =>
         convertToDrawioFiles({
-          jobs,
+          inputs: composeInputs,
           tools: {
             drawioPath,
             runPdfToSvg: async (sourcePath, toolOutputPath, page, signal) => {

@@ -81,7 +81,7 @@ export async function createConversionUndoRecord(
   now: () => number = Date.now,
 ): Promise<ConversionUndoRecord> {
   if (outputs.length === 0) {
-    throw new Error('No conversion outputs were provided.');
+    throw new Error('No input outputs were provided.');
   }
 
   const uniquePaths = new Set<string>();
@@ -90,7 +90,7 @@ export async function createConversionUndoRecord(
       const normalizedPath = path.resolve(output.outputPath);
 
       if (uniquePaths.has(normalizedPath)) {
-        throw new Error(`Duplicate conversion output: ${output.outputPath}`);
+        throw new Error(`Duplicate input output: ${output.outputPath}`);
       }
       uniquePaths.add(normalizedPath);
 
@@ -359,7 +359,7 @@ async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<Va
     );
 
     if (previous.sha256 !== output.previousSha256) {
-      throw new Error(`Output backup changed after conversion: ${output.previousFilePath}`);
+      throw new Error(`Output backup changed after input: ${output.previousFilePath}`);
     }
     previousIdentity = previous.identity;
   }
@@ -369,7 +369,7 @@ async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<Va
   const current = await readValidatedDigest(output.outputPath, output.workspacePath);
 
   if (current.sha256 !== output.sha256) {
-    throw new Error(`Output changed after conversion: ${output.outputPath}`);
+    throw new Error(`Output changed after input: ${output.outputPath}`);
   }
   return {
     outputIdentity: current.identity,

@@ -3,7 +3,7 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
-import { compressPdfFiles, type CompressPdfJob } from '../../operations/pdf/compress_pdf.js';
+import { compressPdfFiles, type CompressPdfInput } from '../../operations/pdf/compress_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
@@ -20,20 +20,20 @@ export async function compressPdfCommand(sourceUris: vscode.Uri[], dependencies:
 
     const configuration = dependencies.getConfiguration();
     const outputTemplate = configuration.outputPath.compressPdf();
-    const jobs = sourceUris.map((sourceUri) => planCompressPdfJob(sourceUri, outputTemplate));
+    const inputs = sourceUris.map((sourceUri) => planCompressPdfInput(sourceUri, outputTemplate));
     await runConversionLifecycle({
       operationName: 'compress-pdf',
       outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
-        progressTitle: userMessage('message.progress.compressPdf.title', jobs.length),
+        progressTitle: userMessage('message.progress.compressPdf.title', inputs.length),
         prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
         successMessage: (count) => userMessage('message.compressPdf.success', count),
         undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
         cancelledMessage: userMessage('message.compressPdf.cancelled'),
         failedMessage: (reason) => userMessage('message.compressPdf.failed', reason),
       },
-      run: async (runtime) => compressPdfFiles({ jobs, runtime }),
+      run: async (runtime) => compressPdfFiles({ inputs, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -46,7 +46,7 @@ export async function compressPdfCommand(sourceUris: vscode.Uri[], dependencies:
   }
 }
 
-function planCompressPdfJob(sourceUri: vscode.Uri, outputTemplate: string): CompressPdfJob {
+function planCompressPdfInput(sourceUri: vscode.Uri, outputTemplate: string): CompressPdfInput {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local PDF files are supported: ${sourceUri.toString()}`);
   }

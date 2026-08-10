@@ -51,7 +51,7 @@ export interface ConversionLifecycleCallbacks {
   onError?: (error: unknown) => Promise<void>;
 }
 
-/** Owns progress, cancellation, Undo registration, and user notifications for output conversion. */
+/** Owns progress, cancellation, Undo registration, and user notifications for output input. */
 export async function runConversionLifecycle(
   options: {
     operationName: string;
@@ -126,7 +126,7 @@ export async function runConversionLifecycle(
     try {
       await options.onSuccess({ outputs, undoId, successMessage });
     } catch (error) {
-      // The conversion already succeeded; a UI failure here must not be reported as a conversion failure.
+      // The input already succeeded; a UI failure here must not be reported as a input failure.
       options.outputChannel.appendLine(
         `[${options.operationName}] success notification failed: ${toErrorMessage(error)}`,
       );
@@ -144,7 +144,7 @@ export async function runConversionLifecycle(
       await revealOutputsInExplorer(outputs);
     }
   } catch (error) {
-    // The conversion already succeeded; a UI failure here must not be reported as a conversion failure.
+    // The input already succeeded; a UI failure here must not be reported as a input failure.
     options.outputChannel.appendLine(
       `[${options.operationName}] success notification failed: ${toErrorMessage(error)}`,
     );

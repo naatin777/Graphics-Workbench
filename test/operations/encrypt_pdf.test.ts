@@ -32,7 +32,7 @@ suite('PDFのパスワード暗号化', () => {
 
     try {
       await encryptPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
         runId: 'run',
       });
@@ -67,7 +67,7 @@ suite('PDFのパスワード暗号化', () => {
 
     await assert.rejects(
       encryptPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
       }),
       /Output file already exists/,
@@ -86,7 +86,7 @@ suite('PDFのパスワード暗号化', () => {
 
     await assert.rejects(
       encryptPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
         runtime: { signal: abortController.signal },
       }),
@@ -106,7 +106,7 @@ suite('PDFのパスワード暗号化', () => {
       for (const invalidPassword of ['bad,password', 'bad=password']) {
         await assert.rejects(
           encryptPdfFiles({
-            jobs: [{ sourcePath, workspacePath, outputPath }],
+            inputs: [{ sourcePath, workspacePath, outputPath }],
             password: invalidPassword,
           }),
           /passwords cannot contain/iu,

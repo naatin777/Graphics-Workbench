@@ -34,7 +34,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
     await writeFile(sourcePath, 'editable drawio image placeholder');
 
     await convertToSvgFiles({
-      jobs: [
+      inputs: [
         {
           sourcePath,
           outputPath,
@@ -84,7 +84,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     await assert.rejects(
       convertToSvgFiles({
-        jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, page: 1 }],
+        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, page: 1 }],
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: {
           drawioPath: 'drawio',
@@ -110,7 +110,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     await assert.rejects(
       convertToSvgFiles({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             outputPath,
@@ -149,7 +149,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     await assert.rejects(
       convertToSvgFiles({
-        jobs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, page: 1 }],
+        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, page: 1 }],
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
         runPdfToSvg: async (_sourcePath, toolOutputPath) => {
@@ -163,7 +163,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('PDF→SVG変換がCommand failedで失敗すると、stderr内容を添えたPDF to SVG conversion failedエラーに包んで変換を失敗させる', async () => {
+  test('PDF→SVG変換がCommand failedで失敗すると、stderr内容を添えたPDF to SVG input failedエラーに包んで変換を失敗させる', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-svg-operation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
@@ -174,7 +174,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     await assert.rejects(
       convertToSvgFiles({
-        jobs: [
+        inputs: [
           {
             sourcePath,
             outputPath,
@@ -198,7 +198,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
         runId: 'test-run',
         maxInputPixels: 1_000_000_000,
       }),
-      /PDF to SVG conversion failed: Command failed: pdf-render\nsyntax error/,
+      /PDF to SVG input failed: Command failed: pdf-render\nsyntax error/,
     );
   });
 });

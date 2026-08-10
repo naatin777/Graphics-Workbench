@@ -16,20 +16,20 @@ import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '..
 import { closeRasterPipeline, openRasterInput } from './raster_input.js';
 import { countPdfPages } from '../pdf/mupdf.js';
 
-interface DrawioInput {
+interface DrawioSourceInput {
   sourcePath: string;
   pageName?: string;
 }
 
-export interface ConvertToDrawioJob {
-  inputs: DrawioInput[];
+export interface DrawioComposeInput {
+  inputs: DrawioSourceInput[];
   outputPath: string;
   workspacePath: string;
 }
 
 type RunMermaid = (sourcePath: string, outputPath: string, signal: AbortSignal) => Promise<void>;
 export interface ConvertToDrawioOptions {
-  jobs: ConvertToDrawioJob[];
+  inputs: DrawioComposeInput[];
   tools: {
     drawioPath: string;
     runPdfToSvg: RunPdfToSvg;
@@ -42,79 +42,86 @@ export interface ConvertToDrawioOptions {
 }
 
 export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Promise<CommittedConversionOutput[]> {
-  if (options.jobs.length === 0) {
+  if (options.inputs.length === 0) {
     throw new Error('No files were selected.');
   }
-  for (const job of options.jobs) {
-    if (job.inputs.length === 0) {
+  for (const composeInput of options.inputs) {
+    if (composeInput.inputs.length === 0) {
       throw new Error('No Draw.io inputs were selected.');
     }
     await Promise.all([
-      ...job.inputs.map(async (input) => assertExistingPathInWorkspace(input.sourcePath, job.workspacePath)),
-      assertWritablePathInWorkspace(job.outputPath, job.workspacePath),
+      ...composeInput.inputs.map(async (sourceInput) =>
+        assertExistingPathInWorkspace(sourceInput.sourcePath, composeInput.workspacePath),
+      ),
+      assertWritablePathInWorkspace(composeInput.outputPath, composeInput.workspacePath),
       assertWritablePathInWorkspace(
-        path.join(job.workspacePath, '.graphics-workbench', 'convert-to-drawio'),
-        job.workspacePath,
+        path.join(composeInput.workspacePath, '.graphics-workbench', 'convert-to-drawio'),
+        composeInput.workspacePath,
       ),
     ]);
   }
 
   options.runtime?.signal?.throwIfAborted();
   return runStagedConversionBatch({
-    jobs: options.jobs,
+    inputs: options.inputs,
     operationName: 'convert-to-drawio',
     runId: options.runId,
     ...(options.runtime !== undefined && { runtime: options.runtime }),
-    stage: async (job, _index, currentRunId, runtime) => stageDrawio(job, currentRunId, runtime, options),
+    stage: async (input, _index, currentRunId, runtime) => stageDrawio(input, currentRunId, runtime, options),
   });
 }
 
 async function stageDrawio(
-  job: ConvertToDrawioJob,
+  composeInput: DrawioComposeInput,
   runId: string,
   runtime: ResolvedConversionRuntime,
   options: ConvertToDrawioOptions,
 ): Promise<PreparedConversionOutput> {
-  const stagingRootPath = stagingRootPathFor(job.workspacePath, 'convert-to-drawio', runId);
+  const stagingRootPath = stagingRootPathFor(composeInput.workspacePath, 'convert-to-drawio', runId);
   const stageDirectory = path.join(stagingRootPath, 'inputs');
-  const stagedOutputPath = path.join(stagingRootPath, `result${drawioExtension(job.outputPath)}`);
-  await assertWritablePathInWorkspace(stagingRootPath, job.workspacePath);
-  await assertWritablePathInWorkspace(stagedOutputPath, job.workspacePath);
+  const stagedOutputPath = path.join(stagingRootPath, `result${drawioExtension(composeInput.outputPath)}`);
+  await assertWritablePathInWorkspace(stagingRootPath, composeInput.workspacePath);
+  await assertWritablePathInWorkspace(stagedOutputPath, composeInput.workspacePath);
   await mkdir(stageDirectory, { recursive: true });
   const pages: DrawioPage[] = [];
 
-  for (const [inputIndex, input] of job.inputs.entries()) {
-    pages.push(...(await stageDrawioInput(input, inputIndex, stageDirectory, runtime, options)));
+  for (const [inputIndex, sourceInput] of composeInput.inputs.entries()) {
+    pages.push(...(await stageDrawioInput(sourceInput, inputIndex, stageDirectory, runtime, options)));
   }
 
   const xml = createDrawioXml(pages);
-  await validateDrawioXml(xml, job.inputs[0]?.sourcePath ?? job.outputPath);
+  await validateDrawioXml(xml, composeInput.inputs[0]?.sourcePath ?? composeInput.outputPath);
   const xmlPath = path.join(stagingRootPath, 'source.drawio');
   await writeFile(xmlPath, xml);
-  await (drawioExtension(job.outputPath) === '.drawio'
+  await (drawioExtension(composeInput.outputPath) === '.drawio'
     ? writeFile(stagedOutputPath, xml)
     : exportEditableDrawioImage({
         xmlPath,
         outputPath: stagedOutputPath,
-        workspacePath: job.workspacePath,
-        format: drawioExtension(job.outputPath).slice(1),
+        workspacePath: composeInput.workspacePath,
+        format: drawioExtension(composeInput.outputPath).slice(1),
         drawioPath: options.tools.drawioPath,
         runDrawio: options.tools.runDrawio,
         runtime,
       }));
-  if (drawioExtension(job.outputPath) !== '.drawio') {
+  if (drawioExtension(composeInput.outputPath) !== '.drawio') {
     await validateEmbeddedDrawioImage(
       stagedOutputPath,
-      drawioExtension(job.outputPath),
-      job.inputs[0]?.sourcePath ?? job.outputPath,
+      drawioExtension(composeInput.outputPath),
+      composeInput.inputs[0]?.sourcePath ?? composeInput.outputPath,
     );
   }
-  await assertExistingPathInWorkspace(stagedOutputPath, job.workspacePath);
-  return { stagedOutputPath, outputPath: job.outputPath, workspacePath: job.workspacePath, stagingRootPath };
+  await assertExistingPathInWorkspace(stagedOutputPath, composeInput.workspacePath);
+  return {
+    stagedOutputPath,
+    outputPath: composeInput.outputPath,
+    workspacePath: composeInput.workspacePath,
+    stagingRootPath,
+  };
 }
 
 async function stageDrawioInput(
-  input: DrawioInput,
+  input: DrawioSourceInput,
   inputIndex: number,
   stageDirectory: string,
   runtime: ResolvedConversionRuntime,
@@ -138,7 +145,7 @@ async function stageDrawioInput(
 }
 
 async function stagePdfDrawioInput(
-  input: DrawioInput,
+  input: DrawioSourceInput,
   inputIndex: number,
   stageDirectory: string,
   runtime: ResolvedConversionRuntime,
@@ -250,7 +257,7 @@ export interface DrawioPage {
 
 async function rasterPage(
   sourcePath: string,
-  input: DrawioInput,
+  input: DrawioSourceInput,
   maxInputPixels: number,
   page?: number,
 ): Promise<DrawioPage> {
@@ -273,7 +280,7 @@ async function rasterPage(
   }
 }
 
-async function svgPage(sourcePath: string, input: DrawioInput, page?: number): Promise<DrawioPage> {
+async function svgPage(sourcePath: string, input: DrawioSourceInput, page?: number): Promise<DrawioPage> {
   const source = await readFile(sourcePath, 'utf8');
   const { width, height } = parseSvgSize(source);
   return {

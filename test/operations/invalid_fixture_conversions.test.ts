@@ -31,15 +31,11 @@ suite('不正なテスト入力の実変換エラー', () => {
         const destinationPath = workspaceDestinationPath(invalidCase.fileName, index);
         const sourcePath = await copyInputToWorkspace(inputPath, destinationPath);
 
-        const outputPath = path.join(
-          workspacePath,
-          'invalid conversion outputs',
-          `${index}.${invalidCase.outputFormat}`,
-        );
-        const conversion = executeRasterConversion({
+        const outputPath = path.join(workspacePath, 'invalid input outputs', `${index}.${invalidCase.outputFormat}`);
+        const input = executeRasterConversion({
           spec: rasterFormatSpecs.png,
           maxInputPixels: 1_000_000_000,
-          jobs: [{ sourcePath, outputPath, workspacePath }],
+          inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,
           drawioTools,
@@ -47,7 +43,7 @@ suite('不正なテスト入力の実変換エラー', () => {
           runId: `invalid-${index}`,
         });
 
-        await assert.rejects(conversion, `${invalidCase.directory}/${invalidCase.fileName}`);
+        await assert.rejects(input, `${invalidCase.directory}/${invalidCase.fileName}`);
         await assert.rejects(access(outputPath));
       });
     });

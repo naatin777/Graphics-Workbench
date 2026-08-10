@@ -5,7 +5,7 @@ type ConflictResolver = (conflicts: string[]) => Promise<OutputConflictDecision>
 type ProgressReporter = (completed: number, total: number) => void;
 type MessageReporter = (message: string) => void;
 
-/** Dependencies shared by one conversion run, not by an individual source job. */
+/** Dependencies shared by one input run, not by an individual source input. */
 export interface ConversionExecutionContext {
   signal?: AbortSignal;
   outputChannel?: LineOutputChannel;

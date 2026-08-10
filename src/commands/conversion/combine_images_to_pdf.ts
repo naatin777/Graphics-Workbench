@@ -50,16 +50,16 @@ export async function combineImagesToPdfCommand(
     await assertWritablePathInWorkspace(outputPath, workspacePath);
 
     const svgToPdfTools = createSvgToPdfBackend(configuration);
-    const jobs = previewedUris.map((sourceUri) => ({ sourcePath: sourceUri.fsPath }));
+    const inputs = previewedUris.map((sourceUri) => ({ sourcePath: sourceUri.fsPath }));
 
     await runConversionLifecycle({
       operationName: 'combine-images-to-pdf',
       outputChannel,
       resolveConflicts: resolveOutputConflicts,
-      messages: createOutputConversionMessages('PDF', jobs.length),
+      messages: createOutputConversionMessages('PDF', inputs.length),
       run: async (runtime) =>
         combineImagesToPdf({
-          jobs,
+          inputs,
           outputPath,
           workspacePath,
           runtime,

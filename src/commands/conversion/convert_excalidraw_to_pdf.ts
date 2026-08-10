@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { isExcalidrawPath } from '../../shared/source_format.js';
 import {
   convertExcalidrawToPdfFiles,
-  type ExcalidrawPdfJob,
+  type ExcalidrawPdfInput,
 } from '../../operations/conversion/convert_excalidraw_to_pdf.js';
 import { validateSvgToPdfOptions } from '../../operations/conversion/convert_to_pdf.js';
 
@@ -28,14 +28,14 @@ export async function convertExcalidrawToPdfCommand(
     const outputTemplate = configuration.outputPath.convertExcalidrawToPdf();
     const svgToPdfTools = createSvgToPdfBackend(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
-    const jobs = sourceUris.map((sourceUri) => planExcalidrawPdfJob(sourceUri, outputTemplate));
+    const inputs = sourceUris.map((sourceUri) => planExcalidrawPdfInput(sourceUri, outputTemplate));
 
     await runConversionLifecycle({
       operationName: 'convert-excalidraw-to-pdf',
       outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
-        progressTitle: userMessage('message.progress.convertExcalidrawToPdf.title', jobs.length),
+        progressTitle: userMessage('message.progress.convertExcalidrawToPdf.title', inputs.length),
         prepareMessage: userMessage('message.progress.prepareConversion', 'Excalidraw PDF'),
         successMessage: (count) => userMessage('message.convertExcalidrawToPdf.success', count),
         undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
@@ -44,7 +44,7 @@ export async function convertExcalidrawToPdfCommand(
       },
       run: async (runtime) =>
         convertExcalidrawToPdfFiles({
-          jobs,
+          inputs,
           svgToPdf: svgToPdfTools,
           maxInputPixels: configuration.raster.maxInputPixels(),
           runtime,
@@ -56,7 +56,7 @@ export async function convertExcalidrawToPdfCommand(
   }
 }
 
-function planExcalidrawPdfJob(sourceUri: vscode.Uri, outputTemplate: string): ExcalidrawPdfJob {
+function planExcalidrawPdfInput(sourceUri: vscode.Uri, outputTemplate: string): ExcalidrawPdfInput {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local Excalidraw files are supported: ${sourceUri.toString()}`);
   }

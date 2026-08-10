@@ -13,7 +13,7 @@ import sharp from 'sharp';
 import {
   executeRasterConversion,
   rasterFormatSpecs,
-  type RasterJob,
+  type RasterInput,
 } from '../../src/operations/conversion/raster_conversion.js';
 import type { DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
@@ -39,7 +39,7 @@ suite('編集可能なDraw.io画像をPDF中間経由でJPEGへ変換する処�
         await writeFile(pdfPath, await document.save());
       },
     };
-    const job: RasterJob = {
+    const job: RasterInput = {
       sourcePath,
       outputPath,
       workspacePath: workspacePath.path,
@@ -49,7 +49,7 @@ suite('編集可能なDraw.io画像をPDF中間経由でJPEGへ変換する処�
     await executeRasterConversion({
       spec: rasterFormatSpecs.jpeg,
       maxInputPixels: 1_000_000_000,
-      jobs: [job],
+      inputs: [job],
       pdfRenderTools: {
         runPdfToPng: async (pdfPath, pngPath, page) => {
           assert.ok(pdfPath.endsWith('.pdf'));

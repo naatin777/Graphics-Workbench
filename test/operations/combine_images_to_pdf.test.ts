@@ -49,7 +49,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
       const outputPath = path.join(workspacePath, 'result.pdf');
 
       await combineImagesToPdf({
-        jobs: [{ sourcePath }],
+        inputs: [{ sourcePath }],
         outputPath,
         workspacePath,
         maxInputPixels: 1_000_000_000,
@@ -72,7 +72,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
 
       await assert.rejects(
         combineImagesToPdf({
-          jobs: [{ sourcePath }],
+          inputs: [{ sourcePath }],
           outputPath,
           workspacePath,
           maxInputPixels: 99,
@@ -97,7 +97,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
       const progress: [number, number][] = [];
 
       await combineImagesToPdf({
-        jobs: sourcePaths.map((sourcePath) => ({ sourcePath })),
+        inputs: sourcePaths.map((sourcePath) => ({ sourcePath })),
         outputPath,
         workspacePath,
         maxInputPixels: 1_000_000_000,
@@ -127,7 +127,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
     try {
       await assert.rejects(
         combineImagesToPdf({
-          jobs: [{ sourcePath }],
+          inputs: [{ sourcePath }],
           outputPath,
           workspacePath,
           maxInputPixels: 1_000_000_000,
@@ -153,7 +153,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
       const outputPath = path.join(workspacePath, 'result.pdf');
 
       await combineImagesToPdf({
-        jobs: sourcePaths.map((sourcePath) => ({ sourcePath })),
+        inputs: sourcePaths.map((sourcePath) => ({ sourcePath })),
         outputPath,
         workspacePath,
         maxInputPixels: 1_000_000_000,
@@ -203,7 +203,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
       };
 
       await combineImagesToPdf({
-        jobs: [{ sourcePath }],
+        inputs: [{ sourcePath }],
         outputPath,
         workspacePath,
         maxInputPixels: 1_000_000_000,
@@ -229,7 +229,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         const outputPath = path.join(workspacePath, `${fixture.format}-result.pdf`);
 
         await combineImagesToPdf({
-          jobs: [{ sourcePath: fixture.sourcePath }],
+          inputs: [{ sourcePath: fixture.sourcePath }],
           outputPath,
           workspacePath,
           maxInputPixels: 1_000_000_000,
@@ -254,7 +254,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
       const outputPath = path.join(workspacePath, 'mixed-result.pdf');
 
       await combineImagesToPdf({
-        jobs: fixtures.map((fixture) => ({ sourcePath: fixture.sourcePath })),
+        inputs: fixtures.map((fixture) => ({ sourcePath: fixture.sourcePath })),
         outputPath,
         workspacePath,
         maxInputPixels: 1_000_000_000,
@@ -276,7 +276,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
     try {
       await assert.rejects(
         combineImagesToPdf({
-          jobs: [],
+          inputs: [],
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
           maxInputPixels: 1_000_000_000,
@@ -297,7 +297,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
 
       await assert.rejects(
         combineImagesToPdf({
-          jobs: [{ sourcePath }],
+          inputs: [{ sourcePath }],
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
           maxInputPixels: 1_000_000_000,
@@ -319,7 +319,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
 
         await assert.rejects(
           combineImagesToPdf({
-            jobs: [{ sourcePath }],
+            inputs: [{ sourcePath }],
             outputPath: path.join(workspacePath, `${fileName}.output.pdf`),
             workspacePath,
             maxInputPixels: 1_000_000_000,
@@ -341,7 +341,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
 
       await assert.rejects(
         combineImagesToPdf({
-          jobs: [{ sourcePath }],
+          inputs: [{ sourcePath }],
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
           maxInputPixels: 1_000_000_000,

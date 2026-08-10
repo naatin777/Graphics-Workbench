@@ -44,7 +44,7 @@ suite('Excalidrawテスト入力のSVG変換とPNG変換結果が、期待出力
         await executeRasterConversion({
           spec: rasterFormatSpecs.png,
           maxInputPixels: 1_000_000_000,
-          jobs: [{ sourcePath: svgPath, outputPath, workspacePath }],
+          inputs: [{ sourcePath: svgPath, outputPath, workspacePath }],
           pdfRenderTools,
           mermaidTools,
           drawioTools,

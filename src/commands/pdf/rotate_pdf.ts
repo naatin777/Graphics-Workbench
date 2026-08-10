@@ -7,7 +7,7 @@ import {
   PDF_ROTATION_ANGLES,
   rotatePdfFiles,
   type PdfRotationAngle,
-  type RotatePdfJob,
+  type RotatePdfInput,
 } from '../../operations/pdf/rotate_pdf.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -31,20 +31,20 @@ export async function rotatePdfCommand(sourceUris: vscode.Uri[], dependencies: C
 
     const configuration = dependencies.getConfiguration();
     const outputTemplate = configuration.outputPath.rotatePdf();
-    const jobs = sourceUris.map((sourceUri) => planRotatePdfJob(sourceUri, outputTemplate, angle));
+    const inputs = sourceUris.map((sourceUri) => planRotatePdfInput(sourceUri, outputTemplate, angle));
     await runConversionLifecycle({
       operationName: 'rotate-pdf',
       outputChannel,
       resolveConflicts: resolveOutputConflicts,
       messages: {
-        progressTitle: userMessage('message.progress.rotatePdf.title', jobs.length),
+        progressTitle: userMessage('message.progress.rotatePdf.title', inputs.length),
         prepareMessage: userMessage('message.progress.prepareRotatePdf'),
         successMessage: (count) => userMessage('message.rotatePdf.success', count),
         undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
         cancelledMessage: userMessage('message.rotatePdf.cancelled'),
         failedMessage: (reason) => userMessage('message.rotatePdf.failed', reason),
       },
-      run: async (runtime) => rotatePdfFiles({ jobs, runtime }),
+      run: async (runtime) => rotatePdfFiles({ inputs, runtime }),
     });
   } catch (error) {
     if (isAbortError(error)) {
@@ -65,7 +65,7 @@ async function pickRotationAngle(): Promise<PdfRotationAngle | undefined> {
   return selected?.angle;
 }
 
-function planRotatePdfJob(sourceUri: vscode.Uri, outputTemplate: string, angle: PdfRotationAngle): RotatePdfJob {
+function planRotatePdfInput(sourceUri: vscode.Uri, outputTemplate: string, angle: PdfRotationAngle): RotatePdfInput {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local PDF files are supported: ${sourceUri.toString()}`);
   }

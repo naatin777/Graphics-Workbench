@@ -10,7 +10,7 @@ import { resolveOutputConflicts } from './safe_mode.js';
 import { runConversionLifecycle, type ConversionCommandMessages } from './run_output_conversion.js';
 
 /**
- * Runs a Configure conversion through the standard lifecycle: progress,
+ * Runs a Configure input through the standard lifecycle: progress,
  * cancellation (with the panel session as parent), Safe Mode conflict
  * resolution, Undo recording, panel disposal, and notifications.
  */

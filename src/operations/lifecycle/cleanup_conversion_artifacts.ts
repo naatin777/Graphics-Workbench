@@ -27,16 +27,16 @@ export interface CleanupResult {
   readonly failures: readonly CleanupFailure[];
 }
 
-export function stagingArtifactsForJobs(
-  jobs: readonly { workspacePath: string }[],
+export function stagingArtifactsForInputs(
+  inputs: readonly { workspacePath: string }[],
   operation: string,
   runId: string,
 ): ConversionArtifactRoot[] {
   return [
     ...new Map(
-      jobs.map((job) => {
-        const rootPath = stagingRootPathFor(job.workspacePath, operation, runId);
-        return [rootPath, { rootPath, workspacePath: job.workspacePath }];
+      inputs.map((input) => {
+        const rootPath = stagingRootPathFor(input.workspacePath, operation, runId);
+        return [rootPath, { rootPath, workspacePath: input.workspacePath }];
       }),
     ).values(),
   ];

@@ -33,7 +33,7 @@ suite('パスワード付きPDFの復号化', () => {
 
     try {
       await decryptPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
         runId: 'run',
       });
@@ -62,7 +62,7 @@ suite('パスワード付きPDFの復号化', () => {
 
     await assert.rejects(
       decryptPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         password: 'wrong-password',
       }),
     );
@@ -79,7 +79,7 @@ suite('パスワード付きPDFの復号化', () => {
 
     await assert.rejects(
       decryptPdfFiles({
-        jobs: [{ sourcePath, workspacePath, outputPath }],
+        inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
       }),
       /Output file already exists/,

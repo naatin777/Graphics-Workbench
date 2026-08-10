@@ -2,7 +2,7 @@ import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config
 import { assertAnimationPixelLimit } from '../../config/raster.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { closeRasterPipeline, openRasterInput } from '../../operations/conversion/raster_input.js';
-import type { RasterJob } from '../../operations/conversion/raster_conversion.js';
+import type { RasterInput } from '../../operations/conversion/raster_conversion.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 
 export interface RasterFramePlanOptions {
@@ -25,7 +25,7 @@ export interface RasterFrameAnalysis {
 export function planRasterFrameJobsFromMetadata(
   options: RasterFramePlanOptions,
   analysis: RasterFrameAnalysis,
-): RasterJob[] {
+): RasterInput[] {
   const { pages, width, pageHeight } = analysis;
 
   if (!Number.isInteger(pages) || pages < 1) {
@@ -68,7 +68,7 @@ export async function planRasterFrameJobs(options: {
   maxInputPixels: number;
   maxAnimationPixels?: number;
   frameMode?: 'first' | 'all';
-}): Promise<RasterJob[]> {
+}): Promise<RasterInput[]> {
   await assertExistingPathInWorkspace(options.sourcePath, options.workspacePath);
   const image = openRasterInput(options.sourcePath, options.maxInputPixels);
   let pages: number;

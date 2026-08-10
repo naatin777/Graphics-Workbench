@@ -38,7 +38,7 @@ export async function undoLastConversionCommand(
       return;
     }
 
-    if (outcome === 'newer-conversion') {
+    if (outcome === 'newer-input') {
       await vscode.window.showWarningMessage(userMessage('message.undo.newerConversionCompleted'));
       return;
     }

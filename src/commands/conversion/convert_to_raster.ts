@@ -1,4 +1,4 @@
-import type * as vscode from 'vscode';
+import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
@@ -7,16 +7,19 @@ import {
   rasterFormatSpecs,
   type RasterConversionTarget,
   type RasterFormatSpec,
-  type RasterJob,
+  type RasterInput,
 } from '../../operations/conversion/raster_conversion.js';
 import type { DrawioBackend } from '../../operations/conversion/tools/drawio_tools.js';
 import type { MermaidBackend } from '../../operations/conversion/tools/mermaid_tools.js';
 import { createPdfRenderBackend, type PdfRenderBackend } from '../../operations/conversion/tools/pdf_render_tools.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createDrawioBackend } from '../shared/command_runtime.js';
+import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
+import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
+import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
+import { userMessage } from '../shared/user_messages.js';
+import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 
 import { planRasterConversionJobs } from './plan_conversion_jobs.js';
-import { runRasterConversionCommand, type RasterConversionContext } from './run_raster_conversion_command.js';
 
 export interface ConvertToRasterCommandOptions {
   target: RasterConversionTarget;
@@ -30,7 +33,13 @@ interface RasterBackendTools {
   outputOptions?: { effort: number };
 }
 
-type RasterPlanContext = RasterConversionContext<RasterBackendTools>;
+interface RasterConversionContext {
+  configuration: Configuration;
+  maxInputPixels: number;
+  maxAnimationPixels?: number;
+  prepared: RasterBackendTools;
+  runtime: ConversionExecutionContext;
+}
 
 function createRasterBackendTools(configuration: Configuration, spec: RasterFormatSpec): RasterBackendTools {
   const tools: RasterBackendTools = {
@@ -52,30 +61,48 @@ async function runRasterCommand(options: {
   spec: RasterFormatSpec;
   outputMode?: 'auto' | 'preserve' | 'split' | undefined;
 }): Promise<void> {
-  const { spec } = options;
-  const animated = spec.animatedInputExtension !== undefined;
-  const plan = async (sourceUri: vscode.Uri, context: RasterPlanContext): Promise<RasterJob[]> =>
-    planRasterConversionJobs(sourceUri, spec, {
-      configuration: context.configuration,
-      maxInputPixels: context.maxInputPixels,
-      ...(animated && context.maxAnimationPixels !== undefined
-        ? { maxAnimationPixels: context.maxAnimationPixels }
-        : {}),
-      ...(options.outputMode !== undefined && { outputMode: options.outputMode }),
-      runtime: context.runtime,
-    });
+  const { sourceUris, spec } = options;
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage(
+      userMessage('message.convertToOutput.failed', spec.outputLabel, 'No files were selected.'),
+    );
+    return;
+  }
 
-  return runRasterConversionCommand<RasterJob, RasterBackendTools>({
-    sourceUris: options.sourceUris,
-    dependencies: options.dependencies,
+  const outputChannel = options.dependencies.outputChannel;
+  const animated = spec.animatedInputExtension !== undefined;
+  await runConversionLifecycle({
     operationName: spec.operationName,
-    outputLabel: spec.outputLabel,
-    animated,
-    prepare: (configuration) => createRasterBackendTools(configuration, spec),
-    plan,
-    execute: async (jobs, context) =>
-      executeRasterConversion({
-        jobs,
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: createOutputConversionMessages(spec.outputLabel, sourceUris.length),
+    run: async (runtime) => {
+      const configuration = options.dependencies.getConfiguration();
+      const maxInputPixels = configuration.raster.maxInputPixels();
+      const context: RasterConversionContext = {
+        configuration,
+        maxInputPixels,
+        prepared: createRasterBackendTools(configuration, spec),
+        runtime,
+        ...(animated && { maxAnimationPixels: configuration.raster.maxAnimationPixels() }),
+      };
+      const plannedInputs: RasterInput[] = [];
+      for (const sourceUri of sourceUris) {
+        runtime.signal?.throwIfAborted();
+        plannedInputs.push(
+          ...(await planRasterConversionJobs(sourceUri, spec, {
+            configuration: context.configuration,
+            maxInputPixels: context.maxInputPixels,
+            ...(animated && context.maxAnimationPixels !== undefined
+              ? { maxAnimationPixels: context.maxAnimationPixels }
+              : {}),
+            ...(options.outputMode !== undefined && { outputMode: options.outputMode }),
+            runtime: context.runtime,
+          })),
+        );
+      }
+      return executeRasterConversion({
+        inputs: plannedInputs,
         spec,
         runtime: context.runtime,
         maxInputPixels: context.maxInputPixels,
@@ -85,7 +112,8 @@ async function runRasterCommand(options: {
         ...(context.prepared.outputOptions !== undefined && {
           outputOptions: context.prepared.outputOptions,
         }),
-      }),
+      });
+    },
   });
 }
 

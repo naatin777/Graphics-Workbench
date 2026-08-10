@@ -12,10 +12,10 @@ export interface ExcalidrawDomInstance {
  * A small pool of persistent jsdom windows for @excalidraw/excalidraw.
  *
  * exportToSvg() resolves browser globals at call time, so installing them for
- * one conversion and restoring them afterwards keeps the Extension Host clean.
+ * one input and restoring them afterwards keeps the Extension Host clean.
  * The windows themselves are reused instead of being created and closed per
- * conversion: a bounded pool keeps the bundle's captured globals stable and
- * avoids jsdom teardown/creation churn. A window whose conversion failed is
+ * input: a bounded pool keeps the bundle's captured globals stable and
+ * avoids jsdom teardown/creation churn. A window whose input failed is
  * discarded and rebuilt on the next acquire.
  */
 export class ExcalidrawDomPool {
@@ -48,7 +48,7 @@ export class ExcalidrawDomPool {
     instance.healthy = false;
   }
 
-  /** Resets an idle window so the next conversion starts from a clean document. */
+  /** Resets an idle window so the next input starts from a clean document. */
   release(instance: ExcalidrawDomInstance): void {
     const { document } = instance.dom.window;
     document.head.replaceChildren();
