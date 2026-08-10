@@ -1,6 +1,8 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import * as v from 'valibot';
+
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { sanitizePdfPathSegment, validatePdfPathInputs } from './pdf_path_validation.js';
 
@@ -164,24 +166,22 @@ function readRawMediaBox(pageObject: MupdfPdfObject): Rect | null {
   return rect;
 }
 
-function asRect(value: unknown): Rect | null {
-  if (!Array.isArray(value) || value.length !== 4) {
-    return null;
-  }
-  const items: unknown[] = value;
-  const x1 = toFiniteNumber(items[0]);
-  const y1 = toFiniteNumber(items[1]);
-  const x2 = toFiniteNumber(items[2]);
-  const y2 = toFiniteNumber(items[3]);
-  if (x1 === null || y1 === null || x2 === null || y2 === null) {
-    return null;
-  }
-  return [x1, y1, x2, y2];
-}
+const MediaBoxSchema = v.tuple([
+  v.pipe(v.number(), v.finite()),
+  v.pipe(v.number(), v.finite()),
+  v.pipe(v.number(), v.finite()),
+  v.pipe(v.number(), v.finite()),
+]);
 
-function toFiniteNumber(value: unknown): number | null {
-  const number = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(number) ? number : null;
+// mupdfのasJS()が返すMediaBox配列を検証してRectへ変換する。
+// oxlint-disable-next-line typescript/no-restricted-types -- mupdf.asJS()が返す未検証PDF値をvalibotで検証する境界。
+function asRect(value: unknown): Rect | null {
+  const result = v.safeParse(MediaBoxSchema, value);
+  if (!result.success) {
+    return null;
+  }
+  const [left, bottom, right, top] = result.output;
+  return [left, bottom, right, top];
 }
 function validateConversions(inputs: CropPdfInput[]): void {
   if (inputs.length === 0) {
@@ -232,6 +232,7 @@ function isEmptyBox(box: Rect): boolean {
   return box[0] === box[2] || box[1] === box[3];
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: catch由来の値を識別する。
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }

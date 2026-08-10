@@ -1,123 +1,62 @@
 import * as vscode from 'vscode';
 
-import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import { commandBindings, type CommandBinding } from './command_bindings.js';
 import type { CommandDependencies } from './command_dependencies.js';
 import { resolveSelectedUris } from './command_input.js';
 
-const loadedCommandModules = new Set<string>();
-
-type ResolvedCommandHandler = (...args: unknown[]) => Promise<unknown>;
-
-export type CommandResolver = (
-  binding: CommandBinding,
-  outputChannel: LineOutputChannel,
-) => Promise<ResolvedCommandHandler>;
-
-function isCommandModule(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isResolvedCommandHandler(value: unknown): value is ResolvedCommandHandler {
-  return typeof value === 'function';
-}
-
-/** Loads a lazily imported command module and records its first-load duration. */
-async function loadCommandModule<T>(
-  outputChannel: LineOutputChannel,
-  specifier: string,
-  load: () => Promise<T>,
-): Promise<T> {
-  const startedAt = Date.now();
-  const module = await load();
-
-  if (!loadedCommandModules.has(specifier)) {
-    loadedCommandModules.add(specifier);
-    outputChannel.appendLine(`[load] ${specifier} first load ${Date.now() - startedAt}ms`);
-  }
-
-  return module;
-}
-
-async function importCommandModule(specifier: string): Promise<unknown> {
-  const imported: unknown = await import(specifier);
-  return imported;
-}
-
-async function resolveCommand(
-  binding: CommandBinding,
-  outputChannel: LineOutputChannel,
-): Promise<ResolvedCommandHandler> {
-  const imported: unknown = await loadCommandModule(outputChannel, binding.module, async () =>
-    importCommandModule(binding.module),
+function registerFileCommand(
+  context: vscode.ExtensionContext,
+  binding: CommandBinding & { kind: 'file' },
+  dependencies: CommandDependencies,
+): void {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
+      const sourceUris = resolveSelectedUris(uri, uris);
+      return binding.handler(sourceUris, dependencies, binding.options);
+    }),
   );
-  if (!isCommandModule(imported)) {
-    throw new Error(`Command module for ${binding.id} could not be loaded: ${binding.module}`);
-  }
-  const command = imported[binding.exportName];
-  if (!isResolvedCommandHandler(command)) {
-    throw new Error(
-      `Command binding ${binding.id} refers to missing export ${binding.exportName} in ${binding.module}.`,
-    );
-  }
-  return command;
 }
 
-function registerCommand(
+function registerFileWithContextCommand(
   context: vscode.ExtensionContext,
-  binding: CommandBinding,
+  binding: CommandBinding & { kind: 'fileWithContext' },
   dependencies: CommandDependencies,
-  outputChannel: LineOutputChannel,
-  resolve: CommandResolver,
 ): void {
-  switch (binding.adapter) {
-    case 'file': {
-      context.subscriptions.push(
-        vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
-          const command = await resolve(binding, outputChannel);
-          const sourceUris = resolveSelectedUris(uri, uris);
-          return command(sourceUris, dependencies, binding.options);
-        }),
-      );
-      break;
-    }
-    case 'fileWithContext': {
-      context.subscriptions.push(
-        vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
-          const command = await resolve(binding, outputChannel);
-          const sourceUris = resolveSelectedUris(uri, uris);
-          return command(context, sourceUris, dependencies);
-        }),
-      );
-      break;
-    }
-    case 'extensionCommand': {
-      context.subscriptions.push(
-        vscode.commands.registerCommand(binding.id, async (...args: unknown[]) => {
-          const command = await resolve(binding, outputChannel);
-          return args.length === 0 ? command(undefined, dependencies) : command(...args, dependencies);
-        }),
-      );
-      break;
-    }
-  }
+  context.subscriptions.push(
+    vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
+      const sourceUris = resolveSelectedUris(uri, uris);
+      return binding.handler(context, sourceUris, dependencies);
+    }),
+  );
 }
 
-export function registerCommands(
+function registerExtensionCommand(
   context: vscode.ExtensionContext,
+  binding: CommandBinding & { kind: 'extensionCommand' },
   dependencies: CommandDependencies,
-  outputChannel: LineOutputChannel,
 ): void {
-  registerCommandBindings(context, dependencies, outputChannel, resolveCommand);
+  context.subscriptions.push(
+    vscode.commands.registerCommand(binding.id, async () => {
+      return binding.handler(dependencies);
+    }),
+  );
 }
 
-export function registerCommandBindings(
-  context: vscode.ExtensionContext,
-  dependencies: CommandDependencies,
-  outputChannel: LineOutputChannel,
-  resolve: CommandResolver,
-): void {
+export function registerCommands(context: vscode.ExtensionContext, dependencies: CommandDependencies): void {
   for (const binding of commandBindings) {
-    registerCommand(context, binding, dependencies, outputChannel, resolve);
+    switch (binding.kind) {
+      case 'file': {
+        registerFileCommand(context, binding, dependencies);
+        break;
+      }
+      case 'fileWithContext': {
+        registerFileWithContextCommand(context, binding, dependencies);
+        break;
+      }
+      case 'extensionCommand': {
+        registerExtensionCommand(context, binding, dependencies);
+        break;
+      }
+    }
   }
 }

@@ -1,24 +1,11 @@
-export function hasExactKeys(
-  value: Record<string, unknown>,
-  requiredKeys: readonly string[],
-  optionalKeys: readonly string[] = [],
-): boolean {
-  const allowedKeys = new Set([...requiredKeys, ...optionalKeys]);
-  const keys = Object.keys(value);
-
-  return requiredKeys.every((key) => Object.hasOwn(value, key)) && keys.every((key) => allowedKeys.has(key));
-}
-
+// oxlint-disable-next-line typescript/no-restricted-types -- webview/child processから届く未検証値をオブジェクトとして検証する型ガード。
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
-}
-
+// oxlint-disable-next-line typescript/no-restricted-types -- 未検証外部入力のURIを検証する型ガード。
 export function isWebviewUri(value: unknown): value is string {
-  if (!isNonEmptyString(value)) {
+  if (typeof value !== 'string' || value.length === 0) {
     return false;
   }
 

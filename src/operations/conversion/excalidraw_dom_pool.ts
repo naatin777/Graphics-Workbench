@@ -74,6 +74,7 @@ function createDomInstance(): ExcalidrawDomInstance {
 function installCanvasContextStub(dom: JSDOM): void {
   Object.defineProperty(dom.window.HTMLCanvasElement.prototype, 'getContext', {
     configurable: true,
+    // oxlint-disable-next-line typescript/no-restricted-types -- jsdomに無いcanvas 2D contextのスタブ: バンドル呼び出しはuntyped。
     value: (): Record<string, unknown> => createCanvas2DContext(),
   });
 }
@@ -83,7 +84,9 @@ function noop(): void {
   return;
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- jsdomに無いcanvas 2D contextのスタブ: 任意プロパティを持つuntypedオブジェクト。
 function createCanvas2DContext(): Record<string, unknown> {
+  // oxlint-disable-next-line typescript/no-restricted-types -- jsdomに無いcanvas 2D contextのスタブ: 初期状態も任意プロパティで表現する。
   const context: Record<string, unknown> = { filter: 'none', font: '10px sans-serif' };
   for (const property of [
     'fillStyle',
@@ -105,6 +108,7 @@ function createCanvas2DContext(): Record<string, unknown> {
     Object.defineProperty(context, property, { get: () => '', set: noop, configurable: true });
   }
   context.measureText = (
+    // oxlint-disable-next-line typescript/no-restricted-types -- canvas APIスタブ: バンドルから渡る文字列引数はuntyped境界。
     text: unknown,
   ): { width: number; actualBoundingBoxAscent: number; actualBoundingBoxDescent: number } => {
     const textValue = typeof text === 'string' ? text : '';

@@ -77,10 +77,12 @@ const MergePdfWebviewToHostSchema = v.variant('type', [
 ]);
 export type MergePdfWebviewToHost = v.InferOutput<typeof MergePdfWebviewToHostSchema>;
 
+// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
 export function isMergePdfHostToWebviewMessage(value: unknown): value is MergePdfHostToWebview {
   return v.is(MergePdfHostToWebviewSchema, value);
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
 export function isMergePdfWebviewToHostMessage(value: unknown): value is MergePdfWebviewToHost {
   return v.is(MergePdfWebviewToHostSchema, value);
 }

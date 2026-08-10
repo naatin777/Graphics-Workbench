@@ -4,14 +4,19 @@ import { HeavyProcessLimiter } from '../external_tools/heavy_process_limiter.js'
 import { ExcalidrawDomPool } from './excalidraw_dom_pool.js';
 
 type ExcalidrawExportToSvg = (options: {
+  // oxlint-disable-next-line typescript/no-restricted-types -- excalidrawバンドルAPIの境界: 要素配列はバンドル固有の型を持つ。
   elements: unknown[];
+  // oxlint-disable-next-line typescript/no-restricted-types -- excalidrawバンドルAPIの境界: appStateはバンドル固有の任意dict。
   appState: Record<string, unknown>;
+  // oxlint-disable-next-line typescript/no-restricted-types -- excalidrawバンドルAPIの境界: filesはバンドル固有の任意dict。
   files: Record<string, unknown>;
   exportPadding: number;
+  // oxlint-disable-next-line typescript/no-restricted-types -- excalidrawバンドルAPIの境界: 返り値はバンドルが生成するDOM SVG要素。
 }) => Promise<unknown>;
 
 export interface ExcalidrawDomContext {
   exportToSvg: ExcalidrawExportToSvg;
+  // oxlint-disable-next-line typescript/no-restricted-types -- exportToSvgの返り値であるDOM SVG要素を受け取る境界。
   serializeSvg: (svgElement: unknown) => string;
 }
 
@@ -56,6 +61,7 @@ export async function withExcalidrawDom<T>(
   });
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: 動的import結果がバンドル形式かを検証する。
 function isExcalidrawBundle(value: unknown): value is { exportToSvg: ExcalidrawExportToSvg } {
   return (
     typeof value === 'object' && value !== null && 'exportToSvg' in value && typeof value.exportToSvg === 'function'
@@ -63,6 +69,7 @@ function isExcalidrawBundle(value: unknown): value is { exportToSvg: ExcalidrawE
 }
 
 async function importExcalidrawBundle(bundleUrl: string): Promise<{ exportToSvg: ExcalidrawExportToSvg }> {
+  // oxlint-disable-next-line typescript/no-restricted-types -- 外部バンドルの動的import結果を型ガードで検証する境界。
   const imported: unknown = await import(bundleUrl);
   if (!isExcalidrawBundle(imported)) {
     throw new Error(`Excalidraw bundle ${bundleUrl} does not export exportToSvg.`);
@@ -74,6 +81,7 @@ type RestoreGlobals = () => void;
 
 function installDomGlobals(dom: JSDOM, bundleBaseUrl: string): RestoreGlobals {
   const originalDescriptors = new Map<string, PropertyDescriptor | undefined>();
+  // oxlint-disable-next-line typescript/no-restricted-types -- jsdomのuntypedなwindowメンバーをグローバルに設定する境界。
   const defineGlobal = (key: string, value: unknown): void => {
     if (!originalDescriptors.has(key)) {
       originalDescriptors.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
@@ -109,7 +117,7 @@ function installDomGlobals(dom: JSDOM, bundleBaseUrl: string): RestoreGlobals {
   return () => {
     for (const [key, descriptor] of originalDescriptors) {
       if (descriptor === undefined) {
-        delete (globalThis as Record<string, unknown>)[key];
+        Reflect.deleteProperty(globalThis, key);
       } else {
         Object.defineProperty(globalThis, key, descriptor);
       }
@@ -155,7 +163,7 @@ function noopPath2DMethod(): void {
   return;
 }
 
-function ExcalidrawPath2DStub(this: Record<string, unknown>, _path?: string): void {
+function ExcalidrawPath2DStub(this: { [key: string]: () => void }, _path?: string): void {
   for (const name of path2DMethodNames) {
     this[name] = noopPath2DMethod;
   }

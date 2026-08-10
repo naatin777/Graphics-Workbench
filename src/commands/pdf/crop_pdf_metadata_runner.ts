@@ -1,4 +1,7 @@
 import { readFile } from 'node:fs/promises';
+
+import * as v from 'valibot';
+
 import { openPdfDocument } from '../../operations/pdf/mupdf.js';
 
 import { getPdfPageGeometry } from '../../operations/pdf/pdf_page_geometry.js';
@@ -14,6 +17,7 @@ process.on('disconnect', () => {
   }
 });
 
+// oxlint-disable-next-line typescript/no-restricted-types -- child processから届くIPCメッセージの検証境界。
 process.on('message', (message: unknown) => {
   if (requestReceived) {
     sendResult({ type: 'failure', error: 'Crop Configure metadata runner received more than one request.' }, true);
@@ -24,6 +28,7 @@ process.on('message', (message: unknown) => {
   void inspectMetadata(message);
 });
 
+// oxlint-disable-next-line typescript/no-restricted-types -- child processから届くIPCメッセージの検証境界。
 async function inspectMetadata(message: unknown): Promise<void> {
   try {
     const filePath = parseFilePath(message);
@@ -71,17 +76,18 @@ function sendResult(message: CropPdfMetadataProcessMessage, disconnectAfterSend:
   }
 }
 
+const CropPdfMetadataRequestSchema = v.strictObject({
+  filePath: v.pipe(v.string(), v.nonEmpty()),
+});
+
+// IPCメッセージからfilePathを検証して読み出す境界。
+// oxlint-disable-next-line typescript/no-restricted-types -- child processから届く未検証IPCメッセージをvalibotで検証する境界。
 function parseFilePath(value: unknown): string {
-  if (typeof value !== 'object' || value === null || !('filePath' in value)) {
+  const result = v.safeParse(CropPdfMetadataRequestSchema, value);
+  if (!result.success) {
     throw new Error('Invalid Crop Configure metadata runner request.');
   }
-
-  const filePath = Reflect.get(value, 'filePath');
-  if (typeof filePath !== 'string' || filePath === '') {
-    throw new Error('Invalid Crop Configure metadata runner request.');
-  }
-
-  return filePath;
+  return result.output.filePath;
 }
 
 type CropPdfMetadataProcessMessage = { type: 'success'; pages: PdfPageGeometry[] } | { type: 'failure'; error: string };

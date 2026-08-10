@@ -43,7 +43,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
   );
 
-  registerCommands(context, dependencies, outputChannel);
+  registerCommands(context, dependencies);
   registerPreviewCustomEditors(context, dependencies);
 
   for (const format of insertionFormats) {

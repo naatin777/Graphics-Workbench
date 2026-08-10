@@ -219,6 +219,7 @@ async function validateEmbeddedDrawioImage(outputPath: string, format: string, s
 
 async function validateDrawioXml(xml: string, sourcePath: string): Promise<void> {
   try {
+    // oxlint-disable-next-line typescript/no-restricted-types -- 外部XMLの未検証パース結果。直後のisRecordで検証する境界。
     const parsed: unknown = parseDrawioXml(xml);
     const mxfile = isRecord(parsed) && isRecord(parsed.mxfile) ? parsed.mxfile : undefined;
     if (!mxfile || !Array.isArray(mxfile.diagram) || mxfile.diagram.length === 0) {
@@ -231,6 +232,7 @@ async function validateDrawioXml(xml: string, sourcePath: string): Promise<void>
 
 async function validateSvgDocument(content: string, sourcePath: string): Promise<void> {
   try {
+    // oxlint-disable-next-line typescript/no-restricted-types -- 外部SVG/XMLの未検証パース結果。直後のinチェックで検証する境界。
     const parsed: unknown = new XMLParser({ ignoreAttributes: false }).parse(content);
     if (typeof parsed !== 'object' || parsed === null || !('svg' in parsed) || parsed.svg === undefined) {
       throw new Error('missing svg root');
@@ -240,10 +242,12 @@ async function validateSvgDocument(content: string, sourcePath: string): Promise
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 外部XMLを検証前に返すパース関数の境界。
 function parseDrawioXml(xml: string): unknown {
   return new XMLParser({ ignoreAttributes: false, isArray: (name) => name === 'diagram' }).parse(xml);
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: 外部XML/JS値がオブジェクトか検証する。
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }

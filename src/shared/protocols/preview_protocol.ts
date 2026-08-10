@@ -71,6 +71,7 @@ const PreviewWebviewToHostSchema = v.variant('type', [
 ]);
 export type PreviewWebviewToHost = v.InferOutput<typeof PreviewWebviewToHostSchema>;
 
+// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
 export function isPreviewWebviewToHostMessage(value: unknown): value is PreviewWebviewToHost {
   return v.is(PreviewWebviewToHostSchema, value);
 }

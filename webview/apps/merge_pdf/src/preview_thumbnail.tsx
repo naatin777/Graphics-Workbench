@@ -36,7 +36,7 @@ export function PreviewThumbnail(props: {
           signal: abortController.signal,
         });
         setStatus('ready');
-      } catch (error: unknown) {
+      } catch (error) {
         if (abortController.signal.aborted) {
           return;
         }

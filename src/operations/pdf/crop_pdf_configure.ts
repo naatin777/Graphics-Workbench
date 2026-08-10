@@ -82,6 +82,7 @@ function buildCommitOptions(runtime: ConversionExecutionContext | undefined): Co
 
 function appendCropConfigureFailureLogs(
   outputChannel: ConversionExecutionContext['outputChannel'],
+  // oxlint-disable-next-line typescript/no-restricted-types -- catchが投げる値は任意の型を取り得る。
   error: unknown,
 ): void {
   outputChannel?.appendLine('[crop-pdf-configure] staging-cleaned');

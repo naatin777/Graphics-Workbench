@@ -374,7 +374,7 @@ export function App(): JSX.Element {
         ...(pdfPreview === undefined ? {} : { root: pdfPreview }),
         page: { label: labels().pages.label },
         signal,
-        onRenderError: (error: unknown) => {
+        onRenderError: (error) => {
           if (signal.aborted) {
             return;
           }
@@ -398,7 +398,7 @@ export function App(): JSX.Element {
       requestAnimationFrame(() => {
         recomputeCurrentPage();
       });
-    } catch (error: unknown) {
+    } catch (error) {
       if (signal.aborted) {
         return;
       }

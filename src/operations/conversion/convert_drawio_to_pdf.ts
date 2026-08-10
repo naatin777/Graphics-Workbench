@@ -272,6 +272,7 @@ async function prepareDrawioInput(options: {
 
 async function readDrawioPageNames(stageDirectory: string, sourcePath: string): Promise<string[]> {
   const source = await readFile(path.join(stageDirectory, 'source.drawio'), 'utf8');
+  // oxlint-disable-next-line typescript/no-restricted-types -- 外部XMLの未検証パース結果。直後のisRecordで検証する境界。
   const parsed: unknown = new XMLParser({ ignoreAttributes: false, isArray: (name) => name === 'diagram' }).parse(
     source,
   );
@@ -296,6 +297,7 @@ async function readDrawioPageNames(stageDirectory: string, sourcePath: string): 
  */
 async function assertHasDrawioContent(sourcePath: string): Promise<void> {
   const source = await readFile(sourcePath, 'utf8');
+  // oxlint-disable-next-line typescript/no-restricted-types -- 外部XMLの未検証パース結果。直後のisRecordで検証する境界。
   const parsed: unknown = new XMLParser({ ignoreAttributes: false, isArray: (name) => name === 'diagram' }).parse(
     source,
   );
@@ -307,6 +309,7 @@ async function assertHasDrawioContent(sourcePath: string): Promise<void> {
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 外部XMLのパース結果のセル値であり、形状が動的に決まる境界。
 function diagramHasContent(diagram: unknown): boolean {
   const graphModel = isRecord(diagram) && isRecord(diagram.mxGraphModel) ? diagram.mxGraphModel : undefined;
   const root = graphModel && isRecord(graphModel.root) ? graphModel.root : undefined;
@@ -317,6 +320,7 @@ function diagramHasContent(diagram: unknown): boolean {
   return cells.some((cell) => isRecord(cell) && (cell['@_vertex'] === '1' || cell['@_edge'] === '1'));
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: 外部XML/JS値がオブジェクトか検証する。
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }

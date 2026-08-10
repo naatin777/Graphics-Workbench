@@ -5,7 +5,11 @@ import { OperationCancelledError } from '../../shared/error.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { reportConfigureApplyError } from '../shared/report_configure_error.js';
 
-export interface PdfConfigureSessionOptions<TMessage extends { type: string }, TApply extends TMessage> {
+export interface PdfConfigureSessionOptions<
+  TMessage extends { type: string },
+  TApply extends TMessage,
+  TInitMessage extends { type: string } = { type: string },
+> {
   panel: {
     id: string;
     title: string;
@@ -19,9 +23,10 @@ export interface PdfConfigureSessionOptions<TMessage extends { type: string }, T
     locale?: string;
   };
   message: {
+    // oxlint-disable-next-line typescript/no-restricted-types -- webview境界から届く未検証メッセージ。
     isWebviewToHostMessage: (value: unknown) => value is TMessage;
     isApplyMessage: (message: TMessage) => message is TApply;
-    buildInitMessage: (panel: vscode.WebviewPanel) => unknown;
+    buildInitMessage: (panel: vscode.WebviewPanel) => TInitMessage;
     runApply: (message: TApply, context: { panel: vscode.WebviewPanel; signal: AbortSignal }) => Promise<void>;
     onPreviewLoadFailed: (message: TMessage, outputChannel?: LineOutputChannel) => void;
   };
@@ -45,9 +50,11 @@ export interface PdfConfigureSession {
  * failure, apply lock, panel-close cancellation, and apply error routing.
  * Domain-specific init payloads and apply operations stay with each command.
  */
-export function startPdfConfigureSession<TMessage extends { type: string }, TApply extends TMessage>(
-  options: PdfConfigureSessionOptions<TMessage, TApply>,
-): PdfConfigureSession {
+export function startPdfConfigureSession<
+  TMessage extends { type: string },
+  TApply extends TMessage,
+  TInitMessage extends { type: string } = { type: string },
+>(options: PdfConfigureSessionOptions<TMessage, TApply, TInitMessage>): PdfConfigureSession {
   const panel = vscode.window.createWebviewPanel(options.panel.id, options.panel.title, vscode.ViewColumn.Active, {
     enableScripts: true,
     localResourceRoots: options.panel.localResourceRoots,
@@ -77,6 +84,7 @@ export function startPdfConfigureSession<TMessage extends { type: string }, TApp
   }
 
   let isApplying = false;
+  // oxlint-disable-next-line typescript/no-restricted-types -- VS Code webview境界から届く未検証メッセージ。
   panel.webview.onDidReceiveMessage((rawMessage: unknown) => {
     if (!options.message.isWebviewToHostMessage(rawMessage)) {
       return;

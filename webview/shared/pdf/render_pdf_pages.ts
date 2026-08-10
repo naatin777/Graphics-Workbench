@@ -54,7 +54,7 @@ export async function renderFirstPdfPage(
     } finally {
       await document.cleanup();
     }
-  } catch (error: unknown) {
+  } catch (error) {
     if (options.signal?.aborted === true) {
       throw createAbortError();
     }
@@ -83,7 +83,7 @@ export async function renderPdfPages(
   try {
     document = await loadingTask.promise;
     throwIfAborted(options.signal);
-  } catch (error: unknown) {
+  } catch (error) {
     options.signal?.removeEventListener('abort', abortLoading);
     if (options.signal?.aborted === true) {
       throw createAbortError();
@@ -150,7 +150,7 @@ export async function renderPdfPages(
           renderTasks.delete(renderTask);
           page.cleanup();
         }
-      } catch (error: unknown) {
+      } catch (error) {
         if (options.signal?.aborted !== true) {
           options.onRenderError?.(error);
         }
@@ -302,7 +302,7 @@ export async function renderPdfPages(
               updateSpacers();
             }
           }
-        } catch (error: unknown) {
+        } catch (error) {
           if (!windowRenderState.disposed && windowPageFrames.has(pageNumber)) {
             if (options.signal?.aborted !== true) {
               options.onRenderError?.(error);
@@ -450,6 +450,7 @@ export interface PdfRenderOptions {
     label?: string;
     onCreated?: (pageFrame: HTMLElement, pageNumber: number) => void;
   };
+  // oxlint-disable-next-line typescript/no-restricted-types -- PDF.jsが投げるレンダリングエラーは任意の型を取り得る。
   onRenderError?: (error: unknown) => void;
   signal?: AbortSignal;
   preview?: {

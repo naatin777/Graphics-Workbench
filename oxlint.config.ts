@@ -252,6 +252,17 @@ export default defineConfig({
     'typescript/no-unused-vars': 'error',
     'typescript/consistent-type-imports': 'error',
     'typescript/no-explicit-any': 'error',
+    'typescript/no-restricted-types': [
+      'error',
+      {
+        types: {
+          unknown: {
+            message:
+              'Do not use `unknown` in application code. Use a concrete type or validate external input at a narrow trust boundary.',
+          },
+        },
+      },
+    ],
     'typescript/no-empty-object-type': 'error',
     'typescript/array-type': 'error',
     'typescript/no-redundant-type-constituents': 'error',
@@ -581,6 +592,8 @@ export default defineConfig({
         'import/unambiguous': 'off',
         'eslint/no-implicit-globals': 'off',
         'node/callback-return': 'off',
+        // The polyfill narrows the global Map prototype it extends.
+        'typescript/no-unsafe-type-assertion': 'off',
       },
     },
     {
@@ -652,6 +665,8 @@ export default defineConfig({
         'typescript/no-unsafe-argument': 'off',
         'typescript/no-unsafe-call': 'off',
         'typescript/no-unsafe-member-access': 'off',
+        // Build script validates untyped package.json / configuration JSON.
+        'typescript/no-restricted-types': 'off',
       },
     },
     {
@@ -743,6 +758,8 @@ export default defineConfig({
         'no-console': 'off',
         // Generated schema check casts the raw config value to the getter type.
         'no-unsafe-type-assertion': 'off',
+        // Generated schema validation accepts arbitrary config values.
+        'typescript/no-restricted-types': 'off',
       },
     },
 
@@ -777,6 +794,8 @@ export default defineConfig({
         'eslint/no-promise-executor-return': 'off',
         'eslint/no-unreachable-loop': 'off',
         'typescript/no-explicit-any': 'off',
+        // Tests exercise untyped mocks, fixtures, and host/webview payloads.
+        'typescript/no-restricted-types': 'off',
         'typescript/no-empty-function': 'off',
         'typescript/explicit-function-return-type': 'off',
         'typescript/no-floating-promises': 'error',

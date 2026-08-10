@@ -10,6 +10,7 @@ export interface TiffRenderOptions {
   pageLabel?: string;
   zoom: () => number;
   requestPage: (page: number) => void;
+  // oxlint-disable-next-line typescript/no-restricted-types -- レンダリングエラー通知のコールバック。
   onRenderError: (error: unknown) => void;
   root?: Element;
   signal: AbortSignal;

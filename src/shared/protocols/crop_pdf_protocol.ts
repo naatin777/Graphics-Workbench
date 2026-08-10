@@ -130,6 +130,7 @@ const CropConfigureWebviewToHostSchema = v.variant('type', [
 ]);
 export type CropConfigureWebviewToHost = v.InferOutput<typeof CropConfigureWebviewToHostSchema>;
 
+// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
 export function isCropConfigureMessage(value: unknown): value is CropConfigureWebviewToHost {
   return v.is(CropConfigureWebviewToHostSchema, value);
 }

@@ -116,6 +116,7 @@ async function readRasterAnimationMetadataFromIndependentPages(
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- エラー検証: catchが投げる値は任意の型を取り得る。
 function isRasterPageDimensionError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /page\s+\d+\s+differs\s+from\s+page\s+\d+|pages?\s+(?:have|has)\s+different\s+(?:dimensions|sizes)/iu.test(
@@ -133,6 +134,7 @@ export async function closeRasterPipeline(pipeline: RasterPipeline): Promise<voi
   await closed;
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- エラー検証: catchが投げる値は任意の型を取り得る。
 export function isRasterInputPixelLimitError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /(?:pixel|pixels).{0,40}(?:limit|maximum)|(?:limit|maximum).{0,40}(?:pixel|pixels)/iu.test(message);

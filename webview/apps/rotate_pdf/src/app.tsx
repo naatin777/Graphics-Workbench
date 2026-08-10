@@ -59,6 +59,7 @@ export function App(): JSX.Element {
 
   onMount(() => {
     const onMessage = (event: MessageEvent): void => {
+      // oxlint-disable-next-line typescript/no-restricted-types -- webviewホストから届く未検証メッセージ。
       const message: unknown = event.data;
 
       if (!isRotatePdfHostToWebviewMessage(message)) {

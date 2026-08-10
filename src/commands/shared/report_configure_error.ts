@@ -5,6 +5,7 @@ import { toErrorMessage, isAbortError } from '../../shared/error.js';
 
 export interface ReportConfigureApplyErrorOptions {
   operationName: string;
+  // oxlint-disable-next-line typescript/no-restricted-types -- catchが投げる値は任意の型を取り得る。
   error: unknown;
   panel: vscode.WebviewPanel;
   cancelledMessage: string;

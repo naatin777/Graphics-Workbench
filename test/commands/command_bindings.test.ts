@@ -1,40 +1,28 @@
 // Test target:
 // - manifestのpublic command集合とbinding集合が完全一致すること
 // - bindingのcommand IDに重複がないこと
-// - 各bindingのmodule/export名が実在すること
-// - registerCommandBindingsがbinding集合と正確に一致するcommandだけを登録すること
-// - adapterごとに正しい引数が渡されること（file / fileWithContext / extensionCommand）
-// - file adapterがVS Codeの(uri, uris)入力をsourceUris[]へ正規化して渡すこと
-// - fileWithContextがExtensionContextを渡すこと
-// - fixed optionsがWebP/GIF commandへ渡されること
-// - 同じmoduleを共有するcommandのfirst load計測が重複しないこと
-// - resolverの例外がhandlerから伝播すること
+// - registerCommandsがbinding集合と正確に一致するcommandだけを登録すること
+// - kindごとに正しい引数へ変換・呼び出しされること（file / fileWithContext / extensionCommand）
+// - fileがVS Codeの(uri, uris)入力をsourceUris[]へ正規化して渡すこと
 //
 // Mocked:
 // - vscode.commands.registerCommand
+// - 各ハンドラの呼び出し（ESM importのためstub不可 → binding構造と登録コールバックの引数変換を検証）
 //
 // Not tested:
 // - 実ファイル変換の挙動（各command testが担当）
 
 import assert from 'node:assert/strict';
-import path from 'node:path';
 
-import { createSandbox } from 'sinon';
+import { createSandbox, type SinonSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { commandBindings } from '../../src/commands/shared/command_bindings.js';
-import {
-  registerCommandBindings,
-  registerCommands,
-  type CommandResolver,
-} from '../../src/commands/shared/command_registrations.js';
-import type { CommandDependencies } from '../../src/commands/shared/command_dependencies.js';
+import { commandBindings, type CommandBinding } from '../../src/commands/shared/command_bindings.js';
+import { registerCommands } from '../../src/commands/shared/command_registrations.js';
 import { publicCommandIds } from '../../src/generated/extension_manifest.js';
 import { testCommandDependencies } from '../helpers/command_dependencies.js';
-import { RecordingOutputChannel } from '../helpers/recording_output_channel.js';
 
 type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
-type RecordedCall = { bindingId: string; args: unknown[] };
 
 suite('command binding集合とmanifestの整合性検証', () => {
   test('binding集合のidとmanifestのpublic command集合のidが数・内容とも完全一致する', () => {
@@ -49,21 +37,10 @@ suite('command binding集合とmanifestの整合性検証', () => {
 
     assert.strictEqual(new Set(bindingIds).size, bindingIds.length);
   });
-
-  test('各bindingのmoduleをimportすると指定されたexport名の関数が実在する', async () => {
-    for (const binding of commandBindings) {
-      const module = await import(bindingModuleSpecifier(binding));
-      assert.strictEqual(
-        typeof module[binding.exportName],
-        'function',
-        `${binding.id} should export ${binding.exportName} from ${binding.module}`,
-      );
-    }
-  });
 });
 
 suite('command登録処理', () => {
-  let sandbox: sinon.SinonSandbox;
+  let sandbox: SinonSandbox;
 
   setup(() => {
     sandbox = createSandbox();
@@ -76,134 +53,72 @@ suite('command登録処理', () => {
   test('bindingに定義されたcommandだけを登録する', () => {
     const handlers = captureRegisteredHandlers(sandbox);
 
-    registerCommandBindings(createContext(), testCommandDependencies(), new RecordingOutputChannel(), noopResolver);
+    registerCommands(createContext(), testCommandDependencies());
 
     assert.deepStrictEqual(new Set(handlers.keys()), new Set(commandBindings.map((binding) => binding.id)));
   });
 
-  test('file adapterでcompressPdfを実行するとhandlerへ正規化したsourceUris、dependenciesをこの順で渡す', async () => {
-    const calls = recordingCalls();
+  test('file bindingのhandlerがsourceUrisとdependenciesを正しい順で受ける', async () => {
+    const handlers = captureRegisteredHandlers(sandbox);
     const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.pdf');
     const uris = [uri];
 
-    await invokeBoundCommand(
-      sandbox,
-      'graphics-workbench.compressPdf',
-      dependencies,
-      calls.resolver,
-      createContext(),
-      uri,
-      uris,
-    );
+    const binding = findBinding('graphics-workbench.compressPdf');
+    assert.strictEqual(binding.kind, 'file');
+    const called = captureHandlerCalls(binding);
+    registerCommands(createContext(), dependencies);
 
-    assert.deepStrictEqual(calls.recorded, [
-      { bindingId: 'graphics-workbench.compressPdf', args: [[uri], dependencies, undefined] },
-    ]);
+    await handlers.get(binding.id)!(uri, uris);
+
+    assert.deepStrictEqual(called.calls, [[[uri], dependencies, undefined]]);
   });
 
-  test('fileWithContext adapterでcropPdf.configureを実行するとhandlerへExtensionContextを先頭に正規化したsourceUris、dependenciesを渡す', async () => {
-    const calls = recordingCalls();
+  test('fileWithContext bindingのhandlerがExtensionContext、sourceUris、dependenciesを正しい順で受ける', async () => {
+    const handlers = captureRegisteredHandlers(sandbox);
     const dependencies = testCommandDependencies();
     const context = createContext();
     const uri = vscode.Uri.file('/workspace/source.pdf');
 
-    await invokeBoundCommand(
-      sandbox,
-      'graphics-workbench.cropPdf.configure',
-      dependencies,
-      calls.resolver,
-      context,
-      uri,
-    );
+    const binding = findBinding('graphics-workbench.cropPdf.configure');
+    assert.strictEqual(binding.kind, 'fileWithContext');
+    const called = captureHandlerCalls(binding);
+    registerCommands(context, dependencies);
 
-    assert.deepStrictEqual(calls.recorded, [
-      { bindingId: 'graphics-workbench.cropPdf.configure', args: [context, [uri], dependencies] },
-    ]);
+    await handlers.get(binding.id)!(uri, [uri]);
+
+    assert.deepStrictEqual(called.calls, [[context, [uri], dependencies]]);
   });
 
-  test('file adapter（options付き）でconvertToWebpPreserveAnimationを実行するとhandlerへ正規化したsourceUris、dependencies、固定optionsの順で渡す', async () => {
-    const calls = recordingCalls();
+  test('ラスタ変換bindingが固定optionsをhandlerへ渡す', async () => {
+    const handlers = captureRegisteredHandlers(sandbox);
     const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.gif');
 
-    await invokeBoundCommand(
-      sandbox,
-      'graphics-workbench.convertToWebpPreserveAnimation',
-      dependencies,
-      calls.resolver,
-      createContext(),
-      uri,
-    );
+    const binding = findBinding('graphics-workbench.convertToWebpPreserveAnimation');
+    assert.strictEqual(binding.kind, 'file');
+    assert.deepStrictEqual(binding.options, { target: 'webp', outputMode: 'preserve' });
+    const called = captureHandlerCalls(binding);
+    registerCommands(createContext(), dependencies);
 
-    assert.deepStrictEqual(calls.recorded, [
-      {
-        bindingId: 'graphics-workbench.convertToWebpPreserveAnimation',
-        args: [[uri], dependencies, { target: 'webp', outputMode: 'preserve' }],
-      },
-    ]);
+    await handlers.get(binding.id)!(uri);
+
+    assert.strictEqual(called.calls.length, 1);
+    assert.deepStrictEqual(called.calls[0], [[uri], dependencies, { target: 'webp', outputMode: 'preserve' }]);
   });
 
-  test('extensionCommand adapterでundoLastConversionへ文字列expected-idを渡すと、handlerへその引数とdependenciesをこの順で渡す', async () => {
-    const calls = recordingCalls();
+  test('extensionCommand bindingのhandlerがdependenciesのみを受ける', async () => {
+    const handlers = captureRegisteredHandlers(sandbox);
     const dependencies = testCommandDependencies();
 
-    await invokeBoundCommand(
-      sandbox,
-      'graphics-workbench.undoLastConversion',
-      dependencies,
-      calls.resolver,
-      createContext(),
-      'expected-id',
-    );
+    const binding = findBinding('graphics-workbench.undoLastConversion');
+    assert.strictEqual(binding.kind, 'extensionCommand');
+    const called = captureHandlerCalls(binding);
+    registerCommands(createContext(), dependencies);
 
-    assert.deepStrictEqual(calls.recorded, [
-      { bindingId: 'graphics-workbench.undoLastConversion', args: ['expected-id', dependencies] },
-    ]);
-  });
+    await handlers.get(binding.id)!();
 
-  test('extensionCommand adapterで引数なしでundoLastConversionを実行するとhandlerへundefinedとdependenciesを渡す', async () => {
-    const calls = recordingCalls();
-    const dependencies = testCommandDependencies();
-
-    await invokeBoundCommand(
-      sandbox,
-      'graphics-workbench.undoLastConversion',
-      dependencies,
-      calls.resolver,
-      createContext(),
-    );
-
-    assert.deepStrictEqual(calls.recorded, [
-      { bindingId: 'graphics-workbench.undoLastConversion', args: [undefined, dependencies] },
-    ]);
-  });
-
-  test('command resolverが例外を投げた場合、handlerの呼び出しが"command resolution failed"エラーでrejectされ伝播する', async () => {
-    const handlers = captureRegisteredHandlers(sandbox);
-    const throwingResolver: CommandResolver = async () => {
-      throw new Error('command resolution failed');
-    };
-
-    registerCommandBindings(createContext(), testCommandDependencies(), new RecordingOutputChannel(), throwingResolver);
-
-    await assert.rejects(handlers.get('graphics-workbench.compressPdf')!(), /command resolution failed/);
-  });
-
-  test('convertToWebpとconvertToWebpPreserveAnimationを実行しても共通moduleのfirst load計測がoutput channelへ1回だけ記録される', async () => {
-    const outputChannel = new RecordingOutputChannel();
-    const handlers = captureRegisteredHandlers(sandbox);
-    sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-
-    registerCommands(createContext(), testCommandDependencies(), outputChannel);
-
-    await handlers.get('graphics-workbench.convertToWebp')!();
-    await handlers.get('graphics-workbench.convertToWebpPreserveAnimation')!();
-
-    const loadLines = outputChannel.lines.filter((line) =>
-      line.includes('../conversion/convert_to_raster.js first load'),
-    );
-    assert.strictEqual(loadLines.length, 1);
+    assert.deepStrictEqual(called.calls, [[dependencies]]);
   });
 });
 
@@ -212,11 +127,7 @@ function createContext(): vscode.ExtensionContext {
   return { subscriptions: [] } as unknown as vscode.ExtensionContext;
 }
 
-function bindingModuleSpecifier(binding: { module: string }): string {
-  return path.posix.join('../../src/commands/shared', binding.module);
-}
-
-function captureRegisteredHandlers(sandbox: sinon.SinonSandbox): Map<string, RegisteredHandler> {
+function captureRegisteredHandlers(sandbox: SinonSandbox): Map<string, RegisteredHandler> {
   const handlers = new Map<string, RegisteredHandler>();
   sandbox.stub(vscode.commands, 'registerCommand').callsFake((id: string, callback: RegisteredHandler) => {
     handlers.set(id, callback);
@@ -225,29 +136,19 @@ function captureRegisteredHandlers(sandbox: sinon.SinonSandbox): Map<string, Reg
   return handlers;
 }
 
-const noopResolver: CommandResolver = async () => async () => {};
-
-function recordingCalls(): { recorded: RecordedCall[]; resolver: CommandResolver } {
-  const recorded: RecordedCall[] = [];
-  const resolver: CommandResolver = async (binding) => {
-    return async (...args: unknown[]) => {
-      recorded.push({ bindingId: binding.id, args });
-    };
-  };
-  return { recorded, resolver };
+function findBinding(id: string): CommandBinding {
+  const binding = commandBindings.find((candidate) => candidate.id === id);
+  assert.ok(binding, `binding ${id} should exist`);
+  return binding;
 }
 
-async function invokeBoundCommand(
-  sandbox: sinon.SinonSandbox,
-  bindingId: string,
-  dependencies: CommandDependencies,
-  resolver: CommandResolver,
-  context: vscode.ExtensionContext,
-  ...args: unknown[]
-): Promise<void> {
-  const handlers = captureRegisteredHandlers(sandbox);
-  registerCommandBindings(context, dependencies, new RecordingOutputChannel(), resolver);
-  await handlers.get(bindingId)!(...args);
+function captureHandlerCalls(binding: CommandBinding): { calls: unknown[][] } {
+  const calls: unknown[][] = [];
+  // 引数変換の検証のため、実ハンドラの代わりに呼び出しを捕捉する（ESM関数はstub不可のため）。
+  binding.handler = async (...args: unknown[]): Promise<void> => {
+    calls.push(args);
+  };
+  return { calls };
 }
 
 class FakeDisposable {

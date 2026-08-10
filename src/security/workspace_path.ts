@@ -69,6 +69,7 @@ async function findNearestExistingPath(targetPath: string): Promise<string> {
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: catch由来の値を識別する。
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }

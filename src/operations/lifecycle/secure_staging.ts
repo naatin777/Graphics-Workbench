@@ -69,6 +69,7 @@ export async function cleanupStaleSecurePdfStagingRoots(now: number = Date.now()
         }
         let manifest: StagingManifest | undefined;
         try {
+          // oxlint-disable-next-line typescript/no-restricted-types -- 外部マニフェストJSONの未検証値。直後にisStagingManifestで検証する。
           const parsed: unknown = JSON.parse(await readFile(path.join(rootPath, 'manifest.json'), 'utf8'));
           if (isStagingManifest(parsed)) {
             manifest = parsed;
@@ -106,6 +107,7 @@ async function isOwnedSecureDirectory(rootPath: string): Promise<boolean> {
   }
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- 外部マニフェストJSONの未検証値の形状を検証する型ガード。
 function isStagingManifest(value: unknown): value is StagingManifest {
   if (!isRecord(value)) {
     return false;

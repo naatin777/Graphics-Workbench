@@ -97,6 +97,7 @@ export class CommitRollbackError extends Error implements CleanupPreservingError
   readonly cleanupPreservePaths: readonly string[];
 
   constructor(
+    // oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値を正規化して保持する。
     originalError: unknown,
     rollbackErrors: readonly RollbackFailure[],
     cleanupPreservePaths: readonly string[] = [],
@@ -797,6 +798,7 @@ export async function restoreFileMetadata(filePath: string, metadata: PreviousFi
   await utimes(filePath, new Date(metadata.atimeMs), new Date(metadata.mtimeMs));
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- renameのcatchから渡される任意のthrow値の型ガード。
 function isWindowsRenameConflict(error: unknown): boolean {
   return (
     process.platform === 'win32' &&
@@ -806,10 +808,12 @@ function isWindowsRenameConflict(error: unknown): boolean {
   );
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値をErrorへ正規化するヘルパー。
 function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値の型ガード。
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }

@@ -1,12 +1,16 @@
 export interface VsCodeApi<Message> {
   sendMessage(message: Message): void;
+  // oxlint-disable-next-line typescript/no-restricted-types -- VS Code API境界が返すstateは任意の型。
   getState(): unknown;
+  // oxlint-disable-next-line typescript/no-restricted-types -- VS Code API境界へ渡すstateは任意の型。
   setState(state: unknown): void;
 }
 
 interface RawVsCodeApi<Message> {
   postMessage(message: Message): void;
+  // oxlint-disable-next-line typescript/no-restricted-types -- VS Code API境界が返すstateは任意の型。
   getState(): unknown;
+  // oxlint-disable-next-line typescript/no-restricted-types -- VS Code API境界へ渡すstateは任意の型。
   setState(state: unknown): void;
 }
 

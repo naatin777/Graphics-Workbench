@@ -203,6 +203,7 @@ export async function runCropPdfProcess(
       finish();
     };
 
+    // oxlint-disable-next-line typescript/no-restricted-types -- 子プロセスIPC境界の未検証メッセージ。
     const onMessage = (message: unknown): void => {
       if (!isCropPdfProcessMessage(message)) {
         protocolFailure('invalid message');
@@ -317,6 +318,7 @@ export function createCropProcessChild(child: ChildProcess): CropProcessChild {
 }
 
 class NodeCropProcessChild extends EventEmitter implements CropProcessChild {
+  // oxlint-disable-next-line typescript/no-restricted-types -- 子プロセスIPC境界の未検証メッセージ。
   private readonly onMessage = (message: unknown): void => {
     this.emit('message', message);
   };
@@ -370,6 +372,7 @@ function defaultTerminate(child: CropProcessChild): void {
   child.terminate();
 }
 
+// oxlint-disable-next-line typescript/no-restricted-types -- catchが投げる値は任意の型を取り得る。
 function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
