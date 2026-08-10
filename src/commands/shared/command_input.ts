@@ -24,23 +24,12 @@ export function assertLocalFileUri(sourceUri: vscode.Uri): void {
  * Resolves the single PDF selected by a Configure command, validating that it
  * is a local file with a `.pdf` extension.
  */
-export function resolveSingleConfiguredPdfUri(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
-  commandName: string,
-): vscode.Uri {
-  let candidates: vscode.Uri[] = [];
-  if (uris !== undefined && uris.length > 0) {
-    candidates = uris;
-  } else if (uri !== undefined) {
-    candidates = [uri];
-  }
-
-  if (candidates.length !== 1) {
+export function resolveSingleConfiguredPdfUri(sourceUris: vscode.Uri[], commandName: string): vscode.Uri {
+  if (sourceUris.length !== 1) {
     throw new Error(`${commandName} requires exactly one PDF file.`);
   }
 
-  const [inputUri] = candidates;
+  const [inputUri] = sourceUris;
   if (!inputUri) {
     throw new Error(`${commandName} requires exactly one PDF file.`);
   }

@@ -1,8 +1,3 @@
-import {
-  readDrawioExecutablePath,
-  readMermaidExecutablePath,
-  readRsvgConvertExecutablePath,
-} from '../../config/external_tools/external_tool_paths.js';
 import { readChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { runExternalTool } from '../../operations/external_tools/run_external_tool.js';
@@ -82,19 +77,19 @@ export async function runFeatureAvailabilityChecks(
       ? chromePromise
       : check({
           toolLabel: userMessage('message.environmentCheck.tool.rsvgConvert'),
-          executable: readRsvgConvertExecutablePath(options.configuration),
+          executable: options.configuration.execPath.rsvgConvert(),
           versionArgs: ['--version'],
           settingId: 'graphics-workbench.execPath.rsvgConvert',
         });
   const drawioPromise = check({
     toolLabel: userMessage('message.environmentCheck.tool.drawio'),
-    executable: readDrawioExecutablePath(options.configuration),
+    executable: options.configuration.execPath.drawio(),
     versionArgs: ['--version'],
     settingId: 'graphics-workbench.execPath.drawio',
   });
   const mermaidCliPromise = check({
     toolLabel: userMessage('message.environmentCheck.tool.mermaidCli'),
-    executable: readMermaidExecutablePath(options.configuration),
+    executable: options.configuration.execPath.mermaid(),
     versionArgs: ['--version'],
     settingId: 'graphics-workbench.execPath.mermaid',
   });

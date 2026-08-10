@@ -11,7 +11,6 @@ import {
   runConversionLifecycle,
 } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { resolveSelectedUris } from '../shared/command_input.js';
 import { userMessage } from '../shared/user_messages.js';
 
 export interface RasterConversionContext<Prepared> {
@@ -23,8 +22,7 @@ export interface RasterConversionContext<Prepared> {
 }
 
 export interface RasterConversionCommandOptions<Job, Prepared> {
-  uri?: vscode.Uri | undefined;
-  uris?: vscode.Uri[] | undefined;
+  sourceUris: vscode.Uri[];
   dependencies: CommandDependencies;
   operationName: string;
   outputLabel: OutputConversionFormat;
@@ -37,7 +35,7 @@ export interface RasterConversionCommandOptions<Job, Prepared> {
 export async function runRasterConversionCommand<Job, Prepared>(
   options: RasterConversionCommandOptions<Job, Prepared>,
 ): Promise<void> {
-  const sourceUris = resolveSelectedUris(options.uri, options.uris);
+  const sourceUris = options.sourceUris;
   if (sourceUris.length === 0) {
     await vscode.window.showErrorMessage(
       userMessage('message.convertToOutput.failed', options.outputLabel, 'No files were selected.'),

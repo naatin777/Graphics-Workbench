@@ -8,6 +8,9 @@ import sharp from 'sharp';
 import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
 import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 
+function stubRunPdfToPng(): never {
+  throw new Error('PDF to PNG rendering must not run in this test.');
+}
 suite('GIF/TIFFの各フレームを静止画像として出力する', () => {
   test('アニメーションGIFをTIFFへ・アニメーションTIFFをGIFへ、各フレームをページ指定で独立した単一フレームの静止画像として出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-tiff-operation-'));
@@ -17,7 +20,7 @@ suite('GIF/TIFFの各フレームを静止画像として出力する', () => {
     await writeAnimatedGif(gifSourcePath);
     await writeAnimatedTiff(tiffSourcePath);
     const common = {
-      pdfRenderTools: {},
+      pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
       mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
       drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
       maxInputPixels: 1_000_000_000,

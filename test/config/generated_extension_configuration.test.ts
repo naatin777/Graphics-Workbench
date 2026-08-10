@@ -32,6 +32,13 @@ suite('生成された設定スキーマ検証', () => {
     assert.strictEqual(configuration.externalTools.rsvgConvert.timeoutSeconds(), 0);
   });
 
+  test('execPath.drawioとexecPath.rsvgConvertを明示的に空文字へ変更した場合はfallbackせず空文字をそのまま返す', () => {
+    const configuration = fakeConfiguration({ 'execPath.drawio': '', 'execPath.rsvgConvert': '' });
+
+    assert.strictEqual(configuration.execPath.drawio(), '');
+    assert.strictEqual(configuration.execPath.rsvgConvert(), '');
+  });
+
   test('undoHistory.maxRecordsに範囲外の0と非整数の1.5を設定した場合、default値10へフォールバックする', () => {
     const outOfBounds = fakeConfiguration({ 'undoHistory.maxRecords': 0 });
     assert.strictEqual(outOfBounds.undoHistory.maxRecords(), 10);

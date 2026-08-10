@@ -39,7 +39,7 @@ async function assertAnimatedInputIsSplit(
     const sourcePath = path.join(workspacePath.path, `source.${format}`);
     await writeAnimatedImage(sourcePath, format);
     await workspaceConfiguration.update(`outputPath.${key}`, template, vscode.ConfigurationTarget.Workspace);
-    await convertToRasterCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies(), options);
+    await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), options);
 
     const outputPath = path.join(workspacePath.path, `source.${outputFormat}`);
     const metadata = await sharp(await readFile(outputPath)).metadata();

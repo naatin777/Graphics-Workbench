@@ -1,5 +1,4 @@
 import { configureExternalToolTimeouts } from '../../config/external_tools/external_tool_settings.js';
-import { readDrawioExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { applyUndoHistoryConfiguration } from '../lifecycle/undo_last_conversion.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
 import {
@@ -21,5 +20,5 @@ export function applyRuntimeConfiguration(configuration: Configuration): void {
 
 /** Builds Draw.io command options from the configured executable path. */
 export function buildDrawioCommandOptions(configuration: Configuration): DrawioBackend {
-  return { drawioPath: readDrawioExecutablePath(configuration), runDrawio: executeDrawio };
+  return { drawioPath: configuration.execPath.drawio(), runDrawio: executeDrawio };
 }

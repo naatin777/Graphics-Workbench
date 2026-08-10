@@ -18,6 +18,9 @@ import {
 import { executeDrawio, type DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
 
+function stubRunPdfToPng(): never {
+  throw new Error('PDF to PNG rendering must not run in this test.');
+}
 suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', () => {
   test('GIF・アニメーションWebP・TIFFの2フレームをフレームごとの個別PNGへ変換し、1フレーム目は赤系・2フレーム目は青系の内容のPNGを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-png-frames-'));
@@ -34,7 +37,7 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
           workspacePath: workspacePath.path,
           page,
         })),
-        pdfRenderTools: {},
+        pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
         mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
         runtime: { resolveConflicts: async () => 'overwrite' },

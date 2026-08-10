@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
 import { commandBindings, type CommandBinding } from './command_bindings.js';
 import type { CommandDependencies } from './command_dependencies.js';
+import { resolveSelectedUris } from './command_input.js';
 
 const loadedCommandModules = new Set<string>();
 
@@ -74,7 +75,10 @@ function registerCommand(
       context.subscriptions.push(
         vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
           const command = await resolve(binding, outputChannel);
-          return command(uri, uris, dependencies);
+          const sourceUris = resolveSelectedUris(uri, uris);
+          return binding.options === undefined
+            ? command(sourceUris, dependencies)
+            : command(sourceUris, dependencies, binding.options);
         }),
       );
       break;
@@ -83,16 +87,8 @@ function registerCommand(
       context.subscriptions.push(
         vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
           const command = await resolve(binding, outputChannel);
-          return command(context, uri, uris, dependencies);
-        }),
-      );
-      break;
-    }
-    case 'fileWithOptions': {
-      context.subscriptions.push(
-        vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
-          const command = await resolve(binding, outputChannel);
-          return command(uri, uris, dependencies, binding.options);
+          const sourceUris = resolveSelectedUris(uri, uris);
+          return command(context, sourceUris, dependencies);
         }),
       );
       break;

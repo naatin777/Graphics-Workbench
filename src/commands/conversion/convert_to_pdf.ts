@@ -7,7 +7,6 @@ import {
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
-import { readRsvgConvertExecutablePath } from '../../config/external_tools/external_tool_paths.js';
 import { readChromeExecutablePath, readMermaidCliOptions } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPathTemplate } from '../../config/output/output_path_settings.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
@@ -27,7 +26,6 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
 import { isAbortError } from '../../shared/error.js';
-import { resolveSelectedUris } from '../shared/command_input.js';
 import { resolveConversionTemplate } from './conversion_routing.js';
 
 const pdfImageExtensions = [
@@ -48,24 +46,17 @@ const pdfImageExtensions = [
   '.dio.svg',
 ] as const;
 
-export async function convertToPdfCommand(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
-  dependencies: CommandDependencies,
-): Promise<void> {
+export async function convertToPdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const outputChannel = dependencies.outputChannel;
-  await convertSelectedSourcesToPdf(uri, uris, dependencies, outputChannel);
+  await convertSelectedSourcesToPdf(sourceUris, dependencies, outputChannel);
 }
 
 async function convertSelectedSourcesToPdf(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
   outputChannel: LineOutputChannel,
 ): Promise<void> {
   try {
-    const sourceUris = resolveSelectedUris(uri, uris);
-
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }
@@ -141,7 +132,7 @@ export function outputTemplateForSource(sourceUri: vscode.Uri, configuration: Co
 export function readSvgToPdfOptions(configuration: Configuration): SvgToPdfBackend {
   return {
     engine: configuration.convertToPdf.svg.engine(),
-    rsvgConvertPath: readRsvgConvertExecutablePath(configuration),
+    rsvgConvertPath: configuration.execPath.rsvgConvert(),
     chromePath: readChromeExecutablePath(configuration),
     runRsvgConvert: executeRsvgConvert,
     runChrome: executeChrome,

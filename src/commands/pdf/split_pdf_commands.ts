@@ -27,7 +27,7 @@ import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '../../shared/error.js';
-import { resolveSelectedUris, resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
+import { resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
 import {
   createPdfJsResources,
   getPdfJsAssetsRoot,
@@ -41,14 +41,11 @@ function readSplitPdfTemplate(dependencies: CommandDependencies): string {
 }
 
 export async function splitPdfAllPagesCommand(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
   try {
-    const sourceUris = resolveSelectedUris(uri, uris);
-
     if (sourceUris.length === 0) {
       throw new Error('No PDF files were selected.');
     }
@@ -115,14 +112,13 @@ function planSplitPdfJob(sourceUri: vscode.Uri, outputTemplate: string): SplitPd
 
 export async function splitPdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
 
   try {
-    await runSplitPdfConfigureCommand(context, uri, uris, dependencies);
+    await runSplitPdfConfigureCommand(context, sourceUris, dependencies);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel.appendLine(`[split-pdf-configure] failure: ${message}`);
@@ -137,12 +133,11 @@ export async function splitPdfConfigureCommand(
 
 async function runSplitPdfConfigureCommand(
   context: vscode.ExtensionContext,
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
+  sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
   const outputChannel = dependencies.outputChannel;
-  const inputUri = resolveSingleConfiguredPdfUri(uri, uris, 'splitPdf.configure');
+  const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'splitPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
   if (!workspaceFolder) {
@@ -264,7 +259,7 @@ async function applyConfiguredSplit(params: {
   rows: SplitPdfPageGroupRow[];
   panel: vscode.WebviewPanel;
   signal: AbortSignal;
-  outputChannel?: LineOutputChannel;
+  outputChannel: LineOutputChannel;
 }): Promise<void> {
   const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, panel, signal, outputChannel } = params;
 
@@ -296,7 +291,7 @@ async function applyConfiguredSplit(params: {
       cancelledMessage: userMessage('message.splitPdf.cancelled'),
       failedMessage: (reason) => userMessage('message.splitPdf.failed', reason),
     },
-    ...(outputChannel !== undefined && { outputChannel }),
+    outputChannel,
     panel,
     signal,
     run: async (runtime) =>

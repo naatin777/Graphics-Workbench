@@ -23,19 +23,13 @@ import { createOutputConversionMessages, runConversionLifecycle } from '../lifec
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { assertLocalFileUri, resolveSelectedUris } from '../shared/command_input.js';
+import { assertLocalFileUri } from '../shared/command_input.js';
 import { buildDrawioCommandOptions } from '../shared/command_runtime.js';
 import { isAbortError } from '../../shared/error.js';
 
-export async function convertToSvgCommand(
-  uri: vscode.Uri | undefined,
-  uris: vscode.Uri[] | undefined,
-  dependencies: CommandDependencies,
-): Promise<void> {
+export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const outputChannel = dependencies.outputChannel;
   try {
-    const sourceUris = resolveSelectedUris(uri, uris);
-
     if (sourceUris.length === 0) {
       throw new Error('No files were selected.');
     }

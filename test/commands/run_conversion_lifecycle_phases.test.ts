@@ -41,9 +41,7 @@ suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗と
       sandbox.stub(vscode.window, 'showInformationMessage').rejects(new Error('UI failed after conversion.'));
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
-      await convertToRasterCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies(), {
-        target: 'png',
-      });
+      await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
 
       assert.ok(showErrorMessage.notCalled, '成功後のUI失敗を変換失敗として表示してはいけない');
       await access(path.join(temporaryDirectory.path, 'source.png'));
@@ -71,9 +69,7 @@ suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗と
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').rejects(new Error('Undo UI failed.'));
 
-      await convertToRasterCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies(), {
-        target: 'png',
-      });
+      await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
 
       assert.ok(showErrorMessage.notCalled, 'Undo実行失敗を変換失敗として表示してはいけない');
       await access(path.join(temporaryDirectory.path, 'source.png'));
@@ -102,9 +98,7 @@ suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗と
         .resolves(localeMap('message.action.revealInExplorer') as unknown as vscode.MessageItem);
       const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').resolves(undefined);
 
-      await convertToRasterCommand(vscode.Uri.file(sourcePath), undefined, liveCommandDependencies(), {
-        target: 'png',
-      });
+      await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
 
       const revealCall = executeCommand.getCalls().find((call) => call.args[0] === 'revealInExplorer');
       assert.ok(revealCall, 'revealInExplorerが呼ばれること');
