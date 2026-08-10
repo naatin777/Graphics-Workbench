@@ -90,13 +90,13 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
     });
   });
 
-  test('splitPdfの出力パステンプレートが.pngで終わる場合は、ConfigureのWebviewを開く前にエラー通知を出して画面を作成しない', async () => {
+  test('split.pdfの出力パステンプレートが.pngで終わる場合は、ConfigureのWebviewを開く前にエラー通知を出して画面を作成しない', async () => {
     await withPdfSource(async (sourcePath, sandbox) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
 
       await withWorkspaceSettings(
-        { 'graphics-workbench.outputPath.splitPdf': '${fileDirname}/${page}.png' },
+        { 'graphics-workbench.outputPath.split.pdf': '${fileDirname}/${page}.png' },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.splitPdf.configure', vscode.Uri.file(sourcePath));
         },
@@ -139,7 +139,7 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
         .stub(vscode.window, 'withProgress')
         .rejects(new Error('withProgress must not be called for an invalid output path.'));
 
-      await withWorkspaceSettings({ 'graphics-workbench.outputPath.convertSvgToPdf': invalidPdfTemplate }, async () => {
+      await withWorkspaceSettings({ 'graphics-workbench.outputPath.single.pdf': invalidPdfTemplate }, async () => {
         await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
       });
 

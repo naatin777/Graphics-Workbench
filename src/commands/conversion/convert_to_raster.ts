@@ -96,7 +96,7 @@ async function runRasterCommand(options: {
             ...(animated && context.maxAnimationPixels !== undefined
               ? { maxAnimationPixels: context.maxAnimationPixels }
               : {}),
-            ...(options.outputMode !== undefined && { outputMode: options.outputMode }),
+            frameMode: options.outputMode === 'split' ? 'all' : 'first',
             runtime: context.runtime,
           })),
         );

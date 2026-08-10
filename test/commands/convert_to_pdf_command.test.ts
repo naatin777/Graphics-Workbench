@@ -164,7 +164,7 @@ suite('PDFに変換コマンド', () => {
     await assertFixtureConvertsToPdf('tiff', 'heatmap.tiff');
   });
 
-  test('outputPath.convertPngToPdfが設定済みの場合、テンプレートを展開したto-pdf-source.pdfを出力し、既定のsource.pdfは作成しない', async () => {
+  test('outputPath.single.pdfが設定済みの場合、テンプレートを展開したto-pdf-source.pdfを出力し、既定のsource.pdfは作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -174,7 +174,7 @@ suite('PDFに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPngToPdf': '${fileDirname}/to-pdf-${fileBasenameNoExtension}.pdf',
+          'graphics-workbench.outputPath.single.pdf': '${fileDirname}/to-pdf-${fileBasenameNoExtension}.pdf',
         },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
@@ -188,7 +188,7 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPngToPdfが空文字の場合は既定のsource.pdfへ出力する', async () => {
+  test('outputPath.single.pdfが空文字の場合は既定のsource.pdfへ出力する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -197,7 +197,7 @@ suite('PDFに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPngToPdf': '',
+          'graphics-workbench.outputPath.single.pdf': '',
         },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
@@ -245,24 +245,21 @@ suite('PDFに変換コマンド', () => {
     );
   });
 
-  test('editableなDraw.io画像の出力テンプレートは、convertDrawioToSinglePdf未設定なら既定、設定済みならその設定値を返す', async () => {
-    const sourceUri = vscode.Uri.file(path.join('workspace', 'source.drawio.png'));
-
-    await withWorkspaceSettings({ 'graphics-workbench.outputPath.convertDrawioToSinglePdf': undefined }, async () => {
+  test('editableなDraw.io画像の出力テンプレートは、outputPath.single.pdf未設定なら既定、設定済みならその設定値を返す', async () => {
+    await withWorkspaceSettings({ 'graphics-workbench.outputPath.single.pdf': undefined }, async () => {
       assert.strictEqual(
-        outputTemplateForSource(sourceUri, getExtensionConfiguration()),
+        outputTemplateForSource(getExtensionConfiguration()),
         '${fileDirname}/${fileBasenameNoExtension}.pdf',
       );
     });
 
     await withWorkspaceSettings(
       {
-        'graphics-workbench.outputPath.convertDrawioToSinglePdf':
-          '${fileDirname}/direct-${fileBasenameNoExtension}.pdf',
+        'graphics-workbench.outputPath.single.pdf': '${fileDirname}/direct-${fileBasenameNoExtension}.pdf',
       },
       async () => {
         assert.strictEqual(
-          outputTemplateForSource(sourceUri, getExtensionConfiguration()),
+          outputTemplateForSource(getExtensionConfiguration()),
           '${fileDirname}/direct-${fileBasenameNoExtension}.pdf',
         );
       },

@@ -39,10 +39,16 @@ suite('生成された設定スキーマ検証', () => {
     assert.strictEqual(configuration.execPath.rsvgConvert(), '');
   });
 
-  test('outputPath.splitPdfを明示的に空文字へ変更した場合は、manifest既定のページ分割テンプレートへフォールバックする', () => {
-    const configuration = fakeConfiguration({ 'outputPath.splitPdf': '   ' });
+  test('outputPath.split.pdfを明示的に空文字へ変更した場合は、manifest既定のページ分割テンプレートへフォールバックする', () => {
+    const configuration = fakeConfiguration({ 'outputPath.split.pdf': '' });
 
-    assert.strictEqual(configuration.outputPath.splitPdf(), '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf');
+    assert.strictEqual(configuration.outputPath.split.pdf(), '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf');
+  });
+
+  test('outputPath.single.pngにtypeが合わない数値を設定した場合は、既定の単一PNGテンプレートへフォールバックする', () => {
+    const configuration = fakeConfiguration({ 'outputPath.single.png': 123 });
+
+    assert.strictEqual(configuration.outputPath.single.png(), '${fileDirname}/${fileBasenameNoExtension}.png');
   });
 
   test('undoHistory.maxRecordsに範囲外の0と非整数の1.5を設定した場合、default値10へフォールバックする', () => {

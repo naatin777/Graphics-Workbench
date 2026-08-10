@@ -63,7 +63,7 @@ suite('AVIFに変換コマンド', () => {
     assert.ok(commands.includes('graphics-workbench.convertToAvif'));
   });
 
-  test('PNG、JPEG、WebP、2ページPDFを1回のコマンド実行でまとめてAVIFへ変換し、画像は拡張子置換の.avif、PDFはページごとの-1.avif/-2.avifをheif形式で生成する', async () => {
+  test('PNG、JPEG、WebP、2ページPDFを1回のコマンド実行でまとめてAVIFへ変換し、画像は拡張子置換の.avif、PDFはページごとの1.avif/2.avifをサブディレクトリにheif形式で生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -89,8 +89,8 @@ suite('AVIFに変換コマンド', () => {
       await Promise.all(
         [pngPath, jpegPath, webpPath].map((sourcePath) => assertReadableAvif(replaceExtension(sourcePath, '.avif'))),
       );
-      await assertReadableAvif(path.join(temporaryDirectory, 'source-document-1.avif'));
-      await assertReadableAvif(path.join(temporaryDirectory, 'source-document-2.avif'));
+      await assertReadableAvif(path.join(temporaryDirectory, 'source-document', '1.avif'));
+      await assertReadableAvif(path.join(temporaryDirectory, 'source-document', '2.avif'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -132,7 +132,7 @@ suite('AVIFに変換コマンド', () => {
     }
   });
 
-  test('AVIF入力を変換せず、ページ分割されたsource-1.avifも作成しない', async () => {
+  test('AVIF入力を変換せず、ページ分割されたsource/1.avifも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -141,13 +141,13 @@ suite('AVIFに変換コマンド', () => {
 
       await vscode.commands.executeCommand('graphics-workbench.convertToAvif', vscode.Uri.file(sourcePath));
 
-      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source-1.avif'));
+      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source', '1.avif'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
   });
 
-  test('outputPath.convertPngToAvifが設定済みの場合、テンプレートを展開したcustom-source.avifを出力し、既定のsource.avifは作成しない', async () => {
+  test('outputPath.single.avifが設定済みの場合、テンプレートを展開したcustom-source.avifを出力し、既定のsource.avifは作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -157,7 +157,7 @@ suite('AVIFに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPngToAvif': '${fileDirname}/custom-${fileBasenameNoExtension}.avif',
+          'graphics-workbench.outputPath.single.avif': '${fileDirname}/custom-${fileBasenameNoExtension}.avif',
         },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.convertToAvif', vscode.Uri.file(sourcePath));
@@ -171,7 +171,7 @@ suite('AVIFに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPngToAvifが空文字の場合は既定のsource.avifへ出力する', async () => {
+  test('outputPath.single.avifが空文字の場合は既定のsource.avifへ出力する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -180,7 +180,7 @@ suite('AVIFに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPngToAvif': '',
+          'graphics-workbench.outputPath.single.avif': '',
         },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.convertToAvif', vscode.Uri.file(sourcePath));

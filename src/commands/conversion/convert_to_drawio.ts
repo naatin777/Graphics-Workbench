@@ -28,7 +28,7 @@ export async function convertToDrawioCommand(
   dependencies: CommandDependencies,
 ): Promise<void> {
   await runDrawioConversionCommand(sourceUris, dependencies, (configuration) =>
-    configuration.outputPath.convertToDrawio(),
+    configuration.outputPath.single.drawio(),
   );
 }
 
@@ -37,7 +37,7 @@ export async function convertToDrawioPngCommand(
   dependencies: CommandDependencies,
 ): Promise<void> {
   await runDrawioConversionCommand(sourceUris, dependencies, (configuration) =>
-    configuration.outputPath.convertToDrawioPng(),
+    configuration.outputPath.single.drawioPng(),
   );
 }
 
@@ -46,7 +46,7 @@ export async function convertToDrawioSvgCommand(
   dependencies: CommandDependencies,
 ): Promise<void> {
   await runDrawioConversionCommand(sourceUris, dependencies, (configuration) =>
-    configuration.outputPath.convertToDrawioSvg(),
+    configuration.outputPath.single.drawioSvg(),
   );
 }
 

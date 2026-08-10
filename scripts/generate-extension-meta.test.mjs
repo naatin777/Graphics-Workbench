@@ -28,7 +28,6 @@ void test('generated manifest is pure and does not import the VS Code API', () =
   assert.match(content, /export type CommandId/u);
   assert.match(content, /export function createConfiguration/u);
   assert.match(content, /export const getDefaultConfiguration/u);
-  assert.match(content, /export const conversionPairs/u);
 });
 
 void test('generated manifest imports in plain Node without vscode', () => {
@@ -36,8 +35,7 @@ void test('generated manifest imports in plain Node without vscode', () => {
     const manifest = await import(${JSON.stringify(manifestPath)});
     if (typeof manifest.getDefaultConfiguration !== 'function') process.exit(1);
     if (typeof manifest.createConfiguration !== 'function') process.exit(2);
-    if (typeof manifest.conversionPairs !== 'object') process.exit(3);
-    if (!Array.isArray(manifest.publicCommandIds) || manifest.publicCommandIds.length === 0) process.exit(4);
+    if (!Array.isArray(manifest.publicCommandIds) || manifest.publicCommandIds.length === 0) process.exit(3);
     process.exit(0);
   `;
   execFileSync(process.execPath, ['--experimental-strip-types', '--input-type=module', '-e', script], {

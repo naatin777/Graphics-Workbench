@@ -25,7 +25,7 @@ suite(
   'PDFの各ページをラスター変換処理単位（出力パス割当て）へ展開し、同一形式入力は拒否するラスター変換を展開する処理',
   () => {
     for (const { spec, extension, unsupportedLabel } of simpleFormats) {
-      test(`${spec.label}変換は2ページのPDFをページごとの変換処理単位へ展開し、各変換処理単位へsource-1.${extension}とsource-2.${extension}の出力パスを割り当てる`, async () => {
+      test(`${spec.label}変換は2ページのPDFをページごとの変換処理単位へ展開し、各変換処理単位へ${extension}/1.${extension}と${extension}/2.${extension}の出力パスを割り当てる`, async () => {
         const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
         await using temporaryDirectory = await mkdtempDisposable(
           path.join(workspace.uri.fsPath, `gw-plan-${extension}-`),
@@ -53,13 +53,13 @@ suite(
             {
               sourcePath,
               workspacePath: workspace.uri.fsPath,
-              outputPath: path.join(temporaryDirectory.path, `source-1.${extension}`),
+              outputPath: path.join(temporaryDirectory.path, 'source', `1.${extension}`),
               page: 1,
             },
             {
               sourcePath,
               workspacePath: workspace.uri.fsPath,
-              outputPath: path.join(temporaryDirectory.path, `source-2.${extension}`),
+              outputPath: path.join(temporaryDirectory.path, 'source', `2.${extension}`),
               page: 2,
             },
           ],

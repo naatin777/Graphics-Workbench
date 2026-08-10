@@ -15,19 +15,17 @@
 - PNG、JPEG、WebP、AVIF、GIF、TIFF（ラスター画像）
 - SVG
 
-Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは`convertDrawioToSinglePdf`で全ページを1PDFにする専用コマンドがある。
+Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは`graphics-workbench.convertDrawioToSinglePdf`で全ページを1PDFにする専用コマンドがある。
 
 ## 入力と順序
 
-複数ファイルを選択可能。1ファイルだけ選択した場合も許容する（単一画像→1ページPDF）。
+**2件以上**のファイルを選択する必要がある。1件だけの選択は結合しない（Combineには2件以上必要であることと、通常のConvert to PDFを使うべきであることを表示する）。
 
-画像の順序は Explorer での選択順（VS Code の `uris` 配列順）とする。ユーザーが Ctrl+クリックで選んだ順序をそのまま使う。
+画像の順序は Explorer での選択順（VS Code の `uris` 配列順）とする。ユーザーが Ctrl+クリックで選んだ順序をそのまま使う。結合前にQuickPickで順序の確認・変更・除外ができる。
 
 ## 出力パス
 
-複数ファイル選択時（出力ファイルが1つになる場合）は保存ダイアログを表示し、ユーザーに出力先を指定させる。
-
-単一ファイル選択時は既存の outputPath テンプレート `${fileDirname}/${fileBasenameNoExtension}.pdf` を使用する。
+`combineImagesToPdf`はoutputPath設定を持たない。結合順の確認後、**必ず保存ダイアログ（Save As）**で出力先を指定させる。出力先は選択したworkspace内に制限する。
 
 ## ページサイズ
 
@@ -69,24 +67,25 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは`convertDrawioToS
 
 ## 設定
 
-outputPath 設定は `outputPath.combineImagesToPdf` で提供する。未設定の場合は保存ダイアログ（複数選択時）またはデフォルトテンプレート（単一選択時）を使用する。
+`combineImagesToPdf`は出力path設定を持たない。出力先は常にSave Asダイアログで選択する。
 
 ## 対象外
 
-- 画像の並び替えUI
+- 画像の並び替えUI（QuickPickでの順序変更は行う）
 - 結合方向の指定（縦結合・横結合・grid など、PDFのページ結合なので不要）
 - 画像間への空白ページ挿入
 - Mermaid、Draw.io、PDFの入力
+- 単一ファイルの入力（通常のConvert to PDFを使う）
 
 ## テスト計画
 
-- 全対象入力形式（PNG, JPEG, WebP, AVIF, GIF, TIFF, SVG）の単一→PDF
+- 全対象入力形式（PNG, JPEG, WebP, AVIF, GIF, TIFF, SVG）の複数→PDF
 - 複数形式混在選択の結合
 - 1件の変換失敗時に出力しないことの確認
 - Safe Mode 競合判断の確認
 - Undo の確認
-- 単一選択時に保存ダイアログが出ないことの確認
-- 複数選択時に保存ダイアログが出ることの確認
+- 1件だけの選択時に結合しないことの確認
+- Save Asで出力先を選択して結合することの確認
 
 ## 関連
 

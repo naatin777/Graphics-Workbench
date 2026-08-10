@@ -12,7 +12,6 @@ import {
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
 import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
-import { resolveConversionTemplate } from './conversion_routing.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { convertToSvgFiles, type SvgInput } from '../../operations/conversion/convert_to_svg.js';
@@ -99,7 +98,7 @@ async function planSvgInputs(
   }
 
   if (isNativeDrawioPath(sourcePath)) {
-    const outputTemplate = resolveConversionTemplate({ target: 'svg', sourcePath, configuration });
+    const outputTemplate = configuration.outputPath.single.svg();
     const outputPath = resolveOutputPath(
       outputTemplate,
       {
@@ -113,7 +112,7 @@ async function planSvgInputs(
   }
 
   const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
-  const outputTemplate = outputTemplateForSource(sourcePath, configuration);
+  const outputTemplate = configuration.outputPath.single.svg();
   const outputPath = resolveOutputPath(
     outputTemplate,
     {
@@ -149,7 +148,7 @@ async function planPdfPageSvgInputs(
     throw new Error(`PDF has no pages: ${sourcePath}`);
   }
 
-  const outputTemplate = resolveConversionTemplate({ target: 'svg', sourcePath, configuration });
+  const outputTemplate = configuration.outputPath.split.svg();
   assertPageTemplateForSplitOutput(outputTemplate, pageCount);
 
   const inputs: SvgInput[] = [];
@@ -175,12 +174,4 @@ async function planPdfPageSvgInputs(
   }
 
   return inputs;
-}
-
-function outputTemplateForSource(sourcePath: string, configuration: Configuration): string {
-  return resolveConversionTemplate({
-    target: 'svg',
-    sourcePath,
-    configuration,
-  });
 }

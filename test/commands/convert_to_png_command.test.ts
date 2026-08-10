@@ -75,7 +75,7 @@ suite('PNGに変換コマンド', () => {
     assert.ok(commands.includes('graphics-workbench.convertToPng'));
   });
 
-  test('JPEG、WebP、AVIF、2ページPDFを1回のコマンド実行でまとめてPNGへ変換し、画像は拡張子置換の.png、PDFはページごとの-1.png/-2.pngを生成する', async () => {
+  test('JPEG、WebP、AVIF、2ページPDFを1回のコマンド実行でまとめてPNGへ変換し、画像は拡張子置換の.png、PDFはページごとの1.png/2.pngをサブディレクトリに生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -98,8 +98,8 @@ suite('PNGに変換コマンド', () => {
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
       await Promise.all(imagePaths.map((sourcePath) => assertReadablePng(replaceExtension(sourcePath, '.png'))));
-      await assertReadablePng(path.join(temporaryDirectory, 'source-document-1.png'));
-      await assertReadablePng(path.join(temporaryDirectory, 'source-document-2.png'));
+      await assertReadablePng(path.join(temporaryDirectory, 'source-document', '1.png'));
+      await assertReadablePng(path.join(temporaryDirectory, 'source-document', '2.png'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -119,8 +119,7 @@ suite('PNGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertGifToPng': '${fileDirname}/${fileBasenameNoExtension}.png',
-          'graphics-workbench.outputPath.convertTiffToPng': '${fileDirname}/${fileBasenameNoExtension}.png',
+          'graphics-workbench.outputPath.single.png': '${fileDirname}/${fileBasenameNoExtension}.png',
         },
         async () => {
           const commandExecution = vscode.commands.executeCommand(
@@ -189,7 +188,7 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPdfToPngが設定済みの場合、2ページPDFを${page}ごとに展開したto-png-source-1.pngとto-png-source-2.pngを生成する', async () => {
+  test('outputPath.split.pngが設定済みの場合、2ページPDFを${page}ごとに展開したto-png-source-1.pngとto-png-source-2.pngを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -200,8 +199,7 @@ suite('PNGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPdfToPng':
-            '${fileDirname}/to-png-${fileBasenameNoExtension}-${page}.png',
+          'graphics-workbench.outputPath.split.png': '${fileDirname}/to-png-${fileBasenameNoExtension}-${page}.png',
         },
         async () => {
           const commandExecution = vscode.commands.executeCommand(
@@ -219,7 +217,7 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('PNG入力を変換せず、ページ分割されたsource-1.pngも作成しない', async () => {
+  test('PNG入力を変換せず、ページ分割されたsource/1.pngも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -228,7 +226,7 @@ suite('PNGに変換コマンド', () => {
 
       await vscode.commands.executeCommand('graphics-workbench.convertToPng', vscode.Uri.file(pngPath));
 
-      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source-1.png'));
+      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source', '1.png'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }

@@ -828,365 +828,136 @@
           "maximum": 9,
           "description": "%config.convertToAvif.effort%"
         },
+        "graphics-workbench.outputPath.single.pdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
+          "description": "%config.outputPath.single.pdf%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.single.png": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.png",
+          "description": "%config.outputPath.single.png%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.single.jpeg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
+          "description": "%config.outputPath.single.jpeg%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.single.webp": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
+          "description": "%config.outputPath.single.webp%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.single.avif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
+          "description": "%config.outputPath.single.avif%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.single.gif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.gif",
+          "description": "%config.outputPath.single.gif%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.single.tiff": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.tiff",
+          "description": "%config.outputPath.single.tiff%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.single.svg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}.svg",
+          "description": "%config.outputPath.single.svg%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.split.pdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf",
+          "description": "%config.outputPath.split.pdf%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.split.png": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.png",
+          "description": "%config.outputPath.split.png%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.split.jpeg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg",
+          "description": "%config.outputPath.split.jpeg%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.split.webp": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.webp",
+          "description": "%config.outputPath.split.webp%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.split.avif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.avif",
+          "description": "%config.outputPath.split.avif%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.split.gif": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.gif",
+          "description": "%config.outputPath.split.gif%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.split.tiff": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.tiff",
+          "description": "%config.outputPath.split.tiff%",
+          "minLength": 1
+        },
+        "graphics-workbench.outputPath.split.svg": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.svg",
+          "description": "%config.outputPath.split.svg%",
+          "minLength": 1
+        },
         "graphics-workbench.outputPath.cropPdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}-crop.pdf",
           "description": "%config.outputPath.cropPdf%"
         },
-        "graphics-workbench.outputPath.convertDrawioToPagePdfs": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf",
-          "description": "%config.outputPath.convertDrawioToPagePdfs%"
-        },
-        "graphics-workbench.outputPath.convertDrawioToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.png",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertDrawioToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertDrawioToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.webp",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertDrawioToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.avif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertDrawioToSvg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.svg",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertDrawioToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertDrawioToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertPdfToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.png",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertPdfToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.jpeg",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertPdfToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.webp",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertPdfToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.avif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertPdfToSvg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.svg",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertPdfToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertPdfToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-${page}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.splitPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}/${page}.pdf",
-          "description": "%config.outputPath.splitPdf%"
-        },
-        "graphics-workbench.outputPath.convertPngToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertPngToPdf%"
-        },
-        "graphics-workbench.outputPath.convertJpegToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertJpegToPdf%"
-        },
-        "graphics-workbench.outputPath.convertWebpToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertWebpToPdf%"
-        },
-        "graphics-workbench.outputPath.convertAvifToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertAvifToPdf%"
-        },
-        "graphics-workbench.outputPath.convertSvgToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertSvgToPdf%"
-        },
-        "graphics-workbench.outputPath.convertMermaidToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertMermaidToPdf%"
-        },
-        "graphics-workbench.outputPath.convertGifToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertGifToPdf%"
-        },
-        "graphics-workbench.outputPath.convertTiffToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertTiffToPdf%"
-        },
-        "graphics-workbench.outputPath.convertPngToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
-          "description": "%config.outputPath.convertPngToJpeg%"
-        },
-        "graphics-workbench.outputPath.convertPngToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
-          "description": "%config.outputPath.convertPngToWebp%"
-        },
-        "graphics-workbench.outputPath.convertPngToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
-          "description": "%config.outputPath.convertPngToAvif%"
-        },
-        "graphics-workbench.outputPath.convertJpegToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.png",
-          "description": "%config.outputPath.convertJpegToPng%"
-        },
-        "graphics-workbench.outputPath.convertJpegToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
-          "description": "%config.outputPath.convertJpegToWebp%"
-        },
-        "graphics-workbench.outputPath.convertJpegToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
-          "description": "%config.outputPath.convertJpegToAvif%"
-        },
-        "graphics-workbench.outputPath.convertWebpToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.png",
-          "description": "%config.outputPath.convertWebpToPng%"
-        },
-        "graphics-workbench.outputPath.convertWebpToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
-          "description": "%config.outputPath.convertWebpToJpeg%"
-        },
-        "graphics-workbench.outputPath.convertWebpToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
-          "description": "%config.outputPath.convertWebpToAvif%"
-        },
-        "graphics-workbench.outputPath.convertAvifToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.png",
-          "description": "%config.outputPath.convertAvifToPng%"
-        },
-        "graphics-workbench.outputPath.convertAvifToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
-          "description": "%config.outputPath.convertAvifToJpeg%"
-        },
-        "graphics-workbench.outputPath.convertAvifToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
-          "description": "%config.outputPath.convertAvifToWebp%"
-        },
-        "graphics-workbench.outputPath.convertSvgToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.png",
-          "description": "%config.outputPath.convertSvgToPng%"
-        },
-        "graphics-workbench.outputPath.convertSvgToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
-          "description": "%config.outputPath.convertSvgToJpeg%"
-        },
-        "graphics-workbench.outputPath.convertSvgToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
-          "description": "%config.outputPath.convertSvgToWebp%"
-        },
-        "graphics-workbench.outputPath.convertSvgToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
-          "description": "%config.outputPath.convertSvgToAvif%"
-        },
-        "graphics-workbench.outputPath.convertMermaidToSvg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.svg",
-          "description": "%config.outputPath.convertMermaidToSvg%"
-        },
-        "graphics-workbench.outputPath.convertMermaidToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.png",
-          "description": "%config.outputPath.convertMermaidToPng%"
-        },
-        "graphics-workbench.outputPath.convertMermaidToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
-          "description": "%config.outputPath.convertMermaidToJpeg%"
-        },
-        "graphics-workbench.outputPath.convertMermaidToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
-          "description": "%config.outputPath.convertMermaidToWebp%"
-        },
-        "graphics-workbench.outputPath.convertGifToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
-          "description": "%config.outputPath.convertGifToJpeg%"
-        },
-        "graphics-workbench.outputPath.convertTiffToJpeg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.jpeg",
-          "description": "%config.outputPath.convertTiffToJpeg%"
-        },
-        "graphics-workbench.outputPath.convertGifToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
-          "description": "%config.outputPath.convertGifToAvif%"
-        },
-        "graphics-workbench.outputPath.convertTiffToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
-          "description": "%config.outputPath.convertTiffToAvif%"
-        },
-        "graphics-workbench.outputPath.convertTiffToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
-          "description": "%config.outputPath.convertTiffToWebp%"
-        },
-        "graphics-workbench.outputPath.convertGifToWebp": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.webp",
-          "description": "%config.outputPath.convertGifToWebp%"
-        },
-        "graphics-workbench.outputPath.convertMermaidToAvif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.avif",
-          "description": "%config.outputPath.convertMermaidToAvif%"
-        },
-        "graphics-workbench.outputPath.convertPngToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertJpegToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertWebpToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertAvifToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertGifToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.png",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertTiffToPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.png",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertTiffToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertSvgToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertMermaidToGif": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.gif",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertPngToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertJpegToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertWebpToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertAvifToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertGifToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertSvgToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertMermaidToTiff": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.tiff",
-          "description": "%config.outputPath.pair%"
-        },
-        "graphics-workbench.outputPath.convertToDrawio": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.dio",
-          "description": "%config.outputPath.convertToDrawio%"
-        },
-        "graphics-workbench.outputPath.convertToDrawioPng": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.drawio.png",
-          "description": "%config.outputPath.convertToDrawioPng%"
-        },
-        "graphics-workbench.outputPath.convertToDrawioSvg": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.drawio.svg",
-          "description": "%config.outputPath.convertToDrawioSvg%"
-        },
         "graphics-workbench.outputPath.clipboardImage": {
           "type": "string",
           "default": "${fileDirname}/${dateNow}",
           "description": "%config.outputPath.clipboardImage%"
+        },
+        "graphics-workbench.outputPath.reorderPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-reordered.pdf",
+          "description": "%config.outputPath.reorderPdf%"
+        },
+        "graphics-workbench.outputPath.rotatePdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-rotated.pdf",
+          "description": "%config.outputPath.rotatePdf%"
+        },
+        "graphics-workbench.outputPath.compressPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}_compressed.pdf",
+          "description": "%config.outputPath.compressPdf%"
+        },
+        "graphics-workbench.outputPath.encryptPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-encrypted.pdf",
+          "description": "%config.outputPath.encryptPdf%"
+        },
+        "graphics-workbench.outputPath.decryptPdf": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-decrypted.pdf",
+          "description": "%config.outputPath.decryptPdf%"
         },
         "graphics-workbench.cropPdf.marginOptions": {
           "type": "array",
@@ -1201,21 +972,6 @@
             20
           ],
           "description": "%config.cropPdf.marginOptions%"
-        },
-        "graphics-workbench.outputPath.convertDrawioToSinglePdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertDrawioToSinglePdf%"
-        },
-        "graphics-workbench.outputPath.convertExcalidrawToPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
-          "description": "%config.outputPath.convertExcalidrawToPdf%"
-        },
-        "graphics-workbench.outputPath.combineImagesToPdf": {
-          "type": "string",
-          "default": "",
-          "description": "%config.outputPath.combineImagesToPdf%"
         },
         "graphics-workbench.contextMenu.enabled": {
           "type": "boolean",
@@ -1312,30 +1068,23 @@
           "default": true,
           "description": "%config.contextMenu.reorderPdf.enabled%"
         },
-        "graphics-workbench.outputPath.reorderPdf": {
+        "graphics-workbench.outputPath.single.drawio": {
           "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-reordered.pdf",
-          "description": "%config.outputPath.reorderPdf%"
+          "default": "${fileDirname}/${fileBasenameNoExtension}.dio",
+          "description": "%config.outputPath.single.drawio%",
+          "minLength": 1
         },
-        "graphics-workbench.outputPath.rotatePdf": {
+        "graphics-workbench.outputPath.single.drawioPng": {
           "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-rotated.pdf",
-          "description": "%config.outputPath.rotatePdf%"
+          "default": "${fileDirname}/${fileBasenameNoExtension}.drawio.png",
+          "description": "%config.outputPath.single.drawioPng%",
+          "minLength": 1
         },
-        "graphics-workbench.outputPath.compressPdf": {
+        "graphics-workbench.outputPath.single.drawioSvg": {
           "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}_compressed.pdf",
-          "description": "%config.outputPath.compressPdf%"
-        },
-        "graphics-workbench.outputPath.encryptPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-encrypted.pdf",
-          "description": "%config.outputPath.encryptPdf%"
-        },
-        "graphics-workbench.outputPath.decryptPdf": {
-          "type": "string",
-          "default": "${fileDirname}/${fileBasenameNoExtension}-decrypted.pdf",
-          "description": "%config.outputPath.decryptPdf%"
+          "default": "${fileDirname}/${fileBasenameNoExtension}.drawio.svg",
+          "description": "%config.outputPath.single.drawioSvg%",
+          "minLength": 1
         }
       }
     }

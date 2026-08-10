@@ -227,23 +227,24 @@ WindowsではHomebrewを使用せず、各ツールのWindows向け配布物ま�
 
 主な設定項目は以下の通りです。
 
-| 設定                                                     | 既定値                                          | 説明                                                                                                                    |
-| -------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `graphics-workbench.outputPath.clipboardImage`           | `${fileDirname}/${dateNow}`                     | クリップボード画像を貼り付けるときに表示する既定の保存先です。貼り付け時に編集でき、拡張子は自動で追加されます          |
-| `graphics-workbench.insertLatex.pdfTemplate`             | `\begin{figure}[H]...`                          | PDF drag&drop時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます |
-| `graphics-workbench.insertLatex.imageTemplate`           | `\begin{figure}[H]...`                          | 画像ペースト時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます  |
-| `graphics-workbench.execPath.drawio`                     | 空文字                                          | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                      |
-| `graphics-workbench.execPath.rsvgConvert`                | `rsvg-convert`                                  | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
-| `graphics-workbench.execPath.chrome`                     | 空文字                                          | mmdcとChrome方式のSVGからPDF変換で使うChrome実行ファイルのパスです。未指定時はOS標準のコマンドまたは場所を使います      |
-| `graphics-workbench.execPath.mermaid`                    | `mmdc`                                          | `@mermaid-js/mermaid-cli`の`mmdc`実行ファイルのパスです                                                                 |
-| `graphics-workbench.convertToPdf.svg.engine`             | `chrome`                                        | SVGをPDFへ変換するときのバックエンドです。`chrome` または `rsvg-convert` を選択できます                                 |
-| `graphics-workbench.outputPath.convertDrawioToSinglePdf` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Draw.ioの全ページを1つのPDFへ出力するパスです                                                                           |
-| `graphics-workbench.convertToWebp.effort`                | `4`                                             | WebP出力のエンコードeffortです                                                                                          |
-| `graphics-workbench.convertToAvif.effort`                | `4`                                             | AVIF出力のエンコードeffortです                                                                                          |
+| 設定                                           | 既定値                                                  | 説明                                                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.outputPath.clipboardImage` | `${fileDirname}/${dateNow}`                             | クリップボード画像を貼り付けるときに表示する既定の保存先です。貼り付け時に編集でき、拡張子は自動で追加されます          |
+| `graphics-workbench.insertLatex.pdfTemplate`   | `\begin{figure}[H]...`                                  | PDF drag&drop時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます |
+| `graphics-workbench.insertLatex.imageTemplate` | `\begin{figure}[H]...`                                  | 画像ペースト時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます  |
+| `graphics-workbench.execPath.drawio`           | 空文字                                                  | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                      |
+| `graphics-workbench.execPath.rsvgConvert`      | `rsvg-convert`                                          | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
+| `graphics-workbench.execPath.chrome`           | 空文字                                                  | mmdcとChrome方式のSVGからPDF変換で使うChrome実行ファイルのパスです。未指定時はOS標準のコマンドまたは場所を使います      |
+| `graphics-workbench.execPath.mermaid`          | `mmdc`                                                  | `@mermaid-js/mermaid-cli`の`mmdc`実行ファイルのパスです                                                                 |
+| `graphics-workbench.convertToPdf.svg.engine`   | `chrome`                                                | SVGをPDFへ変換するときのバックエンドです。`chrome` または `rsvg-convert` を選択できます                                 |
+| `graphics-workbench.outputPath.single.pdf`     | `${fileDirname}/${fileBasenameNoExtension}.pdf`         | 1つの入力から1つのPDFを出力するパスです                                                                                 |
+| `graphics-workbench.outputPath.split.pdf`      | `${fileDirname}/${fileBasenameNoExtension}/${page}.pdf` | 1つの入力から複数のPDFを出力するパスです（Split PDF・Draw.ioのページPDF）。`${page}`を含めてください                    |
+| `graphics-workbench.convertToWebp.effort`      | `4`                                                     | WebP出力のエンコードeffortです                                                                                          |
+| `graphics-workbench.convertToAvif.effort`      | `4`                                                     | AVIF出力のエンコードeffortです                                                                                          |
 
 出力ファイル名や LaTeX snippet の候補も VS Code の設定から変更できます。
 
-command IDは`convertToPdf`などの出力形式基準ですが、変換の出力先はすべて`outputPath.convertPngToPdf`や`outputPath.convertPdfToPng`のような入力・出力pair設定を使います。複数ページのテンプレートも同じ設定で`${page}`を使います。
+変換の出力先は入力形式ではなく出力数を基準に決まります。`single`は1つの入力から1ファイルを生成し`outputPath.single.<形式>`を使います。`split`は1つの入力から複数ファイル（PDFページ・アニメーションフレーム・Draw.ioページ）を生成し`outputPath.split.<形式>`に`${page}`を指定します。画像のPDF結合は常に出力先を選択します。
 
 ## Output パネル
 

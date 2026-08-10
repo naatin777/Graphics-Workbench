@@ -175,7 +175,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(explorerContext.some((entry) => entry.command === 'graphics-workbench.convertDrawioToPagePdfs'));
     assert.ok(explorerContext.some((entry) => entry.command === 'graphics-workbench.convertDrawioToSinglePdf'));
     assert.strictEqual(
-      properties['graphics-workbench.outputPath.convertDrawioToSinglePdf']?.default,
+      properties['graphics-workbench.outputPath.single.pdf']?.default,
       '${fileDirname}/${fileBasenameNoExtension}.pdf',
     );
   });
@@ -592,17 +592,32 @@ suite('package.jsonの変換メニュー定義', () => {
     });
   });
 
-  test('複数出力もoutputPath.convertXToYとoutputPath.splitPdfの個別設定で定義する', async () => {
+  test('outputPathをsingle/split×形式で定義し、source×target形式の設定を持たない', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const { properties } = packageJson.contributes.configuration;
+    const outputPathKeys = Object.keys(properties).filter((key) => key.startsWith('graphics-workbench.outputPath.'));
 
     assert.strictEqual(
-      properties['graphics-workbench.outputPath.convertPdfToPng']?.default,
-      '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
+      properties['graphics-workbench.outputPath.split.png']?.default,
+      '${fileDirname}/${fileBasenameNoExtension}/${page}.png',
     );
     assert.strictEqual(
-      properties['graphics-workbench.outputPath.splitPdf']?.default,
+      properties['graphics-workbench.outputPath.split.pdf']?.default,
       '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf',
+    );
+    assert.strictEqual(
+      properties['graphics-workbench.outputPath.single.webp']?.default,
+      '${fileDirname}/${fileBasenameNoExtension}.webp',
+    );
+    assert.strictEqual(
+      properties['graphics-workbench.outputPath.single.drawio']?.default,
+      '${fileDirname}/${fileBasenameNoExtension}.dio',
+    );
+    assert.ok(
+      outputPathKeys.every((key) => !key.includes('To') && key !== 'graphics-workbench.outputPath.combineImagesToPdf'),
+      `unexpected source-to-target output path settings: ${outputPathKeys
+        .filter((key) => key.includes('To') || key === 'graphics-workbench.outputPath.combineImagesToPdf')
+        .join(', ')}`,
     );
   });
 

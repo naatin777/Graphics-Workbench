@@ -55,7 +55,7 @@ suite('JPEGに変換コマンド', () => {
     assert.ok(commands.includes('graphics-workbench.convertToJpeg'));
   });
 
-  test('PNG、WebP、AVIF、2ページPDFを1回のコマンド実行でまとめてJPEGへ変換し、画像は拡張子置換の.jpeg、PDFはページごとの-1.jpeg/-2.jpegを生成する', async () => {
+  test('PNG、WebP、AVIF、2ページPDFを1回のコマンド実行でまとめてJPEGへ変換し、画像は拡張子置換の.jpeg、PDFはページごとの1.jpeg/2.jpegをサブディレクトリに生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -81,8 +81,8 @@ suite('JPEGに変換コマンド', () => {
       await Promise.all(
         [pngPath, webpPath, avifPath].map((sourcePath) => assertReadableJpeg(replaceExtension(sourcePath, '.jpeg'))),
       );
-      await assertReadableJpeg(path.join(temporaryDirectory, 'source-document-1.jpeg'));
-      await assertReadableJpeg(path.join(temporaryDirectory, 'source-document-2.jpeg'));
+      await assertReadableJpeg(path.join(temporaryDirectory, 'source-document', '1.jpeg'));
+      await assertReadableJpeg(path.join(temporaryDirectory, 'source-document', '2.jpeg'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -124,7 +124,7 @@ suite('JPEGに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPngToJpegが設定済みの場合、テンプレートを展開したcustom-source.jpegを出力し、既定のsource.jpegは作成しない', async () => {
+  test('outputPath.single.jpegが設定済みの場合、テンプレートを展開したcustom-source.jpegを出力し、既定のsource.jpegは作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -134,7 +134,7 @@ suite('JPEGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPngToJpeg': '${fileDirname}/custom-${fileBasenameNoExtension}.jpeg',
+          'graphics-workbench.outputPath.single.jpeg': '${fileDirname}/custom-${fileBasenameNoExtension}.jpeg',
         },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.convertToJpeg', vscode.Uri.file(sourcePath));
@@ -148,7 +148,7 @@ suite('JPEGに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPngToJpegが空文字の場合は既定のsource.jpegへ出力する', async () => {
+  test('outputPath.single.jpegが空文字の場合は既定のsource.jpegへ出力する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -157,7 +157,7 @@ suite('JPEGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPngToJpeg': '',
+          'graphics-workbench.outputPath.single.jpeg': '',
         },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.convertToJpeg', vscode.Uri.file(sourcePath));

@@ -17,7 +17,7 @@ import { readRasterAnimationMetadata } from '../../operations/conversion/raster_
 import { countPdfPages } from '../../operations/pdf/mupdf.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
-import { resolveConversionTemplate } from './conversion_routing.js';
+import { resolveRasterOutputTemplate, type OutputCardinality } from './conversion_routing.js';
 import { planRasterFrameJobs } from './plan_raster_frame_jobs.js';
 
 import { assertLocalFileUri } from '../shared/command_input.js';
@@ -27,7 +27,8 @@ export interface PlanRasterConversionOptions {
   configuration: Configuration;
   maxInputPixels: number;
   maxAnimationPixels?: number;
-  outputMode?: 'auto' | 'preserve' | 'split';
+  /** 'all' splits animated frames into per-frame outputs; otherwise one output per input. */
+  frameMode?: 'first' | 'all';
   runtime?: ConversionExecutionContext;
 }
 
@@ -54,7 +55,13 @@ export async function planRasterConversionJobs(
     return planPdfPageRasterConversions(sourcePath, workspace, spec, options);
   }
 
-  const outputTemplate = outputTemplateForSource(sourcePath, spec, options);
+  const splitByFrames = spec.animatedInputExtension !== undefined && options.frameMode === 'all';
+  const cardinality: OutputCardinality = splitByFrames ? 'split' : 'single';
+  const outputTemplate = resolveRasterOutputTemplate({
+    cardinality,
+    target: spec.target,
+    configuration: options.configuration,
+  });
 
   if (spec.animatedInputExtension !== undefined) {
     const inputs = await planAnimationRasterSourceConversions({
@@ -66,7 +73,7 @@ export async function planRasterConversionJobs(
       maxInputPixels: options.maxInputPixels,
       maxAnimationPixels: options.maxAnimationPixels ?? 0,
       animatedInputExtension: spec.animatedInputExtension,
-      ...(options.outputMode !== undefined && { outputMode: options.outputMode }),
+      frameMode: options.frameMode ?? 'first',
     });
     if (inputs !== undefined) {
       return inputs;
@@ -108,9 +115,9 @@ async function planPdfPageRasterConversions(
   spec: RasterFormatSpec,
   options: PlanRasterConversionOptions,
 ): Promise<RasterInput[]> {
-  const outputTemplate = resolveConversionTemplate({
+  const outputTemplate = resolveRasterOutputTemplate({
+    cardinality: 'split',
     target: spec.target,
-    sourcePath,
     configuration: options.configuration,
   });
   return planPdfPageConversionJobs({
@@ -121,21 +128,6 @@ async function planPdfPageRasterConversions(
     allowedExtensions: spec.extensions,
     ...(options.runtime !== undefined && { runtime: options.runtime }),
     toConversion: (page, outputPath) => ({ sourcePath, workspacePath: workspace.uri.fsPath, outputPath, page }),
-  });
-}
-
-function outputTemplateForSource(
-  sourcePath: string,
-  spec: RasterFormatSpec,
-  options: PlanRasterConversionOptions,
-): string {
-  return resolveConversionTemplate({
-    target: spec.target,
-    sourcePath,
-    configuration: options.configuration,
-    ...(options.outputMode === 'split' && spec.splitOutputTemplate !== undefined
-      ? { templateOverride: spec.splitOutputTemplate }
-      : {}),
   });
 }
 
@@ -178,7 +170,7 @@ export async function planRasterSourceConversionJobs(options: RasterSourcePlanOp
 interface AnimationRasterPlanOptions extends RasterSourcePlanOptions {
   maxAnimationPixels: number;
   animatedInputExtension: string;
-  outputMode?: 'auto' | 'preserve' | 'split';
+  frameMode?: 'first' | 'all';
 }
 
 async function planAnimationRasterSourceConversions(
@@ -194,7 +186,7 @@ async function planAnimationRasterSourceConversions(
       ? await readRasterAnimationMetadata(options.sourcePath, options.maxInputPixels)
       : undefined;
 
-  if (animation !== undefined && options.outputMode !== 'split') {
+  if (animation !== undefined && options.frameMode !== 'all') {
     assertAnimationPixelLimit(
       animation.width ?? 0,
       animation.pageHeight,
@@ -228,7 +220,7 @@ async function planAnimationRasterSourceConversions(
     allowedExtensions: options.allowedExtensions,
     maxInputPixels: options.maxInputPixels,
     maxAnimationPixels: options.maxAnimationPixels,
-    frameMode: options.outputMode === 'split' ? 'all' : 'first',
+    frameMode: options.frameMode === 'all' ? 'all' : 'first',
   });
 }
 

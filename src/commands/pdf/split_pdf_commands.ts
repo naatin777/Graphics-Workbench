@@ -34,7 +34,7 @@ import {
 } from '../../presentation/webview/pdfjs_assets.js';
 
 function readSplitPdfTemplate(dependencies: CommandDependencies): string {
-  return dependencies.getConfiguration().outputPath.splitPdf();
+  return dependencies.getConfiguration().outputPath.split.pdf();
 }
 
 export async function splitPdfAllPagesCommand(
@@ -151,7 +151,7 @@ async function runSplitPdfConfigureCommand(
   const outputTemplate = readSplitPdfTemplate(dependencies);
 
   if (!outputTemplate.includes('${page}')) {
-    throw new Error('outputPath.splitPdf must contain ${page} for splitPdf.configure.');
+    throw new Error('outputPath.split.pdf must contain ${page} for splitPdf.configure.');
   }
 
   const outputPathTemplate = createOutputPathPreviewTemplate(outputTemplate, inputUri, workspaceFolder);
@@ -262,7 +262,7 @@ async function applyConfiguredSplit(params: {
 
   validateConfiguredRows(rows, pageCount);
   if (!outputTemplate.includes('${page}')) {
-    throw new Error('outputPath.splitPdf must contain ${page} for splitPdf.configure.');
+    throw new Error('outputPath.split.pdf must contain ${page} for splitPdf.configure.');
   }
 
   const sourcePath = inputUri.fsPath;
