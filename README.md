@@ -227,23 +227,24 @@ Normal raster conversions use the first GIF/TIFF page or frame. Convert to PDF p
 
 Main settings:
 
-| Setting                                                  | Default                                         | Description                                                                                                                       |
-| -------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `graphics-workbench.outputPath.clipboardImage`           | `${fileDirname}/${dateNow}`                     | Default output path shown when pasting a clipboard image. It can be edited during paste, and the extension is added automatically |
-| `graphics-workbench.insertLatex.pdfTemplate`             | `\begin{figure}[H]...`                          | LaTeX template for PDF drop. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices                  |
-| `graphics-workbench.insertLatex.imageTemplate`           | `\begin{figure}[H]...`                          | LaTeX template for image paste. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices               |
-| `graphics-workbench.execPath.drawio`                     | `drawio`                                        | Command or path for Draw.io Desktop                                                                                               |
-| `graphics-workbench.execPath.rsvgConvert`                | `rsvg-convert`                                  | Path to the `rsvg-convert` executable                                                                                             |
-| `graphics-workbench.execPath.chrome`                     | empty string                                    | Chrome executable for mmdc and Chrome SVG-to-PDF; uses the standard OS command/location when empty                                |
-| `graphics-workbench.execPath.mermaid`                    | `mmdc`                                          | Path to the `mmdc` executable from `@mermaid-js/mermaid-cli`                                                                      |
-| `graphics-workbench.convertToPdf.svg.engine`             | `chrome`                                        | SVG to PDF backend. Choose `chrome` or `rsvg-convert`                                                                             |
-| `graphics-workbench.outputPath.convertDrawioToSinglePdf` | `${fileDirname}/${fileBasenameNoExtension}.pdf` | Output path for the one-PDF Draw.io command                                                                                       |
-| `graphics-workbench.convertToWebp.effort`                | `4`                                             | Encoding effort for WebP output                                                                                                   |
-| `graphics-workbench.convertToAvif.effort`                | `4`                                             | Encoding effort for AVIF output                                                                                                   |
+| Setting                                        | Default                                                 | Description                                                                                                                       |
+| ---------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `graphics-workbench.outputPath.clipboardImage` | `${fileDirname}/${dateNow}`                             | Default output path shown when pasting a clipboard image. It can be edited during paste, and the extension is added automatically |
+| `graphics-workbench.insertLatex.pdfTemplate`   | `\begin{figure}[H]...`                                  | LaTeX template for PDF drop. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices                  |
+| `graphics-workbench.insertLatex.imageTemplate` | `\begin{figure}[H]...`                                  | LaTeX template for image paste. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices               |
+| `graphics-workbench.execPath.drawio`           | `drawio`                                                | Command or path for Draw.io Desktop                                                                                               |
+| `graphics-workbench.execPath.rsvgConvert`      | `rsvg-convert`                                          | Path to the `rsvg-convert` executable                                                                                             |
+| `graphics-workbench.execPath.chrome`           | empty string                                            | Chrome executable for mmdc and Chrome SVG-to-PDF; uses the standard OS command/location when empty                                |
+| `graphics-workbench.execPath.mermaid`          | `mmdc`                                                  | Path to the `mmdc` executable from `@mermaid-js/mermaid-cli`                                                                      |
+| `graphics-workbench.convertToPdf.svg.engine`   | `chrome`                                                | SVG to PDF backend. Choose `chrome` or `rsvg-convert`                                                                             |
+| `graphics-workbench.outputPath.single.pdf`     | `${fileDirname}/${fileBasenameNoExtension}.pdf`         | Output path template for a single-file conversion to PDF                                                                          |
+| `graphics-workbench.outputPath.split.pdf`      | `${fileDirname}/${fileBasenameNoExtension}/${page}.pdf` | Output path template for multiple PDF outputs from one input (Split PDF, Draw.io page PDFs). Include `${page}`                    |
+| `graphics-workbench.convertToWebp.effort`      | `4`                                                     | Encoding effort for WebP output                                                                                                   |
+| `graphics-workbench.convertToAvif.effort`      | `4`                                                     | Encoding effort for AVIF output                                                                                                   |
 
 Output paths and LaTeX snippet candidates can also be changed from VS Code settings.
 
-Command IDs use output-format names such as `convertToPdf`, while every conversion output path uses one input/output pair setting such as `outputPath.convertPngToPdf` or `outputPath.convertPdfToPng`. Multi-page templates use `${page}` in that same setting.
+Conversion output paths are chosen by the number of outputs, not the input format. A `single` conversion produces one file from one input and uses `outputPath.single.<format>`; a `split` conversion produces multiple files (PDF pages, animation frames, Draw.io pages) from one input and uses `outputPath.split.<format>` with `${page}`. Combine Images to PDF always asks for the output location.
 
 ## Output Panel
 

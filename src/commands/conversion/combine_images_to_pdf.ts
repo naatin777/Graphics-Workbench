@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
 
-import { logicalSourcePathForOutputTemplate } from '../../shared/source_format.js';
-import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
@@ -19,34 +17,37 @@ export async function combineImagesToPdfCommand(
   const outputChannel = dependencies.outputChannel;
 
   try {
-    if (sourceUris.length === 0) {
-      throw new Error('No files were selected.');
+    if (sourceUris.length < 2) {
+      await vscode.window.showErrorMessage(userMessage('message.combineImagesToPdf.requiresTwo'));
+      return;
     }
 
-    const previewedUris =
-      sourceUris.length > 1
-        ? await previewCombineInputs(sourceUris, () => vscode.window.createQuickPick<CombinePreviewItem>())
-        : sourceUris;
+    const previewedUris = await previewCombineInputs(sourceUris, () =>
+      vscode.window.createQuickPick<CombinePreviewItem>(),
+    );
     if (previewedUris === undefined) {
+      return;
+    }
+
+    if (previewedUris.length < 2) {
+      await vscode.window.showErrorMessage(userMessage('message.combineImagesToPdf.requiresTwo'));
       return;
     }
 
     const workspaceFolder = requireSingleWorkspace(previewedUris);
     const workspacePath = workspaceFolder.uri.fsPath;
     const configuration = dependencies.getConfiguration();
-    const outputTemplate = configuration.outputPath.combineImagesToPdf();
-    const defaultOutputTemplate = '${fileDirname}/${fileBasenameNoExtension}.pdf';
-    const outputPath = await chooseCombineOutputPath(
-      previewedUris,
-      workspaceFolder,
-      outputTemplate,
-      defaultOutputTemplate,
-    );
 
-    if (outputPath === undefined) {
+    const saveUri = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.joinPath(workspaceFolder.uri, 'combined.pdf'),
+      filters: { 'PDF files': ['pdf'] },
+    });
+    if (!saveUri) {
       return;
     }
 
+    assertOutputInsideWorkspace(saveUri, workspaceFolder);
+    const outputPath = saveUri.fsPath;
     await assertWritablePathInWorkspace(outputPath, workspacePath);
 
     const svgToPdfTools = createSvgToPdfBackend(configuration);
@@ -164,46 +165,6 @@ function pathLabel(uri: vscode.Uri): string {
   return uri.fsPath.split(/[\\/]/u).at(-1) ?? uri.fsPath;
 }
 
-async function chooseCombineOutputPath(
-  sourceUris: vscode.Uri[],
-  workspaceFolder: vscode.WorkspaceFolder,
-  configuredTemplate: string,
-  defaultOutputTemplate: string,
-): Promise<string | undefined> {
-  const [sourceUri] = sourceUris;
-  if (sourceUri === undefined) {
-    throw new Error('combineImagesToPdf requires at least one source file.');
-  }
-
-  if (configuredTemplate !== '') {
-    return resolvePdfOutputPath(configuredTemplate, {
-      sourcePath: logicalSourcePathForOutputTemplate(sourceUri.fsPath),
-      workspacePath: workspaceFolder.uri.fsPath,
-      workspaceName: workspaceFolder.name,
-    });
-  }
-
-  if (sourceUris.length === 1) {
-    return resolvePdfOutputPath(defaultOutputTemplate, {
-      sourcePath: logicalSourcePathForOutputTemplate(sourceUri.fsPath),
-      workspacePath: workspaceFolder.uri.fsPath,
-      workspaceName: workspaceFolder.name,
-    });
-  }
-
-  const saveUri = await vscode.window.showSaveDialog({
-    defaultUri: vscode.Uri.joinPath(workspaceFolder.uri, 'combined.pdf'),
-    filters: { 'PDF files': ['pdf'] },
-  });
-
-  if (!saveUri) {
-    return undefined;
-  }
-
-  assertOutputInsideWorkspace(saveUri, workspaceFolder);
-  return saveUri.fsPath;
-}
-
 function requireSingleWorkspace(sourceUris: vscode.Uri[]): vscode.WorkspaceFolder {
   for (const sourceUri of sourceUris) {
     if (sourceUri.scheme !== 'file') {
@@ -213,7 +174,7 @@ function requireSingleWorkspace(sourceUris: vscode.Uri[]): vscode.WorkspaceFolde
 
   const [firstSource] = sourceUris;
   if (firstSource === undefined) {
-    throw new Error('combineImagesToPdf requires at least one source file.');
+    throw new Error('combineImagesToPdf requires at least two source files.');
   }
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(firstSource);
 

@@ -1,15 +1,5 @@
 import assert from 'node:assert/strict';
-import {
-  access,
-  copyFile,
-  mkdir,
-  mkdtemp,
-  mkdtempDisposable,
-  readdir,
-  readFile,
-  rm,
-  writeFile,
-} from 'node:fs/promises';
+import { access, copyFile, mkdtemp, mkdtempDisposable, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -23,7 +13,6 @@ import { userMessage } from '../../src/commands/shared/user_messages.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
-import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
 const VALID_PNG = operationPngInputPath;
 
@@ -55,7 +44,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     assert.ok(commands.includes('graphics-workbench.combineImagesToPdf'));
   });
 
-  test('入力ファイルが開いているworkspace外にある場合は変換を開始せず、workspace外であることを示すエラーメッセージを表示する', async () => {
+  test('単一の入力だけでは変換を開始せず、2件以上必要であることを示すエラーメッセージを表示する', async () => {
     await using outsideDirectory = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-command-'));
 
     const sourcePath = path.join(outsideDirectory.path, 'outside.png');
@@ -64,84 +53,84 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     await vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(sourcePath));
 
     assert.ok(showErrorMessage.calledOnce);
+    assert.match(String(showErrorMessage.firstCall.args[0]), /at least two/);
+  });
+
+  test('2つの入力が開いているworkspace外にある場合は結合を開始せず、workspace外であることを示すエラーメッセージを表示する', async () => {
+    await using outsideDirectory = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-command-'));
+
+    const firstSourcePath = path.join(outsideDirectory.path, 'first.png');
+    const secondSourcePath = path.join(outsideDirectory.path, 'second.png');
+    await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
+
+    await vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(firstSourcePath), [
+      vscode.Uri.file(firstSourcePath),
+      vscode.Uri.file(secondSourcePath),
+    ]);
+
+    assert.ok(showErrorMessage.calledOnce);
     assert.match(String(showErrorMessage.firstCall.args[0]), /inside an open workspace/);
   });
 
-  test('untitledなどfileスキーム以外の入力uriは変換を開始せず、"Only local files"を含むエラーメッセージを表示する', async () => {
+  test('untitledなどfileスキーム以外の2つの入力uriは結合を開始せず、"Only local files"を含むエラーメッセージを表示する', async () => {
     await vscode.commands.executeCommand(
       'graphics-workbench.combineImagesToPdf',
       vscode.Uri.parse('untitled:test.png'),
+      [vscode.Uri.parse('untitled:test.png'), vscode.Uri.parse('untitled:test2.png')],
     );
 
     assert.ok(showErrorMessage.calledOnce);
     assert.match(String(showErrorMessage.firstCall.args[0]), /Only local files/);
   });
 
-  test('単一のPNG入力で出力テンプレートが設定済みの場合、Saveダイアログを開かずにテンプレートを展開したパスへPDFを生成し、エラー通知も表示しない', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'nested', 'source.png');
-      const outputPath = path.join(temporaryDirectory, 'nested', 'custom-source.pdf');
-      await mkdir(path.dirname(sourcePath));
-      await copyFile(VALID_PNG, sourcePath);
-      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
-
-      await withWorkspaceSettings(
-        {
-          'graphics-workbench.outputPath.combineImagesToPdf':
-            '${relativeFileDirname}/custom-${fileBasenameNoExtension}.pdf',
-        },
-        async () => {
-          await runCommandAndClearNotificationsUntilDone(
-            vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(sourcePath)),
-          );
-        },
-      );
-
-      assert.strictEqual(showErrorMessage.called, false, String(showErrorMessage.firstCall?.args[0]));
-      await access(outputPath);
-      assert.strictEqual(showSaveDialog.called, false);
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
-    } finally {
-      await rm(temporaryDirectory, { recursive: true, force: true });
-    }
-  });
-
-  test('複数のPNG入力で出力テンプレートが設定済みの場合、Saveダイアログを開かずにテンプレートを展開したパスへ結合PDFを生成する', async () => {
+  test('2枚のPNG入力で結合順を確認した後、Saveダイアログで選択したパスへ結合PDFを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
       const firstSourcePath = path.join(temporaryDirectory, 'first.png');
       const secondSourcePath = path.join(temporaryDirectory, 'second.png');
-      const outputPath = path.join(temporaryDirectory, 'combined-first.pdf');
+      const outputPath = path.join(temporaryDirectory, 'selected.pdf');
       await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
-      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
+      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
 
-      await withWorkspaceSettings(
-        {
-          'graphics-workbench.outputPath.combineImagesToPdf': '${fileDirname}/combined-${fileBasenameNoExtension}.pdf',
-        },
-        async () => {
-          await runCommandAndClearNotificationsUntilDone(
-            vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(firstSourcePath), [
-              vscode.Uri.file(firstSourcePath),
-              vscode.Uri.file(secondSourcePath),
-            ]),
-          );
-        },
+      await runCommandAndClearNotificationsUntilDone(
+        vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(firstSourcePath), [
+          vscode.Uri.file(firstSourcePath),
+          vscode.Uri.file(secondSourcePath),
+        ]),
       );
 
       assert.strictEqual(showErrorMessage.called, false, String(showErrorMessage.firstCall?.args[0]));
+      assert.strictEqual(showSaveDialog.calledOnce, true);
       await access(outputPath);
-      assert.strictEqual(showSaveDialog.called, false);
       await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
     } finally {
       await rm(temporaryDirectory, { recursive: true, force: true });
     }
   });
 
-  test('2枚のPNG入力の変換中にVS Code進捗通知へ「準備中」と「1/2、2/2完了」のメッセージを報告し、結合PDFを生成する', async () => {
+  test('Saveダイアログをキャンセルした場合、結合PDFを作成しない', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const firstSourcePath = path.join(temporaryDirectory, 'first.png');
+      const secondSourcePath = path.join(temporaryDirectory, 'second.png');
+      const outputPath = path.join(temporaryDirectory, 'cancelled.pdf');
+      await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
+      sandbox.stub(vscode.window, 'showSaveDialog').resolves(undefined);
+
+      await vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(firstSourcePath), [
+        vscode.Uri.file(firstSourcePath),
+        vscode.Uri.file(secondSourcePath),
+      ]);
+
+      await assertFileDoesNotExist(outputPath);
+    } finally {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
+
+  test('2枚のPNG入力の結合中にVS Code進捗通知へ「準備中」と「1/2、2/2完了」のメッセージを報告し、結合PDFを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -149,6 +138,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
       const secondSourcePath = path.join(temporaryDirectory, 'second.png');
       const outputPath = path.join(temporaryDirectory, 'combined-progress.pdf');
       await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
+      sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
 
       const progressMessages: string[] = [];
       sandbox.stub(vscode.window, 'withProgress').callsFake(async (_options, task) =>
@@ -167,16 +157,10 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
         ),
       );
 
-      await withWorkspaceSettings(
-        { 'graphics-workbench.outputPath.combineImagesToPdf': '${fileDirname}/combined-progress.pdf' },
-        async () => {
-          await vscode.commands.executeCommand(
-            'graphics-workbench.combineImagesToPdf',
-            vscode.Uri.file(firstSourcePath),
-            [vscode.Uri.file(firstSourcePath), vscode.Uri.file(secondSourcePath)],
-          );
-        },
-      );
+      await vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(firstSourcePath), [
+        vscode.Uri.file(firstSourcePath),
+        vscode.Uri.file(secondSourcePath),
+      ]);
 
       assert.strictEqual(showErrorMessage.called, false, String(showErrorMessage.firstCall?.args[0]));
       assert.deepStrictEqual(progressMessages, [
@@ -184,34 +168,6 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
         userMessage('message.progress.completedCount', 1, 2),
         userMessage('message.progress.completedCount', 2, 2),
       ]);
-      await access(outputPath);
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
-    } finally {
-      await rm(temporaryDirectory, { recursive: true, force: true });
-    }
-  });
-
-  test('出力テンプレートが未設定の複数PNG入力の場合、Saveダイアログを1回表示して選択されたパスへ結合PDFを生成する', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const firstSourcePath = path.join(temporaryDirectory, 'first.png');
-      const secondSourcePath = path.join(temporaryDirectory, 'second.png');
-      const outputPath = path.join(temporaryDirectory, 'selected.pdf');
-      await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
-      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
-
-      await withWorkspaceSettings({ 'graphics-workbench.outputPath.combineImagesToPdf': undefined }, async () => {
-        await runCommandAndClearNotificationsUntilDone(
-          vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(firstSourcePath), [
-            vscode.Uri.file(firstSourcePath),
-            vscode.Uri.file(secondSourcePath),
-          ]),
-        );
-      });
-
-      assert.strictEqual(showErrorMessage.called, false, String(showErrorMessage.firstCall?.args[0]));
-      assert.strictEqual(showSaveDialog.calledOnce, true);
       await access(outputPath);
       await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
     } finally {
@@ -233,7 +189,7 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     assert.deepStrictEqual(await previewCombineInputs(sourceUris, () => quickPick), [sourceUris[1]]);
   });
 
-  test('プレビューをキャンセルした場合、Saveダイアログを開かず出力PDFも作成しない', async () => {
+  test('プレビューで全入力を除外した場合、Saveダイアログを開かず出力PDFも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -257,25 +213,30 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     }
   });
 
-  test('既存の出力PDFを上書きする変換を実行すると、変換結果をworkspace内の一時作業ディレクトリ（.graphics-workbench配下）に保存し、上書き前の旧PDFをバックアップとして保持する。Undo実行で出力PDFを旧内容へ復元し、その一時作業ディレクトリを削除する', async () => {
+  test('既存の出力PDFを上書きする結合を実行すると、変換結果をworkspace内の一時作業ディレクトリ（.graphics-workbench配下）に保存し、上書き前の旧PDFをバックアップとして保持する。Undo実行で出力PDFを旧内容へ復元し、その一時作業ディレクトリを削除する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.png');
-      const outputPath = path.join(temporaryDirectory, 'source.pdf');
+      const firstSourcePath = path.join(temporaryDirectory, 'first.png');
+      const secondSourcePath = path.join(temporaryDirectory, 'second.png');
+      const outputPath = path.join(temporaryDirectory, 'combined.pdf');
       const originalOutput = Buffer.from('original output');
       const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       assert.ok(workspacePath);
       const stagingRoot = path.join(workspacePath, '.graphics-workbench', 'combine-images');
       const existingRunDirectories = new Set(await readDirectoryNames(stagingRoot));
-      await copyFile(VALID_PNG, sourcePath);
+      await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
       await writeFile(outputPath, originalOutput);
       sandbox.stub(vscode.window, 'showWarningMessage').resolves({
         title: userMessage('message.safeMode.overwrite'),
       });
+      sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
 
       await runCommandAndClearNotificationsUntilDone(
-        vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(sourcePath)),
+        vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(firstSourcePath), [
+          vscode.Uri.file(firstSourcePath),
+          vscode.Uri.file(secondSourcePath),
+        ]),
       );
 
       assert.strictEqual(showErrorMessage.called, false, String(showErrorMessage.firstCall?.args[0]));
@@ -300,9 +261,11 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
-      const sourcePath = path.join(temporaryDirectory, 'source.png');
-      const outputPath = path.join(temporaryDirectory, 'source.pdf');
-      await copyFile(VALID_PNG, sourcePath);
+      const firstSourcePath = path.join(temporaryDirectory, 'first.png');
+      const secondSourcePath = path.join(temporaryDirectory, 'second.png');
+      const outputPath = path.join(temporaryDirectory, 'combined.pdf');
+      await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
+      sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
       const cancelledToken = {
         isCancellationRequested: true,
         onCancellationRequested: () => ({ dispose: () => undefined }),
@@ -311,7 +274,10 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
         .stub(vscode.window, 'withProgress')
         .callsFake(async (_options, task) => task({ report: () => undefined }, cancelledToken));
 
-      await vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand('graphics-workbench.combineImagesToPdf', vscode.Uri.file(firstSourcePath), [
+        vscode.Uri.file(firstSourcePath),
+        vscode.Uri.file(secondSourcePath),
+      ]);
 
       await assertFileDoesNotExist(outputPath);
       assert.ok(showInformationMessage.calledWith(userMessage('message.convertToOutput.cancelled', 'PDF')));

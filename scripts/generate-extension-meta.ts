@@ -13,6 +13,7 @@ type JsonSchema = {
   additionalProperties?: boolean;
   minimum?: number;
   maximum?: number;
+  minLength?: number;
 };
 type ManifestCommand = { command: string; title?: string; category?: string };
 type ManifestMenu = { command?: string; submenu?: string; group?: string; when?: string };
@@ -111,89 +112,6 @@ function pascalCase(value: string): string {
     .split('.')
     .map((part) => (part.length === 0 ? '' : `${part[0].toUpperCase()}${part.slice(1)}`))
     .join('');
-}
-
-const formatNames: Record<string, string> = {
-  Png: 'png',
-  Jpeg: 'jpeg',
-  Webp: 'webp',
-  Avif: 'avif',
-  Gif: 'gif',
-  Tiff: 'tiff',
-  Svg: 'svg',
-  Pdf: 'pdf',
-  Mermaid: 'mermaid',
-  Drawio: 'drawio',
-  Excalidraw: 'excalidraw',
-  Eps: 'eps',
-};
-
-type ConversionPair = {
-  source: string | null;
-  target: string;
-  setting: string;
-  defaultValue: string;
-};
-
-function sortConversionPairs(pairs: ConversionPair[]): void {
-  pairs.sort((first, second) =>
-    `${first.target}.${first.source ?? 'any'}.${first.setting}`.localeCompare(
-      `${second.target}.${second.source ?? 'any'}.${second.setting}`,
-    ),
-  );
-}
-
-function conversionPairFromKey(key: string, schema: JsonSchema): ConversionPair | undefined {
-  const match = /^convert([A-Za-z]+)To([A-Za-z]+)$/u.exec(key);
-  if (match === null) {
-    return undefined;
-  }
-  const [, sourceName, targetName] = match;
-  if (sourceName === undefined || targetName === undefined) {
-    return undefined;
-  }
-  const target = formatNames[targetName];
-  if (target === undefined) {
-    return undefined;
-  }
-  if (typeof schema.default !== 'string') {
-    throw new Error(`Conversion output path ${key} must have a string default`);
-  }
-  return { source: formatNames[sourceName] ?? null, target, setting: key, defaultValue: schema.default };
-}
-
-function renderConversionPairs(packageJson: PackageManifest): string {
-  const { properties } = packageJson.contributes.configuration;
-  const pairs: ConversionPair[] = [];
-  const extensionPrefix = `${packageJson.name}.`;
-
-  for (const [fullKey, schema] of Object.entries(properties)) {
-    const key = fullKey.slice(extensionPrefix.length);
-    if (!key.startsWith('outputPath.')) {
-      continue;
-    }
-    const pair = conversionPairFromKey(key.slice('outputPath.'.length), schema);
-    if (pair !== undefined) {
-      pairs.push(pair);
-    }
-  }
-
-  sortConversionPairs(pairs);
-
-  const rendered = pairs
-    .map((pair) => {
-      const source = pair.source === null ? 'null' : quote(pair.source);
-      return [
-        '  {',
-        `    source: ${source},`,
-        `    target: ${quote(pair.target)},`,
-        `    setting: ${quote(pair.setting)},`,
-        `    defaultValue: ${quote(pair.defaultValue)},`,
-        '  },',
-      ].join('\n');
-    })
-    .join('\n');
-  return `export const conversionPairs = [\n${rendered}\n] as const;\n`;
 }
 
 function schemaType(schema: JsonSchema, typeName: string): string {
@@ -313,6 +231,9 @@ function renderConfigurationSchema(schema: JsonSchema, indentation: string): str
   }
   if (schema.maximum !== undefined) {
     lines.push(`${childIndentation}maximum: ${literal(schema.maximum)},`);
+  }
+  if (schema.minLength !== undefined) {
+    lines.push(`${childIndentation}minLength: ${literal(schema.minLength)},`);
   }
   if (schema.items !== undefined) {
     lines.push(`${childIndentation}items: ${renderConfigurationSchema(schema.items, childIndentation)},`);
@@ -581,16 +502,16 @@ export function generate(packageJson: PackageManifest): string {
     `export type ConfigurationReader = {\n  get(key: string): unknown;\n};\n\n` +
     `type ConfigurationGetter<Value> = () => Value;\n\n` +
     `type ConfigurationSchemaType = 'array' | 'boolean' | 'integer' | 'number' | 'object' | 'string';\n\n` +
-    `type ConfigurationSchema = {\n  types: readonly ConfigurationSchemaType[];\n  enumValues?: readonly (string | number | boolean | null)[];\n  minimum?: number;\n  maximum?: number;\n  items?: ConfigurationSchema;\n  properties?: Readonly<Record<string, ConfigurationSchema>>;\n  additionalProperties?: boolean;\n};\n\n` +
+    `type ConfigurationSchema = {\n  types: readonly ConfigurationSchemaType[];\n  enumValues?: readonly (string | number | boolean | null)[];\n  minimum?: number;\n  maximum?: number;\n  minLength?: number;\n  items?: ConfigurationSchema;\n  properties?: Readonly<Record<string, ConfigurationSchema>>;\n  additionalProperties?: boolean;\n};\n\n` +
     `function isConfigurationObject(value: unknown): value is Record<string, unknown> {\n  return typeof value === 'object' && value !== null && !Array.isArray(value);\n}\n\n` +
     `function isNumberWithinBounds(value: number, schema: ConfigurationSchema): boolean {\n  return (\n    (schema.minimum === undefined || value >= schema.minimum) &&\n    (schema.maximum === undefined || value <= schema.maximum)\n  );\n}\n\n` +
     `function matchesConfigurationObject(value: unknown, schema: ConfigurationSchema): boolean {\n  if (!isConfigurationObject(value)) {\n    return false;\n  }\n\n  for (const [key, propertyValue] of Object.entries(value)) {\n    const propertySchema = schema.properties?.[key];\n    if (propertySchema === undefined) {\n      if (schema.additionalProperties === false) {\n        return false;\n      }\n      continue;\n    }\n    if (!matchesConfigurationSchema(propertyValue, propertySchema)) {\n      return false;\n    }\n  }\n\n  return true;\n}\n\n` +
-    `function matchesConfigurationType(value: unknown, type: ConfigurationSchemaType, schema: ConfigurationSchema): boolean {\n  switch (type) {\n    case 'array': {\n      if (!Array.isArray(value)) {\n        return false;\n      }\n      const { items } = schema;\n      return items === undefined || value.every((item) => matchesConfigurationSchema(item, items));\n    }\n    case 'boolean': {\n      return typeof value === 'boolean';\n    }\n    case 'integer': {\n      return typeof value === 'number' && Number.isInteger(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'number': {\n      return typeof value === 'number' && Number.isFinite(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'object': {\n      return matchesConfigurationObject(value, schema);\n    }\n    case 'string': {\n      return typeof value === 'string';\n    }\n    default: {\n      return false;\n    }\n  }\n}\n\n` +
+    `function matchesConfigurationType(value: unknown, type: ConfigurationSchemaType, schema: ConfigurationSchema): boolean {\n  switch (type) {\n    case 'array': {\n      if (!Array.isArray(value)) {\n        return false;\n      }\n      const { items } = schema;\n      return items === undefined || value.every((item) => matchesConfigurationSchema(item, items));\n    }\n    case 'boolean': {\n      return typeof value === 'boolean';\n    }\n    case 'integer': {\n      return typeof value === 'number' && Number.isInteger(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'number': {\n      return typeof value === 'number' && Number.isFinite(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'object': {\n      return matchesConfigurationObject(value, schema);\n    }\n    case 'string': {\n      return typeof value === 'string' && (schema.minLength === undefined || value.length >= schema.minLength);\n    }\n    default: {\n      return false;\n    }\n  }\n}\n\n` +
     `function matchesConfigurationSchema(value: unknown, schema: ConfigurationSchema): boolean {\n  if (!schema.types.some((type) => matchesConfigurationType(value, type, schema))) {\n    return false;\n  }\n  return schema.enumValues === undefined || schema.enumValues.some((candidate) => candidate === value);\n}\n\n` +
     renderConfigurationSchemas(configurationEntries, extensionPrefix) +
     `function assertConfigurationValue<Value>(key: ConfigurationKey, value: unknown, defaultValue: Value): Value {\n  if (matchesConfigurationSchema(value, configurationSchemas[key])) {\n    return value as Value;\n  }\n  // 不正な設定値で拡張の起動を止めず、デフォルトへフォールバックする。\n  // 1つのstale設定が全コマンドを無効化するのを防ぐ。\n  console.warn(\n    \`graphics-workbench.\${key}: invalid value \${JSON.stringify(value)}, using default \${JSON.stringify(defaultValue)}\`,\n  );\n  return defaultValue;\n}\n\n` +
     `function defineConfiguration<Value>(\n  configurationReader: ConfigurationReader,\n  key: ConfigurationKey,\n  defaultValue: Value,\n): ConfigurationGetter<Value> {\n` +
-    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    // outputPath template settings treat a blank value as "use the manifest default".\n    if (key.startsWith('outputPath.') && typeof value === 'string' && value.trim() === '') {\n      return defaultValue;\n    }\n    return assertConfigurationValue(key, value, defaultValue);\n  };\n` +
+    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    return assertConfigurationValue(key, value, defaultValue);\n  };\n` +
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     renderCommandContributions(packageJson) +
@@ -600,8 +521,6 @@ export function generate(packageJson: PackageManifest): string {
     renderCustomEditorContributions(packageJson) +
     '\n' +
     renderExternalToolTimeoutKeys(packageJson, extensionPrefix) +
-    '\n' +
-    renderConversionPairs(packageJson) +
     '\n' +
     `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +
     `function createConfigurationInternal(configurationReader: ConfigurationReader) {\n` +

@@ -63,7 +63,7 @@ suite('WebPに変換コマンド', () => {
     assert.ok(commands.includes('graphics-workbench.convertToWebp'));
   });
 
-  test('PNG、JPEG、AVIF、2ページPDFを1回のコマンド実行でまとめてWebPへ変換し、画像は拡張子置換の.webp、PDFはページごとの-1.webp/-2.webpを生成する', async () => {
+  test('PNG、JPEG、AVIF、2ページPDFを1回のコマンド実行でまとめてWebPへ変換し、画像は拡張子置換の.webp、PDFはページごとの1.webp/2.webpをサブディレクトリに生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -89,8 +89,8 @@ suite('WebPに変換コマンド', () => {
       await Promise.all(
         [pngPath, jpegPath, avifPath].map((sourcePath) => assertReadableWebp(replaceExtension(sourcePath, '.webp'))),
       );
-      await assertReadableWebp(path.join(temporaryDirectory, 'source-document-1.webp'));
-      await assertReadableWebp(path.join(temporaryDirectory, 'source-document-2.webp'));
+      await assertReadableWebp(path.join(temporaryDirectory, 'source-document', '1.webp'));
+      await assertReadableWebp(path.join(temporaryDirectory, 'source-document', '2.webp'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -157,8 +157,8 @@ suite('WebPに変換コマンド', () => {
       );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const firstFramePath = path.join(temporaryDirectory, 'rotating-vector-field-01.webp');
-      const secondFramePath = path.join(temporaryDirectory, 'rotating-vector-field-02.webp');
+      const firstFramePath = path.join(temporaryDirectory, 'rotating-vector-field', '01.webp');
+      const secondFramePath = path.join(temporaryDirectory, 'rotating-vector-field', '02.webp');
       await assertReadableWebp(firstFramePath);
       await assertReadableWebp(secondFramePath);
     } finally {
@@ -172,7 +172,7 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('WebP入力を変換せず、ページ分割されたsource-1.webpも作成しない', async () => {
+  test('WebP入力を変換せず、ページ分割されたsource/1.webpも作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -181,13 +181,13 @@ suite('WebPに変換コマンド', () => {
 
       await vscode.commands.executeCommand('graphics-workbench.convertToWebp', vscode.Uri.file(sourcePath));
 
-      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source-1.webp'));
+      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source', '1.webp'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
   });
 
-  test('outputPath.convertPngToWebpが設定済みの場合、テンプレートを展開したcustom-source.webpを出力し、既定のsource.webpは作成しない', async () => {
+  test('outputPath.single.webpが設定済みの場合、テンプレートを展開したcustom-source.webpを出力し、既定のsource.webpは作成しない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -197,7 +197,7 @@ suite('WebPに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPngToWebp': '${fileDirname}/custom-${fileBasenameNoExtension}.webp',
+          'graphics-workbench.outputPath.single.webp': '${fileDirname}/custom-${fileBasenameNoExtension}.webp',
         },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.convertToWebp', vscode.Uri.file(sourcePath));
@@ -211,7 +211,7 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPngToWebpが空文字の場合は既定のsource.webpへ出力する', async () => {
+  test('outputPath.single.webpが空文字の場合は既定のsource.webpへ出力する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -220,7 +220,7 @@ suite('WebPに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPngToWebp': '',
+          'graphics-workbench.outputPath.single.webp': '',
         },
         async () => {
           await vscode.commands.executeCommand('graphics-workbench.convertToWebp', vscode.Uri.file(sourcePath));

@@ -375,7 +375,7 @@ function validatePagePdfInputs(inputs: DrawioPdfInput[]): void {
 
   for (const input of inputs) {
     if (!input.outputTemplate.includes('${page}')) {
-      throw new Error('outputPath.convertDrawioToPagePdfs must contain ${page} for split Draw.io input.');
+      throw new Error('outputPath.split.pdf must contain ${page} for split Draw.io input.');
     }
   }
 }

@@ -2,11 +2,7 @@ import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 
-import {
-  isEditableDrawioImagePath,
-  isRasterImagePath,
-  logicalSourcePathForOutputTemplate,
-} from '../../shared/source_format.js';
+import { isRasterImagePath, logicalSourcePathForOutputTemplate } from '../../shared/source_format.js';
 import { createMermaidBackend, resolveChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
 import { resolvePdfOutputPath } from '../../config/output/resolve_output_path.js';
 import {
@@ -25,7 +21,6 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
 import { isAbortError } from '../../shared/error.js';
-import { resolveConversionTemplate } from './conversion_routing.js';
 
 const pdfImageExtensions = [
   '.png',
@@ -71,7 +66,7 @@ async function convertSelectedSourcesToPdf(
       plannedInputs.push(
         ...(await planToPdfInputs(
           sourceUri,
-          outputTemplateForSource(sourceUri, configuration),
+          outputTemplateForSource(configuration),
           logicalSourcePathForOutputTemplate(sourceUri.fsPath),
           pdfImageExtensions,
         )),
@@ -115,14 +110,8 @@ async function convertSelectedSourcesToPdf(
   }
 }
 
-export function outputTemplateForSource(sourceUri: vscode.Uri, configuration: Configuration): string {
-  const sourcePath = sourceUri.fsPath;
-
-  if (isEditableDrawioImagePath(sourcePath)) {
-    return configuration.outputPath.convertDrawioToSinglePdf();
-  }
-
-  return resolveConversionTemplate({ target: 'pdf', sourcePath, configuration });
+export function outputTemplateForSource(configuration: Configuration): string {
+  return configuration.outputPath.single.pdf();
 }
 
 export function createSvgToPdfBackend(configuration: Configuration): SvgToPdfBackend {

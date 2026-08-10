@@ -49,7 +49,7 @@ suite('SVGに変換コマンド', () => {
     assert.ok(commands.includes('graphics-workbench.convertToSvg'));
   });
 
-  test('2ページPDFをページごとのSVGへ変換し、source-document-1.svgとsource-document-2.svgを生成する', async () => {
+  test('2ページPDFをページごとのSVGへ変換し、source-document/1.svgとsource-document/2.svgを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -62,8 +62,8 @@ suite('SVGに変換コマンド', () => {
       );
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      await assertGeneratedSvg(path.join(temporaryDirectory, 'source-document-1.svg'));
-      await assertGeneratedSvg(path.join(temporaryDirectory, 'source-document-2.svg'));
+      await assertGeneratedSvg(path.join(temporaryDirectory, 'source-document', '1.svg'));
+      await assertGeneratedSvg(path.join(temporaryDirectory, 'source-document', '2.svg'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -99,7 +99,7 @@ suite('SVGに変換コマンド', () => {
     }
   });
 
-  test('outputPath.convertPdfToSvgが設定済みの場合、2ページPDFを${page}ごとに展開したto-svg-source-1.svgとto-svg-source-2.svgを生成する', async () => {
+  test('outputPath.split.svgが設定済みの場合、2ページPDFを${page}ごとに展開したto-svg-source-1.svgとto-svg-source-2.svgを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -110,8 +110,7 @@ suite('SVGに変換コマンド', () => {
 
       await withWorkspaceSettings(
         {
-          'graphics-workbench.outputPath.convertPdfToSvg':
-            '${fileDirname}/to-svg-${fileBasenameNoExtension}-${page}.svg',
+          'graphics-workbench.outputPath.split.svg': '${fileDirname}/to-svg-${fileBasenameNoExtension}-${page}.svg',
         },
         async () => {
           const commandExecution = vscode.commands.executeCommand(

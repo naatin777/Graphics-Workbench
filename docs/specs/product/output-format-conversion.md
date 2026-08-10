@@ -46,7 +46,15 @@ GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変�
 
 ## 設定と入力名
 
-変換ごとに`outputPath.convertXToY`を1つだけ正本とする。複数ページ・複数frameの出力も同じ設定で`${page}`を使う。`outputPaths` objectや別名の設定は読まない。
+変換の出力先は「何から変換したか」ではなく「何を何個出力するか」で決める。`single`（1入力→1出力）は`outputPath.single.<形式>`、`split`（1入力→複数出力）は`outputPath.split.<形式>`を正本とする。
+
+- `single.pdf`、`single.png`、`single.jpeg`、`single.webp`、`single.avif`、`single.gif`、`single.tiff`、`single.svg`
+- `split.pdf`、`split.png`、`split.jpeg`、`split.webp`、`split.avif`、`split.gif`、`split.tiff`、`split.svg`
+- Draw.ioのcompose（N入力→1出力）は`single.drawio`／`single.drawioPng`／`single.drawioSvg`を使う。
+- 画像のPDF結合（N入力→1出力）は出力path設定を持たず、Save Asダイアログで出力先を選択する。
+- PDF編集operation固有の設定（`cropPdf`、`rotatePdf`、`reorderPdf`、`compressPdf`、`encryptPdf`、`decryptPdf`）は維持する。
+
+`split`のテンプレートは`${page}`を必須とし、PDFページ・アニメーションフレーム・Draw.ioページを同じ`split.<形式>`で扱う。`outputPath.convertXToY`のような入力・出力ペア設定は存在しない。
 
 テンプレート変数は利用者が選択した論理入力を基準に展開する。editable Draw.io画像はDraw.io入力として扱い、`.drawio`などの接尾辞を除いた論理入力名を使用する。
 
@@ -65,7 +73,7 @@ SVGからPDFへの`chrome` backendは、同じChrome実行ファイルを`--head
 - `graphics-workbench.convertDrawioToPagePdfs`: Draw.ioの各ページをページ名ごとの単一ページPDFへ分割する。
 - `graphics-workbench.convertDrawioToSinglePdf`: Draw.ioの全ページを1つのPDFへ出力する。
 
-分割commandは`outputPath.convertDrawioToPagePdfs`の`${page}`へDraw.ioのページ名を設定する。Windowsで使用できない文字や端の空白は出力ファイル名用に正規化する。単一PDF commandは`outputPath.convertDrawioToSinglePdf`を使う。いずれもDraw.io Desktop CLIを使い、出力は通常のstaging、Safe Mode、Undo、cancellationの対象とする。
+分割commandは`outputPath.split.pdf`の`${page}`へDraw.ioのページ名を設定する。Windowsで使用できない文字や端の空白は出力ファイル名用に正規化する。単一PDF commandは`outputPath.single.pdf`を使う。いずれもDraw.io Desktop CLIを使い、出力は通常のstaging、Safe Mode、Undo、cancellationの対象とする。
 
 ## 移行
 

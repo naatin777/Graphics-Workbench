@@ -24,7 +24,7 @@ export async function convertDrawioToPagePdfsCommand(
 ): Promise<void> {
   await runDrawioToPdfLifecycle(sourceUris, dependencies, {
     operationName: 'convert-drawio-to-pdf',
-    readTemplate: (configuration) => configuration.outputPath.convertDrawioToPagePdfs(),
+    readTemplate: (configuration) => configuration.outputPath.split.pdf(),
     validateTemplate: (template) => {
       assertPageTemplateForSplitOutput(template, 2);
     },
@@ -45,7 +45,7 @@ export async function convertDrawioToSinglePdfCommand(
 ): Promise<void> {
   await runDrawioToPdfLifecycle(sourceUris, dependencies, {
     operationName: 'convert-drawio-to-single-pdf',
-    readTemplate: (configuration) => configuration.outputPath.convertDrawioToSinglePdf(),
+    readTemplate: (configuration) => configuration.outputPath.single.pdf(),
     messageKeys: {
       progressTitle: 'message.progress.convertDrawioToSinglePdf.title',
       success: 'message.convertDrawioToSinglePdf.success',

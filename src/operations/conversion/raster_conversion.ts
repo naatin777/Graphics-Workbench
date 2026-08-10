@@ -41,7 +41,6 @@ export interface RasterFormatSpec {
   outputLabel: 'PNG' | 'JPEG' | 'AVIF' | 'TIFF' | 'WebP' | 'GIF';
   label: string;
   extensions: readonly string[];
-  splitOutputTemplate?: string;
   animatedInputExtension?: string;
 }
 
@@ -80,7 +79,6 @@ export const rasterFormatSpecs = {
     outputLabel: 'WebP',
     extensions: ['.webp'],
     label: 'WebP',
-    splitOutputTemplate: '${fileDirname}/${fileBasenameNoExtension}-${page}.webp',
     animatedInputExtension: '.gif',
   },
   gif: {
@@ -89,7 +87,6 @@ export const rasterFormatSpecs = {
     outputLabel: 'GIF',
     extensions: ['.gif'],
     label: 'GIF',
-    splitOutputTemplate: '${fileDirname}/${fileBasenameNoExtension}-${page}.gif',
     animatedInputExtension: '.webp',
   },
 } as const satisfies Record<RasterConversionTarget, RasterFormatSpec>;

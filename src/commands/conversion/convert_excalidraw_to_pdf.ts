@@ -25,7 +25,7 @@ export async function convertExcalidrawToPdfCommand(
     }
 
     const configuration = dependencies.getConfiguration();
-    const outputTemplate = configuration.outputPath.convertExcalidrawToPdf();
+    const outputTemplate = configuration.outputPath.single.pdf();
     const svgToPdfTools = createSvgToPdfBackend(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
     const inputs = sourceUris.map((sourceUri) => planExcalidrawPdfInput(sourceUri, outputTemplate));

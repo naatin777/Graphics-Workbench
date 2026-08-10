@@ -216,7 +216,7 @@ test('package済みVSIXからMuPDFでPDFをJPEGへ変換できる', async ({ pla
         try {
           const metadata = await Promise.all(
             Array.from({ length: expectedPageCount }, (_, index) =>
-              sharp(join(env!.directories.workspacePath, `${basename}-${index + 1}.jpeg`)).metadata(),
+              sharp(join(env!.directories.workspacePath, basename, `${index + 1}.jpeg`)).metadata(),
             ),
           );
           return metadata.every((page) => page.format === 'jpeg' && (page.width ?? 0) > 0 && (page.height ?? 0) > 0);
@@ -226,7 +226,7 @@ test('package済みVSIXからMuPDFでPDFをJPEGへ変換できる', async ({ pla
       })
       .toBe(true);
     for (let page = 1; page <= expectedPageCount; page += 1) {
-      const outputPath = join(env.directories.workspacePath, `${basename}-${page}.jpeg`);
+      const outputPath = join(env.directories.workspacePath, basename, `${page}.jpeg`);
       const metadata = await sharp(outputPath).metadata();
       expect(metadata.format).toBe('jpeg');
       expect(metadata.width).toBeGreaterThan(0);

@@ -1,36 +1,14 @@
-import { conversionPairs, type Configuration } from '../../generated/extension_manifest.js';
-import { type SourceFormat, sourceFormatForPath } from '../../shared/source_format.js';
+import type { Configuration } from '../../generated/extension_manifest.js';
+import type { RasterConversionTarget } from '../../operations/conversion/raster_conversion.js';
 
-type ConversionTarget = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff' | 'svg' | 'pdf';
+export type OutputCardinality = 'single' | 'split';
 
-export interface ResolveConversionTemplateOptions {
-  target: ConversionTarget;
-  sourcePath: string;
+/** Resolves the raster output template from the single/split outputPath settings. */
+export function resolveRasterOutputTemplate(options: {
+  cardinality: OutputCardinality;
+  target: RasterConversionTarget;
   configuration: Configuration;
-  templateOverride?: string;
-}
-
-/** Resolves the output template for a input pair derived from package.json. */
-export function resolveConversionTemplate(options: ResolveConversionTemplateOptions): string {
-  const { target, sourcePath, configuration, templateOverride } = options;
-  if (templateOverride !== undefined) {
-    return templateOverride;
-  }
-
-  const source = conversionSource(sourceFormatForPath(sourcePath));
-  const pair = conversionPairs.find((candidate) => candidate.target === target && candidate.source === source);
-
-  if (pair !== undefined) {
-    return configuration.outputPath[pair.setting]();
-  }
-
-  throw new Error(`Unsupported ${target} input format: ${sourcePath}`);
-}
-
-function conversionSource(format: SourceFormat | undefined): string | undefined {
-  if (format === 'editable-drawio-png' || format === 'editable-drawio-svg') {
-    return 'drawio';
-  }
-
-  return format;
+}): string {
+  const { cardinality, target, configuration } = options;
+  return cardinality === 'split' ? configuration.outputPath.split[target]() : configuration.outputPath.single[target]();
 }

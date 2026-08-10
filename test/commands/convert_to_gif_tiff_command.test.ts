@@ -30,7 +30,7 @@ async function assertAnimatedInputIsSplit(
   );
   const workspaceConfiguration = vscode.workspace.getConfiguration('graphics-workbench');
   const sandbox = createSandbox();
-  const key = outputFormat === 'gif' ? 'convertTiffToGif' : 'convertGifToTiff';
+  const key = outputFormat === 'gif' ? 'single.gif' : 'single.tiff';
   const template = `\${fileDirname}/\${fileBasenameNoExtension}.${outputFormat}`;
 
   try {
