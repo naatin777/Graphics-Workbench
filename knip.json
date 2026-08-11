@@ -1,33 +1,50 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "entry": [
-    "test/**/*.test.ts",
-    "test/**/*.spec.ts",
-    "webview/apps/*/src/main.tsx",
-    "webview/apps/*/src/app.test.tsx",
-    "webview/apps/*/vite.config.ts",
-    "webview/apps/*/vitest.config.ts",
-    "webview/excalidraw/entry.ts",
-    "scripts/*.mjs",
-    "src/operations/conversion/tools/run_mermaid_cli.ts",
-    "src/operations/pdf/crop_pdf_runner.ts",
-    "src/commands/pdf/*.ts",
-    "src/commands/conversion/*.ts",
-    "src/commands/lifecycle/*.ts",
-    "src/commands/shared/environment_check.ts",
-    ".vscode-test.mjs"
-  ],
-  "project": ["src/**/*.ts", "test/**/*.ts", "webview/**/*.{ts,tsx}", "scripts/*.mjs"],
-  "ignoreDependencies": [
-    "@commitlint/types",
-    "@types/mocha",
-    "@types/node",
-    "@types/sinon",
-    "@types/vscode",
-    "@vscode/test-electron",
-    "@vscode/vsce",
-    "@vscode/codicons",
-    "lefthook"
-  ],
-  "ignoreFiles": ["webview/apps/crop_pdf/src/pdf/pdfjs.ts", "webview/shared/pdf/render_first_page.ts"]
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.mjs", ".github/scripts/*.mjs", ".vscode-test.mjs", "playwright.config.mjs"],
+      "project": [
+        "test-support/**/*.ts",
+        "scripts/*.{mjs,ts}",
+        ".github/scripts/*.mjs",
+        ".vscode-test.mjs",
+        "playwright.config.mjs"
+      ],
+      "ignoreDependencies": [
+        "@commitlint/types",
+        "@types/mocha",
+        "@types/node",
+        "@types/sinon",
+        "@types/vscode",
+        "@vscode/test-electron",
+        "@vscode/vsce",
+        "@vscode/codicons",
+        "lefthook",
+        "vscode"
+      ]
+    },
+    "core": {
+      "entry": ["test/**/*.test.ts", "src/operations/conversion/tools/run_mermaid_cli.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "vscode": {
+      "entry": [
+        "src/extension.ts",
+        "src/operations/pdf/crop_pdf_runner.ts",
+        "src/commands/pdf/*.ts",
+        "src/commands/conversion/*.ts",
+        "src/commands/lifecycle/*.ts",
+        "src/commands/shared/environment_check.ts",
+        "webview/apps/*/src/main.tsx",
+        "webview/apps/*/src/app.test.tsx",
+        "test/**/*.test.ts",
+        "test/e2e/**/*.spec.ts",
+        "webview/apps/*/vite.config.ts",
+        "webview/apps/*/vitest.config.ts",
+        "webview/excalidraw/entry.ts"
+      ],
+      "project": ["src/**/*.ts", "test/**/*.ts", "webview/**/*.{ts,tsx}"],
+      "ignoreFiles": ["webview/apps/crop_pdf/src/pdf/pdfjs.ts", "webview/shared/pdf/render_first_page.ts"]
+    }
+  }
 }

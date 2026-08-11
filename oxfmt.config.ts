@@ -6,10 +6,10 @@ const config = {
   singleAttributePerLine: true,
   proseWrap: 'preserve',
   ignorePatterns: [
-    'out/**',
-    'dist/**',
+    'core/dist/**',
+    'vscode/out/**',
     'coverage/**',
-    'media/webview/**',
+    'vscode/media/webview/**',
     'node_modules/**',
     'test/input/invalid/**',
     '.vscode-test/**',

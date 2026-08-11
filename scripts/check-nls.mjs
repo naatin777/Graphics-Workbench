@@ -1,6 +1,6 @@
 import { globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/ast';
 
@@ -178,8 +178,9 @@ function sourceFiles(directory) {
  * @returns {{ errors: string[]; keyCount: number }}
  */
 export function checkNls(root) {
-  const englishPath = path.join(root, 'package.nls.json');
-  const japanesePath = path.join(root, 'package.nls.ja.json');
+  const extensionRoot = path.join(root, 'vscode');
+  const englishPath = path.join(extensionRoot, 'package.nls.json');
+  const japanesePath = path.join(extensionRoot, 'package.nls.ja.json');
   const english = parseNlsMessages(readFileSync(englishPath, 'utf8'), englishPath);
   const japanese = parseNlsMessages(readFileSync(japanesePath, 'utf8'), japanesePath);
   /** @type {string[]} */
@@ -198,7 +199,7 @@ export function checkNls(root) {
   }
 
   /** @type {unknown} */
-  const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const packageJson = JSON.parse(readFileSync(path.join(extensionRoot, 'package.json'), 'utf8'));
 
   /**
    * @param {unknown} value
@@ -222,7 +223,7 @@ export function checkNls(root) {
   }
   walk(packageJson);
 
-  for (const sourcePath of sourceFiles(path.join(root, 'src'))) {
+  for (const sourcePath of sourceFiles(path.join(extensionRoot, 'src'))) {
     errors.push(...validateUserMessageSource(sourcePath, readFileSync(sourcePath, 'utf8'), english));
   }
 
@@ -246,5 +247,5 @@ function run(root) {
 
 const [, scriptPath] = process.argv;
 if (scriptPath && import.meta.url === pathToFileURL(path.resolve(scriptPath)).href) {
-  run(process.cwd());
+  run(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 }

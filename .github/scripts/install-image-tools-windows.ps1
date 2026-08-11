@@ -26,7 +26,7 @@ if (-not $chrome) {
 	throw 'Chrome executable was not found.'
 }
 
-$settingsDir = 'test/vscode-settings'
+$settingsDir = 'vscode/test/support/vscode-settings'
 New-Item -ItemType Directory -Force -Path $settingsDir | Out-Null
 $settingsPath = Join-Path $settingsDir 'settings.json'
 $settings = [ordered]@{

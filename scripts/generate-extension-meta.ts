@@ -43,8 +43,8 @@ type ConfigNode =
 type ObjectType = { name: string; schema: JsonSchema };
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const packageJsonPath = path.join(repositoryRoot, 'package.json');
-const metadataOutputPath = path.join(repositoryRoot, 'src/generated/extension_manifest.ts');
+const packageJsonPath = path.join(repositoryRoot, 'vscode/package.json');
+const metadataOutputPath = path.join(repositoryRoot, 'vscode/src/generated/extension_manifest.ts');
 const checkOnly = process.argv.includes('--check');
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -346,18 +346,6 @@ export function renderCustomEditorContributions(packageJson: PackageManifest): s
   return `export const customEditorContributions = {\n${entries.join('\n')}\n} as const;\n`;
 }
 
-export function renderExternalToolTimeoutKeys(packageJson: PackageManifest, extensionPrefix: string): string {
-  const keys = Object.keys(packageJson.contributes.configuration.properties)
-    .map((fullKey) => fullKey.slice(extensionPrefix.length))
-    .filter((key) => /^externalTools\.[A-Za-z]+\.timeoutSeconds$/u.test(key))
-    .toSorted();
-  const entries = keys.map((key) => {
-    const tool = key.slice('externalTools.'.length, -'.timeoutSeconds'.length);
-    return `  ${tool}: ${quote(key)},`;
-  });
-  return `export const externalToolTimeoutConfigurationKeys = {\n${entries.join('\n')}\n} as const;\n`;
-}
-
 function assertExtensionIdentity(packageJson: PackageManifest): void {
   if (
     packageJson.publisher === undefined ||
@@ -527,8 +515,6 @@ export function generate(packageJson: PackageManifest): string {
     renderSubmenuContributions(packageJson) +
     '\n' +
     renderCustomEditorContributions(packageJson) +
-    '\n' +
-    renderExternalToolTimeoutKeys(packageJson, extensionPrefix) +
     '\n' +
     `// oxlint-disable-next-line typescript/explicit-function-return-type -- Generated return type is derived from the manifest.\n` +
     `function createConfigurationInternal(configurationReader: ConfigurationReader) {\n` +

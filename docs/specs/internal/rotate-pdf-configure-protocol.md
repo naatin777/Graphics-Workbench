@@ -2,9 +2,9 @@
 
 ## 対象
 
-- `src/application/protocols/rotate_pdf_protocol.ts`
-- `src/commands/pdf/rotate_pdf_configure.ts`（`graphics-workbench.rotatePdf.configure`）
-- `webview/apps/rotate_pdf/`
+- `vscode/src/shared/protocols/rotate_pdf_protocol.ts`
+- `vscode/src/commands/pdf/rotate_pdf_configure.ts`（`graphics-workbench.rotatePdf.configure`）
+- `vscode/webview/apps/rotate_pdf/`
 
 ## Host → Webview
 

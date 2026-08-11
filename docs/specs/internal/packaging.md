@@ -2,15 +2,15 @@
 
 ## dependency source
 
-VSIXはrepository rootで`npm ci`、`npm run build`、ローカルVSCEのNode entrypointを`node node_modules/@vscode/vsce/vsce package --target <platform>-<architecture>`として実行して生成する。依存lockfileは通常の`package-lock.json`だけを使い、VSIX専用lockfileやstaging内の依存再解決は行わない。
+repository rootはprivate npm coordinatorで、npm workspaceは`core/`と`vscode/`で構成する。VSIXはrepository rootで`npm ci`と`npm run build`を実行した後、`npm run package:vsix -- --target <platform>-<architecture>`で生成する。package scriptは`core/`と`vscode/`をtarball化し、repository外の一時directoryへtarget用production dependency closureをinstallしてから、staged `vscode/package.json`をmanifestとしてローカルVSCEを実行する。一時directoryは成否にかかわらず削除する。
 
-production dependencyが正常に含まれることを`npm ls --omit=dev`と生成VSIXの内容で確認する。変更時は各OS runnerでnative packageと生成VSIXを再確認する。
+rootの`package-lock.json`はnpm workspace用の正本とする。target用staging installはworkspace symlinkを持ち込まず、pack済みtarballから`--package-lock=false`で使い捨てのproduction treeを解決する。`tui/`はnpm workspaceへ含めず、独立した`tui/bun.lock`と生成済み`tui/.core-package`を使うBun packageとし、TUI/OpenTUI/native dependencyをVSIX stagingへ含めない。
 
-rootの`package.json`をそのまま使い、`.vscodeignore`でruntimeに不要な開発ファイルを除外する。
+production dependencyが正常に含まれることをstaging treeと生成VSIXの内容で確認する。pack済み`vscode/package.json`の`files` allowlistをstagingで除去し、`vscode/.vscodeignore`と追加のgenerated test/source-map除外を適用する。変更時は各OS runnerでnative packageと生成VSIXを再確認する。
 
 ## target
 
-package scriptはtarget未指定時にはrunnerの`process.platform`と`process.arch`からtargetを求め、明示的なtarget指定時には6つのsupported targetを受け付ける。releaseのpackage matrixは、runnerとtargetが一致する場合は`npm ci --include=optional`、一致しないcross targetはnpmの`--os`、`--cpu`、Linuxの`--libc=glibc`を使ってoptional dependency treeをtargetごとに解決する。対応targetは`win32-x64`、`win32-arm64`、`darwin-x64`、`darwin-arm64`、`linux-x64`、`linux-arm64`で、Alpineは含めない。
+package scriptはtarget未指定時にはrunnerの`process.platform`と`process.arch`からtargetを求め、明示的なtarget指定時には6つのsupported targetを受け付ける。staging installはnpmの`--os`、`--cpu`、Linuxの`--libc=glibc`、`--include=optional`を使ってoptional dependency treeをtargetごとに解決する。対応targetは`win32-x64`、`win32-arm64`、`darwin-x64`、`darwin-arm64`、`linux-x64`、`linux-arm64`で、Alpineは含めない。
 
 targetとrunnerの対応:
 

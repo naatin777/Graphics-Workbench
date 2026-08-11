@@ -6,7 +6,7 @@ import { defineConfig } from '@playwright/test';
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  testDir: path.join(rootDir, 'test/playwright'),
+  testDir: path.join(rootDir, 'vscode/test/e2e'),
   testMatch: '**/*.spec.ts',
   outputDir: path.join(rootDir, 'test-results'),
   timeout: 60_000,

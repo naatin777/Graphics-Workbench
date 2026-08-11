@@ -1,0 +1,557 @@
+import path from 'node:path';
+
+import { isAbortError, toErrorMessage } from '@graphics-workbench/core/shared/error.js';
+import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/shared/pdf_page_selection.js';
+import type { OutputConflictDecision } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
+import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
+import {
+  availablePdfRasterTargets,
+  inspectPdfRasterSource,
+  planPdfRasterConversion,
+  resolvePdfRasterPages,
+  runPdfRasterConversion,
+  type PdfRasterConversionPlan,
+  type PdfRasterConversionResult,
+  type PdfRasterPageSelection,
+  type PdfRasterSource,
+  type PdfRasterTarget,
+} from '@graphics-workbench/core/operations/conversion/pdf_raster_conversion.js';
+
+import type { TerminalKey, TerminalScreen } from './screen.js';
+import { terminalUiDefaults } from './defaults.js';
+
+type PageMode = 'all' | 'range';
+type ConflictAction = 'cancel' | 'replace' | 'rename';
+
+type AppState =
+  | { kind: 'loading'; sourcePath: string }
+  | { kind: 'format'; source: PdfRasterSource; selectedIndex: number }
+  | { kind: 'pages'; source: PdfRasterSource; target: PdfRasterTarget; selectedIndex: number }
+  | { kind: 'range'; source: PdfRasterSource; target: PdfRasterTarget; value: string; error?: string }
+  | { kind: 'review'; plan: PdfRasterConversionPlan }
+  | { kind: 'converting'; plan: PdfRasterConversionPlan; completed: number; total: number; message: string }
+  | {
+      kind: 'conflict';
+      plan: PdfRasterConversionPlan;
+      conflicts: string[];
+      selectedIndex: number;
+      resolve: (decision: OutputConflictDecision) => void;
+    }
+  | { kind: 'result'; status: 'success' | 'cancelled' | 'error'; title: string; details: string[] };
+
+interface AppDependencies {
+  inspectSource: typeof inspectPdfRasterSource;
+  runConversion: typeof runPdfRasterConversion;
+}
+
+const defaultDependencies: AppDependencies = {
+  inspectSource: inspectPdfRasterSource,
+  runConversion: runPdfRasterConversion,
+};
+
+export async function runTerminalUi(
+  sourceArgument: string,
+  screen: TerminalScreen,
+  dependencyOverrides: Partial<AppDependencies> = {},
+): Promise<void> {
+  const dependencies = { ...defaultDependencies, ...dependencyOverrides };
+  const sourcePath = path.resolve(sourceArgument);
+  const abortController = new AbortController();
+  let state: AppState = { kind: 'loading', sourcePath };
+  let conversion: Promise<void> | undefined;
+  let screenAlive = true;
+  let finish!: () => void;
+  const finished = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+
+  const render = (): void => {
+    if (!screenAlive) {
+      return;
+    }
+    screen.setContent(renderState(state));
+  };
+
+  const cancelConversion = (): void => {
+    abortController.abort();
+    if (state.kind === 'conflict') {
+      state.resolve('cancel');
+    }
+    if (state.kind === 'converting' || state.kind === 'conflict') {
+      const plan = state.plan;
+      state = {
+        kind: 'converting',
+        plan,
+        completed: 0,
+        total: plan.inputs.length,
+        message: 'Cancellation requested; waiting for active work to stop…',
+      };
+      render();
+    }
+  };
+
+  const exitOrCancel = (): void => {
+    if (conversion === undefined) {
+      abortController.abort();
+      finish();
+      return;
+    }
+    cancelConversion();
+  };
+
+  const handleSignal = (): void => {
+    exitOrCancel();
+  };
+
+  const startConversion = (plan: PdfRasterConversionPlan): void => {
+    if (conversion !== undefined) {
+      return;
+    }
+
+    state = {
+      kind: 'converting',
+      plan,
+      completed: 0,
+      total: plan.inputs.length,
+      message: `Converting PDF → ${targetLabel(plan.target)}`,
+    };
+    render();
+
+    const runtime: ConversionExecutionContext = {
+      signal: abortController.signal,
+      outputChannel: {
+        appendLine: (line) => {
+          if (state.kind === 'converting') {
+            state = { ...state, message: line };
+            render();
+          }
+        },
+      },
+      reportMessage: (message) => {
+        if (state.kind === 'converting') {
+          state = { ...state, message };
+          render();
+        }
+      },
+      reportProgress: (completed, total) => {
+        if (state.kind === 'converting') {
+          state = { ...state, completed, total };
+          render();
+        }
+      },
+      resolveConflicts: async (conflicts) =>
+        await new Promise<OutputConflictDecision>((resolve) => {
+          if (abortController.signal.aborted) {
+            resolve('cancel');
+            return;
+          }
+          state = { kind: 'conflict', plan, conflicts, selectedIndex: 0, resolve };
+          render();
+        }),
+    };
+
+    const run = async (): Promise<void> => {
+      try {
+        const result = await dependencies.runConversion({
+          plan,
+          runtime,
+          maxInputPixels: terminalUiDefaults.maxInputPixels,
+          webpEffort: terminalUiDefaults.webpEffort,
+        });
+        state = successState(result);
+      } catch (error) {
+        state = isAbortError(error)
+          ? { kind: 'result', status: 'cancelled', title: 'Conversion cancelled', details: [] }
+          : { kind: 'result', status: 'error', title: 'Conversion failed', details: [toErrorMessage(error)] };
+      } finally {
+        conversion = undefined;
+        render();
+      }
+    };
+    conversion = run();
+  };
+
+  const handleKey = (key: TerminalKey): void => {
+    if (key.ctrl && key.name.toLowerCase() === 'c') {
+      exitOrCancel();
+      return;
+    }
+
+    switch (state.kind) {
+      case 'loading': {
+        if (key.name === 'escape') {
+          exitOrCancel();
+        }
+        break;
+      }
+      case 'format': {
+        if (key.name === 'escape') {
+          finish();
+        } else if (key.name === 'up' || key.name === 'down') {
+          const targets = availablePdfRasterTargets(state.source.sourcePath);
+          state = {
+            ...state,
+            selectedIndex: moveSelection(state.selectedIndex, targets.length, key.name === 'up' ? -1 : 1),
+          };
+          render();
+        } else if (isEnter(key)) {
+          const target = availablePdfRasterTargets(state.source.sourcePath)[state.selectedIndex];
+          if (target !== undefined) {
+            state = { kind: 'pages', source: state.source, target, selectedIndex: 0 };
+            render();
+          }
+        }
+        break;
+      }
+      case 'pages': {
+        if (key.name === 'escape') {
+          state = { kind: 'format', source: state.source, selectedIndex: pdfRasterTargetIndex(state.target) };
+          render();
+        } else if (key.name === 'up' || key.name === 'down') {
+          state = { ...state, selectedIndex: moveSelection(state.selectedIndex, 2, key.name === 'up' ? -1 : 1) };
+          render();
+        } else if (isEnter(key)) {
+          const mode: PageMode = state.selectedIndex === 0 ? 'all' : 'range';
+          if (mode === 'range') {
+            state = { kind: 'range', source: state.source, target: state.target, value: '' };
+          } else {
+            state = createReviewState(state.source, state.target, { kind: 'all' });
+          }
+          render();
+        }
+        break;
+      }
+      case 'range': {
+        if (key.name === 'escape') {
+          state = { kind: 'pages', source: state.source, target: state.target, selectedIndex: 1 };
+          render();
+        } else if (key.name === 'backspace') {
+          state = {
+            kind: 'range',
+            source: state.source,
+            target: state.target,
+            value: state.value.slice(0, -1),
+          };
+          render();
+        } else if (isEnter(key)) {
+          const selection: PdfRasterPageSelection = { kind: 'range', value: state.value };
+          const parsed = resolvePdfRasterPages(selection, state.source.pageCount);
+          if (parsed.ok) {
+            state = createReviewState(state.source, state.target, selection);
+          } else {
+            state = { ...state, error: formatPdfPageSelectionError(parsed, state.source.pageCount) };
+          }
+          render();
+        } else if (/^[\d,\s-]$/u.test(key.sequence)) {
+          state = {
+            kind: 'range',
+            source: state.source,
+            target: state.target,
+            value: `${state.value}${key.sequence}`,
+          };
+          render();
+        }
+        break;
+      }
+      case 'review': {
+        if (key.name === 'escape') {
+          state = { kind: 'pages', source: state.plan.source, target: state.plan.target, selectedIndex: 0 };
+          render();
+        } else if (isEnter(key)) {
+          startConversion(state.plan);
+        }
+        break;
+      }
+      case 'converting': {
+        if (key.name === 'escape') {
+          cancelConversion();
+        }
+        break;
+      }
+      case 'conflict': {
+        if (key.name === 'escape') {
+          const resolve = state.resolve;
+          const plan = state.plan;
+          state = {
+            kind: 'converting',
+            plan,
+            completed: 0,
+            total: plan.inputs.length,
+            message: 'Cancelling because output conflicts were not accepted…',
+          };
+          render();
+          resolve('cancel');
+        } else if (key.name === 'up' || key.name === 'down') {
+          state = { ...state, selectedIndex: moveSelection(state.selectedIndex, 3, key.name === 'up' ? -1 : 1) };
+          render();
+        } else if (isEnter(key)) {
+          const action = conflictActions[state.selectedIndex];
+          if (action !== undefined) {
+            const resolve = state.resolve;
+            const plan = state.plan;
+            state = {
+              kind: 'converting',
+              plan,
+              completed: 0,
+              total: plan.inputs.length,
+              message: 'Applying conflict decision…',
+            };
+            render();
+            resolve(conflictDecision(action));
+          }
+        }
+        break;
+      }
+      case 'result': {
+        if (key.name === 'escape' || isEnter(key) || key.name.toLowerCase() === 'q') {
+          finish();
+        }
+        break;
+      }
+    }
+  };
+
+  const removeKeyHandler = screen.onKey(handleKey);
+  const removeDestroyHandler = screen.onDestroy(() => {
+    screenAlive = false;
+    cancelConversion();
+    finish();
+  });
+  process.on('SIGINT', handleSignal);
+
+  try {
+    render();
+    try {
+      const source = await dependencies.inspectSource({ sourcePath, signal: abortController.signal });
+      const targets = availablePdfRasterTargets(source.sourcePath);
+      if (targets.length === 0) {
+        throw new Error(`No Terminal UI conversions are available for: ${source.sourcePath}`);
+      }
+      state = { kind: 'format', source, selectedIndex: 0 };
+    } catch (error) {
+      state = isAbortError(error)
+        ? { kind: 'result', status: 'cancelled', title: 'Cancelled', details: [] }
+        : { kind: 'result', status: 'error', title: 'Could not open source', details: [toErrorMessage(error)] };
+    }
+    render();
+    await finished;
+    await conversion;
+  } finally {
+    screenAlive = false;
+    process.off('SIGINT', handleSignal);
+    removeDestroyHandler();
+    removeKeyHandler();
+    screen.destroy();
+  }
+}
+
+const conflictActions = ['cancel', 'replace', 'rename'] as const satisfies readonly ConflictAction[];
+
+export function conflictDecision(action: ConflictAction): OutputConflictDecision {
+  switch (action) {
+    case 'cancel': {
+      return 'cancel';
+    }
+    case 'replace': {
+      return 'overwrite';
+    }
+    case 'rename': {
+      return 'keep-both';
+    }
+  }
+  throw new Error('Unsupported output conflict action.');
+}
+
+function createReviewState(
+  source: PdfRasterSource,
+  target: PdfRasterTarget,
+  selection: PdfRasterPageSelection,
+): AppState {
+  return {
+    kind: 'review',
+    plan: planPdfRasterConversion({
+      source,
+      target,
+      selection,
+      outputTemplate: terminalUiDefaults.outputTemplate[target],
+    }),
+  };
+}
+
+function successState(result: PdfRasterConversionResult): AppState {
+  const details = result.outputs.map((output) => output.outputPath);
+  if (result.cleanup.failures.length > 0) {
+    details.push(`Warning: ${result.cleanup.failures.length} temporary artifact root(s) could not be cleaned up.`);
+  }
+  return { kind: 'result', status: 'success', title: 'Conversion complete', details };
+}
+
+function renderState(state: AppState): string {
+  switch (state.kind) {
+    case 'loading': {
+      return lines('Source', `  ${state.sourcePath}`, '', 'Analyzing PDF…', '', 'Esc / Ctrl+C  Cancel');
+    }
+    case 'format': {
+      const targets = availablePdfRasterTargets(state.source.sourcePath);
+      return lines(
+        'Source',
+        `  ${path.basename(state.source.sourcePath)} (${state.source.pageCount} pages)`,
+        '',
+        'Convert to',
+        ...targets.map((target, index) => choice(targetLabel(target), index === state.selectedIndex)),
+        '',
+        '↑/↓ Select   Enter Continue   Esc Exit',
+      );
+    }
+    case 'pages': {
+      return lines(
+        `Convert PDF → ${targetLabel(state.target)}`,
+        '',
+        'Pages',
+        choice(`All pages (1-${state.source.pageCount})`, state.selectedIndex === 0),
+        choice('Range', state.selectedIndex === 1),
+        '',
+        `Output  ${outputTemplateFor(state.target)}`,
+        '',
+        '↑/↓ Select   Enter Continue   Esc Back',
+      );
+    }
+    case 'range': {
+      return lines(
+        `Convert PDF → ${targetLabel(state.target)}`,
+        '',
+        `Pages (1-${state.source.pageCount})`,
+        `  ${state.value}█`,
+        '  Example: 1-3,5,8',
+        ...(state.error === undefined ? [] : ['', `Error: ${state.error}`]),
+        '',
+        'Enter Continue   Esc Back',
+      );
+    }
+    case 'review': {
+      const outputLines = state.plan.inputs.slice(0, 5).map((input) => `  ${input.outputPath}`);
+      if (state.plan.inputs.length > 5) {
+        outputLines.push(`  …and ${state.plan.inputs.length - 5} more`);
+      }
+      return lines(
+        `Convert PDF → ${targetLabel(state.plan.target)}`,
+        '',
+        `Source  ${state.plan.source.sourcePath}`,
+        `Pages   ${state.plan.inputs.map((input) => input.page).join(', ')}`,
+        '',
+        'Output',
+        ...outputLines,
+        '',
+        '[ Enter ] Convert   Esc Back',
+      );
+    }
+    case 'converting': {
+      return lines(
+        `Converting PDF → ${targetLabel(state.plan.target)}`,
+        '',
+        progressBar(state.completed, state.total),
+        `${state.completed} / ${state.total}`,
+        '',
+        state.message,
+        '',
+        'Esc / Ctrl+C  Cancel',
+      );
+    }
+    case 'conflict': {
+      return lines(
+        'Output already exists',
+        '',
+        ...state.conflicts.slice(0, 4).map((conflict) => `  ${conflict}`),
+        ...(state.conflicts.length > 4 ? [`  …and ${state.conflicts.length - 4} more`] : []),
+        '',
+        ...conflictActions.map((action, index) => choice(conflictActionLabel(action), index === state.selectedIndex)),
+        '',
+        '↑/↓ Select   Enter Confirm   Esc Cancel',
+      );
+    }
+    case 'result': {
+      return lines(
+        state.title,
+        '',
+        ...state.details.map((detail) => `  ${detail}`),
+        '',
+        state.status === 'success' ? 'Enter / q  Exit' : 'Enter / Esc / q  Exit',
+      );
+    }
+  }
+  throw new Error('Unsupported Terminal UI state.');
+}
+
+function outputTemplateFor(target: PdfRasterTarget): string {
+  return terminalUiDefaults.outputTemplate[target];
+}
+
+function formatPdfPageSelectionError(failure: PdfPageSelectionParseFailure, pageCount: number): string {
+  switch (failure.kind) {
+    case 'required': {
+      return 'Enter at least one PDF page.';
+    }
+    case 'wholeNumber': {
+      return `PDF pages must be whole numbers: ${failure.token}`;
+    }
+    case 'descending': {
+      return `PDF page ranges must be ascending: ${failure.token}`;
+    }
+    case 'outOfRange': {
+      return `PDF pages must be between 1 and ${pageCount}: ${failure.token}`;
+    }
+    case 'malformed': {
+      return `Invalid PDF page range: ${failure.token}`;
+    }
+  }
+  throw new Error('Unsupported PDF page selection error.');
+}
+
+function targetLabel(target: PdfRasterTarget): string {
+  return target === 'jpeg' ? 'JPEG' : target === 'webp' ? 'WebP' : 'PNG';
+}
+
+function conflictActionLabel(action: ConflictAction): string {
+  switch (action) {
+    case 'cancel': {
+      return 'Cancel';
+    }
+    case 'replace': {
+      return 'Replace';
+    }
+    case 'rename': {
+      return 'Rename (keep both)';
+    }
+  }
+  throw new Error('Unsupported output conflict action.');
+}
+
+function pdfRasterTargetIndex(target: PdfRasterTarget): number {
+  return Math.max(0, pdfRasterTargetsIndex(target));
+}
+
+function pdfRasterTargetsIndex(target: PdfRasterTarget): number {
+  return availablePdfRasterTargets('source.pdf').indexOf(target);
+}
+
+function moveSelection(index: number, count: number, delta: number): number {
+  return (index + delta + count) % count;
+}
+
+function isEnter(key: TerminalKey): boolean {
+  return key.name === 'return' || key.name === 'enter' || key.name === 'kpenter';
+}
+
+function choice(label: string, selected: boolean): string {
+  return `${selected ? '>' : ' '} ${label}`;
+}
+
+function progressBar(completed: number, total: number): string {
+  const width = 24;
+  const filled = total > 0 ? Math.min(width, Math.round((completed / total) * width)) : 0;
+  return `[${'█'.repeat(filled)}${'─'.repeat(width - filled)}]`;
+}
+
+function lines(...values: string[]): string {
+  return values.join('\n');
+}

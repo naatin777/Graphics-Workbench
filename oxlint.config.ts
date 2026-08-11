@@ -137,7 +137,7 @@ const restrictedImports = (
 
 const appOverrides: OxlintOverride[] = [
   {
-    files: ['webview/apps/*/src/**/*.ts', 'webview/apps/*/src/**/*.tsx'],
+    files: ['vscode/webview/apps/*/src/**/*.ts', 'vscode/webview/apps/*/src/**/*.tsx'],
     rules: {
       ...restrictedImports(browserOnly, [
         ...frontendPatterns,
@@ -152,7 +152,7 @@ const appOverrides: OxlintOverride[] = [
     },
   },
   {
-    files: ['webview/shared/**/*.ts'],
+    files: ['vscode/webview/shared/**/*.ts'],
     rules: {
       ...restrictedImports(browserOnly, [
         {
@@ -184,10 +184,10 @@ export default defineConfig({
   },
 
   ignorePatterns: [
-    'out/**',
-    'dist/**',
+    'core/dist/**',
+    'vscode/out/**',
     'coverage/**',
-    'media/webview/**',
+    'vscode/media/webview/**',
     'node_modules/**',
     '.vscode-test/**',
     '.playwright/**',
@@ -528,7 +528,8 @@ export default defineConfig({
      * Only no-focused-tests / no-disabled-tests / no-standalone-expect are
      * intentionally enabled (in the test override below). The plugin's other
      * default rules would also fire on the mocha- and Playwright-based tests
-     * under test/ (which use `assert` and their own `expect`), so every other
+     * under core/test and vscode/test (which use `assert` and their own
+     * `expect`), so every other
      * rule is explicitly disabled instead of being activated by category.
      */
     'vitest/no-focused-tests': 'off',
@@ -586,7 +587,7 @@ export default defineConfig({
       },
     },
     {
-      files: ['webview/shared/pdf/install_map_get_or_insert_computed.ts'],
+      files: ['vscode/webview/shared/pdf/install_map_get_or_insert_computed.ts'],
       rules: {
         // PDF.js Map polyfill installs onto the global Map prototype as a script module.
         'import/unambiguous': 'off',
@@ -597,7 +598,13 @@ export default defineConfig({
       },
     },
     {
-      files: ['src/**/*.ts', 'webview/apps/**/*.ts', 'webview/apps/**/*.tsx', 'webview/shared/**/*.ts'],
+      files: [
+        'core/src/**/*.ts',
+        'vscode/src/**/*.ts',
+        'vscode/webview/apps/**/*.ts',
+        'vscode/webview/apps/**/*.tsx',
+        'vscode/webview/shared/**/*.ts',
+      ],
       rules: {
         'typescript/no-unsafe-assignment': 'error',
         'typescript/no-unnecessary-condition': 'error',
@@ -707,7 +714,7 @@ export default defineConfig({
     },
     {
       // oxlint-lint-coverage: scripts' Node test files exercise untyped Node/CLI
-      // APIs (execFileSync, JSON.parse, test context) the same way `test/**` does.
+      // APIs (execFileSync, JSON.parse, test context) the same way package tests do.
       files: ['scripts/**/*.test.mjs'],
       rules: {
         'typescript/no-unsafe-assignment': 'off',
@@ -722,35 +729,40 @@ export default defineConfig({
     },
     {
       /*
-       * Conservative default for every src file: extension runtime can import
-       * the VS Code API but must not reach Webview frontend code. Layers below
-       * refine (core forbids `vscode`; generated is excluded).
+       * Conservative default for every extension source file: extension runtime
+       * can import the VS Code API but must not reach Webview frontend code.
+       * Layers below refine generated and core-independent boundaries.
        */
-      files: ['src/**/*.ts'],
+      files: ['vscode/src/**/*.ts'],
       rules: restrictedImports(extensionOnly, webviewPatterns),
     },
     {
-      files: ['src/shared/**/*.ts', 'src/operations/**/*.ts', 'src/config/**/*.ts'],
+      files: [
+        'core/src/**/*.ts',
+        'vscode/src/shared/**/*.ts',
+        'vscode/src/operations/**/*.ts',
+        'vscode/src/config/**/*.ts',
+      ],
       rules: restrictedImports(corePaths, corePatterns),
     },
     {
-      files: ['src/config/extension_configuration.ts'],
+      files: ['vscode/src/config/extension_configuration.ts'],
       rules: restrictedImports(extensionOnly, corePatterns),
     },
     {
-      files: ['src/commands/**/*.ts', 'src/presentation/**/*.ts', 'src/extension.ts'],
+      files: ['vscode/src/commands/**/*.ts', 'vscode/src/presentation/**/*.ts', 'vscode/src/extension.ts'],
       rules: restrictedImports(extensionOnly, webviewPatterns),
     },
     {
-      files: ['src/edit_provider/**/*.ts'],
+      files: ['vscode/src/edit_provider/**/*.ts'],
       rules: restrictedImports(extensionOnly, webviewPatterns),
     },
     {
-      files: ['src/security/**/*.ts'],
+      files: ['vscode/src/security/**/*.ts'],
       rules: restrictedImports(corePaths, webviewPatterns),
     },
     {
-      files: ['src/generated/**/*.ts'],
+      files: ['vscode/src/generated/**/*.ts'],
       rules: {
         // Generated manifest is not boundary code; keep it free of the import rules.
         'no-restricted-imports': 'off',
@@ -767,10 +779,10 @@ export default defineConfig({
 
     {
       files: [
-        'webview/vite.config.ts',
-        'webview/vitest.config.ts',
-        'webview/apps/*/vite.config.ts',
-        'webview/apps/*/vitest.config.ts',
+        'vscode/webview/vite.config.ts',
+        'vscode/webview/vitest.config.ts',
+        'vscode/webview/apps/*/vite.config.ts',
+        'vscode/webview/apps/*/vitest.config.ts',
         'scripts/**/*.mjs',
       ],
       rules: {
@@ -780,10 +792,11 @@ export default defineConfig({
     },
     {
       files: [
-        'test/**/*.ts',
-        'src/**/*.test.ts',
-        'webview/**/*.test.ts',
-        'webview/**/*.test.tsx',
+        'core/test/**/*.ts',
+        'vscode/test/**/*.ts',
+        'test-support/**/*.ts',
+        'vscode/webview/**/*.test.ts',
+        'vscode/webview/**/*.test.tsx',
         'scripts/*.test.mjs',
       ],
       rules: {
@@ -854,7 +867,7 @@ export default defineConfig({
       // These loops await an imported mupdf helper per source and then append
       // pages; oxlint's no-unreachable-loop misreads them as single-iteration
       // loops. Both iterate over a >=2-element array by construction.
-      files: ['src/operations/pdf/merge_pdf.ts', 'src/operations/conversion/combine_images_to_pdf.ts'],
+      files: ['vscode/src/operations/pdf/merge_pdf.ts', 'vscode/src/operations/conversion/combine_images_to_pdf.ts'],
       rules: {
         'eslint/no-unreachable-loop': 'off',
       },

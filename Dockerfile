@@ -69,6 +69,8 @@ RUN arch="$(dpkg --print-architecture)" \
 # Linux node_modules (sharp / mupdf native builds). npm configuration belongs to
 # the dependency layer so a policy change invalidates npm ci as expected.
 COPY package.json package-lock.json .npmrc ./
+COPY core/package.json ./core/package.json
+COPY vscode/package.json ./vscode/package.json
 RUN --mount=type=cache,target=/root/.npm \
   npm ci
 

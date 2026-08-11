@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo "Verifying image conversion tools..."
 
-settings_path="test/vscode-settings/settings.json"
+settings_path="vscode/test/support/vscode-settings/settings.json"
 
 read_setting() {
 	local key="$1"

@@ -21,7 +21,7 @@ Playwrightスクリーンショットはpixel比較の対象とせず、目視�
 - `toMatchSnapshot` / `toHaveScreenshot`、`__snapshots__`ディレクトリ、`snapshotPathTemplate`、`PLAYWRIGHT_VISUAL_SNAPSHOTS`を削除する
 - テーマテストの見た目検証は、theme class、`body`背景色 / 前景色の変化、PDF canvasが読めることなどのDOM・状態assertionで行う
 - 目視確認用画像は`npm run visual:capture`（`visual_review_capture.spec.ts`）で`page.screenshot()`として明示的に生成し、`artifacts/visual-review/<platform>-<arch>/<viewport>/<screen>-<state>.png`へ出力する（`<viewport>`は`wide`または`narrow`。画面ごとにElectronを1回起動し、同一セッション内でテーマを切り替え、wide撮影後にnarrowへリサイズして再び撮影する）
-- generated画像（`artifacts/`）はGit管理しない。人間が確認して採用したreference画像は`test/playwright/electron/visual-review/references/`へGit管理する
+- generated画像（`artifacts/`）はGit管理しない。人間が確認して採用したreference画像は`vscode/test/e2e/electron/visual-review/references/`へGit管理する
 - スクリーンショット生成は通常のE2Eコマンド（`test:playwright:vsix`）から分離し、E2Eの合否判定に使わない
 - Linux環境の固定再現用`docker/playwright-visual`は削除する。目視レビューは開発者のローカルOS・CPUで生成する
 - PRのLinux full UI / responsive、macOS / Windows packaged smoke、release前3 OS full suiteの責務は維持する
@@ -60,4 +60,4 @@ Playwrightスクリーンショットはpixel比較の対象とせず、目視�
 - [ADR-0025: Playwright基準画像をローカルで確定してGit管理する](0025-commit-playwright-baselines-from-local-docker.md)
 - [ADR-0024: PlaywrightスクリーンショットをArtifactで配布する](0024-artifact-only-playwright-screenshots.md)
 - [Task 0215: Playwrightのpixel matchingを廃止し目視レビューへ移行する](../tasks/0215-drop-playwright-pixel-matching.md)
-- [`test/playwright/electron/visual-review/README.md`](../../test/playwright/electron/visual-review/README.md)
+- [`vscode/test/e2e/electron/visual-review/README.md`](../../vscode/test/e2e/electron/visual-review/README.md)

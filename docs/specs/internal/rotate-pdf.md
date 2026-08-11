@@ -2,8 +2,8 @@
 
 ## 対象
 
-- `src/operations/pdf/rotate_pdf.ts`の`rotatePdfFiles`
-- `src/commands/pdf/rotate_pdf.ts`の`rotatePdfCommand`（`graphics-workbench.rotatePdf.rotate`）
+- `vscode/src/operations/pdf/rotate_pdf.ts`の`rotatePdfFiles`
+- `vscode/src/commands/pdf/rotate_pdf.ts`の`rotatePdfCommand`（`graphics-workbench.rotatePdf.rotate`）
 
 ## 入力
 

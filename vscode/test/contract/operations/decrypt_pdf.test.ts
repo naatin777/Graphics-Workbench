@@ -1,0 +1,113 @@
+// Test target:
+// - 指定パスワードで暗号化されたPDFを復号し、全成功後に出力すること
+// - 既存出力、キャンセル時に出力を反映しないこと
+// - 復号出力がパスワードなしで読み取れること
+//
+// Mocked:
+// - なし。実mupdfと実ファイルを使用する
+//
+// Not tested:
+// - VS CodeのwithProgress UI
+// - パスワード入力プロンプト
+
+import assert from 'node:assert/strict';
+import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
+import { PDFDocument } from '../../support/helpers/pdf_document.js';
+
+import { decryptPdfFiles } from '../../../src/operations/pdf/decrypt_pdf.js';
+import { loadMupdf, openPdfDocument, savePdfDocument } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
+
+const password = 'secret-password';
+
+suite('パスワード付きPDFの復号化', () => {
+  test('mupdfでAES-256暗号化したmulti-page-table.pdfを指定パスワードで復号し、パスワード不要で読み取れるPDFとして出力する', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
+    const sourcePath = path.join(workspacePath, 'encrypted.pdf');
+    const outputPath = path.join(workspacePath, 'output.pdf');
+    await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
+    await encryptWithMupdf(sourcePath, password);
+
+    try {
+      await decryptPdfFiles({
+        inputs: [{ sourcePath, workspacePath, outputPath }],
+        password,
+        runId: 'run',
+      });
+
+      const decrypted = await PDFDocument.load(await readFile(outputPath));
+      assert.ok(decrypted.getPageCount() >= 1);
+
+      const mupdf = await loadMupdf();
+      const decryptedDocument = mupdf.Document.openDocument(await readFile(outputPath));
+      try {
+        assert.equal(decryptedDocument.needsPassword(), false);
+      } finally {
+        decryptedDocument.destroy();
+      }
+    } finally {
+      await rm(workspacePath, { recursive: true, force: true });
+    }
+  });
+
+  test('誤ったパスワードを渡すと復号に失敗し、出力ファイルを作成しない', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
+    const sourcePath = path.join(workspacePath, 'encrypted.pdf');
+    const outputPath = path.join(workspacePath, 'output.pdf');
+    await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
+    await encryptWithMupdf(sourcePath, password);
+
+    await assert.rejects(
+      decryptPdfFiles({
+        inputs: [{ sourcePath, workspacePath, outputPath }],
+        password: 'wrong-password',
+      }),
+    );
+
+    await assert.rejects(access(outputPath));
+  });
+
+  test('出力先に既存ファイルがある場合はOutput file already existsエラーで復号前に失敗し、既存内容を変更しない', async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
+    const sourcePath = path.join(workspacePath, 'source.pdf');
+    const outputPath = path.join(workspacePath, 'output.pdf');
+    await writePdf(sourcePath);
+    await writeFile(outputPath, 'existing');
+
+    await assert.rejects(
+      decryptPdfFiles({
+        inputs: [{ sourcePath, workspacePath, outputPath }],
+        password,
+      }),
+      /Output file already exists/,
+    );
+
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
+  });
+});
+
+async function encryptWithMupdf(sourcePath: string, pdfPassword: string): Promise<void> {
+  const document = await openPdfDocument(await readFile(sourcePath));
+  try {
+    const encryptedBytes = savePdfDocument(
+      document,
+      `encrypt=aes-256,user-password=${pdfPassword},owner-password=${pdfPassword}`,
+    );
+    await writeFile(sourcePath, encryptedBytes);
+  } finally {
+    document.destroy();
+  }
+}
+
+async function writePdf(filePath: string): Promise<void> {
+  const document = await PDFDocument.create();
+  document.addPage([100, 200]);
+  await writeFile(filePath, await document.save());
+}
+
+function fixturePath(fileName: string): string {
+  return path.join(operationPdfInputDirectory, fileName);
+}

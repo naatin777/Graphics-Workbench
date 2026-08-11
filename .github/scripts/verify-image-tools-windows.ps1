@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host 'Verifying image conversion tools...'
 
-$settingsPath = Join-Path 'test/vscode-settings' 'settings.json'
+$settingsPath = Join-Path 'vscode/test/support/vscode-settings' 'settings.json'
 $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
 
 $rsvgConvert = $settings.'graphics-workbench.execPath.rsvgConvert'

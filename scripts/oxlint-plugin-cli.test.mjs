@@ -121,7 +121,7 @@ export function load(sourcePath: string): Promise<string> {
   return await import('node:child_process');
 }
 `,
-  'src/operations/pdf/crop_pdf_process_protocol.ts': `export interface CropPdfProcessFailure {
+  'vscode/src/operations/pdf/crop_pdf_process_protocol.ts': `export interface CropPdfProcessFailure {
   type: 'failure';
   message: string;
 }
@@ -142,7 +142,7 @@ export type CropPdfProcessProgress =
   | { type: 'progress'; protocolVersion: number; requestId: string }
   | { type: 'progress-detail'; protocolVersion: number; requestId: string };
 `,
-  'src/operations/pdf/crop_pdf_payload_process_protocol.ts': `export interface CropPdfProcessRequest {
+  'vscode/src/operations/pdf/crop_pdf_payload_process_protocol.ts': `export interface CropPdfProcessRequest {
   type: 'request';
   protocolVersion: number;
   requestId: string;
@@ -163,12 +163,12 @@ export interface CropPdfProcessStream {
   data: Uint8Array;
 }
 `,
-  'src/operations/pdf/crop_pdf_core.ts': `export interface CropPdfProcessFailure {
+  'vscode/src/operations/pdf/crop_pdf_core.ts': `export interface CropPdfProcessFailure {
   type: 'failure';
   message: string;
 }
 `,
-  'webview/apps/crop_pdf/src/listener_cleanup_violates.ts': `function handleMessage(event: MessageEvent): void {
+  'vscode/webview/apps/crop_pdf/src/listener_cleanup_violates.ts': `function handleMessage(event: MessageEvent): void {
   void event.data;
 }
 
@@ -176,7 +176,7 @@ export function setup(): void {
   window.addEventListener('message', handleMessage);
 }
 `,
-  'webview/apps/crop_pdf/src/listener_cleanup_clean.ts': `function handleMessage(event: MessageEvent): void {
+  'vscode/webview/apps/crop_pdf/src/listener_cleanup_clean.ts': `function handleMessage(event: MessageEvent): void {
   void event.data;
 }
 
@@ -185,12 +185,12 @@ export function setup(): void {
   window.removeEventListener('message', handleMessage);
 }
 `,
-  'webview/apps/crop_pdf/src/api_bypass.ts': `export function sendMessage(message: unknown): void {
+  'vscode/webview/apps/crop_pdf/src/api_bypass.ts': `export function sendMessage(message: unknown): void {
   const api = acquireVsCodeApi();
   void api.postMessage(message);
 }
 `,
-  'webview/apps/crop_pdf/src/api_clean.ts': `type VscodeApi = {
+  'vscode/webview/apps/crop_pdf/src/api_clean.ts': `type VscodeApi = {
   sendMessage: (message: unknown) => void;
 };
 
@@ -198,7 +198,7 @@ export function notifyReady(vscode: VscodeApi, message: unknown): void {
   vscode.sendMessage(message);
 }
 `,
-  'webview/apps/crop_pdf/src/vscode.ts': `declare const acquireVsCodeApi: () => { postMessage: (message: unknown) => void };
+  'vscode/webview/apps/crop_pdf/src/vscode.ts': `declare const acquireVsCodeApi: () => { postMessage: (message: unknown) => void };
 
 export const vscode = {
   sendMessage(message: unknown): void {
@@ -206,7 +206,7 @@ export const vscode = {
   },
 };
 `,
-  'webview/shared/vscode.ts': `function handleMessage(event: MessageEvent): void {
+  'vscode/webview/shared/vscode.ts': `function handleMessage(event: MessageEvent): void {
   void event.data;
 }
 
@@ -303,32 +303,32 @@ const expectations = [
   {
     ruleId: 'require-webview-listener-cleanup',
     cases: [
-      { file: 'webview/apps/crop_pdf/src/listener_cleanup_violates.ts', lines: [6] },
-      { file: 'webview/apps/crop_pdf/src/listener_cleanup_clean.ts', lines: [] },
-      { file: 'webview/shared/vscode.ts', lines: [] },
+      { file: 'vscode/webview/apps/crop_pdf/src/listener_cleanup_violates.ts', lines: [6] },
+      { file: 'vscode/webview/apps/crop_pdf/src/listener_cleanup_clean.ts', lines: [] },
+      { file: 'vscode/webview/shared/vscode.ts', lines: [] },
     ],
   },
   {
     ruleId: 'no-webview-api-bypass',
     cases: [
-      { file: 'webview/apps/crop_pdf/src/api_bypass.ts', lines: [2, 3] },
-      { file: 'webview/apps/crop_pdf/src/api_clean.ts', lines: [] },
-      { file: 'webview/apps/crop_pdf/src/vscode.ts', lines: [] },
+      { file: 'vscode/webview/apps/crop_pdf/src/api_bypass.ts', lines: [2, 3] },
+      { file: 'vscode/webview/apps/crop_pdf/src/api_clean.ts', lines: [] },
+      { file: 'vscode/webview/apps/crop_pdf/src/vscode.ts', lines: [] },
     ],
   },
   {
     ruleId: 'require-process-envelope',
     cases: [
-      { file: 'src/operations/pdf/crop_pdf_process_protocol.ts', lines: [1] },
-      { file: 'src/operations/pdf/crop_pdf_payload_process_protocol.ts', lines: [] },
-      { file: 'src/operations/pdf/crop_pdf_core.ts', lines: [] },
+      { file: 'vscode/src/operations/pdf/crop_pdf_process_protocol.ts', lines: [1] },
+      { file: 'vscode/src/operations/pdf/crop_pdf_payload_process_protocol.ts', lines: [] },
+      { file: 'vscode/src/operations/pdf/crop_pdf_core.ts', lines: [] },
     ],
   },
   {
     ruleId: 'no-pdf-bytes-in-process-ipc',
     cases: [
-      { file: 'src/operations/pdf/crop_pdf_payload_process_protocol.ts', lines: [12, 19] },
-      { file: 'src/operations/pdf/crop_pdf_process_protocol.ts', lines: [] },
+      { file: 'vscode/src/operations/pdf/crop_pdf_payload_process_protocol.ts', lines: [12, 19] },
+      { file: 'vscode/src/operations/pdf/crop_pdf_process_protocol.ts', lines: [] },
     ],
   },
 ];

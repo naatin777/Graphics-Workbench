@@ -1,5 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { extensionHostSourcePrefixes, verifyExtensionHostLcov } from '../../scripts/extension-host-coverage.mjs';
 
 /** @typedef {Map<number, number>} LineCoverage */
 /** @typedef {Map<string, LineCoverage>} CoverageMap */
@@ -76,6 +79,16 @@ function normalizeSourcePath(source, fallbackPrefix) {
     const sharedIndex = normalized.lastIndexOf('/shared/');
     if (sharedIndex >= 0) {
       return `webview/${normalized.slice(sharedIndex + 1)}`;
+    }
+  }
+
+  for (const prefix of extensionHostSourcePrefixes) {
+    const absoluteIndex = normalized.lastIndexOf(`/${prefix}`);
+    if (absoluteIndex >= 0) {
+      return normalized.slice(absoluteIndex + 1);
+    }
+    if (normalized.startsWith(prefix)) {
+      return normalized;
     }
   }
 
@@ -194,6 +207,13 @@ function summarize(lineCoverage, includeFile) {
     percent: total === 0 ? 0 : (covered / total) * 100,
     uncoveredFiles: values.filter((file) => file.total > 0 && file.covered === 0).length,
   };
+}
+
+export function summarizeExtensionCoverage(content, os) {
+  verifyExtensionHostLcov(content, `${os} Extension Host coverage`);
+  return summarize(parseLcov(content), (filePath) =>
+    extensionHostSourcePrefixes.some((prefix) => filePath.startsWith(prefix)),
+  );
 }
 
 /**
@@ -456,28 +476,32 @@ function renderReport(extensionReports, webviewSummary) {
   return `${output.join('\n')}\n`;
 }
 
-const { input, output } = readArguments(process.argv.slice(2));
+async function main(argv) {
+  const { input, output } = readArguments(argv);
 
-/** @type {ExtensionReport[]} */
-const extensionReports = [];
-for (const [os, relativePath] of EXTENSION_REPORTS) {
-  const content = await readFile(path.join(input, relativePath), 'utf8');
-  const summary = summarize(parseLcov(content), (filePath) => filePath.startsWith('src/'));
-  if (summary.files.size === 0) {
-    throw new Error(`${os} Extension Host coverage is empty`);
+  /** @type {ExtensionReport[]} */
+  const extensionReports = [];
+  for (const [os, relativePath] of EXTENSION_REPORTS) {
+    const content = await readFile(path.join(input, relativePath), 'utf8');
+    extensionReports.push({ os, summary: summarizeExtensionCoverage(content, os) });
   }
-  extensionReports.push({ os, summary });
+
+  /** @type {CoverageMap[]} */
+  const webviewCoverageMaps = [];
+  for (const [appName, relativePath] of WEBVIEW_REPORTS) {
+    const content = await readFile(path.join(input, relativePath), 'utf8');
+    webviewCoverageMaps.push(parseLcov(content, `webview/apps/${appName}/`));
+  }
+  const webviewSummary = summarize(mergeCoverageMaps(webviewCoverageMaps), (filePath) =>
+    filePath.startsWith('webview/'),
+  );
+  if (webviewSummary.files.size === 0) {
+    throw new Error('Webview coverage is empty');
+  }
+
+  await writeFile(output, renderReport(extensionReports, webviewSummary), 'utf8');
 }
 
-/** @type {CoverageMap[]} */
-const webviewCoverageMaps = [];
-for (const [appName, relativePath] of WEBVIEW_REPORTS) {
-  const content = await readFile(path.join(input, relativePath), 'utf8');
-  webviewCoverageMaps.push(parseLcov(content, `webview/apps/${appName}/`));
+if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main(process.argv.slice(2));
 }
-const webviewSummary = summarize(mergeCoverageMaps(webviewCoverageMaps), (filePath) => filePath.startsWith('webview/'));
-if (webviewSummary.files.size === 0) {
-  throw new Error('Webview coverage is empty');
-}
-
-await writeFile(output, renderReport(extensionReports, webviewSummary), 'utf8');

@@ -23,7 +23,7 @@
 ### workspace path boundary
 
 - source、output、staging、sidecarがworkspace外へ逸脱しないことを確認する。
-- symlinkを含む実pathの境界確認は`src/security/workspace_path.ts`が担当する。
+- symlinkを含む実pathの境界確認は`core/src/security/workspace_path.ts`が担当する。
 - これは入力内容のpreflightではなくfile operation securityである。
 
 ### decoder / external tool

@@ -33,7 +33,7 @@ Use this skill for conversion tests whose normal path should exercise a real fil
 
 ## Implement pixel oracles
 
-- Decode raster outputs to RGBA and compare them with `assertRasterMatches` from `test/helpers/content_assertions.ts`. Keep width and height checks enabled.
+- Decode raster outputs to RGBA and compare them with `assertRasterMatches` from `vscode/test/support/helpers/content_assertions.ts`. Keep width and height checks enabled.
 - For PDF results, compare page count and page geometry, render corresponding pages with the repository PDF renderer, and compare the rendered pixels to the matching `test/output` page image or expected PDF.
 - For SVG, compare rendered pixels when visual content is the contract; use structural checks as a supplementary check for stable SVG semantics. Do not use raw byte equality for renderer-produced SVG.
 - For Mermaid, Draw.io, Excalidraw, and EPS, use the fixed input and the appropriate configured backend, then compare the resulting raster or rendered PDF to its fixed expected artifact.
@@ -52,8 +52,8 @@ Use this skill for conversion tests whose normal path should exercise a real fil
 Run the smallest complete set that covers the changed subsystem, then report every command and result:
 
 - Host checks and builds: `npm run check`, `npm run build`, and any relevant `npm run test:webview:<app>` or `npm run test:scripts`.
-- Extension Host or Electron tests that open a window: `npm run test:docker -- test` or the narrow script/grep supported by the repository.
-- Packaged Playwright smoke: `npm run test:docker -- package:vsix test:playwright:smoke` when packaging or packaged conversion behavior changed.
+- Extension Host tests that open a window: `npm run test:docker` or `npm run test:core -- --grep <pattern>` for a core-owned subset.
+- Packaged Playwright smoke: `npm run playwright:smoke:docker` when packaging or packaged conversion behavior changed.
 - Fixture-oracle tests must run with the configured external tools required by their format. Report skipped cases and missing tools explicitly.
 
 Before handoff, check `git diff --check`, confirm no generated workspace artifacts are tracked, inspect `git diff --stat` and `git diff --name-only`, and state the dedicated worktree path. Do not claim pixel coverage for cases that were not executed.

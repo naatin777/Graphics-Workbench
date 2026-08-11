@@ -151,7 +151,7 @@ jobs:
               shell: bash
               run: |
                   TAG="${{ github.ref_name }}"
-                  PKG_VERSION="v$(node -p "require('./package.json').version")"
+                  PKG_VERSION="v$(node -p "require('./vscode/package.json').version")"
                   if [[ "$TAG" != "$PKG_VERSION" ]]; then
                     echo "::error::Tag $TAG does not match package.json version $PKG_VERSION"
                     exit 1
@@ -226,7 +226,7 @@ jobs:
               shell: bash
               run: |
                   TAG="${{ github.ref_name }}"
-                  PKG_VERSION="v$(node -p "require('./package.json').version")"
+                  PKG_VERSION="v$(node -p "require('./vscode/package.json').version")"
                   if [[ "$TAG" != "$PKG_VERSION" ]]; then
                     echo "::error::Tag $TAG does not match package.json version $PKG_VERSION"
                     exit 1

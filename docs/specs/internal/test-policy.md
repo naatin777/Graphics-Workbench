@@ -6,7 +6,19 @@ test runtimeはdirectory名やrunner統一ではなく、検証するcontractと
 
 ## VS Code Extension Host
 
-pre-package testはすべてVS Code Extension Hostを正式なownerとする。`npm test`は`vscode-test`を実行し、`out/test/**/*.test.js`を実行する。`terminate_process_tree.test.js`のみmodule mockとtop-level dynamic importを使うため`node:test`（`npm run test:scripts`）で実行する。このruntimeの選択は[ADR-0018](../../adr/0018-use-extension-host-for-pre-package-tests.md)を正本とする。
+pre-package testはすべてVS Code Extension Hostを正式なrunnerとする。`npm test`は`vscode-test`を実行し、`vscode/out/core/test/**/*.test.js`と`vscode/out/vscode/test/**/*.test.js`を名前順で実行する。`terminate_process_tree.test.js`のみmodule mockとtop-level dynamic importを使うため`node:test`（`npm run test:scripts`）で実行する。このruntimeの選択は[ADR-0018](../../adr/0018-use-extension-host-for-pre-package-tests.md)を正本とする。TUI固有のcontroller/UI testは独立Bun package内で`npm run stage:tui-core`後に`bun test --cwd tui`を実行する。
+
+source ownershipとoracle責務はdirectoryで分ける。runner名とdirectory分類は同義ではない。
+
+- `core/test/unit/`: core moduleの直接contract。isolatedな一時filesystemやinjected mockは許可する。
+- `core/test/contract/`: `test/input` / `test/output`の共有corpus構造・形式・件数のcontract。
+- `core/test/integration/`: Sharp、MuPDF、real child processなど複数runtime componentを通すflow。
+- `vscode/test/unit/`: activationやcommand registryを通さずVS Code側moduleを直接検証するtest。
+- `vscode/test/contract/`: command adapter、filesystem/native/external tool、fixture oracleの境界test。
+- `vscode/test/extension-host/`: extension activationと登録commandをVS Code経由で実行するjourney。
+- `vscode/test/e2e/`: install済みVSIXだけを操作するElectron Playwright。
+- `vscode/test/support/`: VS Code test固有helper、settings、一時workspace。core testからimportしない。
+- `test/input/` / `test/output/`: coreとVS Codeが共有するimmutable fixture/oracleの唯一の正本。
 
 このruntimeでは、次のcontractを確認する。
 
@@ -40,7 +52,7 @@ Browser Playwrightは使用しない。Webview protocol、validation、状態変
 - pre-package testではVS Code Extension Hostを正式採用する。
 - Extension Host testはLinux、macOS、Windowsの3 OSで恒久的に維持する。
 - Node専用runnerやExtension Hostからのtest file除外は持たない。例外は`terminate_process_tree.test.js`のみで、module mockとtop-level dynamic importがExtension Host runnerと互換しないため`node:test`で実行する。
-- Browser Playwrightは廃止し、配布物E2Eはpackage済みVSIX Electron Playwrightへ統一する。releaseのrequired scopeは3 OS各4 cases（wide packaged conversion smoke: Crop Configure / PNG→JPEG / PDF→JPEG / Draw.io→PDF）とする。full wide+narrow suite（38 cases）はローカルとrelease前の3 OSで実行し、`visual:capture`の画像を目視確認する。
+- Browser Playwrightは廃止し、配布物E2Eはpackage済みVSIX Electron Playwrightへ統一する。releaseのrequired scopeは3 OS各4 cases（wide packaged conversion smoke: Crop Configure / PNG→JPEG / PDF→JPEG / Draw.io→PDF）とする。full wide+narrow suiteのcase一覧と件数は`npx playwright test --list`を正本とし、ローカルとrelease前の3 OSで実行して`visual:capture`の画像を目視確認する。
 - required statusは今回設定しない。
 - Extension Host testはMocha（`@vscode/test-cli`）を使う。Webview component testはVitest（JSDOM）を使う。両runnerは検証するcontractで使い分け、どちらか一方へ統一しない。
 
@@ -124,13 +136,12 @@ mock は使ってよい。
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 import * as vscode from 'vscode';
+import { testInputDirectory } from '../../support/helpers/fixture_paths.js';
 
-const testDirectory = path.dirname(fileURLToPath(import.meta.url));
-const sourcePng = path.join(testDirectory, '..', '..', 'test', 'input', 'valid', 'png', 'checker-mosaic.png');
+const sourcePng = path.join(testInputDirectory, 'valid', 'png', 'checker-mosaic.png');
 const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-convert-test-'));
 
 try {
@@ -234,7 +245,7 @@ Webviewの実操作とvisual testでは、実VS Codeが提供する`--vscode-*` 
 
 ### Playwright Electron
 
-Playwright Electronは、直前にpackageして隔離したextensions directoryへinstallしたVSIXだけを実VS Code windowで操作する。source directoryをExtension Development Hostとして読み込まない。releaseは3 OSすべてでwide packaged conversion smokeを実行する。full wide+narrow suiteはローカルとrelease前の3 OSで実行する。固定sleepを使わず、DOM状態、theme class、computed style、file変更検知などの成立条件を待つ。見た目の回帰検証はpixel比較ではなく、`npm run visual:capture`で生成した`artifacts/visual-review/`の画像を人間が目視確認する。承認した画像は[`test/playwright/electron/visual-review/README.md`](../../../test/playwright/electron/visual-review/README.md)の`references/`へreferenceとしてGit管理し、コード変更と一緒にレビューする。
+Playwright Electronは、直前にpackageして隔離したextensions directoryへinstallしたVSIXだけを実VS Code windowで操作する。source directoryをExtension Development Hostとして読み込まない。releaseは3 OSすべてでwide packaged conversion smokeを実行する。full wide+narrow suiteはローカルとrelease前の3 OSで実行する。固定sleepを使わず、DOM状態、theme class、computed style、file変更検知などの成立条件を待つ。見た目の回帰検証はpixel比較ではなく、`npm run visual:capture`で生成した`artifacts/visual-review/`の画像を人間が目視確認する。承認した画像は[`vscode/test/e2e/electron/visual-review/README.md`](../../../vscode/test/e2e/electron/visual-review/README.md)の`references/`へreferenceとしてGit管理し、コード変更と一緒にレビューする。
 
 E2EはCrop PDF ConfigureのWebview、Host message bridge、runtime asset、packageされたnative dependency、pdftocairoを使うsuccessful external conversionを必要とする重要な利用経路を扱う。E2EはDOM・状態・操作・処理結果を検証し、見た目の検証をpixel比較に頼らない。目視確認用画像は`visual:capture`から生成する。screenshotはUI regression向けのレビュー資料であり、出力fileの内容検証を代替しない。
 
@@ -255,7 +266,7 @@ VS Code commandが`showInformationMessage`、`showWarningMessage`、`showErrorMe
 2. helperで通知を閉じながらcommand実行Promiseの完了を待つ
 3. command完了後に、ファイル生成など期待する副作用をassertする
 
-原則として、`test/helpers/vscode_command.ts`のhelperを使う。
+原則として、`vscode/test/support/helpers/vscode_command.ts`のhelperを使う。
 
 例:
 
@@ -297,7 +308,7 @@ await runCommandAndClearNotificationsUntilDone(commandExecution);
 再発時は、以下を優先して確認する。
 
 - `vscode.commands.executeCommand(...)`を直接`await`して通知待ちになっていないか
-- 通知を出すcommand testで`test/helpers/vscode_command.ts`のhelperを使っているか
+- 通知を出すcommand testで`vscode/test/support/helpers/vscode_command.ts`のhelperを使っているか
 - `withProgress`やキャンセル可能処理のPromiseがresolve/rejectしているか
 - 外部processやfile watcherをテスト後に閉じているか
 - 固定秒数の待機で偶然通すテストになっていないか
