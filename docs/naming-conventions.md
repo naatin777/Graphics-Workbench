@@ -26,22 +26,24 @@
 
 ```text
 src/
-  application/{policy,protocols}/
-  commands/{conversion,pdf,lifecycle,shared}/
-  config/{output,rendering,external_tools}/
-  operations/{conversion,pdf,lifecycle,input,external_tools}/
+  commands/{conversion,lifecycle,pdf,preview,shared}/
+  config/{external_tools,output,rendering}/
   edit_provider/
+  generated/
+  operations/{conversion,external_tools,input,lifecycle,pdf,preview}/
   presentation/webview/
   security/
+  shared/{protocols}/
 
 test/
-  {application,commands,config,edit_provider,operations,presentation,security,integration}/
+  {commands,config,edit_provider,integration,operations,presentation,security,shared}/
   {input,output,workspace,vscode-settings}/
+  fixtures/
   helpers/
   playwright/electron/
 ```
 
-`security/`と`presentation/webview/`は現在1責務・1moduleのため、空の下位directoryを作らない。`input/`、`output/`、`workspace/`、`vscode-settings/`、`helpers/`、`playwright/electron/`はsource責務ではなくtest runtime資産として分離する。
+`security/`と`presentation/webview/`は現在1責務・1moduleのため、空の下位directoryを作らない。`input/`、`output/`、`workspace/`、`vscode-settings/`、`fixtures/`、`helpers/`、`playwright/electron/`はsource責務ではなくtest runtime資産として分離する。
 
 ## Naming and compatibility
 

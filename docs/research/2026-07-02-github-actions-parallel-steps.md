@@ -1,4 +1,5 @@
 # GitHub Actions parallel steps
+> 位置づけ: 休眠（導入判断前。CIはtask 0224で停止中）
 
 ## 調査日
 

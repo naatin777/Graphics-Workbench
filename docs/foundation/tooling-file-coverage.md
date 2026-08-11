@@ -178,7 +178,7 @@ vite.config.ts
 
 ### VS Code test
 
-- fixed VS Code 1.128.0
+- VS Code stable
 - `out/test/**/*.test.js`
 - すべてのroot testをExtension Hostへ入れる
 

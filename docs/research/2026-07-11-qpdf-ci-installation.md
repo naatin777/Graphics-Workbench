@@ -1,4 +1,5 @@
 # qpdfのCI導入調査
+> 位置づけ: 履歴（qpdfは未採用。task 0181でCI install削除済み）
 
 ## 調査日
 

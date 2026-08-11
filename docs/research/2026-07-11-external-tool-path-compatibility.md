@@ -1,4 +1,5 @@
 # 外部コマンドのOS別path互換性調査
+> 位置づけ: 現役（ADR-0012とexternal-tool-ascii-scratch specの正）
 
 ## 調査日
 

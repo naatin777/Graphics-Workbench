@@ -8,7 +8,7 @@ Status: Implemented
 
 ## Decision
 
-[ADR-0026](../adr/0026-native-runner-platform-vsix-release.md)に記録した。ADR-0023を置き換え済みにした。
+[ADR-0026](../adr/0026-native-runner-platform-vsix-release.md)に記録した。ADR-0031を置き換え済みにした。
 
 ## Changes
 
@@ -22,7 +22,7 @@ Status: Implemented
   - `publish-marketplace`: Entra ID認証（`azure/login` + `vsce publish --azure-credential --skip-duplicate`）で公開。Azure DevOps PATは2026-12-01廃止のため不使用。`AZURE_CLIENT_ID`未設定時はpublish stepをskip、6個の一覧確認
   - `publish-github`: `publish-marketplace`成功後に実行（job失敗時はskip。認証情報未設定でpublish stepがskipされてもjobは成功扱いのためGitHub Releaseは継続）
   - `publish-open-vsx`: `OVSX_PAT`未設定時はpublish stepをskip
-- `docs/adr/0026`新設、`docs/adr/0023`を置き換え済みに更新
+- `docs/adr/0026`新設、`docs/adr/0031`を置き換え済みに更新
 - `docs/specs/internal/packaging.md`のtarget節を更新
 - `README.md` / `README.ja.md`にプラットフォーム別パッケージ対応表、Remote挙動、非対応環境を追記
 
@@ -42,7 +42,7 @@ Status: Implemented
 - [x] Azure DevOps PATを使わない
 - [x] GitHub ReleaseがMarketplace公開成功後に実行される
 - [x] Universal VSIXを作らない
-- [x] ADR-0026が採用、ADR-0023が置き換え済み
+- [x] ADR-0026が採用、ADR-0031が置き換え済み
 
 ## Related files
 
@@ -50,7 +50,7 @@ Status: Implemented
 - `scripts/test-sharp.mjs`
 - `scripts/verify-vsix.mjs`
 - `scripts/package-vsix.mjs`
-- `docs/adr/0023-build-six-target-vsix-with-npm-platform-overrides.md`
+- `docs/adr/0031-build-six-target-vsix-with-npm-platform-overrides.md`
 - `docs/adr/0026-native-runner-platform-vsix-release.md`
 - `docs/specs/internal/packaging.md`
 - `README.md` / `README.ja.md`

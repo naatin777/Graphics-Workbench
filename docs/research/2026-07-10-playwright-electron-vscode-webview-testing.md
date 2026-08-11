@@ -1,4 +1,5 @@
 # Playwright ElectronとVS Code Webviewテスト
+> 位置づけ: 履歴中心（現行方針はdocs/specs/internal/test-policy.mdへ進化）
 
 ## 調査日
 

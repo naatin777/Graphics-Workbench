@@ -1,4 +1,5 @@
 # sharpとGhostscriptの追加形式予備調査
+> 位置づけ: 一部現役（eps-conversion specとGIF/TIFF対応の根拠）
 
 ## 再調査（2026-07-20）
 

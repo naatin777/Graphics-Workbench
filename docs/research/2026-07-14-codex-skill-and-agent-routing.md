@@ -1,4 +1,5 @@
 # Codex skill と agent routing の確認メモ
+> 位置づけ: 履歴中心（skillは.agents/skills/へ再編済み）
 
 ## 確認日
 
