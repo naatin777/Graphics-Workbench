@@ -283,6 +283,11 @@
         "category": "Graphics Workbench"
       },
       {
+        "command": "graphics-workbench.compressImage",
+        "title": "%command.compressImage%",
+        "category": "Graphics Workbench"
+      },
+      {
         "command": "graphics-workbench.encryptPdf",
         "title": "%command.encryptPdf%",
         "category": "Graphics Workbench"
@@ -364,6 +369,11 @@
           "command": "graphics-workbench.compressPdf",
           "group": "graphics-workbench",
           "when": "resourceExtname == .pdf && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.compressPdf.enabled"
+        },
+        {
+          "command": "graphics-workbench.compressImage",
+          "group": "graphics-workbench",
+          "when": "config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.compressImage.enabled && ((resourceExtname =~ /^\\.png$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i)) || (resourceExtname =~ /^\\.(jpg|jpeg)$/i) || (resourceExtname =~ /^\\.webp$/i) || (resourceExtname =~ /^\\.avif$/i) || (resourceExtname =~ /^\\.gif$/i) || (resourceExtname =~ /^\\.tiff?$/i))"
         },
         {
           "command": "graphics-workbench.encryptPdf",
@@ -553,6 +563,10 @@
         },
         {
           "command": "graphics-workbench.compressPdf",
+          "when": "false"
+        },
+        {
+          "command": "graphics-workbench.compressImage",
           "when": "false"
         },
         {
@@ -852,6 +866,13 @@
           "maximum": 9,
           "description": "%config.convertToAvif.effort%"
         },
+        "graphics-workbench.compressImage.quality": {
+          "type": "integer",
+          "default": 80,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "%config.compressImage.quality%"
+        },
         "graphics-workbench.outputPath.single.pdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}.pdf",
@@ -984,6 +1005,11 @@
           "default": "${fileDirname}/${fileBasenameNoExtension}_compressed.pdf",
           "description": "%config.outputPath.compressPdf%"
         },
+        "graphics-workbench.outputPath.compressImage": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}_compressed${fileExtname}",
+          "description": "%config.outputPath.compressImage%"
+        },
         "graphics-workbench.outputPath.encryptPdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}-encrypted.pdf",
@@ -1047,6 +1073,11 @@
           "type": "boolean",
           "default": true,
           "description": "%config.contextMenu.compressPdf.enabled%"
+        },
+        "graphics-workbench.contextMenu.compressImage.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.contextMenu.compressImage.enabled%"
         },
         "graphics-workbench.contextMenu.encryptPdf.enabled": {
           "type": "boolean",
