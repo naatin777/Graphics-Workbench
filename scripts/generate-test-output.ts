@@ -2,12 +2,13 @@ import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 import sharp, { type Sharp } from 'sharp';
 
 const execFileAsync = promisify(execFile);
-const repositoryDirectory = process.cwd();
+const repositoryDirectory = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const inputDirectory = path.join(repositoryDirectory, 'test', 'input', 'valid');
 const outputDirectory = path.join(repositoryDirectory, 'test', 'output');
 

@@ -23,8 +23,8 @@ tui/.core-package
 opencode.jsonc
 out
 playwright-report
-test/.vscode-test-data
-test/workspace/*
-!test/workspace/.gitkeep
+vscode/test/support/.vscode-test-data
+vscode/test/support/workspace/*
+!vscode/test/support/workspace/.gitkeep
 test-results
 *.vsix

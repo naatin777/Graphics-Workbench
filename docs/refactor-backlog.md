@@ -53,10 +53,10 @@
 - Area: conversion operations
 - Type: Readability
 - Concrete problem: raster operationの公開optionsには、legacy test injectionとruntime値（signal、conflict resolver、Output Channel）がまだ混在している。
-- Evidence: `src/operations/conversion/raster_conversion.ts`の`ExecuteRasterConversionOptions`と形式別のencoder定義。
+- Evidence: `core/src/operations/conversion/raster_conversion.ts`の`ExecuteRasterConversionOptions`と形式別のencoder定義。
 - Trigger: 次に形式別operationの依存を変更するとき、または同じruntime値を追加するとき。
 - Why not now: 今回はstaged batchとcommand runnerの共有境界を先に固定し、既存の安全性テストと直接operation callerを無用に書き換えない。
-- Related files: `src/operations/lifecycle/conversion_runtime.ts`, `src/operations/lifecycle/run_staged_conversion_batch.ts`, `src/operations/conversion/convert_to_*.ts`, `test/operations/convert_to_*_operation.test.ts`
+- Related files: `core/src/operations/lifecycle/conversion_runtime.ts`, `core/src/operations/lifecycle/run_staged_conversion_batch.ts`, `core/src/operations/conversion/raster_conversion.ts`, `core/test/integration/convert_to_*_operation.test.ts`
 - Expected test impact: operation APIの回帰、Safe Mode、cancellation、tool injectionの再確認が必要。
 - Reversibility: runtimeをoptionsへ導入する変更は、形式別に戻せる。
 
@@ -65,10 +65,10 @@
 - Area: conversion operations
 - Type: Duplication
 - Concrete problem: PDF/SVG operationにもstaging・concurrency・commit・cleanupの似た処理が残っている。
-- Evidence: `src/operations/conversion/convert_to_pdf.ts`と`src/operations/conversion/convert_to_svg.ts`はraster batchとは別の形式固有pipelineを持つ。
+- Evidence: `vscode/src/operations/conversion/convert_to_pdf.ts`と`vscode/src/operations/conversion/convert_to_svg.ts`はraster batchとは別の形式固有pipelineを持つ。
 - Trigger: PDF/SVGの安全性変更が同じ境界で3回以上必要になったとき。
 - Why not now: PDF/SVGはrasterと異なるtool/encoder差分があり、今回の共通化でgeneric conversion engineへ近づけない。
-- Related files: `src/operations/conversion/convert_to_pdf.ts`, `src/operations/conversion/convert_to_svg.ts`, `src/operations/lifecycle/run_staged_conversion_batch.ts`
+- Related files: `vscode/src/operations/conversion/convert_to_pdf.ts`, `vscode/src/operations/conversion/convert_to_svg.ts`, `core/src/operations/lifecycle/run_staged_conversion_batch.ts`
 - Expected test impact: PDF/SVGの実変換、external tool failure、cleanup、Safe Modeの全suite。
 - Reversibility: 形式固有のまま小さいhelperを導入できる。
 
@@ -77,10 +77,10 @@
 - Area: configuration
 - Type: Architecture
 - Concrete problem: 出力形式基準commandと入力/出力pair基準のoutput path keyが混同されていた。
-- Evidence: `src/config/output/output_path_settings.ts`、`package.json`の`outputPath.*`設定、`docs/specs/product/output-format-conversion.md`。
+- Evidence: `core/src/config/output/resolve_output_path.ts`、`vscode/package.json`の`outputPath.*`設定、`docs/specs/product/output-format-conversion.md`。
 - Trigger: output path naming policyを変更するとき。
 - Why not now: ADR-0021でpair-specific設定を正本とし、形式基準設定をmanifestと実装から外した。
-- Related files: `package.json`、`package.nls.json`、`package.nls.ja.json`、`src/config/output/output_path_settings.ts`、`src/commands/conversion/convert_*.ts`。
+- Related files: `vscode/package.json`、`vscode/package.nls.json`、`vscode/package.nls.ja.json`、`core/src/config/output/resolve_output_path.ts`、`vscode/src/commands/conversion/convert_*.ts`。
 - Expected test impact: pair-specific `outputPath.convertXToY`の単一・page出力を確認する。
 - Reversibility: ADR-0021を置き換え、設定migrationを別taskとして扱う。
 
@@ -91,9 +91,9 @@
 - Area: performance / cancellation
 - Type: Architecture
 - Concrete problem: 並び替え・回転・分割・結合は`readFile`で入力全体を読み込み、`openPdfDocument` / `graftPage` / `saveToBuffer`の同期区間ではキャンセルが反映されない。大きな入力ではExtension Hostのイベントループが塞がり、キャンセルやOOM時のcleanupが遅れる。
-- Evidence: `src/operations/pdf/reorder_pdf.ts`、`rotate_pdf.ts`、`split_pdf.ts`、`merge_pdf.ts`。
+- Evidence: `vscode/src/operations/pdf/reorder_pdf.ts`、`rotate_pdf.ts`、`split_pdf.ts`、`merge_pdf.ts`。
 - Trigger: PDF・画像のmupdf/Sharp同期処理が原因の障害報告が再現したとき、またはキャンセル保証を「best effort」から強保証へ上げる必要が出たとき。
 - Why not now: Worker Thread / 子プロセスへの隔離は配布物パッケージ、プロセスライフサイクル、staging/Undo契約をまたぐ大規模変更。現状はDraw.io、rsvg-convert、pdftocairo、Mermaidなどの外部toolはprocess単位で終了要求を伝播できる一方、MuPDF/Sharpのprocess内処理はbest effortと明記（ADR-0028）。
-- Related files: `src/operations/pdf/*.ts`、`src/operations/lifecycle/run_staged_conversion_batch.ts`。
+- Related files: `vscode/src/operations/pdf/*.ts`、`core/src/operations/lifecycle/run_staged_conversion_batch.ts`。
 - Expected test impact: mupdf系操作のキャンセル・OOM・staging/Undoの全suite。
 - Reversibility: 操作単位で1つずつ隔離できる。

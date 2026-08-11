@@ -2,6 +2,9 @@
 .vscode-test/**
 src/**
 webview/**
+out/core/test/**
+out/vscode/test/**
+out/test-support/**
 out/test/**
 test-results/**
 playwright-report/**

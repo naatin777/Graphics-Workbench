@@ -2,9 +2,9 @@
 
 ## 対象
 
-- `src/application/protocols/reorder_pdf_protocol.ts`
-- `src/commands/pdf/reorder_pdf_configure.ts`（`graphics-workbench.reorderPdf.configure`）
-- `webview/apps/reorder_pdf/`
+- `vscode/src/shared/protocols/reorder_pdf_protocol.ts`
+- `vscode/src/commands/pdf/reorder_pdf_configure.ts`（`graphics-workbench.reorderPdf.configure`）
+- `vscode/webview/apps/reorder_pdf/`
 
 ## Host → Webview
 

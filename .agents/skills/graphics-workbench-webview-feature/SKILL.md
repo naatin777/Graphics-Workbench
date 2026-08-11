@@ -12,7 +12,7 @@ Webview機能を追加・変更するとき、最も近い既存Webviewを参照
 - host側: `vscode/src/commands/pdf/<feature>_configure.ts` と `vscode/src/commands/lifecycle/pdf_configure_session.ts`(共有セッション)
 - protocol: `vscode/src/shared/protocols/<feature>_protocol.ts`
 - app: `vscode/webview/apps/<feature>/src/`
-- テスト: `test/commands/<feature>_configure_command.test.ts`、`vscode/webview/apps/<feature>/src/app.test.tsx`
+- テスト: `vscode/test/contract/commands/<feature>_configure_command.test.ts`、`vscode/webview/apps/<feature>/src/app.test.tsx`
 
 ## host側
 

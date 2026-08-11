@@ -66,6 +66,7 @@ void test('VSIX verification rejects TUI, build-only, and core source entries', 
     'extension/out/test/operations/example.test.js',
     'extension/out/core/test/operations/example.test.js',
     'extension/out/vscode/test/operations/example.test.js',
+    'extension/out/test-support/repository_root.js',
   ];
   for (const forbiddenEntry of forbiddenEntries) {
     assert.throws(

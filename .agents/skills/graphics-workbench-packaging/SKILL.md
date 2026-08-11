@@ -52,5 +52,5 @@ VSIXを必要以上に巨大化させず、同時にruntime必須ファイルを
 
 ## テスト
 
-- packaged extensionのsmoke test(`test/playwright/electron/packaged_conversion_smoke.spec.ts`)で、除外し過ぎていないことを確認する。
+- packaged extensionのsmoke test(`vscode/test/e2e/electron/packaged_conversion_smoke.spec.ts`)で、除外し過ぎていないことを確認する。
 - 新しいnative binaryやbundled CLIを追加した場合は、packaged smokeで実実行する。

@@ -22,28 +22,30 @@
 
 ## Directory layout
 
-`src/`は責務境界の下に、複数の関連moduleを持つ領域だけを分割する。
+各workspaceの`src/`は責務境界の下に、複数の関連moduleを持つ領域だけを分割する。
 
 ```text
-src/
+core/src/
+  config/{external_tools,output}/
+  operations/{conversion,external_tools,input,lifecycle}/
+  security/
+  shared/
+
+vscode/src/
   commands/{conversion,lifecycle,pdf,preview,shared}/
   config/{external_tools,output,rendering}/
   edit_provider/
   generated/
-  operations/{conversion,external_tools,input,lifecycle,pdf,preview}/
+  operations/{conversion,lifecycle,pdf,preview}/
   presentation/webview/
-  security/
-  shared/{protocols}/
+  shared/protocols/
 
-test/
-  {commands,config,edit_provider,integration,operations,presentation,security,shared}/
-  {input,output,workspace,vscode-settings}/
-  fixtures/
-  helpers/
-  playwright/electron/
+core/test/{unit,contract,integration}/
+vscode/test/{unit,contract,extension-host,e2e,support}/
+test/{input,output}/
 ```
 
-`security/`と`presentation/webview/`は現在1責務・1moduleのため、空の下位directoryを作らない。`input/`、`output/`、`workspace/`、`vscode-settings/`、`fixtures/`、`helpers/`、`playwright/electron/`はsource責務ではなくtest runtime資産として分離する。
+`core/src/security/`と`vscode/src/presentation/webview/`は現在1責務・1moduleのため、空の下位directoryを作らない。固定fixtureの`test/input/`・`test/output/`と、実行時資産の`vscode/test/support/`はsource責務から分離する。
 
 ## Naming and compatibility
 
@@ -64,5 +66,5 @@ test/
 5. internal symbolとfile名はbehaviorを変えずに先にcanonical語彙へ寄せる。ただし、compiled moduleを外部からimportする利用実態が判明した場合はaliasを残す。
 6. staging directoryのoperation labelはcleanup、Undo、recoveryのpath契約に含まれるため、source fileの改名と同時に変更しない。
 7. `convert`、`combine`、`merge`は、入力数と出力数が異なるため代用しない。
-8. package.json由来のcommand ID、configuration schema、Extension identity、submenu metadataは、`src/generated/extension_manifest.ts`を正本とし、別箇所へ手書きしない。public commandの実装bindingは`src/commands/shared/command_bindings.ts`を正本とし、`extension.ts`へ個別登録を追加しない。
+8. `vscode/package.json`由来のcommand ID、configuration schema、Extension identity、submenu metadataは、`vscode/src/generated/extension_manifest.ts`を正本とし、別箇所へ手書きしない。public commandの実装bindingは`vscode/src/commands/shared/command_bindings.ts`を正本とし、`vscode/src/extension.ts`へ個別登録を追加しない。
 9. 一時的なinternal commandやcompatibility aliasを追加する場合は、用途、利用者、削除条件、owner testを明記する。generator内へlegacy command IDを直接記述しない。

@@ -528,7 +528,8 @@ export default defineConfig({
      * Only no-focused-tests / no-disabled-tests / no-standalone-expect are
      * intentionally enabled (in the test override below). The plugin's other
      * default rules would also fire on the mocha- and Playwright-based tests
-     * under test/ (which use `assert` and their own `expect`), so every other
+     * under core/test and vscode/test (which use `assert` and their own
+     * `expect`), so every other
      * rule is explicitly disabled instead of being activated by category.
      */
     'vitest/no-focused-tests': 'off',
@@ -713,7 +714,7 @@ export default defineConfig({
     },
     {
       // oxlint-lint-coverage: scripts' Node test files exercise untyped Node/CLI
-      // APIs (execFileSync, JSON.parse, test context) the same way `test/**` does.
+      // APIs (execFileSync, JSON.parse, test context) the same way package tests do.
       files: ['scripts/**/*.test.mjs'],
       rules: {
         'typescript/no-unsafe-assignment': 'off',
@@ -791,9 +792,9 @@ export default defineConfig({
     },
     {
       files: [
-        'test/**/*.ts',
-        'core/**/*.test.ts',
-        'vscode/src/**/*.test.ts',
+        'core/test/**/*.ts',
+        'vscode/test/**/*.ts',
+        'test-support/**/*.ts',
         'vscode/webview/**/*.test.ts',
         'vscode/webview/**/*.test.tsx',
         'scripts/*.test.mjs',

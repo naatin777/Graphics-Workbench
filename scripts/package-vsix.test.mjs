@@ -126,7 +126,7 @@ void test('staging ignore excludes dependency build metadata', async () => {
     await appendStagingIgnoreRules(temporaryDirectory);
     assert.equal(
       await readFile(path.join(temporaryDirectory, '.vscodeignore'), 'utf8'),
-      '**/*.map\n**/*.tsbuildinfo\nout/core/test/**\nout/vscode/test/**\n',
+      '**/*.map\n**/*.tsbuildinfo\nout/core/test/**\nout/vscode/test/**\nout/test-support/**\nout/test/**\n',
     );
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });

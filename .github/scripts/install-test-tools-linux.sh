@@ -35,7 +35,7 @@ if [ -z "${chrome_path}" ]; then
 	exit 1
 fi
 
-settings_dir="test/vscode-settings"
+settings_dir="vscode/test/support/vscode-settings"
 mkdir -p "$settings_dir"
 cat > "$settings_dir/settings.json" <<EOF
 {

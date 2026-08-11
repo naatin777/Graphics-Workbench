@@ -1,6 +1,6 @@
 import { globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/ast';
 
@@ -247,5 +247,5 @@ function run(root) {
 
 const [, scriptPath] = process.argv;
 if (scriptPath && import.meta.url === pathToFileURL(path.resolve(scriptPath)).href) {
-  run(process.cwd());
+  run(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 }
