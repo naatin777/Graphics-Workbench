@@ -22,6 +22,7 @@ import {
 import { convertToPdfCommand } from '../conversion/convert_to_pdf.js';
 import { convertToRasterCommand, type ConvertToRasterCommandOptions } from '../conversion/convert_to_raster.js';
 import { convertToSvgCommand } from '../conversion/convert_to_svg.js';
+import { rotateImageCommand } from '../conversion/rotate_image.js';
 import { openControlsPanelCommand } from '../lifecycle/controls_panel.js';
 import { toggleSafeModeCommand } from '../lifecycle/safe_mode.js';
 import { undoLastConversionCommand } from '../lifecycle/undo_last_conversion.js';
@@ -134,6 +135,7 @@ export const commandBindings = [
   fileBinding('graphics-workbench.convertToDrawioSvg', convertToDrawioSvgCommand),
   fileBinding('graphics-workbench.combineImagesToPdf', combineImagesToPdfCommand),
   fileBinding('graphics-workbench.quickCombineImagesToPdf', quickCombineImagesToPdfCommand),
+  fileBinding('graphics-workbench.rotateImage', rotateImageCommand),
   // Lifecycle
   extensionCommandBinding('graphics-workbench.undoLastConversion', async (dependencies, ...args) =>
     undoLastConversionCommand(typeof args[0] === 'string' ? args[0] : undefined, dependencies),
