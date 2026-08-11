@@ -75,6 +75,7 @@ Convert confidently. Existing files are protected by default, and the latest gra
 - Explorer の右クリックメニューから、出力形式（PDF / PNG / JPEG / WebP / AVIF / GIF / TIFF / SVG）を選んで変換
 - PDF・画像・SVG・Mermaid・Draw.io ファイルの相互変換
 - 複数の画像を 1 つの PDF に結合
+- ラスター画像を 90° / 180° / 270° で回転
 - アニメーション GIF / WebP の相互変換（アニメーション保持 / フレーム分割）
 - 図版から編集可能な `.drawio` / `.drawio.png` / `.drawio.svg` を作成
 - ネイティブ Draw.io ファイル（`.drawio` / `.dio`）をページごと、または 1 つの PDF へ変換
@@ -206,6 +207,7 @@ WindowsではHomebrewを使用せず、各ツールのWindows向け配布物ま�
 | PDF へ変換                      | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                         | `.pdf`                                  | ラスター画像を PDF に変換                                | 不要                                   |
 | PDF へ変換                      | `.svg`, `.mmd`, `.mermaid`, editable Draw.io 画像                                                          | `.pdf`                                  | 図版ファイルを PDF に変換                                | 入力形式により異なります               |
 | 画像を1つのPDFへ結合            | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                         | `.pdf`                                  | 複数画像を1つのPDFへ結合                                 | 不要                                   |
+| 画像の回転                      | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                         | 同じ形式                                | 90° / 180° / 270°で画像を回転                            | 不要                                   |
 | Draw.ioをページごとのPDFへ変換  | `.drawio`, `.dio`, editable Draw.io 画像                                                                   | ページごとのPDF                         | Draw.ioの各ページを個別に出力                            | Draw.io Desktop                        |
 | Draw.ioを1つのPDFへ変換         | `.drawio`, `.dio`, editable Draw.io 画像                                                                   | 1つのPDF                                | Draw.ioの全ページをまとめて出力                          | Draw.io Desktop                        |
 | PNG へ変換                      | `.pdf`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像 | `.png`                                  | 図版ファイルを PNG に変換                                |                                        |

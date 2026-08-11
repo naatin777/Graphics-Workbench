@@ -75,6 +75,7 @@ Convert confidently. Existing files are protected by default, and the latest gra
 - Choose the output format (PDF / PNG / JPEG / WebP / AVIF / GIF / TIFF / SVG) from the Explorer context menu
 - Convert between PDF, image, SVG, Mermaid, and Draw.io files
 - Combine multiple images into one PDF
+- Rotate raster images by 90°, 180°, or 270°
 - Convert between animated GIF and WebP (preserve animation or split frames)
 - Create editable `.drawio` / `.drawio.png` / `.drawio.svg` from a figure
 - Convert native Draw.io files (`.drawio` / `.dio`) into one PDF per page or one PDF with all pages
@@ -206,6 +207,7 @@ On Windows, use the Windows distributions of each tool or your organization's pa
 | Convert to PDF              | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                           | `.pdf`                                  | Convert raster images to PDF                               | None                                            |
 | Convert to PDF              | `.svg`, `.mmd`, `.mermaid`, editable Draw.io images                                                          | `.pdf`                                  | Convert figure files to PDF                                | Depends on input format                         |
 | Combine images to PDF       | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                           | `.pdf`                                  | Combine multiple images into one PDF                       | None                                            |
+| Rotate images               | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                           | Same format                             | Rotate images by 90° / 180° / 270°                         | None                                            |
 | Draw.io to split PDFs       | `.drawio`, `.dio`, editable Draw.io images                                                                   | Page PDFs                               | Export each Draw.io page separately                        | Draw.io Desktop                                 |
 | Draw.io to one PDF          | `.drawio`, `.dio`, editable Draw.io images                                                                   | One PDF                                 | Export all Draw.io pages together                          | Draw.io Desktop                                 |
 | Convert to PNG              | `.pdf`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io images | `.png`                                  | Convert figure files to PNG                                |                                                 |

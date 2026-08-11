@@ -273,6 +273,11 @@
         "category": "Graphics Workbench"
       },
       {
+        "command": "graphics-workbench.rotateImage",
+        "title": "%command.rotateImage%",
+        "category": "Graphics Workbench"
+      },
+      {
         "command": "graphics-workbench.compressPdf",
         "title": "%command.compressPdf%",
         "category": "Graphics Workbench"
@@ -334,6 +339,11 @@
           "submenu": "graphics-workbench.convert",
           "group": "graphics-workbench",
           "when": "config.graphics-workbench.contextMenu.enabled && (((resourceExtname =~ /^\\.(png|jpe?g|webp|avif|gif|tiff?|svg|mmd|mermaid|drawio|dio)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && (config.graphics-workbench.conversion.single.enabled || config.graphics-workbench.conversion.combine.enabled)) || ((resourceExtname =~ /^\\.(pdf|gif|webp|drawio|dio)$/i || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.conversion.split.enabled))"
+        },
+        {
+          "command": "graphics-workbench.rotateImage",
+          "group": "graphics-workbench",
+          "when": "resourceExtname =~ /^\\.(png|jpe?g|webp|avif|gif|tiff?)$/i && config.graphics-workbench.contextMenu.enabled && config.graphics-workbench.contextMenu.rotateImage.enabled"
         },
         {
           "command": "graphics-workbench.convertDrawioToPagePdfs",
@@ -964,6 +974,11 @@
           "default": "${fileDirname}/${fileBasenameNoExtension}-rotated.pdf",
           "description": "%config.outputPath.rotatePdf%"
         },
+        "graphics-workbench.outputPath.rotateImage": {
+          "type": "string",
+          "default": "${fileDirname}/${fileBasenameNoExtension}-rotated${fileExtname}",
+          "description": "%config.outputPath.rotateImage%"
+        },
         "graphics-workbench.outputPath.compressPdf": {
           "type": "string",
           "default": "${fileDirname}/${fileBasenameNoExtension}_compressed.pdf",
@@ -1047,6 +1062,11 @@
           "type": "boolean",
           "default": true,
           "description": "%config.contextMenu.rotatePdf.enabled%"
+        },
+        "graphics-workbench.contextMenu.rotateImage.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.contextMenu.rotateImage.enabled%"
         },
         "graphics-workbench.contextMenu.reorderPdf.enabled": {
           "type": "boolean",

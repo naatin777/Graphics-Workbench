@@ -57,6 +57,7 @@ type ConfigurationKey =
   | 'outputPath.clipboardImage'
   | 'outputPath.reorderPdf'
   | 'outputPath.rotatePdf'
+  | 'outputPath.rotateImage'
   | 'outputPath.compressPdf'
   | 'outputPath.encryptPdf'
   | 'outputPath.decryptPdf'
@@ -72,6 +73,7 @@ type ConfigurationKey =
   | 'contextMenu.encryptPdf.enabled'
   | 'contextMenu.decryptPdf.enabled'
   | 'contextMenu.rotatePdf.enabled'
+  | 'contextMenu.rotateImage.enabled'
   | 'contextMenu.reorderPdf.enabled'
   | 'outputPath.single.drawio'
   | 'outputPath.single.drawioPng'
@@ -359,6 +361,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.rotatePdf': {
     types: ['string'],
   },
+  'outputPath.rotateImage': {
+    types: ['string'],
+  },
   'outputPath.compressPdf': {
     types: ['string'],
   },
@@ -406,6 +411,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['boolean'],
   },
   'contextMenu.rotatePdf.enabled': {
+    types: ['boolean'],
+  },
+  'contextMenu.rotateImage.enabled': {
     types: ['boolean'],
   },
   'contextMenu.reorderPdf.enabled': {
@@ -590,6 +598,10 @@ export const commandContributions = {
     titleKey: 'command.quickCombineImagesToPdf',
     category: 'Graphics Workbench',
   },
+  'graphics-workbench.rotateImage': {
+    titleKey: 'command.rotateImage',
+    category: 'Graphics Workbench',
+  },
   'graphics-workbench.compressPdf': {
     titleKey: 'command.compressPdf',
     category: 'Graphics Workbench',
@@ -646,6 +658,7 @@ export const publicCommandIds = [
   'graphics-workbench.convertToDrawioSvg',
   'graphics-workbench.combineImagesToPdf',
   'graphics-workbench.quickCombineImagesToPdf',
+  'graphics-workbench.rotateImage',
   'graphics-workbench.compressPdf',
   'graphics-workbench.encryptPdf',
   'graphics-workbench.decryptPdf',
@@ -910,6 +923,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.rotatePdf',
         '${fileDirname}/${fileBasenameNoExtension}-rotated.pdf',
       ),
+      rotateImage: defineStrictOutputPath(
+        configurationReader,
+        'outputPath.rotateImage',
+        '${fileDirname}/${fileBasenameNoExtension}-rotated${fileExtname}',
+      ),
       compressPdf: defineStrictOutputPath(
         configurationReader,
         'outputPath.compressPdf',
@@ -951,6 +969,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       rotatePdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.rotatePdf.enabled', true),
+      },
+      rotateImage: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.rotateImage.enabled', true),
       },
       reorderPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.reorderPdf.enabled', true),
