@@ -3,10 +3,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
 import { convertToDrawioFiles, type DrawioComposeInput } from '../../operations/conversion/convert_to_drawio.js';
 import { renderPdfPageToSvg } from '@graphics-workbench/core/operations/pdf/mupdf.js';
-import { runMermaidCliWithSignal } from '@graphics-workbench/core/operations/conversion/tools/run_mermaid_cli.js';
 import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
@@ -14,14 +12,6 @@ import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertLocalFileUri } from '../shared/command_input.js';
 
 const drawioExtensions = ['.drawio', '.dio', '.drawio.png', '.dio.png', '.drawio.svg', '.dio.svg'] as const;
-
-function assertSvgOutputPath(outputPath: string): string {
-  if (!outputPath.toLowerCase().endsWith('.svg')) {
-    throw new Error(`Mermaid SVG output path must end with .svg: ${outputPath}`);
-  }
-
-  return outputPath;
-}
 
 export async function convertToDrawioCommand(
   sourceUris: vscode.Uri[],
@@ -109,21 +99,6 @@ async function runDrawioConversionCommand(
               const svg = await renderPdfPageToSvg(await readFile(sourcePath), page);
               signal.throwIfAborted();
               await writeFile(toolOutputPath, svg, 'utf8');
-            },
-            runMermaid: async (sourcePath, toolOutputPath, signal) => {
-              const mermaidTools = createMermaidBackend(configuration);
-              await runMermaidCliWithSignal(
-                {
-                  sourcePath,
-                  outputPath: assertSvgOutputPath(toolOutputPath),
-                  outputFormat: 'svg',
-                  mermaidPath: mermaidTools.mermaidPath,
-                  chromePath: mermaidTools.chromePath,
-                  theme: mermaidTools.theme,
-                  backgroundColor: mermaidTools.backgroundColor,
-                },
-                signal,
-              );
             },
             runDrawio: executeDrawio,
           },

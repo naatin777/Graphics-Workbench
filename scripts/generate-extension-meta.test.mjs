@@ -38,7 +38,7 @@ void test('generated manifest imports in plain Node without vscode', () => {
     if (!Array.isArray(manifest.publicCommandIds) || manifest.publicCommandIds.length === 0) process.exit(3);
     process.exit(0);
   `;
-  execFileSync(process.execPath, ['--experimental-strip-types', '--input-type=module', '-e', script], {
+  execFileSync(process.execPath, ['--input-type=module', '-e', script], {
     encoding: 'utf8',
   });
 });

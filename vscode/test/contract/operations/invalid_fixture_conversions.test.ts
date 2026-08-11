@@ -14,7 +14,6 @@ const invalidCases = [
   { directory: 'avif', fileName: 'truncated.avif', outputFormat: 'png' },
   { directory: 'gif', fileName: 'truncated.gif', outputFormat: 'png' },
   { directory: 'jpeg', fileName: 'truncated.jpeg', outputFormat: 'png' },
-  { directory: 'mermaid', fileName: 'malformed.mmd', outputFormat: 'png' },
   { directory: 'pdf', fileName: 'not-a-pdf.pdf', outputFormat: 'png' },
   { directory: 'pdf', fileName: 'password-protected.pdf', outputFormat: 'png' },
   { directory: 'pdf', fileName: 'truncated.pdf', outputFormat: 'png' },
@@ -29,7 +28,7 @@ suite('不正なテスト入力の実変換エラー', () => {
   for (const [index, invalidCase] of invalidCases.entries()) {
     test(`${invalidCase.directory}/${invalidCase.fileName}を実際に${invalidCase.outputFormat.toUpperCase()}へ変換すると変換失敗となり、出力ファイルを生成しない`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
         const inputPath = path.join(testInputDirectory, 'invalid', invalidCase.directory, invalidCase.fileName);
         const destinationPath = workspaceDestinationPath(invalidCase.fileName, index);
         const sourcePath = await copyInputToWorkspace(inputPath, destinationPath);
@@ -40,7 +39,6 @@ suite('不正なテスト入力の実変換エラー', () => {
           maxInputPixels: 1_000_000_000,
           inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
-          mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `invalid-${index}`,

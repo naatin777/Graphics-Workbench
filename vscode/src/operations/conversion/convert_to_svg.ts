@@ -21,9 +21,7 @@ import type {
 } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
 import type { DrawioBackend } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
-import type { MermaidBackend } from '@graphics-workbench/core/operations/conversion/tools/mermaid_tools.js';
 import type { RunPdfToSvg } from '@graphics-workbench/core/operations/conversion/tools/pdf_render_tools.js';
-import { runMermaidCliWithSignal } from '@graphics-workbench/core/operations/conversion/tools/run_mermaid_cli.js';
 import { runStagedConversionBatch } from '@graphics-workbench/core/operations/lifecycle/run_staged_conversion_batch.js';
 import { stagingRootPathFor } from '@graphics-workbench/core/operations/lifecycle/run_id.js';
 
@@ -36,7 +34,6 @@ export interface SvgInput {
 
 export interface ConvertToSvgFilesOptions {
   inputs: SvgInput[];
-  mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   runtime?: ConversionExecutionContext;
   runPdfToSvg: RunPdfToSvg;
@@ -45,13 +42,11 @@ export interface ConvertToSvgFilesOptions {
 }
 
 interface SvgRenderTools {
-  mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   runPdfToSvg: RunPdfToSvg;
 }
 
 interface StageSvgConversionOptions {
-  mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   runPdfToSvg: RunPdfToSvg;
   maxInputPixels: number;
@@ -90,7 +85,6 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
     ...(runtime !== undefined && { runtime }),
     stage: async (input, index, currentRunId, batchRuntime) =>
       stageSvgConversion(input, index, currentRunId, {
-        mermaidTools: options.mermaidTools,
         drawioTools: options.drawioTools,
         runPdfToSvg: options.runPdfToSvg,
         maxInputPixels,
@@ -105,7 +99,7 @@ async function stageSvgConversion(
   runId: string,
   options: StageSvgConversionOptions,
 ): Promise<PreparedConversionOutput> {
-  const { mermaidTools, drawioTools, runPdfToSvg, maxInputPixels, signal } = options;
+  const { drawioTools, runPdfToSvg, maxInputPixels, signal } = options;
   signal.throwIfAborted();
   const stagingRootPath = stagingRootPathFor(input.workspacePath, 'convert-to-svg', runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
@@ -115,7 +109,6 @@ async function stageSvgConversion(
     input,
     outputPath: stagedOutputPath,
     tools: {
-      mermaidTools,
       drawioTools,
       runPdfToSvg,
     },
@@ -135,7 +128,7 @@ async function stageSvgConversion(
 }
 
 async function writeSourceAsSvg({ input, outputPath, tools, signal }: WriteSourceAsSvgOptions): Promise<void> {
-  const { mermaidTools, drawioTools, runPdfToSvg } = tools;
+  const { drawioTools, runPdfToSvg } = tools;
   const extension = path.extname(input.sourcePath).toLowerCase();
 
   if (isEditableDrawioImagePath(input.sourcePath) || isNativeDrawioPath(input.sourcePath)) {
@@ -155,7 +148,7 @@ async function writeSourceAsSvg({ input, outputPath, tools, signal }: WriteSourc
     return;
   }
 
-  await writeMermaidAsSvg(input.sourcePath, outputPath, input.workspacePath, mermaidTools, signal);
+  throw new Error(`Unsupported input for SVG input: ${input.sourcePath}`);
 }
 
 async function writeDrawioAsSvg(
@@ -205,41 +198,6 @@ async function writePdfPageAsSvg({
   }
 }
 
-async function writeMermaidAsSvg(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  mermaid: MermaidBackend,
-  signal: AbortSignal,
-): Promise<void> {
-  signal.throwIfAborted();
-  await assertWritablePathInWorkspace(outputPath, workspacePath);
-  await mkdir(path.dirname(outputPath), { recursive: true });
-  signal.throwIfAborted();
-
-  try {
-    await runMermaidCliWithSignal(
-      {
-        sourcePath,
-        outputPath: asSvgOutputPath(outputPath),
-        outputFormat: 'svg',
-        mermaidPath: mermaid.mermaidPath,
-        chromePath: mermaid.chromePath,
-        theme: mermaid.theme,
-        backgroundColor: mermaid.backgroundColor,
-      },
-      signal,
-    );
-    signal.throwIfAborted();
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw error instanceof Error ? error : new Error(String(error));
-    }
-
-    throw new Error(`Mermaid CLI failed: ${toErrorMessage(error)}`, { cause: error });
-  }
-}
-
 async function validateGeneratedSvg(outputPath: string): Promise<void> {
   const source = await readFile(outputPath, 'utf8');
   const content = source.trim();
@@ -283,27 +241,9 @@ function validateConversions(inputs: SvgInput[]): void {
   }
 }
 
-const supportedSvgInputFormats = new Set<SourceFormat>([
-  'pdf',
-  'mermaid',
-  'drawio',
-  'editable-drawio-png',
-  'editable-drawio-svg',
-]);
+const supportedSvgInputFormats = new Set<SourceFormat>(['pdf', 'drawio', 'editable-drawio-png', 'editable-drawio-svg']);
 
 function isSupportedSourcePath(sourcePath: string): boolean {
   const format = sourceFormatForPath(sourcePath);
   return format !== undefined && supportedSvgInputFormats.has(format);
-}
-
-function asSvgOutputPath(outputPath: string): `${string}.svg` {
-  if (!isSvgOutputPath(outputPath)) {
-    throw new Error(`SVG output path must end with .svg: ${outputPath}`);
-  }
-
-  return outputPath;
-}
-
-function isSvgOutputPath(outputPath: string): outputPath is `${string}.svg` {
-  return outputPath.toLowerCase().endsWith('.svg');
 }

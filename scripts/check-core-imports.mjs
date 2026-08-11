@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const coreSourceRoot = path.join(repositoryRoot, 'core', 'src');
-const allowedPackages = new Set(['mupdf', 'sharp']);
+const allowedPackages = new Set(['mupdf', 'p-limit', 'sharp']);
 const failures = [];
 
 for (const filePath of collectFiles(coreSourceRoot)) {

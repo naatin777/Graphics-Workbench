@@ -63,7 +63,6 @@ async function convertImage(
   const common = {
     inputs: [job],
     pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
-    mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
     drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
     runtime,
     maxInputPixels: 100_000_000,

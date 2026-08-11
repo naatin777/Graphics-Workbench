@@ -4,7 +4,7 @@ set -euo pipefail
 # Runs an npm test script inside the local Docker test container.
 #
 # The container mirrors the GitHub Actions setup: pinned npm, Linux
-# node_modules, and the conversion tools (rsvg-convert / mermaid-cli / drawio /
+# node_modules, and the conversion tools (rsvg-convert / drawio /
 # Chromium). Source is copied into the image. Nothing from the container is
 # bind-mounted into the repository; requested artifacts are copied out after
 # the scripts finish.

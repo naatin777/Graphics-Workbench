@@ -48,11 +48,9 @@ export function compressibleFormatForPath(sourcePath: string): CompressibleImage
     }
     case 'pdf':
     case 'svg':
-    case 'mermaid':
     case 'drawio':
     case 'editable-drawio-png':
-    case 'editable-drawio-svg':
-    case 'excalidraw': {
+    case 'editable-drawio-svg': {
       return undefined;
     }
   }

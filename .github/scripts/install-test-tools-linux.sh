@@ -13,14 +13,7 @@ fi
 	xvfb \
 	fonts-liberation \
 	fonts-dejavu-core
-npm install -g @mermaid-js/mermaid-cli
-
 rsvg_convert_path="$(command -v rsvg-convert)"
-mermaid_path="$(command -v mmdc || true)"
-if [ -z "${mermaid_path}" ]; then
-	echo "Could not find the mmdc executable. Install it with: npm install -g @mermaid-js/mermaid-cli" >&2
-	exit 1
-fi
 chrome_path="$(command -v google-chrome || true)"
 if [ -z "${chrome_path}" ]; then
 	for candidate in /ms-playwright/chromium-*/chrome-linux*/chrome; do
@@ -40,7 +33,6 @@ mkdir -p "$settings_dir"
 cat > "$settings_dir/settings.json" <<EOF
 {
     "graphics-workbench.execPath.rsvgConvert": "${rsvg_convert_path}",
-    "graphics-workbench.execPath.mermaid": "${mermaid_path}",
     "graphics-workbench.execPath.chrome": "${chrome_path}"
 }
 EOF

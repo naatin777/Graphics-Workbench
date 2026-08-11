@@ -112,15 +112,6 @@ export const commandBindings = [
   fileBinding('graphics-workbench.convertToPdf', convertToPdfCommand),
   fileBinding('graphics-workbench.convertDrawioToPagePdfs', convertDrawioToPagePdfsCommand),
   fileBinding('graphics-workbench.convertDrawioToSinglePdf', convertDrawioToSinglePdfCommand),
-  // excalidraw変換はjsdom依存のため遅延import（起動時に重いjsdomを読み込まない）
-  {
-    kind: 'file',
-    id: 'graphics-workbench.convertExcalidrawToPdf',
-    handler: async (sourceUris, dependencies) => {
-      const { convertExcalidrawToPdfCommand } = await import('../conversion/convert_excalidraw_to_pdf.js');
-      return convertExcalidrawToPdfCommand(sourceUris, dependencies);
-    },
-  },
   rasterFileBinding('graphics-workbench.convertToPng', 'png'),
   rasterFileBinding('graphics-workbench.convertToJpeg', 'jpeg'),
   rasterFileBinding('graphics-workbench.convertToWebp', 'webp'),

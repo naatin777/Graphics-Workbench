@@ -10,13 +10,6 @@ Invoke-WebRequest 'https://github.com/miyako/console-rsvg-convert/releases/downl
 
 if (-not (Test-Path $rsvgConvert)) { throw "missing $rsvgConvert" }
 
-Write-Host 'Installing Mermaid CLI...'
-npm install -g @mermaid-js/mermaid-cli
-$mermaid = (Get-Command mmdc -ErrorAction SilentlyContinue)
-if (-not $mermaid) {
-	throw 'mmdc not found after installing @mermaid-js/mermaid-cli'
-}
-
 $chromeCandidates = @(
 	(Join-Path $env:ProgramFiles 'Google/Chrome/Application/chrome.exe'),
 	(Join-Path ${env:ProgramFiles(x86)} 'Google/Chrome/Application/chrome.exe')
@@ -31,7 +24,6 @@ New-Item -ItemType Directory -Force -Path $settingsDir | Out-Null
 $settingsPath = Join-Path $settingsDir 'settings.json'
 $settings = [ordered]@{
 	'graphics-workbench.execPath.rsvgConvert' = $rsvgConvert
-	'graphics-workbench.execPath.mermaid' = $mermaid.Source
 	'graphics-workbench.execPath.chrome' = $chrome
 }
 

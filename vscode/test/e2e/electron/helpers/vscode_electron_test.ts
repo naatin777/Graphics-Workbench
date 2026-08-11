@@ -64,7 +64,6 @@ export async function writeVscodeUserSettings(
 async function resolveMissingExternalToolPaths(settings: Record<string, unknown>): Promise<void> {
   const tools = [
     ['graphics-workbench.execPath.rsvgConvert', 'rsvg-convert'],
-    ['graphics-workbench.execPath.mermaid', 'mmdc'],
     ['graphics-workbench.execPath.drawio', 'drawio'],
     ['graphics-workbench.execPath.chrome', 'google-chrome'],
   ] as const;

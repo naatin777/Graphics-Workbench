@@ -1,5 +1,4 @@
 import type { Configuration } from '../../generated/extension_manifest.js';
-import type { MermaidBackend } from '@graphics-workbench/core/operations/conversion/tools/mermaid_tools.js';
 
 /** Resolves the Chrome executable path, falling back to the platform default when the setting is blank. */
 export function resolveChromeExecutablePath(
@@ -20,13 +19,4 @@ export function resolveChromeExecutablePath(
   }
 
   return 'google-chrome';
-}
-
-export function createMermaidBackend(configuration: Configuration): MermaidBackend {
-  return {
-    chromePath: resolveChromeExecutablePath(configuration),
-    mermaidPath: configuration.execPath.mermaid(),
-    theme: configuration.mermaid.theme(),
-    backgroundColor: configuration.mermaid.backgroundColor(),
-  };
 }

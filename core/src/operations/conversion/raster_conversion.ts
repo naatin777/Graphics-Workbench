@@ -3,14 +3,12 @@ import path from 'node:path';
 
 import {
   isEditableDrawioImagePath,
-  isMermaidPath,
   isNativeDrawioPath,
   isSameSourceFormat,
   sourceFormatForPath,
   type SourceFormat,
 } from '../../shared/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
-import { isAbortError, toErrorMessage } from '../../shared/error.js';
 import { countPdfPages, hasPdfPageContent } from '../pdf/mupdf.js';
 
 import {
@@ -25,7 +23,6 @@ import type { CommittedConversionOutput, PreparedConversionOutput } from '../lif
 export type { CommittedConversionOutput };
 import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import type { DrawioBackend } from './tools/drawio_tools.js';
-import type { MermaidBackend } from './tools/mermaid_tools.js';
 import type { PdfRenderBackend } from './tools/pdf_render_tools.js';
 
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
@@ -102,7 +99,6 @@ interface RasterStageContext {
   runId: string;
   runtime: ResolvedConversionRuntime;
   pdfRenderTools: PdfRenderBackend;
-  mermaidTools: MermaidBackend | undefined;
   drawioTools: DrawioBackend | undefined;
   spec: RasterFormatSpec;
   outputOptions?: AvifOutputOptions | WebpOutputOptions;
@@ -180,11 +176,6 @@ async function writeSourceAsRaster(
     return;
   }
 
-  if (isMermaidPath(sourcePath)) {
-    await writeMermaidAsRaster(request, context);
-    return;
-  }
-
   await writeImageAsRaster(request, context);
 }
 
@@ -253,46 +244,6 @@ async function writePdfPageAsRaster(request: RasterRenderRequest, context: Raste
     request.cropContent,
   );
   context.runtime.signal.throwIfAborted();
-
-  await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
-}
-
-async function writeMermaidAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
-  if (context.mermaidTools === undefined) {
-    throw new Error('Mermaid backend is unavailable for this frontend.');
-  }
-
-  const pngPath = path.join(request.stageDirectory ?? path.dirname(request.outputPath), 'mermaid.png');
-  context.runtime.signal.throwIfAborted();
-  await assertWritablePathInWorkspace(pngPath, request.workspacePath);
-  await mkdir(path.dirname(pngPath), { recursive: true });
-  context.runtime.signal.throwIfAborted();
-
-  try {
-    // Mermaid is outside the Terminal UI MVP. Keep its Node-specific scratch
-    // implementation out of Bun's module graph unless a Mermaid input actually
-    // takes this branch.
-    const { runMermaidCliWithSignal } = await import('./tools/run_mermaid_cli.js');
-    await runMermaidCliWithSignal(
-      {
-        sourcePath: request.sourcePath,
-        outputPath: asPngOutputPath(pngPath),
-        outputFormat: 'png',
-        mermaidPath: context.mermaidTools.mermaidPath,
-        chromePath: context.mermaidTools.chromePath,
-        theme: context.mermaidTools.theme,
-        backgroundColor: context.mermaidTools.backgroundColor,
-      },
-      context.runtime.signal,
-    );
-    context.runtime.signal.throwIfAborted();
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw error instanceof Error ? error : new Error(String(error));
-    }
-
-    throw new Error(`Mermaid CLI failed: ${toErrorMessage(error)}`, { cause: error });
-  }
 
   await writeImageAsRaster({ ...request, sourcePath: pngPath }, context);
 }
@@ -407,7 +358,6 @@ async function validateGeneratedRaster(outputPath: string, outputExtension: stri
 const supportedRasterInputFormats = new Set<SourceFormat>([
   'pdf',
   'svg',
-  'mermaid',
   'png',
   'jpeg',
   'webp',
@@ -424,18 +374,6 @@ function isSupportedSourcePath(sourcePath: string): boolean {
   return format !== undefined && supportedRasterInputFormats.has(format);
 }
 
-function asPngOutputPath(outputPath: string): `${string}.png` {
-  if (!isPngOutputPath(outputPath)) {
-    throw new Error(`PNG output path must end with .png: ${outputPath}`);
-  }
-
-  return outputPath;
-}
-
-function isPngOutputPath(outputPath: string): outputPath is `${string}.png` {
-  return outputPath.toLowerCase().endsWith('.png');
-}
-
 interface AvifOutputOptions {
   effort: number;
 }
@@ -448,7 +386,6 @@ export interface ExecuteRasterConversionOptions {
   inputs: RasterInput[];
   runtime: ConversionExecutionContext;
   pdfRenderTools: PdfRenderBackend;
-  mermaidTools?: MermaidBackend;
   drawioTools?: DrawioBackend;
   maxInputPixels: number;
   runId?: string;
@@ -474,7 +411,6 @@ export async function executeRasterConversion(
         runId: stageRunId,
         runtime: stageRuntime,
         pdfRenderTools: options.pdfRenderTools,
-        mermaidTools: options.mermaidTools,
         drawioTools: options.drawioTools,
         spec: options.spec,
         ...(options.outputOptions !== undefined && { outputOptions: options.outputOptions }),

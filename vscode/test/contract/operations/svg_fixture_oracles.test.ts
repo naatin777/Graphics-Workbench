@@ -20,7 +20,7 @@ suite('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
     .entries()) {
     test(`svg/${path.basename(fixturePath)}をworkspaceへコピーしてPNGへ変換すると、renderer差を許容して固定正解expected.pngと内容が一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const outputPath = path.join(workspacePath, 'converted', `svg-${index}.png`);
         const expectedPath = path.join(testOutputDirectory, 'svg', sourceName(fixturePath), 'expected.png');
@@ -30,7 +30,6 @@ suite('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
           maxInputPixels: 1_000_000_000,
           inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
-          mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `svg-${index}`,

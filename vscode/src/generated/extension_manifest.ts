@@ -13,12 +13,10 @@ export const extensionIdentity = {
 
 type ConfigurationKey =
   | 'execPath.drawio'
-  | 'execPath.mermaid'
   | 'execPath.rsvgConvert'
   | 'execPath.chrome'
   | 'externalTools.drawio.timeoutSeconds'
   | 'externalTools.rsvgConvert.timeoutSeconds'
-  | 'externalTools.mermaid.timeoutSeconds'
   | 'raster.maxInputPixels'
   | 'raster.maxAnimationPixels'
   | 'preview.maxCanvasPixels'
@@ -26,8 +24,6 @@ type ConfigurationKey =
   | 'performance.maxConcurrentHeavyProcesses'
   | 'undoHistory.maxRecords'
   | 'convertToPdf.svg.engine'
-  | 'mermaid.theme'
-  | 'mermaid.backgroundColor'
   | 'insertLatex.pdfTemplate'
   | 'insertLatex.imageTemplate'
   | 'insertTypst.pdfTemplate'
@@ -174,9 +170,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'execPath.drawio': {
     types: ['string'],
   },
-  'execPath.mermaid': {
-    types: ['string'],
-  },
   'execPath.rsvgConvert': {
     types: ['string'],
   },
@@ -189,11 +182,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     maximum: 86400,
   },
   'externalTools.rsvgConvert.timeoutSeconds': {
-    types: ['integer'],
-    minimum: 0,
-    maximum: 86400,
-  },
-  'externalTools.mermaid.timeoutSeconds': {
     types: ['integer'],
     minimum: 0,
     maximum: 86400,
@@ -230,13 +218,6 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'convertToPdf.svg.engine': {
     types: ['string'],
     enumValues: ['chrome', 'rsvg-convert'],
-  },
-  'mermaid.theme': {
-    types: ['string'],
-    enumValues: ['default', 'forest', 'dark', 'neutral', 'base'],
-  },
-  'mermaid.backgroundColor': {
-    types: ['string'],
   },
   'insertLatex.pdfTemplate': {
     types: ['string', 'array'],
@@ -548,10 +529,6 @@ export const commandContributions = {
     titleKey: 'command.convertDrawioToSinglePdf',
     category: 'Graphics Workbench',
   },
-  'graphics-workbench.convertExcalidrawToPdf': {
-    titleKey: 'command.convertExcalidrawToPdf',
-    category: 'Graphics Workbench',
-  },
   'graphics-workbench.convertToPng': {
     titleKey: 'command.convertToPng',
     category: 'Graphics Workbench',
@@ -664,7 +641,6 @@ export const publicCommandIds = [
   'graphics-workbench.convertToPdf',
   'graphics-workbench.convertDrawioToPagePdfs',
   'graphics-workbench.convertDrawioToSinglePdf',
-  'graphics-workbench.convertExcalidrawToPdf',
   'graphics-workbench.convertToPng',
   'graphics-workbench.convertToJpeg',
   'graphics-workbench.convertToWebp',
@@ -722,7 +698,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
   return {
     execPath: {
       drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', 'drawio'),
-      mermaid: defineConfiguration<string>(configurationReader, 'execPath.mermaid', 'mmdc'),
       rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
       chrome: defineConfiguration<string>(configurationReader, 'execPath.chrome', ''),
     },
@@ -732,9 +707,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       rsvgConvert: {
         timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.rsvgConvert.timeoutSeconds', 0),
-      },
-      mermaid: {
-        timeoutSeconds: defineConfiguration<number>(configurationReader, 'externalTools.mermaid.timeoutSeconds', 0),
       },
     },
     raster: {
@@ -763,14 +735,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
           'chrome',
         ),
       },
-    },
-    mermaid: {
-      theme: defineConfiguration<'default' | 'forest' | 'dark' | 'neutral' | 'base'>(
-        configurationReader,
-        'mermaid.theme',
-        'default',
-      ),
-      backgroundColor: defineConfiguration<string>(configurationReader, 'mermaid.backgroundColor', 'white'),
     },
     insertLatex: {
       pdfTemplate: defineConfiguration<string | string[]>(

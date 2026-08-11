@@ -47,7 +47,6 @@ if (existsSync(settingsSourcePath)) {
   const settings = JSON.parse(readFileSync(settingsSourcePath, 'utf8'));
   const toolCommands = [
     ['graphics-workbench.execPath.rsvgConvert', 'rsvg-convert'],
-    ['graphics-workbench.execPath.mermaid', 'mmdc'],
     ['graphics-workbench.execPath.drawio', 'drawio'],
     ['graphics-workbench.execPath.chrome', 'google-chrome'],
   ];

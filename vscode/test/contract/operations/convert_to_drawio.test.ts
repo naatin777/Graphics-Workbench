@@ -55,9 +55,6 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
           calls.push(page);
           await writeFile(output, '<svg width="100" height="50"/>');
         },
-        runMermaid: async () => {
-          throw new Error('mermaid input must not be used in this test');
-        },
         runDrawio: async () => {
           throw new Error('drawio export must not be used for .drawio output');
         },
@@ -104,9 +101,6 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
         runPdfToSvg: async () => {
           throw new Error('pdf input must not be used in this test');
         },
-        runMermaid: async () => {
-          throw new Error('mermaid input must not be used in this test');
-        },
         runDrawio: async () => {
           throw new Error('drawio export must not be used for .drawio output');
         },
@@ -139,9 +133,6 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
           drawioPath: '/custom/drawio',
           runPdfToSvg: async () => {
             throw new Error('pdf input must not be used in this test');
-          },
-          runMermaid: async () => {
-            throw new Error('mermaid input must not be used in this test');
           },
           runDrawio: async (executable, args) => {
             call = { executable, args };
@@ -196,9 +187,6 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
           drawioPath: 'drawio',
           runPdfToSvg: async () => {
             throw new Error('pdf input must not be used in this test');
-          },
-          runMermaid: async () => {
-            throw new Error('mermaid input must not be used in this test');
           },
           runDrawio: async () => {
             throw new Error('Draw.io export failed');

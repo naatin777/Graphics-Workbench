@@ -24,7 +24,7 @@
       ]
     },
     "core": {
-      "entry": ["test/**/*.test.ts", "src/operations/conversion/tools/run_mermaid_cli.ts"],
+      "entry": ["test/**/*.test.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "vscode": {
@@ -40,8 +40,7 @@
         "test/**/*.test.ts",
         "test/e2e/**/*.spec.ts",
         "webview/apps/*/vite.config.ts",
-        "webview/apps/*/vitest.config.ts",
-        "webview/excalidraw/entry.ts"
+        "webview/apps/*/vitest.config.ts"
       ],
       "project": ["src/**/*.ts", "test/**/*.ts", "webview/**/*.{ts,tsx}"],
       "ignoreFiles": ["webview/apps/crop_pdf/src/pdf/pdfjs.ts", "webview/shared/pdf/render_first_page.ts"]

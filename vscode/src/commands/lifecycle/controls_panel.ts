@@ -215,10 +215,9 @@ const FEATURE_LABELS: Record<FeatureAvailabilityId, LocaleKeyType> = {
   images: 'message.controls.feature.images',
   'svg-to-pdf': 'message.controls.feature.svgToPdf',
   drawio: 'message.controls.feature.drawio',
-  mermaid: 'message.controls.feature.mermaid',
 };
 
-const FEATURE_IDS: readonly FeatureAvailabilityId[] = ['pdf-operations', 'images', 'svg-to-pdf', 'drawio', 'mermaid'];
+const FEATURE_IDS: readonly FeatureAvailabilityId[] = ['pdf-operations', 'images', 'svg-to-pdf', 'drawio'];
 
 function featureLabel(id: FeatureAvailabilityId): string {
   return userMessage(FEATURE_LABELS[id]);

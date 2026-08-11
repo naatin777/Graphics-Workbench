@@ -41,12 +41,6 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
           page: 1,
         },
       ],
-      mermaidTools: {
-        chromePath: 'chrome',
-        mermaidPath: 'mmdc',
-        theme: 'default',
-        backgroundColor: 'white',
-      },
       drawioTools: {
         drawioPath: 'drawio',
         runDrawio: async (_executable, args) => {
@@ -82,7 +76,6 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
     await assert.rejects(
       convertToSvgFiles({
         inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, page: 1 }],
-        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: {
           drawioPath: 'drawio',
           runDrawio: async (_executable, args) => {
@@ -115,12 +108,6 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
             page: 1,
           },
         ],
-        mermaidTools: {
-          chromePath: 'chrome',
-          mermaidPath: 'mmdc',
-          theme: 'default',
-          backgroundColor: 'white',
-        },
         drawioTools: {
           drawioPath: 'drawio',
           runDrawio: async () => {
@@ -147,7 +134,6 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
     await assert.rejects(
       convertToSvgFiles({
         inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path, page: 1 }],
-        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
         runPdfToSvg: async (_sourcePath, toolOutputPath) => {
           await writeFile(toolOutputPath, '');
@@ -179,12 +165,6 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
             page: 1,
           },
         ],
-        mermaidTools: {
-          chromePath: 'chrome',
-          mermaidPath: 'mmdc',
-          theme: 'default',
-          backgroundColor: 'white',
-        },
         drawioTools: {
           drawioPath: 'drawio',
           runDrawio: executeDrawio,

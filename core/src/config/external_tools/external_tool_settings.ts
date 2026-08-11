@@ -1,4 +1,4 @@
-export type ExternalToolId = 'drawio' | 'mermaid' | 'rsvgConvert';
+export type ExternalToolId = 'drawio' | 'rsvgConvert';
 
 export interface ExternalToolTimeoutConfiguration {
   externalTools: Readonly<Record<ExternalToolId, { timeoutSeconds: () => number }>>;
@@ -9,7 +9,6 @@ export type ExternalToolTimeouts = Readonly<Record<ExternalToolId, number | unde
 const defaultTimeouts: ExternalToolTimeouts = {
   drawio: undefined,
   rsvgConvert: undefined,
-  mermaid: undefined,
 };
 
 let configuredTimeouts: ExternalToolTimeouts = defaultTimeouts;
@@ -18,7 +17,6 @@ export function readExternalToolTimeouts(configuration: ExternalToolTimeoutConfi
   return {
     drawio: timeoutMilliseconds(configuration.externalTools.drawio.timeoutSeconds()),
     rsvgConvert: timeoutMilliseconds(configuration.externalTools.rsvgConvert.timeoutSeconds()),
-    mermaid: timeoutMilliseconds(configuration.externalTools.mermaid.timeoutSeconds()),
   };
 }
 

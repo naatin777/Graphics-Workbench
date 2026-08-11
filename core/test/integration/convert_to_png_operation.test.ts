@@ -41,7 +41,6 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
           page,
         })),
         pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
-        mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
         drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
         runtime: { resolveConflicts: async () => 'overwrite' },
       });
@@ -104,7 +103,6 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
             .toFile(pngPath);
         },
       },
-      mermaidTools: { chromePath: 'chrome', mermaidPath: 'mmdc', theme: 'default', backgroundColor: 'white' },
       drawioTools: drawio,
       runtime: { resolveConflicts: async () => 'overwrite' },
     });

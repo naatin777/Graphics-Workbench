@@ -39,7 +39,6 @@ const FEATURE_PDF = userMessage('message.controls.feature.pdfOperations');
 const FEATURE_IMAGES = userMessage('message.controls.feature.images');
 const FEATURE_SVG_TO_PDF = userMessage('message.controls.feature.svgToPdf');
 const FEATURE_DRAWIO = userMessage('message.controls.feature.drawio');
-const FEATURE_MERMAID = userMessage('message.controls.feature.mermaid');
 
 suite('Controlsパネル', () => {
   let sandbox: sinon.SinonSandbox;
@@ -76,7 +75,6 @@ suite('Controlsパネル', () => {
       { id: 'images', available: true, detail: 'ok' },
       { id: 'svg-to-pdf', available: true, detail: 'ok' },
       { id: 'drawio', available: false, detail: 'missing' },
-      { id: 'mermaid', available: true, detail: 'ok' },
     ];
 
     await showControlsPanel(
@@ -230,7 +228,6 @@ suite('Controlsパネル', () => {
       { id: 'images', available: true, detail: 'ok' },
       { id: 'svg-to-pdf', available: true, detail: 'ok' },
       { id: 'drawio', available: false, detail: 'missing' },
-      { id: 'mermaid', available: true, detail: 'ok' },
     ];
 
     await showControlsPanel(
@@ -244,7 +241,7 @@ suite('Controlsパネル', () => {
     const availabilityRows = quickPick.items.filter((item) => item.action?.kind === 'none');
     assert.deepStrictEqual(
       availabilityRows.map((item) => item.label),
-      [FEATURE_PDF, FEATURE_IMAGES, FEATURE_SVG_TO_PDF, FEATURE_DRAWIO, FEATURE_MERMAID],
+      [FEATURE_PDF, FEATURE_IMAGES, FEATURE_SVG_TO_PDF, FEATURE_DRAWIO],
     );
     assert.ok(availabilityRows[0]?.description?.startsWith('$(check)'));
     assert.ok(availabilityRows[3]?.description?.startsWith('$(close)'));
@@ -263,7 +260,6 @@ suite('Controlsパネル', () => {
         settingId: 'graphics-workbench.execPath.rsvgConvert',
       },
       { id: 'drawio', available: true, detail: 'ok', settingId: 'graphics-workbench.execPath.drawio' },
-      { id: 'mermaid', available: true, detail: 'ok', settingId: 'graphics-workbench.execPath.mermaid' },
     ];
 
     await showControlsPanel(
@@ -305,7 +301,6 @@ suite('Controlsパネル', () => {
                 { id: 'images', available: true, detail: 'ok' },
                 { id: 'svg-to-pdf', available: false, detail: 'rsvg-convert not found' },
                 { id: 'drawio', available: true, detail: 'ok' },
-                { id: 'mermaid', available: true, detail: 'ok' },
               ]
             : [],
         writeEngine: async (engine) => {
@@ -339,14 +334,12 @@ suite('Controlsパネル', () => {
             { id: 'images', available: true, detail: 'ok' },
             { id: 'svg-to-pdf', available: true, detail: 'ok' },
             { id: 'drawio', available: false, detail: 'missing' },
-            { id: 'mermaid', available: true, detail: 'ok' },
           ]
         : [
             { id: 'pdf-operations', available: true, detail: 'ok' },
             { id: 'images', available: true, detail: 'ok' },
             { id: 'svg-to-pdf', available: true, detail: 'ok' },
             { id: 'drawio', available: true, detail: 'ok' },
-            { id: 'mermaid', available: true, detail: 'ok' },
           ];
     };
 
@@ -432,7 +425,6 @@ function defaultAvailability(): FeatureAvailabilityEntry[] {
     { id: 'images', available: true, detail: 'ok' },
     { id: 'svg-to-pdf', available: true, detail: 'ok' },
     { id: 'drawio', available: false, detail: 'missing' },
-    { id: 'mermaid', available: true, detail: 'ok' },
   ];
 }
 

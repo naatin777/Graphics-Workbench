@@ -2,8 +2,8 @@
 
 # Local test container mirroring the GitHub Actions setup:
 #   - mcr.microsoft.com/playwright base (Chromium, xvfb, fonts-liberation)
-#   - pinned npm to satisfy devEngines (npm 12.0.1)
-#   - librsvg2-bin / mermaid-cli / fonts-noto-cjk / drawio for conversion tests
+#   - pinned Node.js/npm to satisfy devEngines (Node.js 24.15.0 / npm 12.0.1)
+#   - librsvg2-bin / fonts-noto-cjk / drawio for conversion tests
 #
 # Used by scripts/test-in-docker.sh. Run tests with:
 #   npm run check:docker
@@ -19,7 +19,8 @@ ARG DRAWIO_VERSION=31.1.5
 
 WORKDIR /workspace
 
-# Pin npm to satisfy devEngines.packageManager (npm 12.0.1).
+# Pin Node.js/npm to satisfy devEngines (Node.js 24.15.0 / npm 12.0.1).
+RUN node --version | grep -Eq '^v24\\.'
 RUN --mount=type=cache,target=/root/.npm \
   npm install --global npm@12.0.1
 
@@ -32,12 +33,6 @@ RUN apt-get update \
     fonts-dejavu-core \
     fonts-noto-cjk \
   && rm -rf /var/lib/apt/lists/*
-
-# Mermaid CLI. Puppeteer must not download its own Chrome: the container runs
-# the base image's Chromium through the google-chrome wrapper below.
-ENV PUPPETEER_SKIP_DOWNLOAD=true
-RUN --mount=type=cache,target=/root/.npm \
-  npm install --global @mermaid-js/mermaid-cli
 
 # execPath.chrome falls back to `google-chrome` on Linux when the setting is
 # empty. Expose the base image's Chromium under that name. The wrapper adds
