@@ -21,8 +21,8 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 import {
   isReorderPdfHostToWebviewMessage,
   isReorderPdfWebviewToHostMessage,
-} from '../../src/shared/protocols/reorder_pdf_protocol.js';
-import { reorderPdfFiles } from '../../src/operations/pdf/reorder_pdf.js';
+} from '../../vscode/src/shared/protocols/reorder_pdf_protocol.js';
+import { reorderPdfFiles } from '../../vscode/src/operations/pdf/reorder_pdf.js';
 
 suite('PDFページ並び替え', () => {
   test('3ページのPDFへページ順[3,1,2]を指定すると、出力PDFは3ページを保ちながら元の3・1・2ページ目の順に並ぶ', async () => {

@@ -3,11 +3,14 @@ import { access, copyFile, mkdir, mkdtempDisposable, readFile, rename, symlink, 
 import os from 'node:os';
 import path from 'node:path';
 
-import { commitStagedOutputs, CommitRollbackError } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
+import {
+  commitStagedOutputs,
+  CommitRollbackError,
+} from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
 import {
   cleanupConversionArtifacts,
   withStagingCleanup,
-} from '../../src/operations/lifecycle/cleanup_conversion_artifacts.js';
+} from '@graphics-workbench/core/operations/lifecycle/cleanup_conversion_artifacts.js';
 
 suite(
   '変換結果を一時保存した作業ディレクトリの削除と、commit失敗時に元出力を退避した復旧バックアップ（.previous）の保持',

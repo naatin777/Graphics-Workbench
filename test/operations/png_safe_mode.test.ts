@@ -20,12 +20,12 @@ import path from 'node:path';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
 
-import { convertToPdfFiles, type PdfInput } from '../../src/operations/conversion/convert_to_pdf.js';
-import type { RunDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
+import { convertToPdfFiles, type PdfInput } from '../../vscode/src/operations/conversion/convert_to_pdf.js';
+import type { RunDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 import {
   createConversionUndoRecord,
   undoConversionOutputs,
-} from '../../src/operations/lifecycle/undo_last_conversion.js';
+} from '../../vscode/src/operations/lifecycle/undo_last_conversion.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 

@@ -4,8 +4,8 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { planRasterSourceConversionJobs } from '../../src/commands/conversion/plan_conversion_jobs.js';
-import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
+import { planRasterSourceConversionJobs } from '../../vscode/src/commands/conversion/plan_conversion_jobs.js';
+import { getDefaultConfiguration } from '../../vscode/src/generated/extension_manifest.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 

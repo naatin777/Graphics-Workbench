@@ -5,9 +5,9 @@ import { expect, test, type TestInfo } from '@playwright/test';
 import { PDFDocument } from '../../helpers/pdf_document.js';
 
 import { cropConfigureFixture } from '../../helpers/crop_configure_fixture.js';
-import type { MergePdfOptions } from '../../../src/operations/pdf/merge_pdf.js';
-import type { SplitPdfOptions } from '../../../src/operations/pdf/split_pdf.js';
-import type { CommittedConversionOutput } from '../../../src/operations/lifecycle/commit_conversion_outputs.js';
+import type { MergePdfOptions } from '../../../vscode/src/operations/pdf/merge_pdf.js';
+import type { SplitPdfOptions } from '../../../vscode/src/operations/pdf/split_pdf.js';
+import type { CommittedConversionOutput } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
 
 import { resetTestWorkspace } from '../../helpers/test_workspace.js';
 import {
@@ -401,7 +401,7 @@ test('package済みmoduleでMergeとSplitが動く', async ({ playwright }, test
 
     const mergeModule = await loadPackagedOperation<PackagedMergePdfModule>(
       env.app.extensionPath,
-      'out/operations/pdf/merge_pdf.js',
+      'out/vscode/src/operations/pdf/merge_pdf.js',
       isPackagedMergePdfModule,
     );
     await mergeModule.mergePdf({
@@ -420,7 +420,7 @@ test('package済みmoduleでMergeとSplitが動く', async ({ playwright }, test
 
     const splitModule = await loadPackagedOperation<PackagedSplitPdfModule>(
       env.app.extensionPath,
-      'out/operations/pdf/split_pdf.js',
+      'out/vscode/src/operations/pdf/split_pdf.js',
       isPackagedSplitPdfModule,
     );
     const splitOutputs = await splitModule.splitPdfAllPages({

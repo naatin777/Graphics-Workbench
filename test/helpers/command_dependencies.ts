@@ -1,6 +1,6 @@
-import type { CommandDependencies } from '../../src/commands/shared/command_dependencies.js';
+import type { CommandDependencies } from '../../vscode/src/commands/shared/command_dependencies.js';
 
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
+import { getExtensionConfiguration } from '../../vscode/src/config/extension_configuration.js';
 import { fakeConfiguration } from './configuration.js';
 import { RecordingOutputChannel } from './recording_output_channel.js';
 

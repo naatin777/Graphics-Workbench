@@ -19,7 +19,7 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { cropPdfAutoCommand } from '../../src/commands/pdf/crop_pdf_auto.js';
+import { cropPdfAutoCommand } from '../../vscode/src/commands/pdf/crop_pdf_auto.js';
 import { liveCommandDependencies } from '../helpers/command_dependencies.js';
 
 suite('PDF crop outputPath検証', () => {

@@ -3,8 +3,8 @@ import { copyFile, mkdtempDisposable } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { planRasterFrameJobs } from '../../src/commands/conversion/plan_raster_frame_jobs.js';
-import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
+import { planRasterFrameJobs } from '../../vscode/src/commands/conversion/plan_raster_frame_jobs.js';
+import { getDefaultConfiguration } from '../../vscode/src/generated/extension_manifest.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 const fixturePath = operationPngInputPath;

@@ -4,6 +4,9 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 const rootDirectory = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+const extensionPackagePath = path.join(rootDirectory, 'vscode', 'package.json');
+const corePackagePath = path.join(rootDirectory, 'core', 'package.json');
+const corePackageDirectory = 'node_modules/@graphics-workbench/core';
 
 const TARGETS = new Map([
   ['win32-x64', { npmOs: 'win32', npmCpu: 'x64', sharp: 'sharp-win32-x64', libvips: undefined }],
@@ -32,6 +35,30 @@ const TARGETS = new Map([
 const NATIVE_PACKAGE_PREFIX = 'node_modules/@img/';
 
 /**
+ * @param {string} filePath
+ * @returns {Record<string, unknown>}
+ */
+function readPackage(filePath) {
+  /** @type {unknown} */
+  const parsed = JSON.parse(readFileSync(filePath, 'utf8'));
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`Package metadata must be an object: ${filePath}`);
+  }
+  return parsed;
+}
+
+/**
+ * @param {string} filePath
+ */
+function readPackageMain(filePath) {
+  const packageMetadata = readPackage(filePath);
+  if (typeof packageMetadata.main !== 'string' || packageMetadata.main === '') {
+    throw new Error(`Package metadata must define main: ${filePath}`);
+  }
+  return packageMetadata.main.replace(/^\.\//u, '');
+}
+
+/**
  * @param {string[]} values
  * @returns {string[]}
  */
@@ -48,6 +75,24 @@ export function getTargetSpec(target) {
     throw new Error(`Unsupported VSIX target: ${target}`);
   }
   return spec;
+}
+
+/**
+ * @param {string} target
+ */
+export function getRequiredVsixEntries(target) {
+  const spec = getTargetSpec(target);
+  return [
+    'README.ja.md',
+    'THIRD_PARTY_NOTICES.md',
+    readPackageMain(extensionPackagePath),
+    `${corePackageDirectory}/package.json`,
+    `${corePackageDirectory}/${readPackageMain(corePackagePath)}`,
+    'node_modules/mupdf/package.json',
+    'node_modules/sharp/package.json',
+    `${NATIVE_PACKAGE_PREFIX}${spec.sharp}/package.json`,
+    ...(spec.libvips === undefined ? [] : [`${NATIVE_PACKAGE_PREFIX}${spec.libvips}/package.json`]),
+  ];
 }
 
 /**
@@ -98,16 +143,35 @@ export function verifyVsixEntries(entries, target) {
     entry.startsWith('extension/') ? entry.slice('extension/'.length) : entry,
   );
   const entrySet = new Set(normalizedEntries);
-  const forbiddenEntries = normalizedEntries.filter(
-    (entry) => entry.startsWith('tui/') || entry.startsWith('node_modules/@opentui/'),
-  );
+  const forbiddenEntries = normalizedEntries.filter((entry) => {
+    const coreRelativeEntry = entry.startsWith(`${corePackageDirectory}/`)
+      ? entry.slice(corePackageDirectory.length + 1)
+      : undefined;
+    return (
+      entry === 'bun.lock' ||
+      entry === 'bun.lockb' ||
+      entry.endsWith('/bun.lock') ||
+      entry.endsWith('/bun.lockb') ||
+      entry.startsWith('tui/') ||
+      entry.startsWith('node_modules/@opentui/') ||
+      entry.startsWith('node_modules/@types/bun/') ||
+      entry.startsWith('node_modules/typescript/') ||
+      entry.startsWith('out/test/') ||
+      entry.startsWith('out/core/test/') ||
+      entry.startsWith('out/vscode/test/') ||
+      entry.endsWith('.map') ||
+      entry.endsWith('.tsbuildinfo') ||
+      (coreRelativeEntry !== undefined &&
+        (coreRelativeEntry.startsWith('src/') ||
+          coreRelativeEntry.startsWith('test/') ||
+          coreRelativeEntry.startsWith('tests/') ||
+          /\.(?:cts|mts|ts|tsx)$/u.test(coreRelativeEntry)))
+    );
+  });
   if (forbiddenEntries.length > 0) {
-    throw new Error(`VSIX contains Terminal UI-only runtime entries: ${forbiddenEntries.join(', ')}`);
+    throw new Error(`VSIX contains forbidden build or Terminal UI entries: ${forbiddenEntries.join(', ')}`);
   }
-  const requiredEntries = ['node_modules/sharp/package.json', `${NATIVE_PACKAGE_PREFIX}${spec.sharp}/package.json`];
-  if (spec.libvips !== undefined) {
-    requiredEntries.push(`${NATIVE_PACKAGE_PREFIX}${spec.libvips}/package.json`);
-  }
+  const requiredEntries = getRequiredVsixEntries(target);
 
   const missingEntries = requiredEntries.filter((entry) => !entrySet.has(entry));
   if (missingEntries.length > 0) {
@@ -125,10 +189,19 @@ export function verifyVsixEntries(entries, target) {
     throw new Error(`VSIX contains unexpected native packages: ${unexpectedNativePackages.join(', ')}`);
   }
 
-  const devDependencies = readDevDependencyNames(path.join(rootDirectory, 'package.json'));
-  const includedDevDependencies = devDependencies.filter((dependency) =>
-    entrySet.has(`node_modules/${dependency}/package.json`),
-  );
+  const devDependencies = [
+    ...new Set([
+      ...readDevDependencyNames(path.join(rootDirectory, 'package.json')),
+      ...readDevDependencyNames(extensionPackagePath),
+    ]),
+  ];
+  const productionDependencies = new Set([
+    ...readDependencyNames(extensionPackagePath),
+    ...readDependencyNames(corePackagePath),
+  ]);
+  const includedDevDependencies = devDependencies
+    .filter((dependency) => !productionDependencies.has(dependency))
+    .filter((dependency) => entrySet.has(`node_modules/${dependency}/package.json`));
   if (includedDevDependencies.length > 0) {
     throw new Error(`VSIX contains direct devDependencies: ${includedDevDependencies.join(', ')}`);
   }
@@ -146,13 +219,25 @@ export function verifyVsixEntries(entries, target) {
  * @returns {string[]}
  */
 function readDevDependencyNames(filePath) {
-  /** @type {unknown} */
-  const parsed = JSON.parse(readFileSync(filePath, 'utf8'));
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed) || !('devDependencies' in parsed)) {
+  const parsed = readPackage(filePath);
+  if (!('devDependencies' in parsed)) {
     return [];
   }
 
   const dependencies = parsed.devDependencies;
+  if (typeof dependencies !== 'object' || dependencies === null || Array.isArray(dependencies)) {
+    return [];
+  }
+  return Object.keys(dependencies);
+}
+
+/**
+ * @param {string} filePath
+ * @returns {string[]}
+ */
+function readDependencyNames(filePath) {
+  const parsed = readPackage(filePath);
+  const { dependencies } = parsed;
   if (typeof dependencies !== 'object' || dependencies === null || Array.isArray(dependencies)) {
     return [];
   }
@@ -180,6 +265,29 @@ export function verifySharpInstall(target, nodeModulesDirectory = path.join(root
     throw new Error(`Target ${target} is missing installed sharp packages: ${missingPackages.join(', ')}`);
   }
   return requiredPackages;
+}
+
+/**
+ * Verify the production closure assembled for VSCE before creating the archive.
+ * This catches an unresolved workspace link before VSCE can silently omit core.
+ *
+ * @param {string} target
+ * @param {string} nodeModulesDirectory
+ */
+export function verifyProductionInstall(target, nodeModulesDirectory) {
+  const requiredFiles = [
+    path.join(nodeModulesDirectory, '@graphics-workbench', 'core', 'package.json'),
+    path.join(nodeModulesDirectory, '@graphics-workbench', 'core', readPackageMain(corePackagePath)),
+    path.join(nodeModulesDirectory, 'mupdf', 'package.json'),
+  ];
+  const missingFiles = requiredFiles.filter((filePath) => !pathExists(filePath));
+  if (missingFiles.length > 0) {
+    throw new Error(`VSIX staging is missing production files: ${missingFiles.join(', ')}`);
+  }
+  return {
+    requiredFiles,
+    sharpPackages: verifySharpInstall(target, nodeModulesDirectory),
+  };
 }
 
 /**

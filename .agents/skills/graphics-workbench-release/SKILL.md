@@ -21,7 +21,7 @@ description: Graphics Workbenchのバージョン更新、リリース前検証�
 
 ```bash
 npm run check:all
-npm run test:docker -- test
+npm run test:docker
 npm run package
 ```
 
@@ -40,7 +40,7 @@ packagingの詳細チェックリストは `graphics-workbench-packaging` を参
 
 ## 確認項目
 
-- `package.json`のバージョンが正しい。
+- 公開manifestである`vscode/package.json`のバージョンが正しく、`core/package.json`の同一versionと一致している。
 - ユーザー向け変更がリリースノートへ含まれている。
 - ビルド成果物が最新である。
 - 不要な開発ファイルや秘密情報がVSIXへ含まれていない。

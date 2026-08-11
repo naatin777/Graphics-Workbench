@@ -3,7 +3,7 @@ import { access, mkdir, mkdtempDisposable, readFile, writeFile } from 'node:fs/p
 import os from 'node:os';
 import path from 'node:path';
 
-import { runStagedConversionBatch } from '../../src/operations/lifecycle/run_staged_conversion_batch.js';
+import { runStagedConversionBatch } from '@graphics-workbench/core/operations/lifecycle/run_staged_conversion_batch.js';
 
 suite('変換出力を一時領域へ書き出し、全件成功後に最終出力へ反映し、失敗・中断時は一時領域を掃除する一括処理', () => {
   test('成功時は一時出力を最終出力へ反映した後も、反映前の一時出力を保持したまま最終出力にも同じ内容を置く', async () => {

@@ -4,7 +4,7 @@ import {
   assertPageTemplateForSplitOutput,
   assertRandomTemplateForCombine,
   formatOutputPage,
-} from '../../src/config/output/page_template.js';
+} from '@graphics-workbench/core/config/output/page_template.js';
 
 suite('分割出力のpageテンプレート', () => {
   test("総数が9なら'1'、12なら'01'、125なら'012'と、総数の桁数に合わせて1始まりのページ番号を0埋めする", () => {

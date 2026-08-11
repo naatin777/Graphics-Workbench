@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { LatexDropEditProvider } from '../../src/edit_provider/latex_drop_edit_provider.js';
+import { LatexDropEditProvider } from '../../vscode/src/edit_provider/latex_drop_edit_provider.js';
 
 function normalizeSnippetValue(value: string): string {
   return value.replaceAll('\\\\', '\\').replaceAll(/\\([{}])/g, '$1');

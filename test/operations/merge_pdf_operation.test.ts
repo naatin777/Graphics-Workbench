@@ -3,12 +3,12 @@ import { access, copyFile, mkdtempDisposable, readFile, symlink, writeFile } fro
 import os from 'node:os';
 import path from 'node:path';
 
-import { recordConversionForUndo } from '../../src/commands/lifecycle/undo_last_conversion.js';
-import { mergePdf } from '../../src/operations/pdf/merge_pdf.js';
+import { recordConversionForUndo } from '../../vscode/src/commands/lifecycle/undo_last_conversion.js';
+import { mergePdf } from '../../vscode/src/operations/pdf/merge_pdf.js';
 import {
   createConversionUndoRecord,
   undoConversionOutputs,
-} from '../../src/operations/lifecycle/undo_last_conversion.js';
+} from '../../vscode/src/operations/lifecycle/undo_last_conversion.js';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');

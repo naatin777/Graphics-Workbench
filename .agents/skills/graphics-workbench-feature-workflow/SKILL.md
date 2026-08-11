@@ -9,7 +9,7 @@ description: Graphics Workbenchに新しいcommand、PDF操作、画像変換、
 
 ## 判断の起点
 
-1. 最も近い既存実装を探す(例: 画像変換→`src/operations/conversion/`、PDF操作→`src/operations/pdf/`、Webview→`webview/apps/*/`)。
+1. 最も近い既存実装を探す(例: VS Code画像変換→`vscode/src/operations/conversion/`、VS Code PDF操作→`vscode/src/operations/pdf/`、frontend非依存の共有変換→`core/src/`、Webview→`vscode/webview/apps/*/`)。
 2. 既存実装がどの層を通っているかを追う。
 3. 新機能が既存の形式と何が違うかを列挙する。
 4. その差分に必要な層だけを選ぶ。
@@ -29,23 +29,23 @@ description: Graphics Workbenchに新しいcommand、PDF操作、画像変換、
 
 ### 公開面
 
-- `package.json` contributes.commands / configuration / menus / submenu / NLS
-- `scripts/generate-extension-meta.ts` と `src/generated/extension_manifest.ts`(手書き禁止、generatorで再生成)
-- `src/commands/shared/command_bindings.ts`(public commandの正本)
-- `src/commands/shared/command_registrations.ts`(adapter経由の動的登録)
+- `vscode/package.json` contributes.commands / configuration / menus / submenu / NLS
+- `scripts/generate-extension-meta.ts` と `vscode/src/generated/extension_manifest.ts`(手書き禁止、generatorで再生成)
+- `vscode/src/commands/shared/command_bindings.ts`(public commandの正本)
+- `vscode/src/commands/shared/command_registrations.ts`(adapter経由の動的登録)
 
 ### 実装層
 
-- command実装(`src/commands/`)
-- operation層(`src/operations/`)
-- protocol(`src/shared/protocols/`、host↔webview境界)
-- 出力パス設定(`src/config/output/`)
-- staging / Safe Mode / rollback / Undo(`src/commands/lifecycle/` / `src/operations/lifecycle/`)
+- command実装(`vscode/src/commands/`)
+- VS Code固有operation層(`vscode/src/operations/`) / frontend非依存core(`core/src/`)
+- protocol(`vscode/src/shared/protocols/`、host↔webview境界。frontend間で共有する純粋protocolだけ`core/src/`)
+- 出力パス設定(`core/src/config/output/`またはVS Code固有の`vscode/src/config/`)
+- staging / Safe Mode / rollback / Undo(`core/src/operations/lifecycle/` / `vscode/src/commands/lifecycle/`)
 - キャンセル(`ConversionExecutionContext`、`signal`)
 
 ### ローカライズ
 
-- `package.nls.json` / `package.nls.ja.json`(package.json の %key% 参照)
+- `vscode/package.nls.json` / `vscode/package.nls.ja.json`(`vscode/package.json` の %key% 参照)
 - Webview の labels / messages
 
 ## 判断ルール

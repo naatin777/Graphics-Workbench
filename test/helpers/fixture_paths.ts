@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 
-const projectRootDirectory = findProjectRoot(testDirectory);
+export const projectRootDirectory = findProjectRoot(testDirectory);
 const testRootDirectory: string = path.join(projectRootDirectory, 'test');
 export const testInputDirectory: string = path.join(testRootDirectory, 'input');
 export const testOutputDirectory: string = path.join(testRootDirectory, 'output');
@@ -27,7 +27,10 @@ function findProjectRoot(startDirectory: string): string {
   let currentDirectory = path.resolve(startDirectory);
 
   while (true) {
-    if (existsSync(path.join(currentDirectory, 'package.json'))) {
+    if (
+      existsSync(path.join(currentDirectory, 'package.json')) &&
+      existsSync(path.join(currentDirectory, 'test', 'input'))
+    ) {
       return currentDirectory;
     }
 

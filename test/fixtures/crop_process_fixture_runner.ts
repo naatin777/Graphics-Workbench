@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 
-import { CROP_PDF_PROCESS_PROTOCOL_VERSION } from '../../src/operations/pdf/crop_pdf_process_protocol.js';
+import { CROP_PDF_PROCESS_PROTOCOL_VERSION } from '../../vscode/src/operations/pdf/crop_pdf_process_protocol.js';
 
 process.on('message', (message: unknown) => {
   const requestId = readRequestId(message);

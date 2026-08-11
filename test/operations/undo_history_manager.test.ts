@@ -17,8 +17,8 @@ import { access, mkdir, mkdtempDisposable, readFile, writeFile } from 'node:fs/p
 import os from 'node:os';
 import path from 'node:path';
 
-import { UndoHistoryManager } from '../../src/operations/lifecycle/undo_history_manager.js';
-import type { ConversionOutput } from '../../src/operations/lifecycle/undo_last_conversion.js';
+import { UndoHistoryManager } from '../../vscode/src/operations/lifecycle/undo_history_manager.js';
+import type { ConversionOutput } from '../../vscode/src/operations/lifecycle/undo_last_conversion.js';
 
 suite('Undo履歴マネージャの記録・保持・取り消し', () => {
   test('1回目の変換を記録した後で2回目の変換を記録しても、変換1・変換2それぞれの前回内容ファイルを削除せず、どちらの変換も後から取り消せる状態を保つ', async () => {

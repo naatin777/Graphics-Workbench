@@ -1,6 +1,7 @@
 out
 dist
 node_modules
+tui/.core-package/
 .pnpm-store/
 .vscode-test/
 .vscode-test-ci-data/
@@ -18,5 +19,4 @@ media/
 coverage/
 test/workspace/*
 !test/workspace/.gitkeep
-core
 .vscode-test-ci-host/

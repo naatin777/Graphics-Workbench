@@ -16,8 +16,8 @@ import assert from 'node:assert/strict';
 import {
   runFeatureAvailabilityChecks,
   type FeatureAvailabilityEntry,
-} from '../../src/commands/shared/environment_check.js';
-import { userMessage } from '../../src/commands/shared/user_messages.js';
+} from '../../vscode/src/commands/shared/environment_check.js';
+import { userMessage } from '../../vscode/src/commands/shared/user_messages.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 type Probe = (params: { toolName: string }) => Promise<void>;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { isCropConfigureMessage } from '../../src/shared/protocols/crop_pdf_protocol.js';
+import { isCropConfigureMessage } from '../../vscode/src/shared/protocols/crop_pdf_protocol.js';
 
 suite('Crop PDFのWebview操作メッセージの受信判定（ready/apply/previewLoadFailed）', () => {
   test('cropBoxの4座標がすべて有限数値で、targetがselected・正の整数pagesであるapplyメッセージを受け入れる', () => {

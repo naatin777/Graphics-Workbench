@@ -13,9 +13,10 @@ suite('NLSの整合性をスクリプトとscannerで検証する', () => {
     const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
     assert.ok(extension);
 
-    const scriptPath = path.join(extension.extensionPath, 'scripts', 'check-nls.mjs');
+    const repositoryPath = path.resolve(extension.extensionPath, '..');
+    const scriptPath = path.join(repositoryPath, 'scripts', 'check-nls.mjs');
     const result = await execFileAsync(process.execPath, [scriptPath], {
-      cwd: extension.extensionPath,
+      cwd: repositoryPath,
     });
     assert.match(result.stdout, /NLS consistency OK/);
     assert.strictEqual(result.stderr, '');
@@ -25,7 +26,8 @@ suite('NLSの整合性をスクリプトとscannerで検証する', () => {
     const extension = vscode.extensions.getExtension('naatin777.graphics-workbench');
     assert.ok(extension);
 
-    const scriptPath = path.join(extension.extensionPath, 'scripts', 'check-nls.mjs');
+    const repositoryPath = path.resolve(extension.extensionPath, '..');
+    const scriptPath = path.join(repositoryPath, 'scripts', 'check-nls.mjs');
     const script = `
       import { validateUserMessageSource } from ${JSON.stringify(pathToFileURL(scriptPath).href)};
       const source = ${JSON.stringify(`
@@ -41,7 +43,7 @@ suite('NLSの整合性をスクリプトとscannerで検証する', () => {
       console.log(errors.length);
     `;
     const result = await execFileAsync(process.execPath, ['--input-type=module', '-e', script], {
-      cwd: extension.extensionPath,
+      cwd: repositoryPath,
     });
 
     assert.strictEqual(result.stdout.trim(), '2');

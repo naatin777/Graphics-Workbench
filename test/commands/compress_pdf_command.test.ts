@@ -3,13 +3,21 @@ import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
+import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { requireValue } from '../helpers/required.js';
-import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 
 suite('PDF圧縮コマンド', () => {
+  const sandbox = createSandbox();
+
+  teardown(() => {
+    sandbox.restore();
+  });
+
   test('2ページのPDF入力をCompress PDFで処理すると、ソースと同名の_compressed.pdfを出力し、2ページPDFとして読み込める', async () => {
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    const showInformationMessage = sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
     await using workspacePath = await mkdtempDisposable(
       path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-compress-pdf-'),
     );
@@ -23,7 +31,9 @@ suite('PDF圧縮コマンド', () => {
       'graphics-workbench.compressPdf',
       vscode.Uri.file(sourcePath),
     );
-    await runCommandAndClearNotificationsUntilDone(commandExecution);
+    await commandExecution;
+    assert.deepStrictEqual(showErrorMessage.args, []);
+    assert.strictEqual(showInformationMessage.firstCall?.args.length, 3);
 
     const outputPath = path.join(workspacePath.path, 'source_compressed.pdf');
     const output = await PDFDocument.load(await readFile(outputPath));

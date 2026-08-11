@@ -3,8 +3,8 @@
 
 import assert from 'node:assert/strict';
 
-import { applyRuntimeConfiguration } from '../../src/commands/shared/command_runtime.js';
-import { getExternalToolTimeoutMs } from '../../src/config/external_tools/external_tool_settings.js';
+import { applyRuntimeConfiguration } from '../../vscode/src/commands/shared/command_runtime.js';
+import { getExternalToolTimeoutMs } from '@graphics-workbench/core/config/external_tools/external_tool_settings.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('command runtime設定の所有境界', () => {

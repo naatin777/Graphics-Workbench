@@ -18,7 +18,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { rotateImageFiles } from '../../src/operations/conversion/rotate_image.js';
+import { rotateImageFiles } from '../../vscode/src/operations/conversion/rotate_image.js';
 
 suite('ラスタ画像の回転', () => {
   test('4x2のPNGを90度回転すると、2x4のPNGとして出力される', async () => {

@@ -17,9 +17,9 @@ import assert from 'node:assert/strict';
 import { createSandbox, type SinonSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { commandBindings, type CommandBinding } from '../../src/commands/shared/command_bindings.js';
-import { registerCommands } from '../../src/commands/shared/command_registrations.js';
-import { publicCommandIds } from '../../src/generated/extension_manifest.js';
+import { commandBindings, type CommandBinding } from '../../vscode/src/commands/shared/command_bindings.js';
+import { registerCommands } from '../../vscode/src/commands/shared/command_registrations.js';
+import { publicCommandIds } from '../../vscode/src/generated/extension_manifest.js';
 import { testCommandDependencies } from '../helpers/command_dependencies.js';
 
 type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
@@ -66,7 +66,7 @@ suite('command登録処理', () => {
 
     const binding = findBinding('graphics-workbench.compressPdf');
     assert.strictEqual(binding.kind, 'file');
-    const called = captureHandlerCalls(binding);
+    const called = captureHandlerCalls(sandbox, binding);
     registerCommands(createContext(), dependencies);
 
     await handlers.get(binding.id)!(uri, uris);
@@ -82,7 +82,7 @@ suite('command登録処理', () => {
 
     const binding = findBinding('graphics-workbench.cropPdf.configure');
     assert.strictEqual(binding.kind, 'fileWithContext');
-    const called = captureHandlerCalls(binding);
+    const called = captureHandlerCalls(sandbox, binding);
     registerCommands(context, dependencies);
 
     await handlers.get(binding.id)!(uri, [uri]);
@@ -98,7 +98,7 @@ suite('command登録処理', () => {
     const binding = findBinding('graphics-workbench.convertToWebpPreserveAnimation');
     assert.strictEqual(binding.kind, 'file');
     assert.deepStrictEqual(binding.options, { target: 'webp' });
-    const called = captureHandlerCalls(binding);
+    const called = captureHandlerCalls(sandbox, binding);
     registerCommands(createContext(), dependencies);
 
     await handlers.get(binding.id)!(uri);
@@ -115,7 +115,7 @@ suite('command登録処理', () => {
     const binding = findBinding('graphics-workbench.convertToWebpSeparately');
     assert.strictEqual(binding.kind, 'file');
     assert.deepStrictEqual(binding.options, { target: 'webp', cardinality: 'split' });
-    const called = captureHandlerCalls(binding);
+    const called = captureHandlerCalls(sandbox, binding);
     registerCommands(createContext(), dependencies);
 
     await handlers.get(binding.id)!(uri);
@@ -130,7 +130,7 @@ suite('command登録処理', () => {
 
     const binding = findBinding('graphics-workbench.undoLastConversion');
     assert.strictEqual(binding.kind, 'extensionCommand');
-    const called = captureHandlerCalls(binding);
+    const called = captureHandlerCalls(sandbox, binding);
     registerCommands(createContext(), dependencies);
 
     await handlers.get(binding.id)!('undo-record-id');
@@ -159,12 +159,12 @@ function findBinding(id: string): CommandBinding {
   return binding;
 }
 
-function captureHandlerCalls(binding: CommandBinding): { calls: unknown[][] } {
+function captureHandlerCalls(sandbox: SinonSandbox, binding: CommandBinding): { calls: unknown[][] } {
   const calls: unknown[][] = [];
   // 引数変換の検証のため、実ハンドラの代わりに呼び出しを捕捉する（ESM関数はstub不可のため）。
-  binding.handler = async (...args: unknown[]): Promise<void> => {
+  sandbox.stub(binding, 'handler').callsFake(async (...args: unknown[]): Promise<void> => {
     calls.push(args);
-  };
+  });
   return { calls };
 }
 

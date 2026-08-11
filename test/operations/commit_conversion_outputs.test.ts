@@ -34,7 +34,7 @@ import {
   commitStagedOutputs,
   CommitRollbackError,
   OperationCancelledError,
-} from '../../src/operations/lifecycle/commit_conversion_outputs.js';
+} from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
 import { requireValue } from '../helpers/required.js';
 
 suite(

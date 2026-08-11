@@ -13,7 +13,10 @@ const testWorkspaceDirectory = path.join(repositoryDirectory, 'test', 'workspace
 // node:test suites (e.g. terminate_process_tree.test.ts) use module mocks and a
 // top-level dynamic import; they crash the Mocha extension host runner, so run
 // them under node --test (test:scripts) instead.
-const extensionHostTestFiles = collectTestFiles(repositoryDirectory, 'out/test');
+const extensionHostTestFiles = [
+  ...collectTestFiles(repositoryDirectory, 'vscode/out/test'),
+  ...collectTestFiles(repositoryDirectory, 'vscode/out/core/test'),
+];
 
 function collectTestFiles(rootDirectory, directory, files = []) {
   for (const entry of readdirSync(path.join(rootDirectory, directory), { withFileTypes: true })) {
@@ -87,8 +90,8 @@ export default defineConfig({
     {
       files: extensionHostTestFiles,
       version: 'stable',
-      extensionDevelopmentPath: '.',
-      srcDir: 'src',
+      extensionDevelopmentPath: 'vscode',
+      srcDir: 'vscode/src',
       workspaceFolder: './test/workspace',
       mocha: {
         ui: 'tdd',

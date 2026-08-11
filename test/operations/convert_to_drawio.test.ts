@@ -8,7 +8,7 @@ import {
   convertToDrawioFiles,
   createDrawioXml,
   parseSvgSize,
-} from '../../src/operations/conversion/convert_to_drawio.js';
+} from '../../vscode/src/operations/conversion/convert_to_drawio.js';
 import { requireValue } from '../helpers/required.js';
 
 suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {

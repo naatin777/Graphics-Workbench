@@ -9,7 +9,7 @@ description: Graphics Workbenchで外部CLI / renderer / converter（Draw.io、M
 
 ## 共通事項
 
-- `src/operations/external_tools/run_external_tool.ts`の`runExternalTool`を再利用する。個別にspawnを実装しない。
+- `core/src/operations/external_tools/run_external_tool.ts`の`runExternalTool`を再利用する。個別にspawnを実装しない。
 - `shell: false`を基本とし、executableとargumentsを分離する。手動shell quotingを安易に追加しない。
 - cwd / stdin / stdout / stderr / exit code / spawn failureを明示する。
 - exit code 0だけで成功扱いしない。期待する出力ファイルの存在・非空・形式（例: SVG→PDFは`validateGeneratedPdf`等）・ページ数を確認する。
@@ -25,9 +25,9 @@ description: Graphics Workbenchで外部CLI / renderer / converter（Draw.io、M
 新しい外部CLIを組み込むとき、同じ問題を各commandで個別実装しない。
 
 1. dependency戦略を判断する（npm dependencyとしてbundle / system CLIとして要求 / executable pathをsettingで指定 / OS別discovery）。理由なくdependencyを増やさない（AGENTS.md）。
-2. `graphics-workbench.execPath.*`設定と`src/config/external_tools/external_tool_paths.ts`のパターンに従う。setting値が空のときOS既定名へfallbackする既存パターンを参考にする。
-3. timeoutが必要なtoolは`src/config/external_tools/external_tool_settings.ts`の`ExternalToolId`、`readExternalToolTimeouts()`、`getExternalToolTimeoutMs()`と`externalTools.<id>.timeoutSeconds` manifest設定へ追加する。
-4. system dependencyなら`src/commands/shared/environment_check.ts`へ統合する。「未インストール」と「実行したが失敗」を区別し、`checkTool`パターン(probe・versionArgs・settingId)を再利用する。
+2. `graphics-workbench.execPath.*`設定は`vscode/package.json`と`vscode/src/generated/extension_manifest.ts`を正本とし、`vscode/src/config/rendering/`のadapterパターンに従う。setting値が空のときOS既定名へfallbackする既存パターンを参考にする。生成manifestは手書きしない。
+3. timeoutが必要なtoolは`core/src/config/external_tools/external_tool_settings.ts`の`ExternalToolId`、`readExternalToolTimeouts()`、`getExternalToolTimeoutMs()`と`externalTools.<id>.timeoutSeconds` manifest設定へ追加する。
+4. system dependencyなら`vscode/src/commands/shared/environment_check.ts`へ統合する。「未インストール」と「実行したが失敗」を区別し、`checkTool`パターン(probe・versionArgs・settingId)を再利用する。
 5. テスト: 純粋な引数組み立て・path解決はUnit Test、実spawn・ファイル出力・キャンセルはIntegration Test。既存のfixtureランナー(例: `run_crop_pdf_process.test.ts`のpattern)を参考にする。
 
 ## 既存CLIのデバッグ

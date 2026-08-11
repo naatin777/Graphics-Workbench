@@ -8,14 +8,14 @@ import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
-import { resolveChromeExecutablePath } from '../../src/config/rendering/mermaid_cli_options.js';
+import { getExtensionConfiguration } from '../../vscode/src/config/extension_configuration.js';
+import { resolveChromeExecutablePath } from '../../vscode/src/config/rendering/mermaid_cli_options.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 import {
   createMermaidCliArgs,
   runMermaidCliWithSignal,
   type MermaidCliRunRequest,
-} from '../../src/operations/conversion/tools/run_mermaid_cli.js';
+} from '@graphics-workbench/core/operations/conversion/tools/run_mermaid_cli.js';
 
 const operationMermaidInputPath = path.join(testInputDirectory, 'valid', 'mermaid', 'conversion-flowchart.mmd');
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   readExternalToolTimeouts,
   timeoutMilliseconds,
-} from '../../src/config/external_tools/external_tool_settings.js';
+} from '@graphics-workbench/core/config/external_tools/external_tool_settings.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('外部ツールタイムアウト設定', () => {

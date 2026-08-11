@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { escapeLatex, escapeLatexLabel } from '../../src/edit_provider/latex_escape.js';
+import { escapeLatex, escapeLatexLabel } from '../../vscode/src/edit_provider/latex_escape.js';
 
 suite('LaTeXテキストエスケープ', () => {
   test('caption textの\\ { } $ & # % _ ^ ~を、それぞれ\\textbackslash{}・\\{\\}・\\$・\\&・\\#・\\%・\\_・\\textasciicircum{}・\\textasciitilde{}へescapeする', () => {

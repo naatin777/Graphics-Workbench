@@ -33,10 +33,10 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { outputTemplateForSource } from '../../src/commands/conversion/convert_to_pdf.js';
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
+import { outputTemplateForSource } from '../../vscode/src/commands/conversion/convert_to_pdf.js';
+import { getExtensionConfiguration } from '../../vscode/src/config/extension_configuration.js';
 
-import { logicalSourcePathForOutputTemplate } from '../../src/shared/source_format.js';
+import { logicalSourcePathForOutputTemplate } from '@graphics-workbench/core/shared/source_format.js';
 
 import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';

@@ -10,9 +10,9 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 import {
   convertExcalidrawToPdfFiles,
   type ExcalidrawPdfInput,
-} from '../../src/operations/conversion/convert_excalidraw_to_pdf.js';
-import { ExcalidrawError } from '../../src/operations/conversion/excalidraw_scene.js';
-import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/svg_to_pdf_tools.js';
+} from '../../vscode/src/operations/conversion/convert_excalidraw_to_pdf.js';
+import { ExcalidrawError } from '../../vscode/src/operations/conversion/excalidraw_scene.js';
+import type { SvgToPdfBackend } from '../../vscode/src/operations/conversion/tools/svg_to_pdf_tools.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const fakeBundleModule = `export async function exportToSvg() {

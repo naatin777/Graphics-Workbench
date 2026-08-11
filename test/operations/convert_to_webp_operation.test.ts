@@ -14,8 +14,11 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
-import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
+import {
+  executeRasterConversion,
+  rasterFormatSpecs,
+} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 
 function stubRunPdfToPng(): never {
   throw new Error('PDF to PNG rendering must not run in this test.');

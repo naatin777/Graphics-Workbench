@@ -1,10 +1,9 @@
 import path from 'node:path';
 
-import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
-import { isAbortError, toErrorMessage } from '../../src/shared/error.js';
-import type { SplitPdfPageParseFailure } from '../../src/shared/protocols/split_pdf_protocol.js';
-import type { OutputConflictDecision } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
-import type { ConversionExecutionContext } from '../../src/operations/lifecycle/conversion_runtime.js';
+import { isAbortError, toErrorMessage } from '@graphics-workbench/core/shared/error.js';
+import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/shared/pdf_page_selection.js';
+import type { OutputConflictDecision } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
+import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
 import {
   availablePdfRasterTargets,
   inspectPdfRasterSource,
@@ -16,9 +15,10 @@ import {
   type PdfRasterPageSelection,
   type PdfRasterSource,
   type PdfRasterTarget,
-} from '../../src/operations/conversion/pdf_raster_conversion.js';
+} from '@graphics-workbench/core/operations/conversion/pdf_raster_conversion.js';
 
 import type { TerminalKey, TerminalScreen } from './screen.js';
+import { terminalUiDefaults } from './defaults.js';
 
 type PageMode = 'all' | 'range';
 type ConflictAction = 'cancel' | 'replace' | 'rename';
@@ -150,14 +150,13 @@ export async function runTerminalUi(
         }),
     };
 
-    const configuration = getDefaultConfiguration();
     const run = async (): Promise<void> => {
       try {
         const result = await dependencies.runConversion({
           plan,
           runtime,
-          maxInputPixels: configuration.raster.maxInputPixels(),
-          webpEffort: configuration.convertToWebp.effort(),
+          maxInputPixels: terminalUiDefaults.maxInputPixels,
+          webpEffort: terminalUiDefaults.webpEffort,
         });
         state = successState(result);
       } catch (error) {
@@ -368,14 +367,13 @@ function createReviewState(
   target: PdfRasterTarget,
   selection: PdfRasterPageSelection,
 ): AppState {
-  const configuration = getDefaultConfiguration();
   return {
     kind: 'review',
     plan: planPdfRasterConversion({
       source,
       target,
       selection,
-      outputTemplate: configuration.outputPath.split[target](),
+      outputTemplate: terminalUiDefaults.outputTemplate[target],
     }),
   };
 }
@@ -485,10 +483,10 @@ function renderState(state: AppState): string {
 }
 
 function outputTemplateFor(target: PdfRasterTarget): string {
-  return getDefaultConfiguration().outputPath.split[target]();
+  return terminalUiDefaults.outputTemplate[target];
 }
 
-function formatPdfPageSelectionError(failure: SplitPdfPageParseFailure, pageCount: number): string {
+function formatPdfPageSelectionError(failure: PdfPageSelectionParseFailure, pageCount: number): string {
   switch (failure.kind) {
     case 'required': {
       return 'Enter at least one PDF page.';

@@ -9,8 +9,8 @@ import * as vscode from 'vscode';
 import {
   recordConversionForUndo,
   undoLastConversionCommand,
-} from '../../src/commands/lifecycle/undo_last_conversion.js';
-import { LatexPasteEditProvider } from '../../src/edit_provider/latex_paste_edit_provider.js';
+} from '../../vscode/src/commands/lifecycle/undo_last_conversion.js';
+import { LatexPasteEditProvider } from '../../vscode/src/edit_provider/latex_paste_edit_provider.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { liveCommandDependencies } from '../helpers/command_dependencies.js';
 

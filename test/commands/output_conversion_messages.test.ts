@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
-import { createOutputConversionMessages } from '../../src/commands/lifecycle/run_output_conversion.js';
-import { userMessage } from '../../src/commands/shared/user_messages.js';
+import { createOutputConversionMessages } from '../../vscode/src/commands/lifecycle/run_output_conversion.js';
+import { userMessage } from '../../vscode/src/commands/shared/user_messages.js';
 
 suite('出力形式変換コマンドのメッセージ組み立て', () => {
   test('変換形式WebPと入力件数3から、進捗タイトル・準備・成功・キャンセル・失敗・Undo不可の各メッセージを既存のlocale keyに基づいて組み立てる', () => {

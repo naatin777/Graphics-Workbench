@@ -5,8 +5,8 @@ import path from 'node:path';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
 import sharp from 'sharp';
-import { combineImagesToPdf } from '../../src/operations/conversion/combine_images_to_pdf.js';
-import type { SvgToPdfBackend } from '../../src/operations/conversion/tools/svg_to_pdf_tools.js';
+import { combineImagesToPdf } from '../../vscode/src/operations/conversion/combine_images_to_pdf.js';
+import type { SvgToPdfBackend } from '../../vscode/src/operations/conversion/tools/svg_to_pdf_tools.js';
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 const VALID_PNG = operationPngInputPath;

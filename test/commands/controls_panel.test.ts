@@ -29,10 +29,10 @@ import {
   type ControlsPanelDependencies,
   type ControlsQuickPickItem,
   type SvgToPdfEngine,
-} from '../../src/commands/lifecycle/controls_panel.js';
-import { SafeModeState } from '../../src/commands/lifecycle/safe_mode.js';
-import type { FeatureAvailabilityEntry } from '../../src/commands/shared/environment_check.js';
-import { userMessage } from '../../src/commands/shared/user_messages.js';
+} from '../../vscode/src/commands/lifecycle/controls_panel.js';
+import { SafeModeState } from '../../vscode/src/commands/lifecycle/safe_mode.js';
+import type { FeatureAvailabilityEntry } from '../../vscode/src/commands/shared/environment_check.js';
+import { userMessage } from '../../vscode/src/commands/shared/user_messages.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 const FEATURE_PDF = userMessage('message.controls.feature.pdfOperations');

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { ExcalidrawError, parseExcalidrawScene } from '../../src/operations/conversion/excalidraw_scene.js';
+import { ExcalidrawError, parseExcalidrawScene } from '../../vscode/src/operations/conversion/excalidraw_scene.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 function validFixture(name: string): string {

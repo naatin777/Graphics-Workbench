@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { isPreviewWebviewToHostMessage } from '../../src/shared/protocols/preview_protocol.js';
+import { isPreviewWebviewToHostMessage } from '../../vscode/src/shared/protocols/preview_protocol.js';
 
 suite('PDF/TIFF previewのWebview操作メッセージの受信判定（ready/renderPage/previewLoadFailed）', () => {
   test('readyとcancelを余分なキーなしで受け入れる', () => {

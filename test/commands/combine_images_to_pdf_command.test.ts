@@ -6,8 +6,11 @@ import path from 'node:path';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { type CombinePreviewItem, previewCombineInputs } from '../../src/commands/conversion/combine_images_to_pdf.js';
-import { userMessage } from '../../src/commands/shared/user_messages.js';
+import {
+  type CombinePreviewItem,
+  previewCombineInputs,
+} from '../../vscode/src/commands/conversion/combine_images_to_pdf.js';
+import { userMessage } from '../../vscode/src/commands/shared/user_messages.js';
 
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';

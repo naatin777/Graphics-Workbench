@@ -4,8 +4,8 @@ import { access, readFile, stat, writeFile } from 'node:fs/promises';
 import {
   cleanupStaleSecurePdfStagingRoots,
   createSecurePdfStagingRoot,
-} from '../../src/operations/lifecycle/secure_staging.js';
-import { isRecord } from '../../src/shared/protocols/protocol_utils.js';
+} from '../../vscode/src/operations/lifecycle/secure_staging.js';
+import { isRecord } from '../../vscode/src/shared/protocols/protocol_utils.js';
 
 suite('機密PDFの中間ディレクトリを作成し、保存期間を過ぎた古い中間ディレクトリを掃除する', () => {
   test('現プロセスのactive rootは8日後のactivation cleanupでも維持し、不在PIDを記録した24時間超過のold rootだけを削除する', async () => {

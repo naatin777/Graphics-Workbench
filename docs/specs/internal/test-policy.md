@@ -6,7 +6,7 @@ test runtimeはdirectory名やrunner統一ではなく、検証するcontractと
 
 ## VS Code Extension Host
 
-pre-package testはすべてVS Code Extension Hostを正式なownerとする。`npm test`は`vscode-test`を実行し、`out/test/**/*.test.js`を実行する。`terminate_process_tree.test.js`のみmodule mockとtop-level dynamic importを使うため`node:test`（`npm run test:scripts`）で実行する。このruntimeの選択は[ADR-0018](../../adr/0018-use-extension-host-for-pre-package-tests.md)を正本とする。
+pre-package testはすべてVS Code Extension Hostを正式なownerとする。`npm test`は`vscode-test`を実行し、`vscode/out/test/**/*.test.js`と`vscode/out/core/test/**/*.test.js`を実行する。`terminate_process_tree.test.js`のみmodule mockとtop-level dynamic importを使うため`node:test`（`npm run test:scripts`）で実行する。このruntimeの選択は[ADR-0018](../../adr/0018-use-extension-host-for-pre-package-tests.md)を正本とする。TUI固有のcontroller/UI testは独立Bun package内で`npm run stage:tui-core`後に`bun test --cwd tui`を実行する。
 
 このruntimeでは、次のcontractを確認する。
 

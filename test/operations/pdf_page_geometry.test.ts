@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 
 import { degrees, PDFDocument } from '../helpers/pdf_document.js';
 
-import { openPdfDocument } from '../../src/operations/pdf/mupdf.js';
-import { getPdfPageGeometry } from '../../src/operations/pdf/pdf_page_geometry.js';
+import { openPdfDocument } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { getPdfPageGeometry } from '../../vscode/src/operations/pdf/pdf_page_geometry.js';
 
 suite('PDFページのジオメトリ取得', () => {
   test('負のオフセットや90/270度回転を持つPDFページから、絶対座標のMediaBox/CropBoxと正規化されない回転角をそのまま返す', async () => {

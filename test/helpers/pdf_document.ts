@@ -4,8 +4,8 @@
 // sized/rotated pages and boxes, draw rectangles, and read page count/size/
 // boxes/rotation back.
 
-import { loadMupdf, openPdfDocument, savePdfDocument } from '../../src/operations/pdf/mupdf.js';
-import { getPdfPageGeometry } from '../../src/operations/pdf/pdf_page_geometry.js';
+import { loadMupdf, openPdfDocument, savePdfDocument } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { getPdfPageGeometry } from '../../vscode/src/operations/pdf/pdf_page_geometry.js';
 
 export interface PdfBox {
   x: number;

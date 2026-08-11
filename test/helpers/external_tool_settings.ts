@@ -1,11 +1,14 @@
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
-import { createMermaidBackend } from '../../src/config/rendering/mermaid_cli_options.js';
-import type { MermaidBackend } from '../../src/operations/conversion/tools/mermaid_tools.js';
+import { getExtensionConfiguration } from '../../vscode/src/config/extension_configuration.js';
+import { createMermaidBackend } from '../../vscode/src/config/rendering/mermaid_cli_options.js';
+import type { MermaidBackend } from '@graphics-workbench/core/operations/conversion/tools/mermaid_tools.js';
 import {
   createPdfRenderBackend,
   type PdfRenderBackend,
-} from '../../src/operations/conversion/tools/pdf_render_tools.js';
-import { executeDrawio, type DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
+} from '@graphics-workbench/core/operations/conversion/tools/pdf_render_tools.js';
+import {
+  executeDrawio,
+  type DrawioBackend,
+} from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 
 export function readConfiguredConversionTools(): {
   pdfRenderTools: PdfRenderBackend;

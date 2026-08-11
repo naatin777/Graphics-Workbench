@@ -7,7 +7,7 @@ import {
   isSameSourceFormat,
   logicalSourcePathForOutputTemplate,
   sourceFormatForPath,
-} from '../../src/shared/source_format.js';
+} from '@graphics-workbench/core/shared/source_format.js';
 
 suite('source format判定', () => {
   test('大文字小文字を無視して、拡張子（.jpg/.gif/.tiff/.mermaid等）と複合拡張子（.drawio.png/.drawio.svg/.drawio）とexcalidrawを単一のsourceFormatForPathで判定し、editable Draw.io画像は出力テンプレート用の論理パスから複合拡張子を除去する', () => {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
-import { setColumnAlignment, tableModelFromRows } from '../../src/table/table_model.js';
-import { renderLatexTable, renderQuarkdownTable, renderTypstTable } from '../../src/table/table_renderer.js';
+import { setColumnAlignment, tableModelFromRows } from '../../vscode/src/table/table_model.js';
+import { renderLatexTable, renderQuarkdownTable, renderTypstTable } from '../../vscode/src/table/table_renderer.js';
 
 const SAMPLE_ROWS = [
   ['Method', 'Time', 'Score'],

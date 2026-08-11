@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import type {
   PdfRasterConversionResult,
   PdfRasterSource,
-} from '../../src/operations/conversion/pdf_raster_conversion.js';
+} from '@graphics-workbench/core/operations/conversion/pdf_raster_conversion.js';
 import type { TerminalKey, TerminalScreen } from '../src/screen.js';
 import { conflictDecision, runTerminalUi } from '../src/app.js';
 

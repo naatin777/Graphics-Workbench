@@ -3,8 +3,11 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { excalidrawToSvg } from '../../src/operations/conversion/excalidraw_adapter.js';
-import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
+import { excalidrawToSvg } from '../../vscode/src/operations/conversion/excalidraw_adapter.js';
+import {
+  executeRasterConversion,
+  rasterFormatSpecs,
+} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';

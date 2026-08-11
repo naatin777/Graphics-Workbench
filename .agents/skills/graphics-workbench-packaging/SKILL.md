@@ -10,14 +10,14 @@ VSIXを必要以上に巨大化させず、同時にruntime必須ファイルを
 ## 目的
 
 - production dependencyを正確に把握する。
-- runtime必須ファイルを`.vscodeignore`で除外しない。
+- runtime必須ファイルを`vscode/.vscodeignore`やstaging filterで除外しない。
 - Webview bundle・PDF.js・native Sharp assetが正しく含まれる。
 - VSIXの実際の内容を確認できる。
 
 ## 確認すること(必要なものだけ)
 
 - production dependency vs dev dependency vs transitive dependency
-- `.vscodeignore`
+- `vscode/.vscodeignore`と`scripts/package-vsix.mjs`のstaging filter
 - package contents(実際のVSIX内容)
 - duplicated assets / source maps / docs / examples / test fixtures
 - webview bundle(`media/webview/*/index.js`)
@@ -27,6 +27,8 @@ VSIXを必要以上に巨大化させず、同時にruntime必須ファイルを
 - OS-specific files
 - runtime dynamic import / require
 - executable / binary
+- `core/`と`vscode/`のpack済みtarballから組み立てたproduction dependency closure
+- npm workspace外の`tui/`、OpenTUI、Bun native dependencyがVSIXへ混入していないこと
 
 単純にサイズを減らすためだけにファイルを除外しない。除外前にruntime dependencyか確認する。
 
@@ -38,7 +40,9 @@ VSIXを必要以上に巨大化させず、同時にruntime必須ファイルを
 
 ## 既存の制約
 
-- `.vscodeignore` に既に除外されているもの(src/、test/、scripts/、AGENTS.md、.opencode/、.agents/等)を誤って必要としない。
+- rootはprivate npm coordinatorで、VSIXは`core/`と`vscode/`のtarballをrepository外の一時directoryへinstallして組み立てる。workspace symlinkやroot devDependencyを直接packageしない。
+- `vscode/.vscodeignore`とstaging filterに既に除外されているもの(source、test、source map、scripts、AGENTS.md、.opencode/、.agents/等)を誤って必要としない。
+- `tui/`は独立Bun packageであり、root npm workspaceとVSIX production closureへ含めない。
 - 6 target VSIX生成とsharp実実行検証はrelease workflow(`graphics-workbench-release` / ADR-0026)の対象。
 
 ## releaseとの境界

@@ -1,11 +1,17 @@
 # Graphics Workbench Terminal UI
 
-The Terminal UI is a separate Bun frontend. It reuses the repository's TypeScript operations and therefore needs both dependency sets installed:
+The Terminal UI is a separate Bun frontend. It consumes the built core package and keeps OpenTUI outside the npm workspace:
 
 ```bash
 npm ci
+npm run stage:tui-core
 bun install --cwd tui --frozen-lockfile
 ```
+
+The staging step copies the built shared package into `tui/.core-package`, so
+Bun resolves its runtime dependencies entirely from `tui/node_modules`.
+OpenTUI and its native packages remain isolated from the VSIX and the root npm
+workspace.
 
 Run the Phase 1 PDF raster conversion UI from the repository root:
 

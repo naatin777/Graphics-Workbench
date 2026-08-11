@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { isTsvTableCandidate, parseCsv, parseTsv } from '../../src/table/parse_delimited.js';
+import { isTsvTableCandidate, parseCsv, parseTsv } from '../../vscode/src/table/parse_delimited.js';
 
 suite('CSVパーサー', () => {
   test('基本CSVの各行をフィールド配列へ分割する', () => {

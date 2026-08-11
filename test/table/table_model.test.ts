@@ -10,7 +10,7 @@ import {
   setHeaderRows,
   tableModelFromRows,
   updateCellText,
-} from '../../src/table/table_model.js';
+} from '../../vscode/src/table/table_model.js';
 
 suite('TableModel', () => {
   test('createTableModelは指定サイズの空テーブルを作る', () => {

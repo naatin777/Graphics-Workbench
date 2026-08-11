@@ -3,7 +3,10 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { readTiffPreviewPageCount, renderTiffPreviewPage } from '../../../src/operations/preview/tiff_preview.js';
+import {
+  readTiffPreviewPageCount,
+  renderTiffPreviewPage,
+} from '../../../vscode/src/operations/preview/tiff_preview.js';
 import { testInputDirectory } from '../../helpers/fixture_paths.js';
 
 const heatmapTiffPath = path.join(testInputDirectory, 'valid', 'tiff', 'heatmap.tiff');

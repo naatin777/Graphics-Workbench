@@ -4,7 +4,7 @@ import path from 'node:path';
 import {
   planRasterFrameJobsFromMetadata,
   type RasterFramePlanOptions,
-} from '../../src/commands/conversion/plan_raster_frame_jobs.js';
+} from '../../vscode/src/commands/conversion/plan_raster_frame_jobs.js';
 
 const workspacePath = process.platform === 'win32' ? 'C:\\test-workspace' : '/test-workspace';
 

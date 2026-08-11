@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   isMergePdfHostToWebviewMessage,
   isMergePdfWebviewToHostMessage,
-} from '../../src/shared/protocols/merge_pdf_protocol.js';
+} from '../../vscode/src/shared/protocols/merge_pdf_protocol.js';
 
 suite('Merge PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/apply/ready）', () => {
   test('2つ以上のsources（各sourceId/fileName/vscode-resource URI）とpreview・labelsを持つinitメッセージと、非空sourceIdsを持つapplyメッセージを受け入れ、requestId付きreadyと空typeを拒否する', () => {

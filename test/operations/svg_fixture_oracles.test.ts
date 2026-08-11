@@ -1,7 +1,10 @@
 import path from 'node:path';
 
-import { sourceFormatForPath } from '../../src/shared/source_format.js';
-import { executeRasterConversion, rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
+import { sourceFormatForPath } from '@graphics-workbench/core/shared/source_format.js';
+import {
+  executeRasterConversion,
+  rasterFormatSpecs,
+} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
 import { listInputFixturePathsSync, testInputDirectory, testOutputDirectory } from '../helpers/fixture_paths.js';
 import { assertRasterMatches } from '../helpers/content_assertions.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';

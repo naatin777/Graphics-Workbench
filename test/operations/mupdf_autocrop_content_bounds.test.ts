@@ -26,7 +26,7 @@ import {
   renderPdfPageToPng,
   savePdfDocument,
   type MupdfPixmap,
-} from '../../src/operations/pdf/mupdf.js';
+} from '@graphics-workbench/core/operations/pdf/mupdf.js';
 
 suite('DisplayList.getBoundsはcontent boundsではない（raster検出の必要性）', () => {
   test('中央にcontentがあるページでも toDisplayList().getBounds() はページ全体（mediabox）を返し、contentに縮まない', async () => {

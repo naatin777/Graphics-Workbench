@@ -8,11 +8,11 @@ import { fileURLToPath } from 'node:url';
 import { generate, validateManifest } from './generate-extension-meta.ts';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const manifestPath = path.join(repositoryRoot, 'src/generated/extension_manifest.ts');
+const manifestPath = path.join(repositoryRoot, 'vscode/src/generated/extension_manifest.ts');
 const extensionPrefix = 'graphics-workbench.';
 
 void test('old generated metadata files are removed', () => {
-  for (const stalePath of ['src/generated-extension-meta.ts', 'src/generated-extension-config.ts']) {
+  for (const stalePath of ['vscode/src/generated-extension-meta.ts', 'vscode/src/generated-extension-config.ts']) {
     assert.strictEqual(
       existsSync(path.join(repositoryRoot, stalePath)),
       false,
@@ -72,7 +72,7 @@ function createManifest(overrides = {}) {
   };
 }
 
-void test('generate emits extension identity, contributions, and tool timeout keys', () => {
+void test('generate emits extension identity and contributions', () => {
   const output = generate(createManifest());
 
   assert.match(output, /export const extensionIdentity = \{/);
@@ -86,8 +86,6 @@ void test('generate emits extension identity, contributions, and tool timeout ke
   assert.match(output, /export const publicCommandIds = \[/);
   assert.match(output, /export const submenuContributions = \{/);
   assert.match(output, /labelKey: 'submenu\.convert'/);
-  assert.match(output, /export const externalToolTimeoutConfigurationKeys = \{/);
-  assert.match(output, /qpdf: 'externalTools\.qpdf\.timeoutSeconds'/);
 });
 
 void test('generate accepts a valid manifest', () => {

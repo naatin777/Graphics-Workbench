@@ -30,18 +30,19 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
-import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 
 const fixturePngPath = operationPngInputPath;
 
 suite('WebPに変換コマンド', () => {
   let sandbox: sinon.SinonSandbox;
+  let showErrorMessage: sinon.SinonStub;
+  let showInformationMessage: sinon.SinonStub;
 
   setup(async () => {
     sandbox = createSandbox();
-    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
-    sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    showInformationMessage = sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
     await vscode.workspace
       .getConfiguration('graphics-workbench')
       .update('convertToWebp.effort', 0, vscode.ConfigurationTarget.Workspace);
@@ -75,7 +76,7 @@ suite('WebPに変換コマンド', () => {
         vscode.Uri.file(requireValue(sourcePaths[0])),
         sourcePaths.map((sourcePath) => vscode.Uri.file(sourcePath)),
       );
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+      await commandExecution;
 
       await Promise.all(
         [pngPath, jpegPath, avifPath].map((sourcePath) => assertReadableWebp(replaceExtension(sourcePath, '.webp'))),
@@ -98,7 +99,9 @@ suite('WebPに変換コマンド', () => {
         'graphics-workbench.convertToWebpPreserveAnimation',
         vscode.Uri.file(sourcePath),
       );
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+      await commandExecution;
+      assert.deepStrictEqual(showErrorMessage.args, []);
+      assert.strictEqual(showInformationMessage.firstCall?.args.length, 3);
 
       const outputPath = replaceExtension(sourcePath, '.webp');
       const metadata = await sharp(outputPath).metadata();
@@ -119,7 +122,9 @@ suite('WebPに変換コマンド', () => {
         'graphics-workbench.convertToWebpSeparately',
         vscode.Uri.file(sourcePath),
       );
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+      await commandExecution;
+      assert.deepStrictEqual(showErrorMessage.args, []);
+      assert.strictEqual(showInformationMessage.firstCall?.args.length, 3);
 
       const firstFramePath = path.join(temporaryDirectory, 'rotating-vector-field', '01.webp');
       const secondFramePath = path.join(temporaryDirectory, 'rotating-vector-field', '02.webp');

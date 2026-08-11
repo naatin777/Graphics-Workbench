@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const AGGREGATE_WEBVIEW_SCRIPTS = new Set(['test:webview:coverage']);
 
-const appsDirectory = path.join(repositoryRoot, 'webview', 'apps');
+const appsDirectory = path.join(repositoryRoot, 'vscode', 'webview', 'apps');
 const expectedAppNames = readdirSync(appsDirectory, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
@@ -43,7 +43,7 @@ void test('package.jsonのtest:webviewスクリプトがwebview app一覧と一�
     if (scriptName.startsWith('test:webview:') && !AGGREGATE_WEBVIEW_SCRIPTS.has(scriptName)) {
       assert.ok(
         expectedPerAppScripts.includes(scriptName),
-        `${scriptName} does not match a webview app under webview/apps`,
+        `${scriptName} does not match a webview app under vscode/webview/apps`,
       );
     }
   }

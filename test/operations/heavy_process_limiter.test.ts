@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { HeavyProcessLimiter } from '../../src/operations/external_tools/heavy_process_limiter.js';
+import { HeavyProcessLimiter } from '@graphics-workbench/core/operations/external_tools/heavy_process_limiter.js';
 
 suite('重処理の共有実行キュー', () => {
   test('同時実行数を1にしたリミッタで先頭タスクの実行中に待機させた2件目をキャンセルすると、開始前にキャンセルとしてrejectされ、先頭の完了後も2件目のタスク本体は実行されない', async () => {

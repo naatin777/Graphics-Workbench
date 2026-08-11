@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
 
-import { hasPdfPageContent, renderPdfPageToPng, renderPdfPageToSvg } from '../../src/operations/pdf/mupdf.js';
+import {
+  hasPdfPageContent,
+  renderPdfPageToPng,
+  renderPdfPageToSvg,
+} from '@graphics-workbench/core/operations/pdf/mupdf.js';
 
 const pageCount = 12;
 const renderIterations = 200;

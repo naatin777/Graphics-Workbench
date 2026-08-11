@@ -9,10 +9,10 @@ Webview機能を追加・変更するとき、最も近い既存Webviewを参照
 
 ## 参照する既存実装
 
-- host側: `src/commands/pdf/<feature>_configure.ts` と `src/commands/lifecycle/pdf_configure_session.ts`(共有セッション)
-- protocol: `src/shared/protocols/<feature>_protocol.ts`
-- app: `webview/apps/<feature>/src/`
-- テスト: `test/commands/<feature>_configure_command.test.ts`、`webview/apps/<feature>/src/app.test.tsx`
+- host側: `vscode/src/commands/pdf/<feature>_configure.ts` と `vscode/src/commands/lifecycle/pdf_configure_session.ts`(共有セッション)
+- protocol: `vscode/src/shared/protocols/<feature>_protocol.ts`
+- app: `vscode/webview/apps/<feature>/src/`
+- テスト: `test/commands/<feature>_configure_command.test.ts`、`vscode/webview/apps/<feature>/src/app.test.tsx`
 
 ## host側
 
@@ -45,8 +45,8 @@ host↔webview messageはexternal / unknown境界として扱う。
 - protocol / runtime validation
 - Webview initialization / message handling
 - application state
-- labels / localization(`webview/apps/<feature>/src/labels.ts`、`messages.ts`)
-- SolidJS app / shared components(`webview/shared/ui/`、`webview/shared/SplitPane.tsx`)
+- labels / localization(`vscode/webview/apps/<feature>/src/labels.ts`、`messages.ts`)
+- SolidJS app / shared components(`vscode/webview/shared/ui/`、`vscode/webview/shared/SplitPane.tsx`)
 - PDF.js asset / Vite config / Vitest config / CSP / resource URI
 - disposal / loading / error / disabled state
 - wide layout / narrow layout / many-page behavior
@@ -57,6 +57,6 @@ host↔webview messageはexternal / unknown境界として扱う。
 
 - protocolのruntime validationはUnit Test。
 - host↔webview message処理はIntegration Test。
-- SolidJS appの表示・操作は`webview/apps/*/src/app.test.tsx`(Vitest)。
+- SolidJS appの表示・操作は`vscode/webview/apps/*/src/app.test.tsx`(Vitest)。
 - VS Code上での実表示・幅別layout・PDF.js previewはPlaywright。
 - テスト境界と検証方法は`graphics-workbench-verify`を参照。

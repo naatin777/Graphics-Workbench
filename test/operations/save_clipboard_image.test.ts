@@ -3,8 +3,8 @@ import { access, copyFile, mkdir, mkdtempDisposable, readFile, rename, writeFile
 import os from 'node:os';
 import path from 'node:path';
 
-import { CommitRollbackError } from '../../src/operations/lifecycle/commit_conversion_outputs.js';
-import { saveClipboardImage } from '../../src/operations/input/save_clipboard_image.js';
+import { CommitRollbackError } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
+import { saveClipboardImage } from '../../vscode/src/operations/input/save_clipboard_image.js';
 
 suite('クリップボード画像保存で、上書き時の退避・復旧処理を管理する', () => {
   test('commit後のrollbackコピーが失敗すると、復旧用backup（source.png.previous）を残し、出力を元のままにしてClipboard外のファイルは変更しない', async () => {

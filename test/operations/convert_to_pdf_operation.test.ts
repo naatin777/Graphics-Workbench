@@ -18,7 +18,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { PDFDocument } from '../helpers/pdf_document.js';
 
-import { convertToPdfFiles, validateSvgToPdfOptions } from '../../src/operations/conversion/convert_to_pdf.js';
+import { convertToPdfFiles, validateSvgToPdfOptions } from '../../vscode/src/operations/conversion/convert_to_pdf.js';
 import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 

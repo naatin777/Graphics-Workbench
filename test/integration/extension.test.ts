@@ -6,7 +6,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { operationPdfInputDirectory, operationPngInputPath } from '../helpers/fixture_paths.js';
-import { extensionIdentity } from '../../src/generated/extension_manifest.js';
+import { extensionIdentity } from '../../vscode/src/generated/extension_manifest.js';
 
 suite('拡張機能のactivateとworkspace内ファイルへの変換コマンド実行', () => {
   test('拡張機能をactivateするとcropPdf.autoやsplitPdf.allPagesなどの代表commandが登録される', async () => {

@@ -17,7 +17,7 @@ import { mkdtemp, mkdtempDisposable, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { runExternalTool } from '../../src/operations/external_tools/run_external_tool.js';
+import { runExternalTool } from '@graphics-workbench/core/operations/external_tools/run_external_tool.js';
 
 suite('外部CLIツールを起動して標準出力・標準エラーを取得する処理の正常実行', () => {
   test('executableへ配列argsを渡して実行すると、プロセスが書き出したstdoutとstderrをそのまま取得する', async () => {

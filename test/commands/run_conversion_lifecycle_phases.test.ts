@@ -17,8 +17,8 @@ import path from 'node:path';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { localeMap } from '../../src/locale_map.js';
-import { convertToRasterCommand } from '../../src/commands/conversion/convert_to_raster.js';
+import { localeMap } from '../../vscode/src/locale_map.js';
+import { convertToRasterCommand } from '../../vscode/src/commands/conversion/convert_to_raster.js';
 import { liveCommandDependencies } from '../helpers/command_dependencies.js';
 
 import { requireValue } from '../helpers/required.js';

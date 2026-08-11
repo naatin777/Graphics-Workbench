@@ -1,4 +1,4 @@
-import { createConfiguration, type Configuration } from '../../src/generated/extension_manifest.js';
+import { createConfiguration, type Configuration } from '../../vscode/src/generated/extension_manifest.js';
 
 export function fakeConfiguration(values: Record<string, unknown> = {}): Configuration {
   return createConfiguration({

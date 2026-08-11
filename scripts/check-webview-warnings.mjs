@@ -9,7 +9,7 @@ const apps = ['crop_pdf', 'merge_pdf', 'split_pdf', 'rotate_pdf', 'reorder_pdf',
 let failed = false;
 
 for (const app of apps) {
-  const result = spawnSync('npx', ['vite', 'build', '--config', `webview/apps/${app}/vite.config.ts`], {
+  const result = spawnSync('npx', ['vite', 'build', '--config', `vscode/webview/apps/${app}/vite.config.ts`], {
     encoding: 'utf8',
   });
   if (result.status !== 0) {

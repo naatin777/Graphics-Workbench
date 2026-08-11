@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 
-import { createMermaidBackend, resolveChromeExecutablePath } from '../../src/config/rendering/mermaid_cli_options.js';
+import {
+  createMermaidBackend,
+  resolveChromeExecutablePath,
+} from '../../vscode/src/config/rendering/mermaid_cli_options.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('Mermaid CLI設定', () => {

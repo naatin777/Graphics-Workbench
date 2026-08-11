@@ -5,7 +5,7 @@ import path from 'node:path';
 import { PDFDocument } from '../helpers/pdf_document.js';
 import * as vscode from 'vscode';
 
-import { LatexDropEditProvider } from '../../src/edit_provider/latex_drop_edit_provider.js';
+import { LatexDropEditProvider } from '../../vscode/src/edit_provider/latex_drop_edit_provider.js';
 
 suite('LaTeXファイルdrag挿入', () => {
   test('単一PDFをworkspaceのfiguresフォルダに用意し、main.texへのdrop editとして\\begin{figure}・\\centering・\\includegraphics[width=\\linewidth]{figures/sample.pdf}・\\caption{sample}・\\label{fig:sample}を含むfigure snippetを生成する', async () => {

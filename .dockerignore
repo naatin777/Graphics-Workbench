@@ -14,12 +14,12 @@ AGENTS.md
 PROJECT_STATE.md
 artifacts
 blob-report
-core
 coverage
 dist
 docs
 media
 node_modules
+tui/.core-package
 opencode.jsonc
 out
 playwright-report

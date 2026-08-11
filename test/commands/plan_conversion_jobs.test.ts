@@ -5,10 +5,10 @@ import path from 'node:path';
 import { PDFDocument } from '../helpers/pdf_document.js';
 import * as vscode from 'vscode';
 
-import { rasterFormatSpecs } from '../../src/operations/conversion/raster_conversion.js';
-import { planRasterConversionJobs } from '../../src/commands/conversion/plan_conversion_jobs.js';
-import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
-import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
+import { rasterFormatSpecs } from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import { planRasterConversionJobs } from '../../vscode/src/commands/conversion/plan_conversion_jobs.js';
+import { getExtensionConfiguration } from '../../vscode/src/config/extension_configuration.js';
+import { getDefaultConfiguration } from '../../vscode/src/generated/extension_manifest.js';
 import { requireValue } from '../helpers/required.js';
 
 const simpleFormats = [

@@ -17,7 +17,7 @@ import path from 'node:path';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
 
-import { splitPdfAllPages } from '../../src/operations/pdf/split_pdf.js';
+import { splitPdfAllPages } from '../../vscode/src/operations/pdf/split_pdf.js';
 
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.js';

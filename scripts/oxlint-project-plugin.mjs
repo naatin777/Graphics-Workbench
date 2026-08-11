@@ -270,7 +270,7 @@ function isWebviewAppSourceFile(filename) {
 }
 
 function isProcessProtocolFile(filename) {
-  return /(?:^|\/)src\/operations\/[^/]+\/[^/]*process_protocol\.ts$/u.test(normalizeFilename(filename));
+  return /(?:^|\/)vscode\/src\/operations\/[^/]+\/[^/]*process_protocol\.ts$/u.test(normalizeFilename(filename));
 }
 
 function isAllowedChildProcessFile(filename) {
@@ -279,14 +279,14 @@ function isAllowedChildProcessFile(filename) {
     return true;
   }
 
-  if (/(?:^|\/)(?:scripts|test|webview)\//u.test(normalized)) {
+  if (/(?:^|\/)(?:scripts|test|vscode\/webview)\//u.test(normalized)) {
     return true;
   }
 
   return (
-    /(?:^|\/)src\/operations\/external_tools\/[^/]+\.ts$/u.test(normalized) ||
-    normalized.endsWith('/src/operations/conversion/tools/run_mermaid_cli.ts') ||
-    /(?:^|\/src\/operations\/pdf\/)run_crop_pdf_(?:process|metadata)\.ts$/u.test(normalized)
+    /(?:^|\/)core\/src\/operations\/external_tools\/[^/]+\.ts$/u.test(normalized) ||
+    normalized.endsWith('/core/src/operations/conversion/tools/run_mermaid_cli.ts') ||
+    /(?:^|\/vscode\/src\/operations\/pdf\/)run_crop_pdf_(?:process|metadata)\.ts$/u.test(normalized)
   );
 }
 

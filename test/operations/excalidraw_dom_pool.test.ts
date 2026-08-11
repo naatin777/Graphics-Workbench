@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { ExcalidrawDomPool } from '../../src/operations/conversion/excalidraw_dom_pool.js';
+import { ExcalidrawDomPool } from '../../vscode/src/operations/conversion/excalidraw_dom_pool.js';
 
 suite('Excalidraw→SVG変換でのjsdomウィンドウの使い回し（生成・再利用・失敗時再生成・破棄）', () => {
   test('プールサイズ2で2つを順にacquireすると別々のウィンドウが返り、両方をreleaseした後の3回目acquireで既存ウィンドウのいずれかを再利用する', () => {

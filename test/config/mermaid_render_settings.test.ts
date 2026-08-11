@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { createMermaidBackend } from '../../src/config/rendering/mermaid_cli_options.js';
+import { createMermaidBackend } from '../../vscode/src/config/rendering/mermaid_cli_options.js';
 import { fakeConfiguration } from '../helpers/configuration.js';
 
 suite('MermaidテーマおよびbackgroundColor設定', () => {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import * as vscode from 'vscode';
 
-import { getWebviewHtml } from '../../src/presentation/webview/get_webview_html.js';
+import { getWebviewHtml } from '../../vscode/src/presentation/webview/get_webview_html.js';
 
 suite('Webview HTML生成', () => {
   test('getWebviewHtmlが生成するHTMLに、PDF.jsがPDF・フォント・画像・workerを読み込めるCSP（connect/font/img/worker-srcにvscode-resource・data・blob）とnonce付きscript-src・unsafe-inline付きstyle-src・lang="en-US"を含める', () => {

@@ -8,8 +8,8 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
-import { localeMap } from '../../src/locale_map.js';
-import { mergePdfConfigureCommand } from '../../src/commands/pdf/merge_pdf.js';
+import { localeMap } from '../../vscode/src/locale_map.js';
+import { mergePdfConfigureCommand } from '../../vscode/src/commands/pdf/merge_pdf.js';
 
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 import { testCommandDependencies } from '../helpers/command_dependencies.js';

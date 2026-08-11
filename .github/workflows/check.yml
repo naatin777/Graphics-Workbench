@@ -34,6 +34,9 @@ jobs:
         with:
           bun-version: 1.3.14
 
+      - run: npm run stage:tui-core
+        shell: bash
+
       - run: bun install --cwd tui --frozen-lockfile
         shell: bash
 

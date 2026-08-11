@@ -9,8 +9,8 @@ import { PDFDocument } from '../helpers/pdf_document.js';
 import {
   convertDrawioToPagePdfs,
   convertDrawioToSinglePdf,
-} from '../../src/operations/conversion/convert_drawio_to_pdf.js';
-import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
+} from '../../vscode/src/operations/conversion/convert_drawio_to_pdf.js';
+import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 import { readConfiguredConversionTools } from '../helpers/external_tool_settings.js';
 import { requireValue } from '../helpers/required.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';

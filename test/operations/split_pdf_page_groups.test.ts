@@ -10,8 +10,8 @@ import {
   isSplitPdfWebviewToHostMessage,
   parseSplitPdfPages,
   type SplitPdfLabels,
-} from '../../src/shared/protocols/split_pdf_protocol.js';
-import { splitPdfByPageGroups } from '../../src/operations/pdf/split_pdf.js';
+} from '../../vscode/src/shared/protocols/split_pdf_protocol.js';
+import { splitPdfByPageGroups } from '../../vscode/src/operations/pdf/split_pdf.js';
 import { invalidPreflightInputDirectory } from '../helpers/fixture_paths.js';
 
 suite('PDFページグループ分割', () => {

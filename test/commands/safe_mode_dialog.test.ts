@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { initializeSafeMode, resolveOutputConflicts } from '../../src/commands/lifecycle/safe_mode.js';
+import { initializeSafeMode, resolveOutputConflicts } from '../../vscode/src/commands/lifecycle/safe_mode.js';
 
 suite('Safe Mode有効時に競合ダイアログの選択結果から上書き判断を返す処理', () => {
   let sandbox: sinon.SinonSandbox;

@@ -14,8 +14,11 @@ import {
   executeRasterConversion,
   rasterFormatSpecs,
   type RasterInput,
-} from '../../src/operations/conversion/raster_conversion.js';
-import { executeDrawio, type DrawioBackend } from '../../src/operations/conversion/tools/drawio_tools.js';
+} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import {
+  executeDrawio,
+  type DrawioBackend,
+} from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 import { requireValue } from '../helpers/required.js';
 
 function stubRunPdfToPng(): never {

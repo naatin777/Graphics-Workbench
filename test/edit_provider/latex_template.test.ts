@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { renderTemplate, type TemplateContext } from '../../src/edit_provider/latex_template.js';
+import { renderTemplate, type TemplateContext } from '../../vscode/src/edit_provider/latex_template.js';
 
 suite('LaTeXテンプレートのプレースホルダを画像contextへ置換して文字列を返す', () => {
   const ctx: TemplateContext = {

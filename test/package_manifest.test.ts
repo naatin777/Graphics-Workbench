@@ -1,16 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import {
   commandContributions,
   publicCommandIds,
   submenuContributions,
   type SubmenuId,
-} from '../src/generated/extension_manifest.js';
-
-const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+} from '../vscode/src/generated/extension_manifest.js';
+import { projectRootDirectory } from './helpers/fixture_paths.js';
 
 const COMBINE_IMAGES_TO_PDF_COMMAND = 'graphics-workbench.combineImagesToPdf';
 const QUICK_COMBINE_IMAGES_TO_PDF_COMMAND = 'graphics-workbench.quickCombineImagesToPdf';
@@ -683,7 +681,7 @@ async function readJson<T extends PackageJson | Record<string, string>>(
   relativePath: 'package.json' | 'package.nls.json' | 'package.nls.ja.json',
 ): Promise<T>;
 async function readJson(relativePath: string): Promise<PackageJson | Record<string, string>> {
-  const content = await readFile(path.join(repositoryRoot, relativePath), 'utf8');
+  const content = await readFile(path.join(projectRootDirectory, 'vscode', relativePath), 'utf8');
   const value: unknown = JSON.parse(content);
   if (relativePath === 'package.json') {
     if (!isPackageJson(value)) {

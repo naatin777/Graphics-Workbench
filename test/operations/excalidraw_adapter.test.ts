@@ -5,8 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { excalidrawToSvg, normalizeExcalidrawSvg } from '../../src/operations/conversion/excalidraw_adapter.js';
-import { ExcalidrawError } from '../../src/operations/conversion/excalidraw_scene.js';
+import { excalidrawToSvg, normalizeExcalidrawSvg } from '../../vscode/src/operations/conversion/excalidraw_adapter.js';
+import { ExcalidrawError } from '../../vscode/src/operations/conversion/excalidraw_scene.js';
 import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const projectRootDirectory = path.dirname(path.dirname(testInputDirectory));
