@@ -75,6 +75,16 @@ export function defineWebviewConfig(config: WebviewBuildConfig): UserConfig {
           'protocols',
           'preview_protocol.ts',
         ),
+        '@graphics-workbench-table-editor-protocol': resolve(
+          projectRoot,
+          'src',
+          'shared',
+          'protocols',
+          'table_editor_protocol.ts',
+        ),
+        '@graphics-workbench-table-model': resolve(projectRoot, 'src', 'table', 'table_model.ts'),
+        '@graphics-workbench-table-parser': resolve(projectRoot, 'src', 'table', 'parse_delimited.ts'),
+        '@graphics-workbench-table-renderer': resolve(projectRoot, 'src', 'table', 'table_renderer.ts'),
       },
     },
 

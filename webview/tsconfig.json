@@ -39,7 +39,11 @@
       "@graphics-workbench-split-pdf-protocol": ["../src/shared/protocols/split_pdf_protocol.ts"],
       "@graphics-workbench-rotate-pdf-protocol": ["../src/shared/protocols/rotate_pdf_protocol.ts"],
       "@graphics-workbench-reorder-pdf-protocol": ["../src/shared/protocols/reorder_pdf_protocol.ts"],
-      "@graphics-workbench-preview-protocol": ["../src/shared/protocols/preview_protocol.ts"]
+      "@graphics-workbench-preview-protocol": ["../src/shared/protocols/preview_protocol.ts"],
+      "@graphics-workbench-table-editor-protocol": ["../src/shared/protocols/table_editor_protocol.ts"],
+      "@graphics-workbench-table-model": ["../src/table/table_model.ts"],
+      "@graphics-workbench-table-parser": ["../src/table/parse_delimited.ts"],
+      "@graphics-workbench-table-renderer": ["../src/table/table_renderer.ts"]
     }
   },
   "include": [
@@ -48,7 +52,11 @@
     "vite.config.ts",
     "vitest.config.ts",
     "../src/shared/protocols/crop_pdf_protocol.ts",
-    "../src/shared/protocols/preview_protocol.ts"
+    "../src/shared/protocols/preview_protocol.ts",
+    "../src/shared/protocols/table_editor_protocol.ts",
+    "../src/table/table_model.ts",
+    "../src/table/parse_delimited.ts",
+    "../src/table/table_renderer.ts"
   ],
   "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.test.tsx"]
 }

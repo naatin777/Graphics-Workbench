@@ -512,6 +512,10 @@ export const commandContributions = {
     titleKey: 'command.openControls',
     category: 'Graphics Workbench',
   },
+  'graphics-workbench.openTableEditor': {
+    titleKey: 'command.openTableEditor',
+    category: 'Graphics Workbench',
+  },
   'graphics-workbench.cropPdf.configure': {
     titleKey: 'command.cropPdf.configure',
     category: 'Graphics Workbench',
@@ -651,6 +655,7 @@ export const publicCommandIds = [
   'graphics-workbench.undoLastConversion',
   'graphics-workbench.toggleSafeMode',
   'graphics-workbench.openControls',
+  'graphics-workbench.openTableEditor',
   'graphics-workbench.cropPdf.configure',
   'graphics-workbench.splitPdf.allPages',
   'graphics-workbench.splitPdf.configure',

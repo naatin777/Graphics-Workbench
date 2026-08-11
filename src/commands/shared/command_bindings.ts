@@ -27,6 +27,7 @@ import { rotateImageCommand } from '../conversion/rotate_image.js';
 import { openControlsPanelCommand } from '../lifecycle/controls_panel.js';
 import { toggleSafeModeCommand } from '../lifecycle/safe_mode.js';
 import { undoLastConversionCommand } from '../lifecycle/undo_last_conversion.js';
+import { openTableEditorCommand } from '../table/open_table_editor.js';
 import type { CommandDependencies } from './command_dependencies.js';
 import type * as vscode from 'vscode';
 
@@ -144,4 +145,6 @@ export const commandBindings = [
   ),
   extensionCommandBinding('graphics-workbench.toggleSafeMode', async () => toggleSafeModeCommand()),
   extensionCommandBinding('graphics-workbench.openControls', openControlsPanelCommand),
+  // Table editor
+  extensionCommandBinding('graphics-workbench.openTableEditor', openTableEditorCommand),
 ] as const satisfies readonly CommandBinding[];

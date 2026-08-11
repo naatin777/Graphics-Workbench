@@ -1,0 +1,122 @@
+.table-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 12px;
+  gap: 12px;
+  overflow: auto;
+}
+
+.table-editor__header h1 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.table-editor__header p {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.table-editor__status {
+  padding: 6px 8px;
+  border: 1px solid var(--vscode-inputValidation-errorBorder, var(--gw-border));
+  border-radius: 4px;
+  color: var(--vscode-errorForeground);
+  background: var(--vscode-inputValidation-errorBackground, transparent);
+}
+
+.table-editor__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.table-editor__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-editor__grid-scroll {
+  overflow: auto;
+  max-height: 40vh;
+  border: 1px solid var(--gw-border);
+  border-radius: 4px;
+}
+
+.table-editor__grid {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+}
+
+.table-editor__grid th,
+.table-editor__grid td {
+  padding: 2px;
+  border: 1px solid var(--gw-border);
+}
+
+.table-editor__column-tool {
+  min-width: 8rem;
+}
+
+.table-editor__column-tool .gw-select {
+  width: auto;
+}
+
+.table-editor__row-handle {
+  width: 28px;
+  text-align: center;
+  padding: 0;
+}
+
+.table-editor__cell {
+  padding: 0;
+}
+
+.table-editor__cell .gw-input {
+  min-width: 6rem;
+}
+
+.table-editor__row--header .gw-input {
+  font-weight: 600;
+}
+
+.table-editor__options {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+}
+
+.table-editor__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 1.85em;
+}
+
+.table-editor__preview {
+  min-height: 8rem;
+  border: 1px solid var(--gw-border);
+  border-radius: 4px;
+}
+
+.table-editor__preview-title {
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--gw-border);
+}
+
+.table-editor__code {
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  white-space: pre;
+  font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
+  font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
+  color: var(--vscode-editor-foreground);
+}
