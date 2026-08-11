@@ -25,7 +25,6 @@ type Probe = (params: { toolName: string }) => Promise<void>;
 const TOOL_DRAWIO = userMessage('message.environmentCheck.tool.drawio');
 const TOOL_RSVG = userMessage('message.environmentCheck.tool.rsvgConvert');
 const TOOL_BROWSER = userMessage('message.environmentCheck.tool.browser');
-const TOOL_MERMAID = userMessage('message.environmentCheck.tool.mermaidCli');
 
 function checkWithProbe(probe: Probe, overrides: Record<string, unknown> = {}): Promise<FeatureAvailabilityEntry[]> {
   return runFeatureAvailabilityChecks({
@@ -54,7 +53,7 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
     assert.strictEqual(map.get('images')?.available, true);
   });
 
-  test('ChromeがSVG backendの場合はMermaidとSVGで同じbrowser probeを共有し、1回だけ起動する', async () => {
+  test('ChromeがSVG backendの場合はSVGと同じbrowser probeを共有し、1回だけ起動する', async () => {
     const probed: string[] = [];
 
     const map = entryMap(
@@ -65,7 +64,6 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
 
     assert.strictEqual(probed.filter((toolName) => toolName === TOOL_BROWSER).length, 1);
     assert.strictEqual(map.get('svg-to-pdf')?.settingId, 'graphics-workbench.execPath.chrome');
-    assert.strictEqual(map.get('mermaid')?.available, true);
   });
 
   test('rsvg-convertが選択されている場合はSVG用にrsvgだけを追加probeし、失敗してもChromeへfallbackしない', async () => {
@@ -84,7 +82,6 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
 
     assert.strictEqual(map.get('svg-to-pdf')?.available, false);
     assert.strictEqual(map.get('svg-to-pdf')?.settingId, 'graphics-workbench.execPath.rsvgConvert');
-    assert.strictEqual(map.get('mermaid')?.available, true);
     assert.strictEqual(probed.filter((toolName) => toolName === TOOL_RSVG).length, 1);
     assert.strictEqual(probed.filter((toolName) => toolName === TOOL_BROWSER).length, 1);
   });
@@ -93,7 +90,7 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
     const map = entryMap(
       await checkWithProbe(async ({ toolName }) => {
         if (toolName === TOOL_DRAWIO) {
-          throw Object.assign(new Error('spawn /Users/me/private/drawio ENOENT'), { code: 'ENOENT' });
+          throw Object.assign(new Error('spawn LOCAL_DRAWIO_PATH ENOENT'), { code: 'ENOENT' });
         }
       }),
     );
@@ -105,40 +102,21 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
       detail: userMessage('message.environmentCheck.notFound', TOOL_DRAWIO),
       settingId: 'graphics-workbench.execPath.drawio',
     });
-    assert.ok(!drawio?.detail.includes('/Users/me/private'));
-  });
-
-  test('Mermaid CLIが無い場合はmermaid settingを返し、CLIが使えてChromeが無い場合はchrome settingを返す', async () => {
-    const missingCli = entryMap(
-      await checkWithProbe(async ({ toolName }) => {
-        if (toolName === TOOL_MERMAID) {
-          throw notFound(toolName);
-        }
-      }),
-    );
-    assert.strictEqual(missingCli.get('mermaid')?.available, false);
-    assert.strictEqual(missingCli.get('mermaid')?.settingId, 'graphics-workbench.execPath.mermaid');
-
-    const missingChrome = entryMap(
-      await checkWithProbe(async ({ toolName }) => {
-        if (toolName === TOOL_BROWSER) {
-          throw notFound(toolName);
-        }
-      }),
-    );
-    assert.strictEqual(missingChrome.get('mermaid')?.available, false);
-    assert.strictEqual(missingChrome.get('mermaid')?.settingId, 'graphics-workbench.execPath.chrome');
+    assert.ok(!drawio?.detail.includes('LOCAL_DRAWIO_PATH'));
   });
 
   test('timeoutと一般的な起動失敗を利用不可detailへ変換する', async () => {
     const timedOut = entryMap(
       await checkWithProbe(async ({ toolName }) => {
-        if (toolName === TOOL_MERMAID) {
-          throw new Error('mmdc timed out after 10000ms');
+        if (toolName === TOOL_BROWSER) {
+          throw new Error('Chrome timed out after 10000ms');
         }
       }),
     );
-    assert.strictEqual(timedOut.get('mermaid')?.detail, userMessage('message.environmentCheck.timedOut', TOOL_MERMAID));
+    assert.strictEqual(
+      timedOut.get('svg-to-pdf')?.detail,
+      userMessage('message.environmentCheck.timedOut', TOOL_BROWSER),
+    );
 
     const failed = entryMap(
       await checkWithProbe(async ({ toolName }) => {

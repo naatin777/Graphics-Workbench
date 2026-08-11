@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
-import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
 import {
   executeRasterConversion,
   rasterFormatSpecs,
@@ -10,7 +9,6 @@ import {
   type RasterInput,
 } from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
 import type { DrawioBackend } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
-import type { MermaidBackend } from '@graphics-workbench/core/operations/conversion/tools/mermaid_tools.js';
 import {
   createPdfRenderBackend,
   type PdfRenderBackend,
@@ -31,7 +29,6 @@ export interface ConvertToRasterCommandOptions {
 }
 
 interface RasterBackendTools {
-  mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
   pdfRenderTools: PdfRenderBackend;
   outputOptions?: { effort: number };
@@ -47,7 +44,6 @@ interface RasterConversionContext {
 
 function createRasterBackendTools(configuration: Configuration, spec: RasterFormatSpec): RasterBackendTools {
   const tools: RasterBackendTools = {
-    mermaidTools: createMermaidBackend(configuration),
     drawioTools: createDrawioBackend(configuration),
     pdfRenderTools: createPdfRenderBackend(),
   };
@@ -110,7 +106,6 @@ async function runRasterCommand(options: {
         spec,
         runtime: context.runtime,
         maxInputPixels: context.maxInputPixels,
-        mermaidTools: context.prepared.mermaidTools,
         drawioTools: context.prepared.drawioTools,
         pdfRenderTools: context.prepared.pdfRenderTools,
         ...(context.prepared.outputOptions !== undefined && {

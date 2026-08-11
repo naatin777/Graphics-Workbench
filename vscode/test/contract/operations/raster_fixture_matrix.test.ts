@@ -36,7 +36,7 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
   for (const [index, fixturePath] of supportedRasterFixturePaths.entries()) {
     test(`${path.relative(rasterInputDirectory, fixturePath)}をworkspaceへコピーし、複数フレームなら2ページ目を指定してPNGへ変換すると、fixture固定のexpected.pngと内容が一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index);
         const outputPath = path.join(workspacePath, 'converted outputs', `${index}.png`);
         const sourceFormat = sourceFormatForPath(fixturePath);
@@ -54,7 +54,6 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
           maxInputPixels: 1_000_000_000,
           inputs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
           pdfRenderTools,
-          mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `raster-${index}`,
@@ -73,7 +72,7 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
     const fixturePath = path.join(testInputDirectory, 'valid', unsupportedRasterFixtureRelativePaths[0] ?? '');
 
     await withTestWorkspace(async (workspacePath) => {
-      const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+      const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
       const sourcePath = await copyInputToWorkspace(fixturePath, 'unsupported sequence.avif');
       const outputPath = path.join(workspacePath, 'unsupported-output.png');
 
@@ -83,7 +82,6 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
           maxInputPixels: 1_000_000_000,
           inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
-          mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: 'unsupported-avif',

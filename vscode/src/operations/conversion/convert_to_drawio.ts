@@ -4,8 +4,6 @@ import path from 'node:path';
 import { XMLParser } from 'fast-xml-parser';
 import sharp from 'sharp';
 
-import { isMermaidPath } from '@graphics-workbench/core/shared/source_format.js';
-
 import type {
   ConversionExecutionContext,
   ResolvedConversionRuntime,
@@ -36,13 +34,11 @@ export interface DrawioComposeInput {
   workspacePath: string;
 }
 
-type RunMermaid = (sourcePath: string, outputPath: string, signal: AbortSignal) => Promise<void>;
 export interface ConvertToDrawioOptions {
   inputs: DrawioComposeInput[];
   tools: {
     drawioPath: string;
     runPdfToSvg: RunPdfToSvg;
-    runMermaid: RunMermaid;
     runDrawio: RunDrawio;
   };
   runtime?: ConversionExecutionContext;
@@ -144,12 +140,6 @@ async function stageDrawioInput(
   if (extension === '.svg') {
     return [await svgPage(input.sourcePath, input)];
   }
-  if (isMermaidPath(input.sourcePath)) {
-    const svgPath = path.join(stageDirectory, `${inputIndex}.svg`);
-    await options.tools.runMermaid(input.sourcePath, svgPath, runtime.signal);
-    return [await svgPage(svgPath, input)];
-  }
-
   return [await rasterPage(input.sourcePath, input, options.maxInputPixels)];
 }
 

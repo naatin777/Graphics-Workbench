@@ -11,7 +11,6 @@ import {
   isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
 } from '@graphics-workbench/core/shared/source_format.js';
-import { createMermaidBackend } from '../../config/rendering/mermaid_cli_options.js';
 import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
 import {
   assertPageTemplateForSplitOutput,
@@ -38,7 +37,6 @@ export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies
 
     const configuration = dependencies.getConfiguration();
     const maxInputPixels = configuration.raster.maxInputPixels();
-    const mermaidTools = createMermaidBackend(configuration);
     const drawioTools = createDrawioBackend(configuration);
     await runConversionLifecycle({
       operationName: 'convert-to-svg',
@@ -54,7 +52,6 @@ export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies
         return convertToSvgFiles({
           inputs,
           maxInputPixels,
-          mermaidTools,
           drawioTools,
           runtime,
           runPdfToSvg: async (sourcePath, outputPath, page, signal) => {

@@ -9,11 +9,9 @@ export type SourceFormat =
   | 'gif'
   | 'tiff'
   | 'svg'
-  | 'mermaid'
   | 'drawio'
   | 'editable-drawio-png'
-  | 'editable-drawio-svg'
-  | 'excalidraw';
+  | 'editable-drawio-svg';
 
 export function sourceFormatForPath(sourcePath: string): SourceFormat | undefined {
   const lowerSourcePath = sourcePath.toLowerCase();
@@ -67,13 +65,6 @@ function sourceFormatForExtension(extension: string): SourceFormat | undefined {
     case '.svg': {
       return 'svg';
     }
-    case '.mmd':
-    case '.mermaid': {
-      return 'mermaid';
-    }
-    case '.excalidraw': {
-      return 'excalidraw';
-    }
     default: {
       return undefined;
     }
@@ -110,10 +101,6 @@ export function isSameSourceFormat(sourcePath: string, outputExtension: string):
   return sourceFormat === outputFormat;
 }
 
-export function isMermaidPath(sourcePath: string): boolean {
-  return sourceFormatForPath(sourcePath) === 'mermaid';
-}
-
 export function isEditableDrawioImagePath(sourcePath: string): boolean {
   const format = sourceFormatForPath(sourcePath);
   return format === 'editable-drawio-png' || format === 'editable-drawio-svg';
@@ -121,10 +108,6 @@ export function isEditableDrawioImagePath(sourcePath: string): boolean {
 
 export function isNativeDrawioPath(sourcePath: string): boolean {
   return sourceFormatForPath(sourcePath) === 'drawio';
-}
-
-export function isExcalidrawPath(sourcePath: string): boolean {
-  return sourceFormatForPath(sourcePath) === 'excalidraw';
 }
 
 export function isDrawioPath(sourcePath: string): boolean {

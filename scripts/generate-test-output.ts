@@ -1,6 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import os from 'node:os';
+import { mkdir, readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -16,7 +15,6 @@ await generateRasterOutputs();
 await generatePdfOutputs();
 await generateSvgOutputs();
 await generateEpsOutputs();
-await generateMermaidOutputs();
 const configuredDrawioPathArgument = readDrawioPathArgument();
 if (configuredDrawioPathArgument !== undefined) {
   await generateDrawioOutputs(configuredDrawioPathArgument);
@@ -95,43 +93,6 @@ async function generateEpsOutputs(): Promise<void> {
   }
 }
 
-async function generateMermaidOutputs(): Promise<void> {
-  const configDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-mermaid-fixtures-'));
-  const mermaidConfigPath = path.join(configDirectory, 'mermaid-config.json');
-  const chromeConfigPath = path.join(configDirectory, 'chrome-config.json');
-
-  try {
-    await writeFile(mermaidConfigPath, JSON.stringify({ theme: 'default' }), 'utf8');
-    await writeFile(chromeConfigPath, JSON.stringify({ headless: true, channel: 'chrome' }), 'utf8');
-
-    for (const inputPath of await listFiles(path.join(inputDirectory, 'mermaid'))) {
-      const outputDataDirectory = path.join(outputDirectory, 'mermaid', sourceName(inputPath));
-      await mkdir(outputDataDirectory, { recursive: true });
-
-      for (const outputFormat of ['png', 'svg', 'pdf'] as const) {
-        await execFileAsync(process.execPath, [
-          path.join(repositoryDirectory, 'node_modules', '@mermaid-js', 'mermaid-cli', 'src', 'cli.js'),
-          '--input',
-          inputPath,
-          '--output',
-          path.join(outputDataDirectory, `expected.${outputFormat}`),
-          '--outputFormat',
-          outputFormat,
-          '--backgroundColor',
-          'white',
-          '--configFile',
-          mermaidConfigPath,
-          '--puppeteerConfigFile',
-          chromeConfigPath,
-          '--quiet',
-        ]);
-      }
-    }
-  } finally {
-    await rm(configDirectory, { recursive: true, force: true });
-  }
-}
-
 async function generateDrawioOutputs(drawioExecutablePath: string): Promise<void> {
   for (const inputPath of await listFiles(path.join(inputDirectory, 'drawio'))) {
     const outputDataDirectory = path.join(outputDirectory, 'drawio', drawioSourceName(inputPath));
@@ -205,7 +166,8 @@ async function renderPdfPage(sourcePath: string, page: number, outputPath: strin
   const png = await renderPdfPageToPng(new Uint8Array(await readFile(sourcePath)), page, {
     cropContent: cropContent || undefined,
   });
-  await writeFile(outputPath, png);
+  // oxlint-disable-next-line typescript/no-unsafe-call -- the script loads the compiled core renderer dynamically.
+  await writeFile(outputPath, Buffer.from(png));
 }
 
 async function listFiles(directoryPath: string): Promise<string[]> {

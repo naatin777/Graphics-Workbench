@@ -84,14 +84,12 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
           inputs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
           runtime,
           pdfRenderTools: configuredTools.pdfRenderTools,
-          mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
           runId: `drawio-${fixtureCase.id}-png`,
         });
         await convertToSvgFiles({
           inputs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
-          mermaidTools: configuredTools.mermaidTools,
           drawioTools,
           runPdfToSvg: () => {
             throw new Error('drawio fixture must not include PDF input for SVG input');

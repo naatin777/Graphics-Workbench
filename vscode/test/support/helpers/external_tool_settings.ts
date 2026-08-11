@@ -1,6 +1,4 @@
 import { getExtensionConfiguration } from '../../../src/config/extension_configuration.js';
-import { createMermaidBackend } from '../../../src/config/rendering/mermaid_cli_options.js';
-import type { MermaidBackend } from '@graphics-workbench/core/operations/conversion/tools/mermaid_tools.js';
 import {
   createPdfRenderBackend,
   type PdfRenderBackend,
@@ -13,7 +11,6 @@ import {
 export function readConfiguredConversionTools(): {
   pdfRenderTools: PdfRenderBackend;
   rsvgConvertPath: string;
-  mermaidTools: MermaidBackend;
   drawioTools: DrawioBackend;
 } {
   const configuration = getExtensionConfiguration();
@@ -21,7 +18,6 @@ export function readConfiguredConversionTools(): {
   return {
     pdfRenderTools: createPdfRenderBackend(),
     rsvgConvertPath: configuration.execPath.rsvgConvert(),
-    mermaidTools: createMermaidBackend(configuration),
     drawioTools: { drawioPath: configuration.execPath.drawio(), runDrawio: executeDrawio },
   };
 }

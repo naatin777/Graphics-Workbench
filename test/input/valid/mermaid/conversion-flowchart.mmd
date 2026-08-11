@@ -1,7 +1,0 @@
-flowchart LR
-  start([Start]) --> validate{Valid input?}
-  validate -- Yes --> convert[Convert]
-  validate -- No --> reject[Reject]
-  convert --> output[(Output file)]
-  reject --> finish([Finish])
-  output --> finish

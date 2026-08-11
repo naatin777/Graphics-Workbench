@@ -6,11 +6,9 @@ $settingsPath = Join-Path 'vscode/test/support/vscode-settings' 'settings.json'
 $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
 
 $rsvgConvert = $settings.'graphics-workbench.execPath.rsvgConvert'
-$mermaid = $settings.'graphics-workbench.execPath.mermaid'
 $chrome = $settings.'graphics-workbench.execPath.chrome'
 
 if (-not (Test-Path $rsvgConvert)) { throw "missing rsvg-convert: $rsvgConvert" }
-if (-not (Test-Path $mermaid)) { throw "missing mmdc from settings.json: $mermaid" }
 if (-not (Test-Path $chrome)) { throw "missing Chrome from settings.json: $chrome" }
 
 if ($env:INSTALL_DRAWIO -eq '1') {
@@ -21,9 +19,6 @@ if ($env:INSTALL_DRAWIO -eq '1') {
 
 Write-Host "rsvg-convert: $rsvgConvert"
 & $rsvgConvert --version | Out-Host
-
-Write-Host "Mermaid CLI: $mermaid"
-& $mermaid --version | Out-Host
 
 Write-Host "Chrome from settings.json: $chrome"
 $chromeVersion = (Get-Item $chrome).VersionInfo.ProductVersion

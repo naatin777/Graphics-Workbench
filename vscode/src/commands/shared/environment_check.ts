@@ -1,4 +1,4 @@
-import { resolveChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
+import { resolveChromeExecutablePath } from '../../config/rendering/chrome_cli_options.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
 import { runExternalTool } from '@graphics-workbench/core/operations/external_tools/run_external_tool.js';
 
@@ -47,7 +47,7 @@ export interface RunFeatureAvailabilityChecksOptions {
   probe: ProbeTool;
 }
 
-export type FeatureAvailabilityId = 'pdf-operations' | 'images' | 'svg-to-pdf' | 'drawio' | 'mermaid';
+export type FeatureAvailabilityId = 'pdf-operations' | 'images' | 'svg-to-pdf' | 'drawio';
 
 export interface FeatureAvailabilityEntry {
   id: FeatureAvailabilityId;
@@ -87,19 +87,7 @@ export async function runFeatureAvailabilityChecks(
     versionArgs: ['--version'],
     settingId: 'graphics-workbench.execPath.drawio',
   });
-  const mermaidCliPromise = check({
-    toolLabel: userMessage('message.environmentCheck.tool.mermaidCli'),
-    executable: options.configuration.execPath.mermaid(),
-    versionArgs: ['--version'],
-    settingId: 'graphics-workbench.execPath.mermaid',
-  });
-  const [drawio, mermaidCli, chrome, svgToPdf] = await Promise.all([
-    drawioPromise,
-    mermaidCliPromise,
-    chromePromise,
-    svgToPdfPromise,
-  ]);
-  const mermaid = mermaidCli.available ? chrome : mermaidCli;
+  const [drawio, svgToPdf] = await Promise.all([drawioPromise, svgToPdfPromise]);
   const builtinDetail = userMessage('message.environmentCheck.available');
 
   return [
@@ -107,7 +95,6 @@ export async function runFeatureAvailabilityChecks(
     { id: 'images', available: true, detail: builtinDetail },
     { id: 'svg-to-pdf', ...svgToPdf },
     { id: 'drawio', ...drawio },
-    { id: 'mermaid', ...mermaid },
   ];
 }
 

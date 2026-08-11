@@ -11,10 +11,8 @@ read_setting() {
 }
 
 rsvg_convert_path="$(read_setting "graphics-workbench.execPath.rsvgConvert")"
-mermaid_path="$(read_setting "graphics-workbench.execPath.mermaid")"
 chrome_path="$(read_setting "graphics-workbench.execPath.chrome")"
 test -x "${rsvg_convert_path}"
-test -x "${mermaid_path}"
 test -x "${chrome_path}"
 
 if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
@@ -26,9 +24,6 @@ fi
 
 echo "rsvg-convert: ${rsvg_convert_path}"
 "${rsvg_convert_path}" --version
-
-echo "Mermaid CLI: ${mermaid_path}"
-"${mermaid_path}" --version
 
 echo "Chrome from settings.json: ${chrome_path}"
 "${chrome_path}" --version

@@ -22,7 +22,7 @@ suite('PDFテスト入力の全ページPNG変換結果が、各ページの期�
   ).entries()) {
     test(`pdf/${path.basename(fixturePath)}を読み取ったページ数分だけページごとにPNG変換し、各ページの出力が固定正解PNGと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdfRenderTools, mermaidTools, drawioTools } = readConfiguredConversionTools();
+        const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
         const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
         const document = await PDFDocument.load(await readFile(sourcePath));
         const outputDirectory = path.join(workspacePath, 'converted PDF pages', String(index));
@@ -37,7 +37,6 @@ suite('PDFテスト入力の全ページPNG変換結果が、各ページの期�
           maxInputPixels: 1_000_000_000,
           inputs: cases.map(({ outputPath, page }) => ({ sourcePath, outputPath, workspacePath, page })),
           pdfRenderTools,
-          mermaidTools,
           drawioTools,
           runtime: { resolveConflicts: async () => 'overwrite' },
           runId: `pdf-${index}`,

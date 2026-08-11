@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 import { pathToFileURL } from 'node:url';
-import { toErrorMessage, isAbortError } from '@graphics-workbench/core/shared/error.js';
+import { toErrorMessage } from '@graphics-workbench/core/shared/error.js';
 import {
   loadMupdf,
   openPdfDocument,
@@ -14,7 +14,6 @@ import {
 
 import {
   isEditableDrawioImagePath,
-  isMermaidPath,
   isRasterImagePath,
   isSameSourceFormat,
 } from '@graphics-workbench/core/shared/source_format.js';
@@ -36,7 +35,6 @@ import type {
 } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
 import { runExternalTool } from '@graphics-workbench/core/operations/external_tools/run_external_tool.js';
-import { runMermaidCliWithSignal } from '@graphics-workbench/core/operations/conversion/tools/run_mermaid_cli.js';
 import {
   runRsvgConvertWithAsciiScratch,
   type RsvgToolScratchOptions,
@@ -44,7 +42,6 @@ import {
 import { runStagedConversionBatch } from '@graphics-workbench/core/operations/lifecycle/run_staged_conversion_batch.js';
 import { stagingRootPathFor } from '@graphics-workbench/core/operations/lifecycle/run_id.js';
 import type { DrawioBackend } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
-import type { MermaidBackend } from '@graphics-workbench/core/operations/conversion/tools/mermaid_tools.js';
 import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 
 const defaultSupportedImageExtensions = ['.png'] as const;
@@ -72,7 +69,6 @@ export interface WriteSourceAsPdfOptions {
   page?: number;
   tools?: {
     svgToPdfTools?: SvgToPdfBackend;
-    mermaidTools?: MermaidBackend;
     drawioTools?: DrawioBackend;
   };
   scratchOptions?: RsvgToolScratchOptions;
@@ -81,7 +77,6 @@ export interface WriteSourceAsPdfOptions {
 interface StageSourceToPdfOptions {
   signal: AbortSignal;
   svgToPdfTools: SvgToPdfBackend | undefined;
-  mermaidTools: MermaidBackend | undefined;
   drawioTools: DrawioBackend | undefined;
   scratchOptions: RsvgToolScratchOptions;
   maxInputPixels: number;
@@ -112,7 +107,6 @@ export interface ConvertToPdfFilesOptions {
   supportedExtensions?: readonly string[];
   tools?: {
     svgToPdfTools?: SvgToPdfBackend;
-    mermaidTools?: MermaidBackend;
     drawioTools?: DrawioBackend;
   };
   platform?: NodeJS.Platform;
@@ -149,7 +143,6 @@ export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Prom
       stageSourceToPdf(input, index, currentRunId, {
         signal: batchRuntime.signal,
         svgToPdfTools: options.tools?.svgToPdfTools,
-        mermaidTools: options.tools?.mermaidTools,
         drawioTools: options.tools?.drawioTools,
         scratchOptions,
         maxInputPixels,
@@ -163,7 +156,7 @@ async function stageSourceToPdf(
   runId: string,
   options: StageSourceToPdfOptions,
 ): Promise<PreparedConversionOutput> {
-  const { signal, svgToPdfTools, mermaidTools, drawioTools, scratchOptions, maxInputPixels } = options;
+  const { signal, svgToPdfTools, drawioTools, scratchOptions, maxInputPixels } = options;
   signal.throwIfAborted();
   const stagedOutputPath = path.join(
     input.workspacePath,
@@ -189,9 +182,6 @@ async function stageSourceToPdf(
   if (svgToPdfTools !== undefined) {
     writeOptions.tools = { ...writeOptions.tools, svgToPdfTools };
   }
-  if (mermaidTools !== undefined) {
-    writeOptions.tools = { ...writeOptions.tools, mermaidTools };
-  }
   if (drawioTools !== undefined) {
     writeOptions.tools = { ...writeOptions.tools, drawioTools };
   }
@@ -210,7 +200,7 @@ async function stageSourceToPdf(
 
 export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promise<void> {
   const { sourcePath, outputPath, workspacePath, signal, maxInputPixels, tools, scratchOptions = {} } = options;
-  const { svgToPdfTools, mermaidTools, drawioTools } = tools ?? {};
+  const { svgToPdfTools, drawioTools } = tools ?? {};
   const extension = path.extname(sourcePath).toLowerCase();
 
   if (options.page === undefined && isRasterImagePath(sourcePath)) {
@@ -239,11 +229,6 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
 
   if (isEditableDrawioImagePath(sourcePath)) {
     await writeDrawioAsPdf(sourcePath, outputPath, workspacePath, signal, drawioTools);
-    return;
-  }
-
-  if (isMermaidPath(sourcePath)) {
-    await writeMermaidAsPdf(sourcePath, outputPath, workspacePath, signal, mermaidTools);
     return;
   }
 
@@ -285,52 +270,6 @@ async function writeDrawioAsPdf(
   signal.throwIfAborted();
 
   await drawio.runDrawio(drawio.drawioPath, ['-x', '-f', 'pdf', '-o', outputPath, sourcePath], signal);
-}
-
-async function writeMermaidAsPdf(
-  sourcePath: string,
-  outputPath: string,
-  workspacePath: string,
-  signal: AbortSignal,
-  mermaid?: MermaidBackend,
-): Promise<void> {
-  signal.throwIfAborted();
-  await assertWritablePathInWorkspace(outputPath, workspacePath);
-  await mkdir(path.dirname(outputPath), { recursive: true });
-  signal.throwIfAborted();
-
-  try {
-    await runMermaidCliWithSignal(
-      {
-        sourcePath,
-        outputPath: asPdfOutputPath(outputPath),
-        outputFormat: 'pdf',
-        mermaidPath: mermaid?.mermaidPath ?? '',
-        chromePath: mermaid?.chromePath ?? '',
-        theme: mermaid?.theme ?? 'default',
-        backgroundColor: mermaid?.backgroundColor ?? 'white',
-      },
-      signal,
-    );
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw error instanceof Error ? error : new Error(String(error));
-    }
-
-    throw new Error(`Mermaid CLI failed: ${toErrorMessage(error)}`, { cause: error });
-  }
-}
-
-function asPdfOutputPath(outputPath: string): `${string}.pdf` {
-  if (!isPdfOutputPath(outputPath)) {
-    throw new Error(`Mermaid PDF output path must end with .pdf: ${outputPath}`);
-  }
-
-  return outputPath;
-}
-
-function isPdfOutputPath(outputPath: string): outputPath is `${string}.pdf` {
-  return outputPath.toLowerCase().endsWith('.pdf');
 }
 
 async function writeRasterImageAsPdf({

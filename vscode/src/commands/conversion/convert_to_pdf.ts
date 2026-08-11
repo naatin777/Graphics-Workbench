@@ -6,7 +6,7 @@ import {
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '@graphics-workbench/core/shared/source_format.js';
-import { createMermaidBackend, resolveChromeExecutablePath } from '../../config/rendering/mermaid_cli_options.js';
+import { resolveChromeExecutablePath } from '../../config/rendering/chrome_cli_options.js';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
 import {
   convertToPdfFiles,
@@ -35,8 +35,6 @@ const pdfImageExtensions = [
   '.tif',
   '.tiff',
   '.svg',
-  '.mmd',
-  '.mermaid',
   '.drawio.png',
   '.dio.png',
   '.drawio.svg',
@@ -62,7 +60,6 @@ async function convertSelectedSourcesToPdf(
     const maxInputPixels = configuration.raster.maxInputPixels();
     const svgToPdfTools = createSvgToPdfBackend(configuration);
     validateSvgToPdfOptions(svgToPdfTools);
-    const mermaidTools = createMermaidBackend(configuration);
     const drawioTools = createDrawioBackend(configuration);
     const plannedInputs: PdfInput[] = [];
     for (const sourceUri of sourceUris) {
@@ -95,7 +92,6 @@ async function convertSelectedSourcesToPdf(
           supportedExtensions: pdfImageExtensions,
           tools: {
             svgToPdfTools,
-            mermaidTools,
             drawioTools,
           },
           operationName: 'convert-to-pdf',
