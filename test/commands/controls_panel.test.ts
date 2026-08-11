@@ -1,8 +1,9 @@
 // Test target:
 // - Controlsボタン（status bar item）がアイコンのみ・tooltip・commandで作成されること
-// - Controlsパネル（QuickPick）が開き、Tools / Safe Mode / Feature availability の3ブロックを持つこと
+// - Controlsパネル（QuickPick）が開き、Tools / Conversions / SVG→PDF / Safe Mode / Feature availability の各ブロックを持つこと
 // - SVG→PDF変換エンジンをラジオ的に選択でき、選択がconfigへ保存され反映されること
 // - 選択したエンジンが利用できない場合、自動で別エンジンへフォールバックしないこと
+// - Single / Split / Combine のON/OFFが対応設定（conversion.single/split/combine.enabled）と同期すること
 // - Safe ModeのON/OFFが既存設定（globalState）と同期すること
 // - Feature availabilityが機能単位で✓/✕表示されること
 // - 外部toolのavailability行から関連するVS Code Settingsを開けること
@@ -66,7 +67,7 @@ suite('Controlsパネル', () => {
     assert.deepStrictEqual(subscriptions, [statusBarItem]);
   });
 
-  test('Controlsパネルを開くとQuickPickにtitle Graphics Workbenchと3ブロック（Tools / Safe Mode / Feature availability）を表示する', async () => {
+  test('Controlsパネルを開くとQuickPickにtitle Graphics Workbenchと各ブロック（Tools / Conversions / SVG→PDF / Safe Mode / Feature availability）を表示する', async () => {
     const quickPick = createFakeQuickPick();
     const storage = new MemoryState();
     const state = new SafeModeState(storage);
@@ -90,13 +91,63 @@ suite('Controlsパネル', () => {
     assert.strictEqual(quickPick.title, 'Graphics Workbench');
     assert.strictEqual(quickPick.canSelectMany, false);
     const labels = quickPick.items.map((item) => item.label);
-    assert.deepStrictEqual(labels.slice(0, 2), [
+    assert.deepStrictEqual(labels.slice(0, 5), [
       userMessage('message.controls.section.tools'),
-      userMessage('message.controls.section.svgToPdf'),
+      userMessage('message.controls.section.conversions'),
+      userMessage('message.controls.conversionSingle'),
+      userMessage('message.controls.conversionSplit'),
+      userMessage('message.controls.conversionCombine'),
     ]);
+    assert.ok(labels.includes(userMessage('message.controls.section.svgToPdf')));
     assert.ok(labels.includes(userMessage('message.controls.section.safeMode')));
     assert.ok(labels.includes(userMessage('message.controls.section.availability')));
     assert.ok(labels.includes(`$(refresh) ${userMessage('message.controls.checkAgain')}`));
+  });
+
+  test('ConversionsのSingle/Split/Combineが対応設定と同期し、パネル上で切り替えると設定へ保存して表示を更新する', async () => {
+    const quickPick = createFakeQuickPick();
+    const written: { category: 'single' | 'split' | 'combine'; enabled: boolean }[] = [];
+
+    await showControlsPanel(
+      createDependencies({
+        quickPick,
+        engine: 'chrome',
+        conversions: { single: true, split: true, combine: true },
+        writeConversionEnabled: async (category, enabled) => {
+          written.push({ category, enabled });
+        },
+      }),
+    );
+
+    const conversionItems = (): Map<'single' | 'split' | 'combine', ControlsQuickPickItem> => {
+      const items = new Map<'single' | 'split' | 'combine', ControlsQuickPickItem>();
+      for (const item of quickPick.items) {
+        if (item.action?.kind === 'toggle-conversion') {
+          items.set(item.action.category, item);
+        }
+      }
+      return items;
+    };
+
+    assert.strictEqual(conversionItems().get('single')?.description, '[ON]');
+    assert.strictEqual(conversionItems().get('split')?.description, '[ON]');
+    assert.strictEqual(conversionItems().get('combine')?.description, '[ON]');
+
+    quickPick.triggerSelection(conversionItems().get('single')!);
+    await flushPromises();
+
+    assert.deepStrictEqual(written, [{ category: 'single', enabled: false }]);
+    assert.strictEqual(conversionItems().get('single')?.description, '[OFF]');
+
+    quickPick.triggerSelection(conversionItems().get('combine')!);
+    await flushPromises();
+
+    assert.deepStrictEqual(written, [
+      { category: 'single', enabled: false },
+      { category: 'combine', enabled: false },
+    ]);
+    assert.strictEqual(conversionItems().get('combine')?.description, '[OFF]');
+    assert.strictEqual(conversionItems().get('split')?.description, '[ON]');
   });
 
   test('SVG→PDFエンジンのラジオ表示が現在のconfig設定と一致し、選択するとconfigへ保存してラジオ表示を更新する', async () => {
@@ -325,12 +376,28 @@ function createDependencies(overrides: {
   quickPick: FakeQuickPick;
   safeMode?: SafeModeState;
   engine?: SvgToPdfEngine;
+  conversions?: Partial<Record<'single' | 'split' | 'combine', boolean>>;
   availability?: FeatureAvailabilityEntry[] | ((engine: SvgToPdfEngine) => FeatureAvailabilityEntry[]);
   writeEngine?: (engine: SvgToPdfEngine) => Promise<void>;
+  writeConversionEnabled?: (category: 'single' | 'split' | 'combine', enabled: boolean) => Promise<void>;
   openSetting?: (settingId: string) => Promise<void>;
 }): ControlsPanelDependencies {
-  const { quickPick, safeMode, engine = 'chrome', availability, writeEngine, openSetting } = overrides;
-  const values: Record<string, unknown> = { 'convertToPdf.svg.engine': engine };
+  const {
+    quickPick,
+    safeMode,
+    engine = 'chrome',
+    conversions,
+    availability,
+    writeEngine,
+    writeConversionEnabled,
+    openSetting,
+  } = overrides;
+  const values: Record<string, unknown> = {
+    'convertToPdf.svg.engine': engine,
+    'conversion.single.enabled': conversions?.single ?? true,
+    'conversion.split.enabled': conversions?.split ?? true,
+    'conversion.combine.enabled': conversions?.combine ?? true,
+  };
   return {
     getConfiguration: () => fakeConfiguration(values),
     getSafeMode: () => safeMode ?? new SafeModeState(new MemoryState()),
@@ -347,6 +414,12 @@ function createDependencies(overrides: {
         await writeEngine(nextEngine);
       }
       values['convertToPdf.svg.engine'] = nextEngine;
+    },
+    writeConversionEnabled: async (category, enabled) => {
+      if (writeConversionEnabled) {
+        await writeConversionEnabled(category, enabled);
+      }
+      values[`conversion.${category}.enabled`] = enabled;
     },
     openSetting: openSetting ?? (async () => {}),
     createQuickPick: () => quickPick,

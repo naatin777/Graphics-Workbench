@@ -2,6 +2,10 @@ import * as vscode from 'vscode';
 
 import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import type { Configuration } from '../../generated/extension_manifest.js';
+import type { LineOutputChannel } from '../../operations/external_tools/external_tool_ascii_scratch.js';
+import { createRandomToken, resolveOutputPath } from '../../config/output/resolve_output_path.js';
+import { assertRandomTemplateForCombine } from '../../config/output/page_template.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createSvgToPdfBackend } from './convert_to_pdf.js';
@@ -50,29 +54,92 @@ export async function combineImagesToPdfCommand(
     const outputPath = saveUri.fsPath;
     await assertWritablePathInWorkspace(outputPath, workspacePath);
 
-    const svgToPdfTools = createSvgToPdfBackend(configuration);
-    const inputs = previewedUris.map((sourceUri) => ({ sourcePath: sourceUri.fsPath }));
-
-    await runConversionLifecycle({
-      operationName: 'combine-images-to-pdf',
+    await runCombineConversion({
+      sourceUris: previewedUris,
+      outputPath,
+      workspacePath,
+      configuration,
       outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: createOutputConversionMessages('PDF', inputs.length),
-      run: async (runtime) =>
-        combineImagesToPdf({
-          inputs,
-          outputPath,
-          workspacePath,
-          runtime,
-          maxInputPixels: configuration.raster.maxInputPixels(),
-          tools: { svgToPdfTools },
-          platform: process.platform,
-        }),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await vscode.window.showErrorMessage(userMessage('message.convertToOutput.failed', 'PDF', message));
   }
+}
+
+export async function quickCombineImagesToPdfCommand(
+  sourceUris: vscode.Uri[],
+  dependencies: CommandDependencies,
+): Promise<void> {
+  const outputChannel = dependencies.outputChannel;
+
+  try {
+    if (sourceUris.length < 2) {
+      await vscode.window.showErrorMessage(userMessage('message.combineImagesToPdf.requiresTwo'));
+      return;
+    }
+
+    const workspaceFolder = requireSingleWorkspace(sourceUris);
+    const workspacePath = workspaceFolder.uri.fsPath;
+    const configuration = dependencies.getConfiguration();
+    const outputTemplate = configuration.outputPath.combine.pdf();
+    assertRandomTemplateForCombine(outputTemplate);
+    const [firstSource] = sourceUris;
+    if (firstSource === undefined) {
+      throw new Error('Combine requires at least two source files.');
+    }
+    const outputPath = resolveOutputPath(
+      outputTemplate,
+      {
+        sourcePath: firstSource.fsPath,
+        workspacePath,
+        workspaceName: workspaceFolder.name,
+        random: createRandomToken(),
+      },
+      { allowedExtensions: ['.pdf'] },
+    );
+    await assertWritablePathInWorkspace(outputPath, workspacePath);
+
+    await runCombineConversion({
+      sourceUris,
+      outputPath,
+      workspacePath,
+      configuration,
+      outputChannel,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await vscode.window.showErrorMessage(userMessage('message.convertToOutput.failed', 'PDF', message));
+  }
+}
+
+async function runCombineConversion(options: {
+  sourceUris: vscode.Uri[];
+  outputPath: string;
+  workspacePath: string;
+  configuration: Configuration;
+  outputChannel: LineOutputChannel;
+}): Promise<void> {
+  const { configuration } = options;
+  const svgToPdfTools = createSvgToPdfBackend(configuration);
+  const inputs = options.sourceUris.map((sourceUri) => ({ sourcePath: sourceUri.fsPath }));
+
+  await runConversionLifecycle({
+    operationName: 'combine-images-to-pdf',
+    outputChannel: options.outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: createOutputConversionMessages('PDF', inputs.length),
+    run: async (runtime) =>
+      combineImagesToPdf({
+        inputs,
+        outputPath: options.outputPath,
+        workspacePath: options.workspacePath,
+        runtime,
+        maxInputPixels: configuration.raster.maxInputPixels(),
+        tools: { svgToPdfTools },
+        platform: process.platform,
+      }),
+  });
 }
 
 export interface CombinePreviewItem extends vscode.QuickPickItem {

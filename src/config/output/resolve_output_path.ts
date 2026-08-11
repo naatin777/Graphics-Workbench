@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 
 export interface OutputPathContext {
   workspacePath: string;
@@ -6,6 +7,7 @@ export interface OutputPathContext {
   sourcePath: string;
   page?: string;
   dateNow?: number;
+  random?: string;
 }
 
 type OutputPathPlatform = 'win32' | 'posix';
@@ -74,7 +76,13 @@ function createTemplateValues(context: OutputPathContext, pathApi: typeof path.p
     fileExtname: pathApi.extname(sourcePath),
     page: context.page ?? '',
     dateNow: (context.dateNow ?? Date.now()).toString(),
+    random: context.random ?? createRandomToken(),
   };
+}
+
+/** ファイル名用途の短い衝突耐性のあるランダム文字列（例: a83f2c91）。 */
+export function createRandomToken(): string {
+  return randomBytes(4).toString('hex');
 }
 
 function currentOutputPathPlatform(): OutputPathPlatform {

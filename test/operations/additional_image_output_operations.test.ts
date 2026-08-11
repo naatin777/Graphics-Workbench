@@ -12,13 +12,13 @@ import { requireValue } from '../helpers/required.js';
 import { executeDrawio } from '../../src/operations/conversion/tools/drawio_tools.js';
 
 const inputFormats = ['gif', 'tiff'] as const;
-const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif'] as const;
+const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif', 'gif', 'tiff'] as const;
 
 function stubRunPdfToPng(): never {
   throw new Error('PDF to PNG rendering must not run in this test.');
 }
 suite('GIF/TIFFを各出力形式へ変換する', () => {
-  test('2フレームのGIF/TIFFをPDFへ変換すると全フレームを2ページへ展開し、PNG/JPEG/WebP/AVIFへ変換すると先頭フレームだけを4x4の赤画像として出力する', async () => {
+  test('2フレームのGIF/TIFFをPDFへ変換すると全フレームを2ページへ展開し、他のラスター出力へは先頭フレームだけを4x4の赤画像として出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-additional-image-output-'));
 
     for (const inputFormat of inputFormats) {
@@ -26,11 +26,12 @@ suite('GIF/TIFFを各出力形式へ変換する', () => {
       await writeAnimatedImageFixture(sourcePath, inputFormat);
 
       for (const outputFormat of outputFormats) {
+        if (outputFormat === inputFormat) {
+          continue;
+        }
         const outputPath = path.join(workspacePath.path, `source-${inputFormat}.${outputFormat}`);
         await convertImage(inputFormat, outputFormat, sourcePath, outputPath, workspacePath.path);
-        // PDFは全フレームを1つのPDFの各ページへ展開する。それ以外のラスター出力は
-        // 先頭frame/pageのみを保持する。
-        await assertOutput(outputFormat, outputPath);
+        await assertOutput(inputFormat, outputFormat, outputPath);
       }
     }
   });
@@ -99,7 +100,11 @@ async function writeAnimatedImageFixture(filePath: string, format: (typeof input
   await (format === 'gif' ? output.gif() : output.tiff()).toFile(filePath);
 }
 
-async function assertOutput(outputFormat: (typeof outputFormats)[number], filePath: string): Promise<void> {
+async function assertOutput(
+  inputFormat: (typeof inputFormats)[number],
+  outputFormat: (typeof outputFormats)[number],
+  filePath: string,
+): Promise<void> {
   if (outputFormat === 'pdf') {
     // アニメーションの全フレームが1つのPDFの各ページへ展開される。
     const document = await PDFDocument.load(await readFile(filePath));
@@ -112,11 +117,15 @@ async function assertOutput(outputFormat: (typeof outputFormats)[number], filePa
   }
 
   const buffer = await readFile(filePath);
-  const { data, info } = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  assert.strictEqual(info.width, 4);
-  assert.strictEqual(info.height, 4);
-  assert.strictEqual(info.format, 'raw');
+  const metadata = await sharp(buffer).metadata();
+  // sharpのmetadataはAVIFを'heif'として報告する。
+  assert.strictEqual(metadata.format, outputFormat === 'avif' ? 'heif' : outputFormat);
+  // GIF/TIFFを静止ラスター出力へ変換した場合、先頭フレームだけを1ページに保つ。
+  assert.strictEqual(metadata.pages ?? 1, 1, `input ${inputFormat} must keep only the first frame for ${outputFormat}`);
+  assert.strictEqual(metadata.width, 4);
+  assert.strictEqual(metadata.height, 4);
 
+  const { data } = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   for (let index = 0; index < data.length; index += 4) {
     assert.ok(requireValue(data[index]) > 220);
     assert.ok(requireValue(data[index + 1]) < 30);

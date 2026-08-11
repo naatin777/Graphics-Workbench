@@ -7,12 +7,12 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { type CombinePreviewItem, previewCombineInputs } from '../../src/commands/conversion/combine_images_to_pdf.js';
-import { extensionIdentity } from '../../src/generated/extension_manifest.js';
 import { userMessage } from '../../src/commands/shared/user_messages.js';
 
 import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
+import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
 const VALID_PNG = operationPngInputPath;
 
@@ -33,15 +33,6 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
 
   teardown(() => {
     sandbox.restore();
-  });
-
-  test('graphics-workbench.combineImagesToPdfコマンドがVS Codeに登録されている', async () => {
-    const extension = vscode.extensions.getExtension(extensionIdentity.id);
-    if (extension && !extension.isActive) {
-      await extension.activate();
-    }
-    const commands = await vscode.commands.getCommands(true);
-    assert.ok(commands.includes('graphics-workbench.combineImagesToPdf'));
   });
 
   test('単一の入力だけでは変換を開始せず、2件以上必要であることを示すエラーメッセージを表示する', async () => {
@@ -281,6 +272,129 @@ suite('画像を1つのPDFへ結合するコマンド', () => {
 
       await assertFileDoesNotExist(outputPath);
       assert.ok(showInformationMessage.calledWith(userMessage('message.convertToOutput.cancelled', 'PDF')));
+    } finally {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
+
+  test('Quick CombineはプレビューもSaveダイアログも表示せず、outputPath.combine.pdfの${random}を展開したworkspace内パスへ結合PDFを生成する', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const firstSourcePath = path.join(temporaryDirectory, 'first.png');
+      const secondSourcePath = path.join(temporaryDirectory, 'second.png');
+      await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
+      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
+
+      await withWorkspaceSettings(
+        {
+          'graphics-workbench.outputPath.combine.pdf': '${workspaceFolder}/quick-combined-${random}.pdf',
+        },
+        async () => {
+          await runCommandAndClearNotificationsUntilDone(
+            vscode.commands.executeCommand(
+              'graphics-workbench.quickCombineImagesToPdf',
+              vscode.Uri.file(firstSourcePath),
+              [vscode.Uri.file(firstSourcePath), vscode.Uri.file(secondSourcePath)],
+            ),
+          );
+        },
+      );
+
+      assert.strictEqual(showErrorMessage.called, false, String(showErrorMessage.firstCall?.args[0]));
+      assert.strictEqual(showSaveDialog.called, false);
+      assert.ok(!createQuickPick.called, 'Quick Combine must not show the order preview');
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      assert.ok(workspaceFolder);
+      const matches = (await readdir(workspaceFolder.uri.fsPath)).filter((name) =>
+        /^quick-combined-[0-9a-f]{8}\.pdf$/u.test(name),
+      );
+      assert.strictEqual(matches.length, 1, `expected one quick-combined PDF, found: ${matches.join(', ')}`);
+      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
+    } finally {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
+
+  test('Quick Combineは単一入力では結合せず、2件以上必要であることを示すエラーメッセージを表示して通常Convertへフォールバックしない', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const sourcePath = path.join(temporaryDirectory, 'single.png');
+      await copyFile(VALID_PNG, sourcePath);
+      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
+      const convertToPdf = sandbox.stub(vscode.commands, 'executeCommand').callThrough();
+
+      await vscode.commands.executeCommand('graphics-workbench.quickCombineImagesToPdf', vscode.Uri.file(sourcePath), [
+        vscode.Uri.file(sourcePath),
+      ]);
+
+      assert.ok(showErrorMessage.calledOnce);
+      assert.match(String(showErrorMessage.firstCall.args[0]), /at least two/);
+      assert.strictEqual(showSaveDialog.called, false);
+      const executed = convertToPdf.getCalls().map((call) => call.args[0]);
+      assert.ok(!executed.includes('graphics-workbench.convertToPdf'), 'must not fall back to Convert to PDF');
+    } finally {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
+
+  test('Quick CombineでoutputPath.combine.pdfに${random}が無い場合は、invalid configurationとして結合せずエラーを表示する', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const firstSourcePath = path.join(temporaryDirectory, 'first.png');
+      const secondSourcePath = path.join(temporaryDirectory, 'second.png');
+      const outputPath = path.join(temporaryDirectory, 'combined.pdf');
+      await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
+
+      await withWorkspaceSettings(
+        {
+          'graphics-workbench.outputPath.combine.pdf': '${workspaceFolder}/combined.pdf',
+        },
+        async () => {
+          await vscode.commands.executeCommand(
+            'graphics-workbench.quickCombineImagesToPdf',
+            vscode.Uri.file(firstSourcePath),
+            [vscode.Uri.file(firstSourcePath), vscode.Uri.file(secondSourcePath)],
+          );
+        },
+      );
+
+      assert.ok(showErrorMessage.calledOnce);
+      assert.match(String(showErrorMessage.firstCall.args[0]), /must contain \$\{random\}/);
+      await assertFileDoesNotExist(outputPath);
+    } finally {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
+
+  test('Quick CombineでoutputPath.combine.pdfが空文字の場合はinvalid configurationとして結合せずエラーを表示する', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const firstSourcePath = path.join(temporaryDirectory, 'first.png');
+      const secondSourcePath = path.join(temporaryDirectory, 'second.png');
+      await Promise.all([copyFile(VALID_PNG, firstSourcePath), copyFile(VALID_PNG, secondSourcePath)]);
+
+      await withWorkspaceSettings(
+        {
+          'graphics-workbench.outputPath.combine.pdf': '',
+        },
+        async () => {
+          await vscode.commands.executeCommand(
+            'graphics-workbench.quickCombineImagesToPdf',
+            vscode.Uri.file(firstSourcePath),
+            [vscode.Uri.file(firstSourcePath), vscode.Uri.file(secondSourcePath)],
+          );
+        },
+      );
+
+      assert.ok(showErrorMessage.calledOnce);
+      assert.match(
+        String(showErrorMessage.firstCall.args[0]),
+        /Invalid configuration for graphics-workbench\.outputPath\.combine\.pdf/,
+      );
     } finally {
       await rm(temporaryDirectory, { recursive: true, force: true });
     }

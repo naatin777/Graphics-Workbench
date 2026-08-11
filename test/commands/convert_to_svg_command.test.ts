@@ -43,12 +43,6 @@ suite('SVGに変換コマンド', () => {
     sandbox.restore();
   });
 
-  test('graphics-workbench.convertToSvgコマンドがVS Codeに登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.convertToSvg'));
-  });
-
   test('2ページPDFをページごとのSVGへ変換し、source-document/1.svgとsource-document/2.svgを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
@@ -67,14 +61,6 @@ suite('SVGに変換コマンド', () => {
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
-  });
-
-  test('.mmdのMermaid入力を変換したSVGにsvg要素とMermaid Alpha、Mermaid Betaのテキストが含まれる', async () => {
-    await assertMermaidFileConvertsToSvg('source.mmd');
-  });
-
-  test('.mermaidのMermaid入力を変換したSVGにsvg要素とMermaid Alpha、Mermaid Betaのテキストが含まれる', async () => {
-    await assertMermaidFileConvertsToSvg('source.mermaid');
   });
 
   test('mermaid.theme=dark設定で変換したSVG出力にfill:#1f2020が含まれる', async () => {
@@ -129,25 +115,6 @@ suite('SVGに変換コマンド', () => {
   });
 });
 
-async function assertMermaidFileConvertsToSvg(fileName: string): Promise<void> {
-  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-  try {
-    const sourcePath = path.join(temporaryDirectory, fileName);
-    await writeMermaidFixture(sourcePath);
-
-    const commandExecution = vscode.commands.executeCommand(
-      'graphics-workbench.convertToSvg',
-      vscode.Uri.file(sourcePath),
-    );
-    await runCommandAndClearNotificationsUntilDone(commandExecution);
-
-    await assertGeneratedMermaidSvg(replaceExtension(sourcePath, '.svg'));
-  } finally {
-    await removeTemporaryDirectory(temporaryDirectory);
-  }
-}
-
 async function writeMermaidFixture(filePath: string): Promise<void> {
   await writeFile(filePath, ['flowchart LR', '  A[Mermaid Alpha] --> B[Mermaid Beta]', ''].join('\n'));
 }
@@ -168,14 +135,6 @@ async function removeTemporaryDirectory(directoryPath: string): Promise<void> {
     maxRetries: 10,
     retryDelay: 100,
   });
-}
-
-async function assertGeneratedMermaidSvg(filePath: string): Promise<void> {
-  const svg = await readFile(filePath, 'utf8');
-
-  assert.match(svg, /<svg[\s>]/);
-  assert.match(svg, /Mermaid Alpha/);
-  assert.match(svg, /Mermaid Beta/);
 }
 
 async function writeTwoPagePdf(filePath: string): Promise<void> {

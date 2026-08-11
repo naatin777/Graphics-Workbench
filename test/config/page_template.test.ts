@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 
-import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../src/config/output/page_template.js';
+import {
+  assertPageTemplateForSplitOutput,
+  assertRandomTemplateForCombine,
+  formatOutputPage,
+} from '../../src/config/output/page_template.js';
 
 suite('分割出力のpageテンプレート', () => {
   test("総数が9なら'1'、12なら'01'、125なら'012'と、総数の桁数に合わせて1始まりのページ番号を0埋めする", () => {
@@ -13,5 +17,10 @@ suite('分割出力のpageテンプレート', () => {
     assert.throws(() => assertPageTemplateForSplitOutput('${fileDirname}/image.png', 2), /requires \$\{page\}/);
     assert.doesNotThrow(() => assertPageTemplateForSplitOutput('${fileDirname}/image-${page}.png', 2));
     assert.doesNotThrow(() => assertPageTemplateForSplitOutput('${fileDirname}/image.png', 1));
+  });
+
+  test('combine出力テンプレートに${random}変数を要求し、なければ例外を投げる', () => {
+    assert.throws(() => assertRandomTemplateForCombine('${workspaceFolder}/combined.pdf'), /must contain \$\{random\}/);
+    assert.doesNotThrow(() => assertRandomTemplateForCombine('${workspaceFolder}/combined-${random}.pdf'));
   });
 });

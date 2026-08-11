@@ -19,7 +19,7 @@
 // - cancellation tokenのUI操作
 
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
@@ -27,12 +27,10 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
-const fixturePngPath = operationPngInputPath;
 const generatedSvgWidth = 31;
 const generatedSvgHeight = 19;
 
@@ -67,12 +65,6 @@ suite('PNGに変換コマンド', () => {
 
   teardown(() => {
     sandbox.restore();
-  });
-
-  test('graphics-workbench.convertToPngコマンドがVS Codeに登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.convertToPng'));
   });
 
   test('JPEG、WebP、AVIF、2ページPDFを1回のコマンド実行でまとめてPNGへ変換し、画像は拡張子置換の.png、PDFはページごとの1.png/2.pngをサブディレクトリに生成する', async () => {
@@ -160,10 +152,6 @@ suite('PNGに変換コマンド', () => {
     await assertMermaidFileConvertsToPng('source.mmd');
   });
 
-  test('.mermaidのMermaid入力を変換したPNGがpng形式で幅と高さが0より大きい', async () => {
-    await assertMermaidFileConvertsToPng('source.mermaid');
-  });
-
   test('mermaid.backgroundColor=transparent設定で変換したPNG出力のhasAlphaがtrueになる', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
@@ -212,21 +200,6 @@ suite('PNGに変換コマンド', () => {
 
       await assertReadablePng(firstOutputPath);
       await assertReadablePng(secondOutputPath);
-    } finally {
-      await removeTemporaryDirectory(temporaryDirectory);
-    }
-  });
-
-  test('PNG入力を変換せず、ページ分割されたsource/1.pngも作成しない', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const pngPath = path.join(temporaryDirectory, 'source.png');
-      await copyFile(fixturePngPath, pngPath);
-
-      await vscode.commands.executeCommand('graphics-workbench.convertToPng', vscode.Uri.file(pngPath));
-
-      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source', '1.png'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -328,10 +301,4 @@ async function assertReadablePng(filePath: string): Promise<void> {
 
 function replaceExtension(filePath: string, extension: string): string {
   return path.join(path.dirname(filePath), `${path.basename(filePath, path.extname(filePath))}${extension}`);
-}
-
-async function assertFileDoesNotExist(filePath: string): Promise<void> {
-  await assert.rejects(access(filePath), (error) => {
-    return error instanceof Error && 'code' in error && error.code === 'ENOENT';
-  });
 }

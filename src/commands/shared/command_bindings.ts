@@ -9,7 +9,7 @@ import { reorderPdfConfigureCommand } from '../pdf/reorder_pdf_configure.js';
 import { rotatePdfCommand } from '../pdf/rotate_pdf.js';
 import { rotatePdfConfigureCommand } from '../pdf/rotate_pdf_configure.js';
 import { splitPdfAllPagesCommand, splitPdfConfigureCommand } from '../pdf/split_pdf_commands.js';
-import { combineImagesToPdfCommand } from '../conversion/combine_images_to_pdf.js';
+import { combineImagesToPdfCommand, quickCombineImagesToPdfCommand } from '../conversion/combine_images_to_pdf.js';
 import {
   convertDrawioToPagePdfsCommand,
   convertDrawioToSinglePdfCommand,
@@ -77,17 +77,17 @@ function extensionCommandBinding(id: CommandId, handler: ExtensionCommandBinding
   return { kind: 'extensionCommand', id, handler };
 }
 
-/** ラスタ変換コマンドは変換ターゲットをoptionsで指定する。 */
+/** ラスタ変換コマンドは変換ターゲットとcardinalityをoptionsで指定する。 */
 function rasterFileBinding(
   id: CommandId,
   target: 'png' | 'jpeg' | 'avif' | 'tiff' | 'webp' | 'gif',
-  outputMode?: 'auto' | 'preserve' | 'split',
+  cardinality?: 'single' | 'split',
 ): FileCommandBinding {
   return {
     kind: 'file',
     id,
     handler: convertToRasterCommand,
-    options: { target, ...(outputMode !== undefined && { outputMode }) },
+    options: { target, ...(cardinality !== undefined && { cardinality }) },
   };
 }
 
@@ -120,19 +120,20 @@ export const commandBindings = [
   },
   rasterFileBinding('graphics-workbench.convertToPng', 'png'),
   rasterFileBinding('graphics-workbench.convertToJpeg', 'jpeg'),
-  rasterFileBinding('graphics-workbench.convertToWebp', 'webp', 'auto'),
-  rasterFileBinding('graphics-workbench.convertToWebpPreserveAnimation', 'webp', 'preserve'),
+  rasterFileBinding('graphics-workbench.convertToWebp', 'webp'),
+  rasterFileBinding('graphics-workbench.convertToWebpPreserveAnimation', 'webp'),
   rasterFileBinding('graphics-workbench.convertToWebpSeparately', 'webp', 'split'),
   rasterFileBinding('graphics-workbench.convertToAvif', 'avif'),
   fileBinding('graphics-workbench.convertToSvg', convertToSvgCommand),
-  rasterFileBinding('graphics-workbench.convertToGif', 'gif', 'auto'),
-  rasterFileBinding('graphics-workbench.convertToGifPreserveAnimation', 'gif', 'preserve'),
+  rasterFileBinding('graphics-workbench.convertToGif', 'gif'),
+  rasterFileBinding('graphics-workbench.convertToGifPreserveAnimation', 'gif'),
   rasterFileBinding('graphics-workbench.convertToGifSeparately', 'gif', 'split'),
   rasterFileBinding('graphics-workbench.convertToTiff', 'tiff'),
   fileBinding('graphics-workbench.convertToDrawio', convertToDrawioCommand),
   fileBinding('graphics-workbench.convertToDrawioPng', convertToDrawioPngCommand),
   fileBinding('graphics-workbench.convertToDrawioSvg', convertToDrawioSvgCommand),
   fileBinding('graphics-workbench.combineImagesToPdf', combineImagesToPdfCommand),
+  fileBinding('graphics-workbench.quickCombineImagesToPdf', quickCombineImagesToPdfCommand),
   // Lifecycle
   extensionCommandBinding('graphics-workbench.undoLastConversion', async (dependencies, ...args) =>
     undoLastConversionCommand(typeof args[0] === 'string' ? args[0] : undefined, dependencies),

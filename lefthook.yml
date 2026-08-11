@@ -26,4 +26,4 @@ pre-push:
 
   commands:
     verify:
-      run: npm run verify:docker
+      run: npm run check

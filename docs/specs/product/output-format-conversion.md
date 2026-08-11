@@ -46,17 +46,34 @@ GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変�
 
 ## 設定と入力名
 
-変換の出力先は「何から変換したか」ではなく「何を何個出力するか」で決める。`single`（1入力→1出力）は`outputPath.single.<形式>`、`split`（1入力→複数出力）は`outputPath.split.<形式>`を正本とする。
+変換の出力先は「何から変換したか」ではなく「何を何個出力するか」で決める。`single`（1入力→1出力）は`outputPath.single.<形式>`、`split`（1入力→複数出力）は`outputPath.split.<形式>`、`combine`（N入力→1出力）は`outputPath.combine.<形式>`を正本とする。
 
 - `single.pdf`、`single.png`、`single.jpeg`、`single.webp`、`single.avif`、`single.gif`、`single.tiff`、`single.svg`
 - `split.pdf`、`split.png`、`split.jpeg`、`split.webp`、`split.avif`、`split.gif`、`split.tiff`、`split.svg`
+- `combine.pdf`（Quick Combine専用。`${random}`必須）
 - Draw.ioのcompose（N入力→1出力）は`single.drawio`／`single.drawioPng`／`single.drawioSvg`を使う。
-- 画像のPDF結合（N入力→1出力）は出力path設定を持たず、Save Asダイアログで出力先を選択する。
+- 画像のPDF結合（N入力→1出力）のSave As版は出力path設定を持たず、Save Asダイアログで出力先を選択する。
 - PDF編集operation固有の設定（`cropPdf`、`rotatePdf`、`reorderPdf`、`compressPdf`、`encryptPdf`、`decryptPdf`）は維持する。
 
 `split`のテンプレートは`${page}`を必須とし、PDFページ・アニメーションフレーム・Draw.ioページを同じ`split.<形式>`で扱う。`outputPath.convertXToY`のような入力・出力ペア設定は存在しない。
 
+`outputPath`設定は未設定ならmanifest既定値を使い、空文字や空白だけ・型不一致はinvalid configurationとして扱う（既定値への黙示fallbackはしない）。
+
 テンプレート変数は利用者が選択した論理入力を基準に展開する。editable Draw.io画像はDraw.io入力として扱い、`.drawio`などの接尾辞を除いた論理入力名を使用する。
+
+## Context MenuとGW Controls
+
+変換commandのContext Menu表示制御は入力format単位ではなく、出力cardinalityの3分類 `single`／`split`／`combine` 単位で行う。
+
+- `graphics-workbench.conversion.single.enabled`: 1入力→1出力の変換commandを表示する
+- `graphics-workbench.conversion.split.enabled`: 1入力→複数出力の変換commandを表示する
+- `graphics-workbench.conversion.combine.enabled`: N入力→1出力の変換command（Save As / Quickの両方）を表示する
+
+各commandのwhen句は入力formatの判定（対応commandの表示に必要なformat正規表現）を維持するが、`format判定 × format別enabled設定`の組み合わせは持たない。
+
+PDF編集operation（Crop / Rotate / Reorder / Split / Compress / Encrypt / Decrypt）は変換ではなく、`contextMenu.*.enabled`の既存operation設定で制御し、conversion toggleの影響を受けない。
+
+GW Controls（status barのスライダーアイコン）のQuickPickには`Conversions`セクションがあり、`Single`／`Split`／`Combine`をON/OFFできる。選択すると対応する`conversion.*.enabled`設定を直接更新し、表示へ即時反映する。
 
 ## Mermaid
 

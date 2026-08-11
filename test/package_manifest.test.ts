@@ -13,43 +13,40 @@ import {
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const COMBINE_IMAGES_TO_PDF_COMMAND = 'graphics-workbench.combineImagesToPdf';
+const QUICK_COMBINE_IMAGES_TO_PDF_COMMAND = 'graphics-workbench.quickCombineImagesToPdf';
 const CONVERT_SUBMENU = 'graphics-workbench.convert';
 const CONTEXT_MENU_ENABLED = 'config.graphics-workbench.contextMenu.enabled';
 const COMPOUND_DRAWIO_MATCH = 'resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i';
 const COMPOUND_DRAWIO_NOT_MATCH = `!(${COMPOUND_DRAWIO_MATCH})`;
-const CONVERSION_CONTEXT_MENU_SETTINGS = {
-  drawio: {
-    property: 'graphics-workbench.contextMenu.convertDrawio.enabled',
-    description: 'config.contextMenu.convertDrawio.enabled',
-  },
-  pdf: {
-    property: 'graphics-workbench.contextMenu.convertPdf.enabled',
-    description: 'config.contextMenu.convertPdf.enabled',
-  },
-  png: {
-    property: 'graphics-workbench.contextMenu.convertPng.enabled',
-    description: 'config.contextMenu.convertPng.enabled',
-  },
-  jpeg: {
-    property: 'graphics-workbench.contextMenu.convertJpeg.enabled',
-    description: 'config.contextMenu.convertJpeg.enabled',
-  },
-  webp: {
-    property: 'graphics-workbench.contextMenu.convertWebp.enabled',
-    description: 'config.contextMenu.convertWebp.enabled',
-  },
-  avif: {
-    property: 'graphics-workbench.contextMenu.convertAvif.enabled',
-    description: 'config.contextMenu.convertAvif.enabled',
-  },
-  svg: {
-    property: 'graphics-workbench.contextMenu.convertSvg.enabled',
-    description: 'config.contextMenu.convertSvg.enabled',
-  },
-  mermaid: {
-    property: 'graphics-workbench.contextMenu.convertMermaid.enabled',
-    description: 'config.contextMenu.convertMermaid.enabled',
-  },
+
+/** 変換commandごとにwhen句が依存するsingle/split/combine設定。 */
+const EXPECTED_CATEGORIES_BY_COMMAND: Record<string, readonly ('single' | 'split' | 'combine')[]> = {
+  'graphics-workbench.convertToPdf': ['single'],
+  'graphics-workbench.convertToPng': ['single', 'split'],
+  'graphics-workbench.convertToJpeg': ['single', 'split'],
+  'graphics-workbench.convertToWebp': ['single', 'split'],
+  'graphics-workbench.convertToAvif': ['single', 'split'],
+  'graphics-workbench.convertToSvg': ['single', 'split'],
+  'graphics-workbench.convertToGif': ['single', 'split'],
+  'graphics-workbench.convertToTiff': ['single', 'split'],
+  'graphics-workbench.convertToWebpPreserveAnimation': ['single'],
+  'graphics-workbench.convertToWebpSeparately': ['split'],
+  'graphics-workbench.convertToGifPreserveAnimation': ['single'],
+  'graphics-workbench.convertToGifSeparately': ['split'],
+  'graphics-workbench.convertDrawioToPagePdfs': ['split'],
+  'graphics-workbench.convertDrawioToSinglePdf': ['single'],
+  'graphics-workbench.convertExcalidrawToPdf': ['single'],
+  'graphics-workbench.convertToDrawio': ['single'],
+  'graphics-workbench.convertToDrawioPng': ['single'],
+  'graphics-workbench.convertToDrawioSvg': ['single'],
+  [COMBINE_IMAGES_TO_PDF_COMMAND]: ['combine'],
+  [QUICK_COMBINE_IMAGES_TO_PDF_COMMAND]: ['combine'],
+};
+
+const CATEGORY_PROPERTY = {
+  single: 'config.graphics-workbench.conversion.single.enabled',
+  split: 'config.graphics-workbench.conversion.split.enabled',
+  combine: 'config.graphics-workbench.conversion.combine.enabled',
 } as const;
 
 interface PackageJson {
@@ -180,20 +177,34 @@ suite('package.jsonの変換メニュー定義', () => {
     );
   });
 
-  test('入力形式ごとの変換コンテキストメニュー有効化設定をtype:boolean・default:true・description:%キー%で公開する', async () => {
+  test('single/split/combineの変換カテゴリ有効化設定をtype:boolean・default:true・description:%キー%で公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const { properties } = packageJson.contributes.configuration;
 
-    for (const setting of Object.values(CONVERSION_CONTEXT_MENU_SETTINGS)) {
-      assert.deepStrictEqual(properties[setting.property], {
+    for (const category of ['single', 'split', 'combine'] as const) {
+      assert.deepStrictEqual(properties[`graphics-workbench.conversion.${category}.enabled`], {
         type: 'boolean',
         default: true,
-        description: `%${setting.description}%`,
+        description: `%config.conversion.${category}.enabled%`,
       });
     }
   });
 
-  test('変換サブメニューと各変換commandのwhen句にグローバル有効化設定・対応する入力形式の設定・gif/tiff拡張子を含め、commandごとの指定設定で表示を制御する', async () => {
+  test('入力形式ごとのcontextMenu.convertXxx.enabled設定を公開せず、変換表示制御はsingle/split/combineへ一本化する', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+    const { properties } = packageJson.contributes.configuration;
+    const removedProperties = Object.keys(properties).filter((key) =>
+      key.startsWith('graphics-workbench.contextMenu.convert'),
+    );
+
+    assert.deepStrictEqual(
+      removedProperties,
+      [],
+      `format-specific conversion toggles must be removed: ${removedProperties.join(', ')}`,
+    );
+  });
+
+  test('変換サブメニューと各変換commandのwhen句にグローバル有効化設定・single/split/combine設定・gif/tiff拡張子を含め、カテゴリ単位で表示を制御する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -203,93 +214,80 @@ suite('package.jsonの変換メニュー定義', () => {
         .filter((entry): entry is typeof entry & { command: string } => entry.command !== undefined)
         .map((entry) => [entry.command, entry]),
     );
-    const expectedSettingsByCommand: Record<string, string[]> = {
-      'graphics-workbench.convertToPdf': [
-        CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.avif.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
-      ],
-      'graphics-workbench.convertToPng': [
-        CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.avif.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.svg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
-      ],
-      'graphics-workbench.convertToJpeg': [
-        CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.avif.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.svg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
-      ],
-      'graphics-workbench.convertToWebp': [
-        CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.avif.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.svg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
-      ],
-      'graphics-workbench.convertToAvif': [
-        CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.svg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
-      ],
-      'graphics-workbench.convertToSvg': [
-        CONVERSION_CONTEXT_MENU_SETTINGS.pdf.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.mermaid.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property,
-      ],
-      'graphics-workbench.convertDrawioToPagePdfs': [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
-      'graphics-workbench.convertDrawioToSinglePdf': [CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property],
-      [COMBINE_IMAGES_TO_PDF_COMMAND]: [
-        CONVERSION_CONTEXT_MENU_SETTINGS.png.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.jpeg.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.webp.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.avif.property,
-        CONVERSION_CONTEXT_MENU_SETTINGS.svg.property,
-      ],
-    };
 
     assert.ok(convertSubmenu?.when?.includes(CONTEXT_MENU_ENABLED));
-    for (const setting of Object.values(CONVERSION_CONTEXT_MENU_SETTINGS)) {
-      assert.ok(convertSubmenu?.when?.includes(setting.property), `${setting.property} is not on the convert submenu`);
+    for (const category of ['single', 'split', 'combine'] as const) {
+      assert.ok(
+        convertSubmenu?.when?.includes(CATEGORY_PROPERTY[category]),
+        `${CATEGORY_PROPERTY[category]} is not on the convert submenu`,
+      );
     }
-    assert.ok(convertSubmenu?.when?.includes('resourceExtname =~ /^\\.gif$/i'));
-    assert.ok(convertSubmenu?.when?.includes('resourceExtname =~ /^\\.tiff?$/i'));
+    assert.ok(convertSubmenu?.when?.includes('gif'), 'convert submenu must gate on animated GIF inputs');
+    assert.ok(convertSubmenu?.when?.includes('tiff?'), 'convert submenu must gate on TIFF inputs');
 
-    for (const [command, settings] of Object.entries(expectedSettingsByCommand)) {
+    for (const [command, categories] of Object.entries(EXPECTED_CATEGORIES_BY_COMMAND)) {
       const entry = commandEntries.get(command);
       assert.ok(entry?.when?.includes(CONTEXT_MENU_ENABLED), `${command} does not preserve the global setting`);
-      for (const setting of settings) {
-        assert.ok(entry?.when?.includes(setting), `${setting} is not used by ${command}`);
+      for (const category of categories) {
+        assert.ok(
+          entry?.when?.includes(CATEGORY_PROPERTY[category]),
+          `${CATEGORY_PROPERTY[category]} is not used by ${command}`,
+        );
       }
     }
   });
 
-  test('画像PDF結合コマンドのwhen句にgif/tiff拡張子を含め、複合Draw.io画像（.drawio/.dioの.png/.svg）のときは非表示にしてDraw.io設定では制御しない', async () => {
+  test('PDF入力の画像変換when句にはsplit.enabled、PDF以外の入力にはsingle.enabledを対応させる', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
-    const combineImagesToSinglePdf = convertMenu.find((entry) => entry.command === COMBINE_IMAGES_TO_PDF_COMMAND);
+    const convertToPng = convertMenu.find((entry) => entry.command === 'graphics-workbench.convertToPng');
 
-    assert.ok(combineImagesToSinglePdf?.when?.includes(CONTEXT_MENU_ENABLED));
-    assert.ok(combineImagesToSinglePdf?.when?.includes(COMPOUND_DRAWIO_NOT_MATCH));
-    assert.ok(combineImagesToSinglePdf?.when?.includes('resourceExtname =~ /^\\.gif$/i'));
-    assert.ok(combineImagesToSinglePdf?.when?.includes('resourceExtname =~ /^\\.tiff?$/i'));
-    assert.ok(!combineImagesToSinglePdf?.when?.includes(CONVERSION_CONTEXT_MENU_SETTINGS.drawio.property));
+    assert.ok(convertToPng?.when?.includes('config.graphics-workbench.conversion.split.enabled'));
+    assert.ok(convertToPng?.when?.includes('config.graphics-workbench.conversion.single.enabled'));
+    assert.ok(convertToPng?.when?.includes('resourceExtname =~ /^\\.pdf$/i'));
+  });
+
+  test('Save As版とQuick版の両方の画像PDF結合コマンドのwhen句にgif/tiff拡張子を含め、複合Draw.io画像のときは非表示にしてcombine設定で制御する', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+    const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
+    const combineEntries = convertMenu.filter((entry) =>
+      [COMBINE_IMAGES_TO_PDF_COMMAND, QUICK_COMBINE_IMAGES_TO_PDF_COMMAND].includes(entry.command ?? ''),
+    );
+
+    assert.strictEqual(combineEntries.length, 2);
+    for (const entry of combineEntries) {
+      assert.ok(entry.when?.includes(CONTEXT_MENU_ENABLED));
+      assert.ok(entry.when?.includes(CATEGORY_PROPERTY.combine));
+      assert.ok(entry.when?.includes(COMPOUND_DRAWIO_NOT_MATCH));
+      assert.ok(entry.when?.includes('resourceExtname =~ /^\\.gif$/i'));
+      assert.ok(entry.when?.includes('resourceExtname =~ /^\\.tiff?$/i'));
+      assert.ok(!entry.when?.includes('config.graphics-workbench.conversion.single.enabled'));
+      assert.ok(!entry.when?.includes('config.graphics-workbench.conversion.split.enabled'));
+    }
+  });
+
+  test('アニメーション保持コマンドはsingle.enabled、フレーム分割コマンドはsplit.enabledで制御する', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+    const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
+    const findEntry = (command: string) => convertMenu.find((entry) => entry.command === command);
+
+    const preserveCommands = [
+      'graphics-workbench.convertToWebpPreserveAnimation',
+      'graphics-workbench.convertToGifPreserveAnimation',
+    ];
+    const separatelyCommands = [
+      'graphics-workbench.convertToWebpSeparately',
+      'graphics-workbench.convertToGifSeparately',
+    ];
+
+    for (const command of preserveCommands) {
+      const entry = findEntry(command);
+      assert.ok(entry?.when?.includes(CATEGORY_PROPERTY.single), `${command} must depend on single.enabled`);
+    }
+    for (const command of separatelyCommands) {
+      const entry = findEntry(command);
+      assert.ok(entry?.when?.includes(CATEGORY_PROPERTY.split), `${command} must depend on split.enabled`);
+    }
   });
 
   test('変換サブメニューをExplorerに表示し、convertToPdfをmmd/mermaid/drawio/dio入力で表示し、複合Draw.io画像のエントリも追加する', async () => {
@@ -510,6 +508,21 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(paletteHidden.has('graphics-workbench.convertToGifSeparately'));
   });
 
+  test('Save As / Quickの両方の画像PDF結合コマンドを公開し、両方ともcommandPaletteで非表示にしてExplorerの変換サブメニューだけに載せる', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+    const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
+    const paletteEntries = packageJson.contributes.menus.commandPalette ?? [];
+    const paletteHidden = new Set(paletteEntries.filter((e) => e.when === 'false').map((e) => e.command));
+    const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
+
+    assert.ok(commandIds.has(COMBINE_IMAGES_TO_PDF_COMMAND));
+    assert.ok(commandIds.has(QUICK_COMBINE_IMAGES_TO_PDF_COMMAND));
+    assert.ok(paletteHidden.has(COMBINE_IMAGES_TO_PDF_COMMAND));
+    assert.ok(paletteHidden.has(QUICK_COMBINE_IMAGES_TO_PDF_COMMAND));
+    assert.ok(convertMenu.some((entry) => entry.command === COMBINE_IMAGES_TO_PDF_COMMAND));
+    assert.ok(convertMenu.some((entry) => entry.command === QUICK_COMBINE_IMAGES_TO_PDF_COMMAND));
+  });
+
   test('WebPのアニメーション保持・フレーム分割は.gif入力のときだけ表示し、GIFのアニメーション保持・フレーム分割は.webp入力のときだけ表示する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -563,6 +576,8 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.strictEqual(jaMessages['command.convertToGifSeparately'], 'GIF: フレーム分割');
     assert.strictEqual(jaMessages['command.convertToWebpPreserveAnimation'], 'WebP: アニメーションを保持');
     assert.strictEqual(jaMessages['command.convertToWebpSeparately'], 'WebP: フレーム分割');
+    assert.strictEqual(jaMessages['command.combineImagesToPdf'], '画像をPDFに結合（保存先を指定）');
+    assert.strictEqual(jaMessages['command.quickCombineImagesToPdf'], '画像をPDFにクイック結合');
   });
 
   test('package.nls.jsonとpackage.nls.ja.jsonのキー一覧をソートして比較し、欠落や余分なキーが無いことを検証する', async () => {
@@ -592,7 +607,7 @@ suite('package.jsonの変換メニュー定義', () => {
     });
   });
 
-  test('outputPathをsingle/split×形式で定義し、source×target形式の設定を持たない', async () => {
+  test('outputPathをsingle/split/combine×形式で定義し、source×target形式の設定を持たない', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const { properties } = packageJson.contributes.configuration;
     const outputPathKeys = Object.keys(properties).filter((key) => key.startsWith('graphics-workbench.outputPath.'));
@@ -612,6 +627,10 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.strictEqual(
       properties['graphics-workbench.outputPath.single.drawio']?.default,
       '${fileDirname}/${fileBasenameNoExtension}.dio',
+    );
+    assert.strictEqual(
+      properties['graphics-workbench.outputPath.combine.pdf']?.default,
+      '${workspaceFolder}/combined-${random}.pdf',
     );
     assert.ok(
       outputPathKeys.every((key) => !key.includes('To') && key !== 'graphics-workbench.outputPath.combineImagesToPdf'),

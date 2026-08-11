@@ -190,14 +190,18 @@ function renderConfigs(tree: Map<string, ConfigNode>, indentation: string): stri
       throw new Error(`Configuration key is missing a default: ${node.key}`);
     }
     const property = propertyName(name);
-    const getter = `defineConfiguration<${valueType}>(configurationReader, ${quote(node.key)}, ${literal(defaultValue)})`;
+    const isStrictOutputPath =
+      node.key.startsWith('outputPath.') && schemaTypes(node.schema).every((type) => type === 'string');
+    const getter = isStrictOutputPath
+      ? `defineStrictOutputPath(configurationReader, ${quote(node.key)}, ${literal(defaultValue)})`
+      : `defineConfiguration<${valueType}>(configurationReader, ${quote(node.key)}, ${literal(defaultValue)})`;
     const propertyLine = `${indentation}${property}: ${getter},`;
     if (propertyLine.length <= 120) {
       lines.push(propertyLine);
       continue;
     }
     lines.push(
-      `${indentation}${property}: defineConfiguration<${valueType}>(\n${indentation}  configurationReader,\n${indentation}  ${quote(node.key)},\n${indentation}  ${literal(defaultValue)},\n${indentation}),`,
+      `${indentation}${property}: ${isStrictOutputPath ? 'defineStrictOutputPath' : `defineConfiguration<${valueType}>`}(\n${indentation}  configurationReader,\n${indentation}  ${quote(node.key)},\n${indentation}  ${literal(defaultValue)},\n${indentation}),`,
     );
   }
   return `{
@@ -512,6 +516,10 @@ export function generate(packageJson: PackageManifest): string {
     `function assertConfigurationValue<Value>(key: ConfigurationKey, value: unknown, defaultValue: Value): Value {\n  if (matchesConfigurationSchema(value, configurationSchemas[key])) {\n    return value as Value;\n  }\n  // 不正な設定値で拡張の起動を止めず、デフォルトへフォールバックする。\n  // 1つのstale設定が全コマンドを無効化するのを防ぐ。\n  console.warn(\n    \`graphics-workbench.\${key}: invalid value \${JSON.stringify(value)}, using default \${JSON.stringify(defaultValue)}\`,\n  );\n  return defaultValue;\n}\n\n` +
     `function defineConfiguration<Value>(\n  configurationReader: ConfigurationReader,\n  key: ConfigurationKey,\n  defaultValue: Value,\n): ConfigurationGetter<Value> {\n` +
     `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    return assertConfigurationValue(key, value, defaultValue);\n  };\n` +
+    `}\n\n` +
+    `function isBlankString(value: unknown): value is string {\n  return typeof value === 'string' && value.trim() === '';\n}\n\n` +
+    `function defineStrictOutputPath(\n  configurationReader: ConfigurationReader,\n  key: ConfigurationKey,\n  defaultValue: string,\n): ConfigurationGetter<string> {\n` +
+    `  return (): string => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    if (typeof value !== 'string' || isBlankString(value)) {\n      throw new Error(\n        \`Invalid configuration for graphics-workbench.\${key}: expected a non-blank output path template.\`,\n      );\n    }\n    return value;\n  };\n` +
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
     renderCommandContributions(packageJson) +
