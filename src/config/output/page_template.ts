@@ -8,3 +8,9 @@ export function assertPageTemplateForSplitOutput(template: string, totalPages: n
     throw new Error('Split output for multiple pages or frames requires ${page} in the output path.');
   }
 }
+
+export function assertRandomTemplateForCombine(template: string): void {
+  if (!template.includes('${random}')) {
+    throw new Error('Combine output path must contain ${random} to avoid output collisions.');
+  }
+}

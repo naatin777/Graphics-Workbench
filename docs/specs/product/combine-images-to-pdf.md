@@ -6,9 +6,12 @@
 
 ## コマンド
 
-| Command ID                              | 表示名               | 出力形式 |
-| --------------------------------------- | -------------------- | -------- |
-| `graphics-workbench.combineImagesToPdf` | 画像を1つのPDFに結合 | PDF      |
+| Command ID                                   | 表示名                          | 出力形式 |
+| -------------------------------------------- | ------------------------------- | -------- |
+| `graphics-workbench.combineImagesToPdf`      | 画像をPDFに結合（保存先を指定） | PDF      |
+| `graphics-workbench.quickCombineImagesToPdf` | 画像をPDFにクイック結合         | PDF      |
+
+両コマンドは `combine`（N入力→1出力）に分類され、Context Menuでの表示は `graphics-workbench.conversion.combine.enabled` で制御する。
 
 ## 対象入力形式
 
@@ -19,13 +22,19 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは`graphics-workben
 
 ## 入力と順序
 
-**2件以上**のファイルを選択する必要がある。1件だけの選択は結合しない（Combineには2件以上必要であることと、通常のConvert to PDFを使うべきであることを表示する）。
+**2件以上**のファイルを選択する必要がある。1件だけの選択は結合しない（Combineには2件以上必要であることを表示する）。通常のConvert to PDFへの暗黙フォールバックはしない。
 
-画像の順序は Explorer での選択順（VS Code の `uris` 配列順）とする。ユーザーが Ctrl+クリックで選んだ順序をそのまま使う。結合前にQuickPickで順序の確認・変更・除外ができる。
+- **Save As Combine**（`combineImagesToPdf`）: 画像の順序をQuickPickで確認・変更・除外した後、Save Asダイアログで出力先を指定する。
+- **Quick Combine**（`quickCombineImagesToPdf`）: ダイアログなしで即座に結合する。入力順序は Explorer の選択順のまま使う。
 
 ## 出力パス
 
-`combineImagesToPdf`はoutputPath設定を持たない。結合順の確認後、**必ず保存ダイアログ（Save As）**で出力先を指定させる。出力先は選択したworkspace内に制限する。
+- **Save As Combine**: outputPath設定を持たない。結合順の確認後、**必ず保存ダイアログ（Save As）**で出力先を指定させる。出力先は選択したworkspace内に制限する。
+- **Quick Combine**: `graphics-workbench.outputPath.combine.pdf` を使う。既定値は `${workspaceFolder}/combined-${random}.pdf`。この設定は**必ず `${random}` を含む必要がある**。含まない場合はinvalid configurationとして扱い、`combined.pdf` への衝突時に `combined-1.pdf` へ勝手に名前を変えるようなfallbackはしない。
+
+`${random}` はファイル名用途の短いランダム文字列（16進数8桁、例: `a83f2c91`）で、Node.jsの暗号学的乱数（`crypto.randomBytes`）から生成する。Quick Combineを連続実行しても出力が衝突しないことを設定レベルで保証する。
+
+Save AsとQuickは空文字設定のような隠れたsentinel値で切り替えない。別commandとして明示する。
 
 ## ページサイズ
 
@@ -67,15 +76,16 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは`graphics-workben
 
 ## 設定
 
-`combineImagesToPdf`は出力path設定を持たない。出力先は常にSave Asダイアログで選択する。
+- `graphics-workbench.outputPath.combine.pdf`: Quick Combineの出力テンプレート。`${random}`必須。
+- Save As Combineは出力path設定を持たない。出力先は常にSave Asダイアログで選択する。
 
 ## 対象外
 
-- 画像の並び替えUI（QuickPickでの順序変更は行う）
+- 画像の並び替えUI（Save As版のQuickPickでの順序変更は行う）
 - 結合方向の指定（縦結合・横結合・grid など、PDFのページ結合なので不要）
 - 画像間への空白ページ挿入
 - Mermaid、Draw.io、PDFの入力
-- 単一ファイルの入力（通常のConvert to PDFを使う）
+- 単一ファイルの入力（通常のConvert to PDFを使う。暗黙フォールバックしない）
 
 ## テスト計画
 
@@ -86,6 +96,8 @@ Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは`graphics-workben
 - Undo の確認
 - 1件だけの選択時に結合しないことの確認
 - Save Asで出力先を選択して結合することの確認
+- Quick Combineがダイアログなしで`outputPath.combine.pdf`へ出力し、`${random}`を展開することの確認
+- `outputPath.combine.pdf`に`${random}`が無い場合にinvalid configurationとして結合しないことの確認
 
 ## 関連
 

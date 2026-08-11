@@ -52,6 +52,7 @@ type ConfigurationKey =
   | 'outputPath.split.gif'
   | 'outputPath.split.tiff'
   | 'outputPath.split.svg'
+  | 'outputPath.combine.pdf'
   | 'outputPath.cropPdf'
   | 'outputPath.clipboardImage'
   | 'outputPath.reorderPdf'
@@ -64,16 +65,9 @@ type ConfigurationKey =
   | 'contextMenu.cropPdf.enabled'
   | 'contextMenu.splitPdf.enabled'
   | 'contextMenu.mergePdf.enabled'
-  | 'contextMenu.convertDrawio.enabled'
-  | 'contextMenu.convertExcalidraw.enabled'
-  | 'contextMenu.convertPdf.enabled'
-  | 'contextMenu.convertPng.enabled'
-  | 'contextMenu.convertJpeg.enabled'
-  | 'contextMenu.convertWebp.enabled'
-  | 'contextMenu.convertAvif.enabled'
-  | 'contextMenu.convertSvg.enabled'
-  | 'contextMenu.convertMermaid.enabled'
-  | 'contextMenu.convertDrawioCreate.enabled'
+  | 'conversion.single.enabled'
+  | 'conversion.split.enabled'
+  | 'conversion.combine.enabled'
   | 'contextMenu.compressPdf.enabled'
   | 'contextMenu.encryptPdf.enabled'
   | 'contextMenu.decryptPdf.enabled'
@@ -349,6 +343,10 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['string'],
     minLength: 1,
   },
+  'outputPath.combine.pdf': {
+    types: ['string'],
+    minLength: 1,
+  },
   'outputPath.cropPdf': {
     types: ['string'],
   },
@@ -389,34 +387,13 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'contextMenu.mergePdf.enabled': {
     types: ['boolean'],
   },
-  'contextMenu.convertDrawio.enabled': {
+  'conversion.single.enabled': {
     types: ['boolean'],
   },
-  'contextMenu.convertExcalidraw.enabled': {
+  'conversion.split.enabled': {
     types: ['boolean'],
   },
-  'contextMenu.convertPdf.enabled': {
-    types: ['boolean'],
-  },
-  'contextMenu.convertPng.enabled': {
-    types: ['boolean'],
-  },
-  'contextMenu.convertJpeg.enabled': {
-    types: ['boolean'],
-  },
-  'contextMenu.convertWebp.enabled': {
-    types: ['boolean'],
-  },
-  'contextMenu.convertAvif.enabled': {
-    types: ['boolean'],
-  },
-  'contextMenu.convertSvg.enabled': {
-    types: ['boolean'],
-  },
-  'contextMenu.convertMermaid.enabled': {
-    types: ['boolean'],
-  },
-  'contextMenu.convertDrawioCreate.enabled': {
+  'conversion.combine.enabled': {
     types: ['boolean'],
   },
   'contextMenu.compressPdf.enabled': {
@@ -470,6 +447,29 @@ function defineConfiguration<Value>(
       return defaultValue;
     }
     return assertConfigurationValue(key, value, defaultValue);
+  };
+}
+
+function isBlankString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim() === '';
+}
+
+function defineStrictOutputPath(
+  configurationReader: ConfigurationReader,
+  key: ConfigurationKey,
+  defaultValue: string,
+): ConfigurationGetter<string> {
+  return (): string => {
+    const value = configurationReader.get(key);
+    if (value === undefined) {
+      return defaultValue;
+    }
+    if (typeof value !== 'string' || isBlankString(value)) {
+      throw new Error(
+        `Invalid configuration for graphics-workbench.${key}: expected a non-blank output path template.`,
+      );
+    }
+    return value;
   };
 }
 
@@ -586,6 +586,10 @@ export const commandContributions = {
     titleKey: 'command.combineImagesToPdf',
     category: 'Graphics Workbench',
   },
+  'graphics-workbench.quickCombineImagesToPdf': {
+    titleKey: 'command.quickCombineImagesToPdf',
+    category: 'Graphics Workbench',
+  },
   'graphics-workbench.compressPdf': {
     titleKey: 'command.compressPdf',
     category: 'Graphics Workbench',
@@ -641,6 +645,7 @@ export const publicCommandIds = [
   'graphics-workbench.convertToDrawioPng',
   'graphics-workbench.convertToDrawioSvg',
   'graphics-workbench.combineImagesToPdf',
+  'graphics-workbench.quickCombineImagesToPdf',
   'graphics-workbench.compressPdf',
   'graphics-workbench.encryptPdf',
   'graphics-workbench.decryptPdf',
@@ -780,135 +785,142 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
     },
     outputPath: {
       single: {
-        pdf: defineConfiguration<string>(
+        pdf: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.pdf',
           '${fileDirname}/${fileBasenameNoExtension}.pdf',
         ),
-        png: defineConfiguration<string>(
+        png: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.png',
           '${fileDirname}/${fileBasenameNoExtension}.png',
         ),
-        jpeg: defineConfiguration<string>(
+        jpeg: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.jpeg',
           '${fileDirname}/${fileBasenameNoExtension}.jpeg',
         ),
-        webp: defineConfiguration<string>(
+        webp: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.webp',
           '${fileDirname}/${fileBasenameNoExtension}.webp',
         ),
-        avif: defineConfiguration<string>(
+        avif: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.avif',
           '${fileDirname}/${fileBasenameNoExtension}.avif',
         ),
-        gif: defineConfiguration<string>(
+        gif: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.gif',
           '${fileDirname}/${fileBasenameNoExtension}.gif',
         ),
-        tiff: defineConfiguration<string>(
+        tiff: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.tiff',
           '${fileDirname}/${fileBasenameNoExtension}.tiff',
         ),
-        svg: defineConfiguration<string>(
+        svg: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.svg',
           '${fileDirname}/${fileBasenameNoExtension}.svg',
         ),
-        drawio: defineConfiguration<string>(
+        drawio: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.drawio',
           '${fileDirname}/${fileBasenameNoExtension}.dio',
         ),
-        drawioPng: defineConfiguration<string>(
+        drawioPng: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.drawioPng',
           '${fileDirname}/${fileBasenameNoExtension}.drawio.png',
         ),
-        drawioSvg: defineConfiguration<string>(
+        drawioSvg: defineStrictOutputPath(
           configurationReader,
           'outputPath.single.drawioSvg',
           '${fileDirname}/${fileBasenameNoExtension}.drawio.svg',
         ),
       },
       split: {
-        pdf: defineConfiguration<string>(
+        pdf: defineStrictOutputPath(
           configurationReader,
           'outputPath.split.pdf',
           '${fileDirname}/${fileBasenameNoExtension}/${page}.pdf',
         ),
-        png: defineConfiguration<string>(
+        png: defineStrictOutputPath(
           configurationReader,
           'outputPath.split.png',
           '${fileDirname}/${fileBasenameNoExtension}/${page}.png',
         ),
-        jpeg: defineConfiguration<string>(
+        jpeg: defineStrictOutputPath(
           configurationReader,
           'outputPath.split.jpeg',
           '${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg',
         ),
-        webp: defineConfiguration<string>(
+        webp: defineStrictOutputPath(
           configurationReader,
           'outputPath.split.webp',
           '${fileDirname}/${fileBasenameNoExtension}/${page}.webp',
         ),
-        avif: defineConfiguration<string>(
+        avif: defineStrictOutputPath(
           configurationReader,
           'outputPath.split.avif',
           '${fileDirname}/${fileBasenameNoExtension}/${page}.avif',
         ),
-        gif: defineConfiguration<string>(
+        gif: defineStrictOutputPath(
           configurationReader,
           'outputPath.split.gif',
           '${fileDirname}/${fileBasenameNoExtension}/${page}.gif',
         ),
-        tiff: defineConfiguration<string>(
+        tiff: defineStrictOutputPath(
           configurationReader,
           'outputPath.split.tiff',
           '${fileDirname}/${fileBasenameNoExtension}/${page}.tiff',
         ),
-        svg: defineConfiguration<string>(
+        svg: defineStrictOutputPath(
           configurationReader,
           'outputPath.split.svg',
           '${fileDirname}/${fileBasenameNoExtension}/${page}.svg',
         ),
       },
-      cropPdf: defineConfiguration<string>(
+      combine: {
+        pdf: defineStrictOutputPath(
+          configurationReader,
+          'outputPath.combine.pdf',
+          '${workspaceFolder}/combined-${random}.pdf',
+        ),
+      },
+      cropPdf: defineStrictOutputPath(
         configurationReader,
         'outputPath.cropPdf',
         '${fileDirname}/${fileBasenameNoExtension}-crop.pdf',
       ),
-      clipboardImage: defineConfiguration<string>(
+      clipboardImage: defineStrictOutputPath(
         configurationReader,
         'outputPath.clipboardImage',
         '${fileDirname}/${dateNow}',
       ),
-      reorderPdf: defineConfiguration<string>(
+      reorderPdf: defineStrictOutputPath(
         configurationReader,
         'outputPath.reorderPdf',
         '${fileDirname}/${fileBasenameNoExtension}-reordered.pdf',
       ),
-      rotatePdf: defineConfiguration<string>(
+      rotatePdf: defineStrictOutputPath(
         configurationReader,
         'outputPath.rotatePdf',
         '${fileDirname}/${fileBasenameNoExtension}-rotated.pdf',
       ),
-      compressPdf: defineConfiguration<string>(
+      compressPdf: defineStrictOutputPath(
         configurationReader,
         'outputPath.compressPdf',
         '${fileDirname}/${fileBasenameNoExtension}_compressed.pdf',
       ),
-      encryptPdf: defineConfiguration<string>(
+      encryptPdf: defineStrictOutputPath(
         configurationReader,
         'outputPath.encryptPdf',
         '${fileDirname}/${fileBasenameNoExtension}-encrypted.pdf',
       ),
-      decryptPdf: defineConfiguration<string>(
+      decryptPdf: defineStrictOutputPath(
         configurationReader,
         'outputPath.decryptPdf',
         '${fileDirname}/${fileBasenameNoExtension}-decrypted.pdf',
@@ -928,36 +940,6 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       mergePdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.mergePdf.enabled', true),
       },
-      convertDrawio: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertDrawio.enabled', true),
-      },
-      convertExcalidraw: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertExcalidraw.enabled', true),
-      },
-      convertPdf: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertPdf.enabled', true),
-      },
-      convertPng: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertPng.enabled', true),
-      },
-      convertJpeg: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertJpeg.enabled', true),
-      },
-      convertWebp: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertWebp.enabled', true),
-      },
-      convertAvif: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertAvif.enabled', true),
-      },
-      convertSvg: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertSvg.enabled', true),
-      },
-      convertMermaid: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertMermaid.enabled', true),
-      },
-      convertDrawioCreate: {
-        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.convertDrawioCreate.enabled', true),
-      },
       compressPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.compressPdf.enabled', true),
       },
@@ -972,6 +954,17 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       reorderPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.reorderPdf.enabled', true),
+      },
+    },
+    conversion: {
+      single: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'conversion.single.enabled', true),
+      },
+      split: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'conversion.split.enabled', true),
+      },
+      combine: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'conversion.combine.enabled', true),
       },
     },
   } as const;

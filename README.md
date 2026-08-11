@@ -32,7 +32,7 @@ The value of Graphics Workbench is not any single conversion format but the whol
 ### 2. Combine several images into one PDF
 
 1. Select multiple images in the Explorer
-2. Right-click → **Convert** → **Combine Images into Single PDF**
+2. Right-click → **Convert** → **Combine Images to PDF (Save As)** to choose the output location, or **Quick Combine Images to PDF** to combine immediately into `outputPath.combine.pdf`
 3. Review the resulting PDF
 4. Save the output
 

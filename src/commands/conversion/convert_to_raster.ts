@@ -23,7 +23,8 @@ import { planRasterConversionJobs } from './plan_conversion_jobs.js';
 
 export interface ConvertToRasterCommandOptions {
   target: RasterConversionTarget;
-  outputMode?: 'auto' | 'preserve' | 'split';
+  /** アニメーション入力をフレームごとに分割出力する場合は'split'。それ以外は'single'。 */
+  cardinality?: 'single' | 'split';
 }
 
 interface RasterBackendTools {
@@ -59,7 +60,7 @@ async function runRasterCommand(options: {
   sourceUris: vscode.Uri[];
   dependencies: CommandDependencies;
   spec: RasterFormatSpec;
-  outputMode?: 'auto' | 'preserve' | 'split' | undefined;
+  cardinality?: 'single' | 'split' | undefined;
 }): Promise<void> {
   const { sourceUris, spec } = options;
   if (sourceUris.length === 0) {
@@ -96,7 +97,7 @@ async function runRasterCommand(options: {
             ...(animated && context.maxAnimationPixels !== undefined
               ? { maxAnimationPixels: context.maxAnimationPixels }
               : {}),
-            frameMode: options.outputMode === 'split' ? 'all' : 'first',
+            frameMode: options.cardinality === 'split' ? 'all' : 'first',
             runtime: context.runtime,
           })),
         );
@@ -122,11 +123,11 @@ export async function convertToRasterCommand(
   dependencies: CommandDependencies,
   options?: ConvertToRasterCommandOptions,
 ): Promise<void> {
-  const { target = 'png', outputMode } = options ?? {};
+  const { target = 'png', cardinality } = options ?? {};
   await runRasterCommand({
     sourceUris,
     dependencies,
     spec: rasterFormatSpecs[target],
-    outputMode,
+    cardinality,
   });
 }
