@@ -10,6 +10,7 @@ import { rotatePdfCommand } from '../pdf/rotate_pdf.js';
 import { rotatePdfConfigureCommand } from '../pdf/rotate_pdf_configure.js';
 import { splitPdfAllPagesCommand, splitPdfConfigureCommand } from '../pdf/split_pdf_commands.js';
 import { combineImagesToPdfCommand, quickCombineImagesToPdfCommand } from '../conversion/combine_images_to_pdf.js';
+import { compressImageCommand } from '../conversion/compress_image.js';
 import {
   convertDrawioToPagePdfsCommand,
   convertDrawioToSinglePdfCommand,
@@ -136,6 +137,7 @@ export const commandBindings = [
   fileBinding('graphics-workbench.combineImagesToPdf', combineImagesToPdfCommand),
   fileBinding('graphics-workbench.quickCombineImagesToPdf', quickCombineImagesToPdfCommand),
   fileBinding('graphics-workbench.rotateImage', rotateImageCommand),
+  fileBinding('graphics-workbench.compressImage', compressImageCommand),
   // Lifecycle
   extensionCommandBinding('graphics-workbench.undoLastConversion', async (dependencies, ...args) =>
     undoLastConversionCommand(typeof args[0] === 'string' ? args[0] : undefined, dependencies),

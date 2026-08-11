@@ -36,6 +36,7 @@ type ConfigurationKey =
   | 'insertQuarkdown.imageTemplate'
   | 'convertToWebp.effort'
   | 'convertToAvif.effort'
+  | 'compressImage.quality'
   | 'outputPath.single.pdf'
   | 'outputPath.single.png'
   | 'outputPath.single.jpeg'
@@ -59,6 +60,7 @@ type ConfigurationKey =
   | 'outputPath.rotatePdf'
   | 'outputPath.rotateImage'
   | 'outputPath.compressPdf'
+  | 'outputPath.compressImage'
   | 'outputPath.encryptPdf'
   | 'outputPath.decryptPdf'
   | 'cropPdf.marginOptions'
@@ -70,6 +72,7 @@ type ConfigurationKey =
   | 'conversion.split.enabled'
   | 'conversion.combine.enabled'
   | 'contextMenu.compressPdf.enabled'
+  | 'contextMenu.compressImage.enabled'
   | 'contextMenu.encryptPdf.enabled'
   | 'contextMenu.decryptPdf.enabled'
   | 'contextMenu.rotatePdf.enabled'
@@ -281,6 +284,11 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     minimum: 0,
     maximum: 9,
   },
+  'compressImage.quality': {
+    types: ['integer'],
+    minimum: 1,
+    maximum: 100,
+  },
   'outputPath.single.pdf': {
     types: ['string'],
     minLength: 1,
@@ -367,6 +375,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   'outputPath.compressPdf': {
     types: ['string'],
   },
+  'outputPath.compressImage': {
+    types: ['string'],
+  },
   'outputPath.encryptPdf': {
     types: ['string'],
   },
@@ -402,6 +413,9 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     types: ['boolean'],
   },
   'contextMenu.compressPdf.enabled': {
+    types: ['boolean'],
+  },
+  'contextMenu.compressImage.enabled': {
     types: ['boolean'],
   },
   'contextMenu.encryptPdf.enabled': {
@@ -606,6 +620,10 @@ export const commandContributions = {
     titleKey: 'command.compressPdf',
     category: 'Graphics Workbench',
   },
+  'graphics-workbench.compressImage': {
+    titleKey: 'command.compressImage',
+    category: 'Graphics Workbench',
+  },
   'graphics-workbench.encryptPdf': {
     titleKey: 'command.encryptPdf',
     category: 'Graphics Workbench',
@@ -660,6 +678,7 @@ export const publicCommandIds = [
   'graphics-workbench.quickCombineImagesToPdf',
   'graphics-workbench.rotateImage',
   'graphics-workbench.compressPdf',
+  'graphics-workbench.compressImage',
   'graphics-workbench.encryptPdf',
   'graphics-workbench.decryptPdf',
   'graphics-workbench.rotatePdf.rotate',
@@ -795,6 +814,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
     },
     convertToAvif: {
       effort: defineConfiguration<number>(configurationReader, 'convertToAvif.effort', 4),
+    },
+    compressImage: {
+      quality: defineConfiguration<number>(configurationReader, 'compressImage.quality', 80),
     },
     outputPath: {
       single: {
@@ -933,6 +955,11 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
         'outputPath.compressPdf',
         '${fileDirname}/${fileBasenameNoExtension}_compressed.pdf',
       ),
+      compressImage: defineStrictOutputPath(
+        configurationReader,
+        'outputPath.compressImage',
+        '${fileDirname}/${fileBasenameNoExtension}_compressed${fileExtname}',
+      ),
       encryptPdf: defineStrictOutputPath(
         configurationReader,
         'outputPath.encryptPdf',
@@ -960,6 +987,9 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
       },
       compressPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.compressPdf.enabled', true),
+      },
+      compressImage: {
+        enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.compressImage.enabled', true),
       },
       encryptPdf: {
         enabled: defineConfiguration<boolean>(configurationReader, 'contextMenu.encryptPdf.enabled', true),
