@@ -101,7 +101,7 @@
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
-    "knip": "^6.31.0",
+    "knip": "^6.32.0",
     "lefthook": "2.1.10",
     "mocha": "^11.8.0",
     "ovsx": "^1.1.0",
