@@ -7,7 +7,7 @@
 ## 状態
 
 - 初期値はONとする。
-- status barでON/OFFを確認し、切り替えられる。
+- 状態の確認と切り替えは、status barのControlsボタン（`$(sliders)`アイコン）から開くQuickPickポップオーバーで行う。Safe Modeはその中の1ブロックとしてON/OFFを表示し、切り替えられる。単独のSafe Mode status bar項目は持たない。
 
 ## Safe Mode ON
 

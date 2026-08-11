@@ -1,4 +1,5 @@
 # VS Codeのdrop/paste edit provider調査
+> 位置づけ: 履歴（実装済み。判断はコードに反映）
 
 ## 調査日
 

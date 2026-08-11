@@ -6,7 +6,7 @@ test runtimeはdirectory名やrunner統一ではなく、検証するcontractと
 
 ## VS Code Extension Host
 
-pre-package testはすべてVS Code Extension Hostを正式なownerとする。`npm test`は`build:test`の後に`vscode-test`を実行し、`out/test/**/*.test.js`を除外せずに実行する。このruntimeの選択は[ADR-0018](../../adr/0018-use-extension-host-for-pre-package-tests.md)を正本とする。
+pre-package testはすべてVS Code Extension Hostを正式なownerとする。`npm test`は`vscode-test`を実行し、`out/test/**/*.test.js`を実行する。`terminate_process_tree.test.js`のみmodule mockとtop-level dynamic importを使うため`node:test`（`npm run test:scripts`）で実行する。このruntimeの選択は[ADR-0018](../../adr/0018-use-extension-host-for-pre-package-tests.md)を正本とする。
 
 このruntimeでは、次のcontractを確認する。
 
@@ -33,16 +33,16 @@ pre-package testはすべてVS Code Extension Hostを正式なownerとする。`
 
 Electron Playwrightは、直前にpackageして隔離されたextensions directoryへinstallしたVSIXだけを対象にする。VSIX pathがない場合は失敗させ、Extension Development Hostとしてsource directoryを読み込まない。この境界とCIの責務分離は[ADR-0017](../../adr/0017-use-installed-vsix-for-electron-e2e.md)を正本とする。
 
-Browser Playwrightは使用しない。Webview protocol、validation、状態変換などBrowser実装を必要としない契約はExtension Host testで確認する。実VS Codeで意味を持つWebview表示、操作、Host message bridgeはpackage済みVSIXのElectron Playwrightで確認する。PRでは3 OSすべてがwide packaged conversion smoke（実VS Code、Host bridge、native dependency、外部CLI成功）を実行する。full wide+narrow suiteはローカル（`/verify-e2e`、pre-push変更検知）とrelease前の3 OSで実行し、`visual:capture`で生成したscreenshotを目視確認する。見た目の検証はpixel比較でなく、`visual:capture`で生成した画像を人間が目視確認する。browser DOMだけのlayout、zoom、mocked Host細部はVS Codeの配布物契約を証明しないため、独立した回帰対象にしない。
+Browser Playwrightは使用しない。Webview protocol、validation、状態変換などBrowser実装を必要としない契約はExtension Host testで確認する。実VS Codeで意味を持つWebview表示、操作、Host message bridgeはpackage済みVSIXのElectron Playwrightで確認する。releaseでは3 OSすべてがwide packaged conversion smoke（実VS Code、Host bridge、native dependency、外部CLI成功）を実行する。full wide+narrow suiteはローカル（`npm run playwright:full:docker`、pre-push変更検知）とrelease前の3 OSで実行し、`visual:capture`で生成したscreenshotを目視確認する。見た目の検証はpixel比較でなく、`visual:capture`で生成した画像を人間が目視確認する。browser DOMだけのlayout、zoom、mocked Host細部はVS Codeの配布物契約を証明しないため、独立した回帰対象にしない。
 
 ## Decision
 
 - pre-package testではVS Code Extension Hostを正式採用する。
 - Extension Host testはLinux、macOS、Windowsの3 OSで恒久的に維持する。
-- Node専用runnerやExtension Hostからのtest file除外は持たない。
-- Browser Playwrightは廃止し、配布物E2Eはpackage済みVSIX Electron Playwrightへ統一する。PRのrequired scopeは3 OS各4 cases（wide packaged conversion smoke: Crop Configure / PNG→JPEG / PDF→JPEG / Draw.io→PDF）とする。full wide+narrow suite（38 cases）はローカルとrelease前の3 OSで実行し、`visual:capture`の画像を目視確認する。
+- Node専用runnerやExtension Hostからのtest file除外は持たない。例外は`terminate_process_tree.test.js`のみで、module mockとtop-level dynamic importがExtension Host runnerと互換しないため`node:test`で実行する。
+- Browser Playwrightは廃止し、配布物E2Eはpackage済みVSIX Electron Playwrightへ統一する。releaseのrequired scopeは3 OS各4 cases（wide packaged conversion smoke: Crop Configure / PNG→JPEG / PDF→JPEG / Draw.io→PDF）とする。full wide+narrow suite（38 cases）はローカルとrelease前の3 OSで実行し、`visual:capture`の画像を目視確認する。
 - required statusは今回設定しない。
-- Mochaを維持し、Vitest comparisonは今回行わない。
+- Extension Host testはMocha（`@vscode/test-cli`）を使う。Webview component testはVitest（JSDOM）を使う。両runnerは検証するcontractで使い分け、どちらか一方へ統一しない。
 
 このプロジェクトでは、テストを「仕様を守るための安全網」として扱う。
 
@@ -165,6 +165,8 @@ base64埋め込みを使う場合は、コメントまたはタスクに理由�
 - 個人情報、機密情報、不要に大きなファイルをfixtureへ含めない
 - fixtureの見た目や内容を変更した場合は、その変更理由と影響する期待値を確認する
 
+PDF操作testの固定入力・正解データの目録は[`docs/testing/pdf-operation-inputs.md`](../../testing/pdf-operation-inputs.md)、テスト名規約は[`docs/testing/test-naming.md`](../../testing/test-naming.md)を参照する。
+
 プログラム生成fixtureは廃止しない。座標や色を厳密に制御した小さな単体テストには適している。一方、主要な正常系、複雑なfont・vector・rasterの混在、実ファイル読み込み、OS差の検出には固定fixtureを優先する。
 
 固定fixture方式への移行は、機能ごとに既存テストを置き換える形で行う。
@@ -232,7 +234,7 @@ Webviewの実操作とvisual testでは、実VS Codeが提供する`--vscode-*` 
 
 ### Playwright Electron
 
-Playwright Electronは、直前にpackageして隔離したextensions directoryへinstallしたVSIXだけを実VS Code windowで操作する。source directoryをExtension Development Hostとして読み込まない。PRは3 OSすべてでwide packaged conversion smokeを実行する。full wide+narrow suiteはローカルとrelease前の3 OSで実行する。固定sleepを使わず、DOM状態、theme class、computed style、file変更検知などの成立条件を待つ。見た目の回帰検証はpixel比較ではなく、`npm run visual:capture`で生成した`artifacts/visual-review/`の画像を人間が目視確認する。承認した画像は[`test/playwright/electron/visual-review/README.md`](../../../test/playwright/electron/visual-review/README.md)の`references/`へreferenceとしてGit管理し、コード変更と一緒にレビューする。
+Playwright Electronは、直前にpackageして隔離したextensions directoryへinstallしたVSIXだけを実VS Code windowで操作する。source directoryをExtension Development Hostとして読み込まない。releaseは3 OSすべてでwide packaged conversion smokeを実行する。full wide+narrow suiteはローカルとrelease前の3 OSで実行する。固定sleepを使わず、DOM状態、theme class、computed style、file変更検知などの成立条件を待つ。見た目の回帰検証はpixel比較ではなく、`npm run visual:capture`で生成した`artifacts/visual-review/`の画像を人間が目視確認する。承認した画像は[`test/playwright/electron/visual-review/README.md`](../../../test/playwright/electron/visual-review/README.md)の`references/`へreferenceとしてGit管理し、コード変更と一緒にレビューする。
 
 E2EはCrop PDF ConfigureのWebview、Host message bridge、runtime asset、packageされたnative dependency、pdftocairoを使うsuccessful external conversionを必要とする重要な利用経路を扱う。E2EはDOM・状態・操作・処理結果を検証し、見た目の検証をpixel比較に頼らない。目視確認用画像は`visual:capture`から生成する。screenshotはUI regression向けのレビュー資料であり、出力fileの内容検証を代替しない。
 

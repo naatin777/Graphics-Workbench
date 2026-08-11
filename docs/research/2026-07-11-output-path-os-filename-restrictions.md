@@ -1,4 +1,5 @@
 # outputPathのOS別ファイル名制限調査
+> 位置づけ: 履歴（判断はoutput-path-validation specで正本化済み）
 
 ## 調査日
 

@@ -1,4 +1,5 @@
 # Playwright browser cache
+> 位置づけ: 履歴（不採用判断の記録）
 
 ## 調査日
 

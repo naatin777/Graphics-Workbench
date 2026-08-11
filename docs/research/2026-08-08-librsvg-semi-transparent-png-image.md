@@ -1,4 +1,5 @@
 # rsvg-convert/librsvgが半透明PNGの`<image>`描画を崩す調査
+> 位置づけ: 現役（最新。テストoracle除外の根拠）
 
 ## 調査日
 

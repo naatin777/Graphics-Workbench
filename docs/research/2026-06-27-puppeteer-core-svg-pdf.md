@@ -1,4 +1,5 @@
 # puppeteer-coreでSVGをPDFへ変換するための調査
+> 位置づけ: 履歴（ADR-0029でChrome headless直接実行に置き換え）
 
 ## 調査日
 

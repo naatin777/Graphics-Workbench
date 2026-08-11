@@ -1,4 +1,5 @@
 # GitHub Actionsの変更影響CI scope調査
+> 位置づけ: 履歴（classifierはtask 0183で削除、CIは0224で停止）
 
 調査日: 2026-07-15
 

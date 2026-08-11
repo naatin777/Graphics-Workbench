@@ -10,7 +10,7 @@
 
 ## 背景
 
-ADR-0023で、6 targetのVSIXを`ubuntu-latest`上でnpm platform overrideによりcross-package生成し、ネイティブ実行はlinux-x64の最小Sharp smokeと既存3 OS packaged smokeに委ねると決めた。
+ADR-0031で、6 targetのVSIXを`ubuntu-latest`上でnpm platform overrideによりcross-package生成し、ネイティブ実行はlinux-x64の最小Sharp smokeと既存3 OS packaged smokeに委ねると決めた。
 
 この方式は生成と内容検証はできるが、darwin-x64、win32-arm64、linux-arm64のVSIXに同梱するsharpネイティブバイナリを実環境で実行できない。配布物に含まれるバイナリが実際にロード可能かを、可能な限り対象と同一のrunnerで確認したい。
 
@@ -47,7 +47,7 @@ Marketplace公開は`azure/login`でEntra ID認証を確立し、各VSIXを`vsce
 
 ## 関連
 
-- [ADR-0023: npm platform overrideで6 targetのVSIXを生成する](0023-build-six-target-vsix-with-npm-platform-overrides.md)
+- [ADR-0031: npm platform overrideで6 targetのVSIXを生成する](0031-build-six-target-vsix-with-npm-platform-overrides.md)
 - [ADR-0015: npmからOS別VSIXを生成する](0015-build-platform-specific-vsix-from-runtime-staging.md)
 - [VSIX packaging仕様](../specs/internal/packaging.md)
 - [Task 0214: 6 target VSIXをネイティブランナーで生成・検証・公開する](../tasks/0214-native-runner-platform-vsix-release.md)

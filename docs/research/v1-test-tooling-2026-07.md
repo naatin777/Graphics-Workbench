@@ -1,4 +1,5 @@
 # v1 test tooling research
+> 位置づけ: 基準資料（foundation auditの参照。type-aware lint判断はその後覆された）
 
 - 調査日: 2026-07-16
 - 対象branch: `audit/v1-foundation`（`next/v1`から分岐）

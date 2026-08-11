@@ -1,4 +1,4 @@
-# ADR-0023: npm platform overrideで6 targetのVSIXを生成する
+# ADR-0031: npm platform overrideで6 targetのVSIXを生成する
 
 ## ステータス
 
