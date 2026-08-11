@@ -29,6 +29,13 @@ export function defineWebviewTestConfig(config: WebviewTestConfig): ReturnType<t
           '../src/shared/protocols/reorder_pdf_protocol.ts',
         ),
         '@graphics-workbench-preview-protocol': resolve(webviewRoot, '../src/shared/protocols/preview_protocol.ts'),
+        '@graphics-workbench-table-editor-protocol': resolve(
+          webviewRoot,
+          '../src/shared/protocols/table_editor_protocol.ts',
+        ),
+        '@graphics-workbench-table-model': resolve(webviewRoot, '../src/table/table_model.ts'),
+        '@graphics-workbench-table-parser': resolve(webviewRoot, '../src/table/parse_delimited.ts'),
+        '@graphics-workbench-table-renderer': resolve(webviewRoot, '../src/table/table_renderer.ts'),
       },
     },
     test: {

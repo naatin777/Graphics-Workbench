@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 // pseudo-class. Rotate/Reorder previously shipped it; fail CI if it recurs.
 const knownCssWarning = /not recognized as a valid pseudo-class/u;
 
-const apps = ['crop_pdf', 'merge_pdf', 'split_pdf', 'rotate_pdf', 'reorder_pdf', 'preview'];
+const apps = ['crop_pdf', 'merge_pdf', 'split_pdf', 'rotate_pdf', 'reorder_pdf', 'preview', 'table_editor'];
 
 let failed = false;
 

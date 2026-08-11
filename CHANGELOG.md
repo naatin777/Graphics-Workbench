@@ -2,6 +2,7 @@
 
 ## 1.0.0
 
+- New Table Editor (`graphics-workbench.openTableEditor`): paste tables copied from Excel / Google Sheets or drop `.csv` / `.tsv` files, edit cells, and insert LaTeX / Typst / Quarkdown table code into the active document.
 - BREAKING CHANGE: conversion commands are organized by output format; old pair-specific command IDs have no compatibility aliases.
 - BREAKING CHANGE: native Draw.io commands are now `graphics-workbench.convertDrawioToPagePdfs` and `graphics-workbench.convertDrawioToSinglePdf`; image aggregation is `graphics-workbench.combineImagesToPdf`.
 - BREAKING CHANGE: conversion output settings now use only `graphics-workbench.outputPath.convertXToY`; the `outputPaths` object and old public names are no longer read.
