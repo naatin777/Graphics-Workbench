@@ -69,6 +69,34 @@ suite('出力パスのテンプレート解決', () => {
     );
   });
 
+  test('${random}を16進数8桁のランダム文字列へ展開し、workspaceFolder基準の結合PDFパスを生成する', () => {
+    const workspacePath = path.resolve(path.sep, 'workspace');
+
+    const result = resolveOutputPath('${workspaceFolder}/combined-${random}.pdf', {
+      workspacePath,
+      workspaceName: 'workspace',
+      sourcePath: path.join(workspacePath, 'first.png'),
+    });
+
+    const directory = path.dirname(result);
+    const basename = path.basename(result, '.pdf');
+    assert.strictEqual(directory, workspacePath);
+    assert.match(basename, /^combined-[0-9a-f]{8}$/u);
+  });
+
+  test('context.randomを指定すると${random}をその値へ展開する', () => {
+    const workspacePath = path.resolve(path.sep, 'workspace');
+
+    const result = resolveOutputPath('${workspaceFolder}/combined-${random}.pdf', {
+      workspacePath,
+      workspaceName: 'workspace',
+      sourcePath: path.join(workspacePath, 'first.png'),
+      random: 'a83f2c91',
+    });
+
+    assert.strictEqual(result, path.join(workspacePath, 'combined-a83f2c91.pdf'));
+  });
+
   test("Windowsでpath componentに予約文字(< > : \" | ? *)のいずれかを含む場合は、'reserved character'エラーで拒否する", () => {
     for (const character of ['<', '>', ':', '"', '|', '?', '*']) {
       assert.throws(

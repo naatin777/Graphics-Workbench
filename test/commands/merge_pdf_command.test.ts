@@ -22,13 +22,6 @@ const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-te
 const longFixturePath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
 
 suite('PDF結合コマンド', () => {
-  test('VS Codeに選択ファイル版のPDF結合コマンドが登録されており、旧ページ選択版のコマンドは登録されていない', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.mergePdf.selectedFiles'));
-    assert.ok(!commands.includes('graphics-workbench.mergePdf.selectedPages'));
-  });
-
   test('選択された2つのPDFを先頭から順に読み込み、それぞれの全ページを同じ順序で1つの出力PDFへ書き出し、2件の成功通知を出す', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);

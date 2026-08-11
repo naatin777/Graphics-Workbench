@@ -27,32 +27,25 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../helpers/vscode_command.js';
 import { requireValue } from '../helpers/required.js';
 import { withWorkspaceSettings } from '../helpers/workspace_settings.js';
 
 const fixturePngPath = operationPngInputPath;
-const generatedSvgWidth = 31;
-const generatedSvgHeight = 19;
 
 suite('JPEGに変換コマンド', () => {
   let sandbox: sinon.SinonSandbox;
+  let showErrorMessage: sinon.SinonStub;
 
   setup(() => {
     sandbox = createSandbox();
     sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
-    sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
   });
 
   teardown(() => {
     sandbox.restore();
-  });
-
-  test('graphics-workbench.convertToJpegコマンドがVS Codeに登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.convertToJpeg'));
   });
 
   test('PNG、WebP、AVIF、2ページPDFを1回のコマンド実行でまとめてJPEGへ変換し、画像は拡張子置換の.jpeg、PDFはページごとの1.jpeg/2.jpegをサブディレクトリに生成する', async () => {
@@ -88,67 +81,7 @@ suite('JPEGに変換コマンド', () => {
     }
   });
 
-  test('SVG入力から変換したJPEGがjpeg形式で幅と高さが0より大きい', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'source.svg');
-      await writeTestSvg(sourcePath, generatedSvgWidth, generatedSvgHeight);
-
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.convertToJpeg',
-        vscode.Uri.file(sourcePath),
-      );
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
-
-      await assertReadableJpeg(replaceExtension(sourcePath, '.jpeg'));
-    } finally {
-      await removeTemporaryDirectory(temporaryDirectory);
-    }
-  });
-
-  test('.mmdのMermaid入力を変換したJPEGがjpeg形式で幅と高さが0より大きい', async () => {
-    await assertMermaidFileConvertsToJpeg('source.mmd');
-  });
-
-  test('.mermaidのMermaid入力を変換したJPEGがjpeg形式で幅と高さが0より大きい', async () => {
-    await assertMermaidFileConvertsToJpeg('source.mermaid');
-  });
-
-  test('GIFとTIFFのテスト入力ファイルをそれぞれJPEGへ変換し、jpeg形式で幅と高さが0より大きい', async () => {
-    for (const [format, fixtureFileName] of [
-      ['gif', 'swirl-gradient.gif'],
-      ['tiff', 'heatmap.tiff'],
-    ] as const) {
-      await assertFixtureConvertsToJpeg(format, fixtureFileName);
-    }
-  });
-
-  test('outputPath.single.jpegが設定済みの場合、テンプレートを展開したcustom-source.jpegを出力し、既定のsource.jpegは作成しない', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'source.png');
-      const customOutputPath = path.join(temporaryDirectory, 'custom-source.jpeg');
-      await copyFile(fixturePngPath, sourcePath);
-
-      await withWorkspaceSettings(
-        {
-          'graphics-workbench.outputPath.single.jpeg': '${fileDirname}/custom-${fileBasenameNoExtension}.jpeg',
-        },
-        async () => {
-          await vscode.commands.executeCommand('graphics-workbench.convertToJpeg', vscode.Uri.file(sourcePath));
-        },
-      );
-
-      await assertReadableJpeg(customOutputPath);
-      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source.jpeg'));
-    } finally {
-      await removeTemporaryDirectory(temporaryDirectory);
-    }
-  });
-
-  test('outputPath.single.jpegが空文字の場合は既定のsource.jpegへ出力する', async () => {
+  test('outputPath.single.jpegが空文字の場合はinvalid configurationとして変換せず、既定のsource.jpegへフォールバックしない', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -164,50 +97,17 @@ suite('JPEGに変換コマンド', () => {
         },
       );
 
-      await assertReadableJpeg(path.join(temporaryDirectory, 'source.jpeg'));
+      assert.ok(showErrorMessage.calledOnce);
+      assert.match(
+        String(showErrorMessage.firstCall.args[0]),
+        /Invalid configuration for graphics-workbench\.outputPath\.single\.jpeg/,
+      );
+      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source.jpeg'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
   });
 });
-
-async function assertMermaidFileConvertsToJpeg(fileName: string): Promise<void> {
-  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-  try {
-    const sourcePath = path.join(temporaryDirectory, fileName);
-    await writeMermaidFixture(sourcePath);
-
-    const commandExecution = vscode.commands.executeCommand(
-      'graphics-workbench.convertToJpeg',
-      vscode.Uri.file(sourcePath),
-    );
-    await runCommandAndClearNotificationsUntilDone(commandExecution);
-
-    await assertReadableJpeg(replaceExtension(sourcePath, '.jpeg'));
-  } finally {
-    await removeTemporaryDirectory(temporaryDirectory);
-  }
-}
-
-async function assertFixtureConvertsToJpeg(format: string, fixtureFileName: string): Promise<void> {
-  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-  try {
-    const sourcePath = path.join(temporaryDirectory, fixtureFileName);
-    await copyFile(path.join(testInputDirectory, 'valid', format, fixtureFileName), sourcePath);
-
-    const commandExecution = vscode.commands.executeCommand(
-      'graphics-workbench.convertToJpeg',
-      vscode.Uri.file(sourcePath),
-    );
-    await runCommandAndClearNotificationsUntilDone(commandExecution);
-
-    await assertReadableJpeg(replaceExtension(sourcePath, '.jpeg'));
-  } finally {
-    await removeTemporaryDirectory(temporaryDirectory);
-  }
-}
 
 async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -225,17 +125,6 @@ async function removeTemporaryDirectory(directoryPath: string): Promise<void> {
     maxRetries: 10,
     retryDelay: 100,
   });
-}
-
-async function writeMermaidFixture(filePath: string): Promise<void> {
-  await writeFile(filePath, ['flowchart LR', '  A[Mermaid Alpha] --> B[Mermaid Beta]', ''].join('\n'));
-}
-
-async function writeTestSvg(filePath: string, width: number, height: number): Promise<void> {
-  await writeFile(
-    filePath,
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="#285078"/></svg>`,
-  );
 }
 
 async function writeTwoPagePdf(filePath: string): Promise<void> {

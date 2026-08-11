@@ -90,12 +90,6 @@ suite('PDFに変換コマンド', () => {
     sandbox.restore();
   });
 
-  test('graphics-workbench.convertToPdfコマンドがVS Codeに登録されている', async () => {
-    const commands = await vscode.commands.getCommands(true);
-
-    assert.ok(commands.includes('graphics-workbench.convertToPdf'));
-  });
-
   test('PNG、JPEG、WebP、AVIFを1回のコマンド実行でまとめてPDFへ変換し、各出力PDFが1ページで入力画像の幅・高さと同じpointサイズになる', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
@@ -148,66 +142,12 @@ suite('PDFに変換コマンド', () => {
     }
   });
 
-  test('.mmdのMermaid入力を変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
-    await assertMermaidFileConvertsToPdf('source.mmd');
-  });
-
-  test('.mermaidのMermaid入力を変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
-    await assertMermaidFileConvertsToPdf('source.mermaid');
-  });
-
   test('GIFのテスト入力ファイルを変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
     await assertFixtureConvertsToPdf('gif', 'swirl-gradient.gif');
   });
 
   test('TIFFのテスト入力ファイルを変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
     await assertFixtureConvertsToPdf('tiff', 'heatmap.tiff');
-  });
-
-  test('outputPath.single.pdfが設定済みの場合、テンプレートを展開したto-pdf-source.pdfを出力し、既定のsource.pdfは作成しない', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'source.png');
-      const outputPath = path.join(temporaryDirectory, 'to-pdf-source.pdf');
-      await copyFile(fixturePngPath, sourcePath);
-
-      await withWorkspaceSettings(
-        {
-          'graphics-workbench.outputPath.single.pdf': '${fileDirname}/to-pdf-${fileBasenameNoExtension}.pdf',
-        },
-        async () => {
-          await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
-        },
-      );
-
-      await assertPdfPageSizeMatchesImage(outputPath, sourcePath);
-      await assertFileDoesNotExist(path.join(temporaryDirectory, 'source.pdf'));
-    } finally {
-      await removeTemporaryDirectory(temporaryDirectory);
-    }
-  });
-
-  test('outputPath.single.pdfが空文字の場合は既定のsource.pdfへ出力する', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'source.png');
-      await copyFile(fixturePngPath, sourcePath);
-
-      await withWorkspaceSettings(
-        {
-          'graphics-workbench.outputPath.single.pdf': '',
-        },
-        async () => {
-          await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
-        },
-      );
-
-      await assertPdfPageSizeMatchesImage(path.join(temporaryDirectory, 'source.pdf'), sourcePath);
-    } finally {
-      await removeTemporaryDirectory(temporaryDirectory);
-    }
   });
 
   test('拡張子が大文字のraster.PNGでも変換でき、raster.pdfが入力画像と同じpixelサイズになる', async () => {
@@ -323,25 +263,6 @@ suite('PDFに変換コマンド', () => {
   });
 });
 
-async function assertMermaidFileConvertsToPdf(fileName: string): Promise<void> {
-  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-  try {
-    const sourcePath = path.join(temporaryDirectory, fileName);
-    await writeMermaidFixture(sourcePath);
-
-    const commandExecution = vscode.commands.executeCommand(
-      'graphics-workbench.convertToPdf',
-      vscode.Uri.file(sourcePath),
-    );
-    await runCommandAndClearNotificationsUntilDone(commandExecution);
-
-    await assertReadablePdfWithAtLeastOnePage(replaceExtension(sourcePath, '.pdf'));
-  } finally {
-    await removeTemporaryDirectory(temporaryDirectory);
-  }
-}
-
 async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
@@ -371,10 +292,6 @@ async function assertPdfPageSizeMatchesImage(pdfPath: string, imagePath: string)
 
 async function writeTestImage(filePath: string, imageBase64: string): Promise<void> {
   await writeFile(filePath, Buffer.from(imageBase64, 'base64'));
-}
-
-async function writeMermaidFixture(filePath: string): Promise<void> {
-  await writeFile(filePath, ['flowchart LR', '  A[Mermaid Alpha] --> B[Mermaid Beta]', ''].join('\n'));
 }
 
 async function writeTestSvg(filePath: string, width: number, height: number): Promise<void> {

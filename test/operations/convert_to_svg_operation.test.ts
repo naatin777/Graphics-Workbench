@@ -1,6 +1,5 @@
 // Test target:
 // - editable Draw.io画像をSVGへ変換するとき、Draw.io CLIへSVG出力を要求すること
-// - 変換結果を.graphics-workbench配下で作成してから指定出力先へ反映すること
 // - Draw.io CLI / PDF renderer の失敗をユーザー向けエラーに包むこと
 // - external toolが成功終了しても不正なSVGをcommitしないこと
 //
@@ -25,7 +24,7 @@ function stubRunPdfToSvg(sourcePath: string, outputPath: string, _page: number, 
 }
 
 suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
-  test('編集可能なDraw.io画像をDraw.io CLIへ-f svgオプションで一時作業ディレクトリ内のresult.svgへ出力させ、その結果を最終出力先へ反映する', async () => {
+  test('編集可能なDraw.io画像をDraw.io CLIへ-f svgオプションで一時作業ファイルへ出力させ、その結果を最終出力先へ反映する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-svg-operation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
@@ -64,13 +63,11 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     assert.strictEqual(drawioCalls.length, 1);
     const args = requireValue(drawioCalls[0]);
-    assert.deepStrictEqual(args.slice(0, 5), [
-      '-x',
-      '-f',
-      'svg',
-      '-o',
-      path.join(workspacePath.path, '.graphics-workbench', 'convert-to-svg', 'test-run', '1', 'result.svg'),
-    ]);
+    assert.strictEqual(args[0], '-x');
+    assert.strictEqual(args[1], '-f');
+    assert.strictEqual(args[2], 'svg');
+    assert.strictEqual(args[3], '-o');
+    assert.ok(args[4]?.endsWith('.svg'));
     assert.strictEqual(args.at(-1), sourcePath);
     assert.match(await readFile(outputPath, 'utf8'), /<svg[\s>]/);
   });

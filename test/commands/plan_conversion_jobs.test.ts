@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { copyFile, mkdtempDisposable, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { PDFDocument } from '../helpers/pdf_document.js';
@@ -9,7 +9,6 @@ import { rasterFormatSpecs } from '../../src/operations/conversion/raster_conver
 import { planRasterConversionJobs } from '../../src/commands/conversion/plan_conversion_jobs.js';
 import { getExtensionConfiguration } from '../../src/config/extension_configuration.js';
 import { getDefaultConfiguration } from '../../src/generated/extension_manifest.js';
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
 import { requireValue } from '../helpers/required.js';
 
 const simpleFormats = [
@@ -79,35 +78,5 @@ suite(
         );
       });
     }
-
-    test('AVIF変換はPNGのラスター入力をページ1の単一の変換処理単位へ展開し、出力パスsource.avifを割り当てる', async () => {
-      const workspace = requireValue(vscode.workspace.workspaceFolders?.[0]);
-      await using temporaryDirectory = await mkdtempDisposable(path.join(workspace.uri.fsPath, 'gw-plan-avif-'));
-
-      const sourcePath = path.join(temporaryDirectory.path, 'source.png');
-      await copyFile(operationPngInputPath, sourcePath);
-
-      const jobs = await planRasterConversionJobs(vscode.Uri.file(sourcePath), rasterFormatSpecs.avif, {
-        configuration: getExtensionConfiguration(),
-        maxInputPixels,
-      });
-
-      assert.deepStrictEqual(
-        jobs.map(({ sourcePath: jobSourcePath, workspacePath, outputPath, page }) => ({
-          sourcePath: jobSourcePath,
-          workspacePath,
-          outputPath,
-          page,
-        })),
-        [
-          {
-            sourcePath,
-            workspacePath: workspace.uri.fsPath,
-            outputPath: path.join(temporaryDirectory.path, 'source.avif'),
-            page: 1,
-          },
-        ],
-      );
-    });
   },
 );

@@ -97,14 +97,31 @@ suite('command登録処理', () => {
 
     const binding = findBinding('graphics-workbench.convertToWebpPreserveAnimation');
     assert.strictEqual(binding.kind, 'file');
-    assert.deepStrictEqual(binding.options, { target: 'webp', outputMode: 'preserve' });
+    assert.deepStrictEqual(binding.options, { target: 'webp' });
     const called = captureHandlerCalls(binding);
     registerCommands(createContext(), dependencies);
 
     await handlers.get(binding.id)!(uri);
 
     assert.strictEqual(called.calls.length, 1);
-    assert.deepStrictEqual(called.calls[0], [[uri], dependencies, { target: 'webp', outputMode: 'preserve' }]);
+    assert.deepStrictEqual(called.calls[0], [[uri], dependencies, { target: 'webp' }]);
+  });
+
+  test('フレーム分割bindingがfixedオプションとしてcardinality:splitをhandlerへ渡す', async () => {
+    const handlers = captureRegisteredHandlers(sandbox);
+    const dependencies = testCommandDependencies();
+    const uri = vscode.Uri.file('/workspace/source.gif');
+
+    const binding = findBinding('graphics-workbench.convertToWebpSeparately');
+    assert.strictEqual(binding.kind, 'file');
+    assert.deepStrictEqual(binding.options, { target: 'webp', cardinality: 'split' });
+    const called = captureHandlerCalls(binding);
+    registerCommands(createContext(), dependencies);
+
+    await handlers.get(binding.id)!(uri);
+
+    assert.strictEqual(called.calls.length, 1);
+    assert.deepStrictEqual(called.calls[0], [[uri], dependencies, { target: 'webp', cardinality: 'split' }]);
   });
 
   test('extensionCommand bindingのhandlerがVS Codeから渡された任意引数とdependenciesを正しい順で受ける', async () => {

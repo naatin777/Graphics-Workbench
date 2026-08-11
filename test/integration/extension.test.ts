@@ -26,6 +26,8 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
       'graphics-workbench.convertToPdf',
       'graphics-workbench.convertDrawioToPagePdfs',
       'graphics-workbench.convertDrawioToSinglePdf',
+      'graphics-workbench.combineImagesToPdf',
+      'graphics-workbench.quickCombineImagesToPdf',
     ]) {
       assert.ok(commands.includes(command), `Expected command to be registered: ${command}`);
     }
