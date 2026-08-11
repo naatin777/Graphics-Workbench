@@ -98,6 +98,12 @@ export function verifyVsixEntries(entries, target) {
     entry.startsWith('extension/') ? entry.slice('extension/'.length) : entry,
   );
   const entrySet = new Set(normalizedEntries);
+  const forbiddenEntries = normalizedEntries.filter(
+    (entry) => entry.startsWith('tui/') || entry.startsWith('node_modules/@opentui/'),
+  );
+  if (forbiddenEntries.length > 0) {
+    throw new Error(`VSIX contains Terminal UI-only runtime entries: ${forbiddenEntries.join(', ')}`);
+  }
   const requiredEntries = ['node_modules/sharp/package.json', `${NATIVE_PACKAGE_PREFIX}${spec.sharp}/package.json`];
   if (spec.libvips !== undefined) {
     requiredEntries.push(`${NATIVE_PACKAGE_PREFIX}${spec.libvips}/package.json`);
@@ -131,6 +137,7 @@ export function verifyVsixEntries(entries, target) {
     nativePackages: uniqueNativePackages,
     requiredEntries,
     includedDevDependencies,
+    forbiddenEntries,
   };
 }
 

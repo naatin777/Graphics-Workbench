@@ -36,3 +36,21 @@ void test('VSIX verification rejects mixed platform native packages', () => {
     /unexpected native packages/u,
   );
 });
+
+void test('VSIX verification rejects the Terminal UI package and OpenTUI native runtime', () => {
+  for (const forbiddenEntry of ['extension/tui/package.json', 'extension/node_modules/@opentui/core/package.json']) {
+    assert.throws(
+      () =>
+        verifyVsixEntries(
+          [
+            'extension/node_modules/sharp/package.json',
+            'extension/node_modules/@img/sharp-linux-x64/package.json',
+            'extension/node_modules/@img/sharp-libvips-linux-x64/package.json',
+            forbiddenEntry,
+          ],
+          'linux-x64',
+        ),
+      /Terminal UI-only runtime entries/u,
+    );
+  }
+});

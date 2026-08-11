@@ -36,6 +36,7 @@ docker/**
 .cursor/**
 docs/**
 test/**
+tui/**
 lefthook.yml
 .oxlintrc.json
 .oxfmtrc.json

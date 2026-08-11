@@ -9,12 +9,12 @@ import {
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '../../shared/source_format.js';
-import { assertPageTemplateForSplitOutput, formatOutputPage } from '../../config/output/page_template.js';
 import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertAnimationPixelLimit } from '../../config/raster.js';
 import type { RasterFormatSpec, RasterInput } from '../../operations/conversion/raster_conversion.js';
 import { readRasterAnimationMetadata } from '../../operations/conversion/raster_input.js';
 import { countPdfPages } from '../../operations/pdf/mupdf.js';
+import { planPdfPageJobs } from '../../operations/conversion/plan_pdf_page_jobs.js';
 import type { ConversionExecutionContext } from '../../operations/lifecycle/conversion_runtime.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { resolveRasterOutputTemplate, type OutputCardinality } from './conversion_routing.js';
@@ -253,51 +253,4 @@ export async function planPdfPageConversionJobs<Conversion>(options: {
     inputs.push(options.toConversion(page, outputPath));
   }
   return inputs;
-}
-
-/** The source file location used as the base for planning per-page inputs. */
-export interface PdfPageSource {
-  sourcePath: string;
-  workspacePath: string;
-  workspaceName: string;
-}
-
-export interface PdfPageInput {
-  sourcePath: string;
-  workspacePath: string;
-  outputPath: string;
-  page: number;
-}
-
-/** Pure: PDFの読み込み結果（page count）だけから、pageごとの変換単位を生成する。 */
-export function planPdfPageJobs(
-  source: PdfPageSource,
-  pageCount: number,
-  outputTemplate: string,
-  allowedExtensions: readonly string[],
-): PdfPageInput[] {
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${source.sourcePath}`);
-  }
-
-  assertPageTemplateForSplitOutput(outputTemplate, pageCount);
-
-  return Array.from({ length: pageCount }, (_value, index) => {
-    const page = index + 1;
-    return {
-      sourcePath: source.sourcePath,
-      workspacePath: source.workspacePath,
-      outputPath: resolveOutputPath(
-        outputTemplate,
-        {
-          sourcePath: source.sourcePath,
-          workspacePath: source.workspacePath,
-          workspaceName: source.workspaceName,
-          page: formatOutputPage(page, pageCount),
-        },
-        { allowedExtensions },
-      ),
-      page,
-    };
-  });
 }

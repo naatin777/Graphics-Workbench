@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-import { planPdfPageJobs } from '../../src/commands/conversion/plan_conversion_jobs.js';
+import { planPdfPageJobs } from '../../src/operations/conversion/plan_pdf_page_jobs.js';
 
 const workspacePath = process.platform === 'win32' ? 'C:\\test-workspace' : '/test-workspace';
 
@@ -36,5 +36,41 @@ suite('ページ数と出力テンプレートからPDFページごとの出力�
       () => planPdfPageJobs(source, 0, '${fileDirname}/${fileBasenameNoExtension}-${page}.png', ['.png']),
       new RegExp(`PDF has no pages: ${RegExp.escape(source.sourcePath)}`),
     );
+  });
+
+  test('選択pageは最初に現れた順で重複を除き、page countの桁数で03, 01の出力パスを作る', () => {
+    const jobs = planPdfPageJobs(
+      source,
+      12,
+      '${fileDirname}/${fileBasenameNoExtension}-${page}.png',
+      ['.png'],
+      [3, 1, 3],
+    );
+
+    assert.deepStrictEqual(
+      jobs.map(({ page, outputPath }) => ({ page, outputPath })),
+      [
+        { page: 3, outputPath: path.join(workspacePath, 'source-03.png') },
+        { page: 1, outputPath: path.join(workspacePath, 'source-01.png') },
+      ],
+    );
+  });
+
+  test('選択pageが空、0、負数、小数、page count超過の場合は出力パスを作らず拒否する', () => {
+    const template = '${fileDirname}/${fileBasenameNoExtension}-${page}.png';
+    assert.throws(() => planPdfPageJobs(source, 12, template, ['.png'], []), /At least one PDF page/u);
+    for (const page of [0, -1, 1.5, 13]) {
+      assert.throws(() => planPdfPageJobs(source, 12, template, ['.png'], [page]), /outside the range 1-12/u);
+    }
+  });
+
+  test('page countが負数、小数、NaNの場合はPDFにpageが無いエラーで拒否する', () => {
+    const template = '${fileDirname}/${fileBasenameNoExtension}-${page}.png';
+    for (const pageCount of [-1, 1.5, Number.NaN]) {
+      assert.throws(
+        () => planPdfPageJobs(source, pageCount, template, ['.png']),
+        new RegExp(`PDF has no pages: ${RegExp.escape(source.sourcePath)}`),
+      );
+    }
   });
 });

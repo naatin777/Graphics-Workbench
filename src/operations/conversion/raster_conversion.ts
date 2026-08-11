@@ -28,7 +28,6 @@ import type { DrawioBackend } from './tools/drawio_tools.js';
 import type { MermaidBackend } from './tools/mermaid_tools.js';
 import type { PdfRenderBackend } from './tools/pdf_render_tools.js';
 
-import { runMermaidCliWithSignal } from './tools/run_mermaid_cli.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
 import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import sharp from 'sharp';
@@ -103,8 +102,8 @@ interface RasterStageContext {
   runId: string;
   runtime: ResolvedConversionRuntime;
   pdfRenderTools: PdfRenderBackend;
-  mermaidTools: MermaidBackend;
-  drawioTools: DrawioBackend;
+  mermaidTools: MermaidBackend | undefined;
+  drawioTools: DrawioBackend | undefined;
   spec: RasterFormatSpec;
   outputOptions?: AvifOutputOptions | WebpOutputOptions;
   maxInputPixels: number;
@@ -194,6 +193,10 @@ async function writeDrawioAsRaster(
   paths: RasterStagePaths,
   context: RasterStageContext,
 ): Promise<void> {
+  if (context.drawioTools === undefined) {
+    throw new Error('Draw.io backend is unavailable for this frontend.');
+  }
+
   context.runtime.signal.throwIfAborted();
   const pdfPath = path.join(paths.stageDirectory, 'drawio.pdf');
   await assertWritablePathInWorkspace(pdfPath, input.workspacePath);
@@ -255,6 +258,10 @@ async function writePdfPageAsRaster(request: RasterRenderRequest, context: Raste
 }
 
 async function writeMermaidAsRaster(request: RasterRenderRequest, context: RasterStageContext): Promise<void> {
+  if (context.mermaidTools === undefined) {
+    throw new Error('Mermaid backend is unavailable for this frontend.');
+  }
+
   const pngPath = path.join(request.stageDirectory ?? path.dirname(request.outputPath), 'mermaid.png');
   context.runtime.signal.throwIfAborted();
   await assertWritablePathInWorkspace(pngPath, request.workspacePath);
@@ -262,6 +269,10 @@ async function writeMermaidAsRaster(request: RasterRenderRequest, context: Raste
   context.runtime.signal.throwIfAborted();
 
   try {
+    // Mermaid is outside the Terminal UI MVP. Keep its Node-specific scratch
+    // implementation out of Bun's module graph unless a Mermaid input actually
+    // takes this branch.
+    const { runMermaidCliWithSignal } = await import('./tools/run_mermaid_cli.js');
     await runMermaidCliWithSignal(
       {
         sourcePath: request.sourcePath,
@@ -437,8 +448,8 @@ export interface ExecuteRasterConversionOptions {
   inputs: RasterInput[];
   runtime: ConversionExecutionContext;
   pdfRenderTools: PdfRenderBackend;
-  mermaidTools: MermaidBackend;
-  drawioTools: DrawioBackend;
+  mermaidTools?: MermaidBackend;
+  drawioTools?: DrawioBackend;
   maxInputPixels: number;
   runId?: string;
   spec: RasterFormatSpec;

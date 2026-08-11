@@ -23,6 +23,7 @@
   "type": "module",
   "main": "./out/extension.js",
   "scripts": {
+    "tui": "bun run tui/src/main.ts",
     "clean": "node -e \"const fs = require('node:fs'); for (const p of ['out', 'media/webview', 'media/excalidraw']) fs.rmSync(p, { recursive: true, force: true })\"",
     "watch": "tsc --watch -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
