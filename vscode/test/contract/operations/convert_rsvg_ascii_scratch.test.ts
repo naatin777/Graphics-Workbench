@@ -19,8 +19,11 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import { convertToPdfFiles, type ConvertToPdfFilesOptions } from '../../../src/operations/conversion/convert_to_pdf.js';
-import type { SvgToPdfBackend } from '../../../src/operations/conversion/tools/svg_to_pdf_tools.js';
+import {
+  convertToPdfFiles,
+  type ConvertToPdfFilesOptions,
+  type SvgToPdfBackend,
+} from '@graphics-workbench/core/conversion';
 import {
   operationPathCompatibilitySvgInputPath,
   operationPdfInputDirectory,

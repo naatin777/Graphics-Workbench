@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 
-import type { CommittedConversionOutput } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
-import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
-import { toErrorMessage } from '@graphics-workbench/core/shared/error.js';
+import {
+  toErrorMessage,
+  type CommittedConversionOutput,
+  type ConversionExecutionContext,
+} from '@graphics-workbench/core/runtime';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 
 import { userMessage } from '../shared/user_messages.js';
 import { resolveOutputConflicts } from './safe_mode.js';

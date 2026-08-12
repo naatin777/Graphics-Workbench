@@ -4,7 +4,7 @@ import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { copyFileWithAbort } from '@graphics-workbench/core/operations/lifecycle/copy_file_with_abort.js';
+import { copyFileWithAbort } from '@graphics-workbench/core/runtime';
 
 suite('abort可能なファイルcopy処理', () => {
   test('copyFileWithAbortでソースの内容をcopyして宛先と一致することを確認し、COPYFILE_EXCL指定で既存宛先へのcopyがEEXISTエラーで失敗することを確認する', async () => {

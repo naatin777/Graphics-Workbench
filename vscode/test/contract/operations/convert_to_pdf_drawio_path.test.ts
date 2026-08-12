@@ -14,9 +14,8 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import { convertToPdfFiles } from '../../../src/operations/conversion/convert_to_pdf.js';
-import type { DrawioBackend } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
-import { hashFile } from '@graphics-workbench/core/operations/input/file_content_hash.js';
+import { convertToPdfFiles, type DrawioBackend } from '@graphics-workbench/core/conversion';
+import { hashFile } from '@graphics-workbench/core/runtime';
 import { testInputDirectory } from '../../support/helpers/fixture_paths.js';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');

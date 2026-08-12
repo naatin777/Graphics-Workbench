@@ -6,12 +6,36 @@
     "dist"
   ],
   "type": "module",
-  "main": "./dist/operations/conversion/pdf_raster_conversion.js",
-  "types": "./dist/operations/conversion/pdf_raster_conversion.d.ts",
+  "main": "./dist/public/conversion.js",
+  "types": "./dist/public/conversion.d.ts",
   "exports": {
-    "./*": {
-      "types": "./dist/*",
-      "import": "./dist/*"
+    "./conversion": {
+      "types": "./dist/public/conversion.d.ts",
+      "import": "./dist/public/conversion.js"
+    },
+    "./pdf": {
+      "types": "./dist/public/pdf.d.ts",
+      "import": "./dist/public/pdf.js"
+    },
+    "./formats": {
+      "types": "./dist/public/formats.d.ts",
+      "import": "./dist/public/formats.js"
+    },
+    "./runtime": {
+      "types": "./dist/public/runtime.d.ts",
+      "import": "./dist/public/runtime.js"
+    },
+    "./security": {
+      "types": "./dist/public/security.d.ts",
+      "import": "./dist/public/security.js"
+    },
+    "./output": {
+      "types": "./dist/public/output.d.ts",
+      "import": "./dist/public/output.js"
+    },
+    "./external-tools": {
+      "types": "./dist/public/external_tools.d.ts",
+      "import": "./dist/public/external_tools.js"
     }
   },
   "scripts": {
@@ -19,6 +43,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "fast-xml-parser": "5.10.1",
     "mupdf": "1.28.0",
     "p-limit": "^7.3.1",
     "sharp": "0.35.3"

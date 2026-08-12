@@ -16,7 +16,7 @@ export interface PdfPageInput {
 }
 
 /**
- * Pure PDF page planner shared by VS Code commands and non-VS Code frontends.
+ * Frontend-independent PDF page planner.
  * Selected page numbers remain 1-based and duplicate selections are collapsed
  * while preserving the user's first-seen order.
  */

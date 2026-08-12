@@ -2,15 +2,15 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { resolvePdfOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { localeMap } from '../../locale_map.js';
-import { cropPdfFiles, type CropPdfInput } from '../../operations/pdf/crop_pdf_auto.js';
+import { cropPdfFiles, type CropPdfInput } from '../../adapters/crop/crop_pdf_auto.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
+import { isAbortError } from '@graphics-workbench/core/runtime';
 
 export async function cropPdfAutoCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const outputChannel = dependencies.outputChannel;

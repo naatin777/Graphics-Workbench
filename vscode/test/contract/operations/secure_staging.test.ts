@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import { access, readFile, stat, writeFile } from 'node:fs/promises';
 
-import {
-  cleanupStaleSecurePdfStagingRoots,
-  createSecurePdfStagingRoot,
-} from '../../../src/operations/lifecycle/secure_staging.js';
+import { cleanupStaleSecurePdfStagingRoots, createSecurePdfStagingRoot } from '@graphics-workbench/core/runtime';
 import { isRecord } from '../../../src/shared/protocols/protocol_utils.js';
 
 suite('機密PDFの中間ディレクトリを作成し、heartbeatから保存期間を判定して掃除する', () => {
@@ -27,7 +24,7 @@ suite('機密PDFの中間ディレクトリを作成し、heartbeatから保存�
       assert.ok(isRecord(parsedManifest));
       const manifest = parsedManifest;
       assert.equal(typeof manifest.sessionId, 'string');
-      assert.equal(typeof manifest.extensionHostStartedAt, 'number');
+      assert.equal(typeof manifest.processStartedAt, 'number');
       assert.equal(typeof manifest.updatedAt, 'number');
       assert.equal(typeof manifest.operationId, 'string');
       await cleanupStaleSecurePdfStagingRoots(Date.now());

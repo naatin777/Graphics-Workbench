@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { OutputConflictDecision } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
+import type { OutputConflictDecision } from '@graphics-workbench/core/runtime';
 
 import { userMessage } from '../shared/user_messages.js';
 

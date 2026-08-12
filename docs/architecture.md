@@ -1,24 +1,24 @@
 # Current architecture
 
-この文書は、実装を変更するときに誤ったmodule境界を作らないための現在形の要約である。詳細な関数一覧や実装手順はコードを正本とする。
+実装を変更するときに誤ったmodule境界を作らないための現在形の要約である。関数一覧と手順はコード・型・testsを正本とする。
 
 ## Packages
 
-- `core/` はfrontendから独立したconversion、PDF/raster処理、external tool runner、configuration、file-safety lifecycleを提供する。
-- `vscode/` はVS Code command、configuration access、notifications、Undo、Safe Mode、Webview host、VS Code固有のoperation adapterを持つ。
-- `tui/` はroot npm workspaceに含まれない独立Bun packageで、VS Code extensionのruntime dependencyではない。
+- `core/` はfrontend-independentなheadless engineである。formats、parser/planner、conversion operation、external process、lifecycle、file-safety primitiveを、明示されたoptionsとdependencyで実行する。frontend設定やfrontend stateは読まない。
+- `vscode/` はVS Code adapterである。command登録、`vscode.Uri`、configuration、progress/notification、Webview、editor integration、Safe Mode interaction、Undo policyを持つ。headless処理は`@graphics-workbench/core/*`の公開entry pointから利用する。
+- `tui/` は独立したBunのterminal adapterである。terminal input/rendering、公開するfeature subset、default、message、成功後cleanup policyを持ち、staged copyのcoreを利用する。
 - root packageは`core`と`vscode`をnpm workspaceとしてbuild・test・packageするcoordinatorである。
 
-## Conversion flow
+依存方向は`vscode -> core`と`tui -> core`である。coreはfrontendをimportせず、frontend同士も参照しない。`scripts/check-package-boundaries.mjs`が依存方向、package declaration、coreの公開entry pointを検証する。
 
-VS Code commandは入力選択とユーザー通知を担当し、形式固有のplanning・operationへ渡す。変換結果は共通のstaging/commit lifecycleを通り、成功時だけ最終出力へ反映される。入力形式・出力形式・page/frameの扱いは、該当するplannerとoperationの型・testsを正本とする。
+coreの公開surfaceは`conversion`、`pdf`、`formats`、`runtime`、`security`、`output`、`external-tools`に分かれる。frontendはcoreの内部file layoutへ依存しない。
 
-外部CLIはcoreの`runExternalTool`と、形式ごとの薄いadapterを通る。CLIの実行、キャンセル、process-tree終了、出力検証を各commandで再実装しない。
+## Safety and integration boundaries
 
-## Webview boundary
+変換結果は共通のstaging/commit lifecycleを通り、workspace containment、symlink/realpath検証、overwrite protection、TOCTOU mitigation、rollback、cleanup、cancellationを維持する。Safe Modeのconflict interactionとUndoの保持方針はVS Code側、TUIの成功後cleanupはTUI側にある。
 
-Webview機能は、VS Code host command、`vscode/src/shared/protocols/`のruntime-validated message、`vscode/webview/apps/*`のUIの3境界で構成する。Webview stateとhost stateをDOMの存在だけで同期しない。protocolと既存のconfigure session/lifecycleを再利用する。
+外部CLIはcoreの`runExternalTool`と形式ごとの薄いadapterを通る。CLI設定の取得とユーザーへのenvironment error表示はfrontend、実行・キャンセル・process-tree終了・出力検証はcoreが担当する。
 
-## Configuration and generated metadata
+WebviewはVS Code host command、`vscode/src/shared/protocols/`のruntime-validated message、`vscode/webview/apps/*`のUIの境界で構成する。
 
-VS Code configuration accessは`vscode/src/config/extension_configuration.ts`へ集約する。公開command、configuration、menu、NLS、generated manifestの対応は`vscode/package.json`とgenerator/testsを正本とし、generated fileを手編集しない。
+VS Code configuration accessは`vscode/src/config/extension_configuration.ts`へ集約する。公開command、configuration、menu、NLS、generated manifestはpackageとgenerator/testsを正本とし、generated fileを手編集しない。

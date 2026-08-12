@@ -2,10 +2,7 @@ import assert from 'node:assert/strict';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  executeRasterConversion,
-  rasterFormatSpecs,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import { testInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { readConfiguredConversionTools } from '../../support/helpers/external_tool_settings.js';
 import { copyInputToWorkspace, withTestWorkspace } from '../../support/helpers/test_workspace.js';

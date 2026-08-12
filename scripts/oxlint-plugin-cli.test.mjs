@@ -121,7 +121,7 @@ export function load(sourcePath: string): Promise<string> {
   return await import('node:child_process');
 }
 `,
-  'vscode/src/operations/pdf/crop_pdf_process_protocol.ts': `export interface CropPdfProcessFailure {
+  'vscode/src/adapters/crop/crop_pdf_process_protocol.ts': `export interface CropPdfProcessFailure {
   type: 'failure';
   message: string;
 }
@@ -142,7 +142,7 @@ export type CropPdfProcessProgress =
   | { type: 'progress'; protocolVersion: number; requestId: string }
   | { type: 'progress-detail'; protocolVersion: number; requestId: string };
 `,
-  'vscode/src/operations/pdf/crop_pdf_payload_process_protocol.ts': `export interface CropPdfProcessRequest {
+  'vscode/src/adapters/crop/crop_pdf_payload_process_protocol.ts': `export interface CropPdfProcessRequest {
   type: 'request';
   protocolVersion: number;
   requestId: string;
@@ -163,7 +163,7 @@ export interface CropPdfProcessStream {
   data: Uint8Array;
 }
 `,
-  'vscode/src/operations/pdf/crop_pdf_core.ts': `export interface CropPdfProcessFailure {
+  'vscode/src/adapters/crop/crop_pdf_core.ts': `export interface CropPdfProcessFailure {
   type: 'failure';
   message: string;
 }
@@ -319,16 +319,16 @@ const expectations = [
   {
     ruleId: 'require-process-envelope',
     cases: [
-      { file: 'vscode/src/operations/pdf/crop_pdf_process_protocol.ts', lines: [1] },
-      { file: 'vscode/src/operations/pdf/crop_pdf_payload_process_protocol.ts', lines: [] },
-      { file: 'vscode/src/operations/pdf/crop_pdf_core.ts', lines: [] },
+      { file: 'vscode/src/adapters/crop/crop_pdf_process_protocol.ts', lines: [1] },
+      { file: 'vscode/src/adapters/crop/crop_pdf_payload_process_protocol.ts', lines: [] },
+      { file: 'vscode/src/adapters/crop/crop_pdf_core.ts', lines: [] },
     ],
   },
   {
     ruleId: 'no-pdf-bytes-in-process-ipc',
     cases: [
-      { file: 'vscode/src/operations/pdf/crop_pdf_payload_process_protocol.ts', lines: [12, 19] },
-      { file: 'vscode/src/operations/pdf/crop_pdf_process_protocol.ts', lines: [] },
+      { file: 'vscode/src/adapters/crop/crop_pdf_payload_process_protocol.ts', lines: [12, 19] },
+      { file: 'vscode/src/adapters/crop/crop_pdf_process_protocol.ts', lines: [] },
     ],
   },
 ];

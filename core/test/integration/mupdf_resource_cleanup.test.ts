@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict';
 
-import {
-  hasPdfPageContent,
-  renderPdfPageToPng,
-  renderPdfPageToSvg,
-} from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { hasPdfPageContent, renderPdfPageToPng, renderPdfPageToSvg } from '@graphics-workbench/core/pdf';
 import { buildPdfFixture } from '../helpers/pdf_fixture_builder.js';
 
 const pageCount = 12;

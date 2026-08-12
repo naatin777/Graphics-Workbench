@@ -8,18 +8,18 @@ import {
   isEditableDrawioImagePath,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
-} from '@graphics-workbench/core/shared/source_format.js';
-import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
+} from '@graphics-workbench/core/formats';
+import { resolveOutputPath } from '@graphics-workbench/core/output';
 import { assertAnimationPixelLimit } from '../../config/raster.js';
-import type {
-  RasterFormatSpec,
-  RasterInput,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
-import { readRasterAnimationMetadata } from '@graphics-workbench/core/operations/conversion/raster_input.js';
-import { countPdfPages } from '@graphics-workbench/core/operations/pdf/mupdf.js';
-import { planPdfPageJobs } from '@graphics-workbench/core/operations/conversion/plan_pdf_page_jobs.js';
-import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
-import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security/workspace_path.js';
+import {
+  planPdfPageJobs,
+  readRasterAnimationMetadata,
+  type RasterFormatSpec,
+  type RasterInput,
+} from '@graphics-workbench/core/conversion';
+import type { ConversionExecutionContext } from '@graphics-workbench/core/runtime';
+import { countPdfPages } from '@graphics-workbench/core/pdf';
+import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 import { resolveRasterOutputTemplate, type OutputCardinality } from './conversion_routing.js';
 import { planRasterFrameJobs } from './plan_raster_frame_jobs.js';
 

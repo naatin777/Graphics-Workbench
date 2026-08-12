@@ -73,7 +73,7 @@ Convert confidently. Existing files are protected by default, and the latest gra
 ### Conversion
 
 - Choose the output format (PDF / PNG / JPEG / WebP / AVIF / GIF / TIFF / SVG) from the Explorer context menu
-- Convert between PDF, image, SVG, Mermaid, and Draw.io files
+- Convert between PDF, image, SVG, and Draw.io files
 - Combine multiple images into one PDF
 - Rotate raster images by 90°, 180°, or 270°
 - Convert between animated GIF and WebP (preserve animation or split frames)
@@ -129,12 +129,11 @@ Some features need external tools in addition to the VS Code extension. Install 
 
 Open **Graphics Workbench Controls** from the status bar to see per-feature availability. Select an external-tool row to open its related setting, or select **Check again** to refresh the results. A missing tool does not fail the whole check.
 
-| Tool                     | Purpose                                            | Required by                                                             | Notes                                                                                            |
-| ------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| rsvg-convert             | SVG to PDF conversion                              | When the `rsvg-convert` backend is selected                             | One of the SVG conversion backends                                                               |
-| Google Chrome / Chromium | SVG / Mermaid conversion                           | SVG to PDF, Mermaid to PDF/PNG/JPEG/WebP/AVIF/SVG                       | Used by the Chrome headless CLI                                                                  |
-| Draw.io Desktop          | Draw.io file and editable Draw.io image conversion | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Requires the Draw.io desktop application                                                         |
-| Mermaid CLI (`mmdc`)     | Mermaid rendering                                  | Mermaid to PDF/PNG/JPEG/WebP/AVIF/SVG                                   | Install `@mermaid-js/mermaid-cli` via npm globally, or set `graphics-workbench.execPath.mermaid` |
+| Tool                     | Purpose                                            | Required by                                                             | Notes                                    |
+| ------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------- |
+| rsvg-convert             | SVG to PDF conversion                              | When the `rsvg-convert` backend is selected                             | One of the SVG conversion backends       |
+| Google Chrome / Chromium | SVG conversion                                     | SVG to PDF                                                              | Used by the Chrome headless CLI          |
+| Draw.io Desktop          | Draw.io file and editable Draw.io image conversion | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Requires the Draw.io desktop application |
 
 ### To use every feature
 
@@ -144,7 +143,6 @@ To use all conversion features, the following tools are required:
 - One of the SVG conversion backends
   - `rsvg-convert`
   - Google Chrome / Chromium
-- Google Chrome / Chromium and Mermaid CLI (`mmdc`) if you use Mermaid conversion
 
 ### About SVG to PDF conversion
 
@@ -162,7 +160,6 @@ Use whichever conversion backend is available in your environment.
 
 ```sh
 brew install librsvg
-npm install -g @mermaid-js/mermaid-cli
 ```
 
 Homebrew is one example for macOS. The extension itself does not call Homebrew; it resolves external tools from each OS's `PATH` or the `graphics-workbench.execPath.*` settings.
@@ -175,7 +172,6 @@ Install Draw.io Desktop from:
 
 ```sh
 sudo apt install librsvg2-bin
-npm install -g @mermaid-js/mermaid-cli
 ```
 
 Install Draw.io Desktop from:
@@ -188,41 +184,40 @@ Install the following tools and, if necessary, set the path to the executables i
 
 - Draw.io Desktop
 - Google Chrome / Chromium
-- Mermaid CLI (`mmdc`) — `npm install -g @mermaid-js/mermaid-cli`
 
 On Windows, use the Windows distributions of each tool or your organization's package manager instead of Homebrew. Add `rsvg-convert.exe` to `PATH`, or specify the executable paths in VS Code settings.
 
 ## Commands
 
-| Feature                     | Input                                                                                                        | Output                                  | Use case                                                                     | Required external tools                         |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------- |
-| Crop PDF margins            | `.pdf`                                                                                                       | `.pdf`                                  | Remove margins from figure PDFs (auto or configured)                         | None                                            |
-| Split PDF                   | `.pdf`                                                                                                       | `.pdf`                                  | Split a PDF into single pages (all pages or configured)                      | None                                            |
-| Merge PDFs                  | `.pdf` (multiple)                                                                                            | `.pdf`                                  | Merge PDFs into one (selected or configured)                                 | None                                            |
-| Rotate PDF                  | `.pdf`                                                                                                       | `.pdf`                                  | Rotate pages by 90° / 180° / 270° (quick or page-selected)                   | None                                            |
-| Reorder PDF                 | `.pdf`                                                                                                       | `.pdf`                                  | Change the page order interactively                                          | None                                            |
-| Compress PDF                | `.pdf`                                                                                                       | `.pdf`                                  | Recompress a PDF to reduce size                                              | None                                            |
-| Encrypt PDF                 | `.pdf`                                                                                                       | `.pdf`                                  | Protect a PDF with a password                                                | None                                            |
-| Decrypt PDF                 | `.pdf`                                                                                                       | `.pdf`                                  | Remove the password from a PDF                                               | None                                            |
-| Convert to PDF              | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                           | `.pdf`                                  | Convert raster images to PDF                                                 | None                                            |
-| Convert to PDF              | `.svg`, `.mmd`, `.mermaid`, editable Draw.io images                                                          | `.pdf`                                  | Convert figure files to PDF                                                  | Depends on input format                         |
-| Combine images to PDF       | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                           | `.pdf`                                  | Combine multiple images into one PDF                                         | None                                            |
-| Rotate images               | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                           | Same format                             | Rotate images by 90° / 180° / 270°                                           | None                                            |
-| Draw.io to split PDFs       | `.drawio`, `.dio`, editable Draw.io images                                                                   | Page PDFs                               | Export each Draw.io page separately                                          | Draw.io Desktop                                 |
-| Draw.io to one PDF          | `.drawio`, `.dio`, editable Draw.io images                                                                   | One PDF                                 | Export all Draw.io pages together                                            | Draw.io Desktop                                 |
-| Convert to PNG              | `.pdf`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io images | `.png`                                  | Convert figure files to PNG                                                  |                                                 |
-| Convert to JPEG             | `.pdf`, `.png`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io images          | `.jpeg`                                 | Convert figure files to JPEG                                                 |                                                 |
-| Convert to WebP             | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io images  | `.webp`                                 | Convert figure files to WebP                                                 |                                                 |
-| Convert to WebP (animation) | `.gif`                                                                                                       | `.webp`                                 | Preserve animation or split frames                                           | None                                            |
-| Convert to AVIF             | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io images  | `.avif`                                 | Convert figure files to AVIF                                                 |                                                 |
-| Convert to GIF              | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io images | `.gif`                                  | Convert figure files to GIF                                                  |                                                 |
-| Convert to GIF (animation)  | `.webp`                                                                                                      | `.gif`                                  | Preserve animation or split frames                                           | None                                            |
-| Convert to TIFF             | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.svg`, Mermaid, editable Draw.io images          | `.tiff`                                 | Convert figure files to TIFF                                                 |                                                 |
-| Convert to SVG              | `.pdf`, `.mmd`, `.mermaid`, editable Draw.io images                                                          | `.svg`                                  | Convert figure files to SVG                                                  | Chrome for Mermaid, Draw.io for editable images |
-| Create Draw.io file         | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, `.mmd`, `.mermaid`       | `.drawio`, `.drawio.png`, `.drawio.svg` | Create a Draw.io file from a figure                                          | Draw.io Desktop                                 |
-| Insert PDF into LaTeX       | `.pdf`                                                                                                       | LaTeX code                              | Generate `figure` / `includegraphics` code                                   | None                                            |
-| Insert clipboard image      | Clipboard image                                                                                              | Image file + LaTeX code                 | Paste screenshots into LaTeX                                                 | Depends on output format                        |
-| Table Editor                | Clipboard table (Excel / Google Sheets), `.csv`, `.tsv`                                                      | LaTeX / Typst / Quarkdown code          | Paste a spreadsheet table, edit cells, and insert table code into a document | None                                            |
+| Feature                     | Input                                                                                               | Output                                  | Use case                                                                     | Required external tools     |
+| --------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------- | --------------------------- |
+| Crop PDF margins            | `.pdf`                                                                                              | `.pdf`                                  | Remove margins from figure PDFs (auto or configured)                         | None                        |
+| Split PDF                   | `.pdf`                                                                                              | `.pdf`                                  | Split a PDF into single pages (all pages or configured)                      | None                        |
+| Merge PDFs                  | `.pdf` (multiple)                                                                                   | `.pdf`                                  | Merge PDFs into one (selected or configured)                                 | None                        |
+| Rotate PDF                  | `.pdf`                                                                                              | `.pdf`                                  | Rotate pages by 90° / 180° / 270° (quick or page-selected)                   | None                        |
+| Reorder PDF                 | `.pdf`                                                                                              | `.pdf`                                  | Change the page order interactively                                          | None                        |
+| Compress PDF                | `.pdf`                                                                                              | `.pdf`                                  | Recompress a PDF to reduce size                                              | None                        |
+| Encrypt PDF                 | `.pdf`                                                                                              | `.pdf`                                  | Protect a PDF with a password                                                | None                        |
+| Decrypt PDF                 | `.pdf`                                                                                              | `.pdf`                                  | Remove the password from a PDF                                               | None                        |
+| Convert to PDF              | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                  | `.pdf`                                  | Convert raster images to PDF                                                 | None                        |
+| Convert to PDF              | `.svg`, editable Draw.io images                                                                     | `.pdf`                                  | Convert figure files to PDF                                                  | Depends on input format     |
+| Combine images to PDF       | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                  | `.pdf`                                  | Combine multiple images into one PDF                                         | None                        |
+| Rotate images               | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                  | Same format                             | Rotate images by 90° / 180° / 270°                                           | None                        |
+| Draw.io to split PDFs       | `.drawio`, `.dio`, editable Draw.io images                                                          | Page PDFs                               | Export each Draw.io page separately                                          | Draw.io Desktop             |
+| Draw.io to one PDF          | `.drawio`, `.dio`, editable Draw.io images                                                          | One PDF                                 | Export all Draw.io pages together                                            | Draw.io Desktop             |
+| Convert to PNG              | `.pdf`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, editable Draw.io images | `.png`                                  | Convert figure files to PNG                                                  |                             |
+| Convert to JPEG             | `.pdf`, `.png`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, editable Draw.io images          | `.jpeg`                                 | Convert figure files to JPEG                                                 |                             |
+| Convert to WebP             | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, editable Draw.io images  | `.webp`                                 | Convert figure files to WebP                                                 |                             |
+| Convert to WebP (animation) | `.gif`                                                                                              | `.webp`                                 | Preserve animation or split frames                                           | None                        |
+| Convert to AVIF             | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.tif`, `.tiff`, `.svg`, editable Draw.io images  | `.avif`                                 | Convert figure files to AVIF                                                 |                             |
+| Convert to GIF              | `.pdf`, `.png`, `.jpg`, `.webp`, `.avif`, `.tif`, `.tiff`, `.svg`, editable Draw.io images          | `.gif`                                  | Convert figure files to GIF                                                  |                             |
+| Convert to GIF (animation)  | `.webp`                                                                                             | `.gif`                                  | Preserve animation or split frames                                           | None                        |
+| Convert to TIFF             | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.svg`, editable Draw.io images          | `.tiff`                                 | Convert figure files to TIFF                                                 |                             |
+| Convert to SVG              | `.pdf`, editable Draw.io images                                                                     | `.svg`                                  | Convert figure files to SVG                                                  | Draw.io for editable images |
+| Create Draw.io file         | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`                  | `.drawio`, `.drawio.png`, `.drawio.svg` | Create a Draw.io file from a figure                                          | Draw.io Desktop             |
+| Insert PDF into LaTeX       | `.pdf`                                                                                              | LaTeX code                              | Generate `figure` / `includegraphics` code                                   | None                        |
+| Insert clipboard image      | Clipboard image                                                                                     | Image file + LaTeX code                 | Paste screenshots into LaTeX                                                 | Depends on output format    |
+| Table Editor                | Clipboard table (Excel / Google Sheets), `.csv`, `.tsv`                                             | LaTeX / Typst / Quarkdown code          | Paste a spreadsheet table, edit cells, and insert table code into a document | None                        |
 
 Normal raster conversions use the first GIF/TIFF page or frame. Convert to PDF preserves all GIF/TIFF pages, including multi-page TIFFs with different page sizes; the explicit animation preserve/split commands retain their own multi-frame behavior. Same-format conversion is rejected.
 
@@ -237,8 +232,7 @@ Main settings:
 | `graphics-workbench.insertLatex.imageTemplate` | `\begin{figure}[H]...`                                  | LaTeX template for image paste. Supports `${path}`, `${name}`, `${ext}`, `${dir}`. Set an array for snippet choices               |
 | `graphics-workbench.execPath.drawio`           | `drawio`                                                | Command or path for Draw.io Desktop                                                                                               |
 | `graphics-workbench.execPath.rsvgConvert`      | `rsvg-convert`                                          | Path to the `rsvg-convert` executable                                                                                             |
-| `graphics-workbench.execPath.chrome`           | empty string                                            | Chrome executable for mmdc and Chrome SVG-to-PDF; uses the standard OS command/location when empty                                |
-| `graphics-workbench.execPath.mermaid`          | `mmdc`                                                  | Path to the `mmdc` executable from `@mermaid-js/mermaid-cli`                                                                      |
+| `graphics-workbench.execPath.chrome`           | empty string                                            | Chrome executable for SVG-to-PDF; uses the standard OS command/location when empty                                                |
 | `graphics-workbench.convertToPdf.svg.engine`   | `chrome`                                                | SVG to PDF backend. Choose `chrome` or `rsvg-convert`                                                                             |
 | `graphics-workbench.outputPath.single.pdf`     | `${fileDirname}/${fileBasenameNoExtension}.pdf`         | Output path template for a single-file conversion to PDF                                                                          |
 | `graphics-workbench.outputPath.split.pdf`      | `${fileDirname}/${fileBasenameNoExtension}/${page}.pdf` | Output path template for multiple PDF outputs from one input (Split PDF, Draw.io page PDFs). Include `${page}`                    |
@@ -259,7 +253,7 @@ Graphics Workbench does not impose a fixed limit on input file size or PDF page 
 
 The range of inputs that can be processed, the processing time, and the required resources depend on the input contents, the operation, the external tools used, and your computer's performance. Very large inputs can take a long time or fail with memory, disk, or external-tool errors.
 
-You can cancel a running operation where possible. External processes (Draw.io, Mermaid CLI, etc.) are terminated, but depending on the processing method it may take some time for the cancellation to take effect.
+You can cancel a running operation where possible. External processes (Draw.io, Chrome, and rsvg-convert) are terminated, but depending on the processing method it may take some time for the cancellation to take effect.
 
 ## Troubleshooting
 
@@ -276,10 +270,6 @@ On Windows, the command may not be found depending on the executable name or `PA
 ### SVG to PDF conversion fails
 
 Depending on the configured backend, check that `rsvg-convert` or Google Chrome / Chromium is available.
-
-### Mermaid conversion fails
-
-Check that Google Chrome / Chromium and the Mermaid CLI (`mmdc`) are available. Install `@mermaid-js/mermaid-cli` via npm globally, or set `graphics-workbench.execPath.mermaid` in VS Code settings. If necessary, set `graphics-workbench.execPath.chrome` for the browser path.
 
 ### Editable Draw.io image conversion fails
 

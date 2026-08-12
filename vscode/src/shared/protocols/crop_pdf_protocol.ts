@@ -2,7 +2,6 @@ import * as v from 'valibot';
 import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
 
 const PdfPageRotationSchema = v.union([v.literal(0), v.literal(90), v.literal(180), v.literal(270)]);
-export type PdfPageRotation = v.InferOutput<typeof PdfPageRotationSchema>;
 
 const PdfRectangleSchema = v.strictObject({
   x: v.pipe(v.number(), v.finite()),
@@ -10,7 +9,6 @@ const PdfRectangleSchema = v.strictObject({
   width: v.pipe(v.number(), v.finite()),
   height: v.pipe(v.number(), v.finite()),
 });
-export type PdfRectangle = v.InferOutput<typeof PdfRectangleSchema>;
 
 const PdfPageGeometrySchema = v.strictObject({
   page: v.pipe(v.number(), v.integer(), v.minValue(1)),
@@ -18,7 +16,6 @@ const PdfPageGeometrySchema = v.strictObject({
   cropBox: PdfRectangleSchema,
   rotation: PdfPageRotationSchema,
 });
-export type PdfPageGeometry = v.InferOutput<typeof PdfPageGeometrySchema>;
 
 const CropBoxSchema = v.strictObject({
   left: v.pipe(v.number(), v.finite()),

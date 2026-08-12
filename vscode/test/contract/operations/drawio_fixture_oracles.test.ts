@@ -4,15 +4,15 @@ import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { isEditableDrawioImagePath } from '@graphics-workbench/core/shared/source_format.js';
-import { convertDrawioToSinglePdf } from '../../../src/operations/conversion/convert_drawio_to_pdf.js';
-import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
+import { isEditableDrawioImagePath } from '@graphics-workbench/core/formats';
 import {
+  convertDrawioToSinglePdf,
+  convertToPdfFiles,
+  convertToSvgFiles,
+  executeDrawio,
   executeRasterConversion,
   rasterFormatSpecs,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
-import { convertToPdfFiles } from '../../../src/operations/conversion/convert_to_pdf.js';
-import { convertToSvgFiles } from '../../../src/operations/conversion/convert_to_svg.js';
+} from '@graphics-workbench/core/conversion';
 import { getExtensionConfiguration } from '../../../src/config/extension_configuration.js';
 import { testInputDirectory, testOutputDirectory } from '../../support/helpers/fixture_paths.js';
 import { assertPdfMatches, assertRasterMatches } from '../../support/helpers/content_assertions.js';

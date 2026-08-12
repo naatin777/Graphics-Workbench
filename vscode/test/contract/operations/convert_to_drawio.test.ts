@@ -4,11 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 
-import {
-  convertToDrawioFiles,
-  createDrawioXml,
-  parseSvgSize,
-} from '../../../src/operations/conversion/convert_to_drawio.js';
+import { convertToDrawioFiles, createDrawioXml, parseSvgSize } from '@graphics-workbench/core/conversion';
 import { requireValue } from '../../support/helpers/required.js';
 
 suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {

@@ -8,16 +8,16 @@ import { fileURLToPath } from 'node:url';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import { cropPdfFile, type CropPdfFileWriter } from '../../../src/operations/pdf/crop_pdf_core.js';
+import { cropPdfFile, type CropPdfFileWriter } from '@graphics-workbench/core/pdf';
 import {
   createCropProcessChild,
   runCropPdfProcess,
   type CropProcessChild,
-} from '../../../src/operations/pdf/run_crop_pdf_process.js';
+} from '../../../src/adapters/crop/run_crop_pdf_process.js';
 import {
   isCropPdfProcessMessage,
   parseCropPdfProcessRequest,
-} from '../../../src/operations/pdf/crop_pdf_process_protocol.js';
+} from '../../../src/adapters/crop/crop_pdf_process_protocol.js';
 import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { RecordingOutputChannel } from '../../support/helpers/recording_output_channel.js';
 import { assertWorkspaceChangesSince, captureWorkspaceSnapshot } from '../../support/helpers/workspace_snapshot.js';
@@ -594,7 +594,7 @@ suite('Crop処理を子プロセスで実行してIPCの完了・失敗を確定
   test('子プロセスのラッパーは実Node childのmessageを転送し、破棄するとNode側のmessage監視を解放する', async () => {
     const runnerPath = path.join(
       path.dirname(fileURLToPath(import.meta.url)),
-      '../../../src/operations/pdf/crop_pdf_runner.js',
+      '../../../src/adapters/crop/crop_pdf_runner.js',
     );
     const underlying = fork(runnerPath, [], {
       stdio: ['ignore', 'ignore', 'ignore', 'ipc'],

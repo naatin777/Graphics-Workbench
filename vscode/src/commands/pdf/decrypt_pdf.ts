@@ -2,15 +2,15 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { resolvePdfOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { localeMap } from '../../locale_map.js';
-import { decryptPdfFiles, type DecryptPdfInput } from '../../operations/pdf/decrypt_pdf.js';
+import { decryptPdfFiles, type DecryptPdfInput } from '@graphics-workbench/core/pdf';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
+import { isAbortError } from '@graphics-workbench/core/runtime';
 
 export async function decryptPdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const outputChannel = dependencies.outputChannel;

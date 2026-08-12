@@ -6,24 +6,24 @@ import {
   type CropConfigureHostToWebview,
   type CropConfigureWebviewToHost,
   type CropPdfLabels,
-  type PdfPageGeometry,
   type CropTarget,
   isCropConfigureMessage,
 } from '../../shared/protocols/crop_pdf_protocol.js';
 import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
-import { resolvePdfOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
+import type { PdfPageGeometry } from '@graphics-workbench/core/pdf';
+import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
-import { cropPdfWithConfiguredBox } from '../../operations/pdf/crop_pdf_configure.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
+import { isAbortError } from '@graphics-workbench/core/runtime';
+import { cropPdfWithConfiguredBox } from '../../adapters/crop/crop_pdf_configure.js';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import {
   createPdfJsResources,
   getPdfJsAssetsRoot,
   getWebviewSharedAssetsRoot,
 } from '../../presentation/webview/pdfjs_assets.js';
-import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security/workspace_path.js';
-import { inspectCropPdfMetadata } from '../../operations/pdf/run_crop_pdf_metadata.js';
+import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
+import { inspectCropPdfMetadata } from '../../adapters/crop/run_crop_pdf_metadata.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';

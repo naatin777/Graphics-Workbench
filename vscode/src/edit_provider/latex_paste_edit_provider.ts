@@ -8,20 +8,20 @@ import { withCancellationSignal } from '../commands/lifecycle/progress_cancellat
 import { resolveOutputConflicts } from '../commands/lifecycle/safe_mode.js';
 import { recordConversionForUndo } from '../commands/lifecycle/undo_last_conversion.js';
 import { userMessage } from '../commands/shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
-import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
+import { resolveOutputPath } from '@graphics-workbench/core/output';
 import { localeMap } from '../locale_map.js';
-import type {
-  CommittedConversionOutput,
-  OutputConflictDecision,
-} from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
+import {
+  isAbortError,
+  type CommittedConversionOutput,
+  type OutputConflictDecision,
+} from '@graphics-workbench/core/runtime';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import {
   cleanupClipboardSourceArtifact,
   saveClipboardImage,
   type ClipboardImageData,
   type ClipboardPasteKind,
-} from '../operations/input/save_clipboard_image.js';
+} from '../adapters/clipboard/save_clipboard_image.js';
 
 import { getImageTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
 import type { InsertionFormat } from './insertion_format.js';

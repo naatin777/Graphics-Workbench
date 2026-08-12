@@ -1,5 +1,5 @@
 import type { Configuration } from '../../generated/extension_manifest.js';
-import type { RasterConversionTarget } from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import type { RasterConversionTarget } from '@graphics-workbench/core/conversion';
 
 export type OutputCardinality = 'single' | 'split';
 

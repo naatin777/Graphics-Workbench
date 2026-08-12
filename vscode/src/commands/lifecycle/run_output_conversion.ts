@@ -1,15 +1,18 @@
 import * as vscode from 'vscode';
 import path from 'node:path';
 
-import type { CommittedConversionOutput } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
-import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
+import {
+  isAbortError,
+  toErrorMessage,
+  type CommittedConversionOutput,
+  type ConversionExecutionContext,
+} from '@graphics-workbench/core/runtime';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 
 import { withCancellationSignal } from './progress_cancellation.js';
 import { createProgressReporters } from './progress_reporting.js';
 import { recordConversionForUndo } from './undo_last_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError, toErrorMessage } from '@graphics-workbench/core/shared/error.js';
 
 export interface ConversionCommandMessages {
   progressTitle: string;

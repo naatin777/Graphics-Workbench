@@ -41,8 +41,8 @@ import {
   createConversionUndoRecord,
   UndoCleanupError,
   undoConversionOutputs,
-} from '../../../src/operations/lifecycle/undo_last_conversion.js';
-import { commitStagedOutputs } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
+} from '../../../src/policy/undo_last_conversion.js';
+import { commitStagedOutputs } from '@graphics-workbench/core/runtime';
 import { liveCommandDependencies } from '../../support/helpers/command_dependencies.js';
 
 suite('直前変換の取り消し処理', () => {

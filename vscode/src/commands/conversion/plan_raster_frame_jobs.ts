@@ -1,12 +1,7 @@
-import {
-  assertPageTemplateForSplitOutput,
-  formatOutputPage,
-} from '@graphics-workbench/core/config/output/page_template.js';
+import { assertPageTemplateForSplitOutput, formatOutputPage, resolveOutputPath } from '@graphics-workbench/core/output';
 import { assertAnimationPixelLimit } from '../../config/raster.js';
-import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import { closeRasterPipeline, openRasterInput } from '@graphics-workbench/core/operations/conversion/raster_input.js';
-import type { RasterInput } from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
-import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security/workspace_path.js';
+import { closeRasterPipeline, openRasterInput, type RasterInput } from '@graphics-workbench/core/conversion';
+import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 
 export interface RasterFramePlanOptions {
   sourcePath: string;

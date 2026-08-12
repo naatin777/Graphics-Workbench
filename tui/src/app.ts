@@ -1,38 +1,39 @@
 import path from 'node:path';
 
-import { isAbortError, toErrorMessage } from '@graphics-workbench/core/shared/error.js';
-import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/shared/pdf_page_selection.js';
-import type { OutputConflictDecision } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
-import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
 import {
-  availablePdfRasterTargets,
-  inspectPdfRasterSource,
-  planPdfRasterConversion,
-  resolvePdfRasterPages,
-  runPdfRasterConversion,
-  type PdfRasterConversionPlan,
-  type PdfRasterConversionResult,
-  type PdfRasterPageSelection,
-  type PdfRasterSource,
-  type PdfRasterTarget,
-} from '@graphics-workbench/core/operations/conversion/pdf_raster_conversion.js';
+  isAbortError,
+  toErrorMessage,
+  type ConversionExecutionContext,
+  type OutputConflictDecision,
+} from '@graphics-workbench/core/runtime';
+import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/formats';
+import type { PdfRasterPageSelection, PdfRasterSource } from '@graphics-workbench/core/conversion';
 
 import type { TerminalKey, TerminalScreen } from './screen.js';
 import { terminalUiDefaults } from './defaults.js';
+import {
+  availableTerminalUiRasterTargets,
+  inspectPdfRasterSource,
+  planPdfRasterConversion,
+  resolvePdfRasterPages,
+  runTerminalPdfRasterConversion,
+  type TerminalUiPdfRasterPlan,
+  type TerminalUiConversionResult,
+  type TerminalUiRasterTarget,
+} from './conversion_adapter.js';
 
 type PageMode = 'all' | 'range';
 type ConflictAction = 'cancel' | 'replace' | 'rename';
-
 type AppState =
   | { kind: 'loading'; sourcePath: string }
   | { kind: 'format'; source: PdfRasterSource; selectedIndex: number }
-  | { kind: 'pages'; source: PdfRasterSource; target: PdfRasterTarget; selectedIndex: number }
-  | { kind: 'range'; source: PdfRasterSource; target: PdfRasterTarget; value: string; error?: string }
-  | { kind: 'review'; plan: PdfRasterConversionPlan }
-  | { kind: 'converting'; plan: PdfRasterConversionPlan; completed: number; total: number; message: string }
+  | { kind: 'pages'; source: PdfRasterSource; target: TerminalUiRasterTarget; selectedIndex: number }
+  | { kind: 'range'; source: PdfRasterSource; target: TerminalUiRasterTarget; value: string; error?: string }
+  | { kind: 'review'; plan: TerminalUiPdfRasterPlan }
+  | { kind: 'converting'; plan: TerminalUiPdfRasterPlan; completed: number; total: number; message: string }
   | {
       kind: 'conflict';
-      plan: PdfRasterConversionPlan;
+      plan: TerminalUiPdfRasterPlan;
       conflicts: string[];
       selectedIndex: number;
       resolve: (decision: OutputConflictDecision) => void;
@@ -41,12 +42,12 @@ type AppState =
 
 interface AppDependencies {
   inspectSource: typeof inspectPdfRasterSource;
-  runConversion: typeof runPdfRasterConversion;
+  runConversion: typeof runTerminalPdfRasterConversion;
 }
 
 const defaultDependencies: AppDependencies = {
   inspectSource: inspectPdfRasterSource,
-  runConversion: runPdfRasterConversion,
+  runConversion: runTerminalPdfRasterConversion,
 };
 
 export async function runTerminalUi(
@@ -103,7 +104,7 @@ export async function runTerminalUi(
     exitOrCancel();
   };
 
-  const startConversion = (plan: PdfRasterConversionPlan): void => {
+  const startConversion = (plan: TerminalUiPdfRasterPlan): void => {
     if (conversion !== undefined) {
       return;
     }
@@ -188,14 +189,14 @@ export async function runTerminalUi(
         if (key.name === 'escape') {
           finish();
         } else if (key.name === 'up' || key.name === 'down') {
-          const targets = availablePdfRasterTargets(state.source.sourcePath);
+          const targets = availableTerminalUiRasterTargets(state.source.sourcePath);
           state = {
             ...state,
             selectedIndex: moveSelection(state.selectedIndex, targets.length, key.name === 'up' ? -1 : 1),
           };
           render();
         } else if (isEnter(key)) {
-          const target = availablePdfRasterTargets(state.source.sourcePath)[state.selectedIndex];
+          const target = availableTerminalUiRasterTargets(state.source.sourcePath)[state.selectedIndex];
           if (target !== undefined) {
             state = { kind: 'pages', source: state.source, target, selectedIndex: 0 };
             render();
@@ -323,7 +324,7 @@ export async function runTerminalUi(
     render();
     try {
       const source = await dependencies.inspectSource({ sourcePath, signal: abortController.signal });
-      const targets = availablePdfRasterTargets(source.sourcePath);
+      const targets = availableTerminalUiRasterTargets(source.sourcePath);
       if (targets.length === 0) {
         throw new Error(`No Terminal UI conversions are available for: ${source.sourcePath}`);
       }
@@ -364,7 +365,7 @@ export function conflictDecision(action: ConflictAction): OutputConflictDecision
 
 function createReviewState(
   source: PdfRasterSource,
-  target: PdfRasterTarget,
+  target: TerminalUiRasterTarget,
   selection: PdfRasterPageSelection,
 ): AppState {
   return {
@@ -378,7 +379,7 @@ function createReviewState(
   };
 }
 
-function successState(result: PdfRasterConversionResult): AppState {
+function successState(result: TerminalUiConversionResult): AppState {
   const details = result.outputs.map((output) => output.outputPath);
   if (result.cleanup.failures.length > 0) {
     details.push(`Warning: ${result.cleanup.failures.length} temporary artifact root(s) could not be cleaned up.`);
@@ -392,7 +393,7 @@ function renderState(state: AppState): string {
       return lines('Source', `  ${state.sourcePath}`, '', 'Analyzing PDF…', '', 'Esc / Ctrl+C  Cancel');
     }
     case 'format': {
-      const targets = availablePdfRasterTargets(state.source.sourcePath);
+      const targets = availableTerminalUiRasterTargets(state.source.sourcePath);
       return lines(
         'Source',
         `  ${path.basename(state.source.sourcePath)} (${state.source.pageCount} pages)`,
@@ -482,7 +483,7 @@ function renderState(state: AppState): string {
   throw new Error('Unsupported Terminal UI state.');
 }
 
-function outputTemplateFor(target: PdfRasterTarget): string {
+function outputTemplateFor(target: TerminalUiRasterTarget): string {
   return terminalUiDefaults.outputTemplate[target];
 }
 
@@ -507,7 +508,7 @@ function formatPdfPageSelectionError(failure: PdfPageSelectionParseFailure, page
   throw new Error('Unsupported PDF page selection error.');
 }
 
-function targetLabel(target: PdfRasterTarget): string {
+function targetLabel(target: TerminalUiRasterTarget): string {
   return target === 'jpeg' ? 'JPEG' : target === 'webp' ? 'WebP' : 'PNG';
 }
 
@@ -526,12 +527,12 @@ function conflictActionLabel(action: ConflictAction): string {
   throw new Error('Unsupported output conflict action.');
 }
 
-function pdfRasterTargetIndex(target: PdfRasterTarget): number {
+function pdfRasterTargetIndex(target: TerminalUiRasterTarget): number {
   return Math.max(0, pdfRasterTargetsIndex(target));
 }
 
-function pdfRasterTargetsIndex(target: PdfRasterTarget): number {
-  return availablePdfRasterTargets('source.pdf').indexOf(target);
+function pdfRasterTargetsIndex(target: TerminalUiRasterTarget): number {
+  return availableTerminalUiRasterTargets('source.pdf').indexOf(target);
 }
 
 function moveSelection(index: number, count: number, delta: number): number {

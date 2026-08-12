@@ -3,10 +3,7 @@ import { mkdir, mkdtempDisposable, readFile, rm, writeFile } from 'node:fs/promi
 import os from 'node:os';
 import path from 'node:path';
 
-import {
-  commitStagedOutputs,
-  CommitRollbackError,
-} from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
+import { commitStagedOutputs, CommitRollbackError } from '@graphics-workbench/core/runtime';
 
 suite('新規出力の取り消し時に他プロセスが置き換えた場合は置き換え後の内容を保持し、削除しない保護', () => {
   test('新規出力（second.pdf）のrollback中に、他プロセスがcommit済みの別の新規出力（first.pdf）を外部編集で置き換えた場合、rollbackは置き換え後の内容を削除せず保持し、対象のsecond出力だけを削除する', async () => {

@@ -2,17 +2,15 @@ import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 import {
+  createPdfRenderBackend,
   executeRasterConversion,
   rasterFormatSpecs,
+  type DrawioBackend,
+  type PdfRenderBackend,
   type RasterConversionTarget,
   type RasterFormatSpec,
   type RasterInput,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
-import type { DrawioBackend } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
-import {
-  createPdfRenderBackend,
-  type PdfRenderBackend,
-} from '@graphics-workbench/core/operations/conversion/tools/pdf_render_tools.js';
+} from '@graphics-workbench/core/conversion';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
@@ -59,7 +57,7 @@ async function runRasterCommand(options: {
     return;
   }
 
-  const outputChannel = options.dependencies.outputChannel;
+  const { outputChannel } = options.dependencies;
   const animated = spec.animatedInputExtension !== undefined;
   await runConversionLifecycle({
     operationName: spec.operationName,
@@ -78,7 +76,7 @@ async function runRasterCommand(options: {
           ...(await planRasterConversionJobs(sourceUri, spec, {
             configuration,
             maxInputPixels,
-            ...(maxAnimationPixels !== undefined ? { maxAnimationPixels } : {}),
+            ...(maxAnimationPixels === undefined ? {} : { maxAnimationPixels }),
             frameMode: options.animatedInputMode === 'split' ? 'all' : 'first',
             runtime,
           })),

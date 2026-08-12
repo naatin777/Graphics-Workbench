@@ -19,12 +19,8 @@ import { promisify } from 'node:util';
 import sharp from 'sharp';
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import {
-  convertToPdfFiles,
-  executeChrome,
-  validateSvgToPdfOptions,
-} from '../../../src/operations/conversion/convert_to_pdf.js';
-import { renderPdfPageToPng } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { convertToPdfFiles, executeChrome, validateSvgToPdfOptions } from '@graphics-workbench/core/conversion';
+import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
 import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { requireValue } from '../../support/helpers/required.js';
 

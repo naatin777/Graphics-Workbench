@@ -4,7 +4,7 @@
 
 採用
 
-Chrome / Chromiumの実行方式は[ADR-0029](0029-use-cli-processes-for-mermaid-and-chrome-svg-pdf.md)に従い、settings.json経由で実体を検証する方針は維持する。
+Chrome / Chromiumの実行file pathはsettings.json経由で検証する。
 
 ## 日付
 
@@ -12,7 +12,7 @@ Chrome / Chromiumの実行方式は[ADR-0029](0029-use-cli-processes-for-mermaid
 
 ## 背景
 
-Graphics Workbenchは、PDF・SVG・Mermaid・Draw.io関連の変換で外部ツールを使用する。
+Graphics Workbenchは、PDF・SVG・Draw.io関連の変換で外部ツールを使用する。
 
 代表的な外部ツールは以下である。
 
@@ -45,7 +45,7 @@ GitHub Actionsで外部ツールを検証するときは、インストール後
 - CIの検証スクリプトは、`settings.json` の値を読み、その値だけを使って実行確認する
 - Chrome / Chromiumも、headless CLIの実行file pathとして `settings.json` に明示する
 - `PATH` 上にツールが存在していても、`settings.json` の値が誤っていれば検証は失敗する
-- WindowsではChromeを直接実行するとGUIアプリとして起動して戻らない可能性があるため、検証スクリプトでは存在確認とファイルバージョン確認に留める。実利用はMermaid/SVG変換のChrome CLI経路で確認する。
+- WindowsではChromeを直接実行するとGUIアプリとして起動して戻らない可能性があるため、検証スクリプトでは存在確認とファイルバージョン確認に留める。実利用はSVG変換のChrome CLI経路で確認する。
 
 ## 運用ルール
 

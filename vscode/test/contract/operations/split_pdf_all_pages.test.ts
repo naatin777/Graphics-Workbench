@@ -17,7 +17,7 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import { splitPdfAllPages } from '../../../src/operations/pdf/split_pdf.js';
+import { splitPdfAllPages } from '@graphics-workbench/core/pdf';
 
 import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { assertRenderedPdfPagesSimilar } from '../../support/helpers/pdf_visual_assertions.js';

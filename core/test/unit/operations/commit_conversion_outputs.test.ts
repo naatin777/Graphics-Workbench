@@ -30,11 +30,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 
-import {
-  commitStagedOutputs,
-  CommitRollbackError,
-  OperationCancelledError,
-} from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
+import { commitStagedOutputs, CommitRollbackError, OperationCancelledError } from '@graphics-workbench/core/runtime';
 import { requireValue } from '../../helpers/required.js';
 
 suite(

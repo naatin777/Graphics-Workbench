@@ -6,11 +6,7 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import {
-  convertDrawioToPagePdfs,
-  convertDrawioToSinglePdf,
-} from '../../../src/operations/conversion/convert_drawio_to_pdf.js';
-import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
+import { convertDrawioToPagePdfs, convertDrawioToSinglePdf, executeDrawio } from '@graphics-workbench/core/conversion';
 import { readConfiguredConversionTools } from '../../support/helpers/external_tool_settings.js';
 import { requireValue } from '../../support/helpers/required.js';
 import { testInputDirectory } from '../../support/helpers/fixture_paths.js';

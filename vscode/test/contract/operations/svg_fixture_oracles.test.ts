@@ -1,10 +1,7 @@
 import path from 'node:path';
 
-import { sourceFormatForPath } from '@graphics-workbench/core/shared/source_format.js';
-import {
-  executeRasterConversion,
-  rasterFormatSpecs,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import { sourceFormatForPath } from '@graphics-workbench/core/formats';
+import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import {
   listInputFixturePathsSync,
   testInputDirectory,

@@ -7,7 +7,7 @@ import {
   isSupportedPdfConversionSource,
   logicalSourcePathForOutputTemplate,
   sourceFormatForPath,
-} from '@graphics-workbench/core/shared/source_format.js';
+} from '@graphics-workbench/core/formats';
 
 suite('source format判定', () => {
   test('大文字小文字を無視して、画像拡張子と複合拡張子（.drawio.png/.drawio.svg/.drawio）を判定し、editable Draw.io画像は出力テンプレート用の論理パスから複合拡張子を除去する', () => {

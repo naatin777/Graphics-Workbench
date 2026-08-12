@@ -4,11 +4,8 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { isRasterImagePath, sourceFormatForPath } from '@graphics-workbench/core/shared/source_format.js';
-import {
-  executeRasterConversion,
-  rasterFormatSpecs,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import { isRasterImagePath, sourceFormatForPath } from '@graphics-workbench/core/formats';
+import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import {
   listInputFixturePathsSync,
   testInputDirectory,

@@ -4,7 +4,7 @@ import {
   type ExternalToolTimeoutConfiguration,
   readExternalToolTimeouts,
   timeoutMilliseconds,
-} from '@graphics-workbench/core/config/external_tools/external_tool_settings.js';
+} from '@graphics-workbench/core/external-tools';
 
 function timeoutConfiguration(values: Partial<Record<'drawio' | 'rsvgConvert', number>>) {
   return {

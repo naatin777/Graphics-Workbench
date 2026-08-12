@@ -4,7 +4,7 @@ import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from
 export {
   parsePdfPageSelection as parseSplitPdfPages,
   type PdfPageSelectionParseFailure as SplitPdfPageParseFailure,
-} from '@graphics-workbench/core/shared/pdf_page_selection.js';
+} from '@graphics-workbench/core/formats';
 
 const SplitPdfLabelsSchema = v.strictObject({
   header: v.strictObject({

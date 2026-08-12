@@ -4,7 +4,6 @@
 // - JPEG、WebPをAVIFへ変換できること
 // - SVGをAVIFへ変換できること
 // - PDFをページごとのAVIFへ変換できること
-// - MermaidをAVIFへ変換できること
 // - AVIFからAVIFへは変換しないこと
 // - 出力AVIFが壊れておらず、幅と高さが0より大きいこと
 //
@@ -12,7 +11,7 @@
 // - Draw.io → PDF → PNG → AVIFの実変換経路
 //   - fake Draw.io CLIをcommand testで直接扱うとWindowsのexecFile差で不安定になりやすい。
 //   - 必要になったらrunnerを注入できるoperation testとして固定する。
-// - PDF / Draw.io / MermaidからAVIFへの変換ではPNGを中間形式に使うこと
+// - PDF / Draw.ioからAVIFへの変換ではPNGを中間形式に使うこと
 //   - command testでは出力AVIFの読み取り可能性を確認し、中間形式の詳細はoperation testで扱う。
 // - 画像内容のpixel完全一致
 // - context menuの画面上の表示

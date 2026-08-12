@@ -13,7 +13,7 @@
 - PNG、JPEG、WebP、AVIF、GIF、TIFF（ラスター画像）
 - SVG
 
-Mermaid、Draw.io、ネイティブPDFは対象外。Draw.ioは`graphics-workbench.convertDrawioToSinglePdf`で全ページを1PDFにする専用コマンドがある。
+Draw.io、ネイティブPDFは対象外。Draw.ioは`graphics-workbench.convertDrawioToSinglePdf`で全ページを1PDFにする専用コマンドがある。
 
 ## 入力と順序
 
@@ -63,7 +63,7 @@ Save AsとQuickは空文字設定のような隠れたsentinel値で切り替え
 - 画像の並び替えUI（Save As版のQuickPickでの順序変更は行う）
 - 結合方向の指定（縦結合・横結合・grid など、PDFのページ結合なので不要）
 - 画像間への空白ページ挿入
-- Mermaid、Draw.io、PDFの入力
+- Draw.io、PDFの入力
 - 単一ファイルの入力（通常のConvert to PDFを使う。暗黙フォールバックしない）
 
 ## 関連

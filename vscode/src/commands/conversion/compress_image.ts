@@ -3,14 +3,14 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { assertAnimationPixelLimit } from '../../config/raster.js';
-import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
+import { resolveOutputPath } from '@graphics-workbench/core/output';
 import {
   compressImageFiles,
   compressibleFormatForPath,
+  readRasterAnimationMetadata,
   type CompressImageInput,
   type CompressibleImageFormat,
-} from '../../operations/conversion/compress_image.js';
-import { readRasterAnimationMetadata } from '@graphics-workbench/core/operations/conversion/raster_input.js';
+} from '@graphics-workbench/core/conversion';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';

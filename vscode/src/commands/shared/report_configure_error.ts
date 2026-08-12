@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
-import { toErrorMessage, isAbortError } from '@graphics-workbench/core/shared/error.js';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
+import { toErrorMessage, isAbortError } from '@graphics-workbench/core/runtime';
 
 export interface ReportConfigureApplyErrorOptions {
   operationName: string;

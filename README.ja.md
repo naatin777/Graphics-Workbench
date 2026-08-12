@@ -73,7 +73,7 @@ Convert confidently. Existing files are protected by default, and the latest gra
 ### 変換
 
 - Explorer の右クリックメニューから、出力形式（PDF / PNG / JPEG / WebP / AVIF / GIF / TIFF / SVG）を選んで変換
-- PDF・画像・SVG・Mermaid・Draw.io ファイルの相互変換
+- PDF・画像・SVG・Draw.io ファイルの相互変換
 - 複数の画像を 1 つの PDF に結合
 - ラスター画像を 90° / 180° / 270° で回転
 - アニメーション GIF / WebP の相互変換（アニメーション保持 / フレーム分割）
@@ -129,12 +129,11 @@ Remote SSH / WSL / Dev Container では、この拡張機能はローカルで�
 
 コマンドパレットから **Graphics Workbench: 環境を確認**（`Check Environment`）を実行すると、機能単位で利用可否を確認でき、項目を選択すると関連設定を開けます。未導入のツールがあっても環境チェック全体は失敗しません。
 
-| ツール                   | 用途                                        | 必須になる機能                                                          | 備考                                                                                              |
-| ------------------------ | ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| rsvg-convert             | SVG から PDF への変換                       | `rsvg-convert`バックエンドを選択した場合                                | SVG 変換バックエンドの 1 つです                                                                   |
-| Google Chrome / Chromium | SVG / Mermaid 変換                          | SVG から PDF、Mermaid から PDF/PNG/JPEG/WebP/AVIF/SVG                   | Chrome headless CLIから使用します                                                                 |
-| Draw.io Desktop          | Draw.ioファイルとeditable Draw.io画像の変換 | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Draw.io デスクトップアプリケーションが必要です                                                    |
-| Mermaid CLI (`mmdc`)     | Mermaid レンダリング                        | Mermaid から PDF/PNG/JPEG/WebP/AVIF/SVG                                 | npmで`@mermaid-js/mermaid-cli`をグローバル導入するか、`graphics-workbench.execPath.mermaid`を指定 |
+| ツール                   | 用途                                        | 必須になる機能                                                          | 備考                                           |
+| ------------------------ | ------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------- |
+| rsvg-convert             | SVG から PDF への変換                       | `rsvg-convert`バックエンドを選択した場合                                | SVG 変換バックエンドの 1 つです                |
+| Google Chrome / Chromium | SVG 変換                                    | SVG から PDF                                                            | Chrome headless CLIから使用します              |
+| Draw.io Desktop          | Draw.ioファイルとeditable Draw.io画像の変換 | `.drawio`, `.dio`, `.drawio.png`, `.dio.png`, `.drawio.svg`, `.dio.svg` | Draw.io デスクトップアプリケーションが必要です |
 
 ### すべての機能を利用する場合
 
@@ -144,7 +143,6 @@ Remote SSH / WSL / Dev Container では、この拡張機能はローカルで�
 - SVG 変換バックエンドのいずれか
   - `rsvg-convert`
   - Google Chrome / Chromium
-- Mermaid変換を使う場合は Google Chrome / Chromium と Mermaid CLI (`mmdc`)
 
 ### SVG から PDF への変換について
 
@@ -162,7 +160,6 @@ rsvg-convert または Google Chrome / Chromium
 
 ```sh
 brew install librsvg
-npm install -g @mermaid-js/mermaid-cli
 ```
 
 HomebrewはmacOSでの導入例です。拡張機能本体はHomebrewを呼び出さず、各OSの`PATH`または`graphics-workbench.execPath.*`設定から外部ツールを解決します。
@@ -175,7 +172,6 @@ Draw.io Desktop は以下からインストールしてください。
 
 ```sh
 sudo apt install librsvg2-bin
-npm install -g @mermaid-js/mermaid-cli
 ```
 
 Draw.io Desktop は以下からインストールしてください。
@@ -188,41 +184,40 @@ Draw.io Desktop は以下からインストールしてください。
 
 - Draw.io Desktop
 - Google Chrome / Chromium
-- Mermaid CLI (`mmdc`) — `npm install -g @mermaid-js/mermaid-cli`
 
 WindowsではHomebrewを使用せず、各ツールのWindows向け配布物または組織のパッケージマネージャーで導入してください。`rsvg-convert.exe`を`PATH`へ追加するか、VS Codeの設定で実行ファイルのパスを指定します。
 
 ## コマンド一覧
 
-| 機能                            | 入力                                                                                                       | 出力                                    | 主な用途                                                           | 必要な外部ツール                       |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ | -------------------------------------- |
-| PDF の余白トリミング            | `.pdf`                                                                                                     | `.pdf`                                  | 図版 PDF の余白を削除（自動 / 設定付き）                           | 不要                                   |
-| PDF の分割                      | `.pdf`                                                                                                     | `.pdf`                                  | PDF をページごとに分割（全ページ / 設定付き）                      | 不要                                   |
-| PDF の結合                      | `.pdf`（複数）                                                                                             | `.pdf`                                  | PDF を1つに結合（選択 / 設定付き）                                 | 不要                                   |
-| PDF の回転                      | `.pdf`                                                                                                     | `.pdf`                                  | 90° / 180° / 270°でページを回転（クイック / ページ選択）           | 不要                                   |
-| PDF の並び替え                  | `.pdf`                                                                                                     | `.pdf`                                  | ページ順をインタラクティブに変更                                   | 不要                                   |
-| PDF の圧縮                      | `.pdf`                                                                                                     | `.pdf`                                  | PDF を再圧縮してサイズ削減                                         | 不要                                   |
-| PDF の暗号化                    | `.pdf`                                                                                                     | `.pdf`                                  | パスワードで保護                                                   | 不要                                   |
-| PDF の復号化                    | `.pdf`                                                                                                     | `.pdf`                                  | パスワードを解除                                                   | 不要                                   |
-| PDF へ変換                      | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                         | `.pdf`                                  | ラスター画像を PDF に変換                                          | 不要                                   |
-| PDF へ変換                      | `.svg`, `.mmd`, `.mermaid`, editable Draw.io 画像                                                          | `.pdf`                                  | 図版ファイルを PDF に変換                                          | 入力形式により異なります               |
-| 画像を1つのPDFへ結合            | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                         | `.pdf`                                  | 複数画像を1つのPDFへ結合                                           | 不要                                   |
-| 画像の回転                      | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                         | 同じ形式                                | 90° / 180° / 270°で画像を回転                                      | 不要                                   |
-| Draw.ioをページごとのPDFへ変換  | `.drawio`, `.dio`, editable Draw.io 画像                                                                   | ページごとのPDF                         | Draw.ioの各ページを個別に出力                                      | Draw.io Desktop                        |
-| Draw.ioを1つのPDFへ変換         | `.drawio`, `.dio`, editable Draw.io 画像                                                                   | 1つのPDF                                | Draw.ioの全ページをまとめて出力                                    | Draw.io Desktop                        |
-| PNG へ変換                      | `.pdf`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像 | `.png`                                  | 図版ファイルを PNG に変換                                          |                                        |
-| JPEG へ変換                     | `.pdf`, `.png`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像          | `.jpeg`                                 | 図版ファイルを JPEG に変換                                         |                                        |
-| WebP へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像  | `.webp`                                 | 図版ファイルを WebP に変換                                         |                                        |
-| WebP へ変換（アニメーション）   | `.gif`                                                                                                     | `.webp`                                 | アニメーション保持またはフレーム分割                               | 不要                                   |
-| AVIF へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像  | `.avif`                                 | 図版ファイルを AVIF に変換                                         |                                        |
-| GIF へ変換                      | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.tif`, `.tiff`, `.svg`, Mermaid, editable Draw.io 画像 | `.gif`                                  | 図版ファイルを GIF に変換                                          |                                        |
-| GIF へ変換（アニメーション）    | `.webp`                                                                                                    | `.gif`                                  | アニメーション保持またはフレーム分割                               | 不要                                   |
-| TIFF へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.svg`, Mermaid, editable Draw.io 画像          | `.tiff`                                 | 図版ファイルを TIFF に変換                                         |                                        |
-| SVG へ変換                      | `.pdf`, `.mmd`, `.mermaid`, editable Draw.io 画像                                                          | `.svg`                                  | 図版ファイルを SVG に変換                                          | MermaidはChrome、editable画像はDraw.io |
-| Draw.ioファイルの作成           | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, `.mmd`, `.mermaid`     | `.drawio`, `.drawio.png`, `.drawio.svg` | 図版からDraw.ioファイルを作成                                      | Draw.io Desktop                        |
-| PDF の LaTeX 挿入               | `.pdf`                                                                                                     | LaTeX コード                            | `figure` / `includegraphics` を自動生成                            | 不要                                   |
-| クリップボード画像の LaTeX 挿入 | クリップボード画像                                                                                         | 画像ファイル + LaTeX コード             | スクリーンショット等を LaTeX に貼り付け                            | 出力形式により異なります               |
-| 表エディター                    | クリップボードの表（Excel / Google Sheets）、`.csv`、`.tsv`                                                | LaTeX / Typst / Quarkdown コード        | スプレッドシートの表を貼り付け、セルを編集して文書へ表コードを挿入 | 不要                                   |
+| 機能                            | 入力                                                                                              | 出力                                    | 主な用途                                                           | 必要な外部ツール         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ | ------------------------ |
+| PDF の余白トリミング            | `.pdf`                                                                                            | `.pdf`                                  | 図版 PDF の余白を削除（自動 / 設定付き）                           | 不要                     |
+| PDF の分割                      | `.pdf`                                                                                            | `.pdf`                                  | PDF をページごとに分割（全ページ / 設定付き）                      | 不要                     |
+| PDF の結合                      | `.pdf`（複数）                                                                                    | `.pdf`                                  | PDF を1つに結合（選択 / 設定付き）                                 | 不要                     |
+| PDF の回転                      | `.pdf`                                                                                            | `.pdf`                                  | 90° / 180° / 270°でページを回転（クイック / ページ選択）           | 不要                     |
+| PDF の並び替え                  | `.pdf`                                                                                            | `.pdf`                                  | ページ順をインタラクティブに変更                                   | 不要                     |
+| PDF の圧縮                      | `.pdf`                                                                                            | `.pdf`                                  | PDF を再圧縮してサイズ削減                                         | 不要                     |
+| PDF の暗号化                    | `.pdf`                                                                                            | `.pdf`                                  | パスワードで保護                                                   | 不要                     |
+| PDF の復号化                    | `.pdf`                                                                                            | `.pdf`                                  | パスワードを解除                                                   | 不要                     |
+| PDF へ変換                      | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                | `.pdf`                                  | ラスター画像を PDF に変換                                          | 不要                     |
+| PDF へ変換                      | `.svg`, editable Draw.io 画像                                                                     | `.pdf`                                  | 図版ファイルを PDF に変換                                          | 入力形式により異なります |
+| 画像を1つのPDFへ結合            | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                | `.pdf`                                  | 複数画像を1つのPDFへ結合                                           | 不要                     |
+| 画像の回転                      | `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`                                | 同じ形式                                | 90° / 180° / 270°で画像を回転                                      | 不要                     |
+| Draw.ioをページごとのPDFへ変換  | `.drawio`, `.dio`, editable Draw.io 画像                                                          | ページごとのPDF                         | Draw.ioの各ページを個別に出力                                      | Draw.io Desktop          |
+| Draw.ioを1つのPDFへ変換         | `.drawio`, `.dio`, editable Draw.io 画像                                                          | 1つのPDF                                | Draw.ioの全ページをまとめて出力                                    | Draw.io Desktop          |
+| PNG へ変換                      | `.pdf`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, editable Draw.io 画像 | `.png`                                  | 図版ファイルを PNG に変換                                          |                          |
+| JPEG へ変換                     | `.pdf`, `.png`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, editable Draw.io 画像          | `.jpeg`                                 | 図版ファイルを JPEG に変換                                         |                          |
+| WebP へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`, editable Draw.io 画像  | `.webp`                                 | 図版ファイルを WebP に変換                                         |                          |
+| WebP へ変換（アニメーション）   | `.gif`                                                                                            | `.webp`                                 | アニメーション保持またはフレーム分割                               | 不要                     |
+| AVIF へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.tif`, `.tiff`, `.svg`, editable Draw.io 画像  | `.avif`                                 | 図版ファイルを AVIF に変換                                         |                          |
+| GIF へ変換                      | `.pdf`, `.png`, `.jpg`, `.webp`, `.avif`, `.tif`, `.tiff`, `.svg`, editable Draw.io 画像          | `.gif`                                  | 図版ファイルを GIF に変換                                          |                          |
+| GIF へ変換（アニメーション）    | `.webp`                                                                                           | `.gif`                                  | アニメーション保持またはフレーム分割                               | 不要                     |
+| TIFF へ変換                     | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.svg`, editable Draw.io 画像          | `.tiff`                                 | 図版ファイルを TIFF に変換                                         |                          |
+| SVG へ変換                      | `.pdf`, editable Draw.io 画像                                                                     | `.svg`                                  | 図版ファイルを SVG に変換                                          | editable画像はDraw.io    |
+| Draw.ioファイルの作成           | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`, `.gif`, `.tif`, `.tiff`, `.svg`                | `.drawio`, `.drawio.png`, `.drawio.svg` | 図版からDraw.ioファイルを作成                                      | Draw.io Desktop          |
+| PDF の LaTeX 挿入               | `.pdf`                                                                                            | LaTeX コード                            | `figure` / `includegraphics` を自動生成                            | 不要                     |
+| クリップボード画像の LaTeX 挿入 | クリップボード画像                                                                                | 画像ファイル + LaTeX コード             | スクリーンショット等を LaTeX に貼り付け                            | 出力形式により異なります |
+| 表エディター                    | クリップボードの表（Excel / Google Sheets）、`.csv`、`.tsv`                                       | LaTeX / Typst / Quarkdown コード        | スプレッドシートの表を貼り付け、セルを編集して文書へ表コードを挿入 | 不要                     |
 
 通常のラスター変換ではGIF/TIFFの先頭page/frameを使用します。Convert to PDFでは複数pageをすべてPDFへ展開し、ページサイズが異なるTIFFにも対応します。アニメーション保持・分割commandはそれぞれ全frameを扱います。同じ形式への変換は拒否します。
 
@@ -237,8 +232,7 @@ WindowsではHomebrewを使用せず、各ツールのWindows向け配布物ま�
 | `graphics-workbench.insertLatex.imageTemplate` | `\begin{figure}[H]...`                                  | 画像ペースト時のLaTeXテンプレート。`${path}` `${name}` `${ext}` `${dir}` を使用可能。配列でsnippet選択肢を指定できます  |
 | `graphics-workbench.execPath.drawio`           | 空文字                                                  | Draw.io 実行ファイルへのパスです。未指定の場合は OS ごとの既定コマンドを使用します                                      |
 | `graphics-workbench.execPath.rsvgConvert`      | `rsvg-convert`                                          | `rsvg-convert` 実行ファイルへのパスです                                                                                 |
-| `graphics-workbench.execPath.chrome`           | 空文字                                                  | mmdcとChrome方式のSVGからPDF変換で使うChrome実行ファイルのパスです。未指定時はOS標準のコマンドまたは場所を使います      |
-| `graphics-workbench.execPath.mermaid`          | `mmdc`                                                  | `@mermaid-js/mermaid-cli`の`mmdc`実行ファイルのパスです                                                                 |
+| `graphics-workbench.execPath.chrome`           | 空文字                                                  | Chrome方式のSVGからPDF変換で使うChrome実行ファイルのパスです。未指定時はOS標準のコマンドまたは場所を使います            |
 | `graphics-workbench.convertToPdf.svg.engine`   | `chrome`                                                | SVGをPDFへ変換するときのバックエンドです。`chrome` または `rsvg-convert` を選択できます                                 |
 | `graphics-workbench.outputPath.single.pdf`     | `${fileDirname}/${fileBasenameNoExtension}.pdf`         | 1つの入力から1つのPDFを出力するパスです                                                                                 |
 | `graphics-workbench.outputPath.split.pdf`      | `${fileDirname}/${fileBasenameNoExtension}/${page}.pdf` | 1つの入力から複数のPDFを出力するパスです（Split PDF・Draw.ioのページPDF）。`${page}`を含めてください                    |
@@ -263,7 +257,7 @@ Graphics Workbenchは、入力ファイルサイズやPDFページ数に一律�
 
 処理可能な範囲、処理時間、必要なリソースは、入力内容、実行する操作、使用する外部ツール、コンピューターの性能によって異なります。非常に大きな入力では処理時間が長くなったり、メモリ不足・ディスク不足・外部ツールの失敗が発生する可能性があります。
 
-実行中の処理は可能な範囲でキャンセルできます。外部プロセス（Draw.io、Mermaid CLIなど）は終了されますが、処理方式によってはキャンセルの反映に時間がかかる場合があります。
+実行中の処理は可能な範囲でキャンセルできます。外部プロセス（Draw.io、Chrome、rsvg-convertなど）は終了されますが、処理方式によってはキャンセルの反映に時間がかかる場合があります。
 
 ## トラブルシューティング
 
@@ -280,10 +274,6 @@ Windows では、実行ファイル名や PATH の設定によりコマンドが
 ### SVG から PDF への変換に失敗する
 
 設定した変換方式に応じて、`rsvg-convert`または Google Chrome / Chromium が利用可能か確認してください。
-
-### Mermaid ファイルの変換に失敗する
-
-Google Chrome / Chromium と Mermaid CLI (`mmdc`) が利用可能か確認してください。`@mermaid-js/mermaid-cli`をnpmでグローバル導入するか、`graphics-workbench.execPath.mermaid`に実行ファイルのパスを指定してください。必要に応じて `graphics-workbench.execPath.chrome` に実行ファイルのパスを指定してください。
 
 ### editable Draw.io 画像の変換に失敗する
 

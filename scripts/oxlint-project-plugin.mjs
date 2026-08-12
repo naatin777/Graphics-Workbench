@@ -270,7 +270,7 @@ function isWebviewAppSourceFile(filename) {
 }
 
 function isProcessProtocolFile(filename) {
-  return /(?:^|\/)vscode\/src\/operations\/[^/]+\/[^/]*process_protocol\.ts$/u.test(normalizeFilename(filename));
+  return /(?:^|\/)vscode\/src\/adapters\/crop\/[^/]*process_protocol\.ts$/u.test(normalizeFilename(filename));
 }
 
 function isAllowedChildProcessFile(filename) {
@@ -285,7 +285,7 @@ function isAllowedChildProcessFile(filename) {
 
   return (
     /(?:^|\/)core\/src\/operations\/external_tools\/[^/]+\.ts$/u.test(normalized) ||
-    /(?:^|\/vscode\/src\/operations\/pdf\/)run_crop_pdf_(?:process|metadata)\.ts$/u.test(normalized)
+    /(?:^|\/vscode\/src\/adapters\/crop\/)run_crop_pdf_(?:process|metadata)\.ts$/u.test(normalized)
   );
 }
 

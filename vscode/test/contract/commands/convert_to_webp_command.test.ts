@@ -4,7 +4,6 @@
 // - JPEG、AVIFをWebPへ変換できること
 // - SVGをWebPへ変換できること
 // - PDFをページごとのWebPへ変換できること
-// - MermaidをWebPへ変換できること
 // - WebPからWebPへは変換しないこと
 // - 出力WebPが壊れておらず、幅と高さが0より大きいこと
 //
@@ -12,7 +11,7 @@
 // - Draw.io → PDF → PNG → WebPの実変換経路
 //   - fake Draw.io CLIをcommand testで直接扱うとWindowsのexecFile差で不安定になりやすい。
 //   - 必要になったらrunnerを注入できるoperation testとして固定する。
-// - PDF / Draw.io / MermaidからWebPへの変換ではPNGを中間形式に使うこと
+// - PDF / Draw.ioからWebPへの変換ではPNGを中間形式に使うこと
 //   - command testでは出力WebPの読み取り可能性を確認し、中間形式の詳細はoperation testで扱う。
 // - 画像内容のpixel完全一致
 // - context menuの画面上の表示

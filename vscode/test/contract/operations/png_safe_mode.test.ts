@@ -11,7 +11,7 @@
 // Not tested:
 // - VS Codeのダイアログとstatus barの描画
 // - VS CodeのwithProgress表示
-// - JPEG/WebP/AVIF/SVG/Mermaid
+// - JPEG/WebP/AVIF/SVG
 
 import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
@@ -20,12 +20,8 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import { convertToPdfFiles, type PdfInput } from '../../../src/operations/conversion/convert_to_pdf.js';
-import type { RunDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
-import {
-  createConversionUndoRecord,
-  undoConversionOutputs,
-} from '../../../src/operations/lifecycle/undo_last_conversion.js';
+import { convertToPdfFiles, type PdfInput, type RunDrawio } from '@graphics-workbench/core/conversion';
+import { createConversionUndoRecord, undoConversionOutputs } from '../../../src/policy/undo_last_conversion.js';
 import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
 import { requireValue } from '../../support/helpers/required.js';
 
