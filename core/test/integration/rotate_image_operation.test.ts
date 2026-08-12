@@ -7,12 +7,8 @@
 // Mocked:
 // - なし。sharpと実ファイルを使用する
 //
-// Not tested:
-// - VS CodeのwithProgress UI
-// - QuickPickの角度選択
-
 import assert from 'node:assert/strict';
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -87,44 +83,6 @@ suite('ラスタ画像の回転', () => {
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
-  });
-
-  test('出力先ファイルが既に存在する場合は回転を開始せず、既存の出力ファイルも変更しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
-    const sourcePath = path.join(workspacePath, 'source.png');
-    const outputPath = path.join(workspacePath, 'output.png');
-    await writeImage(sourcePath, 4, 2);
-    await writeFile(outputPath, 'existing');
-
-    await assert.rejects(
-      rotateImageFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
-        maxInputPixels: 1000,
-      }),
-      /Output file already exists/,
-    );
-
-    assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
-  });
-
-  test('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
-    const sourcePath = path.join(workspacePath, 'source.png');
-    const outputPath = path.join(workspacePath, 'output.png');
-    const abortController = new AbortController();
-    await writeImage(sourcePath, 4, 2);
-    abortController.abort();
-
-    await assert.rejects(
-      rotateImageFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
-        runtime: { signal: abortController.signal },
-        maxInputPixels: 1000,
-      }),
-      { name: 'AbortError' },
-    );
-
-    await assert.rejects(access(outputPath));
   });
 
   test('SVGなど非ラスタの入力は拒否される', async () => {

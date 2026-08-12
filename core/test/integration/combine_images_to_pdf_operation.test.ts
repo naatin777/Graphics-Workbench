@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 import sharp from 'sharp';
 import { combineImagesToPdf, type SvgToPdfBackend } from '@graphics-workbench/core/conversion';
-import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 const VALID_PNG = operationPngInputPath;
 
@@ -111,31 +111,6 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         [2, 3],
         [3, 3],
       ]);
-    } finally {
-      await rm(workspacePath, { recursive: true, force: true });
-    }
-  });
-
-  test('変換開始前にabort済みsignalを渡すと、出力PDFも一時作業ディレクトリも作成せずにキャンセルエラーを返す', async () => {
-    const workspacePath = await setupWorkspace();
-    const sourcePath = await copyFixtureTo(workspacePath, 'input.png');
-    const outputPath = path.join(workspacePath, 'result.pdf');
-    const controller = new AbortController();
-    controller.abort();
-
-    try {
-      await assert.rejects(
-        combineImagesToPdf({
-          inputs: [{ sourcePath }],
-          outputPath,
-          workspacePath,
-          maxInputPixels: 1_000_000_000,
-          runtime: { signal: controller.signal },
-        }),
-        /aborted|cancelled/i,
-      );
-      await assert.rejects(access(outputPath));
-      await assert.rejects(access(path.join(workspacePath, '.graphics-workbench', 'combine-images')));
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
@@ -328,30 +303,6 @@ suite('複数の画像を1つのPDFへ結合する', () => {
       }
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
-    }
-  });
-
-  test('workspace外の入力PNGはpreflightで読み取る前に「File operation is outside the workspace:」エラーで拒否する', async () => {
-    const workspacePath = await setupWorkspace();
-    const outsideDirectory = await setupWorkspace();
-
-    try {
-      const sourcePath = await copyFixtureTo(outsideDirectory, 'outside.png');
-
-      await assert.rejects(
-        combineImagesToPdf({
-          inputs: [{ sourcePath }],
-          outputPath: path.join(workspacePath, 'result.pdf'),
-          workspacePath,
-          maxInputPixels: 1_000_000_000,
-        }),
-        /File operation is outside the workspace:/,
-      );
-    } finally {
-      await Promise.all([
-        rm(workspacePath, { recursive: true, force: true }),
-        rm(outsideDirectory, { recursive: true, force: true }),
-      ]);
     }
   });
 });

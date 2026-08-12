@@ -3,7 +3,7 @@ import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 import sharp from 'sharp';
 
 import {
@@ -12,7 +12,7 @@ import {
   executeRasterConversion,
   rasterFormatSpecs,
 } from '@graphics-workbench/core/conversion';
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '../helpers/required.js';
 
 const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif', 'gif', 'tiff'] as const;

@@ -17,17 +17,14 @@ import { access, copyFile, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFi
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 
 import {
   convertToPdfFiles,
   type ConvertToPdfFilesOptions,
   type SvgToPdfBackend,
 } from '@graphics-workbench/core/conversion';
-import {
-  operationPathCompatibilitySvgInputPath,
-  operationPdfInputDirectory,
-} from '../../support/helpers/fixture_paths.js';
+import { operationPathCompatibilitySvgInputPath, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const svgFixturePath = operationPathCompatibilitySvgInputPath;
 const pdfFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');

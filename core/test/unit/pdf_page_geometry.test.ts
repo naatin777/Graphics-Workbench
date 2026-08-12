@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { degrees, PDFDocument } from '../../support/helpers/pdf_document.js';
+import { degrees, PDFDocument } from '../../../test-support/pdf_document.js';
 
 import { getPdfPageGeometry, openPdfDocument } from '@graphics-workbench/core/pdf';
 

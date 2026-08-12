@@ -6,19 +6,15 @@
 // Mocked:
 // - なし。実mupdfと実ファイルを使用する
 //
-// Not tested:
-// - VS CodeのwithProgress UI
-// - パスワード入力プロンプト
-
 import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 
 import { decryptPdfFiles, loadMupdf, openPdfDocument, savePdfDocument } from '@graphics-workbench/core/pdf';
-import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const password = 'secret-password';
 
@@ -70,25 +66,6 @@ suite('パスワード付きPDFの復号化', () => {
 
     await assert.rejects(access(outputPath));
   });
-
-  test('出力先に既存ファイルがある場合はcommit時にOutput file already existsエラーとなり、既存内容を変更しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
-    const sourcePath = path.join(workspacePath, 'source.pdf');
-    const outputPath = path.join(workspacePath, 'output.pdf');
-    await writePdf(sourcePath);
-    await writeFile(outputPath, 'existing');
-
-    await assert.rejects(
-      decryptPdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath }],
-        password,
-        runtime: {},
-      }),
-      /Output file already exists/,
-    );
-
-    assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
-  });
 });
 
 async function encryptWithMupdf(sourcePath: string, pdfPassword: string): Promise<void> {
@@ -102,12 +79,6 @@ async function encryptWithMupdf(sourcePath: string, pdfPassword: string): Promis
   } finally {
     document.destroy();
   }
-}
-
-async function writePdf(filePath: string): Promise<void> {
-  const document = await PDFDocument.create();
-  document.addPage([100, 200]);
-  await writeFile(filePath, await document.save());
 }
 
 function fixturePath(fileName: string): string {

@@ -4,12 +4,11 @@ import { copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 
 import { convertDrawioToPagePdfs, convertDrawioToSinglePdf, executeDrawio } from '@graphics-workbench/core/conversion';
-import { readConfiguredConversionTools } from '../../support/helpers/external_tool_settings.js';
-import { requireValue } from '../../support/helpers/required.js';
-import { testInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { requireValue } from '../helpers/required.js';
+import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 const emptyDrawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'empty.drawio');
@@ -152,8 +151,7 @@ suite('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
   });
 
   test('設定されたDraw.io CLIを実際に起動し、全ページを3ページの1つのPDFへ変換する（設定が空ならskipする）', async function realDrawioCliConversion() {
-    const { drawioTools } = readConfiguredConversionTools();
-    const { drawioPath } = drawioTools;
+    const drawioPath = process.env.GRAPHICS_WORKBENCH_DRAWIO_PATH ?? '';
     if (drawioPath === '') {
       this.skip();
       return;

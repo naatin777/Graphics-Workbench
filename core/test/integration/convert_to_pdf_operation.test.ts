@@ -5,10 +5,6 @@
 // Mocked:
 // - Draw.io CLIの不正出力caseのみrunnerを注入する
 //
-// Not tested:
-// - VS Codeのcommand UI
-// - 他の画像フォーマット（JPEG、WebP、Avif、SVG）の実変換
-
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { access, copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
@@ -17,12 +13,12 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import sharp from 'sharp';
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 
 import { convertToPdfFiles, executeChrome, validateSvgToPdfOptions } from '@graphics-workbench/core/conversion';
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
-import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
-import { requireValue } from '../../support/helpers/required.js';
+import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('入力画像をPDFへ変換する処理', () => {
   test('2フレームのアニメーションGIFをpage1・page2の2jobに分け、各フレームを1ページのPDFへ変換する', async () => {
@@ -109,7 +105,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       runtime: {},
     });
 
-    const { PDFDocument: LoadedPdfDocument } = await import('../../support/helpers/pdf_document.js');
+    const { PDFDocument: LoadedPdfDocument } = await import('../../../test-support/pdf_document.js');
     const pdf = await LoadedPdfDocument.load(await import('node:fs/promises').then((fs) => fs.readFile(outputPath)));
     assert.strictEqual(pdf.getPageCount(), 1);
   });

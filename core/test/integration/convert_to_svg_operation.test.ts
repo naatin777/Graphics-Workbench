@@ -13,10 +13,10 @@ import { access, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 
 import { convertToSvgFiles, executeDrawio } from '@graphics-workbench/core/conversion';
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '../helpers/required.js';
 
 function stubRunPdfToSvg(sourcePath: string, outputPath: string, _page: number, _signal: AbortSignal): Promise<void> {
   throw new Error(`PDF to SVG must not run in this test: ${sourcePath} -> ${outputPath}`);
