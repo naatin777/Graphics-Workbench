@@ -266,11 +266,13 @@ function getContextFilename(context) {
 }
 
 function isWebviewAppSourceFile(filename) {
-  return /(?:^|\/)webview\/apps\/[^/]+\/src\/.+\.(?:ts|tsx)$/u.test(normalizeFilename(filename));
+  return /(?:^|\/)webview\/src\/pages\/[^/]+\/.+\.(?:ts|tsx)$/u.test(normalizeFilename(filename));
 }
 
 function isProcessProtocolFile(filename) {
-  return /(?:^|\/)vscode\/src\/adapters\/crop\/[^/]*process_protocol\.ts$/u.test(normalizeFilename(filename));
+  return /(?:^|\/)vscode\/extension\/src\/adapters\/crop\/[^/]*process_protocol\.ts$/u.test(
+    normalizeFilename(filename),
+  );
 }
 
 function isAllowedChildProcessFile(filename) {
@@ -285,7 +287,7 @@ function isAllowedChildProcessFile(filename) {
 
   return (
     /(?:^|\/)core\/src\/operations\/external_tools\/[^/]+\.ts$/u.test(normalized) ||
-    /(?:^|\/vscode\/src\/adapters\/crop\/)run_crop_pdf_(?:process|metadata)\.ts$/u.test(normalized)
+    /(?:^|\/vscode\/extension\/src\/adapters\/crop\/)run_crop_pdf_(?:process|metadata)\.ts$/u.test(normalized)
   );
 }
 

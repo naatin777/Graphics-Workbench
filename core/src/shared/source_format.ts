@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 export type SourceFormat =
   | 'pdf'
   | 'png'
@@ -79,7 +77,13 @@ export function sourceFormatForPath(sourcePath: string): SourceFormat | undefine
     }
   }
 
-  return sourceFormatByExtension.get(path.extname(lowerSourcePath));
+  return sourceFormatByExtension.get(fileExtension(lowerSourcePath));
+}
+
+function fileExtension(filePath: string): string {
+  const fileName = filePath.slice(Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\')) + 1);
+  const dotIndex = fileName.lastIndexOf('.');
+  return dotIndex > 0 ? fileName.slice(dotIndex) : '';
 }
 
 export function isRasterImagePath(sourcePath: string): boolean {

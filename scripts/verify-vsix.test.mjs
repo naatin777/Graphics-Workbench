@@ -24,7 +24,7 @@ void test('required entries include the extension, core runtime, MuPDF, and targ
   const requiredEntries = getRequiredVsixEntries('linux-x64');
   assert.ok(requiredEntries.includes('README.ja.md'));
   assert.ok(requiredEntries.includes('THIRD_PARTY_NOTICES.md'));
-  assert.ok(requiredEntries.includes('out/vscode/src/extension.js'));
+  assert.ok(requiredEntries.includes('out/vscode/extension/src/extension.js'));
   assert.ok(requiredEntries.includes('node_modules/@graphics-workbench/core/package.json'));
   assert.ok(requiredEntries.includes('node_modules/@graphics-workbench/core/dist/public/conversion.js'));
   assert.ok(requiredEntries.includes('node_modules/mupdf/package.json'));
@@ -61,7 +61,7 @@ void test('VSIX verification rejects TUI, build-only, and core source entries', 
     'extension/node_modules/@graphics-workbench/core/tsconfig.tsbuildinfo',
     'extension/out/test/operations/example.test.js',
     'extension/out/core/test/operations/example.test.js',
-    'extension/out/vscode/test/operations/example.test.js',
+    'extension/out/vscode/extension/test/operations/example.test.js',
     'extension/out/test-support/repository_root.js',
   ];
   for (const forbiddenEntry of forbiddenEntries) {

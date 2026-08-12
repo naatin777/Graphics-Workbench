@@ -14,7 +14,7 @@
 // are never executed; every test is also skipped when the flag is absent.
 //
 // Run with:
-//   node --experimental-test-module-mocks --test vscode/out/core/test/unit/operations/terminate_process_tree.test.js
+//   node --experimental-test-module-mocks --test vscode/extension/out/core/test/unit/operations/terminate_process_tree.test.js
 
 import assert from 'node:assert/strict';
 import type { ChildProcess } from 'node:child_process';

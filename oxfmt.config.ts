@@ -7,9 +7,9 @@ const config = {
   proseWrap: 'preserve',
   ignorePatterns: [
     'core/dist/**',
-    'vscode/out/**',
+    'vscode/extension/out/**',
     'coverage/**',
-    'vscode/media/webview/**',
+    'vscode/extension/media/webview/**',
     'node_modules/**',
     'test/input/invalid/**',
     '.vscode-test/**',

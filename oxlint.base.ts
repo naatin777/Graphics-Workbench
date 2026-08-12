@@ -151,7 +151,7 @@ export const strictSourceRules = {
 
 const appOverrides: OxlintOverride[] = [
   {
-    files: ['vscode/webview/apps/*/src/**/*.ts', 'vscode/webview/apps/*/src/**/*.tsx'],
+    files: ['vscode/webview/src/pages/*/**/*.ts', 'vscode/webview/src/pages/*/**/*.tsx'],
     rules: {
       ...restrictedImports(browserOnly, [
         ...frontendPatterns,
@@ -166,16 +166,16 @@ const appOverrides: OxlintOverride[] = [
     },
   },
   {
-    files: ['vscode/webview/shared/**/*.ts'],
+    files: ['vscode/webview/src/shared/**/*.ts'],
     rules: {
       ...restrictedImports(browserOnly, [
         {
           group: ['../apps/*', '../../apps/*'],
-          message: 'webview/shared must not import app-specific modules.',
+          message: 'webview shared code must not import page-specific modules.',
         },
         {
           regex: '^(?:\\.\\./)+src/',
-          message: 'webview/shared must not import extension runtime.',
+          message: 'webview shared code must not import extension runtime.',
         },
       ]),
       'import/no-nodejs-modules': 'error',
@@ -198,9 +198,9 @@ export default defineConfig({
 
   ignorePatterns: [
     'core/dist/**',
-    'vscode/out/**',
+    'vscode/extension/out/**',
     'coverage/**',
-    'vscode/media/webview/**',
+    'vscode/extension/media/webview/**',
     'node_modules/**',
     '.vscode-test/**',
     '.playwright/**',
@@ -534,7 +534,7 @@ export default defineConfig({
      * Only no-focused-tests / no-disabled-tests / no-standalone-expect are
      * intentionally enabled (in the test override below). The plugin's other
      * default rules would also fire on the mocha- and Playwright-based tests
-     * under core/test and vscode/test (which use `assert` and their own
+     * under core/test and vscode/extension/test (which use `assert` and their own
      * `expect`), so every other
      * rule is explicitly disabled instead of being activated by category.
      */
@@ -582,7 +582,7 @@ export default defineConfig({
     {
       files: ['vscode/.vscode-test.mjs', '.vscode-test.mjs'],
       rules: {
-        // @vscode/test-cli re-exports defineConfig through a .cjs→.mjs chain; oxlint's import resolution reports a false positive.
+        // @vscode/extension/test-cli re-exports defineConfig through a .cjs→.mjs chain; oxlint's import resolution reports a false positive.
         'import/named': 'off',
         // The JSON settings and parsed process.env values in this test harness are untyped JS.
         'typescript/no-unsafe-member-access': 'off',
@@ -593,7 +593,7 @@ export default defineConfig({
       },
     },
     {
-      files: ['vscode/webview/shared/pdf/install_map_get_or_insert_computed.ts'],
+      files: ['vscode/webview/src/shared/pdf/install_map_get_or_insert_computed.ts'],
       rules: {
         // PDF.js Map polyfill installs onto the global Map prototype as a script module.
         'import/unambiguous': 'off',
@@ -606,10 +606,10 @@ export default defineConfig({
     {
       files: [
         'core/src/**/*.ts',
-        'vscode/src/**/*.ts',
-        'vscode/webview/apps/**/*.ts',
-        'vscode/webview/apps/**/*.tsx',
-        'vscode/webview/shared/**/*.ts',
+        'vscode/extension/src/**/*.ts',
+        'vscode/webview/src/pages/**/*.ts',
+        'vscode/webview/src/pages/**/*.tsx',
+        'vscode/webview/src/shared/**/*.ts',
       ],
       rules: strictSourceRules,
     },
@@ -727,31 +727,35 @@ export default defineConfig({
        * can import the VS Code API but must not reach Webview frontend code.
        * Layers below refine generated and core-independent boundaries.
        */
-      files: ['vscode/src/**/*.ts'],
+      files: ['vscode/extension/src/**/*.ts'],
       rules: restrictedImports(extensionOnly, webviewPatterns),
     },
     {
-      files: ['core/src/**/*.ts', 'vscode/src/shared/**/*.ts', 'vscode/src/config/**/*.ts'],
+      files: ['core/src/**/*.ts', 'vscode/extension/src/shared/**/*.ts', 'vscode/extension/src/config/**/*.ts'],
       rules: restrictedImports(corePaths, corePatterns),
     },
     {
-      files: ['vscode/src/config/extension_configuration.ts'],
+      files: ['vscode/extension/src/config/extension_configuration.ts'],
       rules: restrictedImports(extensionOnly, corePatterns),
     },
     {
-      files: ['vscode/src/commands/**/*.ts', 'vscode/src/presentation/**/*.ts', 'vscode/src/extension.ts'],
+      files: [
+        'vscode/extension/src/commands/**/*.ts',
+        'vscode/extension/src/presentation/**/*.ts',
+        'vscode/extension/src/extension.ts',
+      ],
       rules: restrictedImports(extensionOnly, webviewPatterns),
     },
     {
-      files: ['vscode/src/edit_provider/**/*.ts'],
+      files: ['vscode/extension/src/edit_provider/**/*.ts'],
       rules: restrictedImports(extensionOnly, webviewPatterns),
     },
     {
-      files: ['vscode/src/security/**/*.ts'],
+      files: ['vscode/extension/src/security/**/*.ts'],
       rules: restrictedImports(corePaths, webviewPatterns),
     },
     {
-      files: ['vscode/src/generated/**/*.ts'],
+      files: ['vscode/extension/src/generated/**/*.ts'],
       rules: {
         // Generated manifest is not boundary code; keep it free of the import rules.
         'no-restricted-imports': 'off',
@@ -770,8 +774,8 @@ export default defineConfig({
       files: [
         'vscode/webview/vite.config.ts',
         'vscode/webview/vitest.config.ts',
-        'vscode/webview/apps/*/vite.config.ts',
-        'vscode/webview/apps/*/vitest.config.ts',
+        'vscode/webview/src/pages/*/vite.config.ts',
+        'vscode/webview/src/pages/*/vitest.config.ts',
         'scripts/**/*.mjs',
       ],
       rules: {

@@ -68,9 +68,9 @@ void test('identifies fixed Playwright waits', () => {
 });
 
 void test('limits Webview API rules to app source files and keeps the wrapper allowed', () => {
-  assert.equal(isWebviewAppSourceFile('/workspace/vscode/webview/apps/crop_pdf/src/app.tsx'), true);
-  assert.equal(isWebviewAppSourceFile('/workspace/vscode/webview/apps/crop_pdf/src/vscode.ts'), true);
-  assert.equal(isWebviewAppSourceFile('/workspace/vscode/webview/shared/vscode.ts'), false);
+  assert.equal(isWebviewAppSourceFile('/workspace/vscode/webview/src/pages/crop-pdf/app.tsx'), true);
+  assert.equal(isWebviewAppSourceFile('/workspace/vscode/webview/src/pages/crop-pdf/vscode.ts'), true);
+  assert.equal(isWebviewAppSourceFile('/workspace/vscode/webview/src/shared/vscode.ts'), false);
 });
 
 void test('recognizes static AST property names', () => {
@@ -104,8 +104,11 @@ void test('identifies sensitive values and child-process boundaries', () => {
   assert.equal(hasSensitiveIdentifier({ name: 'jobJsonPath', type: 'Identifier' }), true);
   assert.equal(hasSensitiveIdentifier({ name: 'requestId', type: 'Identifier' }), false);
   assert.equal(hasSensitiveIdentifier({ name: 'tokenize', type: 'Identifier' }), false);
-  assert.equal(isProcessProtocolFile('/workspace/vscode/src/adapters/crop/crop_pdf_process_protocol.ts'), true);
-  assert.equal(isProcessProtocolFile('/workspace/vscode/src/adapters/crop/crop_pdf_core.ts'), false);
+  assert.equal(
+    isProcessProtocolFile('/workspace/vscode/extension/src/adapters/crop/crop_pdf_process_protocol.ts'),
+    true,
+  );
+  assert.equal(isProcessProtocolFile('/workspace/vscode/extension/src/adapters/crop/crop_pdf_core.ts'), false);
   assert.equal(isAllowedChildProcessFile('/workspace/core/src/operations/external_tools/run_external_tool.ts'), true);
-  assert.equal(isAllowedChildProcessFile('/workspace/vscode/src/commands/open_file.ts'), false);
+  assert.equal(isAllowedChildProcessFile('/workspace/vscode/extension/src/commands/open_file.ts'), false);
 });

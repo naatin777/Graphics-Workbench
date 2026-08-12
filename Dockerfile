@@ -65,7 +65,8 @@ RUN arch="$(dpkg --print-architecture)" \
 # the dependency layer so a policy change invalidates npm ci as expected.
 COPY package.json package-lock.json .npmrc ./
 COPY core/package.json ./core/package.json
-COPY vscode/package.json ./vscode/package.json
+COPY vscode/extension/package.json ./vscode/extension/package.json
+COPY vscode/webview/package.json ./vscode/webview/package.json
 RUN --mount=type=cache,target=/root/.npm \
   npm ci
 

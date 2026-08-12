@@ -45,8 +45,8 @@ type ConfigNode =
 type ObjectType = { name: string; schema: JsonSchema };
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const packageJsonPath = path.join(repositoryRoot, 'vscode/package.json');
-const metadataOutputPath = path.join(repositoryRoot, 'vscode/src/generated/extension_manifest.ts');
+const packageJsonPath = path.join(repositoryRoot, 'vscode/extension/package.json');
+const metadataOutputPath = path.join(repositoryRoot, 'vscode/extension/src/generated/extension_manifest.ts');
 const checkOnly = process.argv.includes('--check');
 
 function isRecord(value: unknown): value is Record<string, unknown> {

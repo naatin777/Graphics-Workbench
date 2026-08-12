@@ -28,7 +28,7 @@ Graphics Workbenchは、PDF・SVG・Draw.io関連の変換で外部ツールを�
 
 ## 決定
 
-GitHub Actionsで外部ツールを検証するときは、インストール後に `vscode/test/support/vscode-settings/settings.json` へ実行ファイルパスを書き込む。
+GitHub Actionsで外部ツールを検証するときは、インストール後に `vscode/extension/test/support/vscode-settings/settings.json` へ実行ファイルパスを書き込む。
 
 検証スクリプトは、`PATH` や環境変数から実行ファイルを探さない。必ず `settings.json` に書かれた値を読み、そのパスを実行する。
 

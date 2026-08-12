@@ -16,7 +16,7 @@
 
 ## 決定
 
-pre-package testはすべてVS Code Extension Hostで実行する。`npm test`はbuild後に`vscode-test`を呼び、`vscode/out/core/test/**/*.test.js`と`vscode/out/vscode/test/**/*.test.js`を名前順に1回実行する。plain Node + Mochaを直接起動するtest scriptは持たない。module mockが必要な`terminate_process_tree.test.js`だけは`node:test` ownerとする。
+pre-package testはすべてVS Code Extension Hostで実行する。`npm test`はbuild後に`vscode-test`を呼び、`vscode/extension/out/core/test/**/*.test.js`と`vscode/extension/out/vscode/extension/test/**/*.test.js`を名前順に1回実行する。plain Node + Mochaを直接起動するtest scriptは持たない。module mockが必要な`terminate_process_tree.test.js`だけは`node:test` ownerとする。
 
 `test.yml`はLinux、macOS、Windowsの各runnerで同じ`npm test`を実行する。package済みVSIXのE2Eは引き続き別のElectron Playwright workflowで扱う。
 

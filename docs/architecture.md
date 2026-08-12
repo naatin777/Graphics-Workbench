@@ -19,6 +19,6 @@ coreの公開surfaceは`conversion`、`pdf`、`formats`、`runtime`、`security`
 
 外部CLIはcoreの`runExternalTool`と形式ごとの薄いadapterを通る。CLI設定の取得とユーザーへのenvironment error表示はfrontend、実行・キャンセル・process-tree終了・出力検証はcoreが担当する。
 
-WebviewはVS Code host command、`vscode/src/shared/protocols/`のruntime-validated message、`vscode/webview/apps/*`のUIの境界で構成する。
+WebviewはVS Code host command、`vscode/protocol/protocols/`のruntime-validated message、`vscode/webview/src/pages/`のUIの境界で構成する。
 
-VS Code configuration accessは`vscode/src/config/extension_configuration.ts`へ集約する。公開command、configuration、menu、NLS、generated manifestはpackageとgenerator/testsを正本とし、generated fileを手編集しない。
+VS Code configuration accessは`vscode/extension/src/config/extension_configuration.ts`へ集約する。公開command、configuration、menu、NLS、generated manifestはpackageとgenerator/testsを正本とし、generated fileを手編集しない。

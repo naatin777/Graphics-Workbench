@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { buildVscodeTestArguments, collectCompiledTestFiles } from './compiled-test-files.mjs';
 
 const repositoryDirectory = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const vscodeDirectory = path.join(repositoryDirectory, 'vscode');
+const vscodeDirectory = path.join(repositoryDirectory, 'vscode', 'extension');
 const coreTestFiles = collectCompiledTestFiles(
   vscodeDirectory,
   'out/core/test',

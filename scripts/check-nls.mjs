@@ -178,7 +178,7 @@ function sourceFiles(directory) {
  * @returns {{ errors: string[]; keyCount: number }}
  */
 export function checkNls(root) {
-  const extensionRoot = path.join(root, 'vscode');
+  const extensionRoot = path.join(root, 'vscode', 'extension');
   const englishPath = path.join(extensionRoot, 'package.nls.json');
   const japanesePath = path.join(extensionRoot, 'package.nls.ja.json');
   const english = parseNlsMessages(readFileSync(englishPath, 'utf8'), englishPath);
