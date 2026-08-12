@@ -547,8 +547,8 @@ export const commandContributions = {
     titleKey: 'command.convertToWebp',
     category: 'Graphics Workbench',
   },
-  'graphics-workbench.convertToWebpSeparately': {
-    titleKey: 'command.convertToWebpSeparately',
+  'graphics-workbench.convertToWebpSplit': {
+    titleKey: 'command.convertToWebpSplit',
     category: 'Graphics Workbench',
   },
   'graphics-workbench.convertToAvif': {
@@ -563,8 +563,8 @@ export const commandContributions = {
     titleKey: 'command.convertToGif',
     category: 'Graphics Workbench',
   },
-  'graphics-workbench.convertToGifSeparately': {
-    titleKey: 'command.convertToGifSeparately',
+  'graphics-workbench.convertToGifSplit': {
+    titleKey: 'command.convertToGifSplit',
     category: 'Graphics Workbench',
   },
   'graphics-workbench.convertToTiff': {
@@ -642,11 +642,11 @@ export const publicCommandIds = [
   'graphics-workbench.convertToPng',
   'graphics-workbench.convertToJpeg',
   'graphics-workbench.convertToWebp',
-  'graphics-workbench.convertToWebpSeparately',
+  'graphics-workbench.convertToWebpSplit',
   'graphics-workbench.convertToAvif',
   'graphics-workbench.convertToSvg',
   'graphics-workbench.convertToGif',
-  'graphics-workbench.convertToGifSeparately',
+  'graphics-workbench.convertToGifSplit',
   'graphics-workbench.convertToTiff',
   'graphics-workbench.convertToDrawio',
   'graphics-workbench.convertToDrawioPng',

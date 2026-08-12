@@ -4,9 +4,9 @@ import path from 'node:path';
 import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
+  type RASTER_FORMATS,
   isSameSourceFormat,
   sourceFormatForPath,
-  type SourceFormat,
 } from '../../shared/source_format.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { countPdfPages, hasPdfPageContent } from '../pdf/mupdf.js';
@@ -30,13 +30,12 @@ import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_bat
 import { stagingRootPathFor } from '../lifecycle/run_id.js';
 import sharp from 'sharp';
 
-export type RasterConversionTarget = 'png' | 'jpeg' | 'avif' | 'tiff' | 'webp' | 'gif';
+export type RasterConversionTarget = (typeof RASTER_FORMATS)[number];
 
 export interface RasterFormatSpec {
   target: RasterConversionTarget;
   operationName: string;
-  outputLabel: 'PNG' | 'JPEG' | 'AVIF' | 'TIFF' | 'WebP' | 'GIF';
-  label: string;
+  label: 'PNG' | 'JPEG' | 'AVIF' | 'TIFF' | 'WebP' | 'GIF';
   extensions: readonly string[];
   animatedInputExtension?: string;
 }
@@ -45,35 +44,30 @@ export const rasterFormatSpecs = {
   png: {
     target: 'png',
     operationName: 'convert-to-png',
-    outputLabel: 'PNG',
     extensions: ['.png'],
     label: 'PNG',
   },
   jpeg: {
     target: 'jpeg',
     operationName: 'convert-to-jpeg',
-    outputLabel: 'JPEG',
     extensions: ['.jpg', '.jpeg'],
     label: 'JPEG',
   },
   avif: {
     target: 'avif',
     operationName: 'convert-to-avif',
-    outputLabel: 'AVIF',
     extensions: ['.avif'],
     label: 'AVIF',
   },
   tiff: {
     target: 'tiff',
     operationName: 'convert-to-tiff',
-    outputLabel: 'TIFF',
     extensions: ['.tif', '.tiff'],
     label: 'TIFF',
   },
   webp: {
     target: 'webp',
     operationName: 'convert-to-webp',
-    outputLabel: 'WebP',
     extensions: ['.webp'],
     label: 'WebP',
     animatedInputExtension: '.gif',
@@ -81,7 +75,6 @@ export const rasterFormatSpecs = {
   gif: {
     target: 'gif',
     operationName: 'convert-to-gif',
-    outputLabel: 'GIF',
     extensions: ['.gif'],
     label: 'GIF',
     animatedInputExtension: '.webp',
@@ -331,7 +324,7 @@ function validateConversions(inputs: RasterInput[], spec: RasterFormatSpec): voi
     }
 
     if (!isSupportedSourcePath(input.sourcePath)) {
-      throw new Error(`Unsupported input for ${spec.outputLabel} input: ${input.sourcePath}`);
+      throw new Error(`Unsupported input for ${spec.label} input: ${input.sourcePath}`);
     }
   }
 }
@@ -345,23 +338,8 @@ async function validateGeneratedRaster(outputPath: string, outputExtension: stri
   }
 }
 
-const supportedRasterInputFormats = new Set<SourceFormat>([
-  'pdf',
-  'svg',
-  'png',
-  'jpeg',
-  'webp',
-  'avif',
-  'gif',
-  'tiff',
-  'drawio',
-  'editable-drawio-png',
-  'editable-drawio-svg',
-]);
-
 function isSupportedSourcePath(sourcePath: string): boolean {
-  const format = sourceFormatForPath(sourcePath);
-  return format !== undefined && supportedRasterInputFormats.has(format);
+  return sourceFormatForPath(sourcePath) !== undefined;
 }
 
 interface AvifOutputOptions {

@@ -1,21 +1,15 @@
-import { sourceFormatExtensions, type SourceFormat } from '../core/src/shared/source_format.ts';
+import {
+  EDITABLE_DRAWIO_FORMATS,
+  RASTER_FORMATS,
+  SOURCE_FORMATS,
+  sourceFormatExtensions,
+  type SourceFormat,
+} from '../core/src/shared/source_format.ts';
 
-const extensionFormats: SourceFormat[] = [
-  'pdf',
-  'png',
-  'jpeg',
-  'webp',
-  'avif',
-  'gif',
-  'tiff',
-  'svg',
-  'drawio',
-  'editable-drawio-png',
-  'editable-drawio-svg',
-];
-const editableDrawioFormats = ['editable-drawio-png', 'editable-drawio-svg'] as const;
-const nativeImageFormats = ['png', 'jpeg', 'webp', 'avif', 'gif', 'tiff', 'svg'] as const;
-const rasterFormats = ['png', 'jpeg', 'webp', 'avif', 'gif', 'tiff'] as const;
+const extensionFormats = SOURCE_FORMATS;
+const editableDrawioFormats = EDITABLE_DRAWIO_FORMATS;
+const nativeImageFormats = [...RASTER_FORMATS, 'svg'] as const;
+const rasterFormats = RASTER_FORMATS;
 
 const contextMenuEnabled = 'config.graphics-workbench.contextMenu.enabled';
 const singleEnabled = 'config.graphics-workbench.conversion.single.enabled';
@@ -101,7 +95,7 @@ const conversionMenuWhenByCommand: Record<string, string> = {
   'graphics-workbench.convertToWebp': conversionWhen(
     pdfSplitOrSingleSource(['png', 'jpeg', 'avif', 'gif', 'tiff', 'svg', ...editableDrawioFormats]),
   ),
-  'graphics-workbench.convertToWebpSeparately': conversionWhen(`${sourceFormatMatch(['gif'])} && ${splitEnabled}`),
+  'graphics-workbench.convertToWebpSplit': conversionWhen(`${sourceFormatMatch(['gif'])} && ${splitEnabled}`),
   'graphics-workbench.convertToAvif': conversionWhen(
     pdfSplitOrSingleSource(['png', 'jpeg', 'webp', 'gif', 'tiff', 'svg', ...editableDrawioFormats]),
   ),
@@ -109,7 +103,7 @@ const conversionMenuWhenByCommand: Record<string, string> = {
   'graphics-workbench.convertToGif': conversionWhen(
     pdfSplitOrSingleSource(['png', 'jpeg', 'webp', 'avif', 'tiff', 'svg', ...editableDrawioFormats]),
   ),
-  'graphics-workbench.convertToGifSeparately': conversionWhen(`${sourceFormatMatch(['webp'])} && ${splitEnabled}`),
+  'graphics-workbench.convertToGifSplit': conversionWhen(`${sourceFormatMatch(['webp'])} && ${splitEnabled}`),
   'graphics-workbench.convertToTiff': conversionWhen(
     pdfSplitOrSingleSource(['png', 'jpeg', 'webp', 'avif', 'gif', 'svg', ...editableDrawioFormats]),
   ),
