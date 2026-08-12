@@ -6,7 +6,7 @@ export const extensionIdentity = {
   publisher: 'naatin777',
   id: 'naatin777.graphics-workbench',
   displayName: 'Graphics Workbench',
-  version: '1.0.0',
+  version: '0.0.1',
   repository: { type: 'git', url: 'https://github.com/naatin777/Graphics-Workbench' },
   configurationNamespace: 'graphics-workbench',
 } as const;

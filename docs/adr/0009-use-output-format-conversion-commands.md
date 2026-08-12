@@ -37,11 +37,10 @@ Accepted
 - 旧command IDをkeybindingsやtasksで直接呼んでいるユーザーは、新command IDへ移行する必要がある
 - 出力パス設定は、operationの`single`／`split`／`combine`出力モデルに対応する設定を使う
 - Safe Mode、Undo、Progress、Cancellationは、1回の出力形式基準コマンド実行を1つの変換バッチとして扱う
-- 全形式同時実装は避け、まず`PDFに変換`から段階的に移行する
+- 対応形式の追加や変更は、manifest、binding、planner、testsを同じ公開command契約として更新する
 
 ## Related
 
-- `docs/specs/internal/output-format-conversion.md`
-- `docs/specs/internal/safe-mode.md`
-- `docs/specs/internal/conversion-progress-and-cancellation.md`
-- `docs/tasks/0032-redesign-conversion-commands-by-output-format.md`
+- [`docs/specs/product/output-format-conversion.md`](../specs/product/output-format-conversion.md)
+- [`docs/architecture.md`](../architecture.md)
+- [`docs/safety.md`](../safety.md)

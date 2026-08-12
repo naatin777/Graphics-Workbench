@@ -33,13 +33,13 @@ VS CodeのExtension HostがNode.jsを実行runtimeとして持つことは[VS Co
 
 ## 代替案
 
-### `engines.node`を`>=22.19.0`へ下げる
+### `engines.node`をmanifestへ追加する
 
-VS Code 1.125.0のExtension Hostには適合するが、repositoryのinstall・開発環境とextension runtimeを1つの制約へ混在させる。npm 12.0.1の要求も別に表す必要があり、責務分離にならないため採用しない。
+VS Code利用者へrepositoryのinstall・開発環境の条件を要求することになり、extension runtimeと開発runtimeを混在させるため採用しない。
 
-### `engines.node: >=24.15.0`を維持する
+### `engines.vscode`だけで開発runtimeも表す
 
-開発環境のinstall policyは保てるが、VS Code 1.125.0でも動作可能なextensionに対して、VS Code利用者へ誤ったNode.js下限を示すため採用しない。
+VS Codeの対応versionは表せるが、repositoryのNode.js/npm条件をinstall時に検査できないため採用しない。
 
 ### `engines.node`と`devEngines.runtime`を同じversionで併記する
 
@@ -63,6 +63,5 @@ install時のengine enforcementはできるが、同じversionを異なるruntim
 
 - [ADRの運用方針](README.md)
 - [ADR-0018: pre-package testはVS Code Extension Hostで実行する](0018-use-extension-host-for-pre-package-tests.md)
-- [VSIX packaging仕様](../specs/internal/packaging.md)
-- [0202: npm移行で失われた依存install security policyを復元する](../tasks/0202-restore-npm-dependency-security-policy.md)
+- [ADR-0026: 6 target VSIXをnative runnerで生成・検証する](0026-native-runner-platform-vsix-release.md)
 - [VS Code test設定](../../.vscode-test.mjs)

@@ -83,5 +83,5 @@ OS一時scratchで安全に回避できる範囲まで利用不能にするた�
 ## 関連
 
 - [ファイル変換はworkspace内の作業領域で行う](0006-use-workspace-staging-for-file-operations.md)
-- [外部コマンド用ASCII scratch仕様](../specs/internal/external-tool-ascii-scratch.md)
+- [`docs/safety.md`](../safety.md)
 - [OS別path互換性調査](../research/2026-07-11-external-tool-path-compatibility.md)

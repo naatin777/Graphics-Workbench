@@ -34,7 +34,7 @@ PDF Configure画面（crop / split / merge / rotate / reorder）で、実行前�
 
 ## Constraint
 
-現在のアーキテクチャでは、出力先が設定テンプレート側（`graphics-workbench.outputPath.*` や `outputPaths`）で決定されている。出力先はhost側で解決され、webviewのinit messageには含まれていない。
+現在のアーキテクチャでは、出力先が設定テンプレート側（`graphics-workbench.outputPath.*`）で決定されている。出力先はhost側で解決され、webviewのinit messageには含まれていない。
 
 そのため、出力ファイル名や上書き方針をwebviewへ渡すには、各Configure画面のprotocol（`*_pdf_protocol.ts`）、init payload、host側の`buildInitMessage`、webviewのlabelsを変更する必要がある。これは画面ごとに独立しており、まとめて行うと変更範囲が大きい。
 
@@ -47,7 +47,7 @@ PDF Configure画面（crop / split / merge / rotate / reorder）で、実行前�
 
 ## Non-goals
 
-- 出力設定（`outputPath` / `outputPaths`）の仕様変更
+- 出力設定（`outputPath.*`）の仕様変更
 - webviewからの出力先編集
 - 全画面を一括で書き換えること
 

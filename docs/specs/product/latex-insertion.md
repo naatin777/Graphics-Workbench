@@ -2,7 +2,7 @@
 
 ## 適用範囲
 
-この仕様は、LaTeX documentへのPDF drag and dropとClipboard Pasteが生成するsnippetの入力境界を定義する。Clipboard画像の変換・commit lifecycleは、0187のtaskと実装で定義する。
+この仕様は、LaTeX documentへのPDF drag and dropとClipboard Pasteが生成するsnippetの入力境界を定義する。Clipboard画像の変換・commit lifecycleは実装と[`docs/safety.md`](../../safety.md)を正本とする。
 
 ## PDF drag and drop
 

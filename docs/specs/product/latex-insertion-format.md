@@ -32,7 +32,7 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 - 対象言語により `insert{Format}.pdfTemplate` を使用（LaTeX=`insertLatex`、Typst=`insertTypst`、Quarkdown=`insertQuarkdown`）
 - ページ選択時は `${page}` にページ番号が入る
 - 複数ファイル同時 drop 時は形式別にラップする
-  - LaTeX: `subfigure` 環境（既存動作を維持）
+  - LaTeX: `subfigure` 環境
   - Typst: `#grid(columns: 2, ...)`
   - Quarkdown: `.row alignment:{spacebetween}` ブロック
 
@@ -46,12 +46,9 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 - 保存された画像ファイル → `insert{Format}.imageTemplate` を使用
 - 保存先パスは既存の `outputPath.clipboardImage` 設定に従う
 
-## 既存の詳細設定との関係
+## 設定の扱い
 
-テンプレート方式への移行時に個別設定（`figure.placementOptions`、`figure.alignmentOptions`、`figure.graphicsOptions`、`subfigure.*`）は削除済みで、テンプレート設定のみを正本とする。
-
-- 既存の個別設定は読まない（実装・マニフェストに存在しない）。
-- テンプレートがデフォルト値のままでも、個別設定へのフォールバックは行わない。
+挿入結果はテンプレート設定だけで決まり、テンプレート以外の旧形式の設定へ切り替えない。
 
 ## テンプレートのバリデーション
 
@@ -59,53 +56,6 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 - 未知の変数（`${xxx}`）はそのまま文字列として残す（エラーにはしない）
 
 バリデーションは拡張機能起動時または設定変更時に行い、Output channel に警告を記録する。
-
-## パッケージマニフェスト
-
-```json
-{
-  "graphics-workbench.insertLatex.pdfTemplate": {
-    "type": "string",
-    "default": "\\begin{figure}[H]\n  \\centering\n  \\includegraphics[width=\\linewidth]{${path}}\n  \\caption{${name}}\n  \\label{fig:${name}}\n\\end{figure}",
-    "description": "%config.insertLatex.pdfTemplate%"
-  },
-  "graphics-workbench.insertLatex.imageTemplate": {
-    "type": "string",
-    "default": "\\begin{figure}[H]\n  \\centering\n  \\resizebox{\\linewidth}{!}{\\includegraphics{${path}}}\n  \\caption{${name}}\n  \\label{fig:${name}}\n\\end{figure}",
-    "description": "%config.insertLatex.imageTemplate%"
-  },
-  "graphics-workbench.insertTypst.pdfTemplate": {
-    "type": "string",
-    "default": "#figure(image(\"${path}\"), caption: [${name}])",
-    "description": "%config.insertTypst.pdfTemplate%"
-  },
-  "graphics-workbench.insertTypst.imageTemplate": {
-    "type": "string",
-    "default": "#figure(image(\"${path}\", width: 80%), caption: [${name}])",
-    "description": "%config.insertTypst.imageTemplate%"
-  },
-  "graphics-workbench.insertQuarkdown.pdfTemplate": {
-    "type": "string",
-    "default": "![${name}](${path} \"${name}\")",
-    "description": "%config.insertQuarkdown.pdfTemplate%"
-  },
-  "graphics-workbench.insertQuarkdown.imageTemplate": {
-    "type": "string",
-    "default": "![${name}](${path} \"${name}\")",
-    "description": "%config.insertQuarkdown.imageTemplate%"
-  }
-}
-```
-
-## テスト計画
-
-- デフォルトテンプレートで PDF drop → 期待されるコードが生成される（LaTeX=`includegraphics`、Typst=`#figure(image(...))`、Quarkdown=`![name](path "name")`）
-- デフォルトテンプレートで画像 drop → `resizebox` が含まれる（LaTeX）
-- カスタムテンプレート（`\includegraphics{${path}}` のみ）→ `figure` 環境なしで生成される
-- `${name}`、`${ext}`、`${dir}` 変数が正しく展開される
-- 複数ファイル drop → 形式別ラップ（LaTeX=`subfigure`、Typst=`#grid`、Quarkdown=`.row`）が正しく生成される
-- clipboard paste → 保存先パスが `${path}` に展開される
-- テンプレート空文字 → エラーまたはデフォルトフォールバック
 
 ## 対象外
 
@@ -119,4 +69,3 @@ PDF／画像ファイルの drag & drop、clipboard 画像 paste 時に挿入す
 ## 関連
 
 - [出力形式基準の変換仕様](output-format-conversion.md)
-- [0119: LaTeX挿入フォーマットの仕様を決める](../../tasks/0119-design-latex-insertion-format.md)

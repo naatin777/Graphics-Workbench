@@ -24,7 +24,7 @@ crop範囲はPDFポイントのbboxで指定する。
 - 対象ページの範囲内であること
 - 小数を許可する
 
-初期実装ではmargin指定を扱わない。margin選択は`cropPdf.auto`の役割とする。
+margin選択は`cropPdf.auto`の役割とし、Configure画面ではmargin指定を扱わない。
 
 ## 出力とキャンセル
 

@@ -1,5 +1,6 @@
 # outputPathのOS別ファイル名制限調査
-> 位置づけ: 履歴（判断はoutput-path-validation specで正本化済み）
+
+> 位置づけ: 現役（OS別のoutputPath検証判断の根拠）
 
 ## 調査日
 
@@ -127,7 +128,7 @@ OSで禁止される文字、予約名、先頭末尾空白、末尾ピリオド
 - Windows専用の禁止文字・予約名をmacOS/Linuxで一律には拒否しない
 - 自動置換は行わない
 
-正式仕様は[outputPath検証仕様](../specs/internal/output-path-validation.md)を正本とする。
+正式仕様は[outputPath検証仕様](../specs/product/output-path-validation.md)を正本とする。
 
 ## 再確認条件
 

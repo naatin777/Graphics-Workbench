@@ -30,7 +30,7 @@ description: Graphics Workbenchのファイル変換、出力、上書き、ス�
 - ロールバックとUndoに必要な情報が維持されている。
 - 存在しない、空、形式不正な生成出力を成功扱いしない。
 
-Node.js標準APIで完全に排除できないTOCTOUと現在の緩和策は、`docs/specs/internal/file-operation-security.md`の「競合」を正本とする。実装が提供していない厳密なCASや排他保証を前提にしない。
+Node.js標準APIで完全に排除できないTOCTOUと現在の緩和策は、[`docs/safety.md`](../../../docs/safety.md)と`core/src/operations/lifecycle/commit_conversion_outputs.ts`を正本とする。実装が提供していない厳密なCASや排他保証を前提にしない。
 
 ## 範囲
 

@@ -1,35 +1,23 @@
 # Documentation
 
-このdirectoryの文書は、正本、判断材料、履歴、作業管理を混ぜない。
+このdirectoryは、現在の実装を補う情報だけを役割ごとに置く。コード、型、manifest、tests、scriptsから復元できる一覧はここへ転記しない。
 
-## Canonical documents
+## Current knowledge
 
-- `glossary.md`: code、設定、UI、docsで使うcanonical vocabulary
-- `naming-conventions.md`: directory、file、symbol、public surfaceの命名規則
-- `specs/product/`: 利用者や外部から観測できる挙動の正本
-- `specs/internal/`: module、protocol、staging、testなど内部contractの正本
-- `adr/`: 複数moduleへ継続的に影響する採用済み設計判断と理由
+- [`specs/product/`](specs/product/): ユーザーから観測できる現在の挙動。
+- [`architecture.md`](architecture.md): package間、command、operation、frontendの現在の境界。
+- [`safety.md`](safety.md): workspace、staging、commit、rollback、Safe Mode、Undo、cleanup、cancellationの非自明な不変条件。
+- [`refactor-backlog.md`](refactor-backlog.md): 将来の判断に値する未着手の改善候補だけ。
 
-## Work management
+## Decisions and evidence
 
-- `tasks/`: 達成する成果、進捗、verification、migrationの作業管理
-- `refactor-backlog.md`: まだ実施しない改善候補と開始条件
-- Task、backlogはproduct specやADRの代わりではない
+- [`adr/`](adr/): 将来も再検討され得る設計判断と、その理由。
+- [`research/`](research/): 現在の実装判断に再利用できる外部仕様・実測結果。
 
-## Evidence and history
+## Work in progress
 
-- `research/`: 外部仕様、dependency、CLIの調査結果
-- `records/`: 実験、監査、観測、判断材料、履歴記録
-- `foundation/`: v1のbaseline、Evidence map、gap、Selection Gate
-- `test-matrix.md`: test coverageの入口。現在のテスト構成の正本
-- `testing/`: test命名規約（`test-naming.md`）とPDF操作testの固定データ目録（`pdf-operation-inputs.md`）
-- Research、record、foundationは現在有効なproduct specやADRではない
+- [`tasks/`](tasks/): 未完了の作業候補だけ。完了した作業はGit履歴に任せる。
 
-## Routing rule
+## Maintenance rule
 
-1. 利用者に保証する結果は`specs/product/`へ置く。
-2. 複数moduleが守る内部契約は`specs/internal/`へ置く。
-3. なぜその設計を採用したかは`adr/`へ置く。
-4. 現在変更する対象と完了条件は`tasks/`へ置く。
-5. 外部調査や監査の観測は`research/`または`records/`へ置き、採用判断は正本へ反映する。
-6. 実施条件付きの改善候補は`refactor-backlog.md`へ置く。
+新しい文書は、現在の判断に必要な情報がコード・型・tests・manifest・scriptsから復元できない場合だけ追加する。理由はADR、外部事実はresearch、現在の利用者向け挙動はproduct specへ置き、同じ内容を複数の場所へ写さない。

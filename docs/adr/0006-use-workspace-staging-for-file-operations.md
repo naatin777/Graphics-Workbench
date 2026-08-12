@@ -61,7 +61,6 @@ PDFや画像の変換処理で元ファイルを直接操作すると、コマ�
 
 ## 関連
 
-- `AGENTS.md`
-- `docs/tasks/0008-implement-safe-auto-crop.md`
-- `docs/tasks/0009-restrict-file-operations-to-workspace.md`
-- `docs/tasks/0010-use-workspace-edit-for-output-commit.md`
+- [`docs/safety.md`](../safety.md)
+- [ADR-0007: 直前の変換を専用commandで取り消す](0007-use-dedicated-command-to-undo-last-conversion.md)
+- [ADR-0008: output conflictにglobal Safe Modeを使う](0008-use-global-safe-mode-for-output-conflicts.md)

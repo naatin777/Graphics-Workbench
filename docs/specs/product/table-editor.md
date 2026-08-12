@@ -22,53 +22,11 @@
 - それ以外のファイルは明示的にunsupportedとして `role="alert"` で通知する。silent fallbackはしない。
 - 空ファイルは明示的なメッセージを表示する。
 
-## TableModel
-
-Clipboard / CSV / TSV / DOMは直接相互変換しない。小さい中間モデルへ集約し、Webview表示と各rendererはこのモデルだけを参照する。
-
-```ts
-type TableAlignment = 'left' | 'center' | 'right';
-
-interface TableCell {
-  text: string;
-}
-interface TableRow {
-  cells: TableCell[];
-}
-interface TableColumn {
-  alignment: TableAlignment;
-}
-interface TableModel {
-  rows: TableRow[];
-  columns: TableColumn[];
-  headerRows: number;
-}
-```
-
-- `headerRows` は0（先頭行をheaderにしない）または1（する）で、Webviewのトグルで切り替える。
-- parse時は行の最大列数へ空セルで補完する。
-- 編集操作（セル更新・行/列の追加削除・alignment・headerRows）は純粋関数として `vscode/src/table/table_model.ts` に置き、Webviewは不変更新で使う。
-
-## Webview構成
-
-- host↔webview境界は `vscode/src/shared/protocols/table_editor_protocol.ts` のValibot schemaで検証する。
-- Extension → Webview: `init`（初期出力形式とlabels）。`error`。
-- Webview → Extension: `ready` / `cancel` / `insert`（`{ format, code }`）。
-- セル編集のたびにhostへmessageを送らない。編集・Preview生成はWebview内で完結し、hostは `insert` だけを受け取る。
-- 初期出力形式は、開いた時点のactive editorのdocument languageを既存 `insertionDocumentSelectors` の逆引きで決める。判定できない場合はLaTeXを既定にする。
-
-## リアルタイム更新
-
-- セル編集 → TableModel更新 → renderer（純粋関数）→ Preview更新。
-- VS Code document本体は `insert` まで変更しない。
-
 ## Renderer
 
-rendererは `vscode/src/table/table_renderer.ts` の純粋関数として分離する。
-
-- `renderLatexTable(model, { booktabs })`: `tabular` + `l/c/r`。booktabs有効時は `\toprule` / `\midrule` / `\bottomrule`、無効時は `\hline`。既存 `escapeLatex` を再利用して特殊文字をescapeする。
-- `renderTypstTable(model)`: `#table(columns: (auto, ...), align: (...), table.header(...))`。headerは `[*text*]` で強調する。
-- `renderQuarkdownTable(model)`: GFM pipe table。delimiter行の `:---` / `:---:` / `---:` でalignmentを表す。GFMはheader行を必須とするため、header無効時は空のheader行を出力する。
+- LaTeX、Typst、Quarkdownの表として出力する。列alignmentとheaderの選択を出力へ反映する。
+- LaTeXでは特殊文字をescapeする。TypstとQuarkdownでも表構文を壊す入力文字をデータとして扱い、生成コードの構造を維持する。
+- headerを無効にした場合も、対象形式が要求する最小構造を満たす出力を生成する。
 
 ## Insert
 
@@ -76,12 +34,6 @@ rendererは `vscode/src/table/table_renderer.ts` の純粋関数として分離�
 - `insert` 受信時にそのdocumentへ `editor.edit()` でカーソル位置にコードを挿入する。
 - 対象editorが閉じられた、編集できない場合、開いた時点にeditorが存在しなかった場合は明示的なエラー通知を出し、別documentへfallbackしない。
 - 挿入形式の判定は既存 `InsertionFormat`（`insertion_format.ts`）を再利用する。新規に形式判定を実装しない。
-
-## テスト境界
-
-- CSV / TSV parser・TableModel・rendererはMochaの純粋Unit Test。
-- host↔webviewのprotocol・command・insertはExtension Hostのcontract test（`vscode/test/contract/commands/open_table_editor_command.test.ts`）。
-- Webviewの表示・paste・drop・編集・Preview・InsertはVitest（`vscode/webview/apps/table_editor/src/app.test.tsx`）。
 
 ## 対象外
 

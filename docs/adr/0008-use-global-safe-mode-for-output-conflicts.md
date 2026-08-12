@@ -39,7 +39,6 @@ Safe Mode OFFでは確認せず上書きする。
 
 ## 関連
 
-- `docs/specs/internal/safe-mode.md`
-- `docs/specs/internal/undo-last-conversion.md`
-- `docs/adr/0006-use-workspace-staging-for-file-operations.md`
-- `docs/adr/0007-use-dedicated-command-to-undo-last-conversion.md`
+- [`docs/safety.md`](../safety.md)
+- [ADR-0006: file operationにworkspace stagingを使う](0006-use-workspace-staging-for-file-operations.md)
+- [ADR-0007: 直前の変換を専用commandで取り消す](0007-use-dedicated-command-to-undo-last-conversion.md)

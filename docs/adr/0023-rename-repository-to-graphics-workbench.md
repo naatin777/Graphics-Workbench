@@ -49,5 +49,5 @@
 
 ## 関連
 
-- [命名規則](../naming-conventions.md)
-- [v1 Naming and Responsibility Audit](../records/2026-07-22-naming-audit.md)
+- [`docs/architecture.md`](../architecture.md)
+- [`docs/specs/product/output-format-conversion.md`](../specs/product/output-format-conversion.md)

@@ -55,5 +55,5 @@ Chromeが利用できる環境で追加のrsvg-convert installを要求するた
 ## 関連
 
 - [ADR-0010: CIの外部ツール検証はVS Code設定経由で行う](0010-verify-external-tools-through-vscode-settings.md)
-- [出力形式基準の変換内部契約](../specs/internal/output-format-conversion.md)
+- [`docs/architecture.md`](../architecture.md)
 - [Mermaid描画設定](../specs/product/mermaid-render-settings.md)
