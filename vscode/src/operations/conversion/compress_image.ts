@@ -23,6 +23,7 @@ import {
   formatRasterInputPixelLimitMessage,
   isRasterInputPixelLimitError,
   openRasterInput,
+  readRasterAnimationMetadata,
   rasterAnimationEncoderOptions,
   type RasterAnimationMetadata,
 } from '@graphics-workbench/core/operations/conversion/raster_input.js';
@@ -122,14 +123,21 @@ async function stageCompressImage(
   context: CompressImageStageContext,
 ): Promise<PreparedConversionOutput> {
   context.runtime.signal.throwIfAborted();
+  const animation =
+    input.animation ??
+    (compressibleFormatForPath(input.sourcePath) === 'tiff'
+      ? await readRasterAnimationMetadata(input.sourcePath, context.maxInputPixels)
+      : undefined);
+  context.runtime.signal.throwIfAborted();
+  const plannedInput = animation === undefined ? input : { ...input, animation };
   const resultExtension = path.extname(input.sourcePath).toLowerCase().replace(/^\./u, '');
   const stagingRootPath = stagingRootPathFor(input.workspacePath, OPERATION_NAME, context.runId);
   const stageDirectory = path.join(stagingRootPath, `${index + 1}`);
   const stagedOutputPath = path.join(stageDirectory, `result.${resultExtension}`);
 
-  await writeCompressedImage(input, { stageDirectory, stagedOutputPath, stagingRootPath }, context);
+  await writeCompressedImage(plannedInput, { stageDirectory, stagedOutputPath, stagingRootPath }, context);
   context.runtime.signal.throwIfAborted();
-  await validateGeneratedImage(stagedOutputPath, compressibleFormatForPath(input.sourcePath));
+  await validateGeneratedImage(stagedOutputPath, compressibleFormatForPath(input.sourcePath), plannedInput.animation);
   context.runtime.signal.throwIfAborted();
 
   return {
@@ -179,6 +187,11 @@ async function encodeCompressedImage(
     throw new Error(`Unsupported input for image compression: ${request.sourcePath}`);
   }
 
+  if (format === 'tiff' && request.animation !== undefined && request.animation.pages > 1) {
+    await encodeMultipageTiff(request, context, request.animation.pages);
+    return;
+  }
+
   const input = openRasterInput(request.sourcePath, context.maxInputPixels, undefined, request.animation !== undefined);
   try {
     switch (format) {
@@ -217,7 +230,34 @@ async function encodeCompressedImage(
   }
 }
 
-async function validateGeneratedImage(outputPath: string, format: CompressibleImageFormat | undefined): Promise<void> {
+async function encodeMultipageTiff(
+  request: CompressImageRenderRequest,
+  context: CompressImageStageContext,
+  pages: number,
+): Promise<void> {
+  const pageBuffers: Buffer[] = [];
+  const pageNumbers = Array.from({ length: pages }, (_unused, index) => index + 1);
+  // oxlint-disable-next-line no-unreachable-loop -- Each iteration decodes a distinct TIFF page.
+  for (const page of pageNumbers) {
+    context.runtime.signal.throwIfAborted();
+    const input = openRasterInput(request.sourcePath, context.maxInputPixels, page);
+    try {
+      pageBuffers.push(await input.png().toBuffer());
+    } finally {
+      await closeRasterPipeline(input);
+    }
+  }
+  context.runtime.signal.throwIfAborted();
+  await sharp(pageBuffers, { join: { animated: true } })
+    .tiff({ compression: 'lzw' })
+    .toFile(request.outputPath);
+}
+
+async function validateGeneratedImage(
+  outputPath: string,
+  format: CompressibleImageFormat | undefined,
+  animation: RasterAnimationMetadata | undefined,
+): Promise<void> {
   if (format === undefined) {
     throw new Error(`Unsupported input for image compression: ${outputPath}`);
   }
@@ -227,6 +267,11 @@ async function validateGeneratedImage(outputPath: string, format: CompressibleIm
 
   if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
     throw new Error(`Image compression produced invalid ${expectedFormat.toUpperCase()} output: ${outputPath}`);
+  }
+  if (animation !== undefined && (metadata.pages ?? 1) !== animation.pages) {
+    throw new Error(
+      `Image compression produced ${metadata.pages ?? 1} pages instead of ${animation.pages}: ${outputPath}`,
+    );
   }
 }
 

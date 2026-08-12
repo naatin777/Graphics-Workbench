@@ -7,17 +7,15 @@ import {
 } from '../../../src/operations/lifecycle/secure_staging.js';
 import { isRecord } from '../../../src/shared/protocols/protocol_utils.js';
 
-suite('機密PDFの中間ディレクトリを作成し、保存期間を過ぎた古い中間ディレクトリを掃除する', () => {
-  test('現プロセスのactive rootは8日後のactivation cleanupでも維持し、不在PIDを記録した24時間超過のold rootだけを削除する', async () => {
+suite('機密PDFの中間ディレクトリを作成し、heartbeatから保存期間を判定して掃除する', () => {
+  test('作成直後のrootは維持し、不在PIDを記録した24時間超過のold rootだけを削除する', async () => {
     const activeRoot = await createSecurePdfStagingRoot('test-active');
     const oldRoot = await createSecurePdfStagingRoot('test-old');
+    const oldManifest = JSON.parse(await readFile(`${oldRoot}/manifest.json`, 'utf8'));
+    const staleAt = Date.now() - 2 * 24 * 60 * 60 * 1000;
     await writeFile(
       `${oldRoot}/manifest.json`,
-      JSON.stringify({
-        pid: Number.MAX_SAFE_INTEGER,
-        startedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-        operation: 'test-old',
-      }),
+      JSON.stringify({ ...oldManifest, pid: Number.MAX_SAFE_INTEGER, startedAt: staleAt, updatedAt: staleAt }),
     );
 
     try {
@@ -34,16 +32,34 @@ suite('機密PDFの中間ディレクトリを作成し、保存期間を過ぎ�
       assert.equal(typeof manifest.operationId, 'string');
       await cleanupStaleSecurePdfStagingRoots(Date.now());
       await access(activeRoot);
-
-      await cleanupStaleSecurePdfStagingRoots(Date.now() + 2 * 24 * 60 * 60 * 1000);
-      await access(activeRoot);
-      await cleanupStaleSecurePdfStagingRoots(Date.now() + 8 * 24 * 60 * 60 * 1000);
-      await access(activeRoot);
       await assert.rejects(access(oldRoot));
     } finally {
       const { rm } = await import('node:fs/promises');
       await rm(activeRoot, { recursive: true, force: true });
       await rm(oldRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('24時間を超えたrootはPIDが現在も存在していてもheartbeatが古ければ削除する', async () => {
+    const staleRoot = await createSecurePdfStagingRoot('test-stale-pid');
+    try {
+      const manifestPath = `${staleRoot}/manifest.json`;
+      const manifestValue: unknown = JSON.parse(await readFile(manifestPath, 'utf8'));
+      if (!isRecord(manifestValue)) {
+        throw new Error('Secure staging manifest is not an object.');
+      }
+      const manifest = manifestValue;
+      const staleAt = Date.now() - 2 * 24 * 60 * 60 * 1000;
+      await writeFile(
+        manifestPath,
+        JSON.stringify({ ...manifest, pid: process.pid, startedAt: staleAt, updatedAt: staleAt }),
+      );
+
+      await cleanupStaleSecurePdfStagingRoots(Date.now());
+      await assert.rejects(access(staleRoot));
+    } finally {
+      const { rm } = await import('node:fs/promises');
+      await rm(staleRoot, { recursive: true, force: true });
     }
   });
 });

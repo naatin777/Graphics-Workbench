@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 
 import { setColumnAlignment, tableModelFromRows } from '../../../src/table/table_model.js';
-import { renderLatexTable, renderQuarkdownTable, renderTypstTable } from '../../../src/table/table_renderer.js';
+import {
+  escapePipeTableCell,
+  escapeTypstTableCell,
+  renderLatexTable,
+  renderQuarkdownTable,
+  renderTypstTable,
+} from '../../../src/table/table_renderer.js';
 
 const SAMPLE_ROWS = [
   ['Method', 'Time', 'Score'],
@@ -85,9 +91,9 @@ suite('テーブルrenderer', () => {
         '#table(',
         '  columns: (auto, auto, auto),',
         '  align: (left, right, right),',
-        '  table.header([*Method*], [*Time*], [*Score*]),',
-        '  [A], [12.4], [91.2],',
-        '  [B], [10.8], [94.5],',
+        '  table.header([*#text("Method")*], [*#text("Time")*], [*#text("Score")*]),',
+        '  [#text("A")], [#text("12.4")], [#text("91.2")],',
+        '  [#text("B")], [#text("10.8")], [#text("94.5")],',
         ')',
       ].join('\n'),
     );
@@ -101,11 +107,26 @@ suite('テーブルrenderer', () => {
         '#table(',
         '  columns: (auto, auto, auto),',
         '  align: (left, left, left),',
-        '  [A], [12.4], [91.2],',
-        '  [B], [10.8], [94.5],',
+        '  [#text("A")], [#text("12.4")], [#text("91.2")],',
+        '  [#text("B")], [#text("10.8")], [#text("94.5")],',
         ')',
       ].join('\n'),
     );
+  });
+
+  test('Typstはセル文字列をtext stringへ入れてmarkup記号・括弧・改行をデータとして保持する', () => {
+    const model = tableModelFromRows([['A | B *bold* [link]', 'line\nnext']], 1);
+    assert.strictEqual(
+      renderTypstTable(model),
+      [
+        '#table(',
+        '  columns: (auto, auto),',
+        '  align: (left, left),',
+        '  table.header([*#text("A | B *bold* [link]")*], [*#text("line\\nnext")*]),',
+        ')',
+      ].join('\n'),
+    );
+    assert.strictEqual(escapeTypstTableCell('quote " \\ tab\t'), 'quote \\" \\\\ tab\\t');
   });
 
   test('同一TableModelからQuarkdownを生成する', () => {
@@ -127,5 +148,14 @@ suite('テーブルrenderer', () => {
       renderQuarkdownTable(model),
       ['|  |  |  |', '| :--- | :--- | :--- |', '| A | 12.4 | 91.2 |', '| B | 10.8 | 94.5 |'].join('\n'),
     );
+  });
+
+  test('Quarkdownはpipe・markup記号・改行をセル境界の外へ出さない', () => {
+    const model = tableModelFromRows([['A | B', 'line\nnext [x] *bold*']], 1);
+    assert.strictEqual(
+      renderQuarkdownTable(model),
+      ['| A \\| B | line<br>next \\[x\\] \\*bold\\* |', '| :--- | :--- |'].join('\n'),
+    );
+    assert.strictEqual(escapePipeTableCell('a\\b|c'), 'a\\\\b\\|c');
   });
 });

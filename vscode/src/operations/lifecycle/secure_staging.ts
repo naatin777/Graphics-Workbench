@@ -7,6 +7,7 @@ import { isRecord } from '../../shared/protocols/protocol_utils.js';
 
 const STAGING_PREFIX = 'graphics-workbench-pdf-';
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
 const SESSION_ID = randomUUID();
 const EXTENSION_HOST_STARTED_AT = Date.now();
 
@@ -50,6 +51,34 @@ export async function createSecurePdfStagingRoot(operation: string): Promise<str
   }
 }
 
+/** Refreshes the manifest while a sensitive PDF operation is still active. */
+export function startSecurePdfStagingHeartbeat(rootPath: string): { dispose: () => void } {
+  const interval = setInterval(() => {
+    void touchSecurePdfStagingRoot(rootPath);
+  }, HEARTBEAT_INTERVAL_MS);
+  interval.unref();
+  void touchSecurePdfStagingRoot(rootPath);
+  return {
+    dispose: () => {
+      clearInterval(interval);
+    },
+  };
+}
+
+async function touchSecurePdfStagingRoot(rootPath: string): Promise<void> {
+  const manifestPath = path.join(rootPath, 'manifest.json');
+  try {
+    // oxlint-disable-next-line typescript/no-restricted-types -- 外部マニフェストJSONの未検証値。直後にisStagingManifestで検証する。
+    const parsed: unknown = JSON.parse(await readFile(manifestPath, 'utf8'));
+    if (!isStagingManifest(parsed)) {
+      return;
+    }
+    await writeFile(manifestPath, JSON.stringify({ ...parsed, updatedAt: Date.now() }), { mode: 0o600 });
+  } catch {
+    // The operation will fail or cleanup will retry if the secure root disappears.
+  }
+}
+
 /** Removes abandoned sensitive staging roots from a previous extension-host process. */
 export async function cleanupStaleSecurePdfStagingRoots(now: number = Date.now()): Promise<void> {
   let entries;
@@ -78,12 +107,11 @@ export async function cleanupStaleSecurePdfStagingRoots(now: number = Date.now()
           // A root created immediately before a crash has no usable manifest; age is the fallback guard.
         }
 
-        const startedAt = manifest?.startedAt ?? 0;
-        const processIsAlive = manifest?.pid !== undefined && isProcessAlive(manifest.pid);
-        const age = startedAt > 0 ? now - startedAt : await rootAge(rootPath, now);
-        // A live process can own a long-running input. Fixed retention is
-        // only safe after its PID is no longer active.
-        if (age < STALE_AFTER_MS || processIsAlive) {
+        const heartbeatAt = manifest?.updatedAt ?? manifest?.startedAt ?? 0;
+        const age = heartbeatAt > 0 ? now - heartbeatAt : await rootAge(rootPath, now);
+        // PID is not an ownership proof: it can be reused by an unrelated process.
+        // Active operations keep this timestamp fresh through the heartbeat.
+        if (age < STALE_AFTER_MS) {
           return;
         }
 
@@ -121,15 +149,6 @@ function isStagingManifest(value: unknown): value is StagingManifest {
     typeof value.operation === 'string' &&
     typeof value.operationId === 'string'
   );
-}
-
-function isProcessAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error instanceof Error && 'code' in error && error.code === 'EPERM';
-  }
 }
 
 async function rootAge(rootPath: string, now: number): Promise<number> {

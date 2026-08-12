@@ -58,17 +58,55 @@ export function renderTypstTable(model: TableModel): string {
 }
 
 function renderTypstRow(row: TableRow, isHeader: boolean): string {
-  return row.cells.map((cell) => (isHeader ? `[*${cell.text}*]` : `[${cell.text}]`)).join(', ');
+  return row.cells
+    .map((cell) =>
+      isHeader ? `[*#text("${escapeTypstTableCell(cell.text)}")*]` : `[#text("${escapeTypstTableCell(cell.text)}")]`,
+    )
+    .join(', ');
 }
 
 export function renderQuarkdownTable(model: TableModel): string {
   const headerCells = model.headerRows > 0 ? (model.rows[0]?.cells ?? []) : model.columns.map(() => ({ text: '' }));
   const bodyRows = model.rows.slice(model.headerRows);
   const lines: string[] = [];
-  lines.push(`| ${headerCells.map((cell) => cell.text).join(' | ')} |`);
+  lines.push(`| ${headerCells.map((cell) => escapePipeTableCell(cell.text)).join(' | ')} |`);
   lines.push(`| ${model.columns.map((column) => QUARKDOWN_DELIMITER[column.alignment]).join(' | ')} |`);
   for (const row of bodyRows) {
-    lines.push(`| ${row.cells.map((cell) => cell.text).join(' | ')} |`);
+    lines.push(`| ${row.cells.map((cell) => escapePipeTableCell(cell.text)).join(' | ')} |`);
   }
   return lines.join('\n');
+}
+
+const TYPST_STRING_ESCAPES: Readonly<Record<string, string>> = {
+  '\\': '\\\\',
+  '"': '\\"',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t',
+};
+
+/** Keeps plain table data inside a Typst string instead of letting markup parse it. */
+export function escapeTypstTableCell(value: string): string {
+  return Array.from(value, (character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return (
+      TYPST_STRING_ESCAPES[character] ??
+      (codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f) ? `\\u{${codePoint.toString(16)}}` : character)
+    );
+  }).join('');
+}
+
+/** Escapes Markdown/Quarkdown table syntax while preserving line breaks as explicit breaks. */
+export function escapePipeTableCell(value: string): string {
+  return value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('|', '\\|')
+    .replaceAll('*', '\\*')
+    .replaceAll('_', '\\_')
+    .replaceAll('~', '\\~')
+    .replaceAll('[', '\\[')
+    .replaceAll(']', '\\]')
+    .replaceAll('<', '\\<')
+    .replaceAll('>', '\\>')
+    .replaceAll(/\r\n|\r|\n/gu, '<br>');
 }

@@ -10,15 +10,21 @@
 // - 他の画像フォーマット（JPEG、WebP、Avif、SVG）の実変換
 
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import { access, copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 
 import sharp from 'sharp';
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import { convertToPdfFiles, validateSvgToPdfOptions } from '../../../src/operations/conversion/convert_to_pdf.js';
+import {
+  convertToPdfFiles,
+  executeChrome,
+  validateSvgToPdfOptions,
+} from '../../../src/operations/conversion/convert_to_pdf.js';
+import { renderPdfPageToPng } from '@graphics-workbench/core/operations/pdf/mupdf.js';
 import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { requireValue } from '../../support/helpers/required.js';
 
@@ -229,10 +235,58 @@ suite('入力画像をPDFへ変換する処理', () => {
     assert.strictEqual(call?.executable, '/opt/google-chrome');
     assert.deepStrictEqual(call?.args.slice(0, 2), ['--headless', '--no-pdf-header-footer']);
     assert.match(call?.args[2] ?? '', /^--print-to-pdf=.+result\.pdf$/u);
-    assert.strictEqual(call?.args[3], pathToFileURL(sourcePath).href);
+    assert.match(call?.args[3] ?? '', /result\.pdf\.chrome\.html$/u);
 
     const document = await PDFDocument.load(await readFile(outputPath));
     assert.deepStrictEqual(document.getPage(0).getSize(), { width: 31, height: 19 });
+  });
+
+  test('実Chromeで31x19 SVGいっぱいの矩形をPDFへ印刷すると、ページ全体に内容が残る', async function chromeSvgContentTest() {
+    const chromePath = await findChromeExecutable();
+    if (chromePath === undefined) {
+      this.skip();
+      return;
+    }
+
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-svg-chrome-content-'));
+    const sourcePath = path.join(workspacePath.path, 'source.svg');
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    await writeFile(
+      sourcePath,
+      '<svg xmlns="http://www.w3.org/2000/svg" width="31" height="19"><rect width="31" height="19" fill="#d22" /></svg>',
+    );
+
+    await convertToPdfFiles({
+      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      maxInputPixels: 1_000_000_000,
+      runtime: {},
+      tools: {
+        svgToPdfTools: {
+          engine: 'chrome',
+          rsvgConvertPath: 'rsvg-convert',
+          chromePath,
+          runRsvgConvert: async () => {
+            throw new Error('rsvg-convert must not run for chrome engine');
+          },
+          runChrome: executeChrome,
+        },
+      },
+    });
+
+    const pdf = await PDFDocument.load(await readFile(outputPath));
+    assert.deepStrictEqual(pdf.getPage(0).getSize(), { width: 31, height: 19 });
+    const rendered = await renderPdfPageToPng(await readFile(outputPath), 1, { dpi: 72 });
+    const { data, info } = await sharp(rendered).raw().toBuffer({ resolveWithObject: true });
+    let redPixels = 0;
+    for (let index = 0; index < data.length; index += info.channels) {
+      if ((data[index] ?? 0) > 150 && (data[index + 1] ?? 0) < 120 && (data[index + 2] ?? 0) < 120) {
+        redPixels += 1;
+      }
+    }
+    assert.ok(
+      redPixels / (info.width * info.height) > 0.9,
+      'Chrome PDF content was clipped or left at the default print scale.',
+    );
   });
 
   test('Chrome方式でchromePathが空文字の設定をvalidateSvgToPdfOptionsへ渡すとChrome executable未設定エラーを投げる', () => {
@@ -264,4 +318,19 @@ async function writeAnimatedGif(filePath: string): Promise<void> {
   await sharp([red, blue], { join: { animated: true } })
     .gif()
     .toFile(filePath);
+}
+
+const execFileAsync = promisify(execFile);
+
+async function findChromeExecutable(): Promise<string | undefined> {
+  const lookupCommand = process.platform === 'win32' ? 'where' : 'which';
+  try {
+    const { stdout } = await execFileAsync(lookupCommand, ['google-chrome'], { encoding: 'utf8' });
+    return stdout
+      .split(/\r?\n/u)
+      .find((line) => line.trim() !== '')
+      ?.trim();
+  } catch {
+    return undefined;
+  }
 }

@@ -27,62 +27,38 @@ export const sourceFormatExtensions = {
   'editable-drawio-svg': ['drawio.svg', 'dio.svg'],
 } as const satisfies Record<SourceFormat, readonly string[]>;
 
+const compoundSourceFormatSuffixes = Object.entries(sourceFormatExtensions).flatMap(([format, extensions]) =>
+  isSourceFormat(format)
+    ? extensions
+        .filter((extension) => extension.includes('.'))
+        .map((extension) => ({ format, suffix: `.${extension}` }))
+    : [],
+);
+const sourceFormatByExtension: ReadonlyMap<string, SourceFormat> = new Map(
+  Object.entries(sourceFormatExtensions).flatMap(([format, extensions]) => {
+    if (!isSourceFormat(format)) {
+      return [];
+    }
+    return extensions
+      .filter((extension) => !extension.includes('.'))
+      .map((extension) => [`.${extension}`, format] as const);
+  }),
+);
+const rasterSourceFormats = new Set<SourceFormat>(['png', 'jpeg', 'webp', 'avif', 'gif', 'tiff']);
+
+function isSourceFormat(value: string): value is SourceFormat {
+  return value in sourceFormatExtensions;
+}
+
 export function sourceFormatForPath(sourcePath: string): SourceFormat | undefined {
   const lowerSourcePath = sourcePath.toLowerCase();
-  const drawioFormat = drawioFormatForPath(lowerSourcePath);
-  if (drawioFormat !== undefined) {
-    return drawioFormat;
+  for (const { format, suffix } of compoundSourceFormatSuffixes) {
+    if (lowerSourcePath.endsWith(suffix)) {
+      return format;
+    }
   }
 
-  return sourceFormatForExtension(path.extname(lowerSourcePath));
-}
-
-function drawioFormatForPath(sourcePath: string): SourceFormat | undefined {
-  if (sourcePath.endsWith('.drawio.png') || sourcePath.endsWith('.dio.png')) {
-    return 'editable-drawio-png';
-  }
-  if (sourcePath.endsWith('.drawio.svg') || sourcePath.endsWith('.dio.svg')) {
-    return 'editable-drawio-svg';
-  }
-  if (sourcePath.endsWith('.drawio') || sourcePath.endsWith('.dio')) {
-    return 'drawio';
-  }
-
-  return undefined;
-}
-
-function sourceFormatForExtension(extension: string): SourceFormat | undefined {
-  switch (extension) {
-    case '.pdf': {
-      return 'pdf';
-    }
-    case '.png': {
-      return 'png';
-    }
-    case '.jpg':
-    case '.jpeg': {
-      return 'jpeg';
-    }
-    case '.webp': {
-      return 'webp';
-    }
-    case '.avif': {
-      return 'avif';
-    }
-    case '.gif': {
-      return 'gif';
-    }
-    case '.tif':
-    case '.tiff': {
-      return 'tiff';
-    }
-    case '.svg': {
-      return 'svg';
-    }
-    default: {
-      return undefined;
-    }
-  }
+  return sourceFormatByExtension.get(path.extname(lowerSourcePath));
 }
 
 export function isRasterImagePath(sourcePath: string): boolean {
@@ -97,14 +73,7 @@ export function isSupportedPdfConversionSource(sourcePath: string): boolean {
 
 /** Returns true when the resolved format is a raster image format. */
 export function isRasterFormat(format: SourceFormat | undefined): boolean {
-  return (
-    format === 'png' ||
-    format === 'jpeg' ||
-    format === 'webp' ||
-    format === 'avif' ||
-    format === 'gif' ||
-    format === 'tiff'
-  );
+  return format !== undefined && rasterSourceFormats.has(format);
 }
 
 export function isSameSourceFormat(sourcePath: string, outputExtension: string): boolean {

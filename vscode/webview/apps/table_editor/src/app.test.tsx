@@ -191,7 +191,7 @@ test('出力形式の切り替えでプレビューとInsert形式が変わる',
   await flushPromises();
 
   expect(previewCode()).toContain('#table(');
-  expect(previewCode()).toContain('table.header([*Method*]');
+  expect(previewCode()).toContain('table.header([*#text("Method")*]');
 
   sendMessage.mockClear();
   clickInsert();
