@@ -181,7 +181,7 @@ jobs:
 
             - if: matrix.npm_os == ''
               name: Smoke test sharp on native runner
-              run: node scripts/test-sharp.mjs
+              run: node core/scripts/test-sharp.mjs
               shell: bash
 
             - name: Package target VSIX

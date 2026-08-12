@@ -8,11 +8,14 @@ import { fileURLToPath } from 'node:url';
 import { generate, validateManifest } from './generate-extension-meta.ts';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const manifestPath = path.join(repositoryRoot, 'vscode/src/generated/extension_manifest.ts');
+const manifestPath = path.join(repositoryRoot, 'vscode/extension/src/generated/extension_manifest.ts');
 const extensionPrefix = 'graphics-workbench.';
 
 void test('old generated metadata files are removed', () => {
-  for (const stalePath of ['vscode/src/generated-extension-meta.ts', 'vscode/src/generated-extension-config.ts']) {
+  for (const stalePath of [
+    'vscode/extension/src/generated-extension-meta.ts',
+    'vscode/extension/src/generated-extension-config.ts',
+  ]) {
     assert.strictEqual(
       existsSync(path.join(repositoryRoot, stalePath)),
       false,

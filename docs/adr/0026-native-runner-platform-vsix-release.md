@@ -25,7 +25,7 @@ releaseの`package` jobは、対象と同一OS・CPUのGitHub-hosted runnerが�
 - `linux-arm64` → `ubuntu-24.04-arm`（arm64）
 - `win32-arm64` → `windows-11-arm`はPublic previewのため使わず、`ubuntu-latest`でcross-package生成・内容検証のみ
 
-各targetで`npm ci --include=optional`（runner一致）または`--os` / `--cpu` / `--libc`（cross）でoptional dependencyを解決し、`npm run build`、`scripts/verify-vsix.mjs --check-install`、native runnerでは`scripts/test-sharp.mjs`（sharp import、libvipsロード、PNG生成、versionログ）を実行してから`vsce package --target`でVSIXを生成し、`scripts/verify-vsix.mjs --vsix`で内容を検証する。
+各targetで`npm ci --include=optional`（runner一致）または`--os` / `--cpu` / `--libc`（cross）でoptional dependencyを解決し、`npm run build`、`scripts/verify-vsix.mjs --check-install`、native runnerでは`core/scripts/test-sharp.mjs`（sharp import、libvipsロード、PNG生成、versionログ）を実行してから`vsce package --target`でVSIXを生成し、`scripts/verify-vsix.mjs --vsix`で内容を検証する。
 
 Marketplace公開は`azure/login`でEntra ID認証を確立し、各VSIXを`vsce publish --packagePath ... --azure-credential --skip-duplicate`で順に公開する。Azure DevOps PATは2026-12-01に廃止されるため使わない。`AZURE_CLIENT_ID`等の認証情報が未設定の間はpublish stepをskipし、失敗させない。GitHub ReleaseはMarketplace公開成功後に実行する。
 

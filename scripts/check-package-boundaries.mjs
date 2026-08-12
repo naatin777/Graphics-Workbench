@@ -4,14 +4,16 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const coreSourceRoot = path.join(repositoryRoot, 'core', 'src');
-const vscodeSourceRoot = path.join(repositoryRoot, 'vscode', 'src');
-const vscodeTestRoot = path.join(repositoryRoot, 'vscode', 'test');
+const vscodeSourceRoot = path.join(repositoryRoot, 'vscode', 'extension', 'src');
+const vscodeTestRoot = path.join(repositoryRoot, 'vscode', 'extension', 'test');
+const webviewSourceRoot = path.join(repositoryRoot, 'vscode', 'webview', 'src');
 const tuiSourceRoot = path.join(repositoryRoot, 'tui', 'src');
 const tuiTestRoot = path.join(repositoryRoot, 'tui', 'test');
 const failures = [];
 
 const corePackage = readJson(path.join(repositoryRoot, 'core', 'package.json'));
-const vscodePackage = readJson(path.join(repositoryRoot, 'vscode', 'package.json'));
+const vscodePackage = readJson(path.join(repositoryRoot, 'vscode', 'extension', 'package.json'));
+const webviewPackage = readJson(path.join(repositoryRoot, 'vscode', 'webview', 'package.json'));
 const tuiPackage = readJson(path.join(repositoryRoot, 'tui', 'package.json'));
 const rootPackage = readJson(path.join(repositoryRoot, 'package.json'));
 const publicCoreEntries = new Set(
@@ -22,13 +24,29 @@ const publicCoreEntries = new Set(
 
 checkCoreImports();
 checkFrontendImports('vscode', [vscodeSourceRoot], vscodePackage, ['vscode']);
-checkFrontendImports('vscode', [vscodeTestRoot], mergePackageDependencies(vscodePackage, rootPackage), ['vscode']);
+checkFrontendImports('vscode', [vscodeTestRoot], vscodePackage, ['vscode']);
+checkFrontendImports('webview', [webviewSourceRoot], webviewPackage, [
+  '@webview-shared',
+  '@graphics-workbench-typed-protocol',
+  '@graphics-workbench-crop-pdf-protocol',
+  '@graphics-workbench-merge-pdf-protocol',
+  '@graphics-workbench-split-pdf-protocol',
+  '@graphics-workbench-rotate-pdf-protocol',
+  '@graphics-workbench-reorder-pdf-protocol',
+  '@graphics-workbench-preview-protocol',
+  '@graphics-workbench-table-editor-protocol',
+  '@graphics-workbench-table-model',
+  '@graphics-workbench-table-parser',
+  '@graphics-workbench-table-renderer',
+]);
 checkFrontendImports('tui', [tuiSourceRoot, tuiTestRoot], tuiPackage, []);
-checkCorePublicImports([vscodeSourceRoot, vscodeTestRoot, tuiSourceRoot, tuiTestRoot]);
+checkCorePublicImports([vscodeSourceRoot, vscodeTestRoot, webviewSourceRoot, tuiSourceRoot, tuiTestRoot]);
 checkFrontendBoundaryImports('vscode', [vscodeSourceRoot, vscodeTestRoot], 'tui');
 checkFrontendBoundaryImports('tui', [tuiSourceRoot, tuiTestRoot], 'vscode');
+checkWebviewBoundaryImports();
 checkPackageVersions();
 checkCoreExports();
+checkPackageOwnership();
 checkLockfiles();
 
 if (failures.length > 0) {
@@ -76,7 +94,11 @@ function checkFrontendImports(frontend, roots, packageJson, builtInPackages) {
           continue;
         }
         const packageName = packageNameFor(specifier);
-        if (builtInPackages.includes(packageName)) {
+        if (
+          builtInPackages.some(
+            (builtInPackage) => specifier === builtInPackage || specifier.startsWith(`${builtInPackage}/`),
+          )
+        ) {
           continue;
         }
         if (!declaredDependencies.has(packageName)) {
@@ -85,13 +107,6 @@ function checkFrontendImports(frontend, roots, packageJson, builtInPackages) {
       }
     }
   }
-}
-
-function mergePackageDependencies(primary, secondary) {
-  return {
-    dependencies: { ...secondary.dependencies, ...primary.dependencies },
-    devDependencies: { ...secondary.devDependencies, ...primary.devDependencies },
-  };
 }
 
 function checkCorePublicImports(roots) {
@@ -107,6 +122,38 @@ function checkCorePublicImports(roots) {
           failures.push(`${relative(filePath)} imports non-public core module ${specifier}`);
         }
       }
+    }
+  }
+}
+
+function checkPackageOwnership() {
+  if (!corePackage.dependencies?.sharp) {
+    failures.push('core must own sharp as a production dependency');
+  }
+  if (vscodePackage.dependencies?.sharp !== undefined) {
+    failures.push('vscode must not ship sharp as a production dependency');
+  }
+  if (!vscodePackage.devDependencies?.sharp) {
+    failures.push('vscode test tooling must declare sharp as a devDependency');
+  }
+
+  for (const dependency of [
+    '@types/mocha',
+    '@types/sinon',
+    '@types/vscode',
+    '@vscode/test-cli',
+    '@vscode/test-electron',
+    'jsdom',
+    'mocha',
+    'pdfjs-dist',
+    'sinon',
+    'solid-js',
+    'vite',
+    'vite-plugin-solid',
+    'vitest',
+  ]) {
+    if (rootPackage.devDependencies?.[dependency] !== undefined) {
+      failures.push(`root must not own frontend-only dependency ${dependency}`);
     }
   }
 }
@@ -132,12 +179,36 @@ function checkFrontendBoundaryImports(frontend, roots, forbiddenFrontend) {
   }
 }
 
+function checkWebviewBoundaryImports() {
+  for (const filePath of collectFiles(webviewSourceRoot)) {
+    for (const specifier of collectModuleSpecifiers(readFileSync(filePath, 'utf8'))) {
+      if (specifier === 'vscode' || specifier.startsWith('vscode/')) {
+        failures.push(`${relative(filePath)} imports VS Code runtime directly`);
+        continue;
+      }
+      if (!specifier.startsWith('.')) {
+        continue;
+      }
+      const resolvedPath = path.resolve(path.dirname(filePath), specifier).replaceAll('\\', '/');
+      if (resolvedPath.includes('/vscode/extension/')) {
+        failures.push(`${relative(filePath)} reaches Extension Host source through ${specifier}`);
+      }
+    }
+  }
+}
+
 function checkPackageVersions() {
   if (corePackage.version !== vscodePackage.version) {
     failures.push('core and vscode package versions must match');
   }
+  if (corePackage.version !== webviewPackage.version) {
+    failures.push('core and webview package versions must match');
+  }
   if (vscodePackage.dependencies?.['@graphics-workbench/core'] !== corePackage.version) {
     failures.push('vscode must depend on the exact matching @graphics-workbench/core version');
+  }
+  if (webviewPackage.dependencies?.['@graphics-workbench/core'] !== corePackage.version) {
+    failures.push('webview must depend on the exact matching @graphics-workbench/core version');
   }
   if (tuiPackage.dependencies?.['@graphics-workbench/core'] !== 'file:.core-package') {
     failures.push('tui must consume its staged local core package');
@@ -176,7 +247,7 @@ function collectFiles(directory) {
     const entryPath = path.join(directory, entry.name);
     return entry.isDirectory()
       ? collectFiles(entryPath)
-      : entry.isFile() && entry.name.endsWith('.ts')
+      : entry.isFile() && /\.(?:ts|tsx)$/u.test(entry.name)
         ? [entryPath]
         : [];
   });

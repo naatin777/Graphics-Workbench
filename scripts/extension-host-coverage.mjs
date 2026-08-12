@@ -2,12 +2,12 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const extensionHostSourcePrefixes = ['core/src/', 'vscode/src/'];
+export const extensionHostSourcePrefixes = ['core/src/', 'vscode/extension/src/'];
 
 export function buildExtensionHostRuntimeCoverageGlobs(repositoryDirectory) {
   return [
     path.join(repositoryDirectory, 'core', 'dist', '**', '*.js'),
-    path.join(repositoryDirectory, 'vscode', 'out', 'vscode', 'src', '**', '*.js'),
+    path.join(repositoryDirectory, 'vscode', 'extension', 'out', 'vscode', 'extension', 'src', '**', '*.js'),
   ].map((pattern) => pattern.replaceAll(path.sep, '/'));
 }
 

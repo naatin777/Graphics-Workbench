@@ -2,6 +2,8 @@
   "compilerOptions": {
     "module": "Preserve",
     "moduleResolution": "Bundler",
+    "jsx": "preserve",
+    "jsxImportSource": "@opentui/solid",
     "target": "ES2022",
     "lib": ["ES2022"],
     "strict": true,

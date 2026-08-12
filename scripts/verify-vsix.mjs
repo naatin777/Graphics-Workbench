@@ -4,7 +4,7 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 const rootDirectory = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-const extensionPackagePath = path.join(rootDirectory, 'vscode', 'package.json');
+const extensionPackagePath = path.join(rootDirectory, 'vscode', 'extension', 'package.json');
 const corePackagePath = path.join(rootDirectory, 'core', 'package.json');
 const corePackageDirectory = 'node_modules/@graphics-workbench/core';
 
@@ -158,7 +158,7 @@ export function verifyVsixEntries(entries, target) {
       entry.startsWith('node_modules/typescript/') ||
       entry.startsWith('out/test/') ||
       entry.startsWith('out/core/test/') ||
-      entry.startsWith('out/vscode/test/') ||
+      entry.startsWith('out/vscode/extension/test/') ||
       entry.startsWith('out/test-support/') ||
       entry.endsWith('.map') ||
       entry.endsWith('.tsbuildinfo') ||

@@ -1,0 +1,47 @@
+:root {
+  color-scheme: light;
+  --vscode-foreground: #1f2937;
+  --vscode-descriptionForeground: #4b5563;
+  --vscode-editor-background: #ffffff;
+  --vscode-sideBar-background: #f3f4f6;
+  --vscode-input-background: #ffffff;
+  --vscode-input-foreground: #1f2937;
+  --vscode-input-border: #9ca3af;
+  --vscode-button-background: #2563eb;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #1d4ed8;
+  --vscode-focusBorder: #2563eb;
+  --vscode-errorForeground: #b91c1c;
+}
+
+body.vscode-dark {
+  color-scheme: dark;
+  --vscode-foreground: #e5e7eb;
+  --vscode-descriptionForeground: #9ca3af;
+  --vscode-editor-background: #111827;
+  --vscode-sideBar-background: #1f2937;
+  --vscode-input-background: #374151;
+  --vscode-input-foreground: #f9fafb;
+  --vscode-input-border: #6b7280;
+  --vscode-button-background: #2563eb;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #3b82f6;
+  --vscode-focusBorder: #60a5fa;
+  --vscode-errorForeground: #fca5a5;
+}
+
+body.vscode-high-contrast {
+  color-scheme: dark;
+  --vscode-foreground: #ffffff;
+  --vscode-descriptionForeground: #ffffff;
+  --vscode-editor-background: #000000;
+  --vscode-sideBar-background: #000000;
+  --vscode-input-background: #000000;
+  --vscode-input-foreground: #ffffff;
+  --vscode-input-border: #ffffff;
+  --vscode-button-background: #000000;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #1f1f1f;
+  --vscode-focusBorder: #ffffff;
+  --vscode-errorForeground: #ff8080;
+}

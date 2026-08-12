@@ -2,48 +2,31 @@
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["scripts/*.mjs", ".github/scripts/*.mjs", ".vscode-test.mjs", "playwright.config.mjs"],
-      "project": [
-        "test-support/**/*.ts",
-        "scripts/*.{mjs,ts}",
-        ".github/scripts/*.mjs",
-        ".vscode-test.mjs",
-        "playwright.config.mjs"
-      ],
-      "ignoreDependencies": [
-        "@commitlint/types",
-        "@types/mocha",
-        "@types/node",
-        "@types/sinon",
-        "@types/vscode",
-        "@vscode/test-electron",
-        "@vscode/vsce",
-        "@vscode/codicons",
-        "lefthook",
-        "vscode"
-      ]
+      "entry": ["scripts/*.mjs", ".github/scripts/*.mjs"],
+      "project": ["test-support/**/*.ts", "scripts/*.{mjs,ts}", ".github/scripts/*.mjs"],
+      "ignoreDependencies": ["@commitlint/types"]
     },
     "core": {
       "entry": ["test/**/*.test.ts"],
-      "project": ["src/**/*.ts", "test/**/*.ts"]
+      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
     },
-    "vscode": {
+    "vscode/extension": {
       "entry": [
-        "src/extension.ts",
         "src/adapters/crop/crop_pdf_runner.ts",
         "src/commands/pdf/*.ts",
         "src/commands/conversion/*.ts",
         "src/commands/lifecycle/*.ts",
         "src/commands/shared/environment_check.ts",
-        "webview/apps/*/src/main.tsx",
-        "webview/apps/*/src/app.test.tsx",
         "test/**/*.test.ts",
-        "test/e2e/**/*.spec.ts",
-        "webview/apps/*/vite.config.ts",
-        "webview/apps/*/vitest.config.ts"
+        "test/e2e/**/*.spec.ts"
       ],
-      "project": ["src/**/*.ts", "test/**/*.ts", "webview/**/*.{ts,tsx}"],
-      "ignoreFiles": ["webview/apps/crop_pdf/src/pdf/pdfjs.ts", "webview/shared/pdf/render_first_page.ts"]
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "vscode/webview": {
+      "entry": ["src/pages/**/*.test.ts", "src/pages/**/*.test.tsx"],
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.mjs"],
+      "ignoreDependencies": ["@graphics-workbench/core"],
+      "ignoreFiles": ["src/pages/crop-pdf/pdf/pdfjs.ts", "src/shared/pdf/render_first_page.ts"]
     }
   }
 }

@@ -1,0 +1,79 @@
+import { randomBytes } from 'node:crypto';
+
+import * as vscode from 'vscode';
+
+export function getWebviewHtml(params: {
+  webview: Pick<vscode.Webview, 'cspSource' | 'asWebviewUri'>;
+  extensionUri: vscode.Uri;
+  title: string;
+  pageId: string;
+  locale?: string;
+}): string {
+  const { webview, extensionUri, title, pageId, locale = vscode.env.language } = params;
+
+  const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'webview', 'index.js'));
+
+  const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'webview', 'index.css'));
+
+  const nonce = getNonce();
+
+  return /* html */ `<!doctype html>
+<html lang="${escapeHtml(locale)}">
+  <head>
+    <meta charset="UTF-8">
+
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'none';
+        connect-src ${webview.cspSource} data: blob:;
+        img-src ${webview.cspSource} data: blob:;
+        font-src ${webview.cspSource} data: blob:;
+        style-src ${webview.cspSource} 'unsafe-inline';
+        worker-src ${webview.cspSource} blob:;
+        script-src 'nonce-${nonce}';
+      "
+    >
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="${styleUri.toString()}" rel="stylesheet">
+
+    <title>${escapeHtml(title)}</title>
+  </head>
+
+  <body data-page="${escapeHtml(pageId)}">
+    <div id="root"></div>
+    <script nonce="${nonce}" type="module" src="${scriptUri.toString()}"></script>
+  </body>
+</html>`;
+}
+
+function getNonce(): string {
+  return randomBytes(16).toString('base64');
+}
+
+function escapeHtml(value: string): string {
+  return value.replaceAll(/[&<>"']/g, (char) => {
+    switch (char) {
+      case '&': {
+        return '&amp;';
+      }
+      case '<': {
+        return '&lt;';
+      }
+      case '>': {
+        return '&gt;';
+      }
+      case '"': {
+        return '&quot;';
+      }
+      case "'": {
+        return '&#39;';
+      }
+      default: {
+        return char;
+      }
+    }
+  });
+}

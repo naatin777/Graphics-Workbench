@@ -146,7 +146,7 @@ export function parsePackOutput(output, packDirectory) {
 }
 
 /**
- * @param {'core' | 'vscode'} workspace
+ * @param {'core' | 'vscode/extension'} workspace
  * @param {string} packDirectory
  * @param {NodeJS.ProcessEnv} environment
  */
@@ -230,14 +230,17 @@ export async function appendStagingIgnoreRules(stagingDirectory) {
   const existingRules = await readFile(ignorePath, 'utf8');
   await writeFile(
     ignorePath,
-    `${existingRules.trimEnd()}\n**/*.tsbuildinfo\nout/core/test/**\nout/vscode/test/**\nout/test-support/**\nout/test/**\n`,
+    `${existingRules.trimEnd()}\n**/*.tsbuildinfo\nout/core/test/**\nout/vscode/extension/test/**\nout/test-support/**\nout/test/**\n`,
     'utf8',
   );
 }
 
 async function copyPackagingMetadata(stagingDirectory) {
   await prepareStagingManifest(stagingDirectory);
-  await copyFile(path.join(rootDirectory, 'vscode', '.vscodeignore'), path.join(stagingDirectory, '.vscodeignore'));
+  await copyFile(
+    path.join(rootDirectory, 'vscode', 'extension', '.vscodeignore'),
+    path.join(stagingDirectory, '.vscodeignore'),
+  );
   await appendStagingIgnoreRules(stagingDirectory);
   for (const fileName of packagingDocumentation) {
     await copyFile(path.join(rootDirectory, fileName), path.join(stagingDirectory, fileName));
@@ -260,7 +263,7 @@ export async function packageVsix(options) {
     await writeFile(path.join(installDirectory, 'package.json'), '{"private":true,"type":"module"}\n', 'utf8');
 
     const coreTarball = await packWorkspace('core', packDirectory, npmEnvironment);
-    const vscodeTarball = await packWorkspace('vscode', packDirectory, npmEnvironment);
+    const vscodeTarball = await packWorkspace('vscode/extension', packDirectory, npmEnvironment);
     await runNpm(getProductionInstallArguments(installDirectory, options.target, vscodeTarball, coreTarball), {
       cwd: rootDirectory,
       env: npmEnvironment,
