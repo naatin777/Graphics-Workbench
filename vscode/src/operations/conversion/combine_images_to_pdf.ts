@@ -20,7 +20,7 @@ import {
   type CommitConversionOutputsOptions,
   type CommittedConversionOutput,
 } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
-import { writeSourceAsPdf, executeChrome, executeRsvgConvert, type WriteSourceAsPdfOptions } from './convert_to_pdf.js';
+import { writeSourceAsPdf, type WriteSourceAsPdfOptions } from './convert_to_pdf.js';
 import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
 
 import { readRasterAnimationMetadata } from '@graphics-workbench/core/operations/conversion/raster_input.js';
@@ -99,15 +99,16 @@ async function createPdfPaths(
     for (let page = 1; page <= pageCount; page += 1) {
       options.runtime?.signal?.throwIfAborted();
       const pdfPath = path.join(stagingRootPath, `page-${index + 1}-${page}.pdf`);
+      const svgToPdfTools = svgToPdfOptions(options);
       const writeOptions: WriteSourceAsPdfOptions = {
         sourcePath: input.sourcePath,
         outputPath: pdfPath,
         workspacePath: options.workspacePath,
         maxInputPixels,
         signal: options.runtime?.signal ?? new AbortController().signal,
-        tools: { svgToPdfTools: svgToPdfOptions(options) },
         scratchOptions: scratchOptions(options),
         ...(pageCount > 1 ? { page } : {}),
+        ...(svgToPdfTools !== undefined ? { tools: { svgToPdfTools } } : {}),
       };
       await writeSourceAsPdf(writeOptions);
       pdfPaths.push(pdfPath);
@@ -179,16 +180,8 @@ function validateInputs(inputs: CombineImageInput[]): void {
   }
 }
 
-function svgToPdfOptions(options: CombineImagesToPdfOptions): SvgToPdfBackend {
-  return (
-    options.tools?.svgToPdfTools ?? {
-      engine: 'rsvg-convert',
-      rsvgConvertPath: 'rsvg-convert',
-      chromePath: '',
-      runRsvgConvert: executeRsvgConvert,
-      runChrome: executeChrome,
-    }
-  );
+function svgToPdfOptions(options: CombineImagesToPdfOptions): SvgToPdfBackend | undefined {
+  return options.tools?.svgToPdfTools;
 }
 
 function scratchOptions(options: CombineImagesToPdfOptions): RsvgToolScratchOptions {

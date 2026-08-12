@@ -27,6 +27,7 @@ suite('PDF自動crop処理', () => {
     await cropPdfFiles({
       inputs: [{ sourcePath, workspacePath, outputPath }],
       margin: 5,
+      runtime: {},
       runId: 'run',
     });
 
@@ -67,6 +68,7 @@ suite('PDF自動crop処理', () => {
     await cropPdfFiles({
       inputs: [{ sourcePath, workspacePath, outputPath }],
       margin: 20,
+      runtime: {},
     });
 
     const outputDocument = await PDFDocument.load(await readFile(outputPath));
@@ -98,6 +100,7 @@ suite('PDF自動crop処理', () => {
     await cropPdfFiles({
       inputs: [{ sourcePath, workspacePath, outputPath }],
       margin: 0,
+      runtime: {},
     });
 
     const outputDocument = await PDFDocument.load(await readFile(outputPath));
@@ -126,6 +129,7 @@ suite('PDF自動crop処理', () => {
     await cropPdfFiles({
       inputs,
       margin: 0,
+      runtime: {},
     });
 
     for (const input of inputs) {
@@ -134,7 +138,7 @@ suite('PDF自動crop処理', () => {
     }
   });
 
-  test('出力先に既存ファイルがある場合はOutput file already existsエラーでcrop前に失敗し、既存の出力内容を変更しない', async () => {
+  test('出力先に既存ファイルがある場合はcommit時にOutput file already existsエラーとなり、既存の出力内容を変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source-crop.pdf');
@@ -145,6 +149,7 @@ suite('PDF自動crop処理', () => {
       cropPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath }],
         margin: 0,
+        runtime: {},
       }),
       /Output file already exists/,
     );
@@ -163,6 +168,7 @@ suite('PDF自動crop処理', () => {
       cropPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath }],
         margin: 0,
+        runtime: {},
       }),
       /outside the workspace/,
     );
@@ -179,6 +185,7 @@ suite('PDF自動crop処理', () => {
       cropPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath }],
         margin: 0,
+        runtime: {},
       }),
       /outside the workspace/,
     );
@@ -210,7 +217,7 @@ suite('PDF自動crop処理', () => {
     const outputPath = path.join(workspacePath, 'broken-crop.pdf');
     await writeFile(sourcePath, '%PDF-1.7\nnot a real pdf');
 
-    await assert.rejects(cropPdfFiles({ inputs: [{ sourcePath, workspacePath, outputPath }], margin: 0 }));
+    await assert.rejects(cropPdfFiles({ inputs: [{ sourcePath, workspacePath, outputPath }], margin: 0, runtime: {} }));
 
     await assert.rejects(access(outputPath));
   });

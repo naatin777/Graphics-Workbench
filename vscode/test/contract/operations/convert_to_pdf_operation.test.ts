@@ -37,9 +37,8 @@ suite('入力画像をPDFへ変換する処理', () => {
         workspacePath: workspacePath.path,
         page: index + 1,
       })),
-      supportedExtensions: ['.gif'],
-      operationName: 'convert-gif-to-pdf',
       maxInputPixels: 1_000_000_000,
+      runtime: {},
     });
 
     await Promise.all(
@@ -59,9 +58,8 @@ suite('入力画像をPDFへ変換する処理', () => {
 
     await convertToPdfFiles({
       inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      supportedExtensions: ['.gif'],
-      operationName: 'convert-gif-to-pdf',
       maxInputPixels: 1_000_000_000,
+      runtime: {},
       runId: 'run',
     });
 
@@ -78,9 +76,8 @@ suite('入力画像をPDFへ変換する処理', () => {
 
     await convertToPdfFiles({
       inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      supportedExtensions: ['.tiff'],
-      operationName: 'convert-tiff-to-pdf',
       maxInputPixels: 1_000_000_000,
+      runtime: {},
       runId: 'run',
     });
 
@@ -106,9 +103,8 @@ suite('入力画像をPDFへ変換する処理', () => {
 
     await convertToPdfFiles({
       inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      supportedExtensions: ['.png'],
-      operationName: 'convert-to-pdf',
       maxInputPixels: 1_000_000_000,
+      runtime: {},
     });
 
     const { PDFDocument: LoadedPdfDocument } = await import('../../support/helpers/pdf_document.js');
@@ -136,8 +132,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       convertToPdfFiles({
         inputs: [{ sourcePath, outputPath: limitedOutputPath, workspacePath: workspacePath.path }],
         maxInputPixels: 99,
-        supportedExtensions: ['.png'],
-        operationName: 'convert-to-pdf',
+        runtime: {},
       }),
       /Configured limit: 99 pixels|pixel limit|Input image exceeds pixel limit/,
     );
@@ -145,8 +140,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await convertToPdfFiles({
       inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       maxInputPixels: 100,
-      supportedExtensions: ['.png'],
-      operationName: 'convert-to-pdf',
+      runtime: {},
     });
     await access(outputPath);
   });
@@ -161,9 +155,8 @@ suite('入力画像をPDFへ変換する処理', () => {
     await assert.rejects(
       convertToPdfFiles({
         inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-        supportedExtensions: ['.drawio.png'],
-        operationName: 'convert-to-pdf',
         maxInputPixels: 1_000_000_000,
+        runtime: {},
         tools: {
           drawioTools: {
             drawioPath: 'drawio',
@@ -188,9 +181,8 @@ suite('入力画像をPDFへ変換する処理', () => {
     await assert.rejects(
       convertToPdfFiles({
         inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-        supportedExtensions: ['.drawio.png'],
-        operationName: 'convert-to-pdf',
         maxInputPixels: 1_000_000_000,
+        runtime: {},
       }),
       /Draw\.io executable is not configured/,
     );
@@ -210,9 +202,8 @@ suite('入力画像をPDFへ変換する処理', () => {
 
     await convertToPdfFiles({
       inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      supportedExtensions: ['.svg'],
-      operationName: 'convert-svg-to-pdf',
       maxInputPixels: 1_000_000_000,
+      runtime: {},
       tools: {
         svgToPdfTools: {
           engine: 'chrome',

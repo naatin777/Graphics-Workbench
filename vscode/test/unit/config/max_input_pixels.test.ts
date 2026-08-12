@@ -33,11 +33,11 @@ suite('Raster入力pixel上限設定', () => {
     );
   });
 
-  test('raster.maxInputPixelsに0・負数・小数・NaN・Infinity・文字列・MAX_SAFE_INTEGER超のいずれかを設定した場合は、マニフェスト既定のSharp既定値(268,402,689)へフォールバックする', () => {
+  test('raster.maxInputPixelsに0・負数・小数・NaN・Infinity・文字列・MAX_SAFE_INTEGER超のいずれかを設定した場合はconfiguration errorになる', () => {
     for (const value of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, '100', Number.MAX_SAFE_INTEGER + 1]) {
-      assert.strictEqual(
-        fakeConfiguration({ 'raster.maxInputPixels': value }).raster.maxInputPixels(),
-        getDefaultConfiguration().raster.maxInputPixels(),
+      assert.throws(
+        () => fakeConfiguration({ 'raster.maxInputPixels': value }).raster.maxInputPixels(),
+        /Invalid configuration/,
         `unexpected value: ${String(value)}`,
       );
     }

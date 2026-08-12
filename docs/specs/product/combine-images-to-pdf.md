@@ -11,7 +11,7 @@
 | `graphics-workbench.combineImagesToPdf`      | 画像をPDFに結合（保存先を指定） | PDF      |
 | `graphics-workbench.quickCombineImagesToPdf` | 画像をPDFにクイック結合         | PDF      |
 
-両コマンドは `combine`（N入力→1出力）に分類され、Context Menuでの表示は `graphics-workbench.conversion.combine.enabled` で制御する。
+両コマンドは、複数の独立した画像を1つのPDFへ結合すること自体を目的とする `combine` operation に分類され、Context Menuでの表示は `graphics-workbench.conversion.combine.enabled` で制御する。
 
 ## 対象入力形式
 

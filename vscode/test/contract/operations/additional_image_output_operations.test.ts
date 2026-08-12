@@ -53,8 +53,7 @@ async function convertImage(
   if (outputFormat === 'pdf') {
     await convertToPdfFiles({
       inputs: [job],
-      supportedExtensions: [`.${inputFormat}`],
-      operationName: 'convert-additional-image-to-pdf',
+      runtime,
       maxInputPixels: 100_000_000,
     });
     return;

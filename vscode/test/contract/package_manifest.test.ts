@@ -27,9 +27,7 @@ const EXPECTED_CATEGORIES_BY_COMMAND: Record<string, readonly ('single' | 'split
   'graphics-workbench.convertToSvg': ['single', 'split'],
   'graphics-workbench.convertToGif': ['single', 'split'],
   'graphics-workbench.convertToTiff': ['single', 'split'],
-  'graphics-workbench.convertToWebpPreserveAnimation': ['single'],
   'graphics-workbench.convertToWebpSeparately': ['split'],
-  'graphics-workbench.convertToGifPreserveAnimation': ['single'],
   'graphics-workbench.convertToGifSeparately': ['split'],
   'graphics-workbench.convertDrawioToPagePdfs': ['split'],
   'graphics-workbench.convertDrawioToSinglePdf': ['single'],
@@ -68,6 +66,7 @@ interface PackageJson {
           default: unknown;
           minimum?: number;
           maximum?: number;
+          minLength?: number;
           description: string;
           additionalProperties?: unknown;
           properties?: Record<string, unknown>;
@@ -264,15 +263,12 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('アニメーション保持コマンドはsingle.enabled、フレーム分割コマンドはsplit.enabledで制御する', async () => {
+  test('アニメーションを保持する通常コマンドはsingle.enabled、フレーム分割コマンドはsplit.enabledで制御する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((entry) => entry.command === command);
 
-    const preserveCommands = [
-      'graphics-workbench.convertToWebpPreserveAnimation',
-      'graphics-workbench.convertToGifPreserveAnimation',
-    ];
+    const preserveCommands = ['graphics-workbench.convertToWebp', 'graphics-workbench.convertToGif'];
     const separatelyCommands = [
       'graphics-workbench.convertToWebpSeparately',
       'graphics-workbench.convertToGifSeparately',
@@ -466,32 +462,30 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToAvif.when?.includes('dio'));
   });
 
-  test('convertToGif・convertToGifPreserveAnimation・convertToGifSeparatelyの3コマンドを公開する', async () => {
+  test('convertToGif・convertToGifSeparatelyの2コマンドを公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
     assert.ok(commandIds.has('graphics-workbench.convertToGif'));
-    assert.ok(commandIds.has('graphics-workbench.convertToGifPreserveAnimation'));
     assert.ok(commandIds.has('graphics-workbench.convertToGifSeparately'));
   });
 
-  test('convertToWebp・convertToWebpPreserveAnimation・convertToWebpSeparatelyの3コマンドを公開する', async () => {
+  test('convertToWebp・convertToWebpSeparatelyの2コマンドを公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
     assert.ok(commandIds.has('graphics-workbench.convertToWebp'));
-    assert.ok(commandIds.has('graphics-workbench.convertToWebpPreserveAnimation'));
     assert.ok(commandIds.has('graphics-workbench.convertToWebpSeparately'));
   });
 
-  test('GIF/WebPのアニメーション保持とフレーム分割の4コマンドを変換サブメニューに載せる', async () => {
+  test('GIF/WebPのアニメーション保持とフレーム分割を通常・Separatelyコマンドで変換サブメニューに載せる', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const commands = new Set(convertMenu.map((entry) => entry.command));
 
-    assert.ok(commands.has('graphics-workbench.convertToWebpPreserveAnimation'));
+    assert.ok(commands.has('graphics-workbench.convertToWebp'));
     assert.ok(commands.has('graphics-workbench.convertToWebpSeparately'));
-    assert.ok(commands.has('graphics-workbench.convertToGifPreserveAnimation'));
+    assert.ok(commands.has('graphics-workbench.convertToGif'));
     assert.ok(commands.has('graphics-workbench.convertToGifSeparately'));
   });
 
@@ -500,9 +494,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const paletteEntries = packageJson.contributes.menus.commandPalette ?? [];
     const paletteHidden = new Set(paletteEntries.filter((e) => e.when === 'false').map((e) => e.command));
 
-    assert.ok(paletteHidden.has('graphics-workbench.convertToWebpPreserveAnimation'));
     assert.ok(paletteHidden.has('graphics-workbench.convertToWebpSeparately'));
-    assert.ok(paletteHidden.has('graphics-workbench.convertToGifPreserveAnimation'));
     assert.ok(paletteHidden.has('graphics-workbench.convertToGifSeparately'));
   });
 
@@ -521,23 +513,21 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertMenu.some((entry) => entry.command === QUICK_COMBINE_IMAGES_TO_PDF_COMMAND));
   });
 
-  test('WebPのアニメーション保持・フレーム分割は.gif入力のときだけ表示し、GIFのアニメーション保持・フレーム分割は.webp入力のときだけ表示する', async () => {
+  test('通常のWebP/GIFは相互のanimated入力を含み、Separatelyは対応するanimated入力だけに表示する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((e) => e.command === command);
 
-    const webpPreserve = findEntry('graphics-workbench.convertToWebpPreserveAnimation');
+    const webp = findEntry('graphics-workbench.convertToWebp');
     const webpSeparately = findEntry('graphics-workbench.convertToWebpSeparately');
-    const gifPreserve = findEntry('graphics-workbench.convertToGifPreserveAnimation');
+    const gif = findEntry('graphics-workbench.convertToGif');
     const gifSeparately = findEntry('graphics-workbench.convertToGifSeparately');
 
-    assert.ok(webpPreserve?.when?.includes('resourceExtname =~ /^\\.gif$/i'));
-    assert.ok(!webpPreserve?.when?.includes('.webp'), 'WebP preserve should not match .webp');
+    assert.ok(webp?.when?.includes('resourceExtname =~ /^\\.gif$/i'));
     assert.ok(webpSeparately?.when?.includes('resourceExtname =~ /^\\.gif$/i'));
     assert.ok(!webpSeparately?.when?.includes('.webp'), 'WebP separately should not match .webp');
 
-    assert.ok(gifPreserve?.when?.includes('resourceExtname =~ /^\\.webp$/i'));
-    assert.ok(!gifPreserve?.when?.includes('.gif'), 'GIF preserve should not match .gif');
+    assert.ok(gif?.when?.includes('resourceExtname =~ /^\\.webp$/i'));
     assert.ok(gifSeparately?.when?.includes('resourceExtname =~ /^\\.webp$/i'));
     assert.ok(!gifSeparately?.when?.includes('.gif'), 'GIF separately should not match .gif');
   });
@@ -550,8 +540,8 @@ suite('package.jsonの変換メニュー定義', () => {
     const webp = findEntry('graphics-workbench.convertToWebp');
     const gif = findEntry('graphics-workbench.convertToGif');
 
-    assert.ok(!webp?.when?.includes('gif'), 'Standard WebP should not match .gif');
-    assert.ok(!gif?.when?.includes('.webp'), 'Standard GIF should not match .webp');
+    assert.ok(webp?.when?.includes('gif'), 'Standard WebP should match .gif');
+    assert.ok(gif?.when?.includes('.webp'), 'Standard GIF should match .webp');
   });
 
   test('package.jsonのcommand titleを%キー%参照にし、日本語ラベルが選択したファイルを各形式に変換する行動ベースの文言とGIF/WebPのアニメーション保持・フレーム分割文言であることを検証する', async () => {
@@ -570,9 +560,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.strictEqual(jaMessages['command.convertToAvif'], '選択したファイルをAVIFに変換');
     assert.strictEqual(jaMessages['command.convertToSvg'], '選択したファイルをSVGに変換');
     assert.strictEqual(jaMessages['command.convertToGif'], '選択したファイルをGIFに変換');
-    assert.strictEqual(jaMessages['command.convertToGifPreserveAnimation'], 'GIF: アニメーションを保持');
     assert.strictEqual(jaMessages['command.convertToGifSeparately'], 'GIF: フレーム分割');
-    assert.strictEqual(jaMessages['command.convertToWebpPreserveAnimation'], 'WebP: アニメーションを保持');
     assert.strictEqual(jaMessages['command.convertToWebpSeparately'], 'WebP: フレーム分割');
     assert.strictEqual(jaMessages['command.combineImagesToPdf'], '画像をPDFに結合（保存先を指定）');
     assert.strictEqual(jaMessages['command.quickCombineImagesToPdf'], '画像をPDFにクイック結合');
@@ -638,6 +626,18 @@ suite('package.jsonの変換メニュー定義', () => {
     );
   });
 
+  test('すべてのoutputPath文字列設定に空でないschema制約minLength:1を付ける', async () => {
+    const packageJson = await readJson<PackageJson>('package.json');
+    const outputPathEntries = Object.entries(packageJson.contributes.configuration.properties).filter(
+      ([key, schema]) => key.startsWith('graphics-workbench.outputPath.') && schema.type === 'string',
+    );
+
+    assert.ok(outputPathEntries.length > 0);
+    for (const [key, schema] of outputPathEntries) {
+      assert.strictEqual(schema.minLength, 1, `${key} must reject empty strings in its schema`);
+    }
+  });
+
   test('PDFとTIFFのCustom Editorをpriority:optionで登録し、displayNameを%キー%参照・selectorを拡張子パターンにする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const customEditors = packageJson.contributes.customEditors ?? [];
@@ -673,6 +673,7 @@ suite('package.jsonの変換メニュー定義', () => {
       type: 'string',
       default: '${fileDirname}/${dateNow}',
       description: '%config.outputPath.clipboardImage%',
+      minLength: 1,
     });
   });
 });

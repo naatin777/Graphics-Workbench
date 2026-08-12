@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { Configuration } from '../../generated/extension_manifest.js';
 
 import {
+  isSupportedPdfConversionSource,
   isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '@graphics-workbench/core/shared/source_format.js';
@@ -23,23 +24,6 @@ import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
-
-const pdfImageExtensions = [
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.webp',
-  '.avif',
-  '.gif',
-  '.tif',
-  '.tiff',
-  '.svg',
-  '.drawio.png',
-  '.dio.png',
-  '.drawio.svg',
-  '.dio.svg',
-] as const;
 
 export async function convertToPdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const outputChannel = dependencies.outputChannel;
@@ -51,62 +35,46 @@ async function convertSelectedSourcesToPdf(
   dependencies: CommandDependencies,
   outputChannel: LineOutputChannel,
 ): Promise<void> {
-  try {
-    if (sourceUris.length === 0) {
-      throw new Error('No files were selected.');
-    }
-
-    const configuration = dependencies.getConfiguration();
-    const maxInputPixels = configuration.raster.maxInputPixels();
-    const svgToPdfTools = createSvgToPdfBackend(configuration);
-    validateSvgToPdfOptions(svgToPdfTools);
-    const drawioTools = createDrawioBackend(configuration);
-    const plannedInputs: PdfInput[] = [];
-    for (const sourceUri of sourceUris) {
-      plannedInputs.push(
-        ...(await planToPdfInputs(
-          sourceUri,
-          outputTemplateForSource(configuration),
-          logicalSourcePathForOutputTemplate(sourceUri.fsPath),
-          pdfImageExtensions,
-        )),
-      );
-    }
-    const inputs = plannedInputs;
-    await runConversionLifecycle({
-      operationName: 'convert-to-pdf',
-      outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: {
-        progressTitle: userMessage('message.progress.convertToPdf.title', inputs.length),
-        prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
-        successMessage: (count) => userMessage('message.convertToPdf.success', count),
-        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-        cancelledMessage: userMessage('message.convertToPdf.cancelled'),
-        failedMessage: (reason) => userMessage('message.convertToPdf.failed', reason),
-      },
-      run: async (runtime) =>
-        convertToPdfFiles({
-          inputs,
-          maxInputPixels,
-          supportedExtensions: pdfImageExtensions,
-          tools: {
-            svgToPdfTools,
-            drawioTools,
-          },
-          operationName: 'convert-to-pdf',
-          runtime,
-        }),
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.convertToPdf.cancelled'));
-      return;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage('message.convertToPdf.failed', message));
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage(userMessage('message.convertToPdf.failed', 'No files were selected.'));
+    return;
   }
+
+  await runConversionLifecycle({
+    operationName: 'convert-to-pdf',
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: {
+      progressTitle: userMessage('message.progress.convertToPdf.title', sourceUris.length),
+      prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
+      successMessage: (count) => userMessage('message.convertToPdf.success', count),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage('message.convertToPdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.convertToPdf.failed', reason),
+    },
+    run: async (runtime) => {
+      const configuration = dependencies.getConfiguration();
+      const maxInputPixels = configuration.raster.maxInputPixels();
+      const svgToPdfTools = createSvgToPdfBackend(configuration);
+      validateSvgToPdfOptions(svgToPdfTools);
+      const drawioTools = createDrawioBackend(configuration);
+      const plannedInputs: PdfInput[] = [];
+      const outputTemplate = outputTemplateForSource(configuration);
+      for (const sourceUri of sourceUris) {
+        runtime.signal?.throwIfAborted();
+        plannedInputs.push(
+          ...(await planToPdfInputs(sourceUri, outputTemplate, logicalSourcePathForOutputTemplate(sourceUri.fsPath))),
+        );
+      }
+      runtime.signal?.throwIfAborted();
+      return convertToPdfFiles({
+        inputs: plannedInputs,
+        maxInputPixels,
+        tools: { svgToPdfTools, drawioTools },
+        runtime,
+      });
+    },
+  });
 }
 
 export function outputTemplateForSource(configuration: Configuration): string {
@@ -127,7 +95,6 @@ async function planToPdfInputs(
   sourceUri: vscode.Uri,
   outputTemplate: string,
   templateSourcePath: string,
-  supportedExtensions: readonly string[],
 ): Promise<PdfInput[]> {
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local image files are supported: ${sourceUri.toString()}`);
@@ -139,8 +106,7 @@ async function planToPdfInputs(
     throw new Error(`The image must be inside an open workspace: ${sourceUri.fsPath}`);
   }
 
-  const lowerSourcePath = sourceUri.fsPath.toLowerCase();
-  if (!supportedExtensions.some((extension) => lowerSourcePath.endsWith(extension))) {
+  if (!isSupportedPdfConversionSource(sourceUri.fsPath)) {
     throw new Error(`Unsupported input format: ${sourceUri.fsPath}`);
   }
 

@@ -216,6 +216,16 @@ function schemaTypes(schema: JsonSchema): string[] {
   return Array.isArray(schema.type) ? schema.type : [schema.type];
 }
 
+function validateConfigurationSchema(fullKey: string, schema: JsonSchema, extensionPrefix: string): void {
+  if (
+    fullKey.startsWith(`${extensionPrefix}outputPath.`) &&
+    schema.type === 'string' &&
+    (schema.minLength === undefined || schema.minLength < 1)
+  ) {
+    throw new Error(`Output path configuration must declare minLength >= 1: ${fullKey}`);
+  }
+}
+
 function renderConfigurationSchema(schema: JsonSchema, indentation: string): string {
   if (schema.enum?.some((value) => typeof value === 'object' && value !== null)) {
     throw new Error('Configuration enums must contain primitive values');
@@ -465,6 +475,7 @@ export function generate(packageJson: PackageManifest): string {
     if (!Object.hasOwn(schema, 'default')) {
       throw new Error(`Configuration key is missing a default: ${fullKey}`);
     }
+    validateConfigurationSchema(fullKey, schema, extensionPrefix);
 
     const key = fullKey.slice(extensionPrefix.length);
     const typeName = schema.type === 'object' ? pascalCase(key) : undefined;
@@ -501,9 +512,9 @@ export function generate(packageJson: PackageManifest): string {
     `function matchesConfigurationType(value: unknown, type: ConfigurationSchemaType, schema: ConfigurationSchema): boolean {\n  switch (type) {\n    case 'array': {\n      if (!Array.isArray(value)) {\n        return false;\n      }\n      const { items } = schema;\n      return items === undefined || value.every((item) => matchesConfigurationSchema(item, items));\n    }\n    case 'boolean': {\n      return typeof value === 'boolean';\n    }\n    case 'integer': {\n      return typeof value === 'number' && Number.isInteger(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'number': {\n      return typeof value === 'number' && Number.isFinite(value) && isNumberWithinBounds(value, schema);\n    }\n    case 'object': {\n      return matchesConfigurationObject(value, schema);\n    }\n    case 'string': {\n      return typeof value === 'string' && (schema.minLength === undefined || value.length >= schema.minLength);\n    }\n    default: {\n      return false;\n    }\n  }\n}\n\n` +
     `function matchesConfigurationSchema(value: unknown, schema: ConfigurationSchema): boolean {\n  if (!schema.types.some((type) => matchesConfigurationType(value, type, schema))) {\n    return false;\n  }\n  return schema.enumValues === undefined || schema.enumValues.some((candidate) => candidate === value);\n}\n\n` +
     renderConfigurationSchemas(configurationEntries, extensionPrefix) +
-    `function assertConfigurationValue<Value>(key: ConfigurationKey, value: unknown, defaultValue: Value): Value {\n  if (matchesConfigurationSchema(value, configurationSchemas[key])) {\n    return value as Value;\n  }\n  // 不正な設定値で拡張の起動を止めず、デフォルトへフォールバックする。\n  // 1つのstale設定が全コマンドを無効化するのを防ぐ。\n  console.warn(\n    \`graphics-workbench.\${key}: invalid value \${JSON.stringify(value)}, using default \${JSON.stringify(defaultValue)}\`,\n  );\n  return defaultValue;\n}\n\n` +
+    `function assertConfigurationValue(key: ConfigurationKey, value: unknown): unknown {\n  if (matchesConfigurationSchema(value, configurationSchemas[key])) {\n    return value;\n  }\n  throw new Error(\n    \`Invalid configuration for graphics-workbench.\${key}: value \${JSON.stringify(value)} does not match the declared schema.\`,\n  );\n}\n\n` +
     `function defineConfiguration<Value>(\n  configurationReader: ConfigurationReader,\n  key: ConfigurationKey,\n  defaultValue: Value,\n): ConfigurationGetter<Value> {\n` +
-    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    return assertConfigurationValue(key, value, defaultValue);\n  };\n` +
+    `  return (): Value => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    return assertConfigurationValue(key, value) as Value;\n  };\n` +
     `}\n\n` +
     `function isBlankString(value: unknown): value is string {\n  return typeof value === 'string' && value.trim() === '';\n}\n\n` +
     `function defineStrictOutputPath(\n  configurationReader: ConfigurationReader,\n  key: ConfigurationKey,\n  defaultValue: string,\n): ConfigurationGetter<string> {\n` +

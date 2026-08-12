@@ -15,6 +15,7 @@ import {
   isRasterInputPixelLimitError,
   formatRasterInputPixelLimitMessage,
   openRasterInput,
+  rasterAnimationEncoderOptions,
   type RasterAnimationMetadata,
 } from './raster_input.js';
 // oxlint-disable-next-line unicorn/prefer-export-from -- CommittedConversionOutput is used locally and re-exported.
@@ -291,26 +292,15 @@ async function encodeRaster(request: RasterRenderRequest, context: RasterStageCo
       return;
     }
     case 'gif': {
-      await input.gif(animationEncoderOptions(request.animation)).toFile(request.outputPath);
+      await input.gif(rasterAnimationEncoderOptions(request.animation)).toFile(request.outputPath);
       return;
     }
     case 'webp': {
       await input
-        .webp({ ...context.outputOptions, ...animationEncoderOptions(request.animation) })
+        .webp({ ...context.outputOptions, ...rasterAnimationEncoderOptions(request.animation) })
         .toFile(request.outputPath);
     }
   }
-}
-
-function animationEncoderOptions(animation: RasterAnimationMetadata | undefined): { delay?: number[]; loop?: number } {
-  const options: { delay?: number[]; loop?: number } = {};
-  if (animation?.delay !== undefined) {
-    options.delay = animation.delay;
-  }
-  if (animation?.loop !== undefined) {
-    options.loop = animation.loop;
-  }
-  return options;
 }
 
 async function validateInputPaths(inputs: RasterInput[], stagingDirectoryName: string): Promise<void> {

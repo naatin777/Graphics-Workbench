@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import * as v from 'valibot';
@@ -37,7 +37,7 @@ export interface CropPdfInput {
 export interface CropPdfOptions {
   inputs: CropPdfInput[];
   margin: number;
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
 }
 
@@ -45,25 +45,21 @@ type Rect = [number, number, number, number];
 
 export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   validateConversions(options.inputs);
   validateMargin(options.margin);
   await validatePdfPathInputs(options.inputs, 'crop-pdf');
 
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
-  if (!runtime?.resolveConflicts) {
-    await assertOutputsDoNotExist(options.inputs);
-  }
-
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'crop-pdf-auto',
     stagingOperationName: 'crop-pdf',
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, currentRunId, batchRuntime) =>
       convertPdf({
         input,
@@ -207,38 +203,10 @@ function validateMargin(margin: number): void {
   }
 }
 
-async function assertOutputsDoNotExist(inputs: CropPdfInput[]): Promise<void> {
-  const normalizedOutputs = new Set<string>();
-
-  for (const input of inputs) {
-    const normalizedOutput = path.resolve(input.outputPath);
-
-    if (normalizedOutputs.has(normalizedOutput)) {
-      throw new Error(`Multiple inputs resolve to the same output: ${input.outputPath}`);
-    }
-    normalizedOutputs.add(normalizedOutput);
-
-    try {
-      await access(input.outputPath);
-      throw new Error(`Output file already exists: ${input.outputPath}`);
-    } catch (error) {
-      if (isFileNotFoundError(error)) {
-        continue;
-      }
-      throw error instanceof Error ? error : new Error(String(error));
-    }
-  }
-}
-
 function addMargin(box: Rect, margin: number): Rect {
   return [box[0] - margin, box[1] - margin, box[2] + margin, box[3] + margin];
 }
 
 function isEmptyBox(box: Rect): boolean {
   return box[0] === box[2] || box[1] === box[3];
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: catch由来の値を識別する。
-function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }

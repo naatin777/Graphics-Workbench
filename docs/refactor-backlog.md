@@ -72,18 +72,6 @@
 - Expected test impact: PDF/SVGの実変換、external tool failure、cleanup、Safe Modeの全suite。
 - Reversibility: 形式固有のまま小さいhelperを導入できる。
 
-### legacy outputPath設定の移行（解決済み）
-
-- Area: configuration
-- Type: Architecture
-- Concrete problem: 出力形式基準commandと入力/出力pair基準のoutput path keyが混同されていた。
-- Evidence: `core/src/config/output/resolve_output_path.ts`、`vscode/package.json`の`outputPath.*`設定、`docs/specs/product/output-format-conversion.md`。
-- Trigger: output path naming policyを変更するとき。
-- Why not now: ADR-0021でpair-specific設定を正本とし、形式基準設定をmanifestと実装から外した。
-- Related files: `vscode/package.json`、`vscode/package.nls.json`、`vscode/package.nls.ja.json`、`core/src/config/output/resolve_output_path.ts`、`vscode/src/commands/conversion/convert_*.ts`。
-- Expected test impact: pair-specific `outputPath.convertXToY`の単一・page出力を確認する。
-- Reversibility: ADR-0021を置き換え、設定migrationを別taskとして扱う。
-
 ---
 
 ### 重いmupdf処理をExtension Host外へ隔離する

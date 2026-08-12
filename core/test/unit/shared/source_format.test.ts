@@ -4,6 +4,7 @@ import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
   isSameSourceFormat,
+  isSupportedPdfConversionSource,
   logicalSourcePathForOutputTemplate,
   sourceFormatForPath,
 } from '@graphics-workbench/core/shared/source_format.js';
@@ -27,5 +28,13 @@ suite('source format判定', () => {
     assert.strictEqual(isSameSourceFormat('image.tiff', '.tif'), true);
     assert.strictEqual(isSameSourceFormat('diagram.drawio.png', '.png'), false);
     assert.strictEqual(isSameSourceFormat('image.png', '.webp'), false);
+  });
+
+  test('PDF変換の対応入力形式をsource format分類から判定し、未知形式とPDF自身を拒否する', () => {
+    assert.strictEqual(isSupportedPdfConversionSource('image.png'), true);
+    assert.strictEqual(isSupportedPdfConversionSource('diagram.drawio.svg'), true);
+    assert.strictEqual(isSupportedPdfConversionSource('diagram.drawio'), false);
+    assert.strictEqual(isSupportedPdfConversionSource('document.pdf'), false);
+    assert.strictEqual(isSupportedPdfConversionSource('notes.txt'), false);
   });
 });

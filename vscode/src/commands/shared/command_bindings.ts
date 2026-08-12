@@ -35,13 +35,7 @@ import type * as vscode from 'vscode';
 export interface FileCommandBinding {
   kind: 'file';
   id: CommandId;
-  handler: (
-    sourceUris: vscode.Uri[],
-    dependencies: CommandDependencies,
-    options?: ConvertToRasterCommandOptions,
-  ) => Promise<void>;
-  /** ラスタ変換など固定optionsをhandlerへ渡すbindingのみ保持。 */
-  options?: ConvertToRasterCommandOptions;
+  handler: (sourceUris: vscode.Uri[], dependencies: CommandDependencies) => Promise<void>;
 }
 
 /** VS Codeから(uri, uris)入力を受け、ExtensionContextも必要なconfigure系コマンド。 */
@@ -86,12 +80,10 @@ function rasterFileBinding(
   target: 'png' | 'jpeg' | 'avif' | 'tiff' | 'webp' | 'gif',
   cardinality?: 'single' | 'split',
 ): FileCommandBinding {
-  return {
-    kind: 'file',
-    id,
-    handler: convertToRasterCommand,
-    options: { target, ...(cardinality !== undefined && { cardinality }) },
-  };
+  const options: ConvertToRasterCommandOptions = { target, ...(cardinality !== undefined && { cardinality }) };
+  return fileBinding(id, async (sourceUris, dependencies) => {
+    await convertToRasterCommand(sourceUris, dependencies, options);
+  });
 }
 
 export const commandBindings = [
@@ -115,12 +107,10 @@ export const commandBindings = [
   rasterFileBinding('graphics-workbench.convertToPng', 'png'),
   rasterFileBinding('graphics-workbench.convertToJpeg', 'jpeg'),
   rasterFileBinding('graphics-workbench.convertToWebp', 'webp'),
-  rasterFileBinding('graphics-workbench.convertToWebpPreserveAnimation', 'webp'),
   rasterFileBinding('graphics-workbench.convertToWebpSeparately', 'webp', 'split'),
   rasterFileBinding('graphics-workbench.convertToAvif', 'avif'),
   fileBinding('graphics-workbench.convertToSvg', convertToSvgCommand),
   rasterFileBinding('graphics-workbench.convertToGif', 'gif'),
-  rasterFileBinding('graphics-workbench.convertToGifPreserveAnimation', 'gif'),
   rasterFileBinding('graphics-workbench.convertToGifSeparately', 'gif', 'split'),
   rasterFileBinding('graphics-workbench.convertToTiff', 'tiff'),
   fileBinding('graphics-workbench.convertToDrawio', convertToDrawioCommand),

@@ -340,30 +340,39 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
   },
   'outputPath.cropPdf': {
     types: ['string'],
+    minLength: 1,
   },
   'outputPath.clipboardImage': {
     types: ['string'],
+    minLength: 1,
   },
   'outputPath.reorderPdf': {
     types: ['string'],
+    minLength: 1,
   },
   'outputPath.rotatePdf': {
     types: ['string'],
+    minLength: 1,
   },
   'outputPath.rotateImage': {
     types: ['string'],
+    minLength: 1,
   },
   'outputPath.compressPdf': {
     types: ['string'],
+    minLength: 1,
   },
   'outputPath.compressImage': {
     types: ['string'],
+    minLength: 1,
   },
   'outputPath.encryptPdf': {
     types: ['string'],
+    minLength: 1,
   },
   'outputPath.decryptPdf': {
     types: ['string'],
+    minLength: 1,
   },
   'cropPdf.marginOptions': {
     types: ['array'],
@@ -427,16 +436,13 @@ const configurationSchemas: Record<ConfigurationKey, ConfigurationSchema> = {
     minLength: 1,
   },
 };
-function assertConfigurationValue<Value>(key: ConfigurationKey, value: unknown, defaultValue: Value): Value {
+function assertConfigurationValue(key: ConfigurationKey, value: unknown): unknown {
   if (matchesConfigurationSchema(value, configurationSchemas[key])) {
-    return value as Value;
+    return value;
   }
-  // 不正な設定値で拡張の起動を止めず、デフォルトへフォールバックする。
-  // 1つのstale設定が全コマンドを無効化するのを防ぐ。
-  console.warn(
-    `graphics-workbench.${key}: invalid value ${JSON.stringify(value)}, using default ${JSON.stringify(defaultValue)}`,
+  throw new Error(
+    `Invalid configuration for graphics-workbench.${key}: value ${JSON.stringify(value)} does not match the declared schema.`,
   );
-  return defaultValue;
 }
 
 function defineConfiguration<Value>(
@@ -449,7 +455,7 @@ function defineConfiguration<Value>(
     if (value === undefined) {
       return defaultValue;
     }
-    return assertConfigurationValue(key, value, defaultValue);
+    return assertConfigurationValue(key, value) as Value;
   };
 }
 
@@ -541,10 +547,6 @@ export const commandContributions = {
     titleKey: 'command.convertToWebp',
     category: 'Graphics Workbench',
   },
-  'graphics-workbench.convertToWebpPreserveAnimation': {
-    titleKey: 'command.convertToWebpPreserveAnimation',
-    category: 'Graphics Workbench',
-  },
   'graphics-workbench.convertToWebpSeparately': {
     titleKey: 'command.convertToWebpSeparately',
     category: 'Graphics Workbench',
@@ -559,10 +561,6 @@ export const commandContributions = {
   },
   'graphics-workbench.convertToGif': {
     titleKey: 'command.convertToGif',
-    category: 'Graphics Workbench',
-  },
-  'graphics-workbench.convertToGifPreserveAnimation': {
-    titleKey: 'command.convertToGifPreserveAnimation',
     category: 'Graphics Workbench',
   },
   'graphics-workbench.convertToGifSeparately': {
@@ -644,12 +642,10 @@ export const publicCommandIds = [
   'graphics-workbench.convertToPng',
   'graphics-workbench.convertToJpeg',
   'graphics-workbench.convertToWebp',
-  'graphics-workbench.convertToWebpPreserveAnimation',
   'graphics-workbench.convertToWebpSeparately',
   'graphics-workbench.convertToAvif',
   'graphics-workbench.convertToSvg',
   'graphics-workbench.convertToGif',
-  'graphics-workbench.convertToGifPreserveAnimation',
   'graphics-workbench.convertToGifSeparately',
   'graphics-workbench.convertToTiff',
   'graphics-workbench.convertToDrawio',

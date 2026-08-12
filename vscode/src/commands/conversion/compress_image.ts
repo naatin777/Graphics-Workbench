@@ -11,7 +11,6 @@ import {
   type CompressibleImageFormat,
 } from '../../operations/conversion/compress_image.js';
 import { readRasterAnimationMetadata } from '@graphics-workbench/core/operations/conversion/raster_input.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
@@ -23,44 +22,45 @@ const animatedCompressionFormats = new Set<CompressibleImageFormat>(['gif', 'web
 
 export async function compressImageCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const { outputChannel } = dependencies;
-  try {
-    if (sourceUris.length === 0) {
-      throw new Error('No image files were selected.');
-    }
-
-    const configuration = dependencies.getConfiguration();
-    const outputTemplate = configuration.outputPath.compressImage();
-    const quality = configuration.compressImage.quality();
-    const maxInputPixels = configuration.raster.maxInputPixels();
-    const maxAnimationPixels = configuration.raster.maxAnimationPixels();
-    const inputs: CompressImageInput[] = [];
-    for (const sourceUri of sourceUris) {
-      inputs.push(...(await planCompressImageInputs(sourceUri, outputTemplate, maxInputPixels, maxAnimationPixels)));
-    }
-
-    await runConversionLifecycle({
-      operationName: OPERATION_NAME,
-      outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: {
-        progressTitle: userMessage('message.progress.compressImage.title', inputs.length),
-        prepareMessage: userMessage('message.progress.prepareConversion', 'Image'),
-        successMessage: (count) => userMessage('message.compressImage.success', count),
-        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-        cancelledMessage: userMessage('message.compressImage.cancelled'),
-        failedMessage: (reason) => userMessage('message.compressImage.failed', reason),
-      },
-      run: async (runtime) => compressImageFiles({ inputs, quality, maxInputPixels, runtime }),
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.compressImage.cancelled'));
-      return;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage('message.compressImage.failed', message));
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage(userMessage('message.compressImage.failed', 'No image files were selected.'));
+    return;
   }
+
+  await runConversionLifecycle({
+    operationName: OPERATION_NAME,
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: {
+      progressTitle: userMessage('message.progress.compressImage.title', sourceUris.length),
+      prepareMessage: userMessage('message.progress.prepareConversion', 'Image'),
+      successMessage: (count) => userMessage('message.compressImage.success', count),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage('message.compressImage.cancelled'),
+      failedMessage: (reason) => userMessage('message.compressImage.failed', reason),
+    },
+    run: async (runtime) => {
+      const configuration = dependencies.getConfiguration();
+      const outputTemplate = configuration.outputPath.compressImage();
+      const quality = configuration.compressImage.quality();
+      const maxInputPixels = configuration.raster.maxInputPixels();
+      const maxAnimationPixels = configuration.raster.maxAnimationPixels();
+      const inputs: CompressImageInput[] = [];
+      for (const sourceUri of sourceUris) {
+        runtime.signal?.throwIfAborted();
+        inputs.push(
+          ...(await planCompressImageInputs(
+            sourceUri,
+            outputTemplate,
+            maxInputPixels,
+            maxAnimationPixels,
+            runtime.signal,
+          )),
+        );
+      }
+      return compressImageFiles({ inputs, quality, maxInputPixels, runtime });
+    },
+  });
 }
 
 async function planCompressImageInputs(
@@ -68,7 +68,9 @@ async function planCompressImageInputs(
   outputTemplate: string,
   maxInputPixels: number,
   maxAnimationPixels: number,
+  signal?: AbortSignal,
 ): Promise<CompressImageInput[]> {
+  signal?.throwIfAborted();
   if (sourceUri.scheme !== 'file') {
     throw new Error(`Only local image files are supported: ${sourceUri.toString()}`);
   }
@@ -98,6 +100,7 @@ async function planCompressImageInputs(
   const animation = animatedCompressionFormats.has(format)
     ? await readRasterAnimationMetadata(sourcePath, maxInputPixels)
     : undefined;
+  signal?.throwIfAborted();
   if (animation !== undefined) {
     assertAnimationPixelLimit(
       animation.width ?? 0,

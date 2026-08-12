@@ -139,7 +139,6 @@ async function saveClipboardImageAsPdf(
     ],
     runId,
     runtime,
-    supportedExtensions: [`.${request.data.type.ext}`] as const,
     maxInputPixels: request.maxInputPixels,
   };
   return convertToPdfFiles(convertOptions);

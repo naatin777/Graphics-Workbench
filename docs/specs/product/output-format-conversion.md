@@ -42,20 +42,20 @@ PDFを画像またはSVGへ変換する場合はページごとに出力を作�
 
 editable Draw.io画像から画像へ変換する場合は、数式を保持するためPDFを経由する。中間結果は利用者向けの出力名へ現れない。
 
-GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変換では先頭page/frameを扱い、GIF/WebPのanimation preserve commandとsplit commandは全frameを扱う。Convert to PDFのGIF/TIFF入力は、複数page/frameを全ページPDFへ展開する。ページ寸法が異なるTIFFも各pageを個別に読み出す。
+GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変換では先頭page/frameを扱い、通常のWebP/GIF commandはanimationを1つの出力へ保持し、Separately commandは全frameを個別出力する。Convert to PDFのGIF/TIFF入力は、複数page/frameを全ページPDFへ展開する。ページ寸法が異なるTIFFも各pageを個別に読み出す。
 
 ## 設定と入力名
 
-変換の出力先は「何から変換したか」ではなく「何を何個出力するか」で決める。`single`（1入力→1出力）は`outputPath.single.<形式>`、`split`（1入力→複数出力）は`outputPath.split.<形式>`、`combine`（N入力→1出力）は`outputPath.combine.<形式>`を正本とする。
+変換の出力先は入力形式ではなく、ユーザーから見た出力・操作の種類で決める。`single`は1回の変換結果を1つの出力ファイルとして生成する操作、`split`は1つの論理的な入力・document・animationを複数の独立ファイルへ展開する操作、`combine`は複数の独立したユーザーファイルを1つへ結合すること自体を目的とする操作を表す。それぞれ`outputPath.single.<形式>`、`outputPath.split.<形式>`、`outputPath.combine.<形式>`を正本とする。
 
 - `single.pdf`、`single.png`、`single.jpeg`、`single.webp`、`single.avif`、`single.gif`、`single.tiff`、`single.svg`
 - `split.pdf`、`split.png`、`split.jpeg`、`split.webp`、`split.avif`、`split.gif`、`split.tiff`、`split.svg`
 - `combine.pdf`（Quick Combine専用。`${random}`必須）
-- Draw.ioのcompose（N入力→1出力）は`single.drawio`／`single.drawioPng`／`single.drawioSvg`を使う。
-- 画像のPDF結合（N入力→1出力）のSave As版は出力path設定を持たず、Save Asダイアログで出力先を選択する。
+- 素材からeditable Draw.ioを作成するcomposeは、最終artifactが1ファイルのため`single.drawio`／`single.drawioPng`／`single.drawioSvg`を使う。
+- 複数画像を1つへ結合する画像のPDF結合operationのSave As版は出力path設定を持たず、Save Asダイアログで出力先を選択する。
 - PDF編集operation固有の設定（`cropPdf`、`rotatePdf`、`reorderPdf`、`compressPdf`、`encryptPdf`、`decryptPdf`）は維持する。
 
-`split`のテンプレートは`${page}`を必須とし、PDFページ・アニメーションフレーム・Draw.ioページを同じ`split.<形式>`で扱う。`outputPath.convertXToY`のような入力・出力ペア設定は存在しない。
+`split`のテンプレートは`${page}`を必須とし、PDFページ・アニメーションフレーム・Draw.ioページを同じ`split.<形式>`で扱う。
 
 `outputPath`設定は未設定ならmanifest既定値を使い、空文字や空白だけ・型不一致はinvalid configurationとして扱う（既定値への黙示fallbackはしない）。
 
@@ -63,11 +63,11 @@ GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変�
 
 ## Context MenuとGW Controls
 
-変換commandのContext Menu表示制御は入力format単位ではなく、出力cardinalityの3分類 `single`／`split`／`combine` 単位で行う。
+変換commandのContext Menu表示制御は入力format単位ではなく、ユーザー向けの出力・操作分類 `single`／`split`／`combine` 単位で行う。
 
-- `graphics-workbench.conversion.single.enabled`: 1入力→1出力の変換commandを表示する
-- `graphics-workbench.conversion.split.enabled`: 1入力→複数出力の変換commandを表示する
-- `graphics-workbench.conversion.combine.enabled`: N入力→1出力の変換command（Save As / Quickの両方）を表示する
+- `graphics-workbench.conversion.single.enabled`: 最終artifactを1ファイルへ生成する変換commandを表示する
+- `graphics-workbench.conversion.split.enabled`: 1つの論理入力を複数ファイルへ展開する変換commandを表示する
+- `graphics-workbench.conversion.combine.enabled`: 複数ファイルを1つへ結合することが目的の変換command（Save As / Quickの両方）を表示する
 
 各commandのwhen句は入力formatの判定（対応commandの表示に必要なformat正規表現）を維持するが、`format判定 × format別enabled設定`の組み合わせは持たない。
 
@@ -91,7 +91,3 @@ SVGからPDFへの`chrome` backendは、同じChrome実行ファイルを`--head
 - `graphics-workbench.convertDrawioToSinglePdf`: Draw.ioの全ページを1つのPDFへ出力する。
 
 分割commandは`outputPath.split.pdf`の`${page}`へDraw.ioのページ名を設定する。Windowsで使用できない文字や端の空白は出力ファイル名用に正規化する。単一PDF commandは`outputPath.single.pdf`を使う。いずれもDraw.io Desktop CLIを使い、出力は通常のstaging、Safe Mode、Undo、cancellationの対象とする。
-
-## 移行
-
-v1では入力形式・出力形式ペア別の旧command IDを公開UIへ残さない。旧command IDからの移行は[v1 migration note](v1-migration-from-v051.md)に従う。
