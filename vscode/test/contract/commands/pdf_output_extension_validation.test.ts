@@ -4,7 +4,7 @@
 // Mocked:
 // - 通知API
 // - 確認UI (quick pick, input box)
-// - progress UI (呼び出されないことの検証)
+// - progress UI (convertToPdfのplanning errorをlifecycle経由で検証)
 // - Webview panel (作成されないことの検証)
 //
 // Not tested:
@@ -124,7 +124,7 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
     });
   });
 
-  test('convertToPdf（SVG入力）の出力パス設定が.pngで終わる場合は、変換処理（withProgress）を開始せず、無効な拡張子のエラー通知を出す', async () => {
+  test('convertToPdf（SVG入力）の出力パス設定が.pngで終わる場合は、共通lifecycleでplanning errorを通知する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
     const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
@@ -135,16 +135,22 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
       const sourcePath = path.join(temporaryDirectory.path, 'source.svg');
       await copyFile(path.join(testInputDirectory, 'valid', 'svg', 'gradient-card.svg'), sourcePath);
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-      const withProgress = sandbox
-        .stub(vscode.window, 'withProgress')
-        .rejects(new Error('withProgress must not be called for an invalid output path.'));
+      const withProgress = sandbox.stub(vscode.window, 'withProgress').callsFake(async (_options, task) =>
+        task(
+          { report: () => undefined },
+          {
+            isCancellationRequested: false,
+            onCancellationRequested: () => ({ dispose: () => undefined }),
+          },
+        ),
+      );
 
       await withWorkspaceSettings({ 'graphics-workbench.outputPath.single.pdf': invalidPdfTemplate }, async () => {
         await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
       });
 
       assertShowExtensionError(showErrorMessage);
-      assert.ok(withProgress.notCalled);
+      assert.ok(withProgress.calledOnce);
     } finally {
       sandbox.restore();
     }

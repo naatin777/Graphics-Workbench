@@ -3,22 +3,22 @@ import assert from 'node:assert/strict';
 import { fakeConfiguration } from '../../support/helpers/configuration.js';
 
 suite('生成された設定スキーマ検証', () => {
-  test("convertToPdf.svg.engineに列挙値でない'puppeteer'を設定した場合、default値'chrome'へフォールバックする", () => {
+  test("convertToPdf.svg.engineに列挙値でない'puppeteer'を設定した場合、configuration errorになる", () => {
     const configuration = fakeConfiguration({ 'convertToPdf.svg.engine': 'puppeteer' });
 
-    assert.strictEqual(configuration.convertToPdf.svg.engine(), 'chrome');
+    assert.throws(() => configuration.convertToPdf.svg.engine(), /Invalid configuration/);
   });
 
-  test('convertToWebp.effortに範囲外の7を設定した場合、default値4へフォールバックする', () => {
+  test('convertToWebp.effortに範囲外の7を設定した場合、configuration errorになる', () => {
     const configuration = fakeConfiguration({ 'convertToWebp.effort': 7 });
 
-    assert.strictEqual(configuration.convertToWebp.effort(), 4);
+    assert.throws(() => configuration.convertToWebp.effort(), /Invalid configuration/);
   });
 
-  test("cropPdf.marginOptionsに型が合わない要素'5'を含む[0,'5']を設定した場合、既定の[0,5,10,20]へフォールバックする", () => {
+  test("cropPdf.marginOptionsに型が合わない要素'5'を含む[0,'5']を設定した場合、configuration errorになる", () => {
     const configuration = fakeConfiguration({ 'cropPdf.marginOptions': [0, '5'] });
 
-    assert.deepStrictEqual(configuration.cropPdf.marginOptions(), [0, 5, 10, 20]);
+    assert.throws(() => configuration.cropPdf.marginOptions(), /Invalid configuration/);
   });
 
   test('設定を何も与えない場合、Draw.io commandと各runtime設定のmanifest既定値を返す', () => {
@@ -68,21 +68,21 @@ suite('生成された設定スキーマ検証', () => {
     assert.throws(() => configuration.outputPath.combine.pdf(), /Invalid configuration/);
   });
 
-  test('undoHistory.maxRecordsに範囲外の0と非整数の1.5を設定した場合、default値10へフォールバックする', () => {
+  test('undoHistory.maxRecordsに範囲外の0と非整数の1.5を設定した場合、configuration errorになる', () => {
     const outOfBounds = fakeConfiguration({ 'undoHistory.maxRecords': 0 });
-    assert.strictEqual(outOfBounds.undoHistory.maxRecords(), 10);
+    assert.throws(() => outOfBounds.undoHistory.maxRecords(), /Invalid configuration/);
 
     const nonInteger = fakeConfiguration({ 'undoHistory.maxRecords': 1.5 });
-    assert.strictEqual(nonInteger.undoHistory.maxRecords(), 10);
+    assert.throws(() => nonInteger.undoHistory.maxRecords(), /Invalid configuration/);
   });
 
-  test('preview.maxDevicePixelRatioに範囲外の0、rsvgConvert.timeoutSecondsに範囲外の86,401を設定した場合、それぞれdefaultの2と0へフォールバックする', () => {
+  test('preview.maxDevicePixelRatioに範囲外の0、rsvgConvert.timeoutSecondsに範囲外の86,401を設定した場合、configuration errorになる', () => {
     const configuration = fakeConfiguration({
       'preview.maxDevicePixelRatio': 0,
       'externalTools.rsvgConvert.timeoutSeconds': 86401,
     });
 
-    assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
-    assert.strictEqual(configuration.externalTools.rsvgConvert.timeoutSeconds(), 0);
+    assert.throws(() => configuration.preview.maxDevicePixelRatio(), /Invalid configuration/);
+    assert.throws(() => configuration.externalTools.rsvgConvert.timeoutSeconds(), /Invalid configuration/);
   });
 });

@@ -88,7 +88,7 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('convertToWebpPreserveAnimationでGIFを変換し、複数ページの1つのWebPを生成する', async () => {
+  test('convertToWebpでGIFを変換すると複数frameを持つ1つのWebPを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -96,7 +96,7 @@ suite('WebPに変換コマンド', () => {
       await copyFile(path.join(testInputDirectory, 'valid', 'gif', 'rotating-vector-field.gif'), sourcePath);
 
       const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.convertToWebpPreserveAnimation',
+        'graphics-workbench.convertToWebp',
         vscode.Uri.file(sourcePath),
       );
       await commandExecution;
@@ -130,6 +130,41 @@ suite('WebPに変換コマンド', () => {
       const secondFramePath = path.join(temporaryDirectory, 'rotating-vector-field', '02.webp');
       await assertReadableWebp(firstFramePath);
       await assertReadableWebp(secondFramePath);
+    } finally {
+      await removeTemporaryDirectory(temporaryDirectory);
+    }
+  });
+
+  test('convertToGifでanimated WebPを変換すると複数frameを持つ1つのGIFを生成する', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const sourcePath = path.join(temporaryDirectory, 'animated-swirl.webp');
+      await copyFile(path.join(testInputDirectory, 'valid', 'webp', 'animated-swirl.webp'), sourcePath);
+
+      await vscode.commands.executeCommand('graphics-workbench.convertToGif', vscode.Uri.file(sourcePath));
+
+      assert.deepStrictEqual(showErrorMessage.args, []);
+      const metadata = await sharp(replaceExtension(sourcePath, '.gif')).metadata();
+      assert.strictEqual(metadata.format, 'gif');
+      assert.ok((metadata.pages ?? 1) > 1);
+    } finally {
+      await removeTemporaryDirectory(temporaryDirectory);
+    }
+  });
+
+  test('convertToGifSeparatelyでanimated WebPを変換し、フレームごとのGIFを生成する', async () => {
+    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
+
+    try {
+      const sourcePath = path.join(temporaryDirectory, 'animated-swirl.webp');
+      await copyFile(path.join(testInputDirectory, 'valid', 'webp', 'animated-swirl.webp'), sourcePath);
+
+      await vscode.commands.executeCommand('graphics-workbench.convertToGifSeparately', vscode.Uri.file(sourcePath));
+
+      assert.deepStrictEqual(showErrorMessage.args, []);
+      await assertReadableGif(path.join(temporaryDirectory, 'animated-swirl', '01.gif'));
+      await assertReadableGif(path.join(temporaryDirectory, 'animated-swirl', '02.gif'));
     } finally {
       await removeTemporaryDirectory(temporaryDirectory);
     }
@@ -209,6 +244,14 @@ async function assertReadableWebp(filePath: string): Promise<void> {
   assert.ok(metadata.width > 0);
   assert.ok(metadata.height);
   assert.ok(metadata.height > 0);
+}
+
+async function assertReadableGif(filePath: string): Promise<void> {
+  await assertFileExists(filePath);
+  const metadata = await sharp(await readFile(filePath)).metadata();
+  assert.strictEqual(metadata.format, 'gif');
+  assert.ok((metadata.width ?? 0) > 0);
+  assert.ok((metadata.height ?? 0) > 0);
 }
 
 async function assertFileExists(filePath: string): Promise<void> {

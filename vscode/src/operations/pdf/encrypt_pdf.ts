@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -26,34 +26,29 @@ export interface EncryptPdfInput {
 export interface EncryptPdfOptions {
   inputs: EncryptPdfInput[];
   password: string;
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
 }
 
 export async function encryptPdfFiles(options: EncryptPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   validatePassword(options.password);
   validateConversions(options.inputs);
   await validatePdfPathInputs(options.inputs, 'encrypt-pdf');
 
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
-  if (!runtime?.resolveConflicts) {
-    await assertOutputsDoNotExist(options.inputs);
-  }
-
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   const stagingRootPath = await createSecurePdfStagingRoot('encrypt-pdf');
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'encrypt-pdf',
-    stagingOperationName: 'encrypt-pdf',
     runId: options.runId,
     artifactRoots: [{ rootPath: stagingRootPath, workspacePath: stagingRootPath }],
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, _runId, batchRuntime) =>
       encryptPdf({
         input,
@@ -128,32 +123,4 @@ function validateConversions(inputs: EncryptPdfInput[]): void {
       throw new Error(`Only PDF files can be encrypted: ${input.sourcePath}`);
     }
   }
-}
-
-async function assertOutputsDoNotExist(inputs: EncryptPdfInput[]): Promise<void> {
-  const normalizedOutputs = new Set<string>();
-
-  for (const input of inputs) {
-    const normalizedOutput = path.resolve(input.outputPath);
-
-    if (normalizedOutputs.has(normalizedOutput)) {
-      throw new Error(`Multiple inputs resolve to the same output: ${input.outputPath}`);
-    }
-    normalizedOutputs.add(normalizedOutput);
-
-    try {
-      await access(input.outputPath);
-      throw new Error(`Output file already exists: ${input.outputPath}`);
-    } catch (error) {
-      if (isFileNotFoundError(error)) {
-        continue;
-      }
-      throw error instanceof Error ? error : new Error(String(error));
-    }
-  }
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- 型ガード: catch由来の値を識別する。
-function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }

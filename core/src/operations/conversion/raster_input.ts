@@ -16,6 +16,20 @@ export interface RasterAnimationMetadata {
   loop?: number;
 }
 
+export function rasterAnimationEncoderOptions(animation: RasterAnimationMetadata | undefined): {
+  delay?: number[];
+  loop?: number;
+} {
+  const options: { delay?: number[]; loop?: number } = {};
+  if (animation?.delay !== undefined) {
+    options.delay = animation.delay;
+  }
+  if (animation?.loop !== undefined) {
+    options.loop = animation.loop;
+  }
+  return options;
+}
+
 export function openRasterInput(
   sourcePath: string,
   maxInputPixels: number,

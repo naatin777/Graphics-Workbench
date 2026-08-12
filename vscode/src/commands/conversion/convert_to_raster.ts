@@ -119,9 +119,9 @@ async function runRasterCommand(options: {
 export async function convertToRasterCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
-  options?: ConvertToRasterCommandOptions,
+  options: ConvertToRasterCommandOptions,
 ): Promise<void> {
-  const { target = 'png', cardinality } = options ?? {};
+  const { target, cardinality } = options;
   await runRasterCommand({
     sourceUris,
     dependencies,

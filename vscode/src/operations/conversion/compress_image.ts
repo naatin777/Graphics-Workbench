@@ -23,6 +23,7 @@ import {
   formatRasterInputPixelLimitMessage,
   isRasterInputPixelLimitError,
   openRasterInput,
+  rasterAnimationEncoderOptions,
   type RasterAnimationMetadata,
 } from '@graphics-workbench/core/operations/conversion/raster_input.js';
 
@@ -69,22 +70,22 @@ export interface CompressImageOptions {
   inputs: CompressImageInput[];
   quality: number;
   maxInputPixels: number;
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
 }
 
 export async function compressImageFiles(options: CompressImageOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   validateConversions(options.inputs);
   await validateInputPaths(options.inputs);
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: OPERATION_NAME,
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, stageRunId, stageRuntime) =>
       stageCompressImage(input, index, {
         runId: stageRunId,
@@ -191,7 +192,7 @@ async function encodeCompressedImage(
       }
       case 'webp': {
         await input
-          .webp({ quality: context.quality, effort: 4, ...animationEncoderOptions(request.animation) })
+          .webp({ quality: context.quality, effort: 4, ...rasterAnimationEncoderOptions(request.animation) })
           .toFile(request.outputPath);
         return;
       }
@@ -200,7 +201,7 @@ async function encodeCompressedImage(
         return;
       }
       case 'gif': {
-        await input.gif({ effort: 10, ...animationEncoderOptions(request.animation) }).toFile(request.outputPath);
+        await input.gif({ effort: 10, ...rasterAnimationEncoderOptions(request.animation) }).toFile(request.outputPath);
         return;
       }
       case 'tiff': {
@@ -214,17 +215,6 @@ async function encodeCompressedImage(
   } finally {
     await closeRasterPipeline(input);
   }
-}
-
-function animationEncoderOptions(animation: RasterAnimationMetadata | undefined): { delay?: number[]; loop?: number } {
-  const options: { delay?: number[]; loop?: number } = {};
-  if (animation?.delay !== undefined) {
-    options.delay = animation.delay;
-  }
-  if (animation?.loop !== undefined) {
-    options.loop = animation.loop;
-  }
-  return options;
 }
 
 async function validateGeneratedImage(outputPath: string, format: CompressibleImageFormat | undefined): Promise<void> {

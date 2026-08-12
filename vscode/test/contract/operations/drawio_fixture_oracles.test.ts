@@ -101,11 +101,9 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
         await (isEditableDrawioImagePath(sourcePath)
           ? convertToPdfFiles({
               inputs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
-              supportedExtensions: ['.drawio', '.drawio.png', '.drawio.svg'],
               tools: { drawioTools },
               maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
               runtime,
-              operationName: `drawio-${fixtureCase.id}-to-pdf`,
               runId: `drawio-${fixtureCase.id}-pdf`,
             })
           : convertDrawioToSinglePdf({

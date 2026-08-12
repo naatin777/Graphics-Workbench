@@ -35,6 +35,7 @@ suite('パスワード付きPDFの復号化', () => {
       await decryptPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
+        runtime: {},
         runId: 'run',
       });
 
@@ -64,13 +65,14 @@ suite('パスワード付きPDFの復号化', () => {
       decryptPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath }],
         password: 'wrong-password',
+        runtime: {},
       }),
     );
 
     await assert.rejects(access(outputPath));
   });
 
-  test('出力先に既存ファイルがある場合はOutput file already existsエラーで復号前に失敗し、既存内容を変更しない', async () => {
+  test('出力先に既存ファイルがある場合はcommit時にOutput file already existsエラーとなり、既存内容を変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -81,6 +83,7 @@ suite('パスワード付きPDFの復号化', () => {
       decryptPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
+        runtime: {},
       }),
       /Output file already exists/,
     );

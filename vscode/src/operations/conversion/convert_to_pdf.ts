@@ -14,6 +14,7 @@ import {
 
 import {
   isEditableDrawioImagePath,
+  isSupportedPdfConversionSource,
   isRasterImagePath,
   isSameSourceFormat,
 } from '@graphics-workbench/core/shared/source_format.js';
@@ -44,7 +45,6 @@ import { stagingRootPathFor } from '@graphics-workbench/core/operations/lifecycl
 import type { DrawioBackend } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 
-const defaultSupportedImageExtensions = ['.png'] as const;
 const svgExtension = '.svg';
 
 export function validateSvgToPdfOptions(options: SvgToPdfBackend): void {
@@ -86,7 +86,7 @@ interface WriteRasterImageAsPdfOptions {
   sourcePath: string;
   outputPath: string;
   workspacePath: string;
-  signal: AbortSignal | undefined;
+  signal: AbortSignal;
   maxInputPixels: number;
   framePage: number | undefined;
 }
@@ -102,9 +102,8 @@ interface WriteSvgAsPdfOptions {
 
 export interface ConvertToPdfFilesOptions {
   inputs: PdfInput[];
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
-  supportedExtensions?: readonly string[];
   tools?: {
     svgToPdfTools?: SvgToPdfBackend;
     drawioTools?: DrawioBackend;
@@ -112,33 +111,29 @@ export interface ConvertToPdfFilesOptions {
   platform?: NodeJS.Platform;
   maxInputPixels: number;
   scratchBaseCandidates?: readonly string[];
-  operationName?: string;
 }
 
 export async function convertToPdfFiles(options: ConvertToPdfFilesOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
   const { maxInputPixels } = options;
-  runtime?.signal?.throwIfAborted();
-  validateConversions(options.inputs, options.supportedExtensions ?? defaultSupportedImageExtensions);
+  runtime.signal?.throwIfAborted();
+  validateConversions(options.inputs);
   await validatePdfPathInputs(options.inputs, 'convert-to-pdf');
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   const platform = options.platform ?? process.platform;
   const scratchOptions: RsvgToolScratchOptions = { platform };
-  if (runtime?.outputChannel !== undefined) {
+  if (runtime.outputChannel !== undefined) {
     scratchOptions.outputChannel = runtime.outputChannel;
   }
   if (options.scratchBaseCandidates !== undefined) {
     scratchOptions.scratchBaseCandidates = options.scratchBaseCandidates;
   }
-  const operationName = options.operationName ?? 'convert-to-pdf';
-
   return runStagedConversionBatch({
     inputs: options.inputs,
-    operationName,
-    stagingOperationName: 'convert-to-pdf',
+    operationName: 'convert-to-pdf',
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, currentRunId, batchRuntime) =>
       stageSourceToPdf(input, index, currentRunId, {
         signal: batchRuntime.signal,
@@ -280,15 +275,15 @@ async function writeRasterImageAsPdf({
   maxInputPixels,
   framePage,
 }: WriteRasterImageAsPdfOptions): Promise<void> {
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   const metadataImage = openRasterInput(sourcePath, maxInputPixels, framePage);
   let width: number;
   let height: number;
 
   try {
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
     const metadata = await metadataImage.metadata();
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
 
     if (!metadata.width || !metadata.height) {
       throw new Error(`Could not determine image dimensions: ${sourcePath}`);
@@ -296,7 +291,7 @@ async function writeRasterImageAsPdf({
 
     ({ width, height } = metadata);
   } catch (error) {
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
     if (isRasterInputPixelLimitError(error)) {
       throw new Error(formatRasterInputPixelLimitMessage(maxInputPixels), { cause: error });
     }
@@ -304,17 +299,17 @@ async function writeRasterImageAsPdf({
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
     await closeRasterPipeline(metadataImage);
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
   }
 
   const encodingImage = openRasterInput(sourcePath, maxInputPixels, framePage);
   let imageBuffer: Buffer;
   try {
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
     imageBuffer = await encodingImage.png().toBuffer();
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
   } catch (error) {
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
     if (isRasterInputPixelLimitError(error)) {
       throw new Error(formatRasterInputPixelLimitMessage(maxInputPixels, { width, height }), { cause: error });
     }
@@ -322,7 +317,7 @@ async function writeRasterImageAsPdf({
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
     await closeRasterPipeline(encodingImage);
-    signal?.throwIfAborted();
+    signal.throwIfAborted();
   }
 
   const mupdf = await loadMupdf();
@@ -351,10 +346,10 @@ async function writeRasterImageAsPdf({
   } finally {
     doc.destroy();
   }
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await assertWritablePathInWorkspace(outputPath, workspacePath);
   await mkdir(path.dirname(outputPath), { recursive: true });
-  signal?.throwIfAborted();
+  signal.throwIfAborted();
   await writeFile(outputPath, pdfBytes);
 }
 
@@ -440,13 +435,11 @@ async function writeSvgAsPdf({
   svgToPdf,
   scratchOptions,
 }: WriteSvgAsPdfOptions): Promise<void> {
-  const options = svgToPdf ?? {
-    engine: 'chrome',
-    rsvgConvertPath: 'rsvg-convert',
-    chromePath: '',
-    runRsvgConvert: executeRsvgConvert,
-    runChrome: executeChrome,
-  };
+  if (svgToPdf === undefined) {
+    throw new Error('SVG-to-PDF backend is not configured.');
+  }
+
+  const options = svgToPdf;
   const size = await readSvgSize(sourcePath);
   validateSvgToPdfOptions(options);
 
@@ -587,25 +580,18 @@ function setPageSize(page: MupdfPdfPage, width: number, height: number): void {
   page.setPageBox('CropBox', [0, 0, width, height]);
 }
 
-function validateConversions(inputs: PdfInput[], supportedExtensions: readonly string[]): void {
+function validateConversions(inputs: PdfInput[]): void {
   if (inputs.length === 0) {
     throw new Error('No image files were selected.');
   }
-
-  const supportedExtensionSet = new Set(supportedExtensions.map((extension) => extension.toLowerCase()));
 
   for (const input of inputs) {
     if (isSameSourceFormat(input.sourcePath, '.pdf')) {
       throw new Error(`Input and output formats must differ: ${input.sourcePath}`);
     }
 
-    if (!isSupportedSourcePath(input.sourcePath, supportedExtensionSet)) {
+    if (!isSupportedPdfConversionSource(input.sourcePath)) {
       throw new Error(`Unsupported image format: ${input.sourcePath}`);
     }
   }
-}
-
-function isSupportedSourcePath(sourcePath: string, supportedExtensionSet: Set<string>): boolean {
-  const lowerSourcePath = sourcePath.toLowerCase();
-  return [...supportedExtensionSet].some((extension) => lowerSourcePath.endsWith(extension));
 }

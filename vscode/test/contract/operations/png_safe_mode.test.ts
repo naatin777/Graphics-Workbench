@@ -30,7 +30,6 @@ import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
 import { requireValue } from '../../support/helpers/required.js';
 
 const fixturePath = operationPngInputPath;
-const editableDrawioImageExtensions = ['.drawio.png', '.dio.png', '.drawio.svg', '.dio.svg'] as const;
 
 suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）', () => {
   test('2件のPNG→PDF変換を実行すると、各結果を一時フォルダに作成してから出力PDFへ反映し、一時作業ディレクトリにはジョブごとのresult.pdfが残る', async () => {
@@ -160,7 +159,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     await Promise.all(inputs.map((input) => assert.rejects(access(input.outputPath))));
   });
 
-  test('編集可能なDraw.io PNG/SVGをsupportedExtensionsに指定し、注入したDraw.io runnerで各ソースを1ページPDFへ変換する', async () => {
+  test('編集可能なDraw.io PNG/SVGを入力として、注入したDraw.io runnerで各ソースを1ページPDFへ変換する', async () => {
     const { inputs } = await createEditableDrawioJobs([
       ['source.drawio.png', 'source.pdf'],
       ['diagram.dio.svg', 'diagram.pdf'],
@@ -170,7 +169,6 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     const outputs = await convertToPdfFiles({
       inputs,
       maxInputPixels: 1_000_000_000,
-      supportedExtensions: editableDrawioImageExtensions,
       tools: {
         drawioTools: {
           drawioPath: 'drawio',
@@ -198,7 +196,6 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     const outputs = await convertToPdfFiles({
       inputs,
       maxInputPixels: 1_000_000_000,
-      supportedExtensions: editableDrawioImageExtensions,
       tools: {
         drawioTools: {
           drawioPath: 'drawio',
@@ -224,7 +221,6 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     const outputs = await convertToPdfFiles({
       inputs,
       maxInputPixels: 1_000_000_000,
-      supportedExtensions: editableDrawioImageExtensions,
       tools: {
         drawioTools: {
           drawioPath: 'drawio',

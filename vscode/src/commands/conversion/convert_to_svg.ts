@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { countPdfPages, renderPdfPageToSvg } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { renderPdfPageToSvg } from '@graphics-workbench/core/operations/pdf/mupdf.js';
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
@@ -12,72 +12,57 @@ import {
   logicalSourcePathForOutputTemplate,
 } from '@graphics-workbench/core/shared/source_format.js';
 import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import {
-  assertPageTemplateForSplitOutput,
-  formatOutputPage,
-} from '@graphics-workbench/core/config/output/page_template.js';
 import { convertToSvgFiles, type SvgInput } from '../../operations/conversion/convert_to_svg.js';
+import { planPdfPageConversionJobs } from './plan_conversion_jobs.js';
 import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security/workspace_path.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
-import { userMessage } from '../shared/user_messages.js';
 import { assertLocalFileUri } from '../shared/command_input.js';
 import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
 
 export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const outputChannel = dependencies.outputChannel;
-  try {
-    if (sourceUris.length === 0) {
-      throw new Error('No files were selected.');
-    }
-
-    const configuration = dependencies.getConfiguration();
-    const maxInputPixels = configuration.raster.maxInputPixels();
-    const drawioTools = createDrawioBackend(configuration);
-    await runConversionLifecycle({
-      operationName: 'convert-to-svg',
-      outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: createOutputConversionMessages('SVG', sourceUris.length),
-      run: async (runtime) => {
-        const inputs: SvgInput[] = [];
-        for (const sourceUri of sourceUris) {
-          runtime.signal?.throwIfAborted();
-          inputs.push(...(await planSvgInputs(sourceUri, configuration, runtime)));
-        }
-        return convertToSvgFiles({
-          inputs,
-          maxInputPixels,
-          drawioTools,
-          runtime,
-          runPdfToSvg: async (sourcePath, outputPath, page, signal) => {
-            signal.throwIfAborted();
-            const svg = await renderPdfPageToSvg(await readFile(sourcePath), page);
-            signal.throwIfAborted();
-            await writeFile(outputPath, svg, 'utf8');
-          },
-        });
-      },
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.convertToOutput.cancelled', 'SVG'));
-      return;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage('message.convertToOutput.failed', 'SVG', message));
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage('No files were selected.');
+    return;
   }
+
+  await runConversionLifecycle({
+    operationName: 'convert-to-svg',
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: createOutputConversionMessages('SVG', sourceUris.length),
+    run: async (runtime) => {
+      const configuration = dependencies.getConfiguration();
+      const maxInputPixels = configuration.raster.maxInputPixels();
+      const drawioTools = createDrawioBackend(configuration);
+      const inputs: SvgInput[] = [];
+      for (const sourceUri of sourceUris) {
+        inputs.push(...(await planSvgInputs(sourceUri, configuration, runtime)));
+      }
+      return convertToSvgFiles({
+        inputs,
+        maxInputPixels,
+        drawioTools,
+        runtime,
+        runPdfToSvg: async (sourcePath, outputPath, page, signal) => {
+          signal.throwIfAborted();
+          const svg = await renderPdfPageToSvg(await readFile(sourcePath), page);
+          signal.throwIfAborted();
+          await writeFile(outputPath, svg, 'utf8');
+        },
+      });
+    },
+  });
 }
 
 async function planSvgInputs(
   sourceUri: vscode.Uri,
   configuration: Configuration,
-  runtime?: ConversionExecutionContext,
+  runtime: ConversionExecutionContext,
 ): Promise<SvgInput[]> {
   assertLocalFileUri(sourceUri);
   const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -138,40 +123,16 @@ async function planPdfPageSvgInputs(
   sourcePath: string,
   workspace: vscode.WorkspaceFolder,
   configuration: Configuration,
-  runtime?: ConversionExecutionContext,
+  runtime: ConversionExecutionContext,
 ): Promise<SvgInput[]> {
-  runtime?.signal?.throwIfAborted();
-  runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
-  const pageCount = await countPdfPages(await readFile(sourcePath));
-
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${sourcePath}`);
-  }
-
   const outputTemplate = configuration.outputPath.split.svg();
-  assertPageTemplateForSplitOutput(outputTemplate, pageCount);
-
-  const inputs: SvgInput[] = [];
-
-  for (let index = 0; index < pageCount; index += 1) {
-    runtime?.signal?.throwIfAborted();
-    const page = index + 1;
-    inputs.push({
-      sourcePath,
-      workspacePath: workspace.uri.fsPath,
-      outputPath: resolveOutputPath(
-        outputTemplate,
-        {
-          sourcePath,
-          workspacePath: workspace.uri.fsPath,
-          workspaceName: workspace.name,
-          page: formatOutputPage(page, pageCount),
-        },
-        { allowedExtensions: ['.svg'] },
-      ),
-      page,
-    });
-  }
-
-  return inputs;
+  return planPdfPageConversionJobs({
+    sourcePath,
+    workspacePath: workspace.uri.fsPath,
+    workspaceName: workspace.name,
+    outputTemplate,
+    allowedExtensions: ['.svg'],
+    runtime,
+    toConversion: (page, outputPath) => ({ sourcePath, workspacePath: workspace.uri.fsPath, outputPath, page }),
+  });
 }

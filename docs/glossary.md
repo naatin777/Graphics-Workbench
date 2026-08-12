@@ -51,5 +51,5 @@
 
 - `native Draw.io document`: `.drawio`または`.dio`のauthoring document。pageごとのPDFまたは1つのmulti-page PDFへ外部toolでexportする。
 - `editable Draw.io image`: `.drawio.png`、`.dio.png`、`.drawio.svg`、`.dio.svg`。通常のformat conversionからDraw.io adapterへrouteする。
-- `page PDFs`: native Draw.ioの各pageを個別PDFにした結果。`outputPath.convertDrawioToPagePdfs`と`${page}`を使う。
-- `single PDF`: native Draw.ioの全pageを1つにした結果。`outputPath.convertDrawioToSinglePdf`を使う。
+- `page PDFs`: native Draw.ioの各pageを個別PDFにした結果。`outputPath.split.pdf`と`${page}`を使う。
+- `single PDF`: native Draw.ioの全pageを1つにした結果。`outputPath.single.pdf`を使う。

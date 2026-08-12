@@ -4,7 +4,7 @@ PDF操作の利用者向けquick/configure挙動は、[product specification](..
 
 ## Routing boundary
 
-command registryではquick系とconfigure系を別の入口として扱う。`manual`を新しい内部aliasやcommand名として追加せず、旧command IDの移行はproduct側のmigration specificationへ委譲する。
+command registryではquick系とconfigure系を別の入口として扱う。`manual`を新しい内部aliasやcommand名として追加せず、現行registryには旧command IDを登録しない。
 
 ## Quick boundary
 

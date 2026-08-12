@@ -71,7 +71,7 @@ suite('command登録処理', () => {
 
     await handlers.get(binding.id)!(uri, uris);
 
-    assert.deepStrictEqual(called.calls, [[[uri], dependencies, undefined]]);
+    assert.deepStrictEqual(called.calls, [[[uri], dependencies]]);
   });
 
   test('fileWithContext bindingのhandlerがExtensionContext、sourceUris、dependenciesを正しい順で受ける', async () => {
@@ -90,38 +90,36 @@ suite('command登録処理', () => {
     assert.deepStrictEqual(called.calls, [[context, [uri], dependencies]]);
   });
 
-  test('ラスタ変換bindingが固定optionsをhandlerへ渡す', async () => {
+  test('ラスタ変換bindingが通常のfile bindingと同じ2引数でhandlerを呼ぶ', async () => {
     const handlers = captureRegisteredHandlers(sandbox);
     const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.gif');
 
-    const binding = findBinding('graphics-workbench.convertToWebpPreserveAnimation');
+    const binding = findBinding('graphics-workbench.convertToWebp');
     assert.strictEqual(binding.kind, 'file');
-    assert.deepStrictEqual(binding.options, { target: 'webp' });
     const called = captureHandlerCalls(sandbox, binding);
     registerCommands(createContext(), dependencies);
 
     await handlers.get(binding.id)!(uri);
 
     assert.strictEqual(called.calls.length, 1);
-    assert.deepStrictEqual(called.calls[0], [[uri], dependencies, { target: 'webp' }]);
+    assert.deepStrictEqual(called.calls[0], [[uri], dependencies]);
   });
 
-  test('フレーム分割bindingがfixedオプションとしてcardinality:splitをhandlerへ渡す', async () => {
+  test('フレーム分割bindingが通常のfile bindingと同じ2引数でhandlerを呼ぶ', async () => {
     const handlers = captureRegisteredHandlers(sandbox);
     const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.gif');
 
     const binding = findBinding('graphics-workbench.convertToWebpSeparately');
     assert.strictEqual(binding.kind, 'file');
-    assert.deepStrictEqual(binding.options, { target: 'webp', cardinality: 'split' });
     const called = captureHandlerCalls(sandbox, binding);
     registerCommands(createContext(), dependencies);
 
     await handlers.get(binding.id)!(uri);
 
     assert.strictEqual(called.calls.length, 1);
-    assert.deepStrictEqual(called.calls[0], [[uri], dependencies, { target: 'webp', cardinality: 'split' }]);
+    assert.deepStrictEqual(called.calls[0], [[uri], dependencies]);
   });
 
   test('extensionCommand bindingのhandlerがVS Codeから渡された任意引数とdependenciesを正しい順で受ける', async () => {

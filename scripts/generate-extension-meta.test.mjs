@@ -92,6 +92,21 @@ void test('generate accepts a valid manifest', () => {
   assert.doesNotThrow(() => generate(createManifest()));
 });
 
+void test('generate rejects string output paths without a non-empty schema constraint', () => {
+  const manifest = createManifest({
+    contributes: {
+      ...createManifest().contributes,
+      configuration: {
+        properties: {
+          'graphics-workbench.outputPath.example': { type: 'string', default: '${fileDirname}/result.pdf' },
+        },
+      },
+    },
+  });
+
+  assert.throws(() => generate(manifest), /Output path configuration must declare minLength >= 1/);
+});
+
 void test('generate rejects commands outside the extension namespace', () => {
   const manifest = createManifest({
     contributes: {

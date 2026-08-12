@@ -34,6 +34,7 @@ suite('PDFのパスワード暗号化', () => {
       await encryptPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
+        runtime: {},
         runId: 'run',
       });
 
@@ -58,7 +59,7 @@ suite('PDFのパスワード暗号化', () => {
     }
   });
 
-  test('出力先に既存ファイルがある場合はOutput file already existsエラーで暗号化前に失敗し、既存内容を変更しない', async () => {
+  test('出力先に既存ファイルがある場合はcommit時にOutput file already existsエラーとなり、既存内容を変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -69,6 +70,7 @@ suite('PDFのパスワード暗号化', () => {
       encryptPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath }],
         password,
+        runtime: {},
       }),
       /Output file already exists/,
     );
@@ -108,6 +110,7 @@ suite('PDFのパスワード暗号化', () => {
           encryptPdfFiles({
             inputs: [{ sourcePath, workspacePath, outputPath }],
             password: invalidPassword,
+            runtime: {},
           }),
           /passwords cannot contain/iu,
         );

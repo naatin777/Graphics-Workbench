@@ -25,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const dependencies = { getConfiguration: getExtensionConfiguration, outputChannel } satisfies CommandDependencies;
   context.subscriptions.push(outputChannel);
 
-  applyRuntimeConfiguration(getExtensionConfiguration());
+  applyRuntimeConfigurationSafely(getExtensionConfiguration, outputChannel);
   void cleanupStaleSecurePdfStagingRoots();
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
@@ -34,7 +34,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         event.affectsConfiguration('graphics-workbench.undoHistory.maxRecords') ||
         event.affectsConfiguration('graphics-workbench.externalTools')
       ) {
-        applyRuntimeConfiguration(getExtensionConfiguration());
+        applyRuntimeConfigurationSafely(getExtensionConfiguration, outputChannel);
       }
     }),
     new vscode.Disposable(() => {
@@ -64,4 +64,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   outputChannel.appendLine(`[activation] extension activated in ${Date.now() - activatedAt}ms`);
+}
+
+function applyRuntimeConfigurationSafely(
+  getConfiguration: CommandDependencies['getConfiguration'],
+  outputChannel: vscode.OutputChannel,
+): void {
+  try {
+    applyRuntimeConfiguration(getConfiguration());
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    outputChannel.appendLine(`[configuration] ${message}`);
+    void vscode.window.showErrorMessage(message);
+  }
 }

@@ -12,7 +12,7 @@ function registerFileCommand(
   context.subscriptions.push(
     vscode.commands.registerCommand(binding.id, async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
       const sourceUris = resolveSelectedUris(uri, uris);
-      return binding.handler(sourceUris, dependencies, binding.options);
+      return binding.handler(sourceUris, dependencies);
     }),
   );
 }

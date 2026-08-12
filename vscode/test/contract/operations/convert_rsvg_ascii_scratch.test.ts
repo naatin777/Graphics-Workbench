@@ -75,7 +75,6 @@ suite(
 
         await convertToPdfFilesWithScratch({
           inputs: [createJob(paths)],
-          supportedExtensions: ['.svg'],
           tools: {
             svgToPdfTools: createSvgToPdfOptions(async (executable, args) => {
               toolInputPath = assertRsvgToolPaths(executable, args, paths);
@@ -88,6 +87,7 @@ suite(
           scratchBaseCandidates: [paths.scratchBasePath],
           runId: 'windows-rsvg-pdf',
           maxInputPixels: 1_000_000_000,
+          runtime: {},
         });
 
         const requiredInputPath = requiredPath(toolInputPath, 'tool入力path');
@@ -109,7 +109,6 @@ suite(
         await assert.rejects(
           convertToPdfFilesWithScratch({
             inputs: [createJob(paths)],
-            supportedExtensions: ['.svg'],
             tools: {
               svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
                 const outputPath = outputPathFromArgs(args);
@@ -121,6 +120,7 @@ suite(
             scratchBaseCandidates: [paths.scratchBasePath],
             runId: 'windows-rsvg-alias',
             maxInputPixels: 1_000_000_000,
+            runtime: {},
           }),
         );
 
@@ -141,7 +141,6 @@ suite(
         await assert.rejects(
           convertToPdfFilesWithScratch({
             inputs: [createJob(paths)],
-            supportedExtensions: ['.svg'],
             tools: {
               svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
                 toolOutputPath = outputPathFromArgs(args);
@@ -152,6 +151,7 @@ suite(
             scratchBaseCandidates: [paths.scratchBasePath],
             runId: 'windows-rsvg-empty',
             maxInputPixels: 1_000_000_000,
+            runtime: {},
           }),
         );
 

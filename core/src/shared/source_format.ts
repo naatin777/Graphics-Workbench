@@ -76,6 +76,11 @@ export function isRasterImagePath(sourcePath: string): boolean {
   return isRasterFormat(format);
 }
 
+export function isSupportedPdfConversionSource(sourcePath: string): boolean {
+  const format = sourceFormatForPath(sourcePath);
+  return format !== undefined && format !== 'pdf' && format !== 'drawio';
+}
+
 /** Returns true when the resolved format is a raster image format. */
 export function isRasterFormat(format: SourceFormat | undefined): boolean {
   return (

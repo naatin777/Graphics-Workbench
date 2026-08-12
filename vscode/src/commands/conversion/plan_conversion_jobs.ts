@@ -240,6 +240,7 @@ export async function planPdfPageConversionJobs<Conversion>(options: {
   options.runtime?.signal?.throwIfAborted();
   options.runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
   const pageCount = await countPdfPages(await readFile(options.sourcePath));
+  options.runtime?.signal?.throwIfAborted();
 
   const inputs: Conversion[] = [];
   for (const { page, outputPath } of planPdfPageJobs(
