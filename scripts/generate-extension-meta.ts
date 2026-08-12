@@ -308,31 +308,13 @@ function nlsKey(label: string | undefined, description: string): string {
   return label.slice(1, -1);
 }
 
-export function renderCommandContributions(packageJson: PackageManifest): string {
-  const entries = packageJson.contributes.commands.map((command) => {
-    const titleKey = nlsKey(command.title, `Command ${command.command}`);
-    const category = command.category === undefined ? '' : `\n    category: ${quote(command.category)},`;
-    return `  ${quote(command.command)}: {\n    titleKey: ${quote(titleKey)},${category}\n  },`;
-  });
+export function renderPublicCommandIds(packageJson: PackageManifest): string {
   const commandIds = packageJson.contributes.commands.map(({ command }) => command);
   const commandIdList = commandIds.map((command) => `  ${quote(command)},`);
 
   return (
-    `export const commandContributions = {\n${entries.join('\n')}\n} as const;\n\n` +
     `export const publicCommandIds = [\n${commandIdList.join('\n')}\n] as const;\n\n` +
     `export type CommandId = (typeof publicCommandIds)[number];\n`
-  );
-}
-
-export function renderSubmenuContributions(packageJson: PackageManifest): string {
-  const submenus = packageJson.contributes.submenus ?? [];
-  const entries = submenus.map((submenu) => {
-    const labelKey = nlsKey(submenu.label, `Submenu ${submenu.id}`);
-    return `  ${quote(submenu.id)}: { labelKey: ${quote(labelKey)} },`;
-  });
-  return (
-    `export const submenuContributions = {\n${entries.join('\n')}\n} as const;\n\n` +
-    `export type SubmenuId = keyof typeof submenuContributions;\n`
   );
 }
 
@@ -553,9 +535,7 @@ export function generate(packageJson: PackageManifest): string {
     `  return (): string => {\n    const value = configurationReader.get(key);\n    if (value === undefined) {\n      return defaultValue;\n    }\n    if (typeof value !== 'string' || isBlankString(value)) {\n      throw new Error(\n        \`Invalid configuration for graphics-workbench.\${key}: expected a non-blank output path template.\`,\n      );\n    }\n    return value;\n  };\n` +
     `}\n\n` +
     objectTypes.map(({ name, schema }) => renderObjectType(name, schema)).join('\n') +
-    renderCommandContributions(packageJson) +
-    '\n' +
-    renderSubmenuContributions(packageJson) +
+    renderPublicCommandIds(packageJson) +
     '\n' +
     renderCustomEditorContributions(packageJson) +
     '\n' +

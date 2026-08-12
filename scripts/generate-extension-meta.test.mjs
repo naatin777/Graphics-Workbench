@@ -80,12 +80,8 @@ void test('generate emits extension identity and contributions', () => {
   assert.match(output, /publisher: 'naatin777'/);
   assert.match(output, /id: 'naatin777\.graphics-workbench'/);
   assert.match(output, /configurationNamespace: 'graphics-workbench'/);
-  assert.match(output, /export const commandContributions = \{/);
-  assert.match(output, /'graphics-workbench\.convertToPdf': \{/);
-  assert.match(output, /titleKey: 'command\.convertToPdf'/);
   assert.match(output, /export const publicCommandIds = \[/);
-  assert.match(output, /export const submenuContributions = \{/);
-  assert.match(output, /labelKey: 'submenu\.convert'/);
+  assert.doesNotMatch(output, /commandContributions|submenuContributions|SubmenuId/);
 });
 
 void test('generate accepts a valid manifest', () => {

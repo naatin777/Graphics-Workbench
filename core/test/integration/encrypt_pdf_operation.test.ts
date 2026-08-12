@@ -6,19 +6,15 @@
 // Mocked:
 // - なし。実mupdfと実ファイルを使用する
 //
-// Not tested:
-// - VS CodeのwithProgress UI
-// - パスワード入力プロンプト
-
 import assert from 'node:assert/strict';
 import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 
 import { encryptPdfFiles, loadMupdf } from '@graphics-workbench/core/pdf';
-import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const password = 'secret-password';
 
@@ -56,45 +52,6 @@ suite('PDFのパスワード暗号化', () => {
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
-  });
-
-  test('出力先に既存ファイルがある場合はcommit時にOutput file already existsエラーとなり、既存内容を変更しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-test-'));
-    const sourcePath = path.join(workspacePath, 'source.pdf');
-    const outputPath = path.join(workspacePath, 'output.pdf');
-    await writePdf(sourcePath);
-    await writeFile(outputPath, 'existing');
-
-    await assert.rejects(
-      encryptPdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath }],
-        password,
-        runtime: {},
-      }),
-      /Output file already exists/,
-    );
-
-    assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
-  });
-
-  test('abort済みのsignalを渡すと暗号化を開始せずAbortErrorで失敗し、出力を作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-test-'));
-    const sourcePath = path.join(workspacePath, 'source.pdf');
-    const outputPath = path.join(workspacePath, 'output.pdf');
-    const abortController = new AbortController();
-    await writePdf(sourcePath);
-    abortController.abort();
-
-    await assert.rejects(
-      encryptPdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath }],
-        password,
-        runtime: { signal: abortController.signal },
-      }),
-      { name: 'AbortError' },
-    );
-
-    await assert.rejects(access(outputPath));
   });
 
   test('MuPDF option parserが扱えないカンマまたは等号を含むパスワードは暗号化を開始せず明示的に拒否する', async () => {

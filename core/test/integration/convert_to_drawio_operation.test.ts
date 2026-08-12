@@ -5,7 +5,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import { convertToDrawioFiles, createDrawioXml, parseSvgSize } from '@graphics-workbench/core/conversion';
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '../helpers/required.js';
 
 suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
   test('XML生成で各画像を1つのshape=imageオブジェクトにし、同名ページをnameとname-2へ連番化する', () => {
@@ -34,7 +34,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
       .png()
       .toFile(imagePath);
-    const { PDFDocument } = await import('../../support/helpers/pdf_document.js');
+    const { PDFDocument } = await import('../../../test-support/pdf_document.js');
     const pdf = await PDFDocument.create();
     pdf.addPage([100, 50]);
     pdf.addPage([80, 40]);

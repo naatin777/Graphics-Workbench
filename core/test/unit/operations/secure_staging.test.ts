@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { access, readFile, stat, writeFile } from 'node:fs/promises';
 
 import { cleanupStaleSecurePdfStagingRoots, createSecurePdfStagingRoot } from '@graphics-workbench/core/runtime';
-import { isRecord } from '../../../src/shared/protocols/protocol_utils.js';
 
 suite('機密PDFの中間ディレクトリを作成し、heartbeatから保存期間を判定して掃除する', () => {
   test('作成直後のrootは維持し、不在PIDを記録した24時間超過のold rootだけを削除する', async () => {
@@ -60,3 +59,7 @@ suite('機密PDFの中間ディレクトリを作成し、heartbeatから保存�
     }
   });
 });
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

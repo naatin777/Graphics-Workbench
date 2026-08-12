@@ -53,7 +53,7 @@ suite('Headless PDF→raster conversion', () => {
   });
 
   test('選択pageと既存output templateからpage付きRasterInputだけを計画する', async () => {
-    await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tui-plan-'));
+    await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-plan-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
     const source = await inspectPdfRasterSource({ sourcePath });
@@ -72,8 +72,8 @@ suite('Headless PDF→raster conversion', () => {
     );
   });
 
-  test('PDFをPNG変換し、staging artifactをfrontendへ返す', async () => {
-    await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tui-convert-'));
+  test('PDFをPNG変換し、staging artifactを返す', async () => {
+    await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-convert-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
     const source = await inspectPdfRasterSource({ sourcePath });
@@ -104,7 +104,7 @@ suite('Headless PDF→raster conversion', () => {
   });
 
   test('変換開始前のAbortSignalを既存operationへ伝搬し、出力をcommitしない', async () => {
-    await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tui-cancel-'));
+    await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-cancel-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
     const source = await inspectPdfRasterSource({ sourcePath });
@@ -129,7 +129,7 @@ suite('Headless PDF→raster conversion', () => {
   });
 
   test('競合出力のoverwrite後にcommit layerが.previous backupを作成する', async () => {
-    await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tui-overwrite-'));
+    await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-overwrite-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
     const source = await inspectPdfRasterSource({ sourcePath });

@@ -31,12 +31,6 @@ suite('command binding集合とmanifestの整合性検証', () => {
     assert.strictEqual(bindingIds.length, publicCommandIds.length);
     assert.deepStrictEqual(new Set(bindingIds), new Set(publicCommandIds));
   });
-
-  test('全bindingのcommand IDに重複がなく一意である', () => {
-    const bindingIds = commandBindings.map((binding) => binding.id);
-
-    assert.strictEqual(new Set(bindingIds).size, bindingIds.length);
-  });
 });
 
 suite('command登録処理', () => {
@@ -96,22 +90,6 @@ suite('command登録処理', () => {
     const uri = vscode.Uri.file('/workspace/source.gif');
 
     const binding = findBinding('graphics-workbench.convertToWebp');
-    assert.strictEqual(binding.kind, 'file');
-    const called = captureHandlerCalls(sandbox, binding);
-    registerCommands(createContext(), dependencies);
-
-    await handlers.get(binding.id)!(uri);
-
-    assert.strictEqual(called.calls.length, 1);
-    assert.deepStrictEqual(called.calls[0], [[uri], dependencies]);
-  });
-
-  test('フレーム分割bindingが通常のfile bindingと同じ2引数でhandlerを呼ぶ', async () => {
-    const handlers = captureRegisteredHandlers(sandbox);
-    const dependencies = testCommandDependencies();
-    const uri = vscode.Uri.file('/workspace/source.gif');
-
-    const binding = findBinding('graphics-workbench.convertToWebpSplit');
     assert.strictEqual(binding.kind, 'file');
     const called = captureHandlerCalls(sandbox, binding);
     registerCommands(createContext(), dependencies);

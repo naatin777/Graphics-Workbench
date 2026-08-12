@@ -5,8 +5,6 @@
 // Mocked:
 // - 競合時のユーザー判断
 //
-// Not tested:
-// - VS Codeのwarning dialog
 // - 変換処理そのもの
 
 import assert from 'node:assert/strict';

@@ -19,7 +19,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import { compressImageFiles } from '@graphics-workbench/core/conversion';
-import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
 
 suite('画像圧縮処理', () => {
   test('JPEG入力をqualityで再圧縮し、読み込み可能なより小さなJPEGを出力する', async () => {
