@@ -13,6 +13,20 @@ export type SourceFormat =
   | 'editable-drawio-png'
   | 'editable-drawio-svg';
 
+export const sourceFormatExtensions = {
+  pdf: ['pdf'],
+  png: ['png'],
+  jpeg: ['jpg', 'jpeg'],
+  webp: ['webp'],
+  avif: ['avif'],
+  gif: ['gif'],
+  tiff: ['tif', 'tiff'],
+  svg: ['svg'],
+  drawio: ['drawio', 'dio'],
+  'editable-drawio-png': ['drawio.png', 'dio.png'],
+  'editable-drawio-svg': ['drawio.svg', 'dio.svg'],
+} as const satisfies Record<SourceFormat, readonly string[]>;
+
 export function sourceFormatForPath(sourcePath: string): SourceFormat | undefined {
   const lowerSourcePath = sourcePath.toLowerCase();
   const drawioFormat = drawioFormatForPath(lowerSourcePath);

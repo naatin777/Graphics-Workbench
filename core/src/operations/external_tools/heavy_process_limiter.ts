@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import pLimit from 'p-limit';
 
 import { OperationCancelledError } from '../../shared/error.js';
@@ -6,9 +7,10 @@ interface PendingTask {
   cancel: () => void;
 }
 
-/** A single extension-wide queue for processes that can consume substantial CPU or memory. */
+/** A single extension-wide queue for work that can consume substantial CPU or memory. */
 export class HeavyProcessLimiter {
   private readonly limiter: ReturnType<typeof pLimit>;
+  private readonly active = new AsyncLocalStorage<true>();
   private stopped = false;
   private readonly pending = new Set<PendingTask>();
 
@@ -34,6 +36,9 @@ export class HeavyProcessLimiter {
     }
     if (signal?.aborted === true) {
       throw new OperationCancelledError('Heavy process was cancelled before it started.');
+    }
+    if (this.active.getStore() === true) {
+      return task();
     }
 
     return new Promise<Value>((resolve, reject) => {
@@ -74,7 +79,7 @@ export class HeavyProcessLimiter {
         this.pending.delete(waiting);
         cleanup();
         try {
-          resolve(await task());
+          resolve(await this.active.run(true, task));
         } catch (error) {
           reject(error instanceof Error ? error : new Error(String(error)));
         }
@@ -84,5 +89,3 @@ export class HeavyProcessLimiter {
 }
 
 export const sharedHeavyProcessLimiter = new HeavyProcessLimiter(2);
-/** Shared input-stage queue retained for staged-batch cancellation semantics. */
-export const sharedConversionJobLimiter = new HeavyProcessLimiter(2);

@@ -31,7 +31,6 @@ const EXPECTED_CATEGORIES_BY_COMMAND: Record<string, readonly ('single' | 'split
   'graphics-workbench.convertToGifSeparately': ['split'],
   'graphics-workbench.convertDrawioToPagePdfs': ['split'],
   'graphics-workbench.convertDrawioToSinglePdf': ['single'],
-  'graphics-workbench.convertExcalidrawToPdf': ['single'],
   'graphics-workbench.convertToDrawio': ['single'],
   'graphics-workbench.convertToDrawioPng': ['single'],
   'graphics-workbench.convertToDrawioSvg': ['single'],
@@ -85,14 +84,14 @@ interface PackageJson {
 }
 
 suite('package.jsonのruntime制約', () => {
-  test('package.jsonを読み、engines.nodeを未指定にしてengines.vscodeを^1.125.0とし、開発用Node.js >=22.22.2とonFail=errorをdevEngines.runtimeで分離指定する', async () => {
+  test('package.jsonを読み、engines.nodeを未指定にしてengines.vscodeを^1.125.0とし、開発用Node.js >=24.15.0とonFail=errorをdevEngines.runtimeで分離指定する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
 
     assert.strictEqual(packageJson.engines.node, undefined);
     assert.strictEqual(packageJson.engines.vscode, '^1.125.0');
     assert.deepStrictEqual(packageJson.devEngines.runtime, {
       name: 'node',
-      version: '>=22.22.2',
+      version: '>=24.15.0',
       onFail: 'error',
     });
   });
@@ -201,7 +200,7 @@ suite('package.jsonの変換メニュー定義', () => {
     );
   });
 
-  test('変換サブメニューと各変換commandのwhen句にグローバル有効化設定・single/split/combine設定・gif/tiff拡張子を含め、カテゴリ単位で表示を制御する', async () => {
+  test('変換サブメニューと各変換commandのwhen句をSourceFormatの形式行列から生成し、カテゴリ単位で表示を制御する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -220,7 +219,8 @@ suite('package.jsonの変換メニュー定義', () => {
       );
     }
     assert.ok(convertSubmenu?.when?.includes('gif'), 'convert submenu must gate on animated GIF inputs');
-    assert.ok(convertSubmenu?.when?.includes('tiff?'), 'convert submenu must gate on TIFF inputs');
+    assert.ok(convertSubmenu?.when?.includes('tif'), 'convert submenu must gate on TIFF inputs');
+    assert.ok(convertSubmenu?.when?.includes('tiff'), 'convert submenu must gate on TIFF inputs');
 
     for (const [command, categories] of Object.entries(EXPECTED_CATEGORIES_BY_COMMAND)) {
       const entry = commandEntries.get(command);
@@ -241,7 +241,7 @@ suite('package.jsonの変換メニュー定義', () => {
 
     assert.ok(convertToPng?.when?.includes('config.graphics-workbench.conversion.split.enabled'));
     assert.ok(convertToPng?.when?.includes('config.graphics-workbench.conversion.single.enabled'));
-    assert.ok(convertToPng?.when?.includes('resourceExtname =~ /^\\.pdf$/i'));
+    assert.ok(convertToPng?.when?.includes('resourceExtname =~ /^\\.(pdf)$/i'));
   });
 
   test('Save As版とQuick版の両方の画像PDF結合コマンドのwhen句にgif/tiff拡張子を含め、複合Draw.io画像のときは非表示にしてcombine設定で制御する', async () => {
@@ -256,8 +256,9 @@ suite('package.jsonの変換メニュー定義', () => {
       assert.ok(entry.when?.includes(CONTEXT_MENU_ENABLED));
       assert.ok(entry.when?.includes(CATEGORY_PROPERTY.combine));
       assert.ok(entry.when?.includes(COMPOUND_DRAWIO_NOT_MATCH));
-      assert.ok(entry.when?.includes('resourceExtname =~ /^\\.gif$/i'));
-      assert.ok(entry.when?.includes('resourceExtname =~ /^\\.tiff?$/i'));
+      assert.ok(entry.when?.includes('gif'));
+      assert.ok(entry.when?.includes('tif'));
+      assert.ok(entry.when?.includes('tiff'));
       assert.ok(!entry.when?.includes('config.graphics-workbench.conversion.single.enabled'));
       assert.ok(!entry.when?.includes('config.graphics-workbench.conversion.split.enabled'));
     }
@@ -284,7 +285,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('変換サブメニューをExplorerに表示し、convertToPdfをmmd/mermaid/drawio/dio入力で表示し、複合Draw.io画像のエントリも追加する', async () => {
+  test('変換サブメニューをExplorerに表示し、convertToPdfをSourceFormatの入力で表示し、複合Draw.io画像のエントリも追加する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -294,8 +295,8 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.strictEqual(submenu?.label, '%submenu.convert%');
     assert.ok(explorerContext.some((entry) => entry.submenu === CONVERT_SUBMENU));
     assert.ok(convertToPdf);
-    assert.ok(convertToPdf.when?.includes('mmd'));
-    assert.ok(convertToPdf.when?.includes('mermaid'));
+    assert.ok(convertToPdf.when?.includes('png'));
+    assert.ok(convertToPdf.when?.includes('svg'));
     assert.ok(convertToPdf.when?.includes('drawio'));
     assert.ok(convertToPdf.when?.includes('dio'));
 
@@ -328,7 +329,7 @@ suite('package.jsonの変換メニュー定義', () => {
     }
   });
 
-  test('変換サブメニューにconvertToSvgを載せ、pdf/mmd/mermaid/drawio/dio入力のときだけ表示するwhen句にする', async () => {
+  test('変換サブメニューにconvertToSvgを載せ、pdf/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -336,18 +337,16 @@ suite('package.jsonの変換メニュー定義', () => {
 
     assert.ok(
       explorerContext.some(
-        (entry) => entry.submenu === CONVERT_SUBMENU && entry.when?.includes('mmd') && entry.when.includes('mermaid'),
+        (entry) => entry.submenu === CONVERT_SUBMENU && entry.when?.includes('pdf') && entry.when.includes('drawio'),
       ),
     );
     assert.ok(convertToSvg);
     assert.ok(convertToSvg.when?.includes('pdf'));
-    assert.ok(convertToSvg.when?.includes('mmd'));
-    assert.ok(convertToSvg.when?.includes('mermaid'));
     assert.ok(convertToSvg.when?.includes('drawio'));
     assert.ok(convertToSvg.when?.includes('dio'));
   });
 
-  test('変換サブメニューにconvertToPngを載せ、pdf/svg/mmd/mermaid/jpg/jpeg/webp/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
+  test('変換サブメニューにconvertToPngを載せ、pdf/svg/jpg/jpeg/webp/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -357,8 +356,8 @@ suite('package.jsonの変換メニュー定義', () => {
       explorerContext.some(
         (entry) =>
           entry.submenu === CONVERT_SUBMENU &&
-          entry.when?.includes('mmd') &&
-          entry.when.includes('mermaid') &&
+          entry.when?.includes('pdf') &&
+          entry.when.includes('svg') &&
           entry.when.includes('drawio') &&
           entry.when.includes('dio'),
       ),
@@ -366,8 +365,6 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToPng);
     assert.ok(convertToPng.when?.includes('pdf'));
     assert.ok(convertToPng.when?.includes('svg'));
-    assert.ok(convertToPng.when?.includes('mmd'));
-    assert.ok(convertToPng.when?.includes('mermaid'));
     assert.ok(convertToPng.when?.includes('jpg'));
     assert.ok(convertToPng.when?.includes('jpeg'));
     assert.ok(convertToPng.when?.includes('webp'));
@@ -376,7 +373,7 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToPng.when?.includes('dio'));
   });
 
-  test('変換サブメニューにconvertToJpegを載せ、pdf/png/svg/mmd/mermaid/webp/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
+  test('変換サブメニューにconvertToJpegを載せ、pdf/png/svg/webp/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -386,8 +383,8 @@ suite('package.jsonの変換メニュー定義', () => {
       explorerContext.some(
         (entry) =>
           entry.submenu === CONVERT_SUBMENU &&
-          entry.when?.includes('mmd') &&
-          entry.when.includes('mermaid') &&
+          entry.when?.includes('pdf') &&
+          entry.when.includes('svg') &&
           entry.when.includes('drawio') &&
           entry.when.includes('dio'),
       ),
@@ -396,15 +393,13 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToJpeg.when?.includes('pdf'));
     assert.ok(convertToJpeg.when?.includes('png'));
     assert.ok(convertToJpeg.when?.includes('svg'));
-    assert.ok(convertToJpeg.when?.includes('mmd'));
-    assert.ok(convertToJpeg.when?.includes('mermaid'));
     assert.ok(convertToJpeg.when?.includes('webp'));
     assert.ok(convertToJpeg.when?.includes('avif'));
     assert.ok(convertToJpeg.when?.includes('drawio'));
     assert.ok(convertToJpeg.when?.includes('dio'));
   });
 
-  test('変換サブメニューにconvertToWebpを載せ、pdf/png/jpg/jpeg/svg/mmd/mermaid/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
+  test('変換サブメニューにconvertToWebpを載せ、pdf/png/jpg/jpeg/svg/avif/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -414,8 +409,8 @@ suite('package.jsonの変換メニュー定義', () => {
       explorerContext.some(
         (entry) =>
           entry.submenu === CONVERT_SUBMENU &&
-          entry.when?.includes('mmd') &&
-          entry.when.includes('mermaid') &&
+          entry.when?.includes('pdf') &&
+          entry.when.includes('svg') &&
           entry.when.includes('drawio') &&
           entry.when.includes('dio'),
       ),
@@ -426,14 +421,12 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToWebp.when?.includes('jpg'));
     assert.ok(convertToWebp.when?.includes('jpeg'));
     assert.ok(convertToWebp.when?.includes('svg'));
-    assert.ok(convertToWebp.when?.includes('mmd'));
-    assert.ok(convertToWebp.when?.includes('mermaid'));
     assert.ok(convertToWebp.when?.includes('avif'));
     assert.ok(convertToWebp.when?.includes('drawio'));
     assert.ok(convertToWebp.when?.includes('dio'));
   });
 
-  test('変換サブメニューにconvertToAvifを載せ、pdf/png/jpg/jpeg/webp/svg/mmd/mermaid/drawio/dio入力のときだけ表示するwhen句にする', async () => {
+  test('変換サブメニューにconvertToAvifを載せ、pdf/png/jpg/jpeg/webp/svg/drawio/dio入力のときだけ表示するwhen句にする', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const explorerContext = packageJson.contributes.menus['explorer/context'] ?? [];
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
@@ -443,8 +436,8 @@ suite('package.jsonの変換メニュー定義', () => {
       explorerContext.some(
         (entry) =>
           entry.submenu === CONVERT_SUBMENU &&
-          entry.when?.includes('mmd') &&
-          entry.when.includes('mermaid') &&
+          entry.when?.includes('pdf') &&
+          entry.when.includes('svg') &&
           entry.when.includes('drawio') &&
           entry.when.includes('dio'),
       ),
@@ -456,8 +449,6 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToAvif.when?.includes('jpeg'));
     assert.ok(convertToAvif.when?.includes('webp'));
     assert.ok(convertToAvif.when?.includes('svg'));
-    assert.ok(convertToAvif.when?.includes('mmd'));
-    assert.ok(convertToAvif.when?.includes('mermaid'));
     assert.ok(convertToAvif.when?.includes('drawio'));
     assert.ok(convertToAvif.when?.includes('dio'));
   });
@@ -523,16 +514,16 @@ suite('package.jsonの変換メニュー定義', () => {
     const gif = findEntry('graphics-workbench.convertToGif');
     const gifSeparately = findEntry('graphics-workbench.convertToGifSeparately');
 
-    assert.ok(webp?.when?.includes('resourceExtname =~ /^\\.gif$/i'));
-    assert.ok(webpSeparately?.when?.includes('resourceExtname =~ /^\\.gif$/i'));
+    assert.ok(webp?.when?.includes('gif'));
+    assert.ok(webpSeparately?.when?.includes('resourceExtname =~ /^\\.(gif)$/i'));
     assert.ok(!webpSeparately?.when?.includes('.webp'), 'WebP separately should not match .webp');
 
-    assert.ok(gif?.when?.includes('resourceExtname =~ /^\\.webp$/i'));
-    assert.ok(gifSeparately?.when?.includes('resourceExtname =~ /^\\.webp$/i'));
+    assert.ok(gif?.when?.includes('webp'));
+    assert.ok(gifSeparately?.when?.includes('resourceExtname =~ /^\\.(webp)$/i'));
     assert.ok(!gifSeparately?.when?.includes('.gif'), 'GIF separately should not match .gif');
   });
 
-  test('通常のconvertToWebpのwhen句に.gifを含めず、通常のconvertToGifのwhen句に.webpを含めない', async () => {
+  test('通常のconvertToWebpのwhen句に.gifを含め、通常のconvertToGifのwhen句に.webpを含める', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((e) => e.command === command);
@@ -541,7 +532,7 @@ suite('package.jsonの変換メニュー定義', () => {
     const gif = findEntry('graphics-workbench.convertToGif');
 
     assert.ok(webp?.when?.includes('gif'), 'Standard WebP should match .gif');
-    assert.ok(gif?.when?.includes('.webp'), 'Standard GIF should match .webp');
+    assert.ok(gif?.when?.includes('webp'), 'Standard GIF should match WebP inputs');
   });
 
   test('package.jsonのcommand titleを%キー%参照にし、日本語ラベルが選択したファイルを各形式に変換する行動ベースの文言とGIF/WebPのアニメーション保持・フレーム分割文言であることを検証する', async () => {
