@@ -15,9 +15,8 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import { convertToSvgFiles } from '../../../src/operations/conversion/convert_to_svg.js';
+import { convertToSvgFiles, executeDrawio } from '@graphics-workbench/core/conversion';
 import { requireValue } from '../../support/helpers/required.js';
-import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 
 function stubRunPdfToSvg(sourcePath: string, outputPath: string, _page: number, _signal: AbortSignal): Promise<void> {
   throw new Error(`PDF to SVG must not run in this test: ${sourcePath} -> ${outputPath}`);

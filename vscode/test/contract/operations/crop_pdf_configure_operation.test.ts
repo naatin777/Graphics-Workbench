@@ -17,11 +17,10 @@ import path from 'node:path';
 import { PDFDocument, type PDFPage } from '../../support/helpers/pdf_document.js';
 import sharp from 'sharp';
 
-import { renderPdfPageToPng } from '@graphics-workbench/core/operations/pdf/mupdf.js';
-import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import { cropPdfWithConfiguredBox, type CropBox } from '../../../src/operations/pdf/crop_pdf_configure.js';
-import { asRunId } from '@graphics-workbench/core/operations/lifecycle/run_id.js';
-import { hashFile } from '@graphics-workbench/core/operations/input/file_content_hash.js';
+import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
+import { resolveOutputPath } from '@graphics-workbench/core/output';
+import { cropPdfWithConfiguredBox, type CropBox } from '../../../src/adapters/crop/crop_pdf_configure.js';
+import { asRunId, hashFile } from '@graphics-workbench/core/runtime';
 
 import { cropConfigureFixture } from '../../support/helpers/crop_configure_fixture.js';
 import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';

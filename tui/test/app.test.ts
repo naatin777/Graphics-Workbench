@@ -1,11 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
-import type {
-  PdfRasterConversionResult,
-  PdfRasterSource,
-} from '@graphics-workbench/core/operations/conversion/pdf_raster_conversion.js';
+import type { PdfRasterSource } from '@graphics-workbench/core/conversion';
 import type { TerminalKey, TerminalScreen } from '../src/screen.js';
 import { conflictDecision, runTerminalUi } from '../src/app.js';
+import type { TerminalUiConversionResult } from '../src/conversion_adapter.js';
 
 const source: PdfRasterSource = {
   sourcePath: '/tmp/paper.pdf',
@@ -14,7 +12,8 @@ const source: PdfRasterSource = {
   pageCount: 1,
 };
 
-const successfulResult: PdfRasterConversionResult = {
+const successfulResult: TerminalUiConversionResult = {
+  artifacts: [],
   outputs: [{ outputPath: '/tmp/paper/1.png', workspacePath: '/tmp', sha256: 'fixture' }],
   cleanup: { attempted: 1, succeeded: 1, failures: [] },
 };

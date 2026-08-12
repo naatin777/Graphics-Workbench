@@ -1,4 +1,4 @@
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 
 export class RecordingOutputChannel implements LineOutputChannel {
   readonly lines: string[] = [];

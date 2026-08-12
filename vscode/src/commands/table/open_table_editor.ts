@@ -7,9 +7,9 @@ import {
 } from '../../edit_provider/insertion_format.js';
 import { extensionIdentity } from '../../generated/extension_manifest.js';
 import { localeMap } from '../../locale_map.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import { getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
+import { isAbortError } from '@graphics-workbench/core/runtime';
 import {
   isTableEditorWebviewToHostMessage,
   type TableEditorFormat,

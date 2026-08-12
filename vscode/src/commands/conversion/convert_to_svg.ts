@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { renderPdfPageToSvg } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { renderPdfPageToSvg } from '@graphics-workbench/core/pdf';
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
@@ -10,15 +10,15 @@ import {
   isEditableDrawioImagePath,
   isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
-} from '@graphics-workbench/core/shared/source_format.js';
-import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import { convertToSvgFiles, type SvgInput } from '../../operations/conversion/convert_to_svg.js';
+} from '@graphics-workbench/core/formats';
+import { resolveOutputPath } from '@graphics-workbench/core/output';
+import { convertToSvgFiles, type SvgInput } from '@graphics-workbench/core/conversion';
 import { planPdfPageConversionJobs } from './plan_conversion_jobs.js';
-import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security/workspace_path.js';
+import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
-import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
+import type { ConversionExecutionContext } from '@graphics-workbench/core/runtime';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertLocalFileUri } from '../shared/command_input.js';
 import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';

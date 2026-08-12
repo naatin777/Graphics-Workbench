@@ -21,7 +21,7 @@ import {
   isRotatePdfHostToWebviewMessage,
   isRotatePdfWebviewToHostMessage,
 } from '../../../src/shared/protocols/rotate_pdf_protocol.js';
-import { rotatePdfFiles } from '../../../src/operations/pdf/rotate_pdf.js';
+import { rotatePdfFiles } from '@graphics-workbench/core/pdf';
 
 suite('PDFページ回転', () => {
   test('3ページのPDFへ角度90を指定すると、出力PDFは3ページを保ったまま全ページの回転角を90度として保存する', async () => {

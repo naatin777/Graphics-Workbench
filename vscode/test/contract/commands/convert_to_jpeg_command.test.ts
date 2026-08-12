@@ -4,7 +4,6 @@
 // - WebP、AVIFをJPEGへ変換できること
 // - SVGをJPEGへ変換できること
 // - PDFをページごとのJPEGへ変換できること
-// - MermaidをJPEGへ変換できること
 // - 出力JPEGが壊れておらず、幅と高さが0より大きいこと
 //
 // Not tested:

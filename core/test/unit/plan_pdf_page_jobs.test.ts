@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-import { planPdfPageJobs } from '@graphics-workbench/core/operations/conversion/plan_pdf_page_jobs.js';
+import { planPdfPageJobs } from '@graphics-workbench/core/conversion';
 
 const workspacePath = process.platform === 'win32' ? 'C:\\test-workspace' : '/test-workspace';
 

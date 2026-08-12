@@ -1,6 +1,6 @@
 ---
 name: graphics-workbench-external-tool
-description: Graphics Workbenchで外部CLI / renderer / converter（Draw.io、Mermaid、Chrome、pdftocairo、rsvg-convert等）を扱うときの判断と手順。新しい外部CLIの統合、または既存外部CLIの失敗・OS差異のデバッグで使用する。`runExternalTool`の再利用、process実行、cross-platform、success条件、キャンセル、環境チェックを扱う。
+description: Graphics Workbenchで外部CLI / renderer / converter（Draw.io、Chrome、pdftocairo、rsvg-convert等）を扱うときの判断と手順。新しい外部CLIの統合、または既存外部CLIの失敗・OS差異のデバッグで使用する。`runExternalTool`の再利用、process実行、cross-platform、success条件、キャンセル、環境チェックを扱う。
 ---
 
 # 外部CLI

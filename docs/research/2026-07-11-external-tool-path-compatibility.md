@@ -37,7 +37,6 @@
 | PDFからSVG                     | pdftocairo               | PDFの指定ページをSVGへ変換する                                          |
 | editable Draw.io画像から各形式 | Draw.io Desktop CLI      | 直接SVGまたは中間PDFへexportする                                        |
 | SVGからPDF                     | rsvg-convertまたはChrome | ユーザー設定で選択したengineを使う                                      |
-| Mermaidから各形式              | Mermaid CLIとChrome      | package APIからMermaid CLIを呼び、設定済みChromeで描画する              |
 | raster画像変換                 | なし                     | sharpをprocess内で使う                                                  |
 | pdfcrop                        | 現行実装では未使用       | v0.5.1系では利用していたがnext/v1ではGhostscriptとpdf-libへ置き換え済み |
 | qpdf                           | 現行実装では未使用       | 将来のpreflightまたはPDF backend候補                                    |

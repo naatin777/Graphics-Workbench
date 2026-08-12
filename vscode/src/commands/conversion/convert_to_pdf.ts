@@ -2,21 +2,18 @@ import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 
-import {
-  isSupportedPdfConversionSource,
-  logicalSourcePathForOutputTemplate,
-} from '@graphics-workbench/core/shared/source_format.js';
+import { isSupportedPdfConversionSource, logicalSourcePathForOutputTemplate } from '@graphics-workbench/core/formats';
 import { resolveChromeExecutablePath } from '../../config/rendering/chrome_cli_options.js';
-import { resolvePdfOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import {
   convertToPdfFiles,
   executeChrome,
   executeRsvgConvert,
   validateSvgToPdfOptions,
   type PdfInput,
-} from '../../operations/conversion/convert_to_pdf.js';
-import type { SvgToPdfBackend } from '../../operations/conversion/tools/svg_to_pdf_tools.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
+  type SvgToPdfBackend,
+} from '@graphics-workbench/core/conversion';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';

@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { PDFDocument } from './pdf_document.js';
 
-import { renderPdfPageToPng } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
 import {
   calculateRgbaDifference,
   readNormalizedRgbaPixels,

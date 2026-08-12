@@ -10,16 +10,12 @@ import {
   type SplitPdfWebviewToHost,
 } from '../../shared/protocols/split_pdf_protocol.js';
 import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
-import { resolvePdfOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import { assertPageTemplateForSplitOutput } from '@graphics-workbench/core/config/output/page_template.js';
+import { assertPageTemplateForSplitOutput, resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
-import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfInput } from '../../operations/pdf/split_pdf.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
-import {
-  assertExistingPathInWorkspace,
-  assertWritablePathInWorkspace,
-} from '@graphics-workbench/core/security/workspace_path.js';
+import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfInput } from '@graphics-workbench/core/pdf';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
+import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { readPdfPageCount } from '../shared/read_pdf_page_count.js';
@@ -28,7 +24,7 @@ import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversi
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
+import { isAbortError } from '@graphics-workbench/core/runtime';
 import { resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
 import {
   createPdfJsResources,

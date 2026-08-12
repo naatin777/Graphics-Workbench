@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
-import { OperationCancelledError } from '@graphics-workbench/core/shared/error.js';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
+import { OperationCancelledError } from '@graphics-workbench/core/runtime';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { reportConfigureApplyError } from '../shared/report_configure_error.js';
 

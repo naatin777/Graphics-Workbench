@@ -18,7 +18,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { compressImageFiles } from '../../../src/operations/conversion/compress_image.js';
+import { compressImageFiles } from '@graphics-workbench/core/conversion';
 import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
 
 suite('画像圧縮処理', () => {

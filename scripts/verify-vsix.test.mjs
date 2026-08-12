@@ -26,11 +26,7 @@ void test('required entries include the extension, core runtime, MuPDF, and targ
   assert.ok(requiredEntries.includes('THIRD_PARTY_NOTICES.md'));
   assert.ok(requiredEntries.includes('out/vscode/src/extension.js'));
   assert.ok(requiredEntries.includes('node_modules/@graphics-workbench/core/package.json'));
-  assert.ok(
-    requiredEntries.includes(
-      'node_modules/@graphics-workbench/core/dist/operations/conversion/pdf_raster_conversion.js',
-    ),
-  );
+  assert.ok(requiredEntries.includes('node_modules/@graphics-workbench/core/dist/public/conversion.js'));
   assert.ok(requiredEntries.includes('node_modules/mupdf/package.json'));
   assert.ok(requiredEntries.includes('node_modules/@img/sharp-linux-x64/package.json'));
   assert.ok(requiredEntries.includes('node_modules/@img/sharp-libvips-linux-x64/package.json'));
@@ -88,7 +84,7 @@ void test('production staging verification requires core, MuPDF, and target Shar
   try {
     const requiredFiles = [
       '@graphics-workbench/core/package.json',
-      '@graphics-workbench/core/dist/operations/conversion/pdf_raster_conversion.js',
+      '@graphics-workbench/core/dist/public/conversion.js',
       'mupdf/package.json',
       'sharp/package.json',
       '@img/sharp-darwin-arm64/package.json',

@@ -10,7 +10,7 @@ description: Graphics WorkbenchのVSIX packaging、dependency・native asset確�
 ## Packaging boundary
 
 - rootはprivate npm coordinatorで、VSIXは`core/`と`vscode/`のbuild済みruntimeを一時directoryへstagingして組み立てる。rootのdevDependency、workspace symlink、`tui/`をVSIXのproduction closureへ混ぜない。
-- `vscode/.vscodeignore`、staging filter、runtimeのdynamic importを確認し、Webview bundle、PDF.js asset、Mermaid asset、native Sharp packageなどの実行時ファイルを除外しない。
+- `vscode/.vscodeignore`、staging filter、runtimeのdynamic importを確認し、Webview bundle、PDF.js asset、native Sharp packageなどの実行時ファイルを除外しない。
 - `npm run package:vsix`でVSIXを作成し、`npx vsce ls --tree`または`unzip -l`で実際の内容を確認する。
 - target別のnative assetは`node scripts/verify-vsix.mjs --vsix <file> --target <target>`で検証する。新しいnative binary、bundled CLI、runtime assetを追加した場合は、packaged smokeで実行まで確認する。
 

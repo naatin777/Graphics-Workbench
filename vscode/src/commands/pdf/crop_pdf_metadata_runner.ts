@@ -2,10 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 import * as v from 'valibot';
 
-import { openPdfDocument } from '@graphics-workbench/core/operations/pdf/mupdf.js';
-
-import { getPdfPageGeometry } from '../../operations/pdf/pdf_page_geometry.js';
-import type { PdfPageGeometry } from '../../shared/protocols/crop_pdf_protocol.js';
+import { getPdfPageGeometry, openPdfDocument, type PdfPageGeometry } from '@graphics-workbench/core/pdf';
 
 let requestReceived = false;
 let disconnectRequested = false;

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 import * as vscode from 'vscode';
 
-import { rasterFormatSpecs } from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import { rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import { planRasterConversionJobs } from '../../../src/commands/conversion/plan_conversion_jobs.js';
 import { getExtensionConfiguration } from '../../../src/config/extension_configuration.js';
 import { getDefaultConfiguration } from '../../../src/generated/extension_manifest.js';

@@ -43,7 +43,7 @@ async function generatePdfOutputs(): Promise<void> {
   for (const inputPath of await listFiles(path.join(inputDirectory, 'pdf'))) {
     const outputDataDirectory = path.join(outputDirectory, 'pdf', sourceName(inputPath));
     await mkdir(outputDataDirectory, { recursive: true });
-    const { countPdfPages } = await import('@graphics-workbench/core/operations/pdf/mupdf.js');
+    const { countPdfPages } = await import('@graphics-workbench/core/pdf');
     const pageCount = await countPdfPages(new Uint8Array(await readFile(inputPath)));
 
     for (let page = 1; page <= pageCount; page += 1) {
@@ -123,7 +123,7 @@ async function generateDrawioOutputs(drawioExecutablePath: string): Promise<void
     // Pick the first page that actually contains content.
     await runDrawio(drawioExecutablePath, inputPath, pngSourcePdfPath, 'pdf');
     try {
-      const { countPdfPages, hasPdfPageContent } = await import('@graphics-workbench/core/operations/pdf/mupdf.js');
+      const { countPdfPages, hasPdfPageContent } = await import('@graphics-workbench/core/pdf');
       const pngSourceBytes = new Uint8Array(await readFile(pngSourcePdfPath));
       const pngSourcePageCount = await countPdfPages(pngSourceBytes);
       let pngSourcePage = 1;
@@ -162,7 +162,7 @@ async function createSharpInput(inputPath: string): Promise<Sharp> {
 }
 
 async function renderPdfPage(sourcePath: string, page: number, outputPath: string, cropContent = false): Promise<void> {
-  const { renderPdfPageToPng } = await import('@graphics-workbench/core/operations/pdf/mupdf.js');
+  const { renderPdfPageToPng } = await import('@graphics-workbench/core/pdf');
   const png = await renderPdfPageToPng(new Uint8Array(await readFile(sourcePath)), page, {
     cropContent: cropContent || undefined,
   });

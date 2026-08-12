@@ -737,12 +737,7 @@ export default defineConfig({
       rules: restrictedImports(extensionOnly, webviewPatterns),
     },
     {
-      files: [
-        'core/src/**/*.ts',
-        'vscode/src/shared/**/*.ts',
-        'vscode/src/operations/**/*.ts',
-        'vscode/src/config/**/*.ts',
-      ],
+      files: ['core/src/**/*.ts', 'vscode/src/shared/**/*.ts', 'vscode/src/config/**/*.ts'],
       rules: restrictedImports(corePaths, corePatterns),
     },
     {
@@ -861,15 +856,6 @@ export default defineConfig({
         'unicorn/no-array-for-each': 'off',
         'unicorn/prefer-dom-node-text-content': 'off',
         'unicorn/consistent-function-scoping': 'off',
-      },
-    },
-    {
-      // These loops await an imported mupdf helper per source and then append
-      // pages; oxlint's no-unreachable-loop misreads them as single-iteration
-      // loops. Both iterate over a >=2-element array by construction.
-      files: ['vscode/src/operations/pdf/merge_pdf.ts', 'vscode/src/operations/conversion/combine_images_to_pdf.ts'],
-      rules: {
-        'eslint/no-unreachable-loop': 'off',
       },
     },
     {

@@ -31,7 +31,6 @@
   "main": "./out/vscode/src/extension.js",
   "dependencies": {
     "@graphics-workbench/core": "0.0.1",
-    "fast-xml-parser": "5.10.1",
     "sharp": "0.35.3",
     "valibot": "1.4.2"
   },

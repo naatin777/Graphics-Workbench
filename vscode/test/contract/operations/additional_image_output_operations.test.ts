@@ -6,13 +6,13 @@ import path from 'node:path';
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 import sharp from 'sharp';
 
-import { convertToPdfFiles } from '../../../src/operations/conversion/convert_to_pdf.js';
 import {
+  convertToPdfFiles,
+  executeDrawio,
   executeRasterConversion,
   rasterFormatSpecs,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+} from '@graphics-workbench/core/conversion';
 import { requireValue } from '../../support/helpers/required.js';
-import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
 
 const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif', 'gif', 'tiff'] as const;

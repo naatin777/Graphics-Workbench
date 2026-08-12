@@ -6,11 +6,9 @@ import path from 'node:path';
 import {
   commitStagedOutputs,
   CommitRollbackError,
-} from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
-import {
   cleanupConversionArtifacts,
   withStagingCleanup,
-} from '@graphics-workbench/core/operations/lifecycle/cleanup_conversion_artifacts.js';
+} from '@graphics-workbench/core/runtime';
 
 suite(
   '変換結果を一時保存した作業ディレクトリの削除と、commit失敗時に元出力を退避した復旧バックアップ（.previous）の保持',

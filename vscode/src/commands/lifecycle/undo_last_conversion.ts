@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
-import type { ConversionOutput } from '../../operations/lifecycle/undo_last_conversion.js';
-import { UndoHistoryManager } from '../../operations/lifecycle/undo_history_manager.js';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
+import type { ConversionOutput } from '../../policy/undo_last_conversion.js';
+import { UndoHistoryManager } from '../../policy/undo_history_manager.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';

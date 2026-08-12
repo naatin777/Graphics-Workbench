@@ -1,4 +1,4 @@
-import { loadMupdf, savePdfDocument } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { loadMupdf, savePdfDocument } from '@graphics-workbench/core/pdf';
 
 export interface PdfFixturePage {
   width: number;

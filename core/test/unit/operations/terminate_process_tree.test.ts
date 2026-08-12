@@ -48,8 +48,7 @@ function spawnMock(
   };
 }
 
-const { terminateProcessTree } =
-  await import('@graphics-workbench/core/operations/external_tools/run_external_tool.js');
+const { terminateProcessTree } = await import('@graphics-workbench/core/external-tools');
 
 type FakeChild = {
   pid: number;

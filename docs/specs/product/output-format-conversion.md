@@ -10,7 +10,7 @@ Command PaletteとExplorerの`変換`サブメニューでは、出力形式基�
 
 ## 入力と処理単位
 
-対応形式は、editable Draw.io画像、PNG、JPEG、WebP、AVIF、GIF、TIFF、SVG、PDF、Mermaidの組み合わせとする。通常のラスター形式変換ではGIF/TIFFの先頭page/frameを扱う。`graphics-workbench.convertToPdf` はGIF/TIFFの全page/frameを1つのPDFの各ページへ展開する。EPSは公開変換commandの入力形式として扱わない。ネイティブDraw.io（`.drawio`、`.dio`）は専用のPDF commandで扱う。対応していない入力、出力と同じ形式の入力、混在選択に含まれる非対応入力がある場合は、変換全体を開始しない。
+対応形式は、editable Draw.io画像、PNG、JPEG、WebP、AVIF、GIF、TIFF、SVG、PDFの組み合わせとする。通常のラスター形式変換ではGIF/TIFFの先頭page/frameを扱う。`graphics-workbench.convertToPdf` はGIF/TIFFの全page/frameを1つのPDFの各ページへ展開する。EPSは公開変換commandの入力形式として扱わない。ネイティブDraw.io（`.drawio`、`.dio`）は専用のPDF commandで扱う。対応していない入力、出力と同じ形式の入力、混在選択に含まれる非対応入力がある場合は、変換全体を開始しない。
 
 1回のcommand実行を1つの変換batchとして扱う。
 
@@ -63,12 +63,6 @@ GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変�
 PDF編集operation（Crop / Rotate / Reorder / Split / Compress / Encrypt / Decrypt）は変換ではなく、`contextMenu.*.enabled`の既存operation設定で制御し、conversion toggleの影響を受けない。
 
 GW Controls（status barのスライダーアイコン）のQuickPickには`Conversions`セクションがあり、`Single`／`Split`／`Combine`をON/OFFできる。選択すると対応する`conversion.*.enabled`設定を直接更新し、表示へ即時反映する。
-
-## Mermaid
-
-Mermaid（`.mmd`、`.mermaid`）は出力形式基準commandの入力として扱う。PDF、SVG、PNGなどの出力形式への対応と出力pathは、対応する形式の設定に従う。
-
-Mermaidは外部の`mmdc` CLIをプロセスとして実行する。`graphics-workbench.execPath.mermaid`で実行ファイルを指定し、未指定時は`mmdc`をPATHから探す。Chrome/Chromiumは`graphics-workbench.execPath.chrome`で指定でき、未設定時はOS標準の実行ファイルを使う。Mermaid CLIは拡張機能へ同梱せず、利用者が別途インストールする。
 
 SVGからPDFへの`chrome` backendは、同じChrome実行ファイルを`--headless --no-pdf-header-footer --print-to-pdf=...`で直接実行する。`rsvg-convert` backendは既存どおり`graphics-workbench.execPath.rsvgConvert`を使う。
 

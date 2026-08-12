@@ -1,6 +1,5 @@
 // Test target:
 // - graphics-workbench.convertToPng commandが登録されること
-// - MermaidをPNGに直接変換できること
 // - JPEG、WebP、AVIFをPNGに変換できること
 // - GIF、TIFFの先頭frame/pageをPNGへ変換できること
 // - SVGをPNGに変換できること
@@ -148,34 +147,6 @@ suite('PNGに変換コマンド', () => {
     }
   });
 
-  test('.mmdのMermaid入力を変換したPNGがpng形式で幅と高さが0より大きい', async () => {
-    await assertMermaidFileConvertsToPng('source.mmd');
-  });
-
-  test('mermaid.backgroundColor=transparent設定で変換したPNG出力のhasAlphaがtrueになる', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'transparent-background.mmd');
-      await writeMermaidFixture(sourcePath);
-
-      await withWorkspaceSettings({ 'graphics-workbench.mermaid.backgroundColor': 'transparent' }, async () => {
-        const commandExecution = vscode.commands.executeCommand(
-          'graphics-workbench.convertToPng',
-          vscode.Uri.file(sourcePath),
-        );
-        await runCommandAndClearNotificationsUntilDone(commandExecution);
-      });
-
-      const outputPath = replaceExtension(sourcePath, '.png');
-      const metadataBuffer = await readFile(outputPath);
-      const metadata = await sharp(metadataBuffer).metadata();
-      assert.strictEqual(metadata.hasAlpha, true);
-    } finally {
-      await removeTemporaryDirectory(temporaryDirectory);
-    }
-  });
-
   test('outputPath.split.pngが設定済みの場合、2ページPDFを${page}ごとに展開したto-png-source-1.pngとto-png-source-2.pngを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
@@ -205,29 +176,6 @@ suite('PNGに変換コマンド', () => {
     }
   });
 });
-
-async function assertMermaidFileConvertsToPng(fileName: string): Promise<void> {
-  const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-  try {
-    const sourcePath = path.join(temporaryDirectory, fileName);
-    await writeMermaidFixture(sourcePath);
-
-    const commandExecution = vscode.commands.executeCommand(
-      'graphics-workbench.convertToPng',
-      vscode.Uri.file(sourcePath),
-    );
-    await runCommandAndClearNotificationsUntilDone(commandExecution);
-
-    await assertReadablePng(replaceExtension(sourcePath, '.png'));
-  } finally {
-    await removeTemporaryDirectory(temporaryDirectory);
-  }
-}
-
-async function writeMermaidFixture(filePath: string): Promise<void> {
-  await writeFile(filePath, ['flowchart LR', '  A[Mermaid Alpha] --> B[Mermaid Beta]', ''].join('\n'));
-}
 
 async function writeAnimatedImageFixture(filePath: string, format: 'gif' | 'tiff'): Promise<void> {
   const red = await sharp({

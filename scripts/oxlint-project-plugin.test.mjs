@@ -104,8 +104,8 @@ void test('identifies sensitive values and child-process boundaries', () => {
   assert.equal(hasSensitiveIdentifier({ name: 'jobJsonPath', type: 'Identifier' }), true);
   assert.equal(hasSensitiveIdentifier({ name: 'requestId', type: 'Identifier' }), false);
   assert.equal(hasSensitiveIdentifier({ name: 'tokenize', type: 'Identifier' }), false);
-  assert.equal(isProcessProtocolFile('/workspace/vscode/src/operations/pdf/crop_pdf_process_protocol.ts'), true);
-  assert.equal(isProcessProtocolFile('/workspace/vscode/src/operations/pdf/crop_pdf_core.ts'), false);
+  assert.equal(isProcessProtocolFile('/workspace/vscode/src/adapters/crop/crop_pdf_process_protocol.ts'), true);
+  assert.equal(isProcessProtocolFile('/workspace/vscode/src/adapters/crop/crop_pdf_core.ts'), false);
   assert.equal(isAllowedChildProcessFile('/workspace/core/src/operations/external_tools/run_external_tool.ts'), true);
   assert.equal(isAllowedChildProcessFile('/workspace/vscode/src/commands/open_file.ts'), false);
 });

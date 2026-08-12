@@ -2,10 +2,9 @@ import * as vscode from 'vscode';
 import { readFile, writeFile } from 'node:fs/promises';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
-import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import { convertToDrawioFiles, type DrawioComposeInput } from '../../operations/conversion/convert_to_drawio.js';
-import { renderPdfPageToSvg } from '@graphics-workbench/core/operations/pdf/mupdf.js';
-import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
+import { resolveOutputPath } from '@graphics-workbench/core/output';
+import { convertToDrawioFiles, executeDrawio, type DrawioComposeInput } from '@graphics-workbench/core/conversion';
+import { renderPdfPageToSvg } from '@graphics-workbench/core/pdf';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';

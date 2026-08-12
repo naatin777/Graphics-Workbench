@@ -4,9 +4,8 @@
 // - JPEG、WebPをPDFに変換できること
 // - AVIFをPDFに変換できること
 // - SVGをPDFに変換できること
-// - MermaidをPDFに変換できること
 // - GIF、TIFFを全フレーム・ページのPDFへ変換できること
-// - PNG、JPEG、WebP、AVIF、SVG、Mermaidを1回のコマンドでPDFへ変換できること
+// - PNG、JPEG、WebP、AVIF、SVGを1回のコマンドでPDFへ変換できること
 // - 複数PNGを1回のコマンドでPDFへ変換できること
 // - 非対応入力が含まれる場合、変換全体を開始しないこと
 // - 入力形式と出力形式が同じ場合、変換全体を開始しないこと
@@ -36,7 +35,7 @@ import * as vscode from 'vscode';
 import { outputTemplateForSource } from '../../../src/commands/conversion/convert_to_pdf.js';
 import { getExtensionConfiguration } from '../../../src/config/extension_configuration.js';
 
-import { logicalSourcePathForOutputTemplate } from '@graphics-workbench/core/shared/source_format.js';
+import { logicalSourcePathForOutputTemplate } from '@graphics-workbench/core/formats';
 
 import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';

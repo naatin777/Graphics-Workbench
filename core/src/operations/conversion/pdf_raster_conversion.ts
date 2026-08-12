@@ -5,11 +5,6 @@ import { sourceFormatForPath } from '../../shared/source_format.js';
 import { parsePdfPageSelection, type PdfPageSelectionParseResult } from '../../shared/pdf_page_selection.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { countPdfPages } from '../pdf/mupdf.js';
-import {
-  cleanupConversionArtifacts,
-  type CleanupResult,
-  type ConversionArtifactRoot,
-} from '../lifecycle/cleanup_conversion_artifacts.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
 import type { CommittedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import { createPdfRenderBackend } from './tools/pdf_render_tools.js';
@@ -21,8 +16,7 @@ import {
 } from './raster_conversion.js';
 import { planPdfPageJobs } from './plan_pdf_page_jobs.js';
 
-const pdfRasterTargets = ['png', 'jpeg', 'webp'] as const satisfies readonly RasterConversionTarget[];
-export type PdfRasterTarget = (typeof pdfRasterTargets)[number];
+export type PdfRasterTarget = RasterConversionTarget;
 
 export type PdfRasterPageSelection = { kind: 'all' } | { kind: 'range'; value: string };
 
@@ -42,11 +36,12 @@ export interface PdfRasterConversionPlan {
 
 export interface PdfRasterConversionResult {
   outputs: CommittedConversionOutput[];
-  cleanup: CleanupResult;
+  artifacts: PdfRasterArtifact[];
 }
 
-export function availablePdfRasterTargets(sourcePath: string): readonly PdfRasterTarget[] {
-  return sourceFormatForPath(sourcePath) === 'pdf' ? pdfRasterTargets : [];
+export interface PdfRasterArtifact {
+  rootPath: string;
+  workspacePath: string;
 }
 
 export async function inspectPdfRasterSource(options: {
@@ -55,8 +50,8 @@ export async function inspectPdfRasterSource(options: {
   signal?: AbortSignal;
 }): Promise<PdfRasterSource> {
   const sourcePath = path.resolve(options.sourcePath);
-  if (availablePdfRasterTargets(sourcePath).length === 0) {
-    throw new Error(`The Terminal UI currently supports PDF input only: ${sourcePath}`);
+  if (sourceFormatForPath(sourcePath) !== 'pdf') {
+    throw new Error(`PDF input required: ${sourcePath}`);
   }
 
   const workspacePath = path.resolve(options.workspacePath ?? path.dirname(sourcePath));
@@ -93,12 +88,12 @@ export function resolvePdfRasterPages(
   return result.ok ? { ok: true, pages: [...new Set(result.pages)] } : result;
 }
 
-export function planPdfRasterConversion(options: {
+export function planPdfRasterConversion<Target extends PdfRasterTarget>(options: {
   source: PdfRasterSource;
-  target: PdfRasterTarget;
+  target: Target;
   selection: PdfRasterPageSelection;
   outputTemplate: string;
-}): PdfRasterConversionPlan {
+}): PdfRasterConversionPlan & { target: Target } {
   const pages = resolvePdfRasterPages(options.selection, options.source.pageCount);
   if (!pages.ok) {
     throw new Error(formatPdfPageSelectionError(pages, options.source.pageCount));
@@ -137,11 +132,7 @@ export async function runPdfRasterConversion(options: {
       : {}),
   });
 
-  // The VS Code frontend retains these roots for Undo. The TUI deliberately
-  // has no Undo history, so release both normal staging files and overwrite
-  // backups after the committed outputs have been reported as successful.
-  const cleanup = await cleanupConversionArtifacts(artifactsForOutputs(outputs), options.runtime.outputChannel);
-  return { outputs, cleanup };
+  return { outputs, artifacts: artifactsForOutputs(outputs) };
 }
 
 function formatPdfPageSelectionError(
@@ -177,7 +168,7 @@ function pageSelectionFailure(
   return { ok: false, kind, token };
 }
 
-function artifactsForOutputs(outputs: readonly CommittedConversionOutput[]): ConversionArtifactRoot[] {
+export function artifactsForOutputs(outputs: readonly CommittedConversionOutput[]): PdfRasterArtifact[] {
   return outputs.flatMap((output) =>
     output.stagingRootPath === undefined || output.stagingRootPath === ''
       ? []

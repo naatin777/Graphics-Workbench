@@ -11,9 +11,9 @@ import {
 import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
 import { localeMap } from '../../locale_map.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
-import { mergePdf } from '../../operations/pdf/merge_pdf.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
-import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security/workspace_path.js';
+import { mergePdf } from '@graphics-workbench/core/pdf';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
+import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
@@ -21,7 +21,7 @@ import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversi
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
+import { isAbortError } from '@graphics-workbench/core/runtime';
 import {
   createPdfJsResources,
   getPdfJsAssetsRoot,

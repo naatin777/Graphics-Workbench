@@ -3,10 +3,7 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import {
-  executeRasterConversion,
-  rasterFormatSpecs,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
+import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import {
   listInputFixturePathsSync,
   testInputDirectory,

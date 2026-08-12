@@ -10,14 +10,12 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import {
+  executeDrawio,
   executeRasterConversion,
   rasterFormatSpecs,
-  type RasterInput,
-} from '@graphics-workbench/core/operations/conversion/raster_conversion.js';
-import {
-  executeDrawio,
   type DrawioBackend,
-} from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
+  type RasterInput,
+} from '@graphics-workbench/core/conversion';
 import { buildPdfFixture } from '../helpers/pdf_fixture_builder.js';
 import { requireValue } from '../helpers/required.js';
 

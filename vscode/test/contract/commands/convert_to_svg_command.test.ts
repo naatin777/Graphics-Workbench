@@ -1,9 +1,7 @@
 // Test target:
 // - graphics-workbench.convertToSvg commandが登録されること
-// - .mmdをSVGに変換できること
-// - .mermaidをSVGに変換できること
 // - PDFをページごとのSVGへ変換できること
-// - SVG出力が壊れておらず、Mermaid由来のテキストを含むこと
+// - SVG出力が壊れていないこと
 //
 // Mocked:
 // - VS Codeの通知API。通知UIの選択はここでは対象外にし、command completionを直接検証する。
@@ -12,8 +10,6 @@
 // - Draw.io → SVGの実CLI経路
 //   - fake Draw.io CLIをcommand testで直接扱うとWindowsのexecFile差で不安定になりやすい。
 //   - runnerを注入できるoperation testとして固定する。
-// - Mermaid → PDF / PNG / JPEG / WebP / AVIF
-// - Mermaid backgroundColor
 // - context menuの画面上の表示
 // - Safe Modeダイアログの画面表示
 // - VS Codeのprogress notificationの画面表示
@@ -63,28 +59,6 @@ suite('SVGに変換コマンド', () => {
     }
   });
 
-  test('mermaid.theme=dark設定で変換したSVG出力にfill:#1f2020が含まれる', async () => {
-    const temporaryDirectory = await createTemporaryWorkspaceDirectory();
-
-    try {
-      const sourcePath = path.join(temporaryDirectory, 'dark-theme.mmd');
-      await writeMermaidFixture(sourcePath);
-
-      await withWorkspaceSettings({ 'graphics-workbench.mermaid.theme': 'dark' }, async () => {
-        const commandExecution = vscode.commands.executeCommand(
-          'graphics-workbench.convertToSvg',
-          vscode.Uri.file(sourcePath),
-        );
-        await runCommandAndClearNotificationsUntilDone(commandExecution);
-      });
-
-      const svg = await readFile(replaceExtension(sourcePath, '.svg'), 'utf8');
-      assert.match(svg, /fill:#1f2020/);
-    } finally {
-      await removeTemporaryDirectory(temporaryDirectory);
-    }
-  });
-
   test('outputPath.split.svgが設定済みの場合、2ページPDFを${page}ごとに展開したto-svg-source-1.svgとto-svg-source-2.svgを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
@@ -115,10 +89,6 @@ suite('SVGに変換コマンド', () => {
   });
 });
 
-async function writeMermaidFixture(filePath: string): Promise<void> {
-  await writeFile(filePath, ['flowchart LR', '  A[Mermaid Alpha] --> B[Mermaid Beta]', ''].join('\n'));
-}
-
 async function createTemporaryWorkspaceDirectory(): Promise<string> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(workspaceFolder);
@@ -148,8 +118,4 @@ async function assertGeneratedSvg(filePath: string): Promise<void> {
   const svg = await readFile(filePath, 'utf8');
 
   assert.match(svg, /<svg[\s>]/);
-}
-
-function replaceExtension(filePath: string, extension: string): string {
-  return path.join(path.dirname(filePath), `${path.basename(filePath, path.extname(filePath))}${extension}`);
 }

@@ -11,8 +11,8 @@ import { insertionDocumentSelectors, insertionFormats } from './edit_provider/in
 import { registerPreviewCustomEditors } from './commands/preview/preview_custom_editor.js';
 import { getExtensionConfiguration } from './config/extension_configuration.js';
 import { extensionIdentity } from './generated/extension_manifest.js';
-import { sharedHeavyProcessLimiter } from '@graphics-workbench/core/operations/external_tools/heavy_process_limiter.js';
-import { cleanupStaleSecurePdfStagingRoots } from './operations/lifecycle/secure_staging.js';
+import { sharedHeavyProcessLimiter } from '@graphics-workbench/core/external-tools';
+import { cleanupStaleSecurePdfStagingRoots } from '@graphics-workbench/core/runtime';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const activatedAt = Date.now();

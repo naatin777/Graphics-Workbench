@@ -15,7 +15,7 @@ import path from 'node:path';
 
 import { PDFDocument, degrees, rgb } from '../../support/helpers/pdf_document.js';
 
-import { cropPdfFiles } from '../../../src/operations/pdf/crop_pdf_auto.js';
+import { cropPdfFiles } from '../../../src/adapters/crop/crop_pdf_auto.js';
 
 suite('PDF自動crop処理', () => {
   test('2ページPDFの各ページを描画スキャンで検出した内容バウンディングボックス＋マージン5の範囲でcropし、MediaBox・CropBoxを更新して一時作業ディレクトリへinput.pdf・result.pdfを作成する', async () => {

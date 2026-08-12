@@ -1,19 +1,19 @@
 import * as vscode from 'vscode';
 
-import { resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import { isRasterImagePath } from '@graphics-workbench/core/shared/source_format.js';
+import { resolveOutputPath } from '@graphics-workbench/core/output';
+import { isRasterImagePath } from '@graphics-workbench/core/formats';
 import {
   IMAGE_ROTATION_ANGLES,
   rotateImageFiles,
   type ImageRotationAngle,
   type RotateImageInput,
-} from '../../operations/conversion/rotate_image.js';
+} from '@graphics-workbench/core/conversion';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
+import { isAbortError } from '@graphics-workbench/core/runtime';
 
 const RASTER_OUTPUT_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.tif', '.tiff'] as const;
 

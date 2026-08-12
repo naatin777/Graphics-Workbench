@@ -5,8 +5,7 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 import sharp from 'sharp';
-import { combineImagesToPdf } from '../../../src/operations/conversion/combine_images_to_pdf.js';
-import type { SvgToPdfBackend } from '../../../src/operations/conversion/tools/svg_to_pdf_tools.js';
+import { combineImagesToPdf, type SvgToPdfBackend } from '@graphics-workbench/core/conversion';
 import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
 
 const VALID_PNG = operationPngInputPath;
@@ -309,11 +308,11 @@ suite('複数の画像を1つのPDFへ結合する', () => {
     }
   });
 
-  test('Mermaid（.mmd）・Draw.io（.drawio.png）・PDF（.pdf）は対象外として変換前に「Unsupported image input:」エラーで拒否する', async () => {
+  test('Draw.io（.drawio.png）・PDF（.pdf）は対象外として変換前に「Unsupported image input:」エラーで拒否する', async () => {
     const workspacePath = await setupWorkspace();
 
     try {
-      for (const fileName of ['diagram.mmd', 'diagram.drawio.png', 'document.pdf']) {
+      for (const fileName of ['diagram.drawio.png', 'document.pdf']) {
         const sourcePath = path.join(workspacePath, fileName);
         await writeFile(sourcePath, 'unsupported');
 

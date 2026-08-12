@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
 
-import { combineImagesToPdf } from '../../operations/conversion/combine_images_to_pdf.js';
-import { assertWritablePathInWorkspace } from '@graphics-workbench/core/security/workspace_path.js';
+import { combineImagesToPdf } from '@graphics-workbench/core/conversion';
+import { assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
 import type { Configuration } from '../../generated/extension_manifest.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
-import { createRandomToken, resolveOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
-import { assertRandomTemplateForCombine } from '@graphics-workbench/core/config/output/page_template.js';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
+import { assertRandomTemplateForCombine, createRandomToken, resolveOutputPath } from '@graphics-workbench/core/output';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { createSvgToPdfBackend } from './convert_to_pdf.js';

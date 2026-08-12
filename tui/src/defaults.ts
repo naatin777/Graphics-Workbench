@@ -1,4 +1,4 @@
-import type { PdfRasterTarget } from '@graphics-workbench/core/operations/conversion/pdf_raster_conversion.js';
+import type { TerminalUiRasterTarget } from './conversion_adapter.js';
 
 export const terminalUiDefaults = {
   maxInputPixels: 268_402_689,
@@ -7,5 +7,5 @@ export const terminalUiDefaults = {
     png: '${fileDirname}/${fileBasenameNoExtension}/${page}.png',
     jpeg: '${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg',
     webp: '${fileDirname}/${fileBasenameNoExtension}/${page}.webp',
-  } satisfies Record<PdfRasterTarget, string>,
+  } satisfies Record<TerminalUiRasterTarget, string>,
 } as const;

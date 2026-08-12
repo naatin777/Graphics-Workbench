@@ -24,7 +24,7 @@ import {
   renderPdfPageToPng,
   savePdfDocument,
   type MupdfPixmap,
-} from '@graphics-workbench/core/operations/pdf/mupdf.js';
+} from '@graphics-workbench/core/pdf';
 import { buildPdfFixture } from '../helpers/pdf_fixture_builder.js';
 
 suite('DisplayList.getBoundsはcontent boundsではない（raster検出の必要性）', () => {

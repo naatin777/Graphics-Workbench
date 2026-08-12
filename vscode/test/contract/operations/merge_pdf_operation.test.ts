@@ -4,11 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { recordConversionForUndo } from '../../../src/commands/lifecycle/undo_last_conversion.js';
-import { mergePdf } from '../../../src/operations/pdf/merge_pdf.js';
-import {
-  createConversionUndoRecord,
-  undoConversionOutputs,
-} from '../../../src/operations/lifecycle/undo_last_conversion.js';
+import { mergePdf } from '@graphics-workbench/core/pdf';
+import { createConversionUndoRecord, undoConversionOutputs } from '../../../src/policy/undo_last_conversion.js';
 import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
 
 const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');

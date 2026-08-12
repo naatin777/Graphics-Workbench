@@ -30,7 +30,7 @@
     "vscode": {
       "entry": [
         "src/extension.ts",
-        "src/operations/pdf/crop_pdf_runner.ts",
+        "src/adapters/crop/crop_pdf_runner.ts",
         "src/commands/pdf/*.ts",
         "src/commands/conversion/*.ts",
         "src/commands/lifecycle/*.ts",

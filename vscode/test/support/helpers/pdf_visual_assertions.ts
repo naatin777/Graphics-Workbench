@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { renderPdfPageToPng } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
 
 export interface PdfPageVisualComparison {
   expectedPdfPath: string;

@@ -15,10 +15,7 @@ import { mkdtemp, mkdir, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import {
-  assertExistingPathInWorkspace,
-  assertWritablePathInWorkspace,
-} from '@graphics-workbench/core/security/workspace_path.js';
+import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
 
 suite('workspaceパスの安全性', () => {
   test('workspace配下の既存ファイルは論理パス判定と実体パス(realpath)判定の両方を通過して許可する', async () => {

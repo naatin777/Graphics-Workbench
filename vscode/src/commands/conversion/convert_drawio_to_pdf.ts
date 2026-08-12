@@ -1,16 +1,15 @@
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
-import { isDrawioPath } from '@graphics-workbench/core/shared/source_format.js';
-import { assertPageTemplateForSplitOutput } from '@graphics-workbench/core/config/output/page_template.js';
-import type { CommittedConversionOutput } from '@graphics-workbench/core/operations/lifecycle/commit_conversion_outputs.js';
-import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
+import { isDrawioPath } from '@graphics-workbench/core/formats';
+import { assertPageTemplateForSplitOutput } from '@graphics-workbench/core/output';
+import type { CommittedConversionOutput, ConversionExecutionContext } from '@graphics-workbench/core/runtime';
 import {
   convertDrawioToPagePdfs,
   convertDrawioToSinglePdf,
+  executeDrawio,
   type DrawioPdfInput,
-} from '../../operations/conversion/convert_drawio_to_pdf.js';
-import { executeDrawio } from '@graphics-workbench/core/operations/conversion/tools/drawio_tools.js';
+} from '@graphics-workbench/core/conversion';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';

@@ -17,8 +17,7 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import { encryptPdfFiles } from '../../../src/operations/pdf/encrypt_pdf.js';
-import { loadMupdf } from '@graphics-workbench/core/operations/pdf/mupdf.js';
+import { encryptPdfFiles, loadMupdf } from '@graphics-workbench/core/pdf';
 import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
 
 const password = 'secret-password';

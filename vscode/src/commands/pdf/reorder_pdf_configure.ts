@@ -9,12 +9,12 @@ import {
   type ReorderPdfWebviewToHost,
 } from '../../shared/protocols/reorder_pdf_protocol.js';
 import type { PdfPreviewSettings } from '../../shared/protocols/pdf_preview_protocol.js';
-import { resolvePdfOutputPath } from '@graphics-workbench/core/config/output/resolve_output_path.js';
+import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
-import { reorderPdfFiles } from '../../operations/pdf/reorder_pdf.js';
-import type { LineOutputChannel } from '@graphics-workbench/core/operations/external_tools/external_tool_ascii_scratch.js';
-import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security/workspace_path.js';
+import { reorderPdfFiles } from '@graphics-workbench/core/pdf';
+import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
+import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { readPdfPageCount } from '../shared/read_pdf_page_count.js';
@@ -22,7 +22,7 @@ import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js'
 import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
-import { isAbortError } from '@graphics-workbench/core/shared/error.js';
+import { isAbortError } from '@graphics-workbench/core/runtime';
 import {
   createPdfJsResources,
   getPdfJsAssetsRoot,

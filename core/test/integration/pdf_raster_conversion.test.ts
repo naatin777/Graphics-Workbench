@@ -6,12 +6,11 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import {
-  availablePdfRasterTargets,
   inspectPdfRasterSource,
   planPdfRasterConversion,
   resolvePdfRasterPages,
   runPdfRasterConversion,
-} from '@graphics-workbench/core/operations/conversion/pdf_raster_conversion.js';
+} from '@graphics-workbench/core/conversion';
 import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const fixturePath = path.join(operationPdfInputDirectory, 'single-page-document.pdf');
@@ -21,12 +20,7 @@ const splitOutputTemplate = {
   png: '${fileDirname}/${fileBasenameNoExtension}/${page}.png',
 } as const;
 
-suite('Terminal frontend用PDF→raster use case', () => {
-  test('PDFではPhase 1のPNG/JPEG/WebPだけを表示し、PDF以外は対応targetを返さない', () => {
-    assert.deepStrictEqual(availablePdfRasterTargets('/workspace/paper.pdf'), ['png', 'jpeg', 'webp']);
-    assert.deepStrictEqual(availablePdfRasterTargets('/workspace/image.png'), []);
-  });
-
+suite('Headless PDF→raster conversion', () => {
   test('page rangeは1-3,5,8を1-based pageに展開し、重複は最初の出現だけを保持する', () => {
     assert.deepStrictEqual(resolvePdfRasterPages({ kind: 'range', value: '1-3,5,8,3' }, 8), {
       ok: true,
@@ -78,7 +72,7 @@ suite('Terminal frontend用PDF→raster use case', () => {
     );
   });
 
-  test('既存raster operationでPDFをPNG変換し、Undoを持たないfrontendの成功後にstagingを掃除する', async () => {
+  test('PDFをPNG変換し、staging artifactをfrontendへ返す', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tui-convert-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
@@ -103,12 +97,10 @@ suite('Terminal frontend用PDF→raster use case', () => {
     const [output] = result.outputs;
     assert.ok(output);
     assert.deepStrictEqual(progress, [[1, 1]]);
-    assert.strictEqual(result.cleanup.attempted, 1);
-    assert.strictEqual(result.cleanup.succeeded, 1);
     assert.strictEqual((await sharp(output.outputPath).metadata()).format, 'png');
     assert.ok((await readFile(output.outputPath)).byteLength > 0);
-    assert.ok(output.stagingRootPath);
-    await assert.rejects(access(output.stagingRootPath));
+    assert.strictEqual(result.artifacts.length, 1);
+    assert.strictEqual(result.artifacts[0]?.rootPath, output.stagingRootPath);
   });
 
   test('変換開始前のAbortSignalを既存operationへ伝搬し、出力をcommitしない', async () => {
@@ -136,7 +128,7 @@ suite('Terminal frontend用PDF→raster use case', () => {
     await assert.rejects(access(plan.inputs[0]?.outputPath ?? 'missing-output'));
   });
 
-  test('競合出力のoverwrite後にTUI用cleanupが.previous backupを残さない', async () => {
+  test('競合出力のoverwrite後にcommit layerが.previous backupを作成する', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tui-overwrite-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
@@ -160,7 +152,7 @@ suite('Terminal frontend用PDF→raster use case', () => {
 
     const [output] = result.outputs;
     assert.ok(output?.previousFilePath);
-    await assert.rejects(access(output.previousFilePath));
+    await access(output.previousFilePath);
     assert.strictEqual((await sharp(outputPath).metadata()).format, 'png');
   });
 });

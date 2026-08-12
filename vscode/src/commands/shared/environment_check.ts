@@ -1,6 +1,6 @@
 import { resolveChromeExecutablePath } from '../../config/rendering/chrome_cli_options.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
-import { runExternalTool } from '@graphics-workbench/core/operations/external_tools/run_external_tool.js';
+import { runExternalTool } from '@graphics-workbench/core/external-tools';
 
 import { userMessage } from './user_messages.js';
 
