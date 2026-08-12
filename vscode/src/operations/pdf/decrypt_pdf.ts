@@ -15,7 +15,7 @@ import type {
 import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
 
 import { runStagedConversionBatch } from '@graphics-workbench/core/operations/lifecycle/run_staged_conversion_batch.js';
-import { createSecurePdfStagingRoot } from '../lifecycle/secure_staging.js';
+import { createSecurePdfStagingRoot, startSecurePdfStagingHeartbeat } from '../lifecycle/secure_staging.js';
 
 export interface DecryptPdfInput {
   sourcePath: string;
@@ -38,25 +38,28 @@ export async function decryptPdfFiles(options: DecryptPdfOptions): Promise<Commi
 
   runtime.signal?.throwIfAborted();
 
-  runtime.signal?.throwIfAborted();
-
   const stagingRootPath = await createSecurePdfStagingRoot('decrypt-pdf');
+  const heartbeat = startSecurePdfStagingHeartbeat(stagingRootPath);
 
-  return runStagedConversionBatch({
-    inputs: options.inputs,
-    operationName: 'decrypt-pdf',
-    runId: options.runId,
-    artifactRoots: [{ rootPath: stagingRootPath, workspacePath: stagingRootPath }],
-    runtime,
-    stage: async (input, index, _runId, batchRuntime) =>
-      decryptPdf({
-        input,
-        index,
-        password: options.password,
-        stagingRootPath,
-        signal: batchRuntime.signal,
-      }),
-  });
+  try {
+    return await runStagedConversionBatch({
+      inputs: options.inputs,
+      operationName: 'decrypt-pdf',
+      runId: options.runId,
+      artifactRoots: [{ rootPath: stagingRootPath, workspacePath: stagingRootPath }],
+      runtime,
+      stage: async (input, index, _runId, batchRuntime) =>
+        decryptPdf({
+          input,
+          index,
+          password: options.password,
+          stagingRootPath,
+          signal: batchRuntime.signal,
+        }),
+    });
+  } finally {
+    heartbeat.dispose();
+  }
 }
 
 async function decryptPdf(params: {

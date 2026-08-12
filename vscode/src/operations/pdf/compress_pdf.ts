@@ -38,8 +38,6 @@ export async function compressPdfFiles(options: CompressPdfOptions): Promise<Com
 
   runtime.signal?.throwIfAborted();
 
-  runtime.signal?.throwIfAborted();
-
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'compress-pdf',

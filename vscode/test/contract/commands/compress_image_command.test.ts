@@ -1,6 +1,6 @@
 // Test target:
 // - graphics-workbench.compressImage commandが登録されること
-// - PNG、JPEG、WebP、AVIF入力を1回のコマンド実行でまとめて圧縮し、同名の_compressed.<ext>を出力すること
+// - PNG、JPEG、WebP、AVIF、マルチページTIFF入力を1回のコマンド実行でまとめて圧縮し、同名の_compressed.<ext>を出力すること
 // - 出力画像が壊れておらず、幅と高さが0より大きいこと
 //
 // Not tested:
@@ -17,7 +17,7 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
 import { requireValue } from '../../support/helpers/required.js';
 
@@ -36,7 +36,7 @@ suite('画像圧縮コマンド', () => {
     sandbox.restore();
   });
 
-  test('PNG、JPEG、WebP、AVIFを1回のコマンド実行でまとめて圧縮し、それぞれ同名の_compressed.<ext>を生成する', async () => {
+  test('PNG、JPEG、WebP、AVIF、マルチページTIFFを1回のコマンド実行でまとめて圧縮し、それぞれ同名の_compressed.<ext>を生成する', async () => {
     await using workspacePath = await mkdtempDisposable(
       path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-compress-image-'),
     );
@@ -44,13 +44,15 @@ suite('画像圧縮コマンド', () => {
     const jpegPath = path.join(workspacePath.path, 'source.jpg');
     const webpPath = path.join(workspacePath.path, 'source.webp');
     const avifPath = path.join(workspacePath.path, 'source.avif');
+    const tiffPath = path.join(workspacePath.path, 'source.tiff');
     await Promise.all([
       copyFile(fixturePngPath, pngPath),
       writeImageFixture(jpegPath, 'jpeg'),
       writeImageFixture(webpPath, 'webp'),
       writeImageFixture(avifPath, 'avif'),
+      copyFile(path.join(testInputDirectory, 'valid', 'tiff', 'heatmap.tiff'), tiffPath),
     ]);
-    const sourcePaths = [pngPath, jpegPath, webpPath, avifPath];
+    const sourcePaths = [pngPath, jpegPath, webpPath, avifPath, tiffPath];
 
     const commandExecution = vscode.commands.executeCommand(
       'graphics-workbench.compressImage',
@@ -64,6 +66,7 @@ suite('画像圧縮コマンド', () => {
       assertReadableImage(path.join(workspacePath.path, 'source_compressed.jpg'), 'jpeg'),
       assertReadableImage(path.join(workspacePath.path, 'source_compressed.webp'), 'webp'),
       assertReadableImage(path.join(workspacePath.path, 'source_compressed.avif'), 'heif'),
+      assertMultipageTiff(path.join(workspacePath.path, 'source_compressed.tiff')),
     ]);
   });
 });
@@ -98,4 +101,11 @@ async function assertReadableImage(filePath: string, expectedFormat: string): Pr
   assert.strictEqual(metadata.format, expectedFormat);
   assert.ok(metadata.width && metadata.width > 0);
   assert.ok(metadata.height && metadata.height > 0);
+}
+
+async function assertMultipageTiff(filePath: string): Promise<void> {
+  await assert.doesNotReject(access(filePath));
+  const metadata = await sharp(await readFile(filePath)).metadata();
+  assert.strictEqual(metadata.format, 'tiff');
+  assert.strictEqual(metadata.pages, 4);
 }

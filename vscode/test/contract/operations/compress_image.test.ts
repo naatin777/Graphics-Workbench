@@ -11,15 +11,15 @@
 // - 画像内容のpixel完全一致
 
 import assert from 'node:assert/strict';
-import { randomBytes } from 'node:crypto';
-import { mkdtempDisposable, readFile, stat, writeFile } from 'node:fs/promises';
+import { createHash, randomBytes } from 'node:crypto';
+import { copyFile, mkdtempDisposable, readFile, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import sharp from 'sharp';
 
 import { compressImageFiles } from '../../../src/operations/conversion/compress_image.js';
-import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
 
 suite('画像圧縮処理', () => {
   test('JPEG入力をqualityで再圧縮し、読み込み可能なより小さなJPEGを出力する', async () => {
@@ -98,6 +98,58 @@ suite('画像圧縮処理', () => {
     assert.strictEqual(metadata.pageHeight ?? metadata.height, 8);
     assert.deepStrictEqual(metadata.delay, [100, 250]);
     assert.strictEqual(metadata.loop, 3);
+  });
+
+  test('ページ寸法が異なる4ページTIFFを圧縮しても、4ページの内容を保持する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-tiff-'));
+
+    const sourcePath = path.join(workspacePath.path, 'source.tiff');
+    const outputPath = path.join(workspacePath.path, 'source_compressed.tiff');
+    await copyFile(path.join(testInputDirectory, 'valid', 'tiff', 'heatmap.tiff'), sourcePath);
+
+    await compressImageFiles({
+      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+      quality: 80,
+      maxInputPixels: 1_000_000_000,
+      runtime: {},
+      runId: 'compress-tiff-test',
+    });
+
+    const metadata = await sharp(await readFile(outputPath)).metadata();
+    assert.strictEqual(metadata.format, 'tiff');
+    assert.strictEqual(metadata.pages, 4);
+    const sourcePageData = await Promise.all(
+      [0, 1, 2, 3].map(async (page) => {
+        const sourcePage = sharp(sourcePath, { page, pages: 1 });
+        const sourceMetadata = await sourcePage.metadata();
+        if (sourceMetadata.width === undefined || sourceMetadata.height === undefined) {
+          throw new Error(`Could not read source TIFF page dimensions: ${page + 1}`);
+        }
+        return {
+          width: sourceMetadata.width,
+          height: sourceMetadata.height,
+          hash: createHash('sha256')
+            .update(await sourcePage.png().toBuffer())
+            .digest('hex'),
+        };
+      }),
+    );
+    const outputPageHashes = await Promise.all(
+      sourcePageData.map(async (sourcePage, page) =>
+        createHash('sha256')
+          .update(
+            await sharp(outputPath, { page, pages: 1 })
+              .extract({ width: sourcePage.width, height: sourcePage.height, left: 0, top: 0 })
+              .png()
+              .toBuffer(),
+          )
+          .digest('hex'),
+      ),
+    );
+    assert.deepStrictEqual(
+      outputPageHashes,
+      sourcePageData.map((page) => page.hash),
+    );
   });
 
   test('非対応入力では変換を失敗させ、最終出力を作成せず一時作業ディレクトリを削除する', async () => {

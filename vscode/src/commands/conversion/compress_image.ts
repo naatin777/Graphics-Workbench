@@ -18,7 +18,7 @@ import { userMessage } from '../shared/user_messages.js';
 
 const OPERATION_NAME = 'compress-image';
 
-const animatedCompressionFormats = new Set<CompressibleImageFormat>(['gif', 'webp']);
+const animatedCompressionFormats = new Set<CompressibleImageFormat>(['gif', 'webp', 'tiff']);
 
 export async function compressImageCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const { outputChannel } = dependencies;

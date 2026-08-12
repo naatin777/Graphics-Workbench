@@ -52,8 +52,6 @@ export async function cropPdfFiles(options: CropPdfOptions): Promise<CommittedCo
 
   runtime.signal?.throwIfAborted();
 
-  runtime.signal?.throwIfAborted();
-
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'crop-pdf-auto',

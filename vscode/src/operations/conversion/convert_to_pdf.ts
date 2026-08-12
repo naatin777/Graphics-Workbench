@@ -450,7 +450,7 @@ async function writeSvgAsPdf({
 
   await (options.engine === 'rsvg-convert'
     ? writeSvgAsPdfWithRsvgConvert(sourcePath, outputPath, options, scratchOptions, signal)
-    : writeSvgAsPdfWithChrome(sourcePath, outputPath, options, signal));
+    : writeSvgAsPdfWithChrome({ sourcePath, outputPath, workspacePath, size, options, signal }));
 
   signal.throwIfAborted();
   await normalizePdfPageSize(outputPath, size.width, size.height);
@@ -495,18 +495,43 @@ export async function executeRsvgConvert(executable: string, args: string[], sig
   });
 }
 
-async function writeSvgAsPdfWithChrome(
-  sourcePath: string,
-  outputPath: string,
-  options: SvgToPdfBackend,
-  signal: AbortSignal,
-): Promise<void> {
-  signal.throwIfAborted();
-  await options.runChrome(
-    options.chromePath,
-    ['--headless', '--no-pdf-header-footer', `--print-to-pdf=${outputPath}`, pathToFileURL(sourcePath).href],
-    signal,
-  );
+async function writeSvgAsPdfWithChrome({
+  sourcePath,
+  outputPath,
+  workspacePath,
+  size,
+  options,
+  signal,
+}: {
+  sourcePath: string;
+  outputPath: string;
+  workspacePath: string;
+  size: { width: number; height: number };
+  options: SvgToPdfBackend;
+  signal: AbortSignal;
+}): Promise<void> {
+  const htmlPath = `${outputPath}.chrome.html`;
+  const sourceUrl = pathToFileURL(sourcePath).href;
+  const escapedSourceUrl = sourceUrl.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
+  const html = [
+    '<!doctype html>',
+    '<html><head><meta charset="utf-8">',
+    `<style>@page { size: ${size.width}pt ${size.height}pt; margin: 0; } html, body { width: ${size.width}pt; height: ${size.height}pt; margin: 0; padding: 0; overflow: hidden; } img { display: block; width: ${size.width}pt; height: ${size.height}pt; }</style>`,
+    `</head><body><img src="${escapedSourceUrl}" alt=""></body></html>`,
+  ].join('');
+
+  await assertWritablePathInWorkspace(htmlPath, workspacePath);
+  try {
+    await writeFile(htmlPath, html);
+    signal.throwIfAborted();
+    await options.runChrome(
+      options.chromePath,
+      ['--headless', '--no-pdf-header-footer', `--print-to-pdf=${outputPath}`, pathToFileURL(htmlPath).href],
+      signal,
+    );
+  } finally {
+    await rm(htmlPath, { force: true });
+  }
 }
 
 export async function executeChrome(executable: string, args: string[], signal: AbortSignal): Promise<void> {
