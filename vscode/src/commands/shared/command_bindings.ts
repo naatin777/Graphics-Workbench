@@ -74,13 +74,16 @@ function extensionCommandBinding(id: CommandId, handler: ExtensionCommandBinding
   return { kind: 'extensionCommand', id, handler };
 }
 
-/** ラスタ変換コマンドは変換ターゲットとcardinalityをoptionsで指定する。 */
+/** ラスタ変換コマンドは変換ターゲットとアニメーション入力モードをoptionsで指定する。 */
 function rasterFileBinding(
   id: CommandId,
-  target: 'png' | 'jpeg' | 'avif' | 'tiff' | 'webp' | 'gif',
-  cardinality?: 'single' | 'split',
+  target: ConvertToRasterCommandOptions['target'],
+  animatedInputMode?: 'single' | 'split',
 ): FileCommandBinding {
-  const options: ConvertToRasterCommandOptions = { target, ...(cardinality !== undefined && { cardinality }) };
+  const options: ConvertToRasterCommandOptions = {
+    target,
+    ...(animatedInputMode !== undefined && { animatedInputMode }),
+  };
   return fileBinding(id, async (sourceUris, dependencies) => {
     await convertToRasterCommand(sourceUris, dependencies, options);
   });
@@ -107,11 +110,11 @@ export const commandBindings = [
   rasterFileBinding('graphics-workbench.convertToPng', 'png'),
   rasterFileBinding('graphics-workbench.convertToJpeg', 'jpeg'),
   rasterFileBinding('graphics-workbench.convertToWebp', 'webp'),
-  rasterFileBinding('graphics-workbench.convertToWebpSeparately', 'webp', 'split'),
+  rasterFileBinding('graphics-workbench.convertToWebpSplit', 'webp', 'split'),
   rasterFileBinding('graphics-workbench.convertToAvif', 'avif'),
   fileBinding('graphics-workbench.convertToSvg', convertToSvgCommand),
   rasterFileBinding('graphics-workbench.convertToGif', 'gif'),
-  rasterFileBinding('graphics-workbench.convertToGifSeparately', 'gif', 'split'),
+  rasterFileBinding('graphics-workbench.convertToGifSplit', 'gif', 'split'),
   rasterFileBinding('graphics-workbench.convertToTiff', 'tiff'),
   fileBinding('graphics-workbench.convertToDrawio', convertToDrawioCommand),
   fileBinding('graphics-workbench.convertToDrawioPng', convertToDrawioPngCommand),

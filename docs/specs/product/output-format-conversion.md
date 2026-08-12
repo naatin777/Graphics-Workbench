@@ -6,16 +6,18 @@
 
 ## 公開command
 
-| Command ID                         | 表示名 | 出力形式 |
-| ---------------------------------- | ------ | -------- |
-| `graphics-workbench.convertToPdf`  | PDF    | PDF      |
-| `graphics-workbench.convertToPng`  | PNG    | PNG      |
-| `graphics-workbench.convertToJpeg` | JPEG   | JPEG     |
-| `graphics-workbench.convertToWebp` | WebP   | WebP     |
-| `graphics-workbench.convertToAvif` | AVIF   | AVIF     |
-| `graphics-workbench.convertToGif`  | GIF    | GIF      |
-| `graphics-workbench.convertToTiff` | TIFF   | TIFF     |
-| `graphics-workbench.convertToSvg`  | SVG    | SVG      |
+| Command ID                              | 表示名 | 出力形式    |
+| --------------------------------------- | ------ | ----------- |
+| `graphics-workbench.convertToPdf`       | PDF    | PDF         |
+| `graphics-workbench.convertToPng`       | PNG    | PNG         |
+| `graphics-workbench.convertToJpeg`      | JPEG   | JPEG        |
+| `graphics-workbench.convertToWebp`      | WebP   | WebP        |
+| `graphics-workbench.convertToWebpSplit` | WebP   | WebP frames |
+| `graphics-workbench.convertToAvif`      | AVIF   | AVIF        |
+| `graphics-workbench.convertToGif`       | GIF    | GIF         |
+| `graphics-workbench.convertToGifSplit`  | GIF    | GIF frames  |
+| `graphics-workbench.convertToTiff`      | TIFF   | TIFF        |
+| `graphics-workbench.convertToSvg`       | SVG    | SVG         |
 
 Command PaletteとExplorerの`変換`サブメニューでは、出力形式基準commandを表示する。
 
@@ -42,7 +44,7 @@ PDFを画像またはSVGへ変換する場合はページごとに出力を作�
 
 editable Draw.io画像から画像へ変換する場合は、数式を保持するためPDFを経由する。中間結果は利用者向けの出力名へ現れない。
 
-GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変換では先頭page/frameを扱い、通常のWebP/GIF commandはanimationを1つの出力へ保持し、Separately commandは全frameを個別出力する。Convert to PDFのGIF/TIFF入力は、複数page/frameを全ページPDFへ展開する。ページ寸法が異なるTIFFも各pageを個別に読み出す。
+GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変換では先頭page/frameを扱い、通常のWebP/GIF commandはanimationを1つの出力へ保持し、Split commandは全frameを個別出力する。Convert to PDFのGIF/TIFF入力は、複数page/frameを全ページPDFへ展開する。ページ寸法が異なるTIFFも各pageを個別に読み出す。
 
 ## 設定と入力名
 

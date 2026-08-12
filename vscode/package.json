@@ -118,8 +118,8 @@
         "category": "Graphics Workbench"
       },
       {
-        "command": "graphics-workbench.convertToWebpSeparately",
-        "title": "%command.convertToWebpSeparately%",
+        "command": "graphics-workbench.convertToWebpSplit",
+        "title": "%command.convertToWebpSplit%",
         "category": "Graphics Workbench"
       },
       {
@@ -138,8 +138,8 @@
         "category": "Graphics Workbench"
       },
       {
-        "command": "graphics-workbench.convertToGifSeparately",
-        "title": "%command.convertToGifSeparately%",
+        "command": "graphics-workbench.convertToGifSplit",
+        "title": "%command.convertToGifSplit%",
         "category": "Graphics Workbench"
       },
       {
@@ -358,7 +358,7 @@
           "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.(pdf)$/i && config.graphics-workbench.conversion.split.enabled) || ((resourceExtname =~ /^\\.(png|jpg|jpeg|avif|gif|tif|tiff|svg)$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.conversion.single.enabled))"
         },
         {
-          "command": "graphics-workbench.convertToWebpSeparately",
+          "command": "graphics-workbench.convertToWebpSplit",
           "group": "graphics-workbench.convert@4",
           "when": "config.graphics-workbench.contextMenu.enabled && resourceExtname =~ /^\\.(gif)$/i && config.graphics-workbench.conversion.split.enabled"
         },
@@ -378,7 +378,7 @@
           "when": "config.graphics-workbench.contextMenu.enabled && ((resourceExtname =~ /^\\.(pdf)$/i && config.graphics-workbench.conversion.split.enabled) || ((resourceExtname =~ /^\\.(png|jpg|jpeg|webp|avif|tif|tiff|svg)$/i && !(resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) || resourceFilename =~ /\\.(drawio|dio)\\.(png|svg)$/i) && config.graphics-workbench.conversion.single.enabled))"
         },
         {
-          "command": "graphics-workbench.convertToGifSeparately",
+          "command": "graphics-workbench.convertToGifSplit",
           "group": "graphics-workbench.convert@7",
           "when": "config.graphics-workbench.contextMenu.enabled && resourceExtname =~ /^\\.(webp)$/i && config.graphics-workbench.conversion.split.enabled"
         },
@@ -471,11 +471,11 @@
           "when": "false"
         },
         {
-          "command": "graphics-workbench.convertToWebpSeparately",
+          "command": "graphics-workbench.convertToWebpSplit",
           "when": "false"
         },
         {
-          "command": "graphics-workbench.convertToGifSeparately",
+          "command": "graphics-workbench.convertToGifSplit",
           "when": "false"
         },
         {

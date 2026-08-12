@@ -22,8 +22,8 @@ import { planRasterConversionJobs } from './plan_conversion_jobs.js';
 
 export interface ConvertToRasterCommandOptions {
   target: RasterConversionTarget;
-  /** アニメーション入力をフレームごとに分割出力する場合は'split'。それ以外は'single'。 */
-  cardinality?: 'single' | 'split';
+  /** アニメーション入力を1ファイルに保持するか、フレームごとに分割するか。 */
+  animatedInputMode?: 'single' | 'split';
 }
 
 interface RasterBackendTools {
@@ -49,12 +49,12 @@ async function runRasterCommand(options: {
   sourceUris: vscode.Uri[];
   dependencies: CommandDependencies;
   spec: RasterFormatSpec;
-  cardinality?: 'single' | 'split' | undefined;
+  animatedInputMode?: 'single' | 'split' | undefined;
 }): Promise<void> {
   const { sourceUris, spec } = options;
   if (sourceUris.length === 0) {
     await vscode.window.showErrorMessage(
-      userMessage('message.convertToOutput.failed', spec.outputLabel, 'No files were selected.'),
+      userMessage('message.convertToOutput.failed', spec.label, 'No files were selected.'),
     );
     return;
   }
@@ -65,7 +65,7 @@ async function runRasterCommand(options: {
     operationName: spec.operationName,
     outputChannel,
     resolveConflicts: resolveOutputConflicts,
-    messages: createOutputConversionMessages(spec.outputLabel, sourceUris.length),
+    messages: createOutputConversionMessages(spec.label, sourceUris.length),
     run: async (runtime) => {
       const configuration = options.dependencies.getConfiguration();
       const maxInputPixels = configuration.raster.maxInputPixels();
@@ -79,7 +79,7 @@ async function runRasterCommand(options: {
             configuration,
             maxInputPixels,
             ...(maxAnimationPixels !== undefined ? { maxAnimationPixels } : {}),
-            frameMode: options.cardinality === 'split' ? 'all' : 'first',
+            frameMode: options.animatedInputMode === 'split' ? 'all' : 'first',
             runtime,
           })),
         );
@@ -104,11 +104,11 @@ export async function convertToRasterCommand(
   dependencies: CommandDependencies,
   options: ConvertToRasterCommandOptions,
 ): Promise<void> {
-  const { target, cardinality } = options;
+  const { target, animatedInputMode } = options;
   await runRasterCommand({
     sourceUris,
     dependencies,
     spec: rasterFormatSpecs[target],
-    cardinality,
+    animatedInputMode,
   });
 }

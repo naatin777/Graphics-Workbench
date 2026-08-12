@@ -27,8 +27,8 @@ const EXPECTED_CATEGORIES_BY_COMMAND: Record<string, readonly ('single' | 'split
   'graphics-workbench.convertToSvg': ['single', 'split'],
   'graphics-workbench.convertToGif': ['single', 'split'],
   'graphics-workbench.convertToTiff': ['single', 'split'],
-  'graphics-workbench.convertToWebpSeparately': ['split'],
-  'graphics-workbench.convertToGifSeparately': ['split'],
+  'graphics-workbench.convertToWebpSplit': ['split'],
+  'graphics-workbench.convertToGifSplit': ['split'],
   'graphics-workbench.convertDrawioToPagePdfs': ['split'],
   'graphics-workbench.convertDrawioToSinglePdf': ['single'],
   'graphics-workbench.convertToDrawio': ['single'],
@@ -270,16 +270,13 @@ suite('package.jsonの変換メニュー定義', () => {
     const findEntry = (command: string) => convertMenu.find((entry) => entry.command === command);
 
     const preserveCommands = ['graphics-workbench.convertToWebp', 'graphics-workbench.convertToGif'];
-    const separatelyCommands = [
-      'graphics-workbench.convertToWebpSeparately',
-      'graphics-workbench.convertToGifSeparately',
-    ];
+    const splitCommands = ['graphics-workbench.convertToWebpSplit', 'graphics-workbench.convertToGifSplit'];
 
     for (const command of preserveCommands) {
       const entry = findEntry(command);
       assert.ok(entry?.when?.includes(CATEGORY_PROPERTY.single), `${command} must depend on single.enabled`);
     }
-    for (const command of separatelyCommands) {
+    for (const command of splitCommands) {
       const entry = findEntry(command);
       assert.ok(entry?.when?.includes(CATEGORY_PROPERTY.split), `${command} must depend on split.enabled`);
     }
@@ -453,31 +450,31 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertToAvif.when?.includes('dio'));
   });
 
-  test('convertToGif・convertToGifSeparatelyの2コマンドを公開する', async () => {
+  test('convertToGif・convertToGifSplitの2コマンドを公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
     assert.ok(commandIds.has('graphics-workbench.convertToGif'));
-    assert.ok(commandIds.has('graphics-workbench.convertToGifSeparately'));
+    assert.ok(commandIds.has('graphics-workbench.convertToGifSplit'));
   });
 
-  test('convertToWebp・convertToWebpSeparatelyの2コマンドを公開する', async () => {
+  test('convertToWebp・convertToWebpSplitの2コマンドを公開する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const commandIds = new Set(packageJson.contributes.commands.map((command) => command.command));
 
     assert.ok(commandIds.has('graphics-workbench.convertToWebp'));
-    assert.ok(commandIds.has('graphics-workbench.convertToWebpSeparately'));
+    assert.ok(commandIds.has('graphics-workbench.convertToWebpSplit'));
   });
 
-  test('GIF/WebPのアニメーション保持とフレーム分割を通常・Separatelyコマンドで変換サブメニューに載せる', async () => {
+  test('GIF/WebPのアニメーション保持とフレーム分割を通常・Splitコマンドで変換サブメニューに載せる', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const commands = new Set(convertMenu.map((entry) => entry.command));
 
     assert.ok(commands.has('graphics-workbench.convertToWebp'));
-    assert.ok(commands.has('graphics-workbench.convertToWebpSeparately'));
+    assert.ok(commands.has('graphics-workbench.convertToWebpSplit'));
     assert.ok(commands.has('graphics-workbench.convertToGif'));
-    assert.ok(commands.has('graphics-workbench.convertToGifSeparately'));
+    assert.ok(commands.has('graphics-workbench.convertToGifSplit'));
   });
 
   test('GIF/WebPのアニメーション保持とフレーム分割コマンドをcommandPaletteでwhen=falseにして非表示にする', async () => {
@@ -485,8 +482,8 @@ suite('package.jsonの変換メニュー定義', () => {
     const paletteEntries = packageJson.contributes.menus.commandPalette ?? [];
     const paletteHidden = new Set(paletteEntries.filter((e) => e.when === 'false').map((e) => e.command));
 
-    assert.ok(paletteHidden.has('graphics-workbench.convertToWebpSeparately'));
-    assert.ok(paletteHidden.has('graphics-workbench.convertToGifSeparately'));
+    assert.ok(paletteHidden.has('graphics-workbench.convertToWebpSplit'));
+    assert.ok(paletteHidden.has('graphics-workbench.convertToGifSplit'));
   });
 
   test('Save As / Quickの両方の画像PDF結合コマンドを公開し、両方ともcommandPaletteで非表示にしてExplorerの変換サブメニューだけに載せる', async () => {
@@ -504,23 +501,23 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.ok(convertMenu.some((entry) => entry.command === QUICK_COMBINE_IMAGES_TO_PDF_COMMAND));
   });
 
-  test('通常のWebP/GIFは相互のanimated入力を含み、Separatelyは対応するanimated入力だけに表示する', async () => {
+  test('通常のWebP/GIFは相互のanimated入力を含み、Splitは対応するanimated入力だけに表示する', async () => {
     const packageJson = await readJson<PackageJson>('package.json');
     const convertMenu = packageJson.contributes.menus[CONVERT_SUBMENU] ?? [];
     const findEntry = (command: string) => convertMenu.find((e) => e.command === command);
 
     const webp = findEntry('graphics-workbench.convertToWebp');
-    const webpSeparately = findEntry('graphics-workbench.convertToWebpSeparately');
+    const webpSplit = findEntry('graphics-workbench.convertToWebpSplit');
     const gif = findEntry('graphics-workbench.convertToGif');
-    const gifSeparately = findEntry('graphics-workbench.convertToGifSeparately');
+    const gifSplit = findEntry('graphics-workbench.convertToGifSplit');
 
     assert.ok(webp?.when?.includes('gif'));
-    assert.ok(webpSeparately?.when?.includes('resourceExtname =~ /^\\.(gif)$/i'));
-    assert.ok(!webpSeparately?.when?.includes('.webp'), 'WebP separately should not match .webp');
+    assert.ok(webpSplit?.when?.includes('resourceExtname =~ /^\\.(gif)$/i'));
+    assert.ok(!webpSplit?.when?.includes('.webp'), 'WebP split should not match .webp');
 
     assert.ok(gif?.when?.includes('webp'));
-    assert.ok(gifSeparately?.when?.includes('resourceExtname =~ /^\\.(webp)$/i'));
-    assert.ok(!gifSeparately?.when?.includes('.gif'), 'GIF separately should not match .gif');
+    assert.ok(gifSplit?.when?.includes('resourceExtname =~ /^\\.(webp)$/i'));
+    assert.ok(!gifSplit?.when?.includes('.gif'), 'GIF split should not match .gif');
   });
 
   test('通常のconvertToWebpのwhen句に.gifを含め、通常のconvertToGifのwhen句に.webpを含める', async () => {
@@ -551,8 +548,8 @@ suite('package.jsonの変換メニュー定義', () => {
     assert.strictEqual(jaMessages['command.convertToAvif'], '選択したファイルをAVIFに変換');
     assert.strictEqual(jaMessages['command.convertToSvg'], '選択したファイルをSVGに変換');
     assert.strictEqual(jaMessages['command.convertToGif'], '選択したファイルをGIFに変換');
-    assert.strictEqual(jaMessages['command.convertToGifSeparately'], 'GIF: フレーム分割');
-    assert.strictEqual(jaMessages['command.convertToWebpSeparately'], 'WebP: フレーム分割');
+    assert.strictEqual(jaMessages['command.convertToGifSplit'], 'GIF: フレーム分割');
+    assert.strictEqual(jaMessages['command.convertToWebpSplit'], 'WebP: フレーム分割');
     assert.strictEqual(jaMessages['command.combineImagesToPdf'], '画像をPDFに結合（保存先を指定）');
     assert.strictEqual(jaMessages['command.quickCombineImagesToPdf'], '画像をPDFにクイック結合');
   });

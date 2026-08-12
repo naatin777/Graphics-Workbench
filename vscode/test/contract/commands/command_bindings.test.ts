@@ -111,7 +111,7 @@ suite('command登録処理', () => {
     const dependencies = testCommandDependencies();
     const uri = vscode.Uri.file('/workspace/source.gif');
 
-    const binding = findBinding('graphics-workbench.convertToWebpSeparately');
+    const binding = findBinding('graphics-workbench.convertToWebpSplit');
     assert.strictEqual(binding.kind, 'file');
     const called = captureHandlerCalls(sandbox, binding);
     registerCommands(createContext(), dependencies);

@@ -13,6 +13,27 @@ export type SourceFormat =
   | 'editable-drawio-png'
   | 'editable-drawio-svg';
 
+export const SOURCE_FORMATS = [
+  'pdf',
+  'png',
+  'jpeg',
+  'webp',
+  'avif',
+  'gif',
+  'tiff',
+  'svg',
+  'drawio',
+  'editable-drawio-png',
+  'editable-drawio-svg',
+] as const satisfies readonly SourceFormat[];
+
+export const RASTER_FORMATS = ['png', 'jpeg', 'webp', 'avif', 'gif', 'tiff'] as const satisfies readonly SourceFormat[];
+
+export const EDITABLE_DRAWIO_FORMATS = [
+  'editable-drawio-png',
+  'editable-drawio-svg',
+] as const satisfies readonly SourceFormat[];
+
 export const sourceFormatExtensions = {
   pdf: ['pdf'],
   png: ['png'],
@@ -44,7 +65,7 @@ const sourceFormatByExtension: ReadonlyMap<string, SourceFormat> = new Map(
       .map((extension) => [`.${extension}`, format] as const);
   }),
 );
-const rasterSourceFormats = new Set<SourceFormat>(['png', 'jpeg', 'webp', 'avif', 'gif', 'tiff']);
+const rasterSourceFormats = new Set<SourceFormat>(RASTER_FORMATS);
 
 function isSourceFormat(value: string): value is SourceFormat {
   return value in sourceFormatExtensions;

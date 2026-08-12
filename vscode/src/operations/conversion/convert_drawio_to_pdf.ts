@@ -77,7 +77,7 @@ export async function convertDrawioToPagePdfs(
 export async function convertDrawioToSinglePdf(
   options: ConvertDrawioToPdfOptions,
 ): Promise<CommittedConversionOutput[]> {
-  const operationName = 'convert-drawio-to-pdf-directly';
+  const operationName = 'convert-drawio-to-single-pdf';
   validateInputs(options.inputs);
   await validateInputPaths(options.inputs, operationName);
 

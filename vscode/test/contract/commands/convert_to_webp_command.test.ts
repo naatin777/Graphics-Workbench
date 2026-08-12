@@ -111,7 +111,7 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('convertToWebpSeparatelyでGIFを変換し、フレームごとの01、02連番WebPを生成する', async () => {
+  test('convertToWebpSplitでGIFを変換し、フレームごとの01、02連番WebPを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
@@ -119,7 +119,7 @@ suite('WebPに変換コマンド', () => {
       await copyFile(path.join(testInputDirectory, 'valid', 'gif', 'rotating-vector-field.gif'), sourcePath);
 
       const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.convertToWebpSeparately',
+        'graphics-workbench.convertToWebpSplit',
         vscode.Uri.file(sourcePath),
       );
       await commandExecution;
@@ -153,14 +153,14 @@ suite('WebPに変換コマンド', () => {
     }
   });
 
-  test('convertToGifSeparatelyでanimated WebPを変換し、フレームごとのGIFを生成する', async () => {
+  test('convertToGifSplitでanimated WebPを変換し、フレームごとのGIFを生成する', async () => {
     const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
     try {
       const sourcePath = path.join(temporaryDirectory, 'animated-swirl.webp');
       await copyFile(path.join(testInputDirectory, 'valid', 'webp', 'animated-swirl.webp'), sourcePath);
 
-      await vscode.commands.executeCommand('graphics-workbench.convertToGifSeparately', vscode.Uri.file(sourcePath));
+      await vscode.commands.executeCommand('graphics-workbench.convertToGifSplit', vscode.Uri.file(sourcePath));
 
       assert.deepStrictEqual(showErrorMessage.args, []);
       await assertReadableGif(path.join(temporaryDirectory, 'animated-swirl', '01.gif'));

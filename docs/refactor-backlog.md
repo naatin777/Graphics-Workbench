@@ -48,18 +48,6 @@
 
 ## Items
 
-### 形式別operationの残る引数列
-
-- Area: conversion operations
-- Type: Readability
-- Concrete problem: raster operationの公開optionsには、legacy test injectionとruntime値（signal、conflict resolver、Output Channel）がまだ混在している。
-- Evidence: `core/src/operations/conversion/raster_conversion.ts`の`ExecuteRasterConversionOptions`と形式別のencoder定義。
-- Trigger: 次に形式別operationの依存を変更するとき、または同じruntime値を追加するとき。
-- Why not now: 今回はstaged batchとcommand runnerの共有境界を先に固定し、既存の安全性テストと直接operation callerを無用に書き換えない。
-- Related files: `core/src/operations/lifecycle/conversion_runtime.ts`, `core/src/operations/lifecycle/run_staged_conversion_batch.ts`, `core/src/operations/conversion/raster_conversion.ts`, `core/test/integration/convert_to_*_operation.test.ts`
-- Expected test impact: operation APIの回帰、Safe Mode、cancellation、tool injectionの再確認が必要。
-- Reversibility: runtimeをoptionsへ導入する変更は、形式別に戻せる。
-
 ### PDF/SVGのstaging batch重複
 
 - Area: conversion operations
