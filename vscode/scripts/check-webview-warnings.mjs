@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Vite/Lightning CSS emits this warning for `:global(...)` used as a plain CSS
 // pseudo-class. Rotate/Reorder previously shipped it; fail CI if it recurs.
@@ -9,7 +11,8 @@ const apps = ['crop_pdf', 'merge_pdf', 'split_pdf', 'rotate_pdf', 'reorder_pdf',
 let failed = false;
 
 for (const app of apps) {
-  const result = spawnSync('npx', ['vite', 'build', '--config', `vscode/webview/apps/${app}/vite.config.ts`], {
+  const result = spawnSync('npm', ['exec', '--', 'vite', 'build', '--config', `webview/apps/${app}/vite.config.ts`], {
+    cwd: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
     encoding: 'utf8',
   });
   if (result.status !== 0) {

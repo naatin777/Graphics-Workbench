@@ -64,4 +64,4 @@ install時のengine enforcementはできるが、同じversionを異なるruntim
 - [ADRの運用方針](README.md)
 - [ADR-0018: pre-package testはVS Code Extension Hostで実行する](0018-use-extension-host-for-pre-package-tests.md)
 - [ADR-0026: 6 target VSIXをnative runnerで生成・検証する](0026-native-runner-platform-vsix-release.md)
-- [VS Code test設定](../../.vscode-test.mjs)
+- [VS Code test設定](../../vscode/.vscode-test.mjs)

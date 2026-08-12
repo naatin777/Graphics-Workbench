@@ -4,35 +4,25 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from '@vscode/test-cli';
-import { collectCompiledTestFiles } from './scripts/compiled-test-files.mjs';
-import { buildExtensionHostRuntimeCoverageGlobs } from './scripts/extension-host-coverage.mjs';
+import { collectCompiledTestFiles } from '../scripts/compiled-test-files.mjs';
+import { buildExtensionHostRuntimeCoverageGlobs } from '../scripts/extension-host-coverage.mjs';
 
 const repositoryDirectory = path.dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = path.resolve(repositoryDirectory, '..');
 const configuredUserDataDirectory = process.env.GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR;
 const userDataDirectory = path.resolve(
-  repositoryDirectory,
+  repositoryRoot,
   configuredUserDataDirectory ?? 'vscode/test/support/.vscode-test-data',
 );
-const settingsSourcePath = path.join(
-  repositoryDirectory,
-  'vscode',
-  'test',
-  'support',
-  'vscode-settings',
-  'settings.json',
-);
+const settingsSourcePath = path.join(repositoryRoot, 'vscode', 'test', 'support', 'vscode-settings', 'settings.json');
 const settingsTargetPath = path.join(userDataDirectory, 'User', 'settings.json');
-const testWorkspaceDirectory = path.join(repositoryDirectory, 'vscode', 'test', 'support', 'workspace');
+const testWorkspaceDirectory = path.join(repositoryDirectory, 'test', 'support', 'workspace');
 // node:test suites (e.g. terminate_process_tree.test.ts) use module mocks and a
 // top-level dynamic import; they crash the Mocha extension host runner, so run
 // them under node --test (test:scripts) instead.
 const extensionHostTestFiles = [
-  ...collectCompiledTestFiles(
-    repositoryDirectory,
-    'vscode/out/vscode/test',
-    new Set(['terminate_process_tree.test.js']),
-  ),
-  ...collectCompiledTestFiles(repositoryDirectory, 'vscode/out/core/test', new Set(['terminate_process_tree.test.js'])),
+  ...collectCompiledTestFiles(repositoryDirectory, 'out/vscode/test', new Set(['terminate_process_tree.test.js'])),
+  ...collectCompiledTestFiles(repositoryDirectory, 'out/core/test', new Set(['terminate_process_tree.test.js'])),
 ].toSorted((left, right) => (left < right ? -1 : left > right ? 1 : 0));
 
 mkdirSync(testWorkspaceDirectory, { recursive: true });
@@ -94,9 +84,9 @@ export default defineConfig({
     {
       files: extensionHostTestFiles,
       version: 'stable',
-      extensionDevelopmentPath: 'vscode',
+      extensionDevelopmentPath: '.',
       srcDir: '.',
-      workspaceFolder: './vscode/test/support/workspace',
+      workspaceFolder: './test/support/workspace',
       mocha: {
         ui: 'tdd',
         timeout: 60000,
@@ -118,7 +108,7 @@ export default defineConfig({
     includeAll: true,
     // @vscode/test-cli disables relative path matching for cross-platform
     // coverage, so include patterns must be absolute.
-    include: buildExtensionHostRuntimeCoverageGlobs(repositoryDirectory),
+    include: buildExtensionHostRuntimeCoverageGlobs(repositoryRoot),
     reporter: ['text-summary', 'html', 'lcov'],
     exclude: ['**/*.d.ts', '**/test/**', '**/scripts/**'],
   },

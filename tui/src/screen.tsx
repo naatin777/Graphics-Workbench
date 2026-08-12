@@ -1,11 +1,6 @@
-import {
-  BoxRenderable,
-  CliRenderEvents,
-  TextRenderable,
-  createCliRenderer,
-  type CliRenderer,
-  type KeyEvent,
-} from '@opentui/core';
+import { render } from '@opentui/solid';
+import { createSignal } from 'solid-js';
+import { CliRenderEvents, createCliRenderer, type CliRenderer, type KeyEvent } from '@opentui/core';
 
 export interface TerminalKey {
   name: string;
@@ -32,36 +27,43 @@ export async function createOpenTuiScreen(): Promise<TerminalScreen> {
 
 class OpenTuiScreen implements TerminalScreen {
   readonly #renderer: CliRenderer;
-  readonly #content: TextRenderable;
+  readonly #setContent: (content: string) => string;
   #destroyed = false;
 
   constructor(renderer: CliRenderer) {
     this.#renderer = renderer;
-    const frame = new BoxRenderable(renderer, {
-      id: 'graphics-workbench-frame',
-      width: '100%',
-      height: '100%',
-      border: true,
-      borderStyle: 'rounded',
-      borderColor: '#6ea8fe',
-      title: ' Graphics Workbench ',
-      padding: 1,
-    });
-    this.#content = new TextRenderable(renderer, {
-      id: 'graphics-workbench-content',
-      width: '100%',
-      height: '100%',
-      content: '',
-    });
-    frame.add(this.#content);
-    renderer.root.add(frame);
+    const [content, setContent] = createSignal('');
+    this.#setContent = setContent;
+    void render(
+      () => (
+        <box
+          id='graphics-workbench-frame'
+          width='100%'
+          height='100%'
+          border
+          borderStyle='rounded'
+          borderColor='#6ea8fe'
+          title=' Graphics Workbench '
+          padding={1}
+        >
+          <text
+            id='graphics-workbench-content'
+            width='100%'
+            height='100%'
+          >
+            {content()}
+          </text>
+        </box>
+      ),
+      renderer,
+    );
   }
 
   setContent(content: string): void {
     if (this.#destroyed) {
       return;
     }
-    this.#content.content = content;
+    this.#setContent(content);
     this.#renderer.requestRender();
   }
 

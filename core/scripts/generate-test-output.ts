@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 import sharp, { type Sharp } from 'sharp';
 
 const execFileAsync = promisify(execFile);
-const repositoryDirectory = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const repositoryDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const inputDirectory = path.join(repositoryDirectory, 'test', 'input', 'valid');
 const outputDirectory = path.join(repositoryDirectory, 'test', 'output');
 

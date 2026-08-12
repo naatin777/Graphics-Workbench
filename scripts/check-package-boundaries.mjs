@@ -22,13 +22,14 @@ const publicCoreEntries = new Set(
 
 checkCoreImports();
 checkFrontendImports('vscode', [vscodeSourceRoot], vscodePackage, ['vscode']);
-checkFrontendImports('vscode', [vscodeTestRoot], mergePackageDependencies(vscodePackage, rootPackage), ['vscode']);
+checkFrontendImports('vscode', [vscodeTestRoot], vscodePackage, ['vscode']);
 checkFrontendImports('tui', [tuiSourceRoot, tuiTestRoot], tuiPackage, []);
 checkCorePublicImports([vscodeSourceRoot, vscodeTestRoot, tuiSourceRoot, tuiTestRoot]);
 checkFrontendBoundaryImports('vscode', [vscodeSourceRoot, vscodeTestRoot], 'tui');
 checkFrontendBoundaryImports('tui', [tuiSourceRoot, tuiTestRoot], 'vscode');
 checkPackageVersions();
 checkCoreExports();
+checkPackageOwnership();
 checkLockfiles();
 
 if (failures.length > 0) {
@@ -87,13 +88,6 @@ function checkFrontendImports(frontend, roots, packageJson, builtInPackages) {
   }
 }
 
-function mergePackageDependencies(primary, secondary) {
-  return {
-    dependencies: { ...secondary.dependencies, ...primary.dependencies },
-    devDependencies: { ...secondary.devDependencies, ...primary.devDependencies },
-  };
-}
-
 function checkCorePublicImports(roots) {
   const packagePrefix = '@graphics-workbench/core/';
   for (const root of roots) {
@@ -107,6 +101,38 @@ function checkCorePublicImports(roots) {
           failures.push(`${relative(filePath)} imports non-public core module ${specifier}`);
         }
       }
+    }
+  }
+}
+
+function checkPackageOwnership() {
+  if (!corePackage.dependencies?.sharp) {
+    failures.push('core must own sharp as a production dependency');
+  }
+  if (vscodePackage.dependencies?.sharp !== undefined) {
+    failures.push('vscode must not ship sharp as a production dependency');
+  }
+  if (!vscodePackage.devDependencies?.sharp) {
+    failures.push('vscode test tooling must declare sharp as a devDependency');
+  }
+
+  for (const dependency of [
+    '@types/mocha',
+    '@types/sinon',
+    '@types/vscode',
+    '@vscode/test-cli',
+    '@vscode/test-electron',
+    'jsdom',
+    'mocha',
+    'pdfjs-dist',
+    'sinon',
+    'solid-js',
+    'vite',
+    'vite-plugin-solid',
+    'vitest',
+  ]) {
+    if (rootPackage.devDependencies?.[dependency] !== undefined) {
+      failures.push(`root must not own frontend-only dependency ${dependency}`);
     }
   }
 }
