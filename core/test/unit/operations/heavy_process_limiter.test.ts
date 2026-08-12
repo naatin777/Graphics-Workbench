@@ -111,6 +111,19 @@ suite('重処理の共有実行キュー', () => {
     assert.strictEqual(await running, 'completed');
   });
 
+  test('同じlimiter内から開始したnested taskは新しいslotを待たず、外部toolを含む1つの重処理として実行される', async () => {
+    const limiter = new HeavyProcessLimiter(1);
+    let nestedStarted = false;
+
+    await limiter.run(async () => {
+      await limiter.run(async () => {
+        nestedStarted = true;
+      });
+    });
+
+    assert.strictEqual(nestedStarted, true);
+  });
+
   test('stopは待機中taskだけをキャンセルし、実行中taskの完了を妨げず、以後のtaskを拒否する', async () => {
     const limiter = new HeavyProcessLimiter(1);
     let releaseFirst!: () => void;

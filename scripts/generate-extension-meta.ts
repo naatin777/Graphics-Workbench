@@ -2,6 +2,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { assertFormatMatrixIsComplete, generatedMenuWhen, generatedSubmenuWhen } from './format_menu_matrix.ts';
+
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 type JsonSchema = {
@@ -375,6 +377,35 @@ function assertNoDuplicateIds(ids: readonly unknown[], description: string): voi
   }
 }
 
+export function normalizeGeneratedMenuContributions(packageJson: PackageManifest): PackageManifest {
+  assertFormatMatrixIsComplete();
+  const menus = packageJson.contributes.menus;
+  if (menus === undefined) {
+    return packageJson;
+  }
+
+  const normalizedMenus = Object.fromEntries(
+    Object.entries(menus).map(([menuId, entries]) => [
+      menuId,
+      entries.map((entry) => {
+        const target = entry.command ?? entry.submenu;
+        const generatedWhen =
+          target === undefined
+            ? undefined
+            : entry.command !== undefined
+              ? generatedMenuWhen(menuId, target)
+              : generatedSubmenuWhen(target);
+        return generatedWhen === undefined ? entry : { ...entry, when: generatedWhen };
+      }),
+    ]),
+  );
+
+  return {
+    ...packageJson,
+    contributes: { ...packageJson.contributes, menus: normalizedMenus },
+  };
+}
+
 function validateMenus(
   packageJson: PackageManifest,
   configurationProperties: Record<string, JsonSchema>,
@@ -464,6 +495,7 @@ function validateWhenClause(
 }
 
 export function generate(packageJson: PackageManifest): string {
+  packageJson = normalizeGeneratedMenuContributions(packageJson);
   const extensionPrefix = `${packageJson.name}.`;
   const configurationTree = new Map<string, ConfigNode>();
   const objectTypes: ObjectType[] = [];
@@ -568,15 +600,34 @@ function checkGeneratedFile(filePath: string, expected: string): boolean {
 }
 
 if (process.argv.length > 1 && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  const generated = generate(readPackageManifest());
+  const packageJson = readPackageManifest();
+  const normalizedPackageJson = normalizeGeneratedMenuContributions(packageJson);
+  const generated = generate(normalizedPackageJson);
+  const rawPackageJson: unknown = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+  if (!isRecord(rawPackageJson) || !isRecord(rawPackageJson.contributes)) {
+    throw new Error('package.json does not contain a valid contributes object');
+  }
+  const expectedPackageJson = {
+    ...rawPackageJson,
+    contributes: {
+      ...rawPackageJson.contributes,
+      menus: normalizedPackageJson.contributes.menus,
+    },
+  };
+  const expectedPackageText = `${JSON.stringify(expectedPackageJson, null, 2)}\n`;
   if (checkOnly) {
     const metadataIsCurrent = checkGeneratedFile(metadataOutputPath, generated);
     if (!metadataIsCurrent) {
       process.stderr.write('Generated extension metadata is out of date. Run npm run generate:extension-meta.\n');
       process.exitCode = 1;
     }
+    if (!checkGeneratedFile(packageJsonPath, expectedPackageText)) {
+      process.stderr.write('Generated menu contributions are out of date. Run npm run generate:extension-meta.\n');
+      process.exitCode = 1;
+    }
   } else {
     mkdirSync(path.dirname(metadataOutputPath), { recursive: true });
+    writeFileSync(packageJsonPath, expectedPackageText);
     writeFileSync(metadataOutputPath, generated);
   }
 }

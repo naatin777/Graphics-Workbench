@@ -18,8 +18,6 @@ import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.j
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import type { ConversionExecutionContext } from '@graphics-workbench/core/operations/lifecycle/conversion_runtime.js';
-
 import { planRasterConversionJobs } from './plan_conversion_jobs.js';
 
 export interface ConvertToRasterCommandOptions {
@@ -32,14 +30,6 @@ interface RasterBackendTools {
   drawioTools: DrawioBackend;
   pdfRenderTools: PdfRenderBackend;
   outputOptions?: { effort: number };
-}
-
-interface RasterConversionContext {
-  configuration: Configuration;
-  maxInputPixels: number;
-  maxAnimationPixels?: number;
-  prepared: RasterBackendTools;
-  runtime: ConversionExecutionContext;
 }
 
 function createRasterBackendTools(configuration: Configuration, spec: RasterFormatSpec): RasterBackendTools {
@@ -79,37 +69,30 @@ async function runRasterCommand(options: {
     run: async (runtime) => {
       const configuration = options.dependencies.getConfiguration();
       const maxInputPixels = configuration.raster.maxInputPixels();
-      const context: RasterConversionContext = {
-        configuration,
-        maxInputPixels,
-        prepared: createRasterBackendTools(configuration, spec),
-        runtime,
-        ...(animated && { maxAnimationPixels: configuration.raster.maxAnimationPixels() }),
-      };
+      const prepared = createRasterBackendTools(configuration, spec);
+      const maxAnimationPixels = animated ? configuration.raster.maxAnimationPixels() : undefined;
       const plannedInputs: RasterInput[] = [];
       for (const sourceUri of sourceUris) {
         runtime.signal?.throwIfAborted();
         plannedInputs.push(
           ...(await planRasterConversionJobs(sourceUri, spec, {
-            configuration: context.configuration,
-            maxInputPixels: context.maxInputPixels,
-            ...(animated && context.maxAnimationPixels !== undefined
-              ? { maxAnimationPixels: context.maxAnimationPixels }
-              : {}),
+            configuration,
+            maxInputPixels,
+            ...(maxAnimationPixels !== undefined ? { maxAnimationPixels } : {}),
             frameMode: options.cardinality === 'split' ? 'all' : 'first',
-            runtime: context.runtime,
+            runtime,
           })),
         );
       }
       return executeRasterConversion({
         inputs: plannedInputs,
         spec,
-        runtime: context.runtime,
-        maxInputPixels: context.maxInputPixels,
-        drawioTools: context.prepared.drawioTools,
-        pdfRenderTools: context.prepared.pdfRenderTools,
-        ...(context.prepared.outputOptions !== undefined && {
-          outputOptions: context.prepared.outputOptions,
+        runtime,
+        maxInputPixels,
+        drawioTools: prepared.drawioTools,
+        pdfRenderTools: prepared.pdfRenderTools,
+        ...(prepared.outputOptions !== undefined && {
+          outputOptions: prepared.outputOptions,
         }),
       });
     },

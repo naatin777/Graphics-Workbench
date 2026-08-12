@@ -53,5 +53,5 @@ description: Graphics Workbenchに新しいcommand、PDF操作、画像変換、
 - **全部をやらない**。今回の変更に必要な層だけを選ぶ。
 - 選ばなかった層は「確認不要」ではなく「今回は対象外」と明示する。
 - アーキテクチャ制約(共通固定入力上限なし・共通timeoutなし)は `docs/adr/0028-no-global-input-limits-or-processing-timeout.md` を参照する。
-- 旧command IDと旧namespaceのalias / fallbackは追加しない(`docs/adr/0009-use-output-format-conversion-commands.md`、`docs/adr/0023-rename-repository-to-graphics-workbench.md`)。一方、v1のpair-specific `outputPath.convertXToY` fallbackは`docs/adr/0020-preserve-legacy-output-path-fallback.md`に従って維持する。これらを同じ「旧setting」として扱わない。command登録と生成metadataはgenerator (`npm run generate:extension-meta`) と `check:extension-meta` が正本。
+- 旧command ID・旧namespace・旧pair-specific outputPathのalias / fallbackは追加しない(`docs/adr/0009-use-output-format-conversion-commands.md`、`docs/adr/0023-rename-repository-to-graphics-workbench.md`)。出力先設定は`outputPath.single.<target>`、`outputPath.split.<target>`、`outputPath.combine.<target>`を正本とする。command登録と生成metadataはgenerator (`npm run generate:extension-meta`) と `check:extension-meta` が正本。
 - 既存の安全機構(staging / Safe Mode / rollback / cancel / Undo)を迂回しない。詳細は `graphics-workbench-safety`。

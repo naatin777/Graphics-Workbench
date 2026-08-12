@@ -4,7 +4,6 @@ import type { Configuration } from '../../generated/extension_manifest.js';
 
 import {
   isSupportedPdfConversionSource,
-  isRasterImagePath,
   logicalSourcePathForOutputTemplate,
 } from '@graphics-workbench/core/shared/source_format.js';
 import { resolveChromeExecutablePath } from '../../config/rendering/chrome_cli_options.js';
@@ -108,20 +107,6 @@ async function planToPdfInputs(
 
   if (!isSupportedPdfConversionSource(sourceUri.fsPath)) {
     throw new Error(`Unsupported input format: ${sourceUri.fsPath}`);
-  }
-
-  if (isRasterImagePath(sourceUri.fsPath)) {
-    return [
-      {
-        sourcePath: sourceUri.fsPath,
-        outputPath: resolvePdfOutputPath(outputTemplate, {
-          sourcePath: templateSourcePath,
-          workspacePath: workspace.uri.fsPath,
-          workspaceName: workspace.name,
-        }),
-        workspacePath: workspace.uri.fsPath,
-      },
-    ];
   }
 
   return [
