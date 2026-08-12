@@ -10,7 +10,7 @@
 
 ## 背景
 
-ADR-0031で、6 targetのVSIXを`ubuntu-latest`上でnpm platform overrideによりcross-package生成し、ネイティブ実行はlinux-x64の最小Sharp smokeと既存3 OS packaged smokeに委ねると決めた。
+6 targetのVSIXは、targetと一致するrunnerで可能な限り生成・実行検証し、runnerが利用できないtargetはcross-package生成と内容検証で補う必要がある。native dependencyを含む配布物は、生成環境と実行環境の差を無視できない。
 
 この方式は生成と内容検証はできるが、darwin-x64、win32-arm64、linux-arm64のVSIXに同梱するsharpネイティブバイナリを実環境で実行できない。配布物に含まれるバイナリが実際にロード可能かを、可能な限り対象と同一のrunnerで確認したい。
 
@@ -47,7 +47,6 @@ Marketplace公開は`azure/login`でEntra ID認証を確立し、各VSIXを`vsce
 
 ## 関連
 
-- [ADR-0031: npm platform overrideで6 targetのVSIXを生成する](0031-build-six-target-vsix-with-npm-platform-overrides.md)
-- [ADR-0015: npmからOS別VSIXを生成する](0015-build-platform-specific-vsix-from-runtime-staging.md)
-- [VSIX packaging仕様](../specs/internal/packaging.md)
-- [Task 0214: 6 target VSIXをネイティブランナーで生成・検証・公開する](../tasks/0214-native-runner-platform-vsix-release.md)
+- [ADR-0017: 配布済みVSIXをElectron E2Eとreleaseの検証単位にする](0017-use-installed-vsix-for-electron-e2e.md)
+- [ADR-0022: Extension Hostと開発用Node.jsのversion制約を分離する](0022-separate-extension-host-and-development-node-constraints.md)
+- [`package.json` scripts](../../package.json)

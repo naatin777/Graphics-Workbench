@@ -3,8 +3,6 @@ description: Linux target VSIXのPlaywright full suite（wide+narrow）をDocker
 agent: build
 ---
 
-`graphics-workbench-verify` Skillを読み込む。
-
 canonicalなLinux Playwright検証を用途別Dockerコマンドで実行する。
 
 1. `npm run playwright:full:docker` でpackage後、wide + narrowの全ケースを実行する

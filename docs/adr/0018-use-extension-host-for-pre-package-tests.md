@@ -53,6 +53,4 @@ VS Code API、workspace、configuration、notificationなどのoracleを失う�
 ## 関連
 
 - [ADR-0017: 配布済みVSIXをElectron E2Eとreleaseの検証単位にする](0017-use-installed-vsix-for-electron-e2e.md)
-- [test policy](../specs/internal/test-policy.md)
-- [0197: CI・Playwright・VSIX releaseを4 workflowへ整理する](../tasks/0197-verify-cross-platform-vsix-release.md)
-- [0201: Node-level testの実行基盤を決定する](../tasks/0201-decide-node-test-runtime.md)（置き換え済み）
+- [`package.json` scripts](../../package.json)

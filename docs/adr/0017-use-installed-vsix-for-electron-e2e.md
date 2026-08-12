@@ -54,7 +54,7 @@ Node testはprotocol、validation、状態変換などの純粋な契約を、Ex
 - Browser DOMだけのlayout、zoom、mocked Host操作は独立した回帰対象にしない
 - failure artifactとして、Playwright report、trace、screenshot、test result、VS Code / Extension Host logを残す必要がある
 - 配布物以外の契約はNodeまたはExtension Host testで維持し、E2Eへ同じ検証を重複させない
-- workflowの具体的なjob、command、artifact名はworkflow fileとtest policyを正本とする
+- workflowの具体的なjob、command、artifact名はworkflow fileと`package.json` scriptsを正本とする
 
 ## 見直す条件
 
@@ -65,9 +65,6 @@ Node testはprotocol、validation、状態変換などの純粋な契約を、Ex
 
 ## 関連
 
-- [ADR-0013: VS Code ElectronをWebview visual testに使う](0013-use-vscode-electron-for-webview-visual-tests.md)（置き換え済み）
-- [ADR-0015: npmからOS別VSIXを生成する](0015-build-platform-specific-vsix-from-runtime-staging.md)
-- [ADR-0018: pre-package testはVS Code Extension Hostで実行する](0018-use-extension-host-for-pre-package-tests.md)（test allocation）
-- [test policy](../specs/internal/test-policy.md)
-- [VSIX packaging仕様](../specs/internal/packaging.md)
-- [0197: CI・Playwright・VSIX releaseを4 workflowへ整理する](../tasks/0197-verify-cross-platform-vsix-release.md)
+- [ADR-0018: pre-package testはVS Code Extension Hostで実行する](0018-use-extension-host-for-pre-package-tests.md)
+- [ADR-0026: 6 target VSIXをnative runnerで生成・検証する](0026-native-runner-platform-vsix-release.md)
+- [`docs/architecture.md`](../architecture.md)

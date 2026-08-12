@@ -1,7 +1,7 @@
 {
   "name": "graphics-workbench",
   "displayName": "Graphics Workbench",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "PDF and image tools for VS Code, including trimming, merging, splitting, conversion, Draw.io export, preview, and figure insertion for LaTeX, Typst, and Quarkdown.",
   "categories": [
     "Other"
@@ -30,7 +30,7 @@
   "type": "module",
   "main": "./out/vscode/src/extension.js",
   "dependencies": {
-    "@graphics-workbench/core": "1.0.0",
+    "@graphics-workbench/core": "0.0.1",
     "fast-xml-parser": "5.10.1",
     "sharp": "0.35.3",
     "valibot": "1.4.2"

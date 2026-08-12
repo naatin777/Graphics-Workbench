@@ -110,6 +110,5 @@ Graphics Workbenchは、入力ファイルサイズおよびPDFページ数に�
 
 ## 関連
 
-- [AGENTS.md](../../AGENTS.md)（開発ルール）
-- [Task 0217: 入力制限・タイムアウト方針を確定する](../tasks/0217-finalize-input-limit-and-timeout-policy.md)
-- [入力preflight仕様](../specs/internal/input-preflight.md)
+- [`docs/architecture.md`](../architecture.md)
+- [`docs/safety.md`](../safety.md)

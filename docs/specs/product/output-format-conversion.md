@@ -6,20 +6,7 @@
 
 ## 公開command
 
-| Command ID                              | 表示名 | 出力形式    |
-| --------------------------------------- | ------ | ----------- |
-| `graphics-workbench.convertToPdf`       | PDF    | PDF         |
-| `graphics-workbench.convertToPng`       | PNG    | PNG         |
-| `graphics-workbench.convertToJpeg`      | JPEG   | JPEG        |
-| `graphics-workbench.convertToWebp`      | WebP   | WebP        |
-| `graphics-workbench.convertToWebpSplit` | WebP   | WebP frames |
-| `graphics-workbench.convertToAvif`      | AVIF   | AVIF        |
-| `graphics-workbench.convertToGif`       | GIF    | GIF         |
-| `graphics-workbench.convertToGifSplit`  | GIF    | GIF frames  |
-| `graphics-workbench.convertToTiff`      | TIFF   | TIFF        |
-| `graphics-workbench.convertToSvg`       | SVG    | SVG         |
-
-Command PaletteとExplorerの`変換`サブメニューでは、出力形式基準commandを表示する。
+Command PaletteとExplorerの`変換`サブメニューでは、出力形式基準の変換commandを表示する。公開IDと登録条件はmanifest、command binding、generated metadataを正本とし、このspecでは一覧を重複管理しない。
 
 ## 入力と処理単位
 
@@ -50,10 +37,10 @@ GIF、TIFFは入力と出力の両方に対応する。通常の画像形式変�
 
 変換の出力先は入力形式ではなく、ユーザーから見た出力・操作の種類で決める。`single`は1回の変換結果を1つの出力ファイルとして生成する操作、`split`は1つの論理的な入力・document・animationを複数の独立ファイルへ展開する操作、`combine`は複数の独立したユーザーファイルを1つへ結合すること自体を目的とする操作を表す。それぞれ`outputPath.single.<形式>`、`outputPath.split.<形式>`、`outputPath.combine.<形式>`を正本とする。
 
-- `single.pdf`、`single.png`、`single.jpeg`、`single.webp`、`single.avif`、`single.gif`、`single.tiff`、`single.svg`
-- `split.pdf`、`split.png`、`split.jpeg`、`split.webp`、`split.avif`、`split.gif`、`split.tiff`、`split.svg`
-- `combine.pdf`（Quick Combine専用。`${random}`必須）
-- 素材からeditable Draw.ioを作成するcomposeは、最終artifactが1ファイルのため`single.drawio`／`single.drawioPng`／`single.drawioSvg`を使う。
+- `outputPath.single.<形式>`は、対応する1ファイル出力形式のmanifest settingを使う。
+- `outputPath.split.<形式>`は、対応する複数ファイル出力形式のmanifest settingを使い、`${page}`を必須とする。
+- `outputPath.combine.pdf`はQuick Combine専用で、`${random}`を必須とする。
+- 素材からeditable Draw.ioを作成するcomposeは、最終artifactが1ファイルのため`outputPath.single.drawio`／`outputPath.single.drawioPng`／`outputPath.single.drawioSvg`を使う。
 - 複数画像を1つへ結合する画像のPDF結合operationのSave As版は出力path設定を持たず、Save Asダイアログで出力先を選択する。
 - PDF編集operation固有の設定（`cropPdf`、`rotatePdf`、`reorderPdf`、`compressPdf`、`encryptPdf`、`decryptPdf`）は維持する。
 

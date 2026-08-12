@@ -1,66 +1,29 @@
 ---
 name: graphics-workbench-release
-description: Graphics Workbenchのバージョン更新、リリース前検証、VSIX作成、リリースノート準備を行う。ユーザーがリリース、公開、バージョン更新、VSIX作成を明示的に依頼した場合だけ使用する。通常の実装では使用しない。
+description: Graphics WorkbenchのVSIX packaging、dependency・native asset確認、リリース前検証、リリースノート準備を行う。ユーザーがVSIX作成、リリース、公開、バージョン更新を明示的に依頼した場合だけ使用する。通常の実装では使用しない。
 ---
 
-# リリース
+# Packaging and release
 
-リリース対象の変更とバージョンを確認してから作業する。
+このskillは、通常の実装で必要なpackage情報を常時読み込ませず、配布物の作成・検証・公開に固有の手順だけを扱う。
 
-## 手順
+## Packaging boundary
 
-1. 現在のブランチと作業ツリーを確認する。
-2. 前回リリースからの変更を確認する。
-3. バージョン番号が変更内容に適切か確認する。
-4. リリース前チェックを実行する。
-5. VSIXを作成する。
-6. VSIXの内容と除外ファイルを確認する。
-7. リリースノートを作成する。
+- rootはprivate npm coordinatorで、VSIXは`core/`と`vscode/`のbuild済みruntimeを一時directoryへstagingして組み立てる。rootのdevDependency、workspace symlink、`tui/`をVSIXのproduction closureへ混ぜない。
+- `vscode/.vscodeignore`、staging filter、runtimeのdynamic importを確認し、Webview bundle、PDF.js asset、Mermaid asset、native Sharp packageなどの実行時ファイルを除外しない。
+- `npm run package:vsix`でVSIXを作成し、`npx vsce ls --tree`または`unzip -l`で実際の内容を確認する。
+- target別のnative assetは`node scripts/verify-vsix.mjs --vsix <file> --target <target>`で検証する。新しいnative binary、bundled CLI、runtime assetを追加した場合は、packaged smokeで実行まで確認する。
 
-## 基本コマンド
+## Release flow
 
-```bash
-npm run check:all
-npm run test:docker
-npm run package
-```
+1. current branch、version、前回releaseとの差分を確認する。
+2. 変更範囲に応じたcheck、test、packaged smokeを実行する。通常のscripts一覧と正確なコマンドはroot `package.json`を正本とする。
+3. `npm run package`または対象targetのpackage scriptで配布物を作成する。
+4. VSIXの内容、version、runtime dependency、native asset、不要な開発ファイルを確認する。
+5. リリースノートを作成し、公開はユーザーが明示した場合だけ行う。
 
-VS Code / Electron windowを開くtestは、ローカル画面を占有しないよう`test:docker`経由で実行する。`check:all`、headless build、script testはhostで実行してよい。
+6 target VSIX、native runner、Marketplace認証、installed VSIX E2Eの境界は、関連ADRと`.github/workflows/`の現在の実装を確認する。古いtaskや過去のpackage方式を復元しない。
 
-変更範囲に応じてPlaywrightも実行する。
+## Safety
 
-(リポジトリはnpmを使う。`pnpm`ではない。)
-
-## VSIX内容の確認
-
-packagingの詳細チェックリストは `graphics-workbench-packaging` を参照する。本skillはrelease手順に集中する。
-
-- `npm run package:vsix` で作成したVSIXの内容を `npx vsce ls --tree` で確認する。
-- 6 target VSIXとsharp実実行検証は `node scripts/verify-vsix.mjs --vsix <file> --target <target>` を利用する(ADR-0026)。
-
-## 確認項目
-
-- 公開manifestである`vscode/package.json`のバージョンが正しく、`core/package.json`の同一versionと一致している。
-- ユーザー向け変更がリリースノートへ含まれている。
-- ビルド成果物が最新である。
-- 不要な開発ファイルや秘密情報がVSIXへ含まれていない。
-- MarketplaceとOpen VSXで必要なメタデータが維持されている。
-
-## 禁止事項
-
-ユーザーの明示的な依頼なしに、次を実行しない。
-
-- Git commit
-- Git tag
-- Git push
-- GitHub Releaseの公開
-- VS Marketplaceへの公開
-- Open VSXへの公開
-
-## 報告形式
-
-- 対象バージョン
-- 実行した検証
-- 作成した成果物
-- リリースノート案
-- 公開前に残っている作業
+Packagingは生成した一時directoryとVSIXだけを対象にする。ユーザーworkspaceの変換出力、staging、Safe Mode、Undo、rollbackの契約をpackage検証の都合で変更しない。

@@ -6,12 +6,7 @@
 
 ## コマンド
 
-| Command ID                                   | 表示名                          | 出力形式 |
-| -------------------------------------------- | ------------------------------- | -------- |
-| `graphics-workbench.combineImagesToPdf`      | 画像をPDFに結合（保存先を指定） | PDF      |
-| `graphics-workbench.quickCombineImagesToPdf` | 画像をPDFにクイック結合         | PDF      |
-
-両コマンドは、複数の独立した画像を1つのPDFへ結合すること自体を目的とする `combine` operation に分類され、Context Menuでの表示は `graphics-workbench.conversion.combine.enabled` で制御する。
+保存先を指定するCombineと、設定済みの出力先へ実行するQuick Combineを提供する。両commandは、複数の独立した画像を1つのPDFへ結合すること自体を目的とする`combine` operationに分類され、Context Menuでの表示は`graphics-workbench.conversion.combine.enabled`で制御する。公開IDはmanifestとcommand bindingを正本とする。
 
 ## 対象入力形式
 
@@ -43,22 +38,6 @@ Save AsとQuickは空文字設定のような隠れたsentinel値で切り替え
 - ラスター画像: `sharp` の metadata から幅・高さを取得し、pixel = point でページサイズとする
 - SVG: `sharp` の metadata から幅・高さを取得（既存の `readSvgSize` を再利用）
 
-## 内部パイプライン
-
-```
-画像1 ─→ 既存の画像→PDF処理 ─→ 中間PDF1 ┐
-画像2 ─→ 既存の画像→PDF処理 ─→ 中間PDF2 ┤─ mupdf graftPage → 結合PDF
-画像3 ─→ 既存の画像→PDF処理 ─→ 中間PDF3 ┘
-```
-
-1. 各入力画像を既存の経路で単ページPDFへ変換する
-   - ラスター画像: `writeRasterImageAsPdf`（sharp + mupdf）
-   - SVG: `writeSvgAsPdf`（rsvg-convert またはChrome headless CLI）
-2. 生成された中間PDFを mupdf の `graftPage` で1つの `PDFDocument` にマージする
-3. 結合PDFを staging へ保存し、commit する
-
-中間PDFは staging directory 内で管理し、ユーザーに見せない。commit 後に staging cleanup で削除する。
-
 ## エラー処理
 
 1件でも入力の変換に失敗した場合、結合PDFを出力しない。既存の batch transaction モデルに従う。
@@ -87,21 +66,8 @@ Save AsとQuickは空文字設定のような隠れたsentinel値で切り替え
 - Mermaid、Draw.io、PDFの入力
 - 単一ファイルの入力（通常のConvert to PDFを使う。暗黙フォールバックしない）
 
-## テスト計画
-
-- 全対象入力形式（PNG, JPEG, WebP, AVIF, GIF, TIFF, SVG）の複数→PDF
-- 複数形式混在選択の結合
-- 1件の変換失敗時に出力しないことの確認
-- Safe Mode 競合判断の確認
-- Undo の確認
-- 1件だけの選択時に結合しないことの確認
-- Save Asで出力先を選択して結合することの確認
-- Quick Combineがダイアログなしで`outputPath.combine.pdf`へ出力し、`${random}`を展開することの確認
-- `outputPath.combine.pdf`に`${random}`が無い場合にinvalid configurationとして結合しないことの確認
-
 ## 関連
 
 - [出力形式基準の変換仕様](output-format-conversion.md)
 - [Safe Mode仕様](safe-mode.md)
-- [変換入力job validationの内部契約](../internal/input-preflight.md)
-- [0096: 複数画像を1つのPDFへ結合する仕様を決める](../../tasks/0096-design-combine-images-to-single-pdf.md)
+- [`docs/architecture.md`](../../architecture.md)

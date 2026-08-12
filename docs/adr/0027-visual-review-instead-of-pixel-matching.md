@@ -45,10 +45,9 @@ Playwrightスクリーンショットはpixel比較の対象とせず、目視�
 
 ## 結果・影響
 
-- `__snapshots__`（144枚）、`electron_snapshot.ts`、`PLAYWRIGHT_VISUAL_SNAPSHOTS`、`docker/playwright-visual`が削除される
-- `visual:capture`で生成した画像を人間が目視確認し、承認した画像だけをreferenceとしてGit管理する
+- pixel snapshotを合否判定に使わず、`visual:capture`で生成した画像をレビュー資料として扱う。
+- `visual:capture`で生成した画像を人間が目視確認し、承認したreferenceだけをGit管理する。
 - リリース時は3 OSで`visual:capture`を実行し、`artifacts/visual-review/`をreview用artifactとして保存する
-- ADR-0025（基準画像をローカルDockerで再生成してGit管理）は置き換えられる
 
 ## 見直す条件
 
@@ -57,7 +56,5 @@ Playwrightスクリーンショットはpixel比較の対象とせず、目視�
 
 ## 関連
 
-- [ADR-0025: Playwright基準画像をローカルで確定してGit管理する](0025-commit-playwright-baselines-from-local-docker.md)
-- [ADR-0024: PlaywrightスクリーンショットをArtifactで配布する](0024-artifact-only-playwright-screenshots.md)
-- [Task 0215: Playwrightのpixel matchingを廃止し目視レビューへ移行する](../tasks/0215-drop-playwright-pixel-matching.md)
+- [`package.json` scripts](../../package.json)
 - [`vscode/test/e2e/electron/visual-review/README.md`](../../vscode/test/e2e/electron/visual-review/README.md)

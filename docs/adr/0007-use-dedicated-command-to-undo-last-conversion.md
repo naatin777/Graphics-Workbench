@@ -49,7 +49,6 @@ Explorerへフォーカスして通常のUndoを実行しても、作成したPD
 
 ## 関連
 
-- `docs/adr/0006-use-workspace-staging-for-file-operations.md`
-- `docs/tasks/0010-use-workspace-edit-for-output-commit.md`
-- `docs/tasks/0014-add-safe-conversion-undo-tests.md`
-- `docs/tasks/0015-implement-safe-conversion-undo.md`
+- [`docs/safety.md`](../safety.md)
+- [ADR-0006: file operationにworkspace stagingを使う](0006-use-workspace-staging-for-file-operations.md)
+- [ADR-0008: output conflictにglobal Safe Modeを使う](0008-use-global-safe-mode-for-output-conflicts.md)

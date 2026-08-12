@@ -1,4 +1,5 @@
 # 外部コマンドのOS別path互換性調査
+
 > 位置づけ: 現役（ADR-0012とexternal-tool-ascii-scratch specの正）
 
 ## 調査日
@@ -194,5 +195,5 @@ pdfcropは現行next/v1製品で使っていないため、CIへ重いTeX distri
 
 ## 関連
 
-- [外部コマンドのOS別path互換性を実測する](../tasks/0141-audit-external-tool-path-compatibility.md)
-- [外部コマンド用ASCII stagingの仕様を決める](../tasks/0142-design-ascii-staging-for-external-tools.md)
+- [`docs/safety.md`](../safety.md)
+- [ADR-0012: OS一時領域を使う](../adr/0012-use-os-temp-for-incompatible-windows-tools.md)
