@@ -2,15 +2,15 @@ import assert from 'node:assert/strict';
 
 import { suite, test } from 'mocha';
 
-import {
-  isMergePdfHostToWebviewMessage,
-  isMergePdfWebviewToHostMessage,
-} from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import { mergePdfProtocol } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+
+const acceptsHostMessage = (value: unknown): boolean => mergePdfProtocol.parseHostToWebview(value) !== undefined;
+const acceptsWebviewMessage = (value: unknown): boolean => mergePdfProtocol.parseWebviewToHost(value) !== undefined;
 
 suite('Merge PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/apply/ready）', () => {
   test('2つ以上のsources（各sourceId/fileName/vscode-resource URI）とpreview・labelsを持つinitメッセージと、非空sourceIdsを持つapplyメッセージを受け入れ、requestId付きreadyと空typeを拒否する', () => {
     assert.equal(
-      isMergePdfHostToWebviewMessage({
+      acceptsHostMessage({
         type: 'init',
         payload: {
           sources: [
@@ -47,19 +47,19 @@ suite('Merge PDFのWebviewとホスト間で送受信するメッセージ形式
       true,
     );
     assert.equal(
-      isMergePdfWebviewToHostMessage({
+      acceptsWebviewMessage({
         type: 'apply',
         payload: { sourceIds: ['source-2', 'source-1'] },
       }),
       true,
     );
-    assert.equal(isMergePdfWebviewToHostMessage({ type: 'ready', requestId: 'request-1' }), false);
-    assert.equal(isMergePdfWebviewToHostMessage({ type: '' }), false);
+    assert.equal(acceptsWebviewMessage({ type: 'ready', requestId: 'request-1' }), false);
+    assert.equal(acceptsWebviewMessage({ type: '' }), false);
   });
 
   test('pdfSrcがvscode-resourceでないファイルシステムパスを持つinitと、sourceIds以外にpathsを持つapplyと、message以外のcodeを持つpreviewLoadFailedを拒否する', () => {
     assert.equal(
-      isMergePdfHostToWebviewMessage({
+      acceptsHostMessage({
         type: 'init',
         payload: {
           sources: [
@@ -89,14 +89,14 @@ suite('Merge PDFのWebviewとホスト間で送受信するメッセージ形式
       false,
     );
     assert.equal(
-      isMergePdfWebviewToHostMessage({
+      acceptsWebviewMessage({
         type: 'apply',
         payload: { sourceIds: ['source-1', 'source-2'], paths: ['/workspace/first.pdf'] },
       }),
       false,
     );
     assert.equal(
-      isMergePdfWebviewToHostMessage({
+      acceptsWebviewMessage({
         type: 'previewLoadFailed',
         payload: { message: 'preview failed', code: 'E_FAIL' },
       }),

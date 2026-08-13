@@ -4,10 +4,10 @@ import * as fc from 'fast-check';
 
 import { suite, test } from 'mocha';
 
-import {
-  isReorderPdfHostToWebviewMessage,
-  isReorderPdfWebviewToHostMessage,
-} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import { reorderPdfProtocol } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+
+const acceptsHostMessage = (value: unknown): boolean => reorderPdfProtocol.parseHostToWebview(value) !== undefined;
+const acceptsWebviewMessage = (value: unknown): boolean => reorderPdfProtocol.parseWebviewToHost(value) !== undefined;
 
 const pageOrderArbitrary = fc.array(fc.integer({ min: 1, max: 20 }), {
   minLength: 1,
@@ -22,8 +22,8 @@ suite('PDFページ並び替えprotocolのValibot validator property-based test'
         let webviewResult = false;
 
         assert.doesNotThrow(() => {
-          hostResult = isReorderPdfHostToWebviewMessage(value);
-          webviewResult = isReorderPdfWebviewToHostMessage(value);
+          hostResult = acceptsHostMessage(value);
+          webviewResult = acceptsWebviewMessage(value);
         });
         assert.strictEqual(typeof hostResult, 'boolean');
         assert.strictEqual(typeof webviewResult, 'boolean');
@@ -34,7 +34,7 @@ suite('PDFページ並び替えprotocolのValibot validator property-based test'
   test('1以上の整数だけからなる縮小可能なpage order配列はapply messageとして受け入れられる', () => {
     fc.assert(
       fc.property(pageOrderArbitrary, (order) => {
-        assert.strictEqual(isReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order } }), true);
+        assert.strictEqual(acceptsWebviewMessage({ type: 'apply', payload: { order } }), true);
       }),
     );
   });
@@ -42,7 +42,7 @@ suite('PDFページ並び替えprotocolのValibot validator property-based test'
   test('正しいapply messageへ任意の余分な最上位キーを追加するとstrict validatorが拒否する', () => {
     fc.assert(
       fc.property(pageOrderArbitrary, fc.jsonValue(), (order, extra) => {
-        assert.strictEqual(isReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order }, extra }), false);
+        assert.strictEqual(acceptsWebviewMessage({ type: 'apply', payload: { order }, extra }), false);
       }),
     );
   });

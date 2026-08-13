@@ -102,13 +102,3 @@ export const splitPdfProtocol = defineProtocol({
 
 export type SplitPdfHostToWebview = ProtocolMessage<typeof splitPdfProtocol, 'hostToWebview'>;
 export type SplitPdfWebviewToHost = ProtocolMessage<typeof splitPdfProtocol, 'webviewToHost'>;
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isSplitPdfHostToWebviewMessage(value: unknown): value is SplitPdfHostToWebview {
-  return splitPdfProtocol.parseHostToWebview(value) !== undefined;
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isSplitPdfWebviewToHostMessage(value: unknown): value is SplitPdfWebviewToHost {
-  return splitPdfProtocol.parseWebviewToHost(value) !== undefined;
-}

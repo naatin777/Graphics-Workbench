@@ -82,13 +82,3 @@ export const mergePdfProtocol = defineProtocol({
 
 export type MergePdfHostToWebview = ProtocolMessage<typeof mergePdfProtocol, 'hostToWebview'>;
 export type MergePdfWebviewToHost = ProtocolMessage<typeof mergePdfProtocol, 'webviewToHost'>;
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isMergePdfHostToWebviewMessage(value: unknown): value is MergePdfHostToWebview {
-  return mergePdfProtocol.parseHostToWebview(value) !== undefined;
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isMergePdfWebviewToHostMessage(value: unknown): value is MergePdfWebviewToHost {
-  return mergePdfProtocol.parseWebviewToHost(value) !== undefined;
-}
