@@ -1,4 +1,4 @@
 import { createPageProtocolClient } from '@webview-shared/vscode';
-import { cropPdfProtocol } from '@graphics-workbench-crop-pdf-protocol';
+import { cropPdfProtocol } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
 
 export const vscode = createPageProtocolClient(cropPdfProtocol);

@@ -9,18 +9,14 @@ import { countPdfPages } from '@graphics-workbench/core/pdf';
 import { readTiffPreviewPageCount, renderTiffPreviewPage } from '../../adapters/preview/tiff_preview.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
-import {
-  createExtensionChannel,
-  createWebviewTransport,
-  sendExtensionError,
-} from '../../presentation/webview/typed_channel.js';
-import type { PdfPreviewSettings } from '../../../../protocol/protocols/pdf_preview_protocol.js';
+import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
+import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import {
   previewProtocol,
   type PreviewFormat,
   type PreviewHostToWebview,
   type PreviewLabels,
-} from '../../../../protocol/protocols/preview_protocol.js';
+} from '@graphics-workbench/vscode-protocol/preview-protocol';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { assertLocalFileUri, toWebviewDirectoryUri } from '../shared/command_input.js';
@@ -123,7 +119,7 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
         }
         const message = error instanceof Error ? error.message : String(error);
         this.dependencies.outputChannel.appendLine(`[tiff-preview] render page failure: ${page}: ${message}`);
-        sendExtensionError(channel, message);
+        channel.send.error({ message });
       }
     };
 
@@ -166,7 +162,7 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
             }
             const message = error instanceof Error ? error.message : String(error);
             this.dependencies.outputChannel.appendLine(`[${this.format}-preview] init failure: ${message}`);
-            sendExtensionError(channel, message);
+            channel.send.error({ message });
           }
         })();
       },

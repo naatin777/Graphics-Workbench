@@ -1,7 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { previewProtocol } from '@graphics-workbench-preview-protocol';
+import { previewProtocol } from '@graphics-workbench/vscode-protocol/preview-protocol';
 import type { PdfRenderController, PdfRenderOptions } from '../../shared/pdf/render_pdf_pages';
 import type { TiffRenderController, TiffRenderOptions } from './tiff_preview';
 import type { ExtensionToWebviewMessage, PreviewLabels } from './messages';

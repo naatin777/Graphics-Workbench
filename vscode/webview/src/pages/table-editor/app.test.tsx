@@ -5,7 +5,7 @@ import {
   isTableEditorHostToWebviewMessage,
   tableEditorProtocol,
   type TableEditorLabels,
-} from '@graphics-workbench-table-editor-protocol';
+} from '@graphics-workbench/vscode-protocol/table-editor-protocol';
 
 import { App } from './app';
 

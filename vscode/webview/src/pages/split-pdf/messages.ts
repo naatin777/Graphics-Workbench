@@ -1,4 +1,4 @@
 export type {
   SplitPdfHostToWebview as ExtensionToWebviewMessage,
   SplitPdfLabels,
-} from '@graphics-workbench-split-pdf-protocol';
+} from '@graphics-workbench/vscode-protocol/split-pdf-protocol';

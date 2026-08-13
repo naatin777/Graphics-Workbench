@@ -1,7 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { cropPdfProtocol } from '@graphics-workbench-crop-pdf-protocol';
+import { cropPdfProtocol } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
 import type { CropPdfLabels, ExtensionToWebviewMessage } from './messages';
 import { App } from './app';
 

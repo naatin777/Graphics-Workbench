@@ -5,7 +5,7 @@ import {
   isReorderPdfHostToWebviewMessage,
   reorderPdfProtocol,
   type ReorderPdfLabels,
-} from '@graphics-workbench-reorder-pdf-protocol';
+} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());

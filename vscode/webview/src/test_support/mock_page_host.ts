@@ -1,12 +1,10 @@
 import {
-  createProtocolClient,
-  createTestTransport,
+  createMockChannel,
   type MessageProtocol,
   type ProtocolHandlers,
   type ProtocolSender,
-  type ProtocolTransport,
   type WireSchema,
-} from '@graphics-workbench-typed-protocol';
+} from '@graphics-workbench/vscode-protocol/typed-protocol';
 import type * as v from 'valibot';
 
 interface TestPageHost<Outgoing extends { type: string }, Incoming extends { type: string }> {
@@ -19,43 +17,15 @@ export function createTestPageHost<const HostSchema extends WireSchema, const We
   protocol: MessageProtocol<HostSchema, WebviewSchema>,
   sendMessage: (message: v.InferOutput<WebviewSchema>) => void,
 ): TestPageHost<v.InferOutput<WebviewSchema> & { type: string }, v.InferOutput<HostSchema> & { type: string }> {
-  const transport = createTestTransport();
-  const sendToTest = transport.send.bind(transport);
-  let subscriptions = 0;
+  const channel = createMockChannel(protocol);
+  channel.hostToWebview.subscribe((message) => sendMessage(message));
   const onMessage = (event: Event): void => {
-    transport.receive((event as MessageEvent).data);
+    channel.deliverHostToWebview((event as MessageEvent).data);
   };
-  const testTransport: ProtocolTransport = {
-    send(message) {
-      sendToTest(message);
-      sendMessage(message as v.InferOutput<WebviewSchema>);
-    },
-    subscribe(listener) {
-      if (subscriptions === 0) {
-        globalThis.addEventListener('message', onMessage);
-      }
-      subscriptions += 1;
-      const unsubscribe = transport.subscribe(listener);
-      let active = true;
-      return () => {
-        if (!active) {
-          return;
-        }
-        active = false;
-        unsubscribe();
-        subscriptions -= 1;
-        if (subscriptions === 0) {
-          globalThis.removeEventListener('message', onMessage);
-        }
-      };
-    },
-  };
-  const sender = createProtocolClient(protocol, testTransport, 'webviewToHost');
-  const receiver = createProtocolClient(protocol, testTransport, 'hostToWebview');
-
+  globalThis.addEventListener('message', onMessage);
   return {
-    send: sender.send,
-    on: (handlers) => receiver.on(handlers),
-    subscribe: (listener) => receiver.subscribe(listener),
+    send: channel.webviewToHost.send,
+    on: (handlers) => channel.webviewToHost.on(handlers),
+    subscribe: (listener) => channel.webviewToHost.subscribe(listener),
   };
 }

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { PdfJsResources } from '../../../../protocol/protocols/pdf_preview_protocol.js';
+import type { PdfJsResources } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 
 export function getPdfJsAssetsRoot(extensionUri: vscode.Uri): vscode.Uri {
   return vscode.Uri.joinPath(extensionUri, 'media', 'webview', 'pdfjs');

@@ -65,14 +65,5 @@ export default defineConfig({
         'project/no-direct-child-process': 'off',
       },
     },
-    {
-      files: ['src/presentation/webview/typed_channel.ts'],
-      rules: {
-        'typescript/no-restricted-types': 'off',
-        'typescript/no-unsafe-return': 'off',
-        'typescript/no-unsafe-type-assertion': 'off',
-        'typescript/unbound-method': 'off',
-      },
-    },
   ],
 });

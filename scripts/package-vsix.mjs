@@ -146,7 +146,7 @@ export function parsePackOutput(output, packDirectory) {
 }
 
 /**
- * @param {'core' | 'vscode/extension'} workspace
+ * @param {'core' | 'vscode/extension' | 'vscode/protocol'} workspace
  * @param {string} packDirectory
  * @param {NodeJS.ProcessEnv} environment
  */
@@ -164,8 +164,9 @@ async function packWorkspace(workspace, packDirectory, environment) {
  * @param {string} target
  * @param {string} vscodeTarball
  * @param {string} coreTarball
+ * @param {string} protocolTarball
  */
-export function getProductionInstallArguments(installDirectory, target, vscodeTarball, coreTarball) {
+export function getProductionInstallArguments(installDirectory, target, vscodeTarball, coreTarball, protocolTarball) {
   const spec = getTargetSpec(target);
   return [
     'install',
@@ -183,6 +184,7 @@ export function getProductionInstallArguments(installDirectory, target, vscodeTa
     ...(spec.libc === undefined ? [] : [`--libc=${spec.libc}`]),
     vscodeTarball,
     coreTarball,
+    protocolTarball,
   ];
 }
 
@@ -263,11 +265,15 @@ export async function packageVsix(options) {
     await writeFile(path.join(installDirectory, 'package.json'), '{"private":true,"type":"module"}\n', 'utf8');
 
     const coreTarball = await packWorkspace('core', packDirectory, npmEnvironment);
+    const protocolTarball = await packWorkspace('vscode/protocol', packDirectory, npmEnvironment);
     const vscodeTarball = await packWorkspace('vscode/extension', packDirectory, npmEnvironment);
-    await runNpm(getProductionInstallArguments(installDirectory, options.target, vscodeTarball, coreTarball), {
-      cwd: rootDirectory,
-      env: npmEnvironment,
-    });
+    await runNpm(
+      getProductionInstallArguments(installDirectory, options.target, vscodeTarball, coreTarball, protocolTarball),
+      {
+        cwd: rootDirectory,
+        env: npmEnvironment,
+      },
+    );
     await assembleInstalledExtension(installDirectory, stagingDirectory);
     await copyPackagingMetadata(stagingDirectory);
     verifyProductionInstall(options.target, path.join(stagingDirectory, 'node_modules'));

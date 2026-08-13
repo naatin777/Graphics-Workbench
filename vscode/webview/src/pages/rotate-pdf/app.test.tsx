@@ -5,7 +5,7 @@ import {
   isRotatePdfHostToWebviewMessage,
   rotatePdfProtocol,
   type RotatePdfLabels,
-} from '@graphics-workbench-rotate-pdf-protocol';
+} from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());

@@ -7,8 +7,8 @@ import {
   type MergePdfHostToWebview,
   type MergePdfLabels,
   type MergePdfWebviewToHost,
-} from '../../../../protocol/protocols/merge_pdf_protocol.js';
-import type { PdfPreviewSettings } from '../../../../protocol/protocols/pdf_preview_protocol.js';
+} from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { localeMap } from '../../locale_map.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { mergePdf } from '@graphics-workbench/core/pdf';
@@ -16,7 +16,7 @@ import type { LineOutputChannel } from '@graphics-workbench/core/external-tools'
 import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
+import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
 import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversion.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
@@ -27,6 +27,7 @@ import {
   getPdfJsAssetsRoot,
   getWebviewSharedAssetsRoot,
 } from '../../presentation/webview/pdfjs_assets.js';
+import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
 
 export async function mergePdfSelectedFilesCommand(
   sourceUris: vscode.Uri[],
@@ -103,11 +104,10 @@ export async function mergePdfConfigureCommand(
     const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
     const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
     const sourceById = new Map(sourceUris.map((sourceUri, index) => [`source-${index + 1}`, sourceUri]));
-    startPdfConfigureSession({
+    const configurePanel = openConfigurePanel({
       panel: {
         id: 'graphics-workbench.mergePdf.configure',
         title: panelTitle,
-        appRoot,
         localResourceRoots: [
           appRoot,
           pdfJsAssetsRoot,
@@ -121,7 +121,15 @@ export async function mergePdfConfigureCommand(
         extensionUri: context.extensionUri,
         locale: vscode.env.language,
       },
-      protocol: mergePdfProtocol,
+    });
+    const extensionChannel = createExtensionChannel(mergePdfProtocol, createWebviewTransport(configurePanel.webview));
+    startPdfConfigureSession({
+      panel: configurePanel,
+      sendInit: extensionChannel.send.init,
+      sendError: (message) => {
+        extensionChannel.send.error({ message });
+      },
+      subscribeMessages: (listener) => extensionChannel.subscribe(listener),
       message: {
         isApplyMessage: isMergeApplyMessage,
         buildInitPayload: (panel) =>

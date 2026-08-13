@@ -1,4 +1,4 @@
-import type { SplitPdfLabels } from '@graphics-workbench-split-pdf-protocol';
+import type { SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 
 import type { PageParseFailure } from './pages';
 

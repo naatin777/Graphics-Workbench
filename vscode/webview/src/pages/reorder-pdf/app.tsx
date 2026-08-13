@@ -1,6 +1,9 @@
 import { createEffect, createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
-import type { ReorderPdfHostToWebview, ReorderPdfLabels } from '@graphics-workbench-reorder-pdf-protocol';
+import type {
+  ReorderPdfHostToWebview,
+  ReorderPdfLabels,
+} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '@webview-shared/error';
 import { SplitPane } from '@webview-shared/SplitPane';

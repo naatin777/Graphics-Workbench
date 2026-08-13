@@ -1,7 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { mergePdfProtocol } from '@graphics-workbench-merge-pdf-protocol';
+import { mergePdfProtocol } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 import type { ExtensionToWebviewMessage, MergePdfLabels } from './messages';
 import { App } from './app';
 

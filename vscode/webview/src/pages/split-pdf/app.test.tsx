@@ -1,7 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { splitPdfProtocol } from '@graphics-workbench-split-pdf-protocol';
+import { splitPdfProtocol } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import type { ExtensionToWebviewMessage, SplitPdfLabels } from './messages';
 import { App } from './app';
 

@@ -1,0 +1,65 @@
+{
+  "name": "@graphics-workbench/vscode-protocol",
+  "version": "0.0.1",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/protocols/typed_protocol.js",
+  "types": "./dist/protocols/typed_protocol.d.ts",
+  "exports": {
+    "./typed-protocol": {
+      "types": "./dist/protocols/typed_protocol.d.ts",
+      "import": "./dist/protocols/typed_protocol.js"
+    },
+    "./pdf-preview-protocol": {
+      "types": "./dist/protocols/pdf_preview_protocol.d.ts",
+      "import": "./dist/protocols/pdf_preview_protocol.js"
+    },
+    "./preview-protocol": {
+      "types": "./dist/protocols/preview_protocol.d.ts",
+      "import": "./dist/protocols/preview_protocol.js"
+    },
+    "./crop-pdf-protocol": {
+      "types": "./dist/protocols/crop_pdf_protocol.d.ts",
+      "import": "./dist/protocols/crop_pdf_protocol.js"
+    },
+    "./merge-pdf-protocol": {
+      "types": "./dist/protocols/merge_pdf_protocol.d.ts",
+      "import": "./dist/protocols/merge_pdf_protocol.js"
+    },
+    "./split-pdf-protocol": {
+      "types": "./dist/protocols/split_pdf_protocol.d.ts",
+      "import": "./dist/protocols/split_pdf_protocol.js"
+    },
+    "./rotate-pdf-protocol": {
+      "types": "./dist/protocols/rotate_pdf_protocol.d.ts",
+      "import": "./dist/protocols/rotate_pdf_protocol.js"
+    },
+    "./reorder-pdf-protocol": {
+      "types": "./dist/protocols/reorder_pdf_protocol.d.ts",
+      "import": "./dist/protocols/reorder_pdf_protocol.js"
+    },
+    "./table-editor-protocol": {
+      "types": "./dist/protocols/table_editor_protocol.d.ts",
+      "import": "./dist/protocols/table_editor_protocol.js"
+    }
+  },
+  "scripts": {
+    "build": "npm run build -w @graphics-workbench/core && tsc -p tsconfig.json",
+    "typecheck": "npm run build -w @graphics-workbench/core && tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint --config oxlint.config.ts --type-aware src",
+    "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src",
+    "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src"
+  },
+  "dependencies": {
+    "@graphics-workbench/core": "0.0.1",
+    "valibot": "1.4.2"
+  },
+  "devDependencies": {
+    "oxlint": "^1.77.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "typescript": "^7.0.2"
+  }
+}

@@ -4,7 +4,7 @@ import { createStore } from 'solid-js/store';
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '@webview-shared/error';
 
-import type { SplitPdfLabels, SplitPdfPageGroupRow } from '@graphics-workbench-split-pdf-protocol';
+import type { SplitPdfLabels, SplitPdfPageGroupRow } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 
 import { Button } from '../../shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '../../shared/ui/PageNavigator';

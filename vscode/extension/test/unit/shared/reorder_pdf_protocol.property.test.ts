@@ -5,7 +5,7 @@ import * as fc from 'fast-check';
 import {
   isReorderPdfHostToWebviewMessage,
   isReorderPdfWebviewToHostMessage,
-} from '../../../../protocol/protocols/reorder_pdf_protocol.js';
+} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 
 const pageOrderArbitrary = fc.array(fc.integer({ min: 1, max: 20 }), {
   minLength: 1,
