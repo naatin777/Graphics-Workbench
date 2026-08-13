@@ -10,10 +10,6 @@
       "entry": ["test/**/*.test.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
     },
-    "vscode/protocol": {
-      "entry": ["src/protocols/typed_protocol.ts", "src/protocols/preview_protocol.ts"],
-      "project": ["src/**/*.ts"]
-    },
     "vscode/extension": {
       "entry": [
         "src/adapters/crop/crop_pdf_runner.ts",
@@ -27,9 +23,8 @@
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "vscode/webview": {
-      "entry": ["src/pages/**/*.test.ts", "src/pages/**/*.test.tsx"],
-      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.mjs"],
-      "ignoreDependencies": ["@graphics-workbench/core"],
+      "entry": ["src/pages/**/*.test.ts", "src/pages/**/*.test.tsx", "e2e/**/*.spec.ts"],
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.mjs", "e2e/**/*.ts"],
       "ignoreFiles": ["src/pages/crop-pdf/pdf/pdfjs.ts", "src/shared/pdf/render_first_page.ts"]
     }
   }

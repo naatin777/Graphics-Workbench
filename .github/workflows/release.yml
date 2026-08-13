@@ -209,15 +209,15 @@ jobs:
                 include:
                     - os: ubuntu-latest
                       label: Linux
-                      test_command: xvfb-run npm run test:playwright:vsix
+                      test_command: xvfb-run npm run test:e2e
                       artifact_suffix: linux
                     - os: macos-latest
                       label: macOS
-                      test_command: npm run test:playwright:vsix
+                      test_command: npm run test:e2e
                       artifact_suffix: macos
                     - os: windows-latest
                       label: Windows
-                      test_command: npm run test:playwright:vsix
+                      test_command: npm run test:e2e
                       artifact_suffix: windows
         steps:
             - uses: actions/checkout@v7
@@ -276,7 +276,16 @@ jobs:
               run: cp "graphics-workbench-${{ matrix.label }}.vsix" graphics-workbench.vsix
               shell: bash
 
-            - name: Run Playwright against packaged VSIX
+            - name: Install Playwright Chromium
+              shell: bash
+              run: |
+                  if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+                    sudo npx playwright install --with-deps chromium
+                  else
+                    npx playwright install chromium
+                  fi
+
+            - name: Run Playwright browser E2E against the Vite dev server
               run: ${{ matrix.test_command }}
               shell: bash
 
@@ -288,7 +297,7 @@ jobs:
             - if: failure()
               uses: actions/upload-artifact@v4
               with:
-                  name: packaged-electron-playwright-${{ matrix.artifact_suffix }}
+                  name: webview-browser-playwright-${{ matrix.artifact_suffix }}
                   path: |
                       playwright-report/
                       test-results/

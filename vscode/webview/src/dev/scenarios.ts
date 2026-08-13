@@ -49,7 +49,7 @@ function previewScenarioHost(scenario: string): WebviewHost {
         scenario === 'long-filename' ? 'a-very-long-fixture-file-name-for-browser-development.pdf' : 'sample.pdf',
       pageCount: scenario === 'large' ? 8 : 3,
       pdfData: await fixtureBase64Data(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf'),
-      resources: {},
+      resources: pdfJsResources(),
       preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
       labels: previewLabels,
     });
@@ -62,7 +62,9 @@ function tableEditorScenarioHost(): WebviewHost {
   const channel = createMockChannel(tableEditorProtocol);
   channel.hostToWebview.on({
     ready: () => {
-      channel.hostToWebview.send.init({ format: 'latex', labels: tableEditorLabels });
+      queueMicrotask(() => {
+        channel.hostToWebview.send.init({ format: 'latex', labels: tableEditorLabels });
+      });
     },
   });
   return scenarioHostFor(channel);
@@ -72,18 +74,20 @@ function cropPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(cropPdfProtocol);
   channel.hostToWebview.on({
     ready: () => {
-      const pageCount = scenario === 'large' ? 8 : 3;
-      channel.hostToWebview.send.init({
-        ...pdfPayloadBase(scenario),
-        initialPage: 1,
-        pageGeometry: Array.from({ length: pageCount }, (_, index) => ({
-          page: index + 1,
-          mediaBox: { x: 0, y: 0, width: 612, height: 792 },
-          cropBox: { x: 0, y: 0, width: 612, height: 792 },
-          rotation: 0,
-        })),
-        initialCropBox: { left: 0, bottom: 0, right: 612, top: 792 },
-        labels: cropPdfLabels,
+      queueMicrotask(() => {
+        const pageCount = scenario === 'large' ? 8 : 3;
+        channel.hostToWebview.send.init({
+          ...pdfPayloadBase(scenario),
+          initialPage: 1,
+          pageGeometry: Array.from({ length: pageCount }, (_, index) => ({
+            page: index + 1,
+            mediaBox: { x: 0, y: 0, width: 612, height: 792 },
+            cropBox: { x: 0, y: 0, width: 612, height: 792 },
+            rotation: 0,
+          })),
+          initialCropBox: { left: 0, bottom: 0, right: 612, top: 792 },
+          labels: cropPdfLabels,
+        });
       });
     },
   });
@@ -96,14 +100,16 @@ function mergePdfScenarioHost(scenario: string): WebviewHost {
   const pdfSrc = fixtureUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf');
   channel.hostToWebview.on({
     ready: () => {
-      channel.hostToWebview.send.init({
-        sources: [
-          { sourceId: 'one', fileName, pdfSrc },
-          { sourceId: 'two', fileName: 'second.pdf', pdfSrc },
-        ],
-        resources: pdfJsResources(),
-        preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
-        labels: mergePdfLabels,
+      queueMicrotask(() => {
+        channel.hostToWebview.send.init({
+          sources: [
+            { sourceId: 'one', fileName, pdfSrc },
+            { sourceId: 'two', fileName: 'second.pdf', pdfSrc },
+          ],
+          resources: pdfJsResources(),
+          preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
+          labels: mergePdfLabels,
+        });
       });
     },
   });
@@ -114,11 +120,13 @@ function splitPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(splitPdfProtocol);
   channel.hostToWebview.on({
     ready: () => {
-      channel.hostToWebview.send.init({
-        sourceId: 'browser-fixture',
-        ...pdfPayloadBase(scenario),
-        outputPathTemplate: 'sample-${page}.pdf',
-        labels: splitPdfLabels,
+      queueMicrotask(() => {
+        channel.hostToWebview.send.init({
+          sourceId: 'browser-fixture',
+          ...pdfPayloadBase(scenario),
+          outputPathTemplate: 'sample-${page}.pdf',
+          labels: splitPdfLabels,
+        });
       });
     },
   });
@@ -129,10 +137,12 @@ function rotatePdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(rotatePdfProtocol);
   channel.hostToWebview.on({
     ready: () => {
-      channel.hostToWebview.send.init({
-        sourceId: 'browser-fixture',
-        ...pdfPayloadBase(scenario),
-        labels: rotatePdfLabels,
+      queueMicrotask(() => {
+        channel.hostToWebview.send.init({
+          sourceId: 'browser-fixture',
+          ...pdfPayloadBase(scenario),
+          labels: rotatePdfLabels,
+        });
       });
     },
   });
@@ -143,10 +153,12 @@ function reorderPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(reorderPdfProtocol);
   channel.hostToWebview.on({
     ready: () => {
-      channel.hostToWebview.send.init({
-        sourceId: 'browser-fixture',
-        ...pdfPayloadBase(scenario),
-        labels: reorderPdfLabels,
+      queueMicrotask(() => {
+        channel.hostToWebview.send.init({
+          sourceId: 'browser-fixture',
+          ...pdfPayloadBase(scenario),
+          labels: reorderPdfLabels,
+        });
       });
     },
   });

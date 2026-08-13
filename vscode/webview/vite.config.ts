@@ -135,6 +135,13 @@ function browserDevelopmentAssetsPlugin(): Plugin {
           next();
           return;
         }
+        if (asset.endsWith('.mjs') || asset.endsWith('.js')) {
+          response.setHeader('Content-Type', 'text/javascript');
+        } else if (asset.endsWith('.wasm')) {
+          response.setHeader('Content-Type', 'application/wasm');
+        } else {
+          response.setHeader('Content-Type', 'application/octet-stream');
+        }
         response.end(readFileSync(asset));
       });
     },
