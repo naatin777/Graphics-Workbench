@@ -17,16 +17,15 @@ const userDataDirectory = path.resolve(
 const settingsSourcePath = path.join(repositoryDirectory, 'test', 'support', 'vscode-settings', 'settings.json');
 const settingsTargetPath = path.join(userDataDirectory, 'User', 'settings.json');
 const testWorkspaceDirectory = path.join(repositoryDirectory, 'test', 'support', 'workspace');
-// node:test suites (e.g. terminate_process_tree.test.ts) use module mocks and a
-// top-level dynamic import; they crash the Mocha extension host runner, so run
-// them under node --test (test:scripts) instead.
+// Core tests have their own Extension Host entry point (`test:core`) and must
+// not be run again as part of the VS Code adapter suite. The node:test suite
+// uses module mocks and is run separately by `test:scripts`.
 const extensionHostTestFiles = [
   ...collectCompiledTestFiles(
     repositoryDirectory,
     'out/vscode/extension/test',
     new Set(['terminate_process_tree.test.js']),
   ),
-  ...collectCompiledTestFiles(repositoryDirectory, 'out/core/test', new Set(['terminate_process_tree.test.js'])),
 ].toSorted((left, right) => (left < right ? -1 : left > right ? 1 : 0));
 
 mkdirSync(testWorkspaceDirectory, { recursive: true });

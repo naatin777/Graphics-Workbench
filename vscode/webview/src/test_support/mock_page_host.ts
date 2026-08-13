@@ -1,42 +1,61 @@
-export function createTestPageHost(sendMessage: (message: unknown) => void): {
-  send: Record<string, (payload?: unknown) => void>;
-  on: (handlers: Record<string, (payload?: unknown) => void>) => () => void;
-  subscribe: (listener: (message: unknown) => void) => () => void;
-} {
-  const send = new Proxy(
-    {},
-    {
-      get: (_target, type: string) => (payload?: unknown) => {
-        sendMessage(payload === undefined ? { type } : { type, payload });
-      },
+import {
+  createProtocolClient,
+  createTestTransport,
+  type MessageProtocol,
+  type ProtocolHandlers,
+  type ProtocolSender,
+  type ProtocolTransport,
+  type WireSchema,
+} from '@graphics-workbench-typed-protocol';
+import type * as v from 'valibot';
+
+interface TestPageHost<Outgoing extends { type: string }, Incoming extends { type: string }> {
+  readonly send: ProtocolSender<Outgoing>;
+  on(handlers: ProtocolHandlers<Incoming>): () => void;
+  subscribe(listener: (message: Incoming) => void): () => void;
+}
+
+export function createTestPageHost<const HostSchema extends WireSchema, const WebviewSchema extends WireSchema>(
+  protocol: MessageProtocol<HostSchema, WebviewSchema>,
+  sendMessage: (message: v.InferOutput<WebviewSchema>) => void,
+): TestPageHost<v.InferOutput<WebviewSchema> & { type: string }, v.InferOutput<HostSchema> & { type: string }> {
+  const transport = createTestTransport();
+  const sendToTest = transport.send.bind(transport);
+  let subscriptions = 0;
+  const onMessage = (event: Event): void => {
+    transport.receive((event as MessageEvent).data);
+  };
+  const testTransport: ProtocolTransport = {
+    send(message) {
+      sendToTest(message);
+      sendMessage(message as v.InferOutput<WebviewSchema>);
     },
-  );
-  return {
-    send,
-    on(handlers) {
-      return this.subscribe((message) => {
-        if (typeof message !== 'object' || message === null || !('type' in message)) {
-          return;
-        }
-        const type = message.type;
-        if (typeof type !== 'string') {
-          return;
-        }
-        const handler = handlers[type];
-        if (handler === undefined) {
-          return;
-        }
-        handler('payload' in message ? message.payload : undefined);
-      });
-    },
-    subscribe(listener: (message: unknown) => void): () => void {
-      const onMessage = (event: Event): void => {
-        listener((event as MessageEvent).data);
-      };
-      globalThis.addEventListener('message', onMessage);
+    subscribe(listener) {
+      if (subscriptions === 0) {
+        globalThis.addEventListener('message', onMessage);
+      }
+      subscriptions += 1;
+      const unsubscribe = transport.subscribe(listener);
+      let active = true;
       return () => {
-        globalThis.removeEventListener('message', onMessage);
+        if (!active) {
+          return;
+        }
+        active = false;
+        unsubscribe();
+        subscriptions -= 1;
+        if (subscriptions === 0) {
+          globalThis.removeEventListener('message', onMessage);
+        }
       };
     },
+  };
+  const sender = createProtocolClient(protocol, testTransport, 'webviewToHost');
+  const receiver = createProtocolClient(protocol, testTransport, 'hostToWebview');
+
+  return {
+    send: sender.send,
+    on: (handlers) => receiver.on(handlers),
+    subscribe: (listener) => receiver.subscribe(listener),
   };
 }

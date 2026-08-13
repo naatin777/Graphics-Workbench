@@ -23,23 +23,23 @@ export interface RotateImageInput {
 
 export interface RotateImageOptions {
   inputs: RotateImageInput[];
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
   maxInputPixels: number;
 }
 
 export async function rotateImageFiles(options: RotateImageOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   validateConversions(options.inputs);
   await validateInputPaths(options.inputs);
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'rotate-image',
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, currentRunId, batchRuntime) =>
       rotateImage({
         input,

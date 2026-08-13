@@ -15,6 +15,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
     const outputs = await runStagedConversionBatch({
       inputs: [{ workspacePath: workspacePath.path }],
       operationName: 'fixture-raster',
+      runtime: {},
       runId: 'run',
       stage: async () => {
         await mkdir(stagingRootPath, { recursive: true });
@@ -42,6 +43,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
       runStagedConversionBatch({
         inputs: [{ workspacePath: workspacePath.path }],
         operationName: 'fixture-raster',
+        runtime: {},
         runId: 'failed-run',
         stage: async () => {
           await mkdir(stagingRootPath, { recursive: true });
@@ -69,6 +71,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
       runStagedConversionBatch({
         inputs: [{ workspacePath: workspacePath.path }],
         operationName: 'fixture-raster',
+        runtime: {},
         runId: '../../src',
         stage: async () => {
           throw new Error('stage must not start');
@@ -102,6 +105,7 @@ suite('変換出力を一時領域へ書き出し、全件成功後に最終出�
           { workspacePath: workspacePath.path },
         ],
         operationName: 'fixture-raster',
+        runtime: {},
         runId: 'abort-run',
         stage: async (_job, index) => {
           await mkdir(stagingRootPath, { recursive: true });

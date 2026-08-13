@@ -34,6 +34,7 @@ suite('PDFページ並び替え', () => {
     try {
       const outputs = await reorderPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, pageOrder: [3, 1, 2] }],
+        runtime: {},
         runId: 'run',
       });
       assert.strictEqual(outputs.length, 1);
@@ -55,6 +56,7 @@ suite('PDFページ並び替え', () => {
     await assert.rejects(
       reorderPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, pageOrder: [1, 2] }],
+        runtime: {},
       }),
       /exactly 3 pages/,
     );
@@ -62,6 +64,7 @@ suite('PDFページ並び替え', () => {
     await assert.rejects(
       reorderPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, pageOrder: [1, 1, 2] }],
+        runtime: {},
       }),
       /more than once/,
     );
@@ -77,6 +80,7 @@ suite('PDFページ並び替え', () => {
     await assert.rejects(
       reorderPdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, pageOrder: [2, 1] }],
+        runtime: {},
       }),
       /Output file already exists/,
     );

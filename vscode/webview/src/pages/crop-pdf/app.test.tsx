@@ -1,6 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
+import { cropPdfProtocol } from '@graphics-workbench-crop-pdf-protocol';
 import type { CropPdfLabels, ExtensionToWebviewMessage } from './messages';
 import { App } from './app';
 
@@ -8,7 +9,7 @@ const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderPdfPages = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
 vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(sendMessage),
+  vscode: createTestPageHost(cropPdfProtocol, sendMessage),
 }));
 vi.mock('../../shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
@@ -81,10 +82,10 @@ const initMessage: ExtensionToWebviewMessage = {
     initialCropBox: { left: 0, bottom: 0, right: 600, top: 800 },
     pdfSrc: 'vscode-resource://source.pdf',
     resources: {
-      workerSrc: '',
-      cMapUrl: '',
-      standardFontDataUrl: '',
-      wasmUrl: '',
+      workerSrc: 'vscode-resource://pdf.worker.mjs',
+      cMapUrl: 'vscode-resource://cmaps/',
+      standardFontDataUrl: 'vscode-resource://standard_fonts/',
+      wasmUrl: 'vscode-resource://wasm/',
     },
     preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
     labels,

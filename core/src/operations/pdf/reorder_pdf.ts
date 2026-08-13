@@ -23,22 +23,22 @@ interface ReorderPdfInput {
 
 export interface ReorderPdfOptions {
   inputs: ReorderPdfInput[];
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
 }
 
 export async function reorderPdfFiles(options: ReorderPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   validateConversions(options.inputs);
   await validatePdfPathInputs(options.inputs, 'reorder-pdf');
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'reorder-pdf',
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, currentRunId, batchRuntime) =>
       reorderPdf({ input, index, runId: currentRunId, signal: batchRuntime.signal }),
   });

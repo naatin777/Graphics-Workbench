@@ -3,7 +3,6 @@ import {
   type MessageProtocol,
   type ProtocolHandlers,
   type ProtocolSender,
-  type ProtocolTransport,
   type WireSchema,
 } from '@graphics-workbench-typed-protocol';
 import type * as v from 'valibot';
@@ -65,7 +64,7 @@ export class MockHost<Outgoing = unknown, Incoming = unknown> implements Webview
 
 export function createVsCodeHost(): WebviewHost {
   if (typeof acquireVsCodeApi !== 'function') {
-    return new MockHost();
+    throw new Error('VS Code webview API is unavailable outside the Extension Host.');
   }
 
   const api = acquireVsCodeApi<unknown>();
@@ -94,7 +93,14 @@ export function createVsCodeHost(): WebviewHost {
   };
 }
 
-let activeHost: WebviewHost = createVsCodeHost();
+let activeHost: WebviewHost | undefined;
+
+function requireActiveWebviewHost(): WebviewHost {
+  if (activeHost === undefined) {
+    throw new Error('Webview host has not been initialized.');
+  }
+  return activeHost;
+}
 
 export function setActiveWebviewHost(host: WebviewHost): void {
   activeHost = host;
@@ -109,7 +115,7 @@ export function createPageProtocolClient<const HostSchema extends WireSchema, co
       get:
         (_target, type: string) =>
         (...args: unknown[]) => {
-          const client = createProtocolClient(protocol, activeHost as ProtocolTransport, 'webviewToHost');
+          const client = createProtocolClient(protocol, requireActiveWebviewHost(), 'webviewToHost');
           Reflect.apply(client.send[type as keyof typeof client.send], client.send, args);
         },
     },
@@ -119,9 +125,9 @@ export function createPageProtocolClient<const HostSchema extends WireSchema, co
   >['send'];
   return {
     send: sender,
-    on: (handlers) => createProtocolClient(protocol, activeHost as ProtocolTransport, 'hostToWebview').on(handlers),
+    on: (handlers) => createProtocolClient(protocol, requireActiveWebviewHost(), 'hostToWebview').on(handlers),
     subscribe: (listener) =>
-      createProtocolClient(protocol, activeHost as ProtocolTransport, 'hostToWebview').subscribe(listener),
+      createProtocolClient(protocol, requireActiveWebviewHost(), 'hostToWebview').subscribe(listener),
   } as PageProtocolClient<
     v.InferOutput<WebviewSchema> & { type: string },
     v.InferOutput<HostSchema> & { type: string }

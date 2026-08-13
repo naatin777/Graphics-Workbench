@@ -24,9 +24,9 @@ import {
   type ConvertToPdfFilesOptions,
   type SvgToPdfBackend,
 } from '@graphics-workbench/core/conversion';
-import { operationPathCompatibilitySvgInputPath, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { operationSvgInputPath, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
-const svgFixturePath = operationPathCompatibilitySvgInputPath;
+const svgFixturePath = operationSvgInputPath;
 const pdfFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 const complexSourceFileName =
   '　日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹 ＡＢＣ１２３①.svg';

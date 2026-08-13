@@ -90,6 +90,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
         });
         await convertToSvgFiles({
           inputs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
+          runtime: {},
           drawioTools,
           runPdfToSvg: () => {
             throw new Error('drawio fixture must not include PDF input for SVG input');

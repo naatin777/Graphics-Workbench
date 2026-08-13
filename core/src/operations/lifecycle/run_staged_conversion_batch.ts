@@ -20,7 +20,7 @@ export interface StagedConversionBatch<Conversion extends { workspacePath: strin
   stagingOperationName?: string;
   runId?: string | undefined;
   artifactRoots?: readonly ConversionArtifactRoot[];
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   stage: (
     input: Conversion,
     index: number,
@@ -33,7 +33,7 @@ export interface StagedConversionBatch<Conversion extends { workspacePath: strin
 export async function runStagedConversionBatch<Conversion extends { workspacePath: string }>(
   options: StagedConversionBatch<Conversion>,
 ): Promise<CommittedConversionOutput[]> {
-  const runtime = options.runtime ?? {};
+  const { runtime } = options;
   const runId = options.runId ?? createRunId();
   const artifacts =
     options.artifactRoots ??
@@ -67,7 +67,7 @@ export async function runStagedConversionBatch<Conversion extends { workspacePat
               try {
                 const output = await options.stage(input, index, runId, batchRuntime);
                 completedCount += 1;
-                options.runtime?.reportProgress?.(completedCount, options.inputs.length);
+                runtime.reportProgress?.(completedCount, options.inputs.length);
                 return output;
               } catch (error) {
                 const stageError = error instanceof Error ? error : new Error(String(error));

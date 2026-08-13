@@ -28,28 +28,28 @@ interface SplitPdfGroupInput {
 
 export interface SplitPdfOptions {
   inputs: SplitPdfInput[];
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
 }
 
 export interface SplitPdfByPageGroupsOptions {
   inputs: SplitPdfGroupInput[];
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
 }
 
 export async function splitPdfAllPages(options: SplitPdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   validateInputs(options.inputs);
   await validatePdfPathInputs(options.inputs, 'split-pdf');
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'split-pdf',
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, currentRunId, batchRuntime) =>
       splitPdf({ input, index, runId: currentRunId, signal: batchRuntime.signal }),
   });
@@ -57,16 +57,16 @@ export async function splitPdfAllPages(options: SplitPdfOptions): Promise<Commit
 
 export async function splitPdfByPageGroups(options: SplitPdfByPageGroupsOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   validatePageGroupInputs(options.inputs);
   await validatePdfPathInputs(options.inputs, 'split-pdf');
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'split-pdf',
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, currentRunId, batchRuntime) =>
       splitPdfPageGroups({ input, index, runId: currentRunId, signal: batchRuntime.signal }),
   });

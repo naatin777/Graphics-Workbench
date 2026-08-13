@@ -21,10 +21,4 @@ export const operationPngInputPath = path.join(testInputDirectory, 'valid', 'png
 export const operationPdfInputDirectory = path.join(testInputDirectory, 'valid', 'pdf');
 export const operationDrawioInputDirectory = path.join(testInputDirectory, 'valid', 'drawio');
 export const operationPdfOutputDirectory = path.join(testOutputDirectory, 'pdf', 'pdf-operations');
-export const operationPathCompatibilitySvgInputPath = path.join(
-  testInputDirectory,
-  'valid',
-  'svg',
-  'transparent-shapes.svg',
-);
 export const invalidPreflightInputDirectory = path.join(testInputDirectory, 'invalid', 'pdf');

@@ -27,22 +27,22 @@ export interface RotatePdfInput {
 
 export interface RotatePdfOptions {
   inputs: RotatePdfInput[];
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
 }
 
 export async function rotatePdfFiles(options: RotatePdfOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   validateConversions(options.inputs);
   await validatePdfPathInputs(options.inputs, 'rotate-pdf');
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'rotate-pdf',
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, currentRunId, batchRuntime) =>
       rotatePdf({ input, index, runId: currentRunId, signal: batchRuntime.signal }),
   });

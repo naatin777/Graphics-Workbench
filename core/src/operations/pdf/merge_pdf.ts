@@ -19,15 +19,15 @@ export interface MergePdfOptions {
   sourcePaths: string[];
   outputPath: string;
   workspacePath: string;
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
 }
 
 export async function mergePdf(options: MergePdfOptions): Promise<CommittedConversionOutput[]> {
   const { sourcePaths, outputPath, runtime } = options;
 
-  runtime?.outputChannel?.appendLine(`[merge-pdf] input paths: ${sourcePaths.join(', ')}`);
-  runtime?.outputChannel?.appendLine(`[merge-pdf] requested output: ${outputPath}`);
+  runtime.outputChannel?.appendLine(`[merge-pdf] input paths: ${sourcePaths.join(', ')}`);
+  runtime.outputChannel?.appendLine(`[merge-pdf] requested output: ${outputPath}`);
 
   if (sourcePaths.length < 2) {
     throw new Error('Select at least two PDF files.');
@@ -43,7 +43,7 @@ async function buildMergedDocument(options: MergePdfOptions): Promise<{
   stagedOutputPath: string;
 }> {
   const { sourcePaths, outputPath, workspacePath, runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   const runId = options.runId ?? createRunId();
   const stagingRootPath = stagingRootPathFor(workspacePath, 'merge-pdf', runId);
@@ -55,13 +55,13 @@ async function buildMergedDocument(options: MergePdfOptions): Promise<{
     assertWritablePathInWorkspace(stagingRootPath, workspacePath),
     assertWritablePathInWorkspace(stagedOutputPath, workspacePath),
   ]);
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   const mupdf = await loadMupdf();
   const mergedDocument = new mupdf.PDFDocument();
   try {
-    await appendSourceDocuments(mergedDocument, sourcePaths, runtime?.signal);
-    runtime?.signal?.throwIfAborted();
+    await appendSourceDocuments(mergedDocument, sourcePaths, runtime.signal);
+    runtime.signal?.throwIfAborted();
     return { mergedDocument, stagingRootPath, stagedOutputPath };
   } catch (error) {
     mergedDocument.destroy();
@@ -79,15 +79,15 @@ async function writeMergedPdf(
   try {
     await assertWritablePathInWorkspace(stagedOutputPath, workspacePath);
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
-    runtime?.signal?.throwIfAborted();
+    runtime.signal?.throwIfAborted();
     await writeFile(stagedOutputPath, savePdfDocument(mergedDocument));
-    runtime?.signal?.throwIfAborted();
+    runtime.signal?.throwIfAborted();
     return await commitStagedOutputs(
       [{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }],
       buildCommitOptions(runtime),
     );
   } catch (error) {
-    await cleanupConversionArtifacts(artifacts, runtime?.outputChannel, error);
+    await cleanupConversionArtifacts(artifacts, runtime.outputChannel, error);
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
     mergedDocument.destroy();
@@ -116,15 +116,15 @@ async function appendSourceDocuments(
   }
 }
 
-function buildCommitOptions(runtime: ConversionExecutionContext | undefined): CommitConversionOutputsOptions {
+function buildCommitOptions(runtime: ConversionExecutionContext): CommitConversionOutputsOptions {
   const commitOptions: CommitConversionOutputsOptions = { operationName: 'merge-pdf' as const };
-  if (runtime?.signal !== undefined) {
+  if (runtime.signal !== undefined) {
     commitOptions.signal = runtime.signal;
   }
-  if (runtime?.resolveConflicts !== undefined) {
+  if (runtime.resolveConflicts !== undefined) {
     commitOptions.resolveConflicts = runtime.resolveConflicts;
   }
-  if (runtime?.outputChannel !== undefined) {
+  if (runtime.outputChannel !== undefined) {
     commitOptions.outputChannel = runtime.outputChannel;
   }
   return commitOptions;

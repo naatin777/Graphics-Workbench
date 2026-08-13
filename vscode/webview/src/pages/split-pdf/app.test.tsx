@@ -1,6 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
+import { splitPdfProtocol } from '@graphics-workbench-split-pdf-protocol';
 import type { ExtensionToWebviewMessage, SplitPdfLabels } from './messages';
 import { App } from './app';
 
@@ -8,7 +9,7 @@ const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderPdfPages = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
 vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(sendMessage),
+  vscode: createTestPageHost(splitPdfProtocol, sendMessage),
 }));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
@@ -71,10 +72,10 @@ const initMessage: ExtensionToWebviewMessage = {
     pdfSrc: 'vscode-resource://source.pdf',
     outputPathTemplate: 'output/__GRAPHICS_WORKBENCH_OUTPUT_NAME__.pdf',
     resources: {
-      workerSrc: '',
-      cMapUrl: '',
-      standardFontDataUrl: '',
-      wasmUrl: '',
+      workerSrc: 'vscode-resource://pdf.worker.mjs',
+      cMapUrl: 'vscode-resource://cmaps/',
+      standardFontDataUrl: 'vscode-resource://standard_fonts/',
+      wasmUrl: 'vscode-resource://wasm/',
     },
     preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
     labels,

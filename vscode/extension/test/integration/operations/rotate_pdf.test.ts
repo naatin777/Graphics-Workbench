@@ -33,6 +33,7 @@ suite('PDFページ回転', () => {
     try {
       const outputs = await rotatePdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        runtime: {},
         runId: 'run',
       });
       assert.strictEqual(outputs.length, 1);
@@ -57,6 +58,7 @@ suite('PDFページ回転', () => {
     try {
       await rotatePdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        runtime: {},
         runId: 'run',
       });
 
@@ -77,6 +79,7 @@ suite('PDFページ回転', () => {
     try {
       await rotatePdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 180, pageIndices: [1] }],
+        runtime: {},
         runId: 'run',
       });
 
@@ -99,6 +102,7 @@ suite('PDFページ回転', () => {
     await assert.rejects(
       rotatePdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        runtime: {},
       }),
       /Output file already exists/,
     );
@@ -134,6 +138,7 @@ suite('PDFページ回転', () => {
     await assert.rejects(
       rotatePdfFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90, pageIndices: [5] }],
+        runtime: {},
       }),
       /out of range/,
     );

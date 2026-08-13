@@ -1,6 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
+import { previewProtocol } from '@graphics-workbench-preview-protocol';
 import type { PdfRenderController, PdfRenderOptions } from '../../shared/pdf/render_pdf_pages';
 import type { TiffRenderController, TiffRenderOptions } from './tiff_preview';
 import type { ExtensionToWebviewMessage, PreviewLabels } from './messages';
@@ -13,7 +14,7 @@ const renderPdfPages = vi.hoisted(() =>
 const renderTiffPreview = vi.hoisted(() => vi.fn<(options: TiffRenderOptions) => TiffRenderController>());
 
 vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(sendMessage),
+  vscode: createTestPageHost(previewProtocol, sendMessage),
 }));
 vi.mock('../../shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 vi.mock('./tiff_preview', () => ({ renderTiffPreview }));
@@ -41,7 +42,12 @@ const pdfInit: ExtensionToWebviewMessage = {
     fileName: 'source.pdf',
     pageCount: 2,
     pdfData: 'JVBERi0xLjQK',
-    resources: { workerSrc: '', cMapUrl: '', standardFontDataUrl: '', wasmUrl: '' },
+    resources: {
+      workerSrc: 'vscode-resource://pdf.worker.mjs',
+      cMapUrl: 'vscode-resource://cmaps/',
+      standardFontDataUrl: 'vscode-resource://standard_fonts/',
+      wasmUrl: 'vscode-resource://wasm/',
+    },
     preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
     labels,
   },
