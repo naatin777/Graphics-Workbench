@@ -19,6 +19,13 @@ jobs:
 
       - uses: ./.github/actions/setup
 
+      # Type-aware lint resolves '@graphics-workbench/core/*' and
+      # '@graphics-workbench/vscode-protocol/*' imports against dist types, so
+      # the packages must be compiled before `npm run check:all` runs lint.
+      - name: Build core and protocol
+        run: npm run compile:core && npm run compile:protocol
+        shell: bash
+
       - run: npm run check:all
         shell: bash
 

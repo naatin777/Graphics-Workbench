@@ -394,24 +394,34 @@ jobs:
                     exit 1
                   fi
 
-            - if: ${{ secrets.AZURE_CLIENT_ID != '' }}
+            - if: ${{ env.AZURE_CLIENT_ID != '' }}
               uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac
+              env:
+                  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+                  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+                  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
               with:
-                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
-                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                  client-id: ${{ env.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ env.AZURE_TENANT_ID }}
+                  subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
-            - if: ${{ secrets.AZURE_CLIENT_ID != '' }}
+            - if: ${{ env.AZURE_CLIENT_ID != '' }}
               name: Publish tested VSIX packages
               shell: bash
+              env:
+                  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+                  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+                  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
               run: |
                   for vsix in ./*.vsix; do
                     npx --no-install vsce publish --packagePath "$vsix" --azure-credential --skip-duplicate
                   done
 
-            - if: ${{ secrets.AZURE_CLIENT_ID == '' }}
+            - if: ${{ env.AZURE_CLIENT_ID == '' }}
               name: Skip Visual Studio Marketplace publish
               shell: bash
+              env:
+                  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
               run: echo "Entra ID credentials are not configured; skipping Visual Studio Marketplace publish"
 
     publish-open-vsx:
@@ -436,7 +446,7 @@ jobs:
                   merge-multiple: true
                   path: .
 
-            - if: ${{ secrets.OVSX_PAT != '' }}
+            - if: ${{ env.OVSX_PAT != '' }}
               name: Publish tested VSIX packages
               shell: bash
               env:
@@ -446,7 +456,9 @@ jobs:
                     npx --no-install ovsx publish "$vsix" --pat "$OVSX_PAT"
                   done
 
-            - if: ${{ secrets.OVSX_PAT == '' }}
+            - if: ${{ env.OVSX_PAT == '' }}
               name: Skip Open VSX publish
               shell: bash
+              env:
+                  OVSX_PAT: ${{ secrets.OVSX_PAT }}
               run: echo "OVSX_PAT is not configured; skipping Open VSX publish"
