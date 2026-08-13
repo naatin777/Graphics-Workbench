@@ -11,7 +11,7 @@ import { insertionDocumentSelectors, insertionFormats } from './edit_provider/in
 import { registerPreviewCustomEditors } from './commands/preview/preview_custom_editor.js';
 import { getExtensionConfiguration } from './config/extension_configuration.js';
 import { extensionIdentity } from './generated/extension_manifest.js';
-import { sharedHeavyProcessLimiter } from '@graphics-workbench/core/external-tools';
+import { shutdownHeavyProcessQueue } from '@graphics-workbench/core/external-tools';
 import { cleanupStaleSecurePdfStagingRoots, cleanupStaleWorkspaceStagingRoots } from '@graphics-workbench/core/runtime';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -40,7 +40,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     new vscode.Disposable(() => {
-      sharedHeavyProcessLimiter.stop();
+      shutdownHeavyProcessQueue();
     }),
   );
 
