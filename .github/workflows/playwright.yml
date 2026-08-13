@@ -23,15 +23,15 @@ jobs:
         include:
           - os: ubuntu-latest
             label: Linux
-            test_command: xvfb-run npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts
+            test_command: xvfb-run npm run test:playwright:smoke
             artifact_suffix: linux
           - os: macos-latest
             label: macOS
-            test_command: npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts
+            test_command: npm run test:playwright:smoke
             artifact_suffix: macos
           - os: windows-latest
             label: Windows
-            test_command: npm run test:playwright:vsix -- --project=vscode-electron electron/packaged_conversion_smoke.spec.ts
+            test_command: npm run test:playwright:smoke
             artifact_suffix: windows
     steps:
       - uses: actions/checkout@v7

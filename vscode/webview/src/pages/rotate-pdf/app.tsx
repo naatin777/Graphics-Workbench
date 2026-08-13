@@ -5,7 +5,7 @@ import {
   type PdfRotationAngle,
   type RotatePdfHostToWebview,
   type RotatePdfLabels,
-} from '@graphics-workbench-rotate-pdf-protocol';
+} from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '@webview-shared/error';
 import { SplitPane } from '@webview-shared/SplitPane';

@@ -10,7 +10,7 @@ import {
   setHeaderRows,
   tableModelFromRows,
   updateCellText,
-} from '../../../../protocol/table/table_model.js';
+} from '@graphics-workbench/core/table';
 
 suite('TableModel', () => {
   test('createTableModelは指定サイズの空テーブルを作る', () => {

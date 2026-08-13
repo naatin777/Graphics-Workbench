@@ -1,4 +1,4 @@
 export type {
   CropConfigureHostToWebview as ExtensionToWebviewMessage,
   CropPdfLabels,
-} from '@graphics-workbench-crop-pdf-protocol';
+} from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';

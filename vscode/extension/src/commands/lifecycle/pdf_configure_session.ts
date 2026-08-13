@@ -1,49 +1,27 @@
 import * as vscode from 'vscode';
-import type * as v from 'valibot';
 
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import { OperationCancelledError } from '@graphics-workbench/core/runtime';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
-import {
-  createExtensionChannel,
-  createWebviewTransport,
-  sendExtensionError,
-  sendExtensionInit,
-  type ExtensionChannel,
-} from '../../presentation/webview/typed_channel.js';
-import type { MessageProtocol, WireSchema } from '../../../../protocol/protocols/typed_protocol.js';
 import { reportConfigureApplyError } from '../shared/report_configure_error.js';
 
-type WireMessage<Schema extends WireSchema> = v.InferOutput<Schema> & { type: string };
-
 export interface PdfConfigureSessionOptions<
-  HostSchema extends WireSchema,
-  WebviewSchema extends WireSchema,
-  TApply extends WireMessage<WebviewSchema>,
+  WebviewMessage extends { type: string },
+  TApply extends WebviewMessage,
+  InitPayload,
 > {
-  protocol: MessageProtocol<HostSchema, WebviewSchema>;
-  panel: {
-    id: string;
-    title: string;
-    appRoot: vscode.Uri;
-    localResourceRoots: readonly vscode.Uri[];
-  };
-  webview: {
-    title: string;
-    pageId: string;
-    extensionUri: vscode.Uri;
-    locale?: string;
-  };
+  panel: vscode.WebviewPanel;
+  sendInit: (payload: InitPayload) => void;
+  sendError: (message: string) => void;
+  subscribeMessages: (listener: (message: WebviewMessage) => void) => () => void;
   message: {
-    isApplyMessage: (message: WireMessage<WebviewSchema>) => message is TApply;
-    buildInitPayload: (
-      panel: vscode.WebviewPanel,
-    ) => Extract<WireMessage<HostSchema>, { type: 'init' }> extends { payload: infer Payload } ? Payload : never;
+    isApplyMessage: (message: WebviewMessage) => message is TApply;
+    buildInitPayload: (panel: vscode.WebviewPanel) => InitPayload;
     runApply: (
       message: TApply,
       context: { panel: vscode.WebviewPanel; signal: AbortSignal; sendError: (message: string) => void },
     ) => Promise<void>;
-    onPreviewLoadFailed: (message: WireMessage<WebviewSchema>, outputChannel?: LineOutputChannel) => void;
+    onPreviewLoadFailed: (message: WebviewMessage, outputChannel?: LineOutputChannel) => void;
   };
   error: {
     operationName: string;
@@ -60,16 +38,20 @@ export interface PdfConfigureSession {
   signal: AbortSignal;
 }
 
-/**
- * Owns the shared Webview Configure session: panel lifecycle, ready/init, preview
- * failure, apply lock, panel-close cancellation, and apply error routing.
- * Domain-specific init payloads and apply operations stay with each command.
- */
-export function startPdfConfigureSession<
-  HostSchema extends WireSchema,
-  WebviewSchema extends WireSchema,
-  TApply extends WireMessage<WebviewSchema>,
->(options: PdfConfigureSessionOptions<HostSchema, WebviewSchema, TApply>): PdfConfigureSession {
+/** Creates the shared Webview Configure panel and installs the production HTML. */
+export function openConfigurePanel(options: {
+  panel: {
+    id: string;
+    title: string;
+    localResourceRoots: readonly vscode.Uri[];
+  };
+  webview: {
+    title: string;
+    pageId: string;
+    extensionUri: vscode.Uri;
+    locale?: string;
+  };
+}): vscode.WebviewPanel {
   const panel = vscode.window.createWebviewPanel(options.panel.id, options.panel.title, vscode.ViewColumn.Active, {
     enableScripts: true,
     localResourceRoots: options.panel.localResourceRoots,
@@ -82,8 +64,21 @@ export function startPdfConfigureSession<
     ...(options.webview.locale !== undefined && { locale: options.webview.locale }),
   };
   panel.webview.html = getWebviewHtml(htmlOptions);
-  const transport = createWebviewTransport(panel.webview);
-  const channel: ExtensionChannel<HostSchema, WebviewSchema> = createExtensionChannel(options.protocol, transport);
+  return panel;
+}
+
+/**
+ * Owns the shared Webview Configure session: ready/init, preview failure,
+ * apply lock, panel-close cancellation, and apply error routing. The caller
+ * supplies the concrete channel sends and subscription, so init/error stays
+ * typed by the caller's protocol without casts.
+ */
+export function startPdfConfigureSession<
+  WebviewMessage extends { type: string },
+  TApply extends WebviewMessage,
+  InitPayload,
+>(options: PdfConfigureSessionOptions<WebviewMessage, TApply, InitPayload>): PdfConfigureSession {
+  const { panel } = options;
 
   const operationController = new AbortController();
   panel.onDidDispose(() => {
@@ -101,9 +96,9 @@ export function startPdfConfigureSession<
   }
 
   let isApplying = false;
-  const unsubscribeMessages = channel.subscribe((message) => {
+  const unsubscribeMessages = options.subscribeMessages((message) => {
     if (message.type === 'ready') {
-      sendExtensionInit(channel, options.message.buildInitPayload(panel));
+      options.sendInit(options.message.buildInitPayload(panel));
       return;
     }
 
@@ -131,9 +126,7 @@ export function startPdfConfigureSession<
         await options.message.runApply(message, {
           panel,
           signal: operationController.signal,
-          sendError: (errorMessage) => {
-            sendExtensionError(channel, errorMessage);
-          },
+          sendError: options.sendError,
         });
       } catch (error) {
         await reportConfigureApplyError({
@@ -143,9 +136,7 @@ export function startPdfConfigureSession<
           cancelledMessage: options.error.cancelledMessage,
           failedMessage: options.error.failedMessage,
           ...(options.outputChannel !== undefined && { outputChannel: options.outputChannel }),
-          sendError: (errorMessage) => {
-            sendExtensionError(channel, errorMessage);
-          },
+          sendError: options.sendError,
         });
       } finally {
         isApplying = false;

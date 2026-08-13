@@ -7,8 +7,8 @@ import {
   type ReorderPdfHostToWebview,
   type ReorderPdfLabels,
   type ReorderPdfWebviewToHost,
-} from '../../../../protocol/protocols/reorder_pdf_protocol.js';
-import type { PdfPreviewSettings } from '../../../../protocol/protocols/pdf_preview_protocol.js';
+} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
@@ -18,7 +18,7 @@ import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { readPdfPageCount } from '../shared/read_pdf_page_count.js';
-import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
+import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
 import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
 import { resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
@@ -28,13 +28,14 @@ import {
   getPdfJsAssetsRoot,
   getWebviewSharedAssetsRoot,
 } from '../../presentation/webview/pdfjs_assets.js';
+import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
 
 export async function reorderPdfConfigureCommand(
   context: vscode.ExtensionContext,
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
 
   try {
     await runReorderPdfConfigureCommand(context, sourceUris, dependencies);
@@ -55,7 +56,7 @@ async function runReorderPdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'reorderPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 
@@ -81,11 +82,10 @@ async function runReorderPdfConfigureCommand(
   const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview');
   const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
   const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
-  startPdfConfigureSession({
+  const configurePanel = openConfigurePanel({
     panel: {
       id: 'graphics-workbench.reorderPdf.configure',
       title: panelTitle,
-      appRoot,
       localResourceRoots: [
         appRoot,
         pdfJsAssetsRoot,
@@ -99,7 +99,15 @@ async function runReorderPdfConfigureCommand(
       extensionUri: context.extensionUri,
       locale: vscode.env.language,
     },
-    protocol: reorderPdfProtocol,
+  });
+  const extensionChannel = createExtensionChannel(reorderPdfProtocol, createWebviewTransport(configurePanel.webview));
+  startPdfConfigureSession({
+    panel: configurePanel,
+    sendInit: extensionChannel.send.init,
+    sendError: (message) => {
+      extensionChannel.send.error({ message });
+    },
+    subscribeMessages: (listener) => extensionChannel.subscribe(listener),
     message: {
       isApplyMessage: isReorderApplyMessage,
       buildInitPayload: (panel) =>

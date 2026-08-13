@@ -81,7 +81,7 @@ for script in "$@"; do
     test:coverage | test:coverage:run)
       export_coverage=1
       ;;
-    test:playwright:smoke | test:playwright:vsix)
+    test:playwright:smoke | test:playwright:vsix | test:e2e)
       export_playwright=1
       ;;
     visual:capture)

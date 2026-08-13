@@ -1,46 +1,48 @@
 import assert from 'node:assert/strict';
 
-import { createProtocolClient, createTestTransport } from '../../../../protocol/protocols/typed_protocol.js';
-import { previewProtocol } from '../../../../protocol/protocols/preview_protocol.js';
+import { createMockChannel } from '@graphics-workbench/vscode-protocol/typed-protocol';
+import { previewProtocol } from '@graphics-workbench/vscode-protocol/preview-protocol';
 
 suite('typed Webview protocol transport', () => {
   test('derives directional senders and validates incoming messages', () => {
-    const transport = createTestTransport();
-    const webview = createProtocolClient(previewProtocol, transport, 'webviewToHost');
-    const host = createProtocolClient(previewProtocol, transport, 'hostToWebview');
+    const channel = createMockChannel(previewProtocol);
     const received: string[] = [];
+    const hostReceived: unknown[] = [];
 
-    const unsubscribe = host.on({
+    channel.hostToWebview.subscribe((message) => hostReceived.push(message));
+    const unsubscribe = channel.webviewToHost.on({
       error: (payload) => received.push(payload.message),
     });
 
-    webview.send.ready();
-    assert.deepEqual(transport.sentMessages, [{ type: 'ready' }]);
+    channel.webviewToHost.send.ready();
+    assert.deepEqual(hostReceived, [{ type: 'ready' }]);
 
-    transport.receive({ type: 'error', payload: { message: 'failed' } });
-    transport.receive({ type: 'error', payload: { message: 42 } });
+    channel.deliverHostToWebview({ type: 'error', payload: { message: 'failed' } });
+    channel.deliverHostToWebview({ type: 'error', payload: { message: 42 } });
     assert.deepEqual(received, ['failed']);
 
     unsubscribe();
-    transport.receive({ type: 'error', payload: { message: 'ignored' } });
+    channel.deliverHostToWebview({ type: 'error', payload: { message: 'ignored' } });
     assert.deepEqual(received, ['failed']);
   });
 
   test('rejects invalid outgoing payloads before they reach the transport', () => {
-    const transport = createTestTransport();
-    const webview = createProtocolClient(previewProtocol, transport, 'webviewToHost');
+    const channel = createMockChannel(previewProtocol);
+    const received: unknown[] = [];
+    const unsubscribe = channel.hostToWebview.subscribe((message) => received.push(message));
 
-    assert.throws(() => webview.send.renderPage({ page: 0 }), TypeError);
-    assert.deepEqual(transport.sentMessages, []);
+    assert.throws(() => channel.webviewToHost.send.renderPage({ page: 0 }), TypeError);
+    assert.deepEqual(received, []);
 
     const compileOnly = (): void => {
       // @ts-expect-error renderPage requires a payload.
-      webview.send.renderPage();
+      channel.webviewToHost.send.renderPage();
       // @ts-expect-error ready does not accept a payload.
-      webview.send.ready({ unexpected: true });
+      channel.webviewToHost.send.ready({ unexpected: true });
       // @ts-expect-error host-to-webview messages are not available on this sender.
-      webview.send.init({});
+      channel.webviewToHost.send.init({});
     };
     void compileOnly;
+    void unsubscribe;
   });
 });

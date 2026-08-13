@@ -24,7 +24,7 @@ import { assertLocalFileUri } from '../shared/command_input.js';
 import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
 
 export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   if (sourceUris.length === 0) {
     await vscode.window.showErrorMessage('No files were selected.');
     return;

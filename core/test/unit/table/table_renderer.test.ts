@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 
-import { setColumnAlignment, tableModelFromRows } from '../../../../protocol/table/table_model.js';
 import {
   escapePipeTableCell,
   escapeTypstTableCell,
   renderLatexTable,
   renderQuarkdownTable,
   renderTypstTable,
-} from '../../../../protocol/table/table_renderer.js';
+  setColumnAlignment,
+  tableModelFromRows,
+} from '@graphics-workbench/core/table';
 
 const SAMPLE_ROWS = [
   ['Method', 'Time', 'Score'],

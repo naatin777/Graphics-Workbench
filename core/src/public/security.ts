@@ -1,1 +1,5 @@
-export * from '../security/workspace_path.js';
+export {
+  assertExistingPathInWorkspace,
+  assertPathIsNotSymbolicLink,
+  assertWritablePathInWorkspace,
+} from '../security/workspace_path.js';

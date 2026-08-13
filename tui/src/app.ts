@@ -79,7 +79,7 @@ export async function runTerminalUi(
       state.resolve('cancel');
     }
     if (state.kind === 'converting' || state.kind === 'conflict') {
-      const plan = state.plan;
+      const { plan } = state;
       state = {
         kind: 'converting',
         plan,
@@ -271,8 +271,8 @@ export async function runTerminalUi(
       }
       case 'conflict': {
         if (key.name === 'escape') {
-          const resolve = state.resolve;
-          const plan = state.plan;
+          const { resolve } = state;
+          const { plan } = state;
           state = {
             kind: 'converting',
             plan,
@@ -288,8 +288,8 @@ export async function runTerminalUi(
         } else if (isEnter(key)) {
           const action = conflictActions[state.selectedIndex];
           if (action !== undefined) {
-            const resolve = state.resolve;
-            const plan = state.plan;
+            const { resolve } = state;
+            const { plan } = state;
             state = {
               kind: 'converting',
               plan,

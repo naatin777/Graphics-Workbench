@@ -2,4 +2,4 @@ export type {
   MergePdfHostToWebview as ExtensionToWebviewMessage,
   MergePdfLabels,
   MergePdfSource,
-} from '@graphics-workbench-merge-pdf-protocol';
+} from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';

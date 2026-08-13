@@ -30,21 +30,21 @@
   "type": "module",
   "main": "./out/vscode/extension/src/extension.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "watch": "tsc --watch -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "build": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && tsc -p tsconfig.json",
+    "watch": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && tsc --watch -p tsconfig.json",
+    "typecheck": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && tsc --noEmit -p tsconfig.json",
+    "typecheck:test": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && tsc --noEmit -p tsconfig.test.json",
     "lint": "oxlint --config oxlint.config.ts --type-aware src test",
     "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src test",
-    "compile:test": "tsc -p tsconfig.test.json",
+    "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src test",
+    "compile:test": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && npm run clean:test && tsc -p tsconfig.test.json",
     "clean:test": "node -e \"const fs = require('node:fs'); for (const p of ['out/core/test', 'out/vscode/extension/test', 'out/test-support', 'out/test']) fs.rmSync(p, { recursive: true, force: true })\"",
     "test": "vscode-test",
-    "test:playwright:vsix": "playwright test --config playwright.config.mjs --grep-invert \"visual review\"",
-    "test:playwright:smoke": "playwright test --config playwright.config.mjs --project=vscode-electron electron/packaged_conversion_smoke.spec.ts",
-    "visual:capture": "playwright test --config playwright.config.mjs --grep \"visual review\" --project=vscode-electron"
+    "test:playwright:smoke": "playwright test --config playwright.config.mjs --project=vscode-electron electron/packaged_conversion_smoke.spec.ts"
   },
   "dependencies": {
     "@graphics-workbench/core": "0.0.1",
+    "@graphics-workbench/vscode-protocol": "0.0.1",
     "valibot": "1.4.2"
   },
   "devDependencies": {

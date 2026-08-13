@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 
 import { localeMap } from '../locale_map.js';
 
-import { escapeLatex, escapeLatexLabel } from './latex_escape.js';
+import { escapeLatex, escapeLatexLabel } from '@graphics-workbench/core/table';
 import { getPdfTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
 import type { InsertionFormat } from './insertion_format.js';
 

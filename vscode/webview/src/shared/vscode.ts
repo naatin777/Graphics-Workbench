@@ -4,7 +4,7 @@ import {
   type ProtocolHandlers,
   type ProtocolSender,
   type WireSchema,
-} from '@graphics-workbench-typed-protocol';
+} from '@graphics-workbench/vscode-protocol/typed-protocol';
 import type * as v from 'valibot';
 
 export interface WebviewHost<Outgoing = unknown, Incoming = unknown> {
@@ -27,40 +27,6 @@ interface RawVsCodeApi<Message> {
 }
 
 declare const acquireVsCodeApi: (<Message>() => RawVsCodeApi<Message>) | undefined;
-
-export class MockHost<Outgoing = unknown, Incoming = unknown> implements WebviewHost<Outgoing, Incoming> {
-  readonly sentMessages: Outgoing[] = [];
-  private readonly listeners = new Set<(message: Incoming) => void>();
-  private state: unknown;
-
-  constructor(private readonly onSend?: (message: Outgoing, host: MockHost<Outgoing, Incoming>) => void) {}
-
-  send(message: Outgoing): void {
-    this.sentMessages.push(message);
-    this.onSend?.(message, this);
-  }
-
-  subscribe(listener: (message: Incoming) => void): () => void {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  }
-
-  emit(message: Incoming): void {
-    for (const listener of this.listeners) {
-      listener(message);
-    }
-  }
-
-  getState<T>(): T | undefined {
-    return this.state as T | undefined;
-  }
-
-  setState<T>(state: T): void {
-    this.state = state;
-  }
-}
 
 export function createVsCodeHost(): WebviewHost {
   if (typeof acquireVsCodeApi !== 'function') {

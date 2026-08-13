@@ -22,7 +22,7 @@ import { userMessage } from '../shared/user_messages.js';
 import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
 
 export async function convertToPdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   await convertSelectedSourcesToPdf(sourceUris, dependencies, outputChannel);
 }
 

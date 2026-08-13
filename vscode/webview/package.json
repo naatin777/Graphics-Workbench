@@ -5,22 +5,28 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "oxlint --config oxlint.config.ts --type-aware src scripts vite.config.ts vitest.config.ts",
-    "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src scripts vite.config.ts vitest.config.ts",
+    "build": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && vite build",
+    "typecheck": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && tsc --noEmit -p tsconfig.json",
+    "typecheck:test": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && tsc --noEmit -p tsconfig.test.json",
+    "lint": "oxlint --config oxlint.config.ts --type-aware src scripts e2e vite.config.ts vitest.config.ts playwright.config.mjs",
+    "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src scripts e2e vite.config.ts vitest.config.ts playwright.config.mjs",
+    "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src scripts e2e vite.config.ts vitest.config.ts playwright.config.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test --config playwright.config.mjs --grep-invert \"visual review\"",
+    "visual:capture": "playwright test --config playwright.config.mjs --grep \"visual review\" --project=chromium-wide",
     "check:warnings": "node scripts/check-webview-warnings.mjs"
   },
   "dependencies": {
     "@graphics-workbench/core": "0.0.1",
+    "@graphics-workbench/vscode-protocol": "0.0.1",
     "@vscode/codicons": "^0.0.45",
     "pdfjs-dist": "^6.2.108",
     "solid-js": "^1.9.14",
     "valibot": "1.4.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "30.0.1",

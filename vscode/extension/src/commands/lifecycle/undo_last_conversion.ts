@@ -28,7 +28,7 @@ export async function undoLastConversionCommand(
   expectedId: string | undefined,
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
 
   try {
     const outcome = await undoHistory.undo(expectedId, outputChannel);

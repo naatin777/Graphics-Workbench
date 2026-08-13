@@ -1,6 +1,5 @@
 import '@vscode/codicons/dist/codicon.css';
 import '@webview-shared/ui/ui.css';
-import './theme.css';
 import './pages/crop-pdf/styles.css';
 import './pages/merge-pdf/styles.css';
 import './pages/preview/styles.css';
@@ -15,13 +14,20 @@ import { WebviewApp, pageIdFromLocation } from './app';
 import { createScenarioHost } from './dev/scenarios';
 import { createVsCodeHost, setActiveWebviewHost } from './shared/vscode';
 
-const pageId = pageIdFromLocation();
-const scenario = new URLSearchParams(globalThis.location.search).get('scenario') ?? 'normal';
-const theme = new URLSearchParams(globalThis.location.search).get('theme');
-document.body.classList.add(
-  theme === 'dark' ? 'vscode-dark' : theme === 'high-contrast' ? 'vscode-high-contrast' : 'vscode-light',
-);
-const host = import.meta.env.DEV ? createScenarioHost(pageId, scenario) : createVsCodeHost();
+if (import.meta.env.DEV) {
+  const theme = new URLSearchParams(globalThis.location.search).get('theme');
+  document.body.classList.add(
+    theme === 'dark' ? 'vscode-dark' : theme === 'high-contrast' ? 'vscode-high-contrast' : 'vscode-light',
+  );
+  void import('./dev/theme_mock.css');
+}
+
+const host = import.meta.env.DEV
+  ? createScenarioHost(
+      pageIdFromLocation() ?? 'preview',
+      new URLSearchParams(globalThis.location.search).get('scenario') ?? 'normal',
+    )
+  : createVsCodeHost();
 setActiveWebviewHost(host);
 
 const root = document.querySelector('#root');

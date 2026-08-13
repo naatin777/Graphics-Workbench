@@ -13,7 +13,7 @@ import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '@graphics-workbench/core/runtime';
 
 export async function encryptPdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   try {
     if (sourceUris.length === 0) {
       throw new Error('No PDF files were selected.');

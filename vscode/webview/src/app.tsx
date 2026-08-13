@@ -20,13 +20,16 @@ const webviewPages = {
 
 export type WebviewPageId = keyof typeof webviewPages;
 
-export function pageIdFromLocation(): WebviewPageId {
+export function pageIdFromLocation(): WebviewPageId | undefined {
   const value = document.body.dataset.page ?? new URLSearchParams(globalThis.location.search).get('page');
-  return isWebviewPageId(value) ? value : 'preview';
+  return isWebviewPageId(value) ? value : undefined;
 }
 
 export function WebviewApp(): JSX.Element {
   const pageId = pageIdFromLocation();
+  if (pageId === undefined) {
+    throw new Error(`Unknown webview page id: ${document.body.dataset.page ?? '<missing>'}`);
+  }
   const Page = webviewPages[pageId];
   document.body.dataset.page = pageId;
   return <Page />;

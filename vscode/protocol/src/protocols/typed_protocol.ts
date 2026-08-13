@@ -107,28 +107,124 @@ export function createProtocolClient<
   } as ProtocolClient<Direction extends 'hostToWebview' ? v.InferOutput<HostSchema> : v.InferOutput<WebviewSchema>>;
 }
 
-export class TestTransport implements ProtocolTransport {
-  readonly sentMessages: unknown[] = [];
-  private readonly listeners = new Set<(message: unknown) => void>();
-
-  send(message: unknown): void {
-    this.sentMessages.push(message);
-  }
-
-  subscribe(listener: (message: unknown) => void): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
-
-  receive(message: unknown): void {
-    for (const listener of this.listeners) {
-      listener(message);
-    }
-  }
+/**
+ * A loopback channel for browser development and unit tests. Both directions
+ * are wired through the protocol parsers, so every message exchanged by the
+ * mock is validated exactly like a real Extension Host <-> Webview boundary.
+ */
+export interface MockChannel<HostMessage extends { type: string }, WebviewMessage extends { type: string }> {
+  /** Extension Host side: sends hostToWebview, receives parsed webviewToHost. */
+  readonly hostToWebview: {
+    readonly send: ProtocolSender<HostMessage>;
+    on(handlers: ProtocolHandlers<WebviewMessage>): () => void;
+    subscribe(listener: (message: WebviewMessage) => void): () => void;
+  };
+  /** Webview side: sends webviewToHost, receives parsed hostToWebview. */
+  readonly webviewToHost: {
+    readonly send: ProtocolSender<WebviewMessage>;
+    on(handlers: ProtocolHandlers<HostMessage>): () => void;
+    subscribe(listener: (message: HostMessage) => void): () => void;
+  };
+  /** Injects a raw (unparsed) hostToWebview message toward the Webview side. */
+  readonly deliverHostToWebview: (message: unknown) => void;
+  /** Injects a raw (unparsed) webviewToHost message toward the Extension Host side. */
+  readonly deliverWebviewToHost: (message: unknown) => void;
 }
 
-export const createMockTransport = (): TestTransport => new TestTransport();
-export const createTestTransport = (): TestTransport => new TestTransport();
+export function createMockChannel<const HostSchema extends WireSchema, const WebviewSchema extends WireSchema>(
+  protocol: MessageProtocol<HostSchema, WebviewSchema>,
+): MockChannel<v.InferOutput<HostSchema>, v.InferOutput<WebviewSchema>> {
+  const hostToWebviewListeners = new Set<(message: unknown) => void>();
+  const webviewToHostListeners = new Set<(message: unknown) => void>();
+
+  const deliverHostToWebview = (message: unknown): void => {
+    for (const listener of hostToWebviewListeners) {
+      listener(message);
+    }
+  };
+  const deliverWebviewToHost = (message: unknown): void => {
+    for (const listener of webviewToHostListeners) {
+      listener(message);
+    }
+  };
+
+  const hostSideTransport: ProtocolTransport = {
+    send: deliverHostToWebview,
+    subscribe(listener) {
+      webviewToHostListeners.add(listener);
+      return () => webviewToHostListeners.delete(listener);
+    },
+  };
+  const webviewSideTransport: ProtocolTransport = {
+    send: deliverWebviewToHost,
+    subscribe(listener) {
+      hostToWebviewListeners.add(listener);
+      return () => hostToWebviewListeners.delete(listener);
+    },
+  };
+
+  return {
+    hostToWebview: createSideClient<v.InferOutput<HostSchema>, v.InferOutput<WebviewSchema>>(
+      protocol.hostToWebview,
+      protocol.parseWebviewToHost,
+      hostSideTransport,
+    ),
+    webviewToHost: createSideClient<v.InferOutput<WebviewSchema>, v.InferOutput<HostSchema>>(
+      protocol.webviewToHost,
+      protocol.parseHostToWebview,
+      webviewSideTransport,
+    ),
+    deliverHostToWebview,
+    deliverWebviewToHost,
+  };
+}
+
+function createSideClient<SendMessage extends { type: string }, ReceiveMessage extends { type: string }>(
+  schema: WireSchema,
+  parse: (value: unknown) => ReceiveMessage | undefined,
+  transport: ProtocolTransport,
+): {
+  readonly send: ProtocolSender<SendMessage>;
+  on(handlers: ProtocolHandlers<ReceiveMessage>): () => void;
+  subscribe(listener: (message: ReceiveMessage) => void): () => void;
+} {
+  const send = new Proxy(
+    {},
+    {
+      get: (_target, type: string) => (payload?: unknown) => {
+        const message = payload === undefined ? { type } : { type, payload };
+        const result = v.safeParse(schema, message);
+        if (!result.success) {
+          throw new TypeError(`Invalid message: ${type}`);
+        }
+        transport.send(result.output);
+      },
+    },
+  ) as ProtocolSender<SendMessage>;
+
+  const on = (handlers: ProtocolHandlers<ReceiveMessage>): (() => void) =>
+    subscribe((message) => {
+      const handler = handlers[message.type as keyof typeof handlers];
+      if (handler === undefined) {
+        return;
+      }
+      Reflect.apply(handler, undefined, 'payload' in message ? [message.payload] : []);
+    });
+
+  const subscribe = (listener: (message: ReceiveMessage) => void): (() => void) =>
+    transport.subscribe((rawMessage) => {
+      const message = parse(rawMessage);
+      if (message !== undefined) {
+        listener(message);
+      }
+    });
+
+  return {
+    send,
+    on,
+    subscribe,
+  };
+}
 
 function createParser<const Schema extends WireSchema>(schema: Schema) {
   return (value: unknown): v.InferOutput<Schema> | undefined => {

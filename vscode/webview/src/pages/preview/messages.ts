@@ -1,6 +1,6 @@
-import type { PreviewHostToWebview } from '@graphics-workbench-preview-protocol';
+import type { PreviewHostToWebview } from '@graphics-workbench/vscode-protocol/preview-protocol';
 
-export type { PreviewLabels } from '@graphics-workbench-preview-protocol';
+export type { PreviewLabels } from '@graphics-workbench/vscode-protocol/preview-protocol';
 
 export type ExtensionToWebviewMessage = PreviewHostToWebview;
 

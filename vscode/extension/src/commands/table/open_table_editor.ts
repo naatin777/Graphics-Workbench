@@ -9,6 +9,7 @@ import { extensionIdentity } from '../../generated/extension_manifest.js';
 import { localeMap } from '../../locale_map.js';
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import { getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
+import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
 import { isAbortError } from '@graphics-workbench/core/runtime';
 import {
   tableEditorProtocol,
@@ -16,8 +17,8 @@ import {
   type TableEditorHostToWebview,
   type TableEditorLabels,
   type TableEditorWebviewToHost,
-} from '../../../../protocol/protocols/table_editor_protocol.js';
-import { startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
+} from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { userMessage } from '../shared/user_messages.js';
 
@@ -28,7 +29,7 @@ interface InsertionTarget {
 }
 
 export async function openTableEditorCommand(dependencies: CommandDependencies): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   try {
     await runOpenTableEditorCommand(dependencies);
   } catch (error) {
@@ -43,7 +44,7 @@ export async function openTableEditorCommand(dependencies: CommandDependencies):
 }
 
 async function runOpenTableEditorCommand(dependencies: CommandDependencies): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   const extensionUri = vscode.extensions.getExtension(extensionIdentity.id)?.extensionUri;
   if (extensionUri === undefined) {
     throw new Error('Graphics Workbench extension URI could not be resolved.');
@@ -54,11 +55,10 @@ async function runOpenTableEditorCommand(dependencies: CommandDependencies): Pro
   const appRoot = vscode.Uri.joinPath(extensionUri, 'media', 'webview');
   const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(extensionUri);
 
-  startPdfConfigureSession({
+  const configurePanel = openConfigurePanel({
     panel: {
       id: 'graphics-workbench.tableEditor',
       title: panelTitle,
-      appRoot,
       localResourceRoots: [appRoot, webviewSharedAssetsRoot],
     },
     webview: {
@@ -67,7 +67,15 @@ async function runOpenTableEditorCommand(dependencies: CommandDependencies): Pro
       extensionUri,
       locale: vscode.env.language,
     },
-    protocol: tableEditorProtocol,
+  });
+  const extensionChannel = createExtensionChannel(tableEditorProtocol, createWebviewTransport(configurePanel.webview));
+  startPdfConfigureSession({
+    panel: configurePanel,
+    sendInit: extensionChannel.send.init,
+    sendError: (message) => {
+      extensionChannel.send.error({ message });
+    },
+    subscribeMessages: (listener) => extensionChannel.subscribe(listener),
     message: {
       isApplyMessage: isTableEditorInsertMessage,
       buildInitPayload: () => buildTableEditorInitMessage({ format: initialFormatFor(target) }),

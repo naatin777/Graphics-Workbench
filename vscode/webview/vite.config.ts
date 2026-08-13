@@ -7,7 +7,6 @@ import solid from 'vite-plugin-solid';
 
 const webviewRoot = dirname(fileURLToPath(import.meta.url));
 const extensionRoot = resolve(webviewRoot, '..', 'extension');
-const protocolRoot = resolve(webviewRoot, '..', 'protocol');
 const repositoryRoot = resolve(webviewRoot, '..', '..');
 const outputRoot = resolve(extensionRoot, 'media', 'webview');
 
@@ -28,17 +27,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@webview-shared': resolve(webviewRoot, 'src', 'shared'),
-      '@graphics-workbench-typed-protocol': resolve(protocolRoot, 'protocols', 'typed_protocol.ts'),
-      '@graphics-workbench-crop-pdf-protocol': resolve(protocolRoot, 'protocols', 'crop_pdf_protocol.ts'),
-      '@graphics-workbench-merge-pdf-protocol': resolve(protocolRoot, 'protocols', 'merge_pdf_protocol.ts'),
-      '@graphics-workbench-split-pdf-protocol': resolve(protocolRoot, 'protocols', 'split_pdf_protocol.ts'),
-      '@graphics-workbench-rotate-pdf-protocol': resolve(protocolRoot, 'protocols', 'rotate_pdf_protocol.ts'),
-      '@graphics-workbench-reorder-pdf-protocol': resolve(protocolRoot, 'protocols', 'reorder_pdf_protocol.ts'),
-      '@graphics-workbench-preview-protocol': resolve(protocolRoot, 'protocols', 'preview_protocol.ts'),
-      '@graphics-workbench-table-editor-protocol': resolve(protocolRoot, 'protocols', 'table_editor_protocol.ts'),
-      '@graphics-workbench-table-model': resolve(protocolRoot, 'table', 'table_model.ts'),
-      '@graphics-workbench-table-parser': resolve(protocolRoot, 'table', 'parse_delimited.ts'),
-      '@graphics-workbench-table-renderer': resolve(protocolRoot, 'table', 'table_renderer.ts'),
     },
   },
   build: {
@@ -146,6 +134,13 @@ function browserDevelopmentAssetsPlugin(): Plugin {
         if (!existsSync(asset)) {
           next();
           return;
+        }
+        if (asset.endsWith('.mjs') || asset.endsWith('.js')) {
+          response.setHeader('Content-Type', 'text/javascript');
+        } else if (asset.endsWith('.wasm')) {
+          response.setHeader('Content-Type', 'application/wasm');
+        } else {
+          response.setHeader('Content-Type', 'application/octet-stream');
         }
         response.end(readFileSync(asset));
       });

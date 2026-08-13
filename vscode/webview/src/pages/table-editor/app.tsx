@@ -1,21 +1,25 @@
 import { createMemo, createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
-import type { TableEditorFormat, TableEditorLabels } from '@graphics-workbench-table-editor-protocol';
+import type { TableEditorFormat, TableEditorLabels } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
 import {
   addTableColumn,
   addTableRow,
   createTableModel,
+  isTsvTableCandidate,
+  parseCsv,
+  parseTsv,
   removeTableColumn,
   removeTableRow,
+  renderLatexTable,
+  renderQuarkdownTable,
+  renderTypstTable,
   setColumnAlignment,
   setHeaderRows,
   tableModelFromRows,
   updateCellText,
   type TableAlignment,
   type TableModel,
-} from '@graphics-workbench-table-model';
-import { isTsvTableCandidate, parseCsv, parseTsv } from '@graphics-workbench-table-parser';
-import { renderLatexTable, renderQuarkdownTable, renderTypstTable } from '@graphics-workbench-table-renderer';
+} from '@graphics-workbench/core/table';
 import { Button } from '@webview-shared/ui/Button';
 
 import { vscode } from './vscode';

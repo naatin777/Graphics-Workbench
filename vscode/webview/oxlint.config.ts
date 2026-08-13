@@ -62,7 +62,7 @@ export default defineConfig({
       },
     },
     {
-      files: ['scripts/**/*.mjs', 'vite.config.ts', 'vitest.config.ts'],
+      files: ['scripts/**/*.mjs', 'vite.config.ts', 'vitest.config.ts', 'playwright.config.mjs', 'e2e/**/*.ts'],
       rules: {
         'no-console': 'off',
         'no-restricted-imports': 'off',

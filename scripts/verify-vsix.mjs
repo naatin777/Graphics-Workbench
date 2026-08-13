@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 const rootDirectory = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const extensionPackagePath = path.join(rootDirectory, 'vscode', 'extension', 'package.json');
 const corePackagePath = path.join(rootDirectory, 'core', 'package.json');
+const protocolPackagePath = path.join(rootDirectory, 'vscode', 'protocol', 'package.json');
 const corePackageDirectory = 'node_modules/@graphics-workbench/core';
+const protocolPackageDirectory = 'node_modules/@graphics-workbench/vscode-protocol';
 
 const TARGETS = new Map([
   ['win32-x64', { npmOs: 'win32', npmCpu: 'x64', sharp: 'sharp-win32-x64', libvips: undefined }],
@@ -88,6 +90,8 @@ export function getRequiredVsixEntries(target) {
     readPackageMain(extensionPackagePath),
     `${corePackageDirectory}/package.json`,
     `${corePackageDirectory}/${readPackageMain(corePackagePath)}`,
+    `${protocolPackageDirectory}/package.json`,
+    `${protocolPackageDirectory}/${readPackageMain(protocolPackagePath)}`,
     'node_modules/mupdf/package.json',
     'node_modules/sharp/package.json',
     `${NATIVE_PACKAGE_PREFIX}${spec.sharp}/package.json`,
@@ -147,6 +151,9 @@ export function verifyVsixEntries(entries, target) {
     const coreRelativeEntry = entry.startsWith(`${corePackageDirectory}/`)
       ? entry.slice(corePackageDirectory.length + 1)
       : undefined;
+    const protocolRelativeEntry = entry.startsWith(`${protocolPackageDirectory}/`)
+      ? entry.slice(protocolPackageDirectory.length + 1)
+      : undefined;
     return (
       entry === 'bun.lock' ||
       entry === 'bun.lockb' ||
@@ -166,7 +173,12 @@ export function verifyVsixEntries(entries, target) {
         (coreRelativeEntry.startsWith('src/') ||
           coreRelativeEntry.startsWith('test/') ||
           coreRelativeEntry.startsWith('tests/') ||
-          /\.(?:cts|mts|ts|tsx)$/u.test(coreRelativeEntry)))
+          /\.(?:cts|mts|ts|tsx)$/u.test(coreRelativeEntry))) ||
+      (protocolRelativeEntry !== undefined &&
+        (protocolRelativeEntry.startsWith('src/') ||
+          protocolRelativeEntry.startsWith('test/') ||
+          protocolRelativeEntry.startsWith('tests/') ||
+          /\.(?:cts|mts|ts|tsx)$/u.test(protocolRelativeEntry)))
     );
   });
   if (forbiddenEntries.length > 0) {
@@ -199,6 +211,7 @@ export function verifyVsixEntries(entries, target) {
   const productionDependencies = new Set([
     ...readDependencyNames(extensionPackagePath),
     ...readDependencyNames(corePackagePath),
+    ...readDependencyNames(protocolPackagePath),
   ]);
   const includedDevDependencies = devDependencies
     .filter((dependency) => !productionDependencies.has(dependency))
@@ -279,6 +292,8 @@ export function verifyProductionInstall(target, nodeModulesDirectory) {
   const requiredFiles = [
     path.join(nodeModulesDirectory, '@graphics-workbench', 'core', 'package.json'),
     path.join(nodeModulesDirectory, '@graphics-workbench', 'core', readPackageMain(corePackagePath)),
+    path.join(nodeModulesDirectory, '@graphics-workbench', 'vscode-protocol', 'package.json'),
+    path.join(nodeModulesDirectory, '@graphics-workbench', 'vscode-protocol', readPackageMain(protocolPackagePath)),
     path.join(nodeModulesDirectory, 'mupdf', 'package.json'),
   ];
   const missingFiles = requiredFiles.filter((filePath) => !pathExists(filePath));

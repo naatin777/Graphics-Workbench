@@ -21,7 +21,7 @@ import { PDFDocument } from '../../support/helpers/pdf_document.js';
 import {
   isReorderPdfHostToWebviewMessage,
   isReorderPdfWebviewToHostMessage,
-} from '../../../../protocol/protocols/reorder_pdf_protocol.js';
+} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import { reorderPdfFiles } from '@graphics-workbench/core/pdf';
 
 suite('PDFページ並び替え', () => {

@@ -7,6 +7,7 @@ const coreSourceRoot = path.join(repositoryRoot, 'core', 'src');
 const vscodeSourceRoot = path.join(repositoryRoot, 'vscode', 'extension', 'src');
 const vscodeTestRoot = path.join(repositoryRoot, 'vscode', 'extension', 'test');
 const webviewSourceRoot = path.join(repositoryRoot, 'vscode', 'webview', 'src');
+const protocolSourceRoot = path.join(repositoryRoot, 'vscode', 'protocol', 'src');
 const tuiSourceRoot = path.join(repositoryRoot, 'tui', 'src');
 const tuiTestRoot = path.join(repositoryRoot, 'tui', 'test');
 const failures = [];
@@ -14,6 +15,7 @@ const failures = [];
 const corePackage = readJson(path.join(repositoryRoot, 'core', 'package.json'));
 const vscodePackage = readJson(path.join(repositoryRoot, 'vscode', 'extension', 'package.json'));
 const webviewPackage = readJson(path.join(repositoryRoot, 'vscode', 'webview', 'package.json'));
+const protocolPackage = readJson(path.join(repositoryRoot, 'vscode', 'protocol', 'package.json'));
 const tuiPackage = readJson(path.join(repositoryRoot, 'tui', 'package.json'));
 const rootPackage = readJson(path.join(repositoryRoot, 'package.json'));
 const publicCoreEntries = new Set(
@@ -25,22 +27,17 @@ const publicCoreEntries = new Set(
 checkCoreImports();
 checkFrontendImports('vscode', [vscodeSourceRoot], vscodePackage, ['vscode']);
 checkFrontendImports('vscode', [vscodeTestRoot], vscodePackage, ['vscode']);
-checkFrontendImports('webview', [webviewSourceRoot], webviewPackage, [
-  '@webview-shared',
-  '@graphics-workbench-typed-protocol',
-  '@graphics-workbench-crop-pdf-protocol',
-  '@graphics-workbench-merge-pdf-protocol',
-  '@graphics-workbench-split-pdf-protocol',
-  '@graphics-workbench-rotate-pdf-protocol',
-  '@graphics-workbench-reorder-pdf-protocol',
-  '@graphics-workbench-preview-protocol',
-  '@graphics-workbench-table-editor-protocol',
-  '@graphics-workbench-table-model',
-  '@graphics-workbench-table-parser',
-  '@graphics-workbench-table-renderer',
-]);
+checkFrontendImports('webview', [webviewSourceRoot], webviewPackage, ['@webview-shared']);
+checkFrontendImports('protocol', [protocolSourceRoot], protocolPackage, []);
 checkFrontendImports('tui', [tuiSourceRoot, tuiTestRoot], tuiPackage, []);
-checkCorePublicImports([vscodeSourceRoot, vscodeTestRoot, webviewSourceRoot, tuiSourceRoot, tuiTestRoot]);
+checkCorePublicImports([
+  vscodeSourceRoot,
+  vscodeTestRoot,
+  webviewSourceRoot,
+  protocolSourceRoot,
+  tuiSourceRoot,
+  tuiTestRoot,
+]);
 checkFrontendBoundaryImports('vscode', [vscodeSourceRoot, vscodeTestRoot], 'tui');
 checkFrontendBoundaryImports('tui', [tuiSourceRoot, tuiTestRoot], 'vscode');
 checkWebviewBoundaryImports();
@@ -133,9 +130,6 @@ function checkPackageOwnership() {
   if (vscodePackage.dependencies?.sharp !== undefined) {
     failures.push('vscode must not ship sharp as a production dependency');
   }
-  if (!vscodePackage.devDependencies?.sharp) {
-    failures.push('vscode test tooling must declare sharp as a devDependency');
-  }
 
   for (const dependency of [
     '@types/mocha',
@@ -204,11 +198,23 @@ function checkPackageVersions() {
   if (corePackage.version !== webviewPackage.version) {
     failures.push('core and webview package versions must match');
   }
+  if (corePackage.version !== protocolPackage.version) {
+    failures.push('core and protocol package versions must match');
+  }
   if (vscodePackage.dependencies?.['@graphics-workbench/core'] !== corePackage.version) {
     failures.push('vscode must depend on the exact matching @graphics-workbench/core version');
   }
   if (webviewPackage.dependencies?.['@graphics-workbench/core'] !== corePackage.version) {
     failures.push('webview must depend on the exact matching @graphics-workbench/core version');
+  }
+  if (vscodePackage.dependencies?.['@graphics-workbench/vscode-protocol'] !== protocolPackage.version) {
+    failures.push('vscode must depend on the exact matching @graphics-workbench/vscode-protocol version');
+  }
+  if (webviewPackage.dependencies?.['@graphics-workbench/vscode-protocol'] !== protocolPackage.version) {
+    failures.push('webview must depend on the exact matching @graphics-workbench/vscode-protocol version');
+  }
+  if (protocolPackage.dependencies?.['@graphics-workbench/core'] !== corePackage.version) {
+    failures.push('protocol must depend on the exact matching @graphics-workbench/core version');
   }
   if (tuiPackage.dependencies?.['@graphics-workbench/core'] !== 'file:.core-package') {
     failures.push('tui must consume its staged local core package');
@@ -223,6 +229,11 @@ function checkCoreExports() {
     const sourcePath = path.join(coreSourceRoot, 'public', `${entry.replaceAll('-', '_')}.ts`);
     if (!existsSync(sourcePath)) {
       failures.push(`core public entry ${entry} has no source module at ${relative(sourcePath)}`);
+    }
+  }
+  for (const filePath of collectFiles(path.join(coreSourceRoot, 'public'))) {
+    if (/\bexport\s+\*\s+from\b/u.test(readFileSync(filePath, 'utf8'))) {
+      failures.push(`${relative(filePath)} must use named exports instead of export *`);
     }
   }
 }

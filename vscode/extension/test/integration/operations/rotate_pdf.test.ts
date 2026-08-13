@@ -20,7 +20,7 @@ import { degrees, PDFDocument } from '../../support/helpers/pdf_document.js';
 import {
   isRotatePdfHostToWebviewMessage,
   isRotatePdfWebviewToHostMessage,
-} from '../../../../protocol/protocols/rotate_pdf_protocol.js';
+} from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import { rotatePdfFiles } from '@graphics-workbench/core/pdf';
 
 suite('PDFページ回転', () => {
