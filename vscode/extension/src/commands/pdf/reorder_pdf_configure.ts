@@ -10,25 +10,18 @@ import {
 } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
+import { inspectPdfSummary, reorderPdfFiles } from '@graphics-workbench/core/pdf';
+import { isAbortError } from '@graphics-workbench/core/runtime';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeMap } from '../../locale_map.js';
-import { reorderPdfFiles } from '@graphics-workbench/core/pdf';
-import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
-import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
+import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { readPdfPageCount } from '../shared/read_pdf_page_count.js';
-import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
-import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversion.js';
-import { userMessage } from '../shared/user_messages.js';
-import { resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
-import { isAbortError } from '@graphics-workbench/core/runtime';
 import {
-  createPdfJsResources,
-  getPdfJsAssetsRoot,
-  getWebviewSharedAssetsRoot,
-} from '../../presentation/webview/pdfjs_assets.js';
-import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
+  runSinglePdfConfigureCommand,
+  type SinglePdfConfigureConversion,
+} from '../lifecycle/run_single_pdf_configure.js';
+import { userMessage } from '../shared/user_messages.js';
 
 export async function reorderPdfConfigureCommand(
   context: vscode.ExtensionContext,
@@ -38,7 +31,66 @@ export async function reorderPdfConfigureCommand(
   const { outputChannel } = dependencies;
 
   try {
-    await runReorderPdfConfigureCommand(context, sourceUris, dependencies);
+    await runSinglePdfConfigureCommand({
+      context,
+      sourceUris,
+      dependencies,
+      commandId: 'reorderPdf.configure',
+      pageId: 'reorder-pdf',
+      panelId: 'graphics-workbench.reorderPdf.configure',
+      panelTitle: localeMap('submenu.reorderPdf'),
+      protocol: reorderPdfProtocol,
+      operationName: 'reorder-pdf-configure',
+      messages: {
+        progressTitle: userMessage('message.progress.reorderPdf.title', 1),
+        prepareMessage: userMessage('message.progress.prepareReorderPdf'),
+        successMessage: (count) => userMessage('message.reorderPdf.success', count),
+        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+        cancelledMessage: userMessage('message.reorderPdf.cancelled'),
+        failedMessage: (reason) => userMessage('message.reorderPdf.failed', reason),
+      },
+      prepare: async ({ inputUri, workspaceFolder, signal, report }) => {
+        report(userMessage('message.progress.analyzingPdf'));
+        const { pageCount } = await inspectPdfSummary(inputUri.fsPath, signal);
+
+        if (pageCount === 0) {
+          throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
+        }
+
+        return {
+          pageCount,
+          outputPath: resolvePdfOutputPath(dependencies.getConfiguration().outputPath.reorderPdf(), {
+            workspacePath: workspaceFolder.uri.fsPath,
+            workspaceName: workspaceFolder.name,
+            sourcePath: inputUri.fsPath,
+          }),
+        };
+      },
+      buildInitPayload: ({ panel, pdfJsAssetsRoot, inputUri, prepared, configuration }) =>
+        buildReorderPdfInitMessage({
+          panel,
+          pdfJsAssetsRoot,
+          inputUri,
+          pageCount: prepared.pageCount,
+          preview: readPdfPreviewSettings(configuration),
+        }),
+      isApplyMessage: isReorderApplyMessage,
+      runApply: async (message, { inputUri, workspaceFolder, prepared, runConversion }) => {
+        await applyConfiguredReorder({
+          inputUri,
+          workspacePath: workspaceFolder.uri.fsPath,
+          outputPath: prepared.outputPath,
+          pageCount: prepared.pageCount,
+          order: message.payload.order,
+          runConversion,
+        });
+      },
+      onPreviewLoadFailed: (message, channel) => {
+        if (message.type === 'previewLoadFailed') {
+          channel?.appendLine(`[reorder-pdf-configure] preview failure: ${message.payload.message}`);
+        }
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel.appendLine(`[reorder-pdf-configure] failure: ${message}`);
@@ -49,101 +101,6 @@ export async function reorderPdfConfigureCommand(
 
     await vscode.window.showErrorMessage(userMessage('message.reorderPdf.failed', message));
   }
-}
-
-async function runReorderPdfConfigureCommand(
-  context: vscode.ExtensionContext,
-  sourceUris: vscode.Uri[],
-  dependencies: CommandDependencies,
-): Promise<void> {
-  const { outputChannel } = dependencies;
-  const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'reorderPdf.configure');
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
-
-  if (!workspaceFolder) {
-    throw new Error('reorderPdf.configure input must be inside the workspace.');
-  }
-
-  await assertExistingPathInWorkspace(inputUri.fsPath, workspaceFolder.uri.fsPath);
-  const pageCount = await readPdfPageCount(inputUri.fsPath, userMessage('message.progress.reorderPdf.title', 1));
-
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
-  }
-
-  const configuration = dependencies.getConfiguration();
-  const outputPath = resolvePdfOutputPath(configuration.outputPath.reorderPdf(), {
-    workspacePath: workspaceFolder.uri.fsPath,
-    workspaceName: workspaceFolder.name,
-    sourcePath: inputUri.fsPath,
-  });
-
-  const panelTitle = localeMap('submenu.reorderPdf');
-  const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview');
-  const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
-  const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
-  const configurePanel = openConfigurePanel({
-    panel: {
-      id: 'graphics-workbench.reorderPdf.configure',
-      title: panelTitle,
-      localResourceRoots: [
-        appRoot,
-        pdfJsAssetsRoot,
-        webviewSharedAssetsRoot,
-        vscode.Uri.file(path.dirname(inputUri.fsPath)),
-      ],
-    },
-    webview: {
-      title: panelTitle,
-      pageId: 'reorder-pdf',
-      extensionUri: context.extensionUri,
-      locale: vscode.env.language,
-    },
-  });
-  const extensionChannel = createExtensionChannel(reorderPdfProtocol, createWebviewTransport(configurePanel.webview));
-  startPdfConfigureSession({
-    panel: configurePanel,
-    sendInit: extensionChannel.send.init,
-    sendError: (message) => {
-      extensionChannel.send.error({ message });
-    },
-    subscribeMessages: (listener) => extensionChannel.subscribe(listener),
-    message: {
-      isApplyMessage: isReorderApplyMessage,
-      buildInitPayload: (panel) =>
-        buildReorderPdfInitMessage({
-          panel,
-          pdfJsAssetsRoot,
-          inputUri,
-          pageCount,
-          preview: readPdfPreviewSettings(configuration),
-        }),
-      runApply: async (message, { panel, signal, sendError }) => {
-        await applyConfiguredReorder({
-          inputUri,
-          workspacePath: workspaceFolder.uri.fsPath,
-          outputPath,
-          pageCount,
-          order: message.payload.order,
-          panel,
-          signal,
-          outputChannel,
-          sendError,
-        });
-      },
-      onPreviewLoadFailed: (message, channel) => {
-        if (message.type === 'previewLoadFailed') {
-          channel?.appendLine(`[reorder-pdf-configure] preview failure: ${message.payload.message}`);
-        }
-      },
-    },
-    error: {
-      operationName: 'reorder-pdf-configure',
-      cancelledMessage: userMessage('message.reorderPdf.cancelled'),
-      failedMessage: (reason) => userMessage('message.reorderPdf.failed', reason),
-    },
-    outputChannel,
-  });
 }
 
 function isReorderApplyMessage(
@@ -178,12 +135,9 @@ async function applyConfiguredReorder(params: {
   outputPath: string;
   pageCount: number;
   order: number[];
-  panel: vscode.WebviewPanel;
-  signal: AbortSignal;
-  outputChannel: LineOutputChannel;
-  sendError: (message: string) => void;
+  runConversion: (run: SinglePdfConfigureConversion) => Promise<void>;
 }): Promise<void> {
-  const { inputUri, workspacePath, outputPath, pageCount, order, panel, signal, outputChannel, sendError } = params;
+  const { inputUri, workspacePath, outputPath, pageCount, order, runConversion } = params;
 
   if (order.length !== pageCount) {
     throw new Error(`Page order must contain exactly ${pageCount} pages.`);
@@ -195,26 +149,12 @@ async function applyConfiguredReorder(params: {
     }
   }
 
-  await runConfiguredPdfConversion({
-    operationName: 'reorder-pdf-configure',
-    messages: {
-      progressTitle: userMessage('message.progress.reorderPdf.title', 1),
-      prepareMessage: userMessage('message.progress.prepareReorderPdf'),
-      successMessage: (count) => userMessage('message.reorderPdf.success', count),
-      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-      cancelledMessage: userMessage('message.reorderPdf.cancelled'),
-      failedMessage: (reason) => userMessage('message.reorderPdf.failed', reason),
-    },
-    outputChannel,
-    panel,
-    signal,
-    sendError,
-    run: async (runtime) =>
-      reorderPdfFiles({
-        inputs: [{ sourcePath: inputUri.fsPath, workspacePath, outputPath, pageOrder: order }],
-        runtime,
-      }),
-  });
+  await runConversion(async (runtime) =>
+    reorderPdfFiles({
+      inputs: [{ sourcePath: inputUri.fsPath, workspacePath, outputPath, pageOrder: order }],
+      runtime,
+    }),
+  );
 }
 
 function reorderPdfLabels(): ReorderPdfLabels {
