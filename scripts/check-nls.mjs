@@ -1,11 +1,13 @@
-import { globSync, readFileSync } from 'node:fs';
+// NLS consistency between the English and Japanese message catalogs and the
+// package.json `%...%` references. The `userMessage(...)` call-site analysis
+// lives in the Oxlint project plugin (scripts/oxlint-project-plugin.mjs),
+// which sees the AST and reports file/line locations directly.
+
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { LanguageVariant, SyntaxKind, createScanner } from 'typescript/unstable/ast';
-
 /** @typedef {Record<string, string>} NlsMessages */
-/** @typedef {{ argumentCount: number; key?: string }} CallArguments */
 
 /**
  * @param {string[]} values
@@ -46,131 +48,7 @@ function parseNlsMessages(content, filePath) {
  */
 function placeholders(value) {
   const values = [...String(value).matchAll(/\{(\d+)\}/g)].map((match) => match[1]);
-  const sortedValues = sortStrings(values);
-  return sortedValues;
-}
-
-/**
- * @param {string} sourcePath
- * @param {string} source
- * @param {NlsMessages} english
- * @param {CallArguments | undefined} call
- * @param {number} callStart
- * @returns {string[]}
- */
-function validateUserMessageCall(sourcePath, source, english, call, callStart) {
-  if (call?.key === undefined) {
-    return [];
-  }
-
-  const line = source.slice(0, callStart).split('\n').length;
-  if (call.key in english) {
-    let requiredArguments = 0;
-    for (const index of placeholders(english[call.key])) {
-      requiredArguments = Math.max(requiredArguments, Number(index) + 1);
-    }
-    if (call.argumentCount - 1 >= requiredArguments) {
-      return [];
-    }
-    return [`userMessage call has too few arguments for ${call.key}: ${sourcePath}:${line}`];
-  }
-
-  return [`userMessage call references missing NLS key ${call.key}: ${sourcePath}:${line}`];
-}
-
-/**
- * @param {string} sourcePath
- * @param {string} source
- * @param {NlsMessages} english
- * @returns {string[]}
- */
-export function validateUserMessageSource(sourcePath, source, english) {
-  if (!source.includes('userMessage')) {
-    return [];
-  }
-  /** @type {string[]} */
-  const errors = [];
-  const scanner = createScanner(true, LanguageVariant.Standard, source, 0, source.length);
-  let token = scanner.scan();
-  let tokenCount = 0;
-
-  while (token !== SyntaxKind.EndOfFile) {
-    tokenCount++;
-    if (tokenCount > source.length * 2) {
-      break;
-    }
-    if (token === SyntaxKind.Identifier && scanner.getTokenText() === 'userMessage') {
-      const callStart = scanner.getTokenStart();
-      if (scanner.scan() === SyntaxKind.OpenParenToken) {
-        const call = scanCallArguments(scanner);
-        errors.push(...validateUserMessageCall(sourcePath, source, english, call, callStart));
-      }
-    }
-    token = scanner.scan();
-  }
-
-  return errors;
-}
-
-/**
- * @param {ReturnType<typeof createScanner>} scanner
- * @returns {CallArguments | undefined}
- */
-function scanCallArguments(scanner) {
-  let depth = 0;
-  let argumentCount = 0;
-  let hasToken = false;
-  /** @type {string | undefined} */
-  let key;
-
-  for (;;) {
-    const token = scanner.scan();
-    if (token === SyntaxKind.EndOfFile) {
-      return undefined;
-    }
-
-    if (depth === 0 && token === SyntaxKind.CloseParenToken) {
-      if (hasToken) {
-        argumentCount += 1;
-      }
-      return { argumentCount, key };
-    }
-
-    if (depth === 0 && token === SyntaxKind.CommaToken) {
-      if (hasToken) {
-        argumentCount += 1;
-      }
-      hasToken = false;
-      continue;
-    }
-
-    if (!hasToken && argumentCount === 0 && depth === 0 && token === SyntaxKind.StringLiteral) {
-      key = scanner.getTokenValue();
-    }
-    hasToken = true;
-
-    if (
-      token === SyntaxKind.OpenParenToken ||
-      token === SyntaxKind.OpenBracketToken ||
-      token === SyntaxKind.OpenBraceToken
-    ) {
-      depth += 1;
-    } else if (
-      token === SyntaxKind.CloseBracketToken ||
-      token === SyntaxKind.CloseBraceToken ||
-      (token === SyntaxKind.CloseParenToken && depth > 0)
-    ) {
-      depth -= 1;
-    }
-  }
-}
-
-/**
- * @param {string} directory
- * @returns {string[]}
- */
-function sourceFiles(directory) {
-  return globSync('**/*.ts', { cwd: directory }).map((relativePath) => path.join(directory, relativePath));
+  return sortStrings(values);
 }
 
 /**
@@ -222,10 +100,6 @@ export function checkNls(root) {
     }
   }
   walk(packageJson);
-
-  for (const sourcePath of sourceFiles(path.join(extensionRoot, 'src'))) {
-    errors.push(...validateUserMessageSource(sourcePath, readFileSync(sourcePath, 'utf8'), english));
-  }
 
   return { errors, keyCount: englishKeys.length };
 }

@@ -42,8 +42,19 @@ export {
   startSecurePdfStagingHeartbeat,
 } from '../operations/lifecycle/secure_staging.js';
 export { isAbortError, toErrorMessage } from '../shared/error.js';
+export { asError, isFileNotFoundError } from '../shared/error.js';
 export { replaceFileAtomically, type AtomicFileReplaceOptions } from '../operations/lifecycle/atomic_file_replace.js';
+export {
+  assertFileIdentityAtPath,
+  fsyncFile,
+  pathExists,
+  readFileIdentity,
+  readStableFileDigest,
+  sameFileIdentity,
+  type FileIdentity,
+} from '../operations/lifecycle/file_operations.js';
 export {
   cleanupStaleWorkspaceStagingRoots,
   markStagingRootOwned,
 } from '../operations/lifecycle/workspace_staging_gc.js';
+export { toArtifactRoots, type ArtifactRootInput } from '../operations/lifecycle/cleanup_conversion_artifacts.js';

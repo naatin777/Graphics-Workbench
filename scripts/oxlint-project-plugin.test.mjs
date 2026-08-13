@@ -10,7 +10,10 @@ import {
   isFixedE2EWaitCall,
   isProcessProtocolFile,
   isWebviewAppSourceFile,
+  packageNameFor,
+  requiredMessageArgumentCount,
   splitIdentifierIntoTokens,
+  validateUserMessageCall,
 } from './oxlint-project-plugin.mjs';
 
 function property(name) {
@@ -111,4 +114,29 @@ void test('identifies sensitive values and child-process boundaries', () => {
   assert.equal(isProcessProtocolFile('/workspace/vscode/extension/src/adapters/crop/crop_pdf_core.ts'), false);
   assert.equal(isAllowedChildProcessFile('/workspace/core/src/operations/external_tools/run_external_tool.ts'), true);
   assert.equal(isAllowedChildProcessFile('/workspace/vscode/extension/src/commands/open_file.ts'), false);
+});
+
+void test('resolves the package name of a module specifier', () => {
+  assert.equal(packageNameFor('@graphics-workbench/core/runtime'), '@graphics-workbench/core');
+  assert.equal(packageNameFor('@opentui/solid'), '@opentui/solid');
+  assert.equal(packageNameFor('vscode/window'), 'vscode');
+  assert.equal(packageNameFor('sharp'), 'sharp');
+});
+
+void test('derives required userMessage argument counts from NLS placeholders', () => {
+  assert.equal(requiredMessageArgumentCount('{0} to {1}'), 2);
+  assert.equal(requiredMessageArgumentCount('no placeholders'), 0);
+  assert.equal(requiredMessageArgumentCount('{2} only'), 3);
+  assert.equal(requiredMessageArgumentCount('{0}{1}{0}'), 2);
+});
+
+void test('validates userMessage calls against the English NLS catalog', () => {
+  const missingKey = validateUserMessageCall('no.such.key', 1);
+  assert.deepStrictEqual(missingKey, ['userMessage call references missing NLS key no.such.key']);
+
+  const tooFew = validateUserMessageCall('message.environmentCheck.failed', 2);
+  assert.deepStrictEqual(tooFew, ['userMessage call has too few arguments for message.environmentCheck.failed']);
+
+  assert.deepStrictEqual(validateUserMessageCall('message.environmentCheck.failed', 3), []);
+  assert.deepStrictEqual(validateUserMessageCall('message.combineImagesToPdf.requiresTwo', 1), []);
 });

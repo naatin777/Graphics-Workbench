@@ -1,5 +1,7 @@
 import { rename, rm } from 'node:fs/promises';
 
+import { asError } from '../../shared/error.js';
+
 export interface AtomicFileReplaceOptions {
   renameImpl?: typeof rename;
   rmImpl?: typeof rm;
@@ -49,9 +51,4 @@ function isWindowsRenameConflict(error: unknown): boolean {
     'code' in error &&
     (error.code === 'EEXIST' || error.code === 'EPERM')
   );
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値をErrorへ正規化するヘルパー。
-function asError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
 }

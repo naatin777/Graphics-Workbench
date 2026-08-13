@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs';
-import { access, copyFile, mkdir, open, rm, stat } from 'node:fs/promises';
+import { access, copyFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
@@ -10,12 +10,17 @@ import {
 } from '@graphics-workbench/core/security';
 
 import {
+  assertFileIdentityAtPath,
   cleanupConversionArtifacts,
+  fsyncFile,
   hashFile,
+  isFileNotFoundError,
+  readStableFileDigest,
   replaceFileAtomically,
   restoreFileMetadata,
+  toArtifactRoots,
   type CleanupResult,
-  type ConversionArtifactRoot,
+  type FileIdentity,
   type PreviousFileMetadata,
 } from '@graphics-workbench/core/runtime';
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
@@ -66,11 +71,6 @@ interface RollbackCopy {
   rollbackRootPath: string;
 }
 
-interface FileIdentity {
-  dev: number;
-  ino: number;
-}
-
 interface ValidatedUndoPaths {
   outputIdentity: FileIdentity;
   previousIdentity?: FileIdentity;
@@ -100,7 +100,7 @@ export async function createConversionUndoRecord(
 
       await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
       await assertPathIsNotSymbolicLink(output.outputPath);
-      const currentSha256 = await calculateSha256(output.outputPath);
+      const currentSha256 = await hashFile(output.outputPath);
       if (output.sha256 !== undefined && currentSha256 !== output.sha256) {
         throw new Error(`Output changed before Undo could be recorded: ${output.outputPath}`);
       }
@@ -175,7 +175,7 @@ export async function undoConversionOutputs(
   }
 
   const rollbackCleanup = await removeRollbackCopies(rollbackCopies, outputChannel, removeRollbackRoot);
-  const artifactCleanup = await cleanupConversionArtifacts(toArtifactRoots(record), outputChannel);
+  const artifactCleanup = await cleanupConversionArtifacts(toArtifactRoots(record.outputs), outputChannel);
   return mergeCleanupResults(rollbackCleanup, artifactCleanup);
 }
 
@@ -325,14 +325,14 @@ async function rollbackRequirementForApplyingOutput(output: ConversionUndoOutput
       throw error instanceof Error ? error : new Error(String(error));
     }
 
-    const current = await readValidatedDigest(output.outputPath, output.workspacePath);
+    const current = await readStableFileDigest(output.outputPath, output.workspacePath);
     if (current.sha256 === output.sha256) {
       return { kind: 'none' };
     }
     throw new Error(`Output changed while Undo was being applied: ${output.outputPath}`);
   }
 
-  const current = await readValidatedDigest(output.outputPath, output.workspacePath);
+  const current = await readStableFileDigest(output.outputPath, output.workspacePath);
   if (current.sha256 === output.sha256) {
     return { kind: 'none' };
   }
@@ -348,7 +348,7 @@ async function assertAppliedUndoStateUnchanged(output: ConversionUndoOutput): Pr
     return { kind: 'restore' };
   }
 
-  const current = await readValidatedDigest(output.outputPath, output.workspacePath);
+  const current = await readStableFileDigest(output.outputPath, output.workspacePath);
   if (output.previousSha256 === undefined || current.sha256 !== output.previousSha256) {
     throw new Error(`Output changed after Undo restoration: ${output.outputPath}`);
   }
@@ -377,19 +377,10 @@ async function restorePreviousFileAtomically(output: ConversionUndoOutput): Prom
   }
 }
 
-async function fsyncFile(filePath: string): Promise<void> {
-  const handle = await open(filePath, 'r');
-  try {
-    await handle.sync();
-  } finally {
-    await handle.close();
-  }
-}
-
 async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<ValidatedUndoPaths> {
   let previousIdentity: FileIdentity | undefined;
   if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-    const previous = await readValidatedDigest(
+    const previous = await readStableFileDigest(
       output.previousFilePath,
       output.stagingWorkspacePath ?? output.workspacePath,
     );
@@ -402,7 +393,7 @@ async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<Va
 
   // Check the user-visible output last so the mutation that follows starts with
   // the smallest practical validation-to-write window.
-  const current = await readValidatedDigest(output.outputPath, output.workspacePath);
+  const current = await readStableFileDigest(output.outputPath, output.workspacePath);
 
   if (current.sha256 !== output.sha256) {
     throw new Error(`Output changed after input: ${output.outputPath}`);
@@ -428,77 +419,10 @@ async function assertUndoPathsStillValid(output: ConversionUndoOutput, validated
   }
 }
 
-async function readValidatedDigest(
-  filePath: string,
-  workspacePath: string,
-): Promise<{ sha256: string; identity: FileIdentity }> {
-  try {
-    await assertExistingPathInWorkspace(filePath, workspacePath);
-    await assertPathIsNotSymbolicLink(filePath);
-    const before = await readFileIdentity(filePath);
-    const sha256 = await calculateSha256(filePath);
-    await assertExistingPathInWorkspace(filePath, workspacePath);
-    await assertPathIsNotSymbolicLink(filePath);
-    const identity = await readFileIdentity(filePath);
-    if (!sameFileIdentity(before, identity)) {
-      throw new Error(`File was replaced while its contents were being verified: ${filePath}`);
-    }
-    return { sha256, identity };
-  } catch (error) {
-    if (isFileNotFoundError(error)) {
-      throw new Error(`File was replaced while its contents were being verified: ${filePath}`, { cause: error });
-    }
-    throw error instanceof Error ? error : new Error(String(error), { cause: error });
-  }
-}
-
-async function assertFileIdentityAtPath(
-  filePath: string,
-  workspacePath: string,
-  expected: FileIdentity,
-): Promise<void> {
-  await assertExistingPathInWorkspace(filePath, workspacePath);
-  await assertPathIsNotSymbolicLink(filePath);
-  if (!sameFileIdentity(await readFileIdentity(filePath), expected)) {
-    throw new Error(`File was replaced before mutation: ${filePath}`);
-  }
-}
-
-async function readFileIdentity(filePath: string): Promise<FileIdentity> {
-  const fileStat = await stat(filePath);
-  return { dev: fileStat.dev, ino: fileStat.ino };
-}
-
-function sameFileIdentity(first: FileIdentity, second: FileIdentity): boolean {
-  return first.dev === second.dev && first.ino === second.ino;
-}
-
 async function recordPreviousFile(previousFilePath: string, workspacePath: string): Promise<string> {
   await assertExistingPathInWorkspace(previousFilePath, workspacePath);
   await assertPathIsNotSymbolicLink(previousFilePath);
-  return calculateSha256(previousFilePath);
-}
-
-async function calculateSha256(filePath: string): Promise<string> {
-  return hashFile(filePath);
-}
-
-function toArtifactRoots(record: ConversionUndoRecord): ConversionArtifactRoot[] {
-  return record.outputs.flatMap((output) =>
-    output.stagingRootPath !== undefined && output.stagingRootPath !== ''
-      ? [
-          {
-            rootPath: output.stagingRootPath,
-            workspacePath: output.stagingWorkspacePath ?? output.workspacePath,
-          },
-        ]
-      : [],
-  );
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値の型ガード。
-function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
+  return hashFile(previousFilePath);
 }
 
 function appendLineBestEffort(outputChannel: LineOutputChannel | undefined, line: string): void {

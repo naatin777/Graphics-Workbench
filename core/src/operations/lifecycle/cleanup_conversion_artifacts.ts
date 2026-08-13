@@ -2,6 +2,7 @@ import { lstat, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { isFileNotFoundError } from '../../shared/error.js';
 import { stagingRootPathFor } from './run_id.js';
 
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
@@ -40,6 +41,20 @@ export function stagingArtifactsForInputs(
       }),
     ).values(),
   ];
+}
+
+export interface ArtifactRootInput {
+  workspacePath: string;
+  stagingRootPath?: string;
+  stagingWorkspacePath?: string;
+}
+
+export function toArtifactRoots(inputs: readonly ArtifactRootInput[]): ConversionArtifactRoot[] {
+  return inputs.flatMap((input) =>
+    input.stagingRootPath !== undefined && input.stagingRootPath !== ''
+      ? [{ rootPath: input.stagingRootPath, workspacePath: input.stagingWorkspacePath ?? input.workspacePath }]
+      : [],
+  );
 }
 
 export async function cleanupConversionArtifacts(
@@ -212,9 +227,4 @@ function isWithin(targetPath: string, parentPath: string): boolean {
 function normalizeComparisonPath(value: string): string {
   const resolved = path.resolve(value);
   return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値の型ガード。
-function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }

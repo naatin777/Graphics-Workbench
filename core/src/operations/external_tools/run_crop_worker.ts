@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import * as v from 'valibot';
 
-import { OperationCancelledError } from '../../shared/error.js';
+import { asError, OperationCancelledError } from '../../shared/error.js';
 import { terminateProcessTree } from './run_external_tool.js';
 import type { LineOutputChannel } from './external_tool_ascii_scratch.js';
 import type { CropPdfFileRequest } from '../pdf/crop_pdf_core.js';
@@ -245,11 +245,6 @@ function defaultLauncher(workerPath: string): CropWorkerChild {
     execArgv: withoutInlineScriptArgs(process.execArgv),
     stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
   });
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- catchが投げる値は任意の型を取り得る。
-function asError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
 }
 
 function isCancellationError(error: Error): boolean {
