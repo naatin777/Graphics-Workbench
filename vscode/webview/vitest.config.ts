@@ -25,10 +25,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text-summary', 'html', 'lcov'],
       reportsDirectory: resolve(repositoryRoot, 'coverage', 'webview'),
-      // No `include`: vitest 4.1's coverage-v8 parses uncovered files with
-      // rolldown's parseAstAsync (plain-JS default), which fails on raw TSX
-      // sources (vitest-dev/vitest#10475). Without `include`, only executed
-      // (already transformed) modules participate in coverage.
+      include: [resolve(webviewRoot, 'src/**/*.{ts,tsx}')],
       exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts'],
     },
   },

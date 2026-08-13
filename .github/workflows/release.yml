@@ -95,6 +95,12 @@ jobs:
 
             - uses: ./.github/actions/setup
 
+            # Webview tests import '@graphics-workbench/vscode-protocol/*',
+            # which resolves to the protocol package's dist on a fresh checkout.
+            - name: Build protocol
+              run: npm run compile:protocol
+              shell: bash
+
             - run: npm run test:webview:coverage
               shell: bash
 
