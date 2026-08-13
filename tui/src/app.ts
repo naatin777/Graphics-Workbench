@@ -7,14 +7,17 @@ import {
   type OutputConflictDecision,
 } from '@graphics-workbench/core/runtime';
 import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/formats';
-import type { PdfRasterPageSelection, PdfRasterSource } from '@graphics-workbench/core/conversion';
+import {
+  planPdfRasterConversion,
+  type PdfRasterPageSelection,
+  type PdfRasterSource,
+} from '@graphics-workbench/core/conversion';
 
 import type { TerminalKey, TerminalScreen } from './screen.js';
 import { terminalUiDefaults } from './defaults.js';
 import {
   availableTerminalUiRasterTargets,
   inspectPdfRasterSource,
-  planPdfRasterConversion,
   resolvePdfRasterPages,
   runTerminalPdfRasterConversion,
   type TerminalUiPdfRasterPlan,

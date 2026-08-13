@@ -18,11 +18,13 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import {
-  isReorderPdfHostToWebviewMessage,
-  isReorderPdfWebviewToHostMessage,
-} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import { reorderPdfProtocol } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import { reorderPdfFiles } from '@graphics-workbench/core/pdf';
+
+const acceptsReorderPdfHostToWebviewMessage = (value: unknown): boolean =>
+  reorderPdfProtocol.parseHostToWebview(value) !== undefined;
+const acceptsReorderPdfWebviewToHostMessage = (value: unknown): boolean =>
+  reorderPdfProtocol.parseWebviewToHost(value) !== undefined;
 
 suite('PDFページ並び替え', () => {
   test('3ページのPDFへページ順[3,1,2]を指定すると、出力PDFは3ページを保ちながら元の3・1・2ページ目の順に並ぶ', async () => {
@@ -138,27 +140,27 @@ suite('Reorder PDFのWebview⇔ホスト間メッセージ型検証', () => {
   };
 
   test('必須フィールドをすべて持つ正しいinitメッセージは受け入れられる', () => {
-    assert.strictEqual(isReorderPdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
+    assert.strictEqual(acceptsReorderPdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
   });
 
   test('applyメッセージのページ順が空の場合は拒否される', () => {
-    assert.strictEqual(isReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order: [] } }), false);
+    assert.strictEqual(acceptsReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order: [] } }), false);
   });
 
   test('applyメッセージのページ順[3,1,2]が定義された配列を持つ場合は受け入れられる', () => {
-    assert.strictEqual(isReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order: [3, 1, 2] } }), true);
+    assert.strictEqual(acceptsReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order: [3, 1, 2] } }), true);
   });
 
   test('initメッセージに定義外のsourcePathキーが含まれる場合は拒否される', () => {
     assert.strictEqual(
-      isReorderPdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
+      acceptsReorderPdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
       false,
     );
   });
 
   test('メッセージ共通枠で許されないrequestIdキーを最上位に付けると拒否される', () => {
     assert.strictEqual(
-      isReorderPdfWebviewToHostMessage({
+      acceptsReorderPdfWebviewToHostMessage({
         type: 'apply',
         payload: { order: [2, 1] },
         requestId: 'request-1',

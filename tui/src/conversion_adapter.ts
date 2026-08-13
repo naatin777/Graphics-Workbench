@@ -1,10 +1,7 @@
 import {
-  planPdfRasterConversion as planCorePdfRasterConversion,
   runPdfRasterConversion,
   type PdfRasterConversionPlan,
   type PdfRasterConversionResult,
-  type PdfRasterPageSelection,
-  type PdfRasterSource,
   type PdfRasterTarget,
 } from '@graphics-workbench/core/conversion';
 import {
@@ -35,16 +32,6 @@ export async function runTerminalPdfRasterConversion(options: {
   const result = await runPdfRasterConversion(options);
   const cleanup = await cleanupConversionArtifacts(result.artifacts, options.runtime.outputChannel);
   return { ...result, cleanup };
-}
-
-export function planPdfRasterConversion(options: {
-  source: PdfRasterSource;
-  target: TerminalUiRasterTarget;
-  selection: PdfRasterPageSelection;
-  outputTemplate: string;
-}): TerminalUiPdfRasterPlan {
-  const plan = planCorePdfRasterConversion(options);
-  return { ...plan, target: options.target };
 }
 
 export { inspectPdfRasterSource, resolvePdfRasterPages } from '@graphics-workbench/core/conversion';
