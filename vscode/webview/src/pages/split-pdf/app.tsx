@@ -3,8 +3,14 @@ import { createStore } from 'solid-js/store';
 
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '@webview-shared/error';
+import { parsePdfPageSelection } from '@graphics-workbench/core/formats';
 
-import type { SplitPdfLabels, SplitPdfPageGroupRow } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+import {
+  splitPdfProtocol,
+  type SplitPdfHostToWebview,
+  type SplitPdfLabels,
+  type SplitPdfPageGroupRow,
+} from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 
 import { Button } from '../../shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '../../shared/ui/PageNavigator';
@@ -12,22 +18,17 @@ import { useCurrentPage } from '../../shared/ui/use_current_page';
 
 import { GroupRow } from './GroupRow';
 import { formatLabel, formatPageParseFailure } from './page_validation_messages';
-import { parsePages } from './pages';
-import type { ExtensionToWebviewMessage } from './messages';
 import { applyPreviewZoom, capturePreviewZoomAnchor, restorePreviewZoomAnchor } from '@webview-shared/pdf/preview_zoom';
 import { PreviewToolbar } from './preview_toolbar';
 import { SplitPane } from '@webview-shared/SplitPane';
 import type { InputKind, PreviewMode, Row } from './types';
-import { vscode } from './vscode';
+import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 type RowRefs = Partial<Record<InputKind, HTMLInputElement>>;
-type InitPayload = Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'];
+type InitPayload = Extract<SplitPdfHostToWebview, { type: 'init' }>['payload'];
 
-function cancel(): void {
-  vscode.send.cancel();
-}
-
-export function App(): JSX.Element {
+export function App(properties: { host: WebviewHost }): JSX.Element {
+  const channel = createPageProtocolClient(splitPdfProtocol, properties.host);
   let nextRowId = 1;
   const createRow = (): Row => ({
     id: nextRowId++,
@@ -54,6 +55,10 @@ export function App(): JSX.Element {
   const [applyError, setApplyError] = createSignal('');
   const [renderError, setRenderError] = createSignal('');
   const [previewReady, setPreviewReady] = createSignal(false);
+
+  const cancel = (): void => {
+    channel.send.cancel();
+  };
 
   const rowRefs = new Map<number, RowRefs>();
   let pdfPreview: HTMLElement | undefined;
@@ -196,7 +201,7 @@ export function App(): JSX.Element {
       return;
     }
 
-    const parsedPages = parsePages(row.pages, pageCount());
+    const parsedPages = parsePdfPageSelection(row.pages, pageCount());
 
     if (!parsedPages.ok) {
       setApplyError(`${labels().groups.label} ${rowIndex + 1}: ${formatPageParseFailure(parsedPages, labels())}`);
@@ -253,7 +258,7 @@ export function App(): JSX.Element {
     const configuredRows: SplitPdfPageGroupRow[] = [];
 
     for (const [index, row] of rows.entries()) {
-      const parsedPages = parsePages(row.pages, pageCount());
+      const parsedPages = parsePdfPageSelection(row.pages, pageCount());
 
       if (!parsedPages.ok) {
         return {
@@ -305,7 +310,7 @@ export function App(): JSX.Element {
     }
 
     setApplyError('');
-    vscode.send.apply({ rows: result.rows });
+    channel.send.apply({ rows: result.rows });
   };
 
   const updatePreviewVisibility = (): void => {
@@ -314,7 +319,7 @@ export function App(): JSX.Element {
     }
 
     const focusedRow = rows.find((row) => row.id === focusedRowId());
-    const parsedPages = focusedRow ? parsePages(focusedRow.pages, pageCount()) : undefined;
+    const parsedPages = focusedRow ? parsePdfPageSelection(focusedRow.pages, pageCount()) : undefined;
     const focusedPages = new Set(parsedPages?.ok === true ? parsedPages.pages : []);
 
     for (const frame of pdfPages.querySelectorAll<HTMLElement>('[data-pdf-page]')) {
@@ -377,7 +382,7 @@ export function App(): JSX.Element {
           const message = toErrorMessage(error);
           setRenderError(message);
           setPreviewReady(false);
-          vscode.send.previewLoadFailed({ message });
+          channel.send.previewLoadFailed({ message });
         },
       });
 
@@ -401,7 +406,7 @@ export function App(): JSX.Element {
       const message = toErrorMessage(error);
       setRenderError(message);
       setPreviewReady(false);
-      vscode.send.previewLoadFailed({ message });
+      channel.send.previewLoadFailed({ message });
     }
   };
 
@@ -428,7 +433,7 @@ export function App(): JSX.Element {
   });
 
   onMount(() => {
-    const unsubscribeMessages = vscode.on({
+    const unsubscribeMessages = channel.on({
       error: ({ message }) => {
         setApplyError(message);
       },
@@ -455,7 +460,7 @@ export function App(): JSX.Element {
       },
     });
 
-    vscode.send.ready();
+    channel.send.ready();
 
     onCleanup(() => {
       unsubscribeMessages();

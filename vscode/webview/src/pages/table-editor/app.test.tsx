@@ -1,19 +1,11 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import {
-  isTableEditorHostToWebviewMessage,
-  tableEditorProtocol,
-  type TableEditorLabels,
-} from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import { tableEditorProtocol, type TableEditorLabels } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
 
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
-
-vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(tableEditorProtocol, sendMessage),
-}));
 
 const labels: TableEditorLabels = {
   header: {
@@ -52,15 +44,20 @@ const initMessage = {
 } as const;
 
 let disposeApp: (() => void) | undefined;
+const pageHost = createTestPageHost(tableEditorProtocol, sendMessage);
 
 async function mountAndInit(): Promise<void> {
-  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  disposeApp = render(() => <App host={pageHost} />, document.querySelector('#root')!);
   globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
   await flushPromises();
 }
 
 async function flushPromises(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function isTableEditorHostToWebviewMessage(value: unknown): boolean {
+  return tableEditorProtocol.parseHostToWebview(value) !== undefined;
 }
 
 function cellValues(): string[] {

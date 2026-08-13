@@ -1,5 +1,11 @@
 import { Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
+import {
+  cropPdfProtocol,
+  type CropConfigureHostToWebview,
+  type CropConfigureWebviewToHost,
+  type CropPdfLabels,
+} from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
 import { renderPdfPages, type PdfRenderController } from '../../shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '../../shared/error';
 import { SplitPane } from '@webview-shared/SplitPane';
@@ -9,20 +15,21 @@ import { ToolbarButton } from '../../shared/ui/ToolbarButton';
 import { useCurrentPage } from '../../shared/ui/use_current_page';
 
 import { parseCropBox, parseTarget } from './crop_input';
-import type { CropPdfLabels, ExtensionToWebviewMessage } from './messages';
 import {
   applyPreviewZoom,
   capturePreviewZoomAnchor,
   clampPreviewZoom,
   restorePreviewZoomAnchor,
 } from '@webview-shared/pdf/preview_zoom';
-import { vscode } from './vscode';
+import { createPageProtocolClient, type PageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
-type CropInitPayload = Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'];
+type CropInitPayload = Extract<CropConfigureHostToWebview, { type: 'init' }>['payload'];
+type CropChannel = PageProtocolClient<CropConfigureWebviewToHost, CropConfigureHostToWebview>;
 type PageSize = { width: number; height: number; x: number; y: number };
 type CropBoxState = { left: string; bottom: string; right: string; top: string };
 type RenderPreviewOptions = {
   payload: CropInitPayload;
+  channel: CropChannel;
   pdf: {
     pages: HTMLDivElement;
     preview: HTMLElement | undefined;
@@ -39,16 +46,18 @@ type RenderPreviewOptions = {
   signal: AbortSignal;
 };
 
-function cancel(): void {
-  vscode.send.cancel();
-}
-
 async function renderPreview(options: RenderPreviewOptions): Promise<void> {
   try {
     const controller = await renderPdfPages(
       options.payload.pdfSrc,
       options.pdf.pages,
-      renderOptions(options.payload, options.pdf.preview, options.state.setRenderError, options.signal),
+      renderOptions(
+        options.payload,
+        options.pdf.preview,
+        options.state.setRenderError,
+        options.signal,
+        options.channel,
+      ),
     );
     if (options.signal.aborted) {
       await controller.dispose();
@@ -72,6 +81,7 @@ function renderOptions(
   pdfPreview: HTMLElement | undefined,
   setRenderError: (value: string) => void,
   signal: AbortSignal,
+  channel: CropChannel,
 ): Parameters<typeof renderPdfPages>[2] {
   return {
     preview: payload.preview,
@@ -85,7 +95,7 @@ function renderOptions(
       }
       const message = toErrorMessage(error);
       setRenderError(message);
-      vscode.send.previewLoadFailed({ message });
+      channel.send.previewLoadFailed({ message });
     },
   };
 }
@@ -151,7 +161,8 @@ function isDefaultCropBox(cropBox: CropBoxState): boolean {
   return cropBox.left === '0' && cropBox.bottom === '0' && cropBox.right === '0' && cropBox.top === '0';
 }
 
-export function App(): JSX.Element {
+export function App(properties: { host: WebviewHost }): JSX.Element {
+  const channel = createPageProtocolClient(cropPdfProtocol, properties.host);
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
   const [pageSize, setPageSize] = createSignal({ x: 0, y: 0, width: 0, height: 0 });
@@ -185,6 +196,10 @@ export function App(): JSX.Element {
     scrollContainer: () => pdfPreview,
     getPageElements: () => (pdfPages ? [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')] : []),
   });
+
+  const cancel = (): void => {
+    channel.send.cancel();
+  };
 
   const goToPreviousPage = (): void => {
     const target = pdfPages?.querySelector<HTMLElement>(`[data-pdf-page="${Math.max(currentPage() - 1, 1)}"]`);
@@ -224,7 +239,7 @@ export function App(): JSX.Element {
   });
 
   onMount(() => {
-    const unsubscribeMessages = vscode.on({
+    const unsubscribeMessages = channel.on({
       error: ({ message }) => {
         setIsApplying(false);
         setInputError(message);
@@ -256,6 +271,7 @@ export function App(): JSX.Element {
         renderAbortController = abortController;
         renderPromise = renderPreview({
           payload,
+          channel,
           pdf: {
             pages,
             preview: pdfPreview,
@@ -282,7 +298,7 @@ export function App(): JSX.Element {
       },
     });
 
-    vscode.send.ready();
+    channel.send.ready();
     onCleanup(() => {
       unsubscribeMessages();
       renderAbortController?.abort();
@@ -323,7 +339,7 @@ export function App(): JSX.Element {
     setInputError('');
 
     setIsApplying(true);
-    vscode.send.apply({
+    channel.send.apply({
       cropBox: parsedCropBox.value,
       target: target.value,
     });

@@ -1,11 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import {
-  isReorderPdfHostToWebviewMessage,
-  reorderPdfProtocol,
-  type ReorderPdfLabels,
-} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import { reorderPdfProtocol, type ReorderPdfLabels } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
@@ -72,9 +68,6 @@ const renderPdfPages = vi.hoisted(() =>
   }),
 );
 
-vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(reorderPdfProtocol, sendMessage),
-}));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
 const labels: ReorderPdfLabels = {
@@ -123,9 +116,10 @@ const initMessage = {
 } as const;
 
 let disposeApp: (() => void) | undefined;
+const pageHost = createTestPageHost(reorderPdfProtocol, sendMessage);
 
 async function mountAndInit(): Promise<void> {
-  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  disposeApp = render(() => <App host={pageHost} />, document.querySelector('#root')!);
   globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
   await flushPromises();
 }
@@ -162,6 +156,10 @@ function mockRect(rect: { top: number; left: number; width: number; height: numb
     y: rect.top,
     toJSON: () => ({}),
   };
+}
+
+function isReorderHostToWebviewMessage(value: unknown): boolean {
+  return reorderPdfProtocol.parseHostToWebview(value) !== undefined;
 }
 
 function clickButton(text: string): void {
@@ -213,7 +211,7 @@ afterEach(async () => {
 });
 
 test('Applyで初期ページ順を送信する', async () => {
-  expect(isReorderPdfHostToWebviewMessage(initMessage)).toBe(true);
+  expect(isReorderHostToWebviewMessage(initMessage)).toBe(true);
   await mountAndInit();
 
   expect(sendMessage).toHaveBeenCalledWith({ type: 'ready' });
@@ -231,10 +229,10 @@ test('33ページ以上のPDFで制限メッセージなしでApplyを有効化�
     ...initMessage,
     payload: { ...initMessage.payload, pageCount: 33 },
   } as const;
-  expect(isReorderPdfHostToWebviewMessage(largeMessage)).toBe(true);
+  expect(isReorderHostToWebviewMessage(largeMessage)).toBe(true);
   renderBehavior.pages = 33;
 
-  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  disposeApp = render(() => <App host={pageHost} />, document.querySelector('#root')!);
   globalThis.dispatchEvent(new MessageEvent('message', { data: largeMessage }));
   await flushPromises();
 
@@ -261,7 +259,7 @@ test('33ページ以上のPDFで1ページ移動しても全ページを重複�
   } as const;
   renderBehavior.pages = 33;
 
-  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  disposeApp = render(() => <App host={pageHost} />, document.querySelector('#root')!);
   globalThis.dispatchEvent(new MessageEvent('message', { data: largeMessage }));
   await flushPromises();
 
@@ -306,7 +304,7 @@ test('33ページ以上のPDFで全ページ分のフレームをDOMに作成す
   } as const;
   renderBehavior.pages = 33;
 
-  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  disposeApp = render(() => <App host={pageHost} />, document.querySelector('#root')!);
   globalThis.dispatchEvent(new MessageEvent('message', { data: largeMessage }));
   await flushPromises();
 
@@ -482,7 +480,7 @@ test('renderPdfPagesにvirtualize: falseを渡して全ページをDOMへマウ�
     payload: { ...initMessage.payload, pageCount: 40 },
   } as const;
 
-  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  disposeApp = render(() => <App host={pageHost} />, document.querySelector('#root')!);
   globalThis.dispatchEvent(new MessageEvent('message', { data: largeMessage }));
   await flushPromises();
 

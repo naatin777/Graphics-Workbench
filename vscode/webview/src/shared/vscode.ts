@@ -59,43 +59,15 @@ export function createVsCodeHost(): WebviewHost {
   };
 }
 
-let activeHost: WebviewHost | undefined;
-
-function requireActiveWebviewHost(): WebviewHost {
-  if (activeHost === undefined) {
-    throw new Error('Webview host has not been initialized.');
-  }
-  return activeHost;
-}
-
-export function setActiveWebviewHost(host: WebviewHost): void {
-  activeHost = host;
-}
-
 export function createPageProtocolClient<const HostSchema extends WireSchema, const WebviewSchema extends WireSchema>(
   protocol: MessageProtocol<HostSchema, WebviewSchema>,
+  host: WebviewHost,
 ): PageProtocolClient<v.InferOutput<WebviewSchema> & { type: string }, v.InferOutput<HostSchema> & { type: string }> {
-  const sender = new Proxy(
-    {},
-    {
-      get:
-        (_target, type: string) =>
-        (...args: unknown[]) => {
-          const client = createProtocolClient(protocol, requireActiveWebviewHost(), 'webviewToHost');
-          Reflect.apply(client.send[type as keyof typeof client.send], client.send, args);
-        },
-    },
-  ) as PageProtocolClient<
-    v.InferOutput<WebviewSchema> & { type: string },
-    v.InferOutput<HostSchema> & { type: string }
-  >['send'];
+  const outgoing = createProtocolClient(protocol, host, 'webviewToHost');
+  const incoming = createProtocolClient(protocol, host, 'hostToWebview');
   return {
-    send: sender,
-    on: (handlers) => createProtocolClient(protocol, requireActiveWebviewHost(), 'hostToWebview').on(handlers),
-    subscribe: (listener) =>
-      createProtocolClient(protocol, requireActiveWebviewHost(), 'hostToWebview').subscribe(listener),
-  } as PageProtocolClient<
-    v.InferOutput<WebviewSchema> & { type: string },
-    v.InferOutput<HostSchema> & { type: string }
-  >;
+    send: outgoing.send,
+    on: (handlers) => incoming.on(handlers),
+    subscribe: (listener) => incoming.subscribe(listener),
+  };
 }

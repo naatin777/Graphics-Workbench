@@ -1,11 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import {
-  isRotatePdfHostToWebviewMessage,
-  rotatePdfProtocol,
-  type RotatePdfLabels,
-} from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
+import { rotatePdfProtocol, type RotatePdfLabels } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
@@ -138,9 +134,6 @@ function cancelNextFrame(handle: number): void {
   pendingFrames.delete(handle);
 }
 
-vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(rotatePdfProtocol, sendMessage),
-}));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
 const labels: RotatePdfLabels = {
@@ -192,9 +185,10 @@ const initMessage = {
 } as const;
 
 let disposeApp: (() => void) | undefined;
+const pageHost = createTestPageHost(rotatePdfProtocol, sendMessage);
 
 async function mountAndInit(): Promise<void> {
-  disposeApp = render(() => <App />, document.querySelector('#root')!);
+  disposeApp = render(() => <App host={pageHost} />, document.querySelector('#root')!);
   globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
   await flushPromises();
 }
@@ -233,6 +227,10 @@ function navigatorButtons(): HTMLButtonElement[] {
   return [...document.querySelectorAll<HTMLButtonElement>('.page-navigator button')];
 }
 
+function isRotateHostToWebviewMessage(value: unknown): boolean {
+  return rotatePdfProtocol.parseHostToWebview(value) !== undefined;
+}
+
 function scrollTo(viewedPage: number): void {
   geometry.scrollY = (viewedPage - 1) * geometry.pageHeight;
   document.querySelector('.rotate__pages')?.dispatchEvent(new Event('scroll'));
@@ -263,7 +261,7 @@ afterEach(async () => {
 });
 
 test('3つの回転角度ラジオを表示し、Applyで選択ページと角度を送信する', async () => {
-  expect(isRotatePdfHostToWebviewMessage(initMessage)).toBe(true);
+  expect(isRotateHostToWebviewMessage(initMessage)).toBe(true);
   await mountAndInit();
 
   expect(sendMessage).toHaveBeenCalledWith({ type: 'ready' });

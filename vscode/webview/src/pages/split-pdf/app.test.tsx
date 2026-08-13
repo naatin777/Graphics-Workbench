@@ -1,16 +1,16 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { splitPdfProtocol } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
-import type { ExtensionToWebviewMessage, SplitPdfLabels } from './messages';
+import {
+  splitPdfProtocol,
+  type SplitPdfHostToWebview,
+  type SplitPdfLabels,
+} from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderPdfPages = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
-vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(splitPdfProtocol, sendMessage),
-}));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
 const labels: SplitPdfLabels = {
@@ -63,7 +63,7 @@ const labels: SplitPdfLabels = {
   },
 };
 
-const initMessage: ExtensionToWebviewMessage = {
+const initMessage: SplitPdfHostToWebview = {
   type: 'init',
   payload: {
     sourceId: 'source-1',
@@ -111,7 +111,8 @@ describe('Split PDF Webview', () => {
       throw new Error('Test root was not created.');
     }
 
-    dispose = render(() => <App />, root);
+    const pageHost = createTestPageHost(splitPdfProtocol, sendMessage);
+    dispose = render(() => <App host={pageHost} />, root);
     globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
   });
 

@@ -1,17 +1,23 @@
 import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
+import type {
+  MergePdfHostToWebview,
+  MergePdfLabels,
+  MergePdfSource,
+  MergePdfWebviewToHost,
+} from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import type { PageProtocolClient } from '@webview-shared/vscode';
 import { renderFirstPdfPage } from '@webview-shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '@webview-shared/error';
 
-import type { ExtensionToWebviewMessage, MergePdfLabels, MergePdfSource } from './messages';
-import { vscode } from './vscode';
-
-export type PdfOptions = Pick<Extract<ExtensionToWebviewMessage, { type: 'init' }>['payload'], 'preview' | 'resources'>;
+export type PdfOptions = Pick<Extract<MergePdfHostToWebview, { type: 'init' }>['payload'], 'preview' | 'resources'>;
+export type MergeThumbnailChannel = PageProtocolClient<MergePdfWebviewToHost, MergePdfHostToWebview>;
 
 export function PreviewThumbnail(props: {
   source: MergePdfSource;
   options: PdfOptions;
   labels: MergePdfLabels;
+  channel: MergeThumbnailChannel;
   onError: () => void;
 }): JSX.Element {
   const [status, setStatus] = createSignal<'waiting' | 'loading' | 'ready' | 'error'>('waiting');
@@ -43,7 +49,7 @@ export function PreviewThumbnail(props: {
         const message = toErrorMessage(error);
         setStatus('error');
         props.onError();
-        vscode.send.previewLoadFailed({ message });
+        props.channel.send.previewLoadFailed({ message });
       }
     };
 

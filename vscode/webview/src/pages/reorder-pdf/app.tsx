@@ -1,8 +1,9 @@
 import { createEffect, createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
-import type {
-  ReorderPdfHostToWebview,
-  ReorderPdfLabels,
+import {
+  reorderPdfProtocol,
+  type ReorderPdfHostToWebview,
+  type ReorderPdfLabels,
 } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '@webview-shared/error';
@@ -10,12 +11,7 @@ import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNavigator';
 import { useCurrentPage } from '@webview-shared/ui/use_current_page';
-
-import { vscode } from './vscode';
-
-function cancel(): void {
-  vscode.send.cancel();
-}
+import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 function createToolbarButton(className: string, label: string, icon: string): HTMLButtonElement {
   const button = document.createElement('button');
@@ -30,7 +26,8 @@ function createToolbarButton(className: string, label: string, icon: string): HT
   return button;
 }
 
-export function App(): JSX.Element {
+export function App(properties: { host: WebviewHost }): JSX.Element {
+  const channel = createPageProtocolClient(reorderPdfProtocol, properties.host);
   const [labelsValue, setLabels] = createSignal<ReorderPdfLabels>();
   const labels = (): ReorderPdfLabels => {
     const value = labelsValue();
@@ -55,6 +52,10 @@ export function App(): JSX.Element {
       pdfPages === undefined ? [] : [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')],
   });
 
+  const cancel = (): void => {
+    channel.send.cancel();
+  };
+
   createEffect(() => {
     const container = pdfPages;
     const current = currentPage();
@@ -71,7 +72,7 @@ export function App(): JSX.Element {
   });
 
   onMount(() => {
-    const unsubscribeMessages = vscode.on({
+    const unsubscribeMessages = channel.on({
       error: ({ message }) => {
         setApplyError(message);
       },
@@ -107,7 +108,7 @@ export function App(): JSX.Element {
     };
 
     globalThis.addEventListener('click', onControlClick);
-    vscode.send.ready();
+    channel.send.ready();
     onCleanup(() => {
       unsubscribeMessages();
       globalThis.removeEventListener('click', onControlClick);
@@ -150,7 +151,7 @@ export function App(): JSX.Element {
           if (controller.signal.aborted) {
             return;
           }
-          vscode.send.previewLoadFailed({ message: toErrorMessage(error) });
+          channel.send.previewLoadFailed({ message: toErrorMessage(error) });
         },
       });
 
@@ -168,7 +169,7 @@ export function App(): JSX.Element {
         return;
       }
       const message = toErrorMessage(error);
-      vscode.send.previewLoadFailed({ message });
+      channel.send.previewLoadFailed({ message });
       setApplyError(currentLabels.preview.renderError);
     }
   }
@@ -257,7 +258,7 @@ export function App(): JSX.Element {
     }
 
     setApplyError('');
-    vscode.send.apply({ order });
+    channel.send.apply({ order });
   }
 
   return (

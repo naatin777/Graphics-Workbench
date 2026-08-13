@@ -1,11 +1,14 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { previewProtocol } from '@graphics-workbench/vscode-protocol/preview-protocol';
+import {
+  previewProtocol,
+  type PreviewHostToWebview,
+  type PreviewLabels,
+} from '@graphics-workbench/vscode-protocol/preview-protocol';
 import type { PdfRenderController, PdfRenderOptions } from '../../shared/pdf/render_pdf_pages';
 import type { TiffRenderController, TiffRenderOptions } from './tiff_preview';
-import type { ExtensionToWebviewMessage, PreviewLabels } from './messages';
-import { App } from './app';
+import { App, type PreviewInitPayload } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderPdfPages = vi.hoisted(() =>
@@ -13,9 +16,6 @@ const renderPdfPages = vi.hoisted(() =>
 );
 const renderTiffPreview = vi.hoisted(() => vi.fn<(options: TiffRenderOptions) => TiffRenderController>());
 
-vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(previewProtocol, sendMessage),
-}));
 vi.mock('../../shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 vi.mock('./tiff_preview', () => ({ renderTiffPreview }));
 
@@ -35,34 +35,37 @@ const labels: PreviewLabels = {
   },
 };
 
-const pdfInit: ExtensionToWebviewMessage = {
-  type: 'init',
-  payload: {
-    format: 'pdf',
-    fileName: 'source.pdf',
-    pageCount: 2,
-    pdfSrc: 'vscode-resource://source.pdf',
-    resources: {
-      workerSrc: 'vscode-resource://pdf.worker.mjs',
-      cMapUrl: 'vscode-resource://cmaps/',
-      standardFontDataUrl: 'vscode-resource://standard_fonts/',
-      wasmUrl: 'vscode-resource://wasm/',
-    },
-    preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
-    labels,
+const pdfInitPayload = {
+  format: 'pdf',
+  fileName: 'source.pdf',
+  pageCount: 2,
+  pdfSrc: 'vscode-resource://source.pdf',
+  resources: {
+    workerSrc: 'vscode-resource://pdf.worker.mjs',
+    cMapUrl: 'vscode-resource://cmaps/',
+    standardFontDataUrl: 'vscode-resource://standard_fonts/',
+    wasmUrl: 'vscode-resource://wasm/',
   },
+  preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
+  labels,
+} satisfies PreviewInitPayload;
+
+const pdfInit: PreviewHostToWebview = {
+  type: 'init',
+  payload: pdfInitPayload,
 };
 
-const tiffInit: ExtensionToWebviewMessage = {
+const tiffInitPayload = {
+  format: 'tiff',
+  fileName: 'image.tiff',
+  pageCount: 3,
+  preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
+  labels,
+} satisfies PreviewInitPayload;
+
+const tiffInit: PreviewHostToWebview = {
   type: 'init',
-  payload: {
-    format: 'tiff',
-    fileName: 'image.tiff',
-    pageCount: 3,
-    resources: {},
-    preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
-    labels,
-  },
+  payload: tiffInitPayload,
 };
 
 describe('PDF/TIFF Preview Webview', () => {
@@ -88,7 +91,8 @@ describe('PDF/TIFF Preview Webview', () => {
       throw new Error('Test root was not created.');
     }
 
-    dispose = render(() => <App />, root);
+    const pageHost = createTestPageHost(previewProtocol, sendMessage);
+    dispose = render(() => <App host={pageHost} />, root);
   });
 
   afterEach(() => {
@@ -105,8 +109,7 @@ describe('PDF/TIFF Preview Webview', () => {
 
     const options = renderPdfPages.mock.calls[0]?.[2];
     expect(renderPdfPages).toHaveBeenCalledTimes(1);
-    expect(renderPdfPages.mock.calls[0]?.[0]).toBe('');
-    expect(options?.url).toBe('vscode-resource://source.pdf');
+    expect(renderPdfPages.mock.calls[0]?.[0]).toBe('vscode-resource://source.pdf');
     expect(options?.preview).toEqual({ maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 });
     expect(document.querySelector('.preview__toolbar h2')?.textContent).toBe('source.pdf');
     expect(document.querySelector('.page-navigator__position')?.textContent).toContain('2');

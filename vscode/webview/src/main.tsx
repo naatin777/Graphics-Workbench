@@ -12,7 +12,7 @@ import { render } from 'solid-js/web';
 
 import { WebviewApp, pageIdFromLocation } from './app';
 import { createScenarioHost } from './dev/scenarios';
-import { createVsCodeHost, setActiveWebviewHost } from './shared/vscode';
+import { createVsCodeHost } from './shared/vscode';
 
 if (import.meta.env.DEV) {
   const theme = new URLSearchParams(globalThis.location.search).get('theme');
@@ -28,11 +28,10 @@ const host = import.meta.env.DEV
       new URLSearchParams(globalThis.location.search).get('scenario') ?? 'normal',
     )
   : createVsCodeHost();
-setActiveWebviewHost(host);
 
 const root = document.querySelector('#root');
 if (root === null) {
   throw new Error('Webview root element was not found.');
 }
 
-render(() => <WebviewApp />, root);
+render(() => <WebviewApp host={host} />, root);

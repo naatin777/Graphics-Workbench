@@ -1,6 +1,10 @@
 import { createMemo, createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
-import type { TableEditorFormat, TableEditorLabels } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import {
+  tableEditorProtocol,
+  type TableEditorFormat,
+  type TableEditorLabels,
+} from '@graphics-workbench/vscode-protocol/table-editor-protocol';
 import {
   addTableColumn,
   addTableRow,
@@ -21,8 +25,7 @@ import {
   type TableModel,
 } from '@graphics-workbench/core/table';
 import { Button } from '@webview-shared/ui/Button';
-
-import { vscode } from './vscode';
+import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 const INITIAL_ROW_COUNT = 2;
 const INITIAL_COLUMN_COUNT = 3;
@@ -54,7 +57,8 @@ function handleDragOver(event: DragEvent): void {
   }
 }
 
-export function App(): JSX.Element {
+export function App(properties: { host: WebviewHost }): JSX.Element {
+  const channel = createPageProtocolClient(tableEditorProtocol, properties.host);
   const [labels, setLabels] = createSignal<TableEditorLabels>();
   const [model, setModel] = createSignal<TableModel>(createTableModel(INITIAL_ROW_COUNT, INITIAL_COLUMN_COUNT, 1));
   const [format, setFormat] = createSignal<TableEditorFormat>('latex');
@@ -136,11 +140,11 @@ export function App(): JSX.Element {
   }
 
   function handleInsert(): void {
-    vscode.send.insert({ format: format(), code: preview() });
+    channel.send.insert({ format: format(), code: preview() });
   }
 
   onMount(() => {
-    const unsubscribeMessages = vscode.on({
+    const unsubscribeMessages = channel.on({
       error: ({ message }) => {
         setHostError(message);
       },
@@ -157,7 +161,7 @@ export function App(): JSX.Element {
     globalThis.addEventListener('paste', handlePaste);
     globalThis.addEventListener('dragover', handleDragOver);
     globalThis.addEventListener('drop', onDrop);
-    vscode.send.ready();
+    channel.send.ready();
     onCleanup(() => {
       unsubscribeMessages();
       globalThis.removeEventListener('paste', handlePaste);
