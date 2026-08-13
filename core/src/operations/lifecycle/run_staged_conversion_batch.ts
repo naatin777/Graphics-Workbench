@@ -1,4 +1,5 @@
 import { isAbortError } from '../../shared/error.js';
+import { markStagingRootOwned } from './workspace_staging_gc.js';
 import {
   stagingArtifactsForInputs,
   type ConversionArtifactRoot,
@@ -56,6 +57,7 @@ export async function runStagedConversionBatch<Conversion extends { workspacePat
   const { signal } = abortController;
 
   try {
+    await Promise.all(artifacts.map((artifact) => markStagingRootOwned(artifact.rootPath)));
     return await withStagingCleanup(
       artifacts,
       async () => {

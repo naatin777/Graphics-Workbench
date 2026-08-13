@@ -12,7 +12,7 @@ import { registerPreviewCustomEditors } from './commands/preview/preview_custom_
 import { getExtensionConfiguration } from './config/extension_configuration.js';
 import { extensionIdentity } from './generated/extension_manifest.js';
 import { sharedHeavyProcessLimiter } from '@graphics-workbench/core/external-tools';
-import { cleanupStaleSecurePdfStagingRoots } from '@graphics-workbench/core/runtime';
+import { cleanupStaleSecurePdfStagingRoots, cleanupStaleWorkspaceStagingRoots } from '@graphics-workbench/core/runtime';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const activatedAt = Date.now();
@@ -24,6 +24,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   applyRuntimeConfigurationSafely(getExtensionConfiguration, outputChannel);
   void cleanupStaleSecurePdfStagingRoots();
+  // Undo history is session-only, so `.previous` backups from earlier sessions
+  // can never be consumed; reclaim any staging root whose owner process died.
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    void cleanupStaleWorkspaceStagingRoots(folder.uri.fsPath);
+  }
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (

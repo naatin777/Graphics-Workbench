@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { sourceFormatForPath } from '../../shared/source_format.js';
+import { assertAnimationPixelLimit } from './animation_pixel_limit.js';
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_batch.js';
@@ -62,6 +63,8 @@ export interface CompressImageOptions {
   inputs: CompressImageInput[];
   quality: number;
   maxInputPixels: number;
+  /** Aggregate animated-input pixel limit (width * pageHeight * frameCount); always enforced before staging. */
+  maxAnimationPixels: number;
   runtime: ConversionExecutionContext;
   runId?: string;
 }
@@ -84,6 +87,7 @@ export async function compressImageFiles(options: CompressImageOptions): Promise
         runtime: stageRuntime,
         quality: options.quality,
         maxInputPixels: options.maxInputPixels,
+        maxAnimationPixels: options.maxAnimationPixels,
       }),
   });
 }
@@ -93,6 +97,7 @@ interface CompressImageStageContext {
   runtime: ResolvedConversionRuntime;
   quality: number;
   maxInputPixels: number;
+  maxAnimationPixels: number;
 }
 
 interface CompressImageStagePaths {
@@ -119,6 +124,15 @@ async function stageCompressImage(
     (compressibleFormatForPath(input.sourcePath) === 'tiff'
       ? await readRasterAnimationMetadata(input.sourcePath, context.maxInputPixels)
       : undefined);
+  if (animation !== undefined) {
+    assertAnimationPixelLimit(
+      animation.width ?? 0,
+      animation.pageHeight,
+      animation.pages,
+      context.maxAnimationPixels,
+      input.sourcePath,
+    );
+  }
   context.runtime.signal.throwIfAborted();
   const plannedInput = animation === undefined ? input : { ...input, animation };
   const resultExtension = path.extname(input.sourcePath).toLowerCase().replace(/^\./u, '');

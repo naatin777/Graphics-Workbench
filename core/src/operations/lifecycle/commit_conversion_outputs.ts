@@ -14,6 +14,7 @@ import {
   type CleanupPreservingError,
   type ConversionArtifactRoot,
 } from './cleanup_conversion_artifacts.js';
+import { replaceFileAtomically } from './atomic_file_replace.js';
 import { OperationCancelledError } from '../../shared/error.js';
 import { copyFileWithAbort, type AbortableCopyFile } from './copy_file_with_abort.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
@@ -532,6 +533,7 @@ async function copyPreparedOutput(
     return;
   }
 
+  const previousFilePath = output.previousFilePath;
   const temporaryPath = path.join(
     path.dirname(output.outputPath),
     `.${path.basename(output.outputPath)}.graphics-workbench-${crypto.randomUUID()}.tmp`,
@@ -545,30 +547,26 @@ async function copyPreparedOutput(
     options.signal?.throwIfAborted();
 
     await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
-    if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
+    if (!(await filesHaveEqualContents(output.outputPath, previousFilePath))) {
       throw new Error(`Output changed before atomic replacement: ${output.outputPath}`);
     }
     options.signal?.throwIfAborted();
     beforeExistingOutputMutation();
 
-    try {
-      await renameImpl(temporaryPath, output.outputPath);
-      output.outputMutation = 'replaced';
-    } catch (error) {
-      if (!isWindowsRenameConflict(error)) {
-        throw asError(error);
-      }
-
-      await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
-      if (!(await filesHaveEqualContents(output.outputPath, output.previousFilePath))) {
-        throw new Error(`Output changed before atomic replacement: ${output.outputPath}`, { cause: error });
-      }
-      await rm(output.outputPath);
-      output.outputMutation = 'removed';
-      options.signal?.throwIfAborted();
-      await renameImpl(temporaryPath, output.outputPath);
-      output.outputMutation = 'replaced';
-    }
+    await replaceFileAtomically(temporaryPath, output.outputPath, {
+      renameImpl,
+      beforeTargetRemoval: async (renameError) => {
+        await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
+        if (!(await filesHaveEqualContents(output.outputPath, previousFilePath))) {
+          throw new Error(`Output changed before atomic replacement: ${output.outputPath}`, { cause: renameError });
+        }
+      },
+      afterTargetRemoval: async () => {
+        output.outputMutation = 'removed';
+        options.signal?.throwIfAborted();
+      },
+    });
+    output.outputMutation = 'replaced';
   } finally {
     await rm(temporaryPath, { force: true });
   }
@@ -796,16 +794,6 @@ export async function restoreFileMetadata(filePath: string, metadata: PreviousFi
 
   await chmod(filePath, metadata.mode);
   await utimes(filePath, new Date(metadata.atimeMs), new Date(metadata.mtimeMs));
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- renameのcatchから渡される任意のthrow値の型ガード。
-function isWindowsRenameConflict(error: unknown): boolean {
-  return (
-    process.platform === 'win32' &&
-    error instanceof Error &&
-    'code' in error &&
-    (error.code === 'EEXIST' || error.code === 'EPERM')
-  );
 }
 
 // oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値をErrorへ正規化するヘルパー。

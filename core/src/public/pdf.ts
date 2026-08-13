@@ -22,10 +22,12 @@ export {
   renderPdfPageToSvg,
   savePdfDocument,
   type MupdfModule,
+  type MupdfMatrix,
   type MupdfPdfDocumentInstance,
   type MupdfPdfObject,
   type MupdfPdfPage,
   type MupdfPixmap,
+  type MupdfRect,
 } from '../operations/pdf/mupdf.js';
 export {
   getPdfPageGeometry,

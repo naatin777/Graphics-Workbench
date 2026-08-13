@@ -6,6 +6,7 @@ export {
   type CompressImageInput,
   type CompressImageOptions,
 } from '../operations/conversion/compress_image.js';
+export { assertAnimationPixelLimit } from '../operations/conversion/animation_pixel_limit.js';
 export {
   convertDrawioToPagePdfs,
   convertDrawioToSinglePdf,

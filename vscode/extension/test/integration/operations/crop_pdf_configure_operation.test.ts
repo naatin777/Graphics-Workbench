@@ -82,6 +82,7 @@ suite('PDF configure crop処理', () => {
     assertWorkspaceChangesSince(before, after, {
       created: [
         path.join('出力 PDF', 'q a-all-crop.pdf'),
+        path.join('.graphics-workbench', 'crop-pdf-configure', 'all-pages', '.graphics-workbench-owner'),
         path.join('.graphics-workbench', 'crop-pdf-configure', 'all-pages', 'item-1', 'input.pdf'),
         path.join('.graphics-workbench', 'crop-pdf-configure', 'all-pages', 'item-1', 'result.pdf'),
       ],
@@ -154,6 +155,7 @@ suite('PDF configure crop処理', () => {
     assertWorkspaceChangesSince(before, after, {
       created: [
         path.join('選択結果', 'q a-selected-crop.pdf'),
+        path.join('.graphics-workbench', 'crop-pdf-configure', 'selected-pages', '.graphics-workbench-owner'),
         path.join('.graphics-workbench', 'crop-pdf-configure', 'selected-pages', 'item-1', 'input.pdf'),
         path.join('.graphics-workbench', 'crop-pdf-configure', 'selected-pages', 'item-1', 'result.pdf'),
       ],

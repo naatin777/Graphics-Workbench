@@ -1,8 +1,10 @@
 name: Test
 
-# CI is temporarily disabled (task 0224) while the development workflow is
-# reorganized. Re-enable with pull_request/push triggers when ready.
 on:
+  pull_request:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -13,10 +15,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  core:
+    name: Core unit/integration (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - uses: ./.github/actions/setup
+
+      - run: bash .github/scripts/install-test-tools-linux.sh
+        shell: bash
+
+      - name: Run Core unit and integration tests
+        run: npm run test -w core
+        shell: bash
+
+  protocol:
+    name: Protocol tests (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - uses: ./.github/actions/setup
+
+      - name: Run protocol tests
+        run: npm run test -w @graphics-workbench/vscode-protocol
+        shell: bash
+
   extension-host:
     name: Extension Host coverage (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:
@@ -31,7 +63,7 @@ jobs:
             label: Windows
             test_command: npm run test:coverage:run
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/setup
 
@@ -67,14 +99,14 @@ jobs:
 
       - if: always()
         name: Upload VS Code coverage
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: vscode-extension-host-coverage-${{ matrix.label }}
           path: coverage/vscode/
           if-no-files-found: ignore
 
       - if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: extension-host-test-${{ matrix.label }}
           path: .vscode-test-ci-data/
@@ -91,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/setup
 
@@ -101,7 +133,7 @@ jobs:
 
       - if: always()
         name: Upload Webview Vitest coverage
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: webview-vitest-coverage
           path: coverage/webview/
@@ -110,6 +142,7 @@ jobs:
   coverage-report:
     name: Coverage report
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     needs:
       - extension-host
       - webview
@@ -119,17 +152,17 @@ jobs:
       actions: read
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Download Extension Host coverage reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           pattern: vscode-extension-host-coverage-*
           path: coverage-input
           merge-multiple: false
 
       - name: Download Webview coverage report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: webview-vitest-coverage
           path: coverage-input/webview-vitest-coverage

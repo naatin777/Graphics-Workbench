@@ -42,3 +42,8 @@ export {
   startSecurePdfStagingHeartbeat,
 } from '../operations/lifecycle/secure_staging.js';
 export { isAbortError, toErrorMessage } from '../shared/error.js';
+export { replaceFileAtomically, type AtomicFileReplaceOptions } from '../operations/lifecycle/atomic_file_replace.js';
+export {
+  cleanupStaleWorkspaceStagingRoots,
+  markStagingRootOwned,
+} from '../operations/lifecycle/workspace_staging_gc.js';

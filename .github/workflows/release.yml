@@ -14,7 +14,7 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - uses: ./.github/actions/setup
 
@@ -39,7 +39,7 @@ jobs:
                       label: Windows
                       test_command: npm run test:coverage:run
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - uses: ./.github/actions/setup
 
@@ -74,7 +74,7 @@ jobs:
                   GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR: .vscode-test-release-data
 
             - if: failure()
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: release-extension-host-${{ matrix.label }}
                   path: .vscode-test-release-data/
@@ -91,7 +91,7 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - uses: ./.github/actions/setup
 
@@ -145,7 +145,7 @@ jobs:
                       npm_cpu: ''
                       libc: ''
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Validate tag matches package.json version
               shell: bash
@@ -192,7 +192,7 @@ jobs:
               run: node scripts/verify-vsix.mjs --vsix "graphics-workbench-${{ matrix.target }}.vsix" --target "${{ matrix.target }}"
               shell: bash
 
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
               with:
                   name: vsix-${{ matrix.target }}
                   path: graphics-workbench-${{ matrix.target }}.vsix
@@ -220,7 +220,7 @@ jobs:
                       test_command: npm run test:e2e
                       artifact_suffix: windows
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Validate tag matches package.json version
               shell: bash
@@ -295,7 +295,7 @@ jobs:
               shell: bash
 
             - if: failure()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
               with:
                   name: webview-browser-playwright-${{ matrix.artifact_suffix }}
                   path: |
@@ -304,14 +304,14 @@ jobs:
                   if-no-files-found: ignore
 
             - if: success()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
               with:
                   name: release-smoke-vsix-${{ matrix.artifact_suffix }}
                   path: graphics-workbench-${{ matrix.label }}.vsix
                   if-no-files-found: error
 
             - if: always()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
               with:
                   name: release-visual-review-${{ matrix.artifact_suffix }}
                   path: artifacts/visual-review/
@@ -331,9 +331,9 @@ jobs:
         permissions:
             contents: write
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-            - uses: actions/download-artifact@v4
+            - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
               with:
                   pattern: vsix-*
                   merge-multiple: true
@@ -370,16 +370,12 @@ jobs:
         permissions:
             contents: read
             id-token: write
-        env:
-            AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-            AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-            AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - uses: ./.github/actions/setup
 
-            - uses: actions/download-artifact@v4
+            - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
               with:
                   pattern: vsix-*
                   merge-multiple: true
@@ -398,14 +394,14 @@ jobs:
                     exit 1
                   fi
 
-            - if: ${{ env.AZURE_CLIENT_ID != '' }}
-              uses: azure/login@v2
+            - if: ${{ secrets.AZURE_CLIENT_ID != '' }}
+              uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac
               with:
-                  client-id: ${{ env.AZURE_CLIENT_ID }}
-                  tenant-id: ${{ env.AZURE_TENANT_ID }}
-                  subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-            - if: ${{ env.AZURE_CLIENT_ID != '' }}
+            - if: ${{ secrets.AZURE_CLIENT_ID != '' }}
               name: Publish tested VSIX packages
               shell: bash
               run: |
@@ -413,7 +409,7 @@ jobs:
                     npx --no-install vsce publish --packagePath "$vsix" --azure-credential --skip-duplicate
                   done
 
-            - if: ${{ env.AZURE_CLIENT_ID == '' }}
+            - if: ${{ secrets.AZURE_CLIENT_ID == '' }}
               name: Skip Visual Studio Marketplace publish
               shell: bash
               run: echo "Entra ID credentials are not configured; skipping Visual Studio Marketplace publish"
@@ -429,28 +425,28 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: read
-        env:
-            OVSX_PAT: ${{ secrets.OVSX_PAT }}
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - uses: ./.github/actions/setup
 
-            - uses: actions/download-artifact@v4
+            - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
               with:
                   pattern: vsix-*
                   merge-multiple: true
                   path: .
 
-            - if: ${{ env.OVSX_PAT != '' }}
+            - if: ${{ secrets.OVSX_PAT != '' }}
               name: Publish tested VSIX packages
               shell: bash
+              env:
+                  OVSX_PAT: ${{ secrets.OVSX_PAT }}
               run: |
                   for vsix in ./*.vsix; do
                     npx --no-install ovsx publish "$vsix" --pat "$OVSX_PAT"
                   done
 
-            - if: ${{ env.OVSX_PAT == '' }}
+            - if: ${{ secrets.OVSX_PAT == '' }}
               name: Skip Open VSX publish
               shell: bash
               run: echo "OVSX_PAT is not configured; skipping Open VSX publish"
