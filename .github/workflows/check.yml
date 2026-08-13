@@ -30,6 +30,14 @@ jobs:
         with:
           bun-version: 1.3.14
 
+      # check:all includes `bun run --cwd tui lint`, whose type-aware oxlint
+      # run needs the TUI's own node_modules (@types/bun) and staged core.
+      - run: npm run stage:tui-core
+        shell: bash
+
+      - run: bun install --cwd tui --frozen-lockfile
+        shell: bash
+
       - run: npm run check:all
         shell: bash
 
