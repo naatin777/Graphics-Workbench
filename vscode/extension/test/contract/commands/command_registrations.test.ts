@@ -100,14 +100,18 @@ suite('command登録helperの引数変換', () => {
     assert.deepStrictEqual(calls, [[context, [uri], dependencies]]);
   });
 
-  test('registerRasterCommandはraster変換をoptions付きのfile handlerとして登録する', async () => {
+  test('registerRasterCommandはraster変換をoptions付きのfile handlerとして登録し、引数なし呼び出しではエラー通知を出して完了する', async () => {
     const handlers = captureRegisteredHandlers(sandbox);
     const dependencies = testCommandDependencies();
     const context = createContext();
     registerRasterCommand(context, 'graphics-workbench.convertToWebp', { target: 'webp' }, dependencies);
 
     assert.ok(handlers.has('graphics-workbench.convertToWebp'));
-    await assert.rejects(() => handlers.get('graphics-workbench.convertToWebp')!());
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    await handlers.get('graphics-workbench.convertToWebp')!();
+    assert.strictEqual(showErrorMessage.callCount, 1);
+    const message = showErrorMessage.firstCall.args[0];
+    assert.ok(typeof message === 'string' && message.includes('No files were selected.'));
   });
 
   test('registerExtensionCommandはVS Codeから渡された任意引数をdependenciesの後に渡す', async () => {

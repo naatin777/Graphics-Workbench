@@ -69,6 +69,7 @@
     "package": "npm run build && npm run package:vsix",
     "package:vsix": "node scripts/package-vsix.mjs"
   },
+  "dependencies": {},
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",

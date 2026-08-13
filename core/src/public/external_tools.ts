@@ -23,7 +23,12 @@ export {
   type AsciiScratch,
   type LineOutputChannel,
 } from '../operations/external_tools/external_tool_ascii_scratch.js';
-export { HeavyProcessLimiter, sharedHeavyProcessLimiter } from '../operations/external_tools/heavy_process_limiter.js';
+export {
+  heavyProcessQueue,
+  runHeavyProcess,
+  setHeavyProcessConcurrency,
+  shutdownHeavyProcessQueue,
+} from '../operations/external_tools/heavy_process_queue.js';
 export {
   runExternalTool,
   terminateProcessTree,

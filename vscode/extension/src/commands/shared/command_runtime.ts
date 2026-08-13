@@ -1,4 +1,4 @@
-import { configureExternalToolTimeouts, sharedHeavyProcessLimiter } from '@graphics-workbench/core/external-tools';
+import { configureExternalToolTimeouts, setHeavyProcessConcurrency } from '@graphics-workbench/core/external-tools';
 import { applyUndoHistoryConfiguration } from '../lifecycle/undo_last_conversion.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
 
@@ -7,7 +7,7 @@ export function applyRuntimeConfiguration(configuration: Configuration): void {
   configureExternalToolTimeouts(configuration);
 
   const concurrency = configuration.performance.maxConcurrentHeavyProcesses();
-  sharedHeavyProcessLimiter.setConcurrency(concurrency);
+  setHeavyProcessConcurrency(concurrency);
 
   applyUndoHistoryConfiguration(configuration);
 }

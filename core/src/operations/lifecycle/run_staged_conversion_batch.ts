@@ -12,7 +12,7 @@ import {
   type PreparedConversionOutput,
 } from './commit_conversion_outputs.js';
 import type { ConversionExecutionContext, ResolvedConversionRuntime } from './conversion_runtime.js';
-import { sharedHeavyProcessLimiter } from '../external_tools/heavy_process_limiter.js';
+import { runHeavyProcess } from '../external_tools/heavy_process_queue.js';
 import { createRunId } from './run_id.js';
 
 export interface StagedConversionBatch<Conversion extends { workspacePath: string }> {
@@ -64,7 +64,7 @@ export async function runStagedConversionBatch<Conversion extends { workspacePat
         let completedCount = 0;
         const settled = await Promise.allSettled(
           options.inputs.map(async (input, index) =>
-            sharedHeavyProcessLimiter.run(async () => {
+            runHeavyProcess(async () => {
               batchRuntime.signal.throwIfAborted();
               try {
                 const output = await options.stage(input, index, runId, batchRuntime);
