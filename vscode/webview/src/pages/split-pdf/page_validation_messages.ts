@@ -1,12 +1,11 @@
+import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/formats';
 import type { SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
-
-import type { PageParseFailure } from './pages';
 
 export function formatLabel(template: string, value: string): string {
   return template.replace('{0}', value);
 }
 
-export function formatPageParseFailure(failure: PageParseFailure, labels: SplitPdfLabels): string {
+export function formatPageParseFailure(failure: PdfPageSelectionParseFailure, labels: SplitPdfLabels): string {
   if (failure.kind === 'required') {
     return labels.validation.pagesRequired;
   }

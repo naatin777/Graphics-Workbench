@@ -132,8 +132,3 @@ export const cropPdfProtocol = defineProtocol({
 
 export type CropConfigureHostToWebview = ProtocolMessage<typeof cropPdfProtocol, 'hostToWebview'>;
 export type CropConfigureWebviewToHost = ProtocolMessage<typeof cropPdfProtocol, 'webviewToHost'>;
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isCropConfigureMessage(value: unknown): value is CropConfigureWebviewToHost {
-  return cropPdfProtocol.parseWebviewToHost(value) !== undefined;
-}

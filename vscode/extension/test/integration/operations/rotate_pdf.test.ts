@@ -17,11 +17,13 @@ import path from 'node:path';
 
 import { degrees, PDFDocument } from '../../support/helpers/pdf_document.js';
 
-import {
-  isRotatePdfHostToWebviewMessage,
-  isRotatePdfWebviewToHostMessage,
-} from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
+import { rotatePdfProtocol } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import { rotatePdfFiles } from '@graphics-workbench/core/pdf';
+
+const acceptsRotatePdfHostToWebviewMessage = (value: unknown): boolean =>
+  rotatePdfProtocol.parseHostToWebview(value) !== undefined;
+const acceptsRotatePdfWebviewToHostMessage = (value: unknown): boolean =>
+  rotatePdfProtocol.parseWebviewToHost(value) !== undefined;
 
 suite('PDFページ回転', () => {
   test('3ページのPDFへ角度90を指定すると、出力PDFは3ページを保ったまま全ページの回転角を90度として保存する', async () => {
@@ -193,40 +195,40 @@ suite('Rotate PDFのWebview⇔ホスト間メッセージ型検証', () => {
   };
 
   test('必須フィールドをすべて持つ正しいinitメッセージは受け入れられる', () => {
-    assert.strictEqual(isRotatePdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
+    assert.strictEqual(acceptsRotatePdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
   });
 
   test('applyメッセージの角度が45度のように90度の倍数でない場合は拒否される', () => {
     assert.strictEqual(
-      isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 45, pageIndices: [1] } }),
+      acceptsRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 45, pageIndices: [1] } }),
       false,
     );
   });
 
   test('applyメッセージのページ選択が空の場合は拒否される', () => {
     assert.strictEqual(
-      isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 90, pageIndices: [] } }),
+      acceptsRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 90, pageIndices: [] } }),
       false,
     );
   });
 
   test('applyメッセージの角度180とページ選択[1,3]が定義に合う場合は受け入れられる', () => {
     assert.strictEqual(
-      isRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 180, pageIndices: [1, 3] } }),
+      acceptsRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 180, pageIndices: [1, 3] } }),
       true,
     );
   });
 
   test('initメッセージに定義外のsourcePathキーが含まれる場合は拒否される', () => {
     assert.strictEqual(
-      isRotatePdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
+      acceptsRotatePdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
       false,
     );
   });
 
   test('メッセージ共通枠で許されないrequestIdキーを最上位に付けると拒否される', () => {
     assert.strictEqual(
-      isRotatePdfWebviewToHostMessage({
+      acceptsRotatePdfWebviewToHostMessage({
         type: 'apply',
         payload: { angle: 90, pageIndices: [1] },
         requestId: 'request-1',

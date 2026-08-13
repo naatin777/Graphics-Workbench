@@ -1,14 +1,19 @@
 import { For, Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
+import {
+  mergePdfProtocol,
+  type MergePdfLabels,
+  type MergePdfSource,
+} from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 import { Button } from '@webview-shared/ui/Button';
+import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
-import type { MergePdfLabels, MergePdfSource } from './messages';
 import { SourceCard } from './source_card';
 import type { PdfOptions } from './preview_thumbnail';
 import { SplitPane } from '@webview-shared/SplitPane';
-import { vscode } from './vscode';
 
-export function App(): JSX.Element {
+export function App(properties: { host: WebviewHost }): JSX.Element {
+  const channel = createPageProtocolClient(mergePdfProtocol, properties.host);
   const [sources, setSources] = createSignal<MergePdfSource[]>([]);
   const [pdfOptionsValue, setPdfOptions] = createSignal<PdfOptions>();
   const pdfOptions = (): PdfOptions => {
@@ -31,8 +36,12 @@ export function App(): JSX.Element {
   const [draggedSourceId, setDraggedSourceId] = createSignal('');
   const [dropTargetId, setDropTargetId] = createSignal('');
 
+  const cancel = (): void => {
+    channel.send.cancel();
+  };
+
   onMount(() => {
-    const unsubscribeMessages = vscode.on({
+    const unsubscribeMessages = channel.on({
       error: ({ message }) => {
         setHostError(message);
       },
@@ -50,7 +59,7 @@ export function App(): JSX.Element {
       },
     });
 
-    vscode.send.ready();
+    channel.send.ready();
 
     onCleanup(() => {
       unsubscribeMessages();
@@ -152,7 +161,7 @@ export function App(): JSX.Element {
       return;
     }
 
-    vscode.send.apply({ sourceIds: sources().map((source) => source.sourceId) });
+    channel.send.apply({ sourceIds: sources().map((source) => source.sourceId) });
   };
 
   return (
@@ -192,6 +201,7 @@ export function App(): JSX.Element {
                           sourceCount={sources().length}
                           labels={labels()}
                           options={pdfOptions()}
+                          channel={channel}
                           dropTargetId={dropTargetId()}
                           handlers={{
                             onMove: moveSource,
@@ -243,8 +253,4 @@ export function App(): JSX.Element {
       )}
     </Show>
   );
-}
-
-function cancel(): void {
-  vscode.send.cancel();
 }

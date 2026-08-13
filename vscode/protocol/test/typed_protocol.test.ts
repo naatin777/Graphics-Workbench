@@ -11,12 +11,12 @@ suite('typed Webview protocol transport', () => {
     const received: string[] = [];
     const hostReceived: unknown[] = [];
 
-    channel.hostToWebview.subscribe((message) => hostReceived.push(message));
-    const unsubscribe = channel.webviewToHost.on({
+    channel.host.subscribe((message) => hostReceived.push(message));
+    const unsubscribe = channel.webview.on({
       error: (payload) => received.push(payload.message),
     });
 
-    channel.webviewToHost.send.ready();
+    channel.webview.send.ready();
     assert.deepEqual(hostReceived, [{ type: 'ready' }]);
 
     channel.deliverHostToWebview({ type: 'error', payload: { message: 'failed' } });
@@ -31,18 +31,18 @@ suite('typed Webview protocol transport', () => {
   test('rejects invalid outgoing payloads before they reach the transport', () => {
     const channel = createMockChannel(previewProtocol);
     const received: unknown[] = [];
-    const unsubscribe = channel.hostToWebview.subscribe((message) => received.push(message));
+    const unsubscribe = channel.host.subscribe((message) => received.push(message));
 
-    assert.throws(() => channel.webviewToHost.send.renderPage({ page: 0 }), TypeError);
+    assert.throws(() => channel.webview.send.renderPage({ page: 0 }), TypeError);
     assert.deepEqual(received, []);
 
     const compileOnly = (): void => {
       // @ts-expect-error renderPage requires a payload.
-      channel.webviewToHost.send.renderPage();
+      channel.webview.send.renderPage();
       // @ts-expect-error ready does not accept a payload.
-      channel.webviewToHost.send.ready({ unexpected: true });
+      channel.webview.send.ready({ unexpected: true });
       // @ts-expect-error host-to-webview messages are not available on this sender.
-      channel.webviewToHost.send.init({});
+      channel.webview.send.init({});
     };
     void compileOnly;
     void unsubscribe;

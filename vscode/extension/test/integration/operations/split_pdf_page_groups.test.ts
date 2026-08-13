@@ -7,12 +7,13 @@ import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
 import { parsePdfPageSelection as parseSplitPdfPages } from '@graphics-workbench/core/formats';
 import { splitPdfByPageGroups } from '@graphics-workbench/core/pdf';
-import {
-  isSplitPdfHostToWebviewMessage,
-  isSplitPdfWebviewToHostMessage,
-  type SplitPdfLabels,
-} from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+import { splitPdfProtocol, type SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import { invalidPreflightInputDirectory } from '../../support/helpers/fixture_paths.js';
+
+const acceptsSplitPdfHostToWebviewMessage = (value: unknown): boolean =>
+  splitPdfProtocol.parseHostToWebview(value) !== undefined;
+const acceptsSplitPdfWebviewToHostMessage = (value: unknown): boolean =>
+  splitPdfProtocol.parseWebviewToHost(value) !== undefined;
 
 suite('PDFページグループ分割', () => {
   test('ページ式"10, 3-5, 3, -2, 7-"を10ページのPDFで解析すると、入力順のまま範囲を展開し重複を保持したページ列を返す', () => {
@@ -184,7 +185,7 @@ suite('PDFページグループ分割', () => {
     };
 
     assert.equal(
-      isSplitPdfHostToWebviewMessage({
+      acceptsSplitPdfHostToWebviewMessage({
         type: 'init',
         payload: {
           sourceId: 'source-1',
@@ -205,7 +206,7 @@ suite('PDFページグループ分割', () => {
       true,
     );
     assert.equal(
-      isSplitPdfHostToWebviewMessage({
+      acceptsSplitPdfHostToWebviewMessage({
         type: 'init',
         payload: {
           sourceId: 'source-1',
@@ -219,26 +220,26 @@ suite('PDFページグループ分割', () => {
       }),
       false,
     );
-    assert.equal(isSplitPdfWebviewToHostMessage({ type: 'ready' }), true);
-    assert.equal(isSplitPdfWebviewToHostMessage({ type: 'ready', requestId: 'request-1' }), false);
-    assert.equal(isSplitPdfWebviewToHostMessage({ type: 'ready', payload: undefined }), false);
-    assert.equal(isSplitPdfWebviewToHostMessage({ type: '' }), false);
+    assert.equal(acceptsSplitPdfWebviewToHostMessage({ type: 'ready' }), true);
+    assert.equal(acceptsSplitPdfWebviewToHostMessage({ type: 'ready', requestId: 'request-1' }), false);
+    assert.equal(acceptsSplitPdfWebviewToHostMessage({ type: 'ready', payload: undefined }), false);
+    assert.equal(acceptsSplitPdfWebviewToHostMessage({ type: '' }), false);
     assert.equal(
-      isSplitPdfWebviewToHostMessage({
+      acceptsSplitPdfWebviewToHostMessage({
         type: 'previewLoadFailed',
         payload: { message: 'preview failed' },
       }),
       true,
     );
     assert.equal(
-      isSplitPdfWebviewToHostMessage({
+      acceptsSplitPdfWebviewToHostMessage({
         type: 'previewLoadFailed',
         payload: { message: 'preview failed', code: 'E_FAIL' },
       }),
       false,
     );
     assert.equal(
-      isSplitPdfHostToWebviewMessage({
+      acceptsSplitPdfHostToWebviewMessage({
         type: 'init',
         payload: {
           sourceId: 'source-1',
@@ -252,21 +253,21 @@ suite('PDFページグループ分割', () => {
       false,
     );
     assert.equal(
-      isSplitPdfWebviewToHostMessage({
+      acceptsSplitPdfWebviewToHostMessage({
         type: 'apply',
         payload: { rows: [{ pages: [2, 2], outputName: 'group.pdf' }] },
       }),
       true,
     );
     assert.equal(
-      isSplitPdfWebviewToHostMessage({
+      acceptsSplitPdfWebviewToHostMessage({
         type: 'apply',
         payload: { rows: [{ pages: [], outputName: 'group.pdf' }] },
       }),
       false,
     );
     assert.equal(
-      isSplitPdfWebviewToHostMessage({
+      acceptsSplitPdfWebviewToHostMessage({
         type: 'apply',
         payload: { rows: [{ pages: [1], outputName: 'group.pdf' }], sourcePath: '/not-allowed' },
       }),

@@ -76,13 +76,3 @@ export const tableEditorProtocol = defineProtocol({
 
 export type TableEditorHostToWebview = ProtocolMessage<typeof tableEditorProtocol, 'hostToWebview'>;
 export type TableEditorWebviewToHost = ProtocolMessage<typeof tableEditorProtocol, 'webviewToHost'>;
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isTableEditorHostToWebviewMessage(value: unknown): value is TableEditorHostToWebview {
-  return tableEditorProtocol.parseHostToWebview(value) !== undefined;
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isTableEditorWebviewToHostMessage(value: unknown): value is TableEditorWebviewToHost {
-  return tableEditorProtocol.parseWebviewToHost(value) !== undefined;
-}

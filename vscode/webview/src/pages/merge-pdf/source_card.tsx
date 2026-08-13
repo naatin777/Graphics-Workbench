@@ -1,7 +1,8 @@
 import type { Accessor, JSX } from 'solid-js';
 
-import type { MergePdfLabels, MergePdfSource } from './messages';
-import { PreviewThumbnail, type PdfOptions } from './preview_thumbnail';
+import type { MergePdfLabels, MergePdfSource } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+
+import { PreviewThumbnail, type MergeThumbnailChannel, type PdfOptions } from './preview_thumbnail';
 
 export function SourceCard(props: {
   source: MergePdfSource;
@@ -9,6 +10,7 @@ export function SourceCard(props: {
   sourceCount: number;
   labels: MergePdfLabels;
   options: PdfOptions;
+  channel: MergeThumbnailChannel;
   dropTargetId: string;
   handlers: {
     onMove: (sourceId: string, offset: number) => void;
@@ -35,6 +37,7 @@ export function SourceCard(props: {
         source={props.source}
         options={props.options}
         labels={props.labels}
+        channel={props.channel}
         onError={props.handlers.onPreviewError}
       />
       <div class='source-card__content'>

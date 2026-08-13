@@ -221,22 +221,28 @@ function buildInitMessage(options: {
   pdfJsAssetsRoot: vscode.Uri;
 }): Extract<PreviewHostToWebview, { type: 'init' }>['payload'] {
   const { format, uri, pageCount, preview, webview, pdfJsAssetsRoot } = options;
-  return {
-    format,
+  const shared = {
     fileName: path.basename(uri.fsPath),
     pageCount,
-    ...(format === 'pdf' && { pdfSrc: webview.asWebviewUri(uri).toString() }),
-    resources:
-      format === 'pdf'
-        ? {
-            workerSrc: webview.asWebviewUri(vscode.Uri.joinPath(pdfJsAssetsRoot, 'pdf.worker.mjs')).toString(),
-            cMapUrl: toWebviewDirectoryUri(webview, pdfJsAssetsRoot, 'cmaps'),
-            standardFontDataUrl: toWebviewDirectoryUri(webview, pdfJsAssetsRoot, 'standard_fonts'),
-            wasmUrl: toWebviewDirectoryUri(webview, pdfJsAssetsRoot, 'wasm'),
-          }
-        : {},
     preview,
     labels: previewLabels(),
+  };
+  if (format === 'pdf') {
+    return {
+      format: 'pdf',
+      ...shared,
+      pdfSrc: webview.asWebviewUri(uri).toString(),
+      resources: {
+        workerSrc: webview.asWebviewUri(vscode.Uri.joinPath(pdfJsAssetsRoot, 'pdf.worker.mjs')).toString(),
+        cMapUrl: toWebviewDirectoryUri(webview, pdfJsAssetsRoot, 'cmaps'),
+        standardFontDataUrl: toWebviewDirectoryUri(webview, pdfJsAssetsRoot, 'standard_fonts'),
+        wasmUrl: toWebviewDirectoryUri(webview, pdfJsAssetsRoot, 'wasm'),
+      },
+    };
+  }
+  return {
+    format: 'tiff',
+    ...shared,
   };
 }
 

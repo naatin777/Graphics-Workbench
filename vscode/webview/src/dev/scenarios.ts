@@ -42,7 +42,7 @@ export function createScenarioHost(page: WebviewPageId, scenario: string): Webvi
 function previewScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(previewProtocol);
   const sendInit = (): void => {
-    channel.hostToWebview.send.init({
+    channel.host.send.init({
       format: 'pdf',
       fileName:
         scenario === 'long-filename' ? 'a-very-long-fixture-file-name-for-browser-development.pdf' : 'sample.pdf',
@@ -53,7 +53,7 @@ function previewScenarioHost(scenario: string): WebviewHost {
       labels: previewLabels,
     });
   };
-  channel.hostToWebview.on({
+  channel.host.on({
     ready: () => {
       queueMicrotask(() => {
         sendInit();
@@ -65,10 +65,10 @@ function previewScenarioHost(scenario: string): WebviewHost {
 
 function tableEditorScenarioHost(): WebviewHost {
   const channel = createMockChannel(tableEditorProtocol);
-  channel.hostToWebview.on({
+  channel.host.on({
     ready: () => {
       queueMicrotask(() => {
-        channel.hostToWebview.send.init({ format: 'latex', labels: tableEditorLabels });
+        channel.host.send.init({ format: 'latex', labels: tableEditorLabels });
       });
     },
   });
@@ -77,11 +77,11 @@ function tableEditorScenarioHost(): WebviewHost {
 
 function cropPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(cropPdfProtocol);
-  channel.hostToWebview.on({
+  channel.host.on({
     ready: () => {
       queueMicrotask(() => {
         const pageCount = scenario === 'large' ? 8 : 3;
-        channel.hostToWebview.send.init({
+        channel.host.send.init({
           ...pdfPayloadBase(scenario),
           initialPage: 1,
           pageGeometry: Array.from({ length: pageCount }, (_, index) => ({
@@ -103,10 +103,10 @@ function mergePdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(mergePdfProtocol);
   const fileName = scenario === 'long-filename' ? 'a-very-long-fixture-file-name.pdf' : 'sample.pdf';
   const pdfSrc = fixtureUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf');
-  channel.hostToWebview.on({
+  channel.host.on({
     ready: () => {
       queueMicrotask(() => {
-        channel.hostToWebview.send.init({
+        channel.host.send.init({
           sources: [
             { sourceId: 'one', fileName, pdfSrc },
             { sourceId: 'two', fileName: 'second.pdf', pdfSrc },
@@ -123,10 +123,10 @@ function mergePdfScenarioHost(scenario: string): WebviewHost {
 
 function splitPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(splitPdfProtocol);
-  channel.hostToWebview.on({
+  channel.host.on({
     ready: () => {
       queueMicrotask(() => {
-        channel.hostToWebview.send.init({
+        channel.host.send.init({
           sourceId: 'browser-fixture',
           ...pdfPayloadBase(scenario),
           outputPathTemplate: 'sample-${page}.pdf',
@@ -140,10 +140,10 @@ function splitPdfScenarioHost(scenario: string): WebviewHost {
 
 function rotatePdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(rotatePdfProtocol);
-  channel.hostToWebview.on({
+  channel.host.on({
     ready: () => {
       queueMicrotask(() => {
-        channel.hostToWebview.send.init({
+        channel.host.send.init({
           sourceId: 'browser-fixture',
           ...pdfPayloadBase(scenario),
           labels: rotatePdfLabels,
@@ -156,10 +156,10 @@ function rotatePdfScenarioHost(scenario: string): WebviewHost {
 
 function reorderPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(reorderPdfProtocol);
-  channel.hostToWebview.on({
+  channel.host.on({
     ready: () => {
       queueMicrotask(() => {
-        channel.hostToWebview.send.init({
+        channel.host.send.init({
           sourceId: 'browser-fixture',
           ...pdfPayloadBase(scenario),
           labels: reorderPdfLabels,
@@ -176,7 +176,7 @@ function scenarioHostFor<HostMessage extends { type: string }, WebviewMessage ex
   let state: unknown;
   return {
     send: channel.deliverWebviewToHost,
-    subscribe: (listener) => channel.webviewToHost.subscribe(listener),
+    subscribe: (listener) => channel.webview.subscribe(listener),
     getState: <T>() => state as T | undefined,
     setState: <T>(next: T) => {
       state = next;
@@ -202,18 +202,19 @@ function pdfPayloadBase(scenario: string): {
 
 function pdfJsResources(): { workerSrc: string; cMapUrl: string; standardFontDataUrl: string; wasmUrl: string } {
   return {
-    workerSrc: fixtureUrl('../pdfjs/build/pdf.worker.min.mjs'),
-    cMapUrl: fixtureUrl('../pdfjs/cmaps/'),
-    standardFontDataUrl: fixtureUrl('../pdfjs/standard_fonts/'),
-    wasmUrl: fixtureUrl('../pdfjs/wasm/'),
+    workerSrc: assetUrl('pdfjs/build/pdf.worker.min.mjs'),
+    cMapUrl: assetUrl('pdfjs/cmaps/'),
+    standardFontDataUrl: assetUrl('pdfjs/standard_fonts/'),
+    wasmUrl: assetUrl('pdfjs/wasm/'),
   };
 }
 
 function fixtureUrl(name: string): string {
-  if (name.startsWith('../')) {
-    return new URL(name.slice(2), `${globalThis.location.origin}/`).toString();
-  }
   return new URL(`/fixtures/${name}`, globalThis.location.href).toString();
+}
+
+function assetUrl(name: string): string {
+  return new URL(`/${name}`, globalThis.location.href).toString();
 }
 
 const previewLabels = {

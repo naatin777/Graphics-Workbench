@@ -41,7 +41,6 @@ export type CompleteProtocolHandlers<Message extends { type: string }> = {
 export interface ProtocolClient<Message extends { type: string }> {
   readonly send: ProtocolSender<Message>;
   on(handlers: ProtocolHandlers<Message>): () => void;
-  onAll(handlers: CompleteProtocolHandlers<Message>): () => void;
   subscribe(listener: (message: Message) => void): () => void;
 }
 
@@ -102,7 +101,6 @@ export function createProtocolClient<
   return {
     send,
     on,
-    onAll: (handlers) => on(handlers),
     subscribe,
   } as ProtocolClient<Direction extends 'hostToWebview' ? v.InferOutput<HostSchema> : v.InferOutput<WebviewSchema>>;
 }
@@ -114,21 +112,21 @@ export function createProtocolClient<
  * Extension Host <-> Webview boundary.
  */
 export interface MockChannel<HostMessage extends { type: string }, WebviewMessage extends { type: string }> {
-  /** Extension Host side: sends hostToWebview, receives parsed webviewToHost. */
-  readonly hostToWebview: {
+  /** Extension Host endpoint: sends hostToWebview messages, receives webviewToHost. */
+  readonly host: {
     readonly send: ProtocolSender<HostMessage>;
     on(handlers: ProtocolHandlers<WebviewMessage>): () => void;
     subscribe(listener: (message: WebviewMessage) => void): () => void;
   };
-  /** Webview side: sends webviewToHost, receives parsed hostToWebview. */
-  readonly webviewToHost: {
+  /** Webview endpoint: sends webviewToHost messages, receives hostToWebview. */
+  readonly webview: {
     readonly send: ProtocolSender<WebviewMessage>;
     on(handlers: ProtocolHandlers<HostMessage>): () => void;
     subscribe(listener: (message: HostMessage) => void): () => void;
   };
-  /** Injects a raw (unparsed) hostToWebview message toward the Webview side. */
+  /** Injects a raw (unparsed) hostToWebview message toward the Webview endpoint. */
   readonly deliverHostToWebview: (message: unknown) => void;
-  /** Injects a raw (unparsed) webviewToHost message toward the Extension Host side. */
+  /** Injects a raw (unparsed) webviewToHost message toward the Extension Host endpoint. */
   readonly deliverWebviewToHost: (message: unknown) => void;
 }
 
@@ -143,12 +141,12 @@ export function createMockChannel<const HostSchema extends WireSchema, const Web
   const webviewIncoming = createProtocolClient(protocol, webviewTransport, 'hostToWebview');
 
   return {
-    hostToWebview: {
+    host: {
       send: hostOutgoing.send,
       on: (handlers) => hostIncoming.on(handlers),
       subscribe: (listener) => hostIncoming.subscribe(listener),
     },
-    webviewToHost: {
+    webview: {
       send: webviewOutgoing.send,
       on: (handlers) => webviewIncoming.on(handlers),
       subscribe: (listener) => webviewIncoming.subscribe(listener),

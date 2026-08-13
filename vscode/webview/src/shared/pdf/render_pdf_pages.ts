@@ -14,7 +14,6 @@ import { calculatePdfCanvasDimensions } from './canvas_limits';
 
 type PdfJs = typeof pdfjsModule;
 
-const sharedPdfJsAssetsPath = '../pdfjs';
 const PAGE_GAP_PX = 12;
 
 export interface PdfRenderController {
@@ -25,10 +24,10 @@ export interface PdfRenderController {
 export async function renderFirstPdfPage(
   pdfSrc: string,
   canvas: HTMLCanvasElement,
-  options: PdfRenderOptions = {},
+  options: PdfRenderOptions,
 ): Promise<void> {
   throwIfAborted(options.signal);
-  const pdfjs = await loadPdfJs(options.resources?.workerSrc);
+  const pdfjs = await loadPdfJs(options.resources.workerSrc);
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
   let renderTask: ReturnType<PDFPageProxy['render']> | undefined;
@@ -68,10 +67,10 @@ export async function renderFirstPdfPage(
 export async function renderPdfPages(
   pdfSrc: string,
   container: HTMLElement,
-  options: PdfRenderOptions = {},
+  options: PdfRenderOptions,
 ): Promise<PdfRenderController> {
   throwIfAborted(options.signal);
-  const pdfjs = await loadPdfJs(options.resources?.workerSrc);
+  const pdfjs = await loadPdfJs(options.resources.workerSrc);
 
   const loadingTask = pdfjs.getDocument(createDocumentOptions(pdfSrc, options));
   const abortLoading = (): void => {
@@ -430,19 +429,18 @@ function attachRenderSignal(controller: PdfRenderController, signal: AbortSignal
   };
 }
 
-async function loadPdfJs(workerSrc?: string): Promise<PdfJs> {
-  pdfjsModule.GlobalWorkerOptions.workerSrc = nonEmptyOrDefault(workerSrc, `${sharedPdfJsAssetsPath}/pdf.worker.mjs`);
+async function loadPdfJs(workerSrc: string): Promise<PdfJs> {
+  pdfjsModule.GlobalWorkerOptions.workerSrc = workerSrc;
   return pdfjsModule;
 }
 
 export interface PdfRenderOptions {
-  resources?: {
-    workerSrc?: string;
-    cMapUrl?: string;
-    standardFontDataUrl?: string;
-    wasmUrl?: string;
+  resources: {
+    workerSrc: string;
+    cMapUrl: string;
+    standardFontDataUrl: string;
+    wasmUrl: string;
   };
-  url?: string;
   root?: Element;
   page?: {
     label?: string;
@@ -471,25 +469,20 @@ function createAbortError(): Error {
 }
 
 function createDocumentOptions(pdfSrc: string, options: PdfRenderOptions): Parameters<PdfJs['getDocument']>[0] {
-  const { resources, url } = options;
   return {
-    url: url ?? pdfSrc,
+    url: pdfSrc,
     cMapPacked: true,
     useWorkerFetch: false,
-    cMapUrl: nonEmptyOrDefault(resources?.cMapUrl, `${sharedPdfJsAssetsPath}/cmaps/`),
-    standardFontDataUrl: nonEmptyOrDefault(resources?.standardFontDataUrl, `${sharedPdfJsAssetsPath}/standard_fonts/`),
-    wasmUrl: nonEmptyOrDefault(resources?.wasmUrl, `${sharedPdfJsAssetsPath}/wasm/`),
+    cMapUrl: options.resources.cMapUrl,
+    standardFontDataUrl: options.resources.standardFontDataUrl,
+    wasmUrl: options.resources.wasmUrl,
   };
-}
-
-function nonEmptyOrDefault(value: string | undefined, fallback: string): string {
-  return value === undefined || value === '' ? fallback : value;
 }
 
 function renderPageToCanvasWithTask(
   page: PDFPageProxy,
   canvas: HTMLCanvasElement,
-  options: PdfRenderOptions = {},
+  options: PdfRenderOptions,
 ): ReturnType<PDFPageProxy['render']> {
   const viewport = page.getViewport({ scale: 1 });
   const dimensions = calculatePdfCanvasDimensions(

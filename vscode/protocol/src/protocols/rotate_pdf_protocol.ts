@@ -81,13 +81,3 @@ export const rotatePdfProtocol = defineProtocol({
 
 export type RotatePdfHostToWebview = ProtocolMessage<typeof rotatePdfProtocol, 'hostToWebview'>;
 export type RotatePdfWebviewToHost = ProtocolMessage<typeof rotatePdfProtocol, 'webviewToHost'>;
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isRotatePdfHostToWebviewMessage(value: unknown): value is RotatePdfHostToWebview {
-  return rotatePdfProtocol.parseHostToWebview(value) !== undefined;
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isRotatePdfWebviewToHostMessage(value: unknown): value is RotatePdfWebviewToHost {
-  return rotatePdfProtocol.parseWebviewToHost(value) !== undefined;
-}

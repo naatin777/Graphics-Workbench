@@ -2,6 +2,7 @@ import { createEffect, createSignal, For, onCleanup, onMount, Show, type JSX } f
 
 import {
   PDF_ROTATION_ANGLES,
+  rotatePdfProtocol,
   type PdfRotationAngle,
   type RotatePdfHostToWebview,
   type RotatePdfLabels,
@@ -12,14 +13,10 @@ import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
 import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNavigator';
 import { useCurrentPage } from '@webview-shared/ui/use_current_page';
+import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
-import { vscode } from './vscode';
-
-function cancel(): void {
-  vscode.send.cancel();
-}
-
-export function App(): JSX.Element {
+export function App(properties: { host: WebviewHost }): JSX.Element {
+  const channel = createPageProtocolClient(rotatePdfProtocol, properties.host);
   const [labelsValue, setLabels] = createSignal<RotatePdfLabels>();
   const labels = (): RotatePdfLabels => {
     const value = labelsValue();
@@ -46,6 +43,10 @@ export function App(): JSX.Element {
       pdfPages === undefined ? [] : [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')],
   });
 
+  const cancel = (): void => {
+    channel.send.cancel();
+  };
+
   createEffect(() => {
     selectedPages();
     syncSelectionClasses();
@@ -57,7 +58,7 @@ export function App(): JSX.Element {
   });
 
   onMount(() => {
-    const unsubscribeMessages = vscode.on({
+    const unsubscribeMessages = channel.on({
       error: ({ message }) => {
         setApplyError(message);
       },
@@ -117,7 +118,7 @@ export function App(): JSX.Element {
 
     globalThis.addEventListener('click', onPageClick);
     globalThis.addEventListener('keydown', onPageKeyDown);
-    vscode.send.ready();
+    channel.send.ready();
     onCleanup(() => {
       unsubscribeMessages();
       globalThis.removeEventListener('click', onPageClick);
@@ -168,7 +169,7 @@ export function App(): JSX.Element {
           if (controller.signal.aborted) {
             return;
           }
-          vscode.send.previewLoadFailed({ message: toErrorMessage(error) });
+          channel.send.previewLoadFailed({ message: toErrorMessage(error) });
         },
       });
 
@@ -187,7 +188,7 @@ export function App(): JSX.Element {
         return;
       }
       const message = toErrorMessage(error);
-      vscode.send.previewLoadFailed({ message });
+      channel.send.previewLoadFailed({ message });
       setApplyError(currentLabels.preview.renderError);
     }
   }
@@ -262,7 +263,7 @@ export function App(): JSX.Element {
     }
     setApplyError('');
     const pageIndices = [...selection].sort((left, right) => left - right);
-    vscode.send.apply({ angle: angle(), pageIndices });
+    channel.send.apply({ angle: angle(), pageIndices });
   }
 
   return (

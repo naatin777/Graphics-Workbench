@@ -1,16 +1,16 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { mergePdfProtocol } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
-import type { ExtensionToWebviewMessage, MergePdfLabels } from './messages';
+import {
+  mergePdfProtocol,
+  type MergePdfHostToWebview,
+  type MergePdfLabels,
+} from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderFirstPdfPage = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
-vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(mergePdfProtocol, sendMessage),
-}));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderFirstPdfPage }));
 
 const labels: MergePdfLabels = {
@@ -40,7 +40,7 @@ const labels: MergePdfLabels = {
   },
 };
 
-const initMessage: ExtensionToWebviewMessage = {
+const initMessage: MergePdfHostToWebview = {
   type: 'init',
   payload: {
     sources: [
@@ -72,7 +72,8 @@ describe('Merge PDF Webview', () => {
       throw new Error('Test root was not created.');
     }
 
-    dispose = render(() => <App />, root);
+    const pageHost = createTestPageHost(mergePdfProtocol, sendMessage);
+    dispose = render(() => <App host={pageHost} />, root);
     globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
   });
 

@@ -72,13 +72,3 @@ export const reorderPdfProtocol = defineProtocol({
 
 export type ReorderPdfHostToWebview = ProtocolMessage<typeof reorderPdfProtocol, 'hostToWebview'>;
 export type ReorderPdfWebviewToHost = ProtocolMessage<typeof reorderPdfProtocol, 'webviewToHost'>;
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isReorderPdfHostToWebviewMessage(value: unknown): value is ReorderPdfHostToWebview {
-  return reorderPdfProtocol.parseHostToWebview(value) !== undefined;
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- webviewから届く未検証JSONを検証する境界。
-export function isReorderPdfWebviewToHostMessage(value: unknown): value is ReorderPdfWebviewToHost {
-  return reorderPdfProtocol.parseWebviewToHost(value) !== undefined;
-}

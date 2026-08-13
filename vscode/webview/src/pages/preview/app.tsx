@@ -1,12 +1,16 @@
 import { Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
+import {
+  previewProtocol,
+  type PreviewHostToWebview,
+  type PreviewLabels,
+} from '@graphics-workbench/vscode-protocol/preview-protocol';
 import { renderPdfPages, type PdfRenderController, type PdfRenderOptions } from '../../shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '../../shared/error';
 import { PageNavigator, scrollPageIntoView } from '../../shared/ui/PageNavigator';
 import { ToolbarButton } from '../../shared/ui/ToolbarButton';
 import { useCurrentPage } from '../../shared/ui/use_current_page';
 
-import type { PreviewInitPayload, PreviewLabels } from './messages';
 import { renderTiffPreview, type TiffRenderController } from './tiff_preview';
 import {
   applyPreviewZoom,
@@ -14,9 +18,13 @@ import {
   clampPreviewZoom,
   restorePreviewZoomAnchor,
 } from '@webview-shared/pdf/preview_zoom';
-import { vscode } from './vscode';
+import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
-export function App(): JSX.Element {
+export type PreviewInitPayload = Extract<PreviewHostToWebview, { type: 'init' }>['payload'];
+type PdfPreviewInitPayload = Extract<PreviewInitPayload, { format: 'pdf' }>;
+
+export function App(properties: { host: WebviewHost }): JSX.Element {
+  const channel = createPageProtocolClient(previewProtocol, properties.host);
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
   const [labelsValue, setLabels] = createSignal<PreviewLabels>();
@@ -80,7 +88,7 @@ export function App(): JSX.Element {
   });
 
   onMount(() => {
-    const unsubscribeMessages = vscode.on({
+    const unsubscribeMessages = channel.on({
       init: (payload) => {
         startRender(payload);
       },
@@ -91,7 +99,7 @@ export function App(): JSX.Element {
         setRenderError(message);
       },
     });
-    vscode.send.ready();
+    channel.send.ready();
     onCleanup(() => {
       unsubscribeMessages();
       renderAbortController?.abort();
@@ -127,13 +135,13 @@ export function App(): JSX.Element {
     }
   };
 
-  const renderPdfPreview = async (payload: PreviewInitPayload, signal: AbortSignal): Promise<void> => {
+  const renderPdfPreview = async (payload: PdfPreviewInitPayload, signal: AbortSignal): Promise<void> => {
     if (!pagesContainer) {
       return;
     }
     try {
       const options = createPdfRenderOptions(payload, signal);
-      const controller = await renderPdfPages('', pagesContainer, options);
+      const controller = await renderPdfPages(payload.pdfSrc, pagesContainer, options);
       if (signal.aborted) {
         await controller.dispose();
         return;
@@ -150,27 +158,14 @@ export function App(): JSX.Element {
       }
       const message = toErrorMessage(error);
       setRenderError(message);
-      vscode.send.previewLoadFailed({ message });
+      channel.send.previewLoadFailed({ message });
     }
   };
 
-  const createPdfRenderOptions = (payload: PreviewInitPayload, signal: AbortSignal): PdfRenderOptions => {
+  const createPdfRenderOptions = (payload: PdfPreviewInitPayload, signal: AbortSignal): PdfRenderOptions => {
     const options: PdfRenderOptions = {
       preview: payload.preview,
-      resources: {
-        ...(payload.resources.workerSrc !== undefined && payload.resources.workerSrc !== ''
-          ? { workerSrc: payload.resources.workerSrc }
-          : {}),
-        ...(payload.resources.cMapUrl !== undefined && payload.resources.cMapUrl !== ''
-          ? { cMapUrl: payload.resources.cMapUrl }
-          : {}),
-        ...(payload.resources.standardFontDataUrl !== undefined && payload.resources.standardFontDataUrl !== ''
-          ? { standardFontDataUrl: payload.resources.standardFontDataUrl }
-          : {}),
-        ...(payload.resources.wasmUrl !== undefined && payload.resources.wasmUrl !== ''
-          ? { wasmUrl: payload.resources.wasmUrl }
-          : {}),
-      },
+      resources: payload.resources,
       page: {
         label: payload.labels.page.label,
         onCreated: (pageFrame) => {
@@ -184,12 +179,9 @@ export function App(): JSX.Element {
         }
         const message = toErrorMessage(error);
         setRenderError(message);
-        vscode.send.previewLoadFailed({ message });
+        channel.send.previewLoadFailed({ message });
       },
     };
-    if (payload.pdfSrc !== undefined) {
-      options.url = payload.pdfSrc;
-    }
     if (previewElement !== undefined) {
       options.root = previewElement;
     }
@@ -206,7 +198,7 @@ export function App(): JSX.Element {
       pageLabel: payload.labels.page.label,
       zoom: previewZoom,
       requestPage: (page) => {
-        vscode.send.renderPage({ page });
+        channel.send.renderPage({ page });
       },
       onRenderError: (error) => {
         if (signal.aborted) {

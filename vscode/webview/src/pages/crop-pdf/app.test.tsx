@@ -1,16 +1,16 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { cropPdfProtocol } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
-import type { CropPdfLabels, ExtensionToWebviewMessage } from './messages';
+import {
+  cropPdfProtocol,
+  type CropConfigureHostToWebview,
+  type CropPdfLabels,
+} from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderPdfPages = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
-vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(cropPdfProtocol, sendMessage),
-}));
 vi.mock('../../shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
 const labels: CropPdfLabels = {
@@ -59,7 +59,7 @@ const labels: CropPdfLabels = {
   },
 };
 
-const initMessage: ExtensionToWebviewMessage = {
+const initMessage: CropConfigureHostToWebview = {
   type: 'init',
   payload: {
     fileName: 'source.pdf',
@@ -105,7 +105,8 @@ describe('Crop PDF Webview', () => {
       throw new Error('Test root was not created.');
     }
 
-    dispose = render(() => <App />, root);
+    const pageHost = createTestPageHost(cropPdfProtocol, sendMessage);
+    dispose = render(() => <App host={pageHost} />, root);
     globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
   });
 
@@ -161,7 +162,7 @@ describe('Crop PDF Webview', () => {
 
     globalThis.dispatchEvent(
       new MessageEvent('message', {
-        data: { type: 'error', payload: { message: 'crop failed' } } satisfies ExtensionToWebviewMessage,
+        data: { type: 'error', payload: { message: 'crop failed' } } satisfies CropConfigureHostToWebview,
       }),
     );
     await flushPromises();
