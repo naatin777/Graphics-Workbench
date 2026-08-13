@@ -41,7 +41,7 @@ export async function splitPdfAllPagesCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   try {
     if (sourceUris.length === 0) {
       throw new Error('No PDF files were selected.');
@@ -112,7 +112,7 @@ export async function splitPdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
 
   try {
     await runSplitPdfConfigureCommand(context, sourceUris, dependencies);
@@ -133,7 +133,7 @@ async function runSplitPdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'splitPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 

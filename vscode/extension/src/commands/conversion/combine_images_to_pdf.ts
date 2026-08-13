@@ -17,7 +17,7 @@ export async function combineImagesToPdfCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
 
   try {
     if (sourceUris.length < 2) {
@@ -70,7 +70,7 @@ export async function quickCombineImagesToPdfCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
 
   try {
     if (sourceUris.length < 2) {

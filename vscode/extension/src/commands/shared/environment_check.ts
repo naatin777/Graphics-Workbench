@@ -61,7 +61,7 @@ export async function runFeatureAvailabilityChecks(
   options: RunFeatureAvailabilityChecksOptions,
 ): Promise<FeatureAvailabilityEntry[]> {
   const timeoutMs = options.timeoutMs ?? CHECK_TIMEOUT_MS;
-  const probe = options.probe;
+  const { probe } = options;
   const check = async (
     params: Omit<Parameters<typeof checkTool>[0], 'timeoutMs' | 'signal' | 'probe'>,
   ): Promise<ToolAvailability> => checkTool({ ...params, timeoutMs, signal: options.signal, probe });

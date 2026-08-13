@@ -18,7 +18,7 @@ import { isAbortError } from '@graphics-workbench/core/runtime';
 const RASTER_OUTPUT_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.tif', '.tiff'] as const;
 
 export async function rotateImageCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   try {
     if (sourceUris.length === 0) {
       throw new Error('No image files were selected.');

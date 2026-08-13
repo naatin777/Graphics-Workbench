@@ -38,7 +38,7 @@ export async function cropPdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   try {
     await runCropPdfConfigureCommand(context, sourceUris, dependencies);
   } catch (error) {
@@ -57,7 +57,7 @@ async function runCropPdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'cropPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 

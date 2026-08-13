@@ -35,7 +35,7 @@ export async function reorderPdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
 
   try {
     await runReorderPdfConfigureCommand(context, sourceUris, dependencies);
@@ -56,7 +56,7 @@ async function runReorderPdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'reorderPdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 

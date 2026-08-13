@@ -30,7 +30,14 @@ checkFrontendImports('vscode', [vscodeTestRoot], vscodePackage, ['vscode']);
 checkFrontendImports('webview', [webviewSourceRoot], webviewPackage, ['@webview-shared']);
 checkFrontendImports('protocol', [protocolSourceRoot], protocolPackage, []);
 checkFrontendImports('tui', [tuiSourceRoot, tuiTestRoot], tuiPackage, []);
-checkCorePublicImports([vscodeSourceRoot, vscodeTestRoot, webviewSourceRoot, protocolSourceRoot, tuiSourceRoot, tuiTestRoot]);
+checkCorePublicImports([
+  vscodeSourceRoot,
+  vscodeTestRoot,
+  webviewSourceRoot,
+  protocolSourceRoot,
+  tuiSourceRoot,
+  tuiTestRoot,
+]);
 checkFrontendBoundaryImports('vscode', [vscodeSourceRoot, vscodeTestRoot], 'tui');
 checkFrontendBoundaryImports('tui', [tuiSourceRoot, tuiTestRoot], 'vscode');
 checkWebviewBoundaryImports();

@@ -98,7 +98,7 @@ async function createPdfPaths(
         signal: options.runtime.signal ?? new AbortController().signal,
         scratchOptions: scratchOptions(options),
         ...(pageCount > 1 ? { page } : {}),
-        ...(svgToPdfTools !== undefined ? { tools: { svgToPdfTools } } : {}),
+        ...(svgToPdfTools === undefined ? {} : { tools: { svgToPdfTools } }),
       };
       await writeSourceAsPdf(writeOptions);
       pdfPaths.push(pdfPath);

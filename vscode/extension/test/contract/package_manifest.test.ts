@@ -65,7 +65,7 @@ suite('公開manifestの現在のproduct invariant', () => {
 
   test('変換menuはsingle/split/combine設定を使い、animated保持とframe分割を区別する', async () => {
     const manifest = await readManifest();
-    const properties = manifest.contributes.configuration.properties;
+    const { properties } = manifest.contributes.configuration;
     for (const category of ['single', 'split', 'combine'] as const) {
       assert.deepStrictEqual(properties[`graphics-workbench.conversion.${category}.enabled`], {
         type: 'boolean',
@@ -91,7 +91,7 @@ suite('公開manifestの現在のproduct invariant', () => {
 
   test('outputPathはcardinality別に定義され、空文字をschemaで拒否する', async () => {
     const manifest = await readManifest();
-    const properties = manifest.contributes.configuration.properties;
+    const { properties } = manifest.contributes.configuration;
     const outputPathEntries = Object.entries(properties).filter(([key]) =>
       key.startsWith('graphics-workbench.outputPath.'),
     );

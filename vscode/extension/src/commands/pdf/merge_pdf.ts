@@ -33,7 +33,7 @@ export async function mergePdfSelectedFilesCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   try {
     assertPdfUris(sourceUris);
 
@@ -88,7 +88,7 @@ export async function mergePdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
 
   try {
     assertPdfUris(sourceUris);

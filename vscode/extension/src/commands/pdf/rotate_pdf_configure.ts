@@ -36,7 +36,7 @@ export async function rotatePdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
 
   try {
     await runRotatePdfConfigureCommand(context, sourceUris, dependencies);
@@ -57,7 +57,7 @@ async function runRotatePdfConfigureCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'rotatePdf.configure');
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
 

@@ -361,7 +361,7 @@ function assertNoDuplicateIds(ids: readonly unknown[], description: string): voi
 
 export function normalizeGeneratedMenuContributions(packageJson: PackageManifest): PackageManifest {
   assertFormatMatrixIsComplete();
-  const menus = packageJson.contributes.menus;
+  const { menus } = packageJson.contributes;
   if (menus === undefined) {
     return packageJson;
   }
@@ -374,9 +374,9 @@ export function normalizeGeneratedMenuContributions(packageJson: PackageManifest
         const generatedWhen =
           target === undefined
             ? undefined
-            : entry.command !== undefined
-              ? generatedMenuWhen(menuId, target)
-              : generatedSubmenuWhen(target);
+            : entry.command === undefined
+              ? generatedSubmenuWhen(target)
+              : generatedMenuWhen(menuId, target);
         return generatedWhen === undefined ? entry : { ...entry, when: generatedWhen };
       }),
     ]),

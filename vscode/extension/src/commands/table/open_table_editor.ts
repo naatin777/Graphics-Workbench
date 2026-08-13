@@ -29,7 +29,7 @@ interface InsertionTarget {
 }
 
 export async function openTableEditorCommand(dependencies: CommandDependencies): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   try {
     await runOpenTableEditorCommand(dependencies);
   } catch (error) {
@@ -44,7 +44,7 @@ export async function openTableEditorCommand(dependencies: CommandDependencies):
 }
 
 async function runOpenTableEditorCommand(dependencies: CommandDependencies): Promise<void> {
-  const outputChannel = dependencies.outputChannel;
+  const { outputChannel } = dependencies;
   const extensionUri = vscode.extensions.getExtension(extensionIdentity.id)?.extensionUri;
   if (extensionUri === undefined) {
     throw new Error('Graphics Workbench extension URI could not be resolved.');
