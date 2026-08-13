@@ -1,7 +1,5 @@
-import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { renderPdfPageToSvg } from '@graphics-workbench/core/pdf';
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
@@ -12,8 +10,7 @@ import {
   logicalSourcePathForOutputTemplate,
 } from '@graphics-workbench/core/formats';
 import { resolveOutputPath } from '@graphics-workbench/core/output';
-import { convertToSvgFiles, type SvgInput } from '@graphics-workbench/core/conversion';
-import { planPdfPageConversionJobs } from './plan_conversion_jobs.js';
+import { convertToSvgFiles, planPdfPageConversionInputs, type SvgInput } from '@graphics-workbench/core/conversion';
 import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -22,6 +19,8 @@ import type { ConversionExecutionContext } from '@graphics-workbench/core/runtim
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { assertLocalFileUri } from '../shared/command_input.js';
 import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
+import type { LocaleKeyType } from '../../locale_map.js';
+import { userMessage } from '../shared/user_messages.js';
 
 export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const { outputChannel } = dependencies;
@@ -48,12 +47,6 @@ export async function convertToSvgCommand(sourceUris: vscode.Uri[], dependencies
         maxInputPixels,
         drawioTools,
         runtime,
-        runPdfToSvg: async (sourcePath, outputPath, page, signal) => {
-          signal.throwIfAborted();
-          const svg = await renderPdfPageToSvg(await readFile(sourcePath), page);
-          signal.throwIfAborted();
-          await writeFile(outputPath, svg, 'utf8');
-        },
       });
     },
   });
@@ -126,13 +119,17 @@ async function planPdfPageSvgInputs(
   runtime: ConversionExecutionContext,
 ): Promise<SvgInput[]> {
   const outputTemplate = configuration.outputPath.split.svg();
-  return planPdfPageConversionJobs({
+  return planPdfPageConversionInputs({
     sourcePath,
     workspacePath: workspace.uri.fsPath,
     workspaceName: workspace.name,
     outputTemplate,
     allowedExtensions: ['.svg'],
-    runtime,
+    ...(runtime.signal !== undefined && { signal: runtime.signal }),
+    report: (message) => {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- コア由来の既知メッセージキーをロケール境界で絞り込む。
+      runtime.reportMessage?.(userMessage(message as LocaleKeyType));
+    },
     toConversion: (page, outputPath) => ({ sourcePath, workspacePath: workspace.uri.fsPath, outputPath, page }),
   });
 }

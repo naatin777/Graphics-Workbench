@@ -3,11 +3,11 @@ import { copyFile, mkdtempDisposable } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { planRasterFrameJobs } from '../../../src/commands/conversion/plan_raster_frame_jobs.js';
-import { getDefaultConfiguration } from '../../../src/generated/extension_manifest.js';
-import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
+import { planRasterFrameJobs } from '@graphics-workbench/core/conversion';
+import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 const fixturePath = operationPngInputPath;
+const maxInputPixels = 1_000_000_000;
 
 suite('ラスター画像から出力テンプレートに従った変換処理単位を生成する処理の出力パス検証', () => {
   test('出力templateの拡張子が.jpegで許容拡張子が.pngのみの場合、"Invalid output extension"エラーで変換前に拒否する', async () => {
@@ -22,7 +22,7 @@ suite('ラスター画像から出力テンプレートに従った変換処理�
         workspaceName: path.basename(workspacePath.path),
         outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.jpeg',
         allowedExtensions: ['.png'],
-        maxInputPixels: getDefaultConfiguration().raster.maxInputPixels(),
+        maxInputPixels,
       }),
       /Invalid output extension/,
     );
@@ -39,7 +39,7 @@ suite('ラスター画像から出力テンプレートに従った変換処理�
       workspaceName: path.basename(workspacePath.path),
       outputTemplate: '${fileDirname}/${fileBasenameNoExtension}.png',
       allowedExtensions: ['.png'],
-      maxInputPixels: getDefaultConfiguration().raster.maxInputPixels(),
+      maxInputPixels,
     });
 
     assert.strictEqual(jobs.length, 1);

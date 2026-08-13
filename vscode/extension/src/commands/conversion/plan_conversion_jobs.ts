@@ -1,28 +1,17 @@
-import path from 'node:path';
-import { readFile } from 'node:fs/promises';
-
 import * as vscode from 'vscode';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
 import {
-  isEditableDrawioImagePath,
-  isRasterImagePath,
-  logicalSourcePathForOutputTemplate,
-} from '@graphics-workbench/core/formats';
-import { resolveOutputPath } from '@graphics-workbench/core/output';
-import { assertAnimationPixelLimit } from '../../config/raster.js';
-import {
-  planPdfPageJobs,
-  readRasterAnimationMetadata,
+  planRasterConversionInputs,
+  type PlanRasterConversionInputsOptions,
+  type RasterConversionTarget,
   type RasterFormatSpec,
   type RasterInput,
 } from '@graphics-workbench/core/conversion';
+import { isEditableDrawioImagePath } from '@graphics-workbench/core/formats';
 import type { ConversionExecutionContext } from '@graphics-workbench/core/runtime';
-import { countPdfPages } from '@graphics-workbench/core/pdf';
-import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
-import { resolveRasterOutputTemplate, type OutputCardinality } from './conversion_routing.js';
-import { planRasterFrameJobs } from './plan_raster_frame_jobs.js';
 
+import type { LocaleKeyType } from '../../locale_map.js';
 import { assertLocalFileUri } from '../shared/command_input.js';
 import { userMessage } from '../shared/user_messages.js';
 
@@ -46,215 +35,39 @@ export async function planRasterConversionJobs(
     throw new Error(`The file must be inside an open workspace: ${sourceUri.fsPath}`);
   }
 
-  const sourcePath = sourceUri.fsPath;
-  const extension = path.extname(sourcePath).toLowerCase();
-
-  if (spec.extensions.includes(extension) && !isEditableDrawioImagePath(sourcePath)) {
-    throw new Error(`Unsupported input for ${spec.label} input: ${sourcePath}`);
-  }
-
-  if (extension === '.pdf') {
-    await assertExistingPathInWorkspace(sourcePath, workspace.uri.fsPath);
-    return planPdfPageRasterConversions(sourcePath, workspace, spec, options);
-  }
-
-  const splitByFrames = spec.animatedInputExtension !== undefined && options.frameMode === 'all';
-  const cardinality: OutputCardinality = splitByFrames ? 'split' : 'single';
-  const outputTemplate = resolveRasterOutputTemplate({
-    cardinality,
-    target: spec.target,
-    configuration: options.configuration,
-  });
-
-  if (spec.animatedInputExtension !== undefined) {
-    const inputs = await planAnimationRasterSourceConversions({
-      sourcePath,
+  const inputOptions: PlanRasterConversionInputsOptions = {
+    source: {
+      sourcePath: sourceUri.fsPath,
       workspacePath: workspace.uri.fsPath,
       workspaceName: workspace.name,
-      outputTemplate,
-      allowedExtensions: spec.extensions,
-      maxInputPixels: options.maxInputPixels,
-      maxAnimationPixels: options.maxAnimationPixels ?? 0,
-      animatedInputExtension: spec.animatedInputExtension,
-      frameMode: options.frameMode ?? 'first',
-    });
-    if (inputs !== undefined) {
-      return inputs;
+    },
+    spec,
+    outputTemplate: resolveRasterOutputTemplate('single', spec.target, options.configuration),
+    splitOutputTemplate: resolveRasterOutputTemplate('split', spec.target, options.configuration),
+    frameMode: options.frameMode ?? 'first',
+    maxInputPixels: options.maxInputPixels,
+    isEditableDrawioImagePath,
+  };
+  if (options.maxAnimationPixels !== undefined) {
+    inputOptions.maxAnimationPixels = options.maxAnimationPixels;
+  }
+  if (options.runtime !== undefined) {
+    if (options.runtime.signal !== undefined) {
+      inputOptions.signal = options.runtime.signal;
     }
-
-    const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
-    return [
-      {
-        sourcePath,
-        workspacePath: workspace.uri.fsPath,
-        outputPath: resolveOutputPath(
-          outputTemplate,
-          {
-            sourcePath: logicalSourcePathForOutputTemplate(sourcePath),
-            workspacePath: workspace.uri.fsPath,
-            workspaceName: workspace.name,
-            ...(page !== undefined && { page }),
-          },
-          { allowedExtensions: spec.extensions },
-        ),
-        ...(page !== undefined && { page: Number(page) }),
-      },
-    ];
+    inputOptions.report = (message: string) => {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- コア由来の既知メッセージキーをロケール境界で絞り込む。
+      options.runtime?.reportMessage?.(userMessage(message as LocaleKeyType));
+    };
   }
-
-  return planRasterSourceConversionJobs({
-    sourcePath,
-    workspacePath: workspace.uri.fsPath,
-    workspaceName: workspace.name,
-    outputTemplate,
-    allowedExtensions: spec.extensions,
-    maxInputPixels: options.maxInputPixels,
-  });
+  return planRasterConversionInputs(inputOptions);
 }
 
-async function planPdfPageRasterConversions(
-  sourcePath: string,
-  workspace: vscode.WorkspaceFolder,
-  spec: RasterFormatSpec,
-  options: PlanRasterConversionOptions,
-): Promise<RasterInput[]> {
-  const outputTemplate = resolveRasterOutputTemplate({
-    cardinality: 'split',
-    target: spec.target,
-    configuration: options.configuration,
-  });
-  return planPdfPageConversionJobs({
-    sourcePath,
-    workspacePath: workspace.uri.fsPath,
-    workspaceName: workspace.name,
-    outputTemplate,
-    allowedExtensions: spec.extensions,
-    ...(options.runtime !== undefined && { runtime: options.runtime }),
-    toConversion: (page, outputPath) => ({ sourcePath, workspacePath: workspace.uri.fsPath, outputPath, page }),
-  });
-}
-
-interface RasterSourcePlanOptions {
-  sourcePath: string;
-  workspacePath: string;
-  workspaceName: string;
-  outputTemplate: string;
-  allowedExtensions: readonly string[];
-  maxInputPixels: number;
-}
-
-export async function planRasterSourceConversionJobs(options: RasterSourcePlanOptions): Promise<RasterInput[]> {
-  const page = isEditableDrawioImagePath(options.sourcePath) ? '1' : undefined;
-  if (isRasterImagePath(options.sourcePath)) {
-    return planRasterFrameJobs(options);
-  }
-
-  const outputPath = resolveOutputPath(
-    options.outputTemplate,
-    {
-      sourcePath: logicalSourcePathForOutputTemplate(options.sourcePath),
-      workspacePath: options.workspacePath,
-      workspaceName: options.workspaceName,
-      ...(page !== undefined && { page }),
-    },
-    { allowedExtensions: options.allowedExtensions },
-  );
-
-  return [
-    {
-      sourcePath: options.sourcePath,
-      workspacePath: options.workspacePath,
-      outputPath,
-      ...(page !== undefined && { page: Number(page) }),
-    },
-  ];
-}
-
-interface AnimationRasterPlanOptions extends RasterSourcePlanOptions {
-  maxAnimationPixels: number;
-  animatedInputExtension: string;
-  frameMode?: 'first' | 'all';
-}
-
-async function planAnimationRasterSourceConversions(
-  options: AnimationRasterPlanOptions,
-): Promise<RasterInput[] | undefined> {
-  if (!isRasterImagePath(options.sourcePath)) {
-    return undefined;
-  }
-
-  const extension = path.extname(options.sourcePath).toLowerCase();
-  const animation =
-    extension === options.animatedInputExtension
-      ? await readRasterAnimationMetadata(options.sourcePath, options.maxInputPixels)
-      : undefined;
-
-  if (animation !== undefined && options.frameMode !== 'all') {
-    assertAnimationPixelLimit(
-      animation.width ?? 0,
-      animation.pageHeight,
-      animation.pages,
-      options.maxAnimationPixels,
-      options.sourcePath,
-    );
-    return [
-      {
-        sourcePath: options.sourcePath,
-        workspacePath: options.workspacePath,
-        outputPath: resolveOutputPath(
-          options.outputTemplate,
-          {
-            sourcePath: logicalSourcePathForOutputTemplate(options.sourcePath),
-            workspacePath: options.workspacePath,
-            workspaceName: options.workspaceName,
-          },
-          { allowedExtensions: options.allowedExtensions },
-        ),
-        animation,
-      },
-    ];
-  }
-
-  return planRasterFrameJobs({
-    sourcePath: options.sourcePath,
-    workspacePath: options.workspacePath,
-    workspaceName: options.workspaceName,
-    outputTemplate: options.outputTemplate,
-    allowedExtensions: options.allowedExtensions,
-    maxInputPixels: options.maxInputPixels,
-    maxAnimationPixels: options.maxAnimationPixels,
-    frameMode: options.frameMode === 'all' ? 'all' : 'first',
-  });
-}
-
-/** PDFを読み込んでpage countを解析し、形式固有の変換単位へ変換する。 */
-export async function planPdfPageConversionJobs<Conversion>(options: {
-  sourcePath: string;
-  workspacePath: string;
-  workspaceName: string;
-  outputTemplate: string;
-  allowedExtensions: readonly string[];
-  runtime?: ConversionExecutionContext;
-  toConversion: (page: number, outputPath: string) => Conversion;
-}): Promise<Conversion[]> {
-  options.runtime?.signal?.throwIfAborted();
-  options.runtime?.reportMessage?.(userMessage('message.progress.analyzingPdf'));
-  const pageCount = await countPdfPages(await readFile(options.sourcePath));
-  options.runtime?.signal?.throwIfAborted();
-
-  const inputs: Conversion[] = [];
-  for (const { page, outputPath } of planPdfPageJobs(
-    {
-      sourcePath: options.sourcePath,
-      workspacePath: options.workspacePath,
-      workspaceName: options.workspaceName,
-    },
-    pageCount,
-    options.outputTemplate,
-    options.allowedExtensions,
-  )) {
-    options.runtime?.signal?.throwIfAborted();
-    inputs.push(options.toConversion(page, outputPath));
-  }
-  return inputs;
+/** Resolves the raster output template from the single/split outputPath settings. */
+function resolveRasterOutputTemplate(
+  cardinality: 'single' | 'split',
+  target: RasterConversionTarget,
+  configuration: Configuration,
+): string {
+  return cardinality === 'split' ? configuration.outputPath.split[target]() : configuration.outputPath.single[target]();
 }
