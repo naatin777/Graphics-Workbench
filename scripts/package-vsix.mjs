@@ -232,7 +232,7 @@ export async function appendStagingIgnoreRules(stagingDirectory) {
   const existingRules = await readFile(ignorePath, 'utf8');
   await writeFile(
     ignorePath,
-    `${existingRules.trimEnd()}\n**/*.tsbuildinfo\nout/core/test/**\nout/vscode/extension/test/**\nout/test-support/**\nout/test/**\n`,
+    `${existingRules.trimEnd()}\n**/*.tsbuildinfo\nout/core/test/**\nout/vscode/extension/test/**\nout/test/**\n`,
     'utf8',
   );
 }

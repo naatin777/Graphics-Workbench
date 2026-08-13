@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdtempDisposable, rm } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '@graphics-workbench/core/testing';
 import * as vscode from 'vscode';
 
 import { LatexDropEditProvider } from '../../../src/edit_provider/latex_drop_edit_provider.js';

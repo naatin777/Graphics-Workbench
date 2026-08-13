@@ -166,7 +166,6 @@ export function verifyVsixEntries(entries, target) {
       entry.startsWith('out/test/') ||
       entry.startsWith('out/core/test/') ||
       entry.startsWith('out/vscode/extension/test/') ||
-      entry.startsWith('out/test-support/') ||
       entry.endsWith('.map') ||
       entry.endsWith('.tsbuildinfo') ||
       (coreRelativeEntry !== undefined &&

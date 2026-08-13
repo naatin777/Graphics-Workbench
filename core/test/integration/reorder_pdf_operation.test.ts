@@ -12,7 +12,7 @@ import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../../test-support/pdf_document.js';
+import { PDFDocument } from '@graphics-workbench/core/testing';
 
 import { reorderPdfFiles } from '@graphics-workbench/core/pdf';
 

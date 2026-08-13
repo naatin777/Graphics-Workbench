@@ -21,7 +21,7 @@ import { localeMap } from '../../../src/locale_map.js';
 import { convertToRasterCommand } from '../../../src/commands/conversion/convert_to_raster.js';
 import { liveCommandDependencies } from '../../support/helpers/command_dependencies.js';
 
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 
 const sourceJpegBase64 =
   '/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAANABEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCbAL6KAA//2Q==';

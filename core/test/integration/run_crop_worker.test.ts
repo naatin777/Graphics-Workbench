@@ -6,20 +6,22 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
-
 import {
   parseCropWorkerRequest,
   parseCropWorkerResult,
   runCropWorker,
   type CropWorkerChild,
-} from '../../../src/adapters/crop/run_crop_worker.js';
-import { invalidPreflightInputDirectory, operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
-import { RecordingOutputChannel } from '../../support/helpers/recording_output_channel.js';
+} from '@graphics-workbench/core/crop-worker';
+import {
+  PDFDocument,
+  RecordingOutputChannel,
+  invalidPreflightInputDirectory,
+  operationPdfInputDirectory,
+} from '@graphics-workbench/core/testing';
 
 const fixtureRunnerPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../support/fixtures/crop_process_fixture_runner.js',
+  '../fixtures/crop_process_fixture_runner.js',
 );
 
 // mupdf re-serializes page boxes with limited float precision, so compare

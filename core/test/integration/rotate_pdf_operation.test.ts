@@ -11,7 +11,7 @@ import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { degrees, PDFDocument } from '../../../test-support/pdf_document.js';
+import { degrees, PDFDocument } from '@graphics-workbench/core/testing';
 
 import { rotatePdfFiles } from '@graphics-workbench/core/pdf';
 

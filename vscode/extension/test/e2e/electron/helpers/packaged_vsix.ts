@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { runVSCodeCommand } from '@vscode/test-electron';
 
-import { requireValue } from '../../../support/helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 
 interface PackagedVsixOptions {
   extensionsDir: string;

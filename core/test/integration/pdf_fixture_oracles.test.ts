@@ -1,17 +1,18 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
-
 import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import {
+  PDFDocument,
+  assertRasterMatches,
+  createTestRuntime,
+  copyInputToWorkspace,
   listInputFixturePathsSync,
+  readConfiguredConversionTools,
   testInputDirectory,
   testOutputDirectory,
-} from '../../support/helpers/fixture_paths.js';
-import { assertRasterMatches } from '../../support/helpers/content_assertions.js';
-import { readConfiguredConversionTools } from '../../support/helpers/external_tool_settings.js';
-import { copyInputToWorkspace, withTestWorkspace } from '../../support/helpers/test_workspace.js';
+  withTestWorkspace,
+} from '@graphics-workbench/core/testing';
 
 suite('PDFテスト入力の全ページPNG変換結果が、各ページの期待出力PNGと一致する', () => {
   for (const [index, fixturePath] of listInputFixturePathsSync(
@@ -35,7 +36,7 @@ suite('PDFテスト入力の全ページPNG変換結果が、各ページの期�
           inputs: cases.map(({ outputPath, page }) => ({ sourcePath, outputPath, workspacePath, page })),
           pdfRenderTools,
           drawioTools,
-          runtime: { resolveConflicts: async () => 'overwrite' },
+          runtime: createTestRuntime().runtime,
           runId: `pdf-${index}`,
         });
 

@@ -14,11 +14,10 @@ import assert from 'node:assert/strict';
 import { mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
 import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
-import { requireValue } from '../../support/helpers/required.js';
 import { stubWebviewPanel, waitFor } from '../../support/helpers/webview_panel.js';
 
 suite('Reorder PDF ConfigureコマンドがWebviewから送られた重複orderをApply時に拒否してエラー通知する処理', () => {

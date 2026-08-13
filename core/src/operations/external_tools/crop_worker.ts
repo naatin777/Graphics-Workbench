@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 
-import { cropPdfFile, getPdfPageGeometry, openPdfDocument } from '@graphics-workbench/core/pdf';
+import { cropPdfFile } from '../pdf/crop_pdf_core.js';
+import { openPdfDocument } from '../pdf/mupdf.js';
+import { getPdfPageGeometry } from '../pdf/pdf_page_geometry.js';
 
 import { parseCropWorkerRequest, type CropPdfMetadata, type CropWorkerResult } from './run_crop_worker.js';
 

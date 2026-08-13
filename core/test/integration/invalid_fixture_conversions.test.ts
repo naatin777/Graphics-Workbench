@@ -3,9 +3,13 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 
 import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
-import { testInputDirectory } from '../../support/helpers/fixture_paths.js';
-import { readConfiguredConversionTools } from '../../support/helpers/external_tool_settings.js';
-import { copyInputToWorkspace, withTestWorkspace } from '../../support/helpers/test_workspace.js';
+import {
+  copyInputToWorkspace,
+  createTestRuntime,
+  readConfiguredConversionTools,
+  testInputDirectory,
+  withTestWorkspace,
+} from '@graphics-workbench/core/testing';
 
 const invalidCases = [
   { directory: 'avif', fileName: 'truncated.avif', outputFormat: 'png' },
@@ -37,7 +41,7 @@ suite('不正なテスト入力の実変換エラー', () => {
           inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
           drawioTools,
-          runtime: { resolveConflicts: async () => 'overwrite' },
+          runtime: createTestRuntime().runtime,
           runId: `invalid-${index}`,
         });
 

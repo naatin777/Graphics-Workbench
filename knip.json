@@ -3,12 +3,12 @@
   "workspaces": {
     ".": {
       "entry": ["scripts/*.mjs", ".github/scripts/*.mjs"],
-      "project": ["test-support/**/*.ts", "scripts/*.{mjs,ts}", ".github/scripts/*.mjs"],
+      "project": ["scripts/*.{mjs,ts}", ".github/scripts/*.mjs"],
       "ignoreDependencies": ["@commitlint/types"]
     },
     "core": {
-      "entry": ["test/**/*.test.ts"],
-      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
+      "entry": ["src/operations/external_tools/crop_worker.ts", "test/**/*.test.ts", "testing/**/*.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts", "testing/**/*.ts", "scripts/**/*.ts"]
     },
     "vscode/protocol": {
       "entry": ["test/**/*.test.ts"],
@@ -16,7 +16,6 @@
     },
     "vscode/extension": {
       "entry": [
-        "src/adapters/crop/crop_worker.ts",
         "src/commands/pdf/*.ts",
         "src/commands/conversion/*.ts",
         "src/commands/lifecycle/*.ts",

@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { planRasterConversionInputs, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import { isEditableDrawioImagePath } from '@graphics-workbench/core/formats';
-import { buildPdfFixture } from '../helpers/pdf_fixture_builder.js';
+import { buildPdfFixture } from '@graphics-workbench/core/testing';
 
 const simpleFormats = [
   { spec: rasterFormatSpecs.png, extension: 'png', unsupportedLabel: 'PNG' },

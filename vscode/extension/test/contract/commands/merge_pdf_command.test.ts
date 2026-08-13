@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument, assertRenderedPdfPagesSimilar } from '@graphics-workbench/core/testing';
 import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
@@ -13,7 +13,6 @@ import { mergePdfConfigureCommand } from '../../../src/commands/pdf/merge_pdf.js
 
 import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { testCommandDependencies } from '../../support/helpers/command_dependencies.js';
-import { assertRenderedPdfPagesSimilar } from '../../support/helpers/pdf_visual_assertions.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
 
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));

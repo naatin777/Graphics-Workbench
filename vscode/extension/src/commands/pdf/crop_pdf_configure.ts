@@ -20,7 +20,7 @@ import {
 } from '@graphics-workbench/core/runtime';
 import { cropPdfWithConfiguredBox } from '../../adapters/crop/crop_pdf_configure.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
-import { runCropWorker, type CropPdfMetadata } from '../../adapters/crop/run_crop_worker.js';
+import { runCropWorker, type CropPdfMetadata } from '@graphics-workbench/core/crop-worker';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runSinglePdfConfigureCommand } from '../lifecycle/run_single_pdf_configure.js';

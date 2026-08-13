@@ -18,7 +18,7 @@ import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
 import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 import { stubWebviewPanel, waitFor } from '../../support/helpers/webview_panel.js';
 
 suite('Rotate PDF ConfigureコマンドがWebviewから送られたApplyを拒否してエラー通知する処理', () => {

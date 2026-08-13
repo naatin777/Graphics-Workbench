@@ -6,7 +6,8 @@ tui/.core-package/
 .pnpm-store/
 .vscode-test/
 .vscode-test-ci-data/
-vscode/test/support/.vscode-test-data/
+test/.vscode-test-data/
+vscode/extension/test/support/.vscode-test-data/
 playwright-report/
 test-results/
 /artifacts/
@@ -18,6 +19,6 @@ media/
 .DS_Store
 *.vsix
 coverage/
-vscode/test/support/workspace/*
-!vscode/test/support/workspace/.gitkeep
+vscode/extension/test/support/workspace/*
+!vscode/extension/test/support/workspace/.gitkeep
 .vscode-test-ci-host/

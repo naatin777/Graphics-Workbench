@@ -13,12 +13,10 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import sharp from 'sharp';
-import { PDFDocument } from '../../../test-support/pdf_document.js';
+import { PDFDocument, operationPngInputPath, testInputDirectory, requireValue } from '@graphics-workbench/core/testing';
 
 import { convertToPdfFiles, executeChrome, validateSvgToPdfOptions } from '@graphics-workbench/core/conversion';
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
-import { operationPngInputPath, testInputDirectory } from '../helpers/fixture_paths.js';
-import { requireValue } from '../helpers/required.js';
 
 suite('入力画像をPDFへ変換する処理', () => {
   test('2フレームのアニメーションGIFをpage1・page2の2jobに分け、各フレームを1ページのPDFへ変換する', async () => {
@@ -105,7 +103,7 @@ suite('入力画像をPDFへ変換する処理', () => {
       runtime: {},
     });
 
-    const { PDFDocument: LoadedPdfDocument } = await import('../../../test-support/pdf_document.js');
+    const { PDFDocument: LoadedPdfDocument } = await import('@graphics-workbench/core/testing');
     const pdf = await LoadedPdfDocument.load(await import('node:fs/promises').then((fs) => fs.readFile(outputPath)));
     assert.strictEqual(pdf.getPageCount(), 1);
   });

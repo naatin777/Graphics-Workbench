@@ -19,7 +19,7 @@ import * as vscode from 'vscode';
 
 import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 
 const fixturePngPath = operationPngInputPath;
 

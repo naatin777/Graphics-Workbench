@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url';
 
 import * as v from 'valibot';
 
-import { OperationCancelledError } from '@graphics-workbench/core/runtime';
-import { terminateProcessTree, type LineOutputChannel } from '@graphics-workbench/core/external-tools';
-import type { CropPdfFileRequest, PdfPageGeometry } from '@graphics-workbench/core/pdf';
+import { OperationCancelledError } from '../../shared/error.js';
+import { terminateProcessTree } from './run_external_tool.js';
+import type { LineOutputChannel } from './external_tool_ascii_scratch.js';
+import type { CropPdfFileRequest } from '../pdf/crop_pdf_core.js';
+import type { PdfPageGeometry } from '../pdf/pdf_page_geometry.js';
 
 export interface CropPdfMetadata {
   pageCount: number;

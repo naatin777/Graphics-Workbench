@@ -12,12 +12,15 @@ import { access, copyFile, mkdir, mkdtemp, mkdtempDisposable, readFile, writeFil
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../../test-support/pdf_document.js';
+import {
+  PDFDocument,
+  invalidPreflightInputDirectory,
+  operationPdfInputDirectory,
+  assertRenderedPdfPagesSimilar,
+} from '@graphics-workbench/core/testing';
 
 import { parsePdfPageSelection as parseSplitPdfPages } from '@graphics-workbench/core/formats';
 import { splitPdfAllPages, splitPdfByPageGroups } from '@graphics-workbench/core/pdf';
-import { invalidPreflightInputDirectory, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
-import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.js';
 
 suite('PDF全ページ分割', () => {
   test('multi-page-table.pdfの全ページを1から始まるページ番号で1ページずつのPDFへ分割し、各分割ページが元の対応ページと同じ描画内容であることを確認する', async () => {

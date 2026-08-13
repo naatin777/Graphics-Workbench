@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const coreSourceRoot = path.join(repositoryRoot, 'core', 'src');
+const coreTestingRoot = path.join(repositoryRoot, 'core', 'testing');
 const vscodeSourceRoot = path.join(repositoryRoot, 'vscode', 'extension', 'src');
 const vscodeTestRoot = path.join(repositoryRoot, 'vscode', 'extension', 'test');
 const webviewSourceRoot = path.join(repositoryRoot, 'vscode', 'webview', 'src');
@@ -31,6 +32,7 @@ checkFrontendImports('webview', [webviewSourceRoot], webviewPackage, ['@webview-
 checkFrontendImports('protocol', [protocolSourceRoot], protocolPackage, []);
 checkFrontendImports('tui', [tuiSourceRoot, tuiTestRoot], tuiPackage, []);
 checkCorePublicImports([
+  coreTestingRoot,
   vscodeSourceRoot,
   vscodeTestRoot,
   webviewSourceRoot,
@@ -70,6 +72,34 @@ function checkCoreImports() {
         packageName.startsWith('@opentui/')
       ) {
         failures.push(`${relative(filePath)} imports frontend-only package ${specifier}`);
+        continue;
+      }
+      if (!declaredDependencies.has(packageName)) {
+        failures.push(`${relative(filePath)} imports undeclared core dependency ${specifier}`);
+      }
+    }
+  }
+  for (const filePath of collectFiles(coreTestingRoot)) {
+    const source = readFileSync(filePath, 'utf8');
+    if (/\b(?:VS Code|Terminal UI|TUI|Extension Host)\b/u.test(source)) {
+      failures.push(`${relative(filePath)} contains frontend-specific policy terminology`);
+    }
+
+    for (const specifier of collectModuleSpecifiers(source)) {
+      if (specifier.startsWith('.') || specifier.startsWith('node:')) {
+        continue;
+      }
+      const packageName = packageNameFor(specifier);
+      if (
+        packageName === 'vscode' ||
+        packageName === 'bun' ||
+        packageName === 'bun-types' ||
+        packageName.startsWith('@opentui/')
+      ) {
+        failures.push(`${relative(filePath)} imports frontend-only package ${specifier}`);
+        continue;
+      }
+      if (packageName === '@graphics-workbench/core') {
         continue;
       }
       if (!declaredDependencies.has(packageName)) {
@@ -195,7 +225,10 @@ function checkCoreExports() {
     failures.push('core package exports must not expose a wildcard or private file layout');
   }
   for (const entry of publicCoreEntries) {
-    const sourcePath = path.join(coreSourceRoot, 'public', `${entry.replaceAll('-', '_')}.ts`);
+    const sourcePath =
+      entry === 'testing'
+        ? path.join(repositoryRoot, 'core', 'testing', 'index.ts')
+        : path.join(coreSourceRoot, 'public', `${entry.replaceAll('-', '_')}.ts`);
     if (!existsSync(sourcePath)) {
       failures.push(`core public entry ${entry} has no source module at ${relative(sourcePath)}`);
     }

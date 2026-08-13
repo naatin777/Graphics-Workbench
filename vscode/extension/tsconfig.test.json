@@ -4,6 +4,6 @@
     "lib": ["ES2023", "ES2025.Regexp"],
     "types": ["node", "mocha"]
   },
-  "include": ["src/**/*", "test/**/*", "../../test-support/**/*"],
+  "include": ["src/**/*", "test/**/*"],
   "exclude": ["out", "../../node_modules", "../../.vscode-test", "webview", "media"]
 }

@@ -14,7 +14,7 @@ import { userMessage } from '../../../src/commands/shared/user_messages.js';
 
 import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 import { withWorkspaceSettings } from '../../support/helpers/workspace_settings.js';
 
 const VALID_PNG = operationPngInputPath;

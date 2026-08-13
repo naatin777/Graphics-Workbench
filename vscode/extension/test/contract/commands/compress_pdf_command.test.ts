@@ -2,11 +2,9 @@ import assert from 'node:assert/strict';
 import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
-
-import { requireValue } from '../../support/helpers/required.js';
 
 suite('PDF圧縮コマンド', () => {
   const sandbox = createSandbox();

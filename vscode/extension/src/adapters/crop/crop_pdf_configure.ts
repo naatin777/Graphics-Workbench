@@ -15,7 +15,7 @@ import {
   type RunId,
 } from '@graphics-workbench/core/runtime';
 
-import { runCropWorker } from './run_crop_worker.js';
+import { runCropWorker } from '@graphics-workbench/core/crop-worker';
 
 export type { CropBox } from '@graphics-workbench/core/pdf';
 

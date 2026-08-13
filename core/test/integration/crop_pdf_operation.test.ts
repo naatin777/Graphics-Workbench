@@ -4,8 +4,11 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { cropPdfFile, type CropPdfFileWriter } from '@graphics-workbench/core/pdf';
-import { PDFDocument } from '../../../test-support/pdf_document.js';
-import { invalidPreflightInputDirectory, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import {
+  PDFDocument,
+  invalidPreflightInputDirectory,
+  operationPdfInputDirectory,
+} from '@graphics-workbench/core/testing';
 
 const multilingualFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 const mixedContentFixturePath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
