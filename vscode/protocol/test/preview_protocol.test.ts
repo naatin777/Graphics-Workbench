@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 
+import { suite, test } from 'mocha';
+
 import { isPreviewWebviewToHostMessage } from '@graphics-workbench/vscode-protocol/preview-protocol';
 
 suite('PDF/TIFF previewのWebview操作メッセージの受信判定（ready/renderPage/previewLoadFailed）', () => {

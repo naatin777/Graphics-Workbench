@@ -79,12 +79,14 @@ void test('VSIX verification rejects an archive without the packed core runtime'
   assert.throws(() => verifyVsixEntries(entries, 'linux-x64'), /missing required entries/u);
 });
 
-void test('production staging verification requires core, MuPDF, and target Sharp files', async () => {
+void test('production staging verification requires core, protocol, MuPDF, and target Sharp files', async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-verify-vsix-test-'));
   try {
     const requiredFiles = [
       '@graphics-workbench/core/package.json',
       '@graphics-workbench/core/dist/public/conversion.js',
+      '@graphics-workbench/vscode-protocol/package.json',
+      '@graphics-workbench/vscode-protocol/dist/protocols/typed_protocol.js',
       'mupdf/package.json',
       'sharp/package.json',
       '@img/sharp-darwin-arm64/package.json',

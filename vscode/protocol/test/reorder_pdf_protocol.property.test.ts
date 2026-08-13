@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 
 import * as fc from 'fast-check';
 
+import { suite, test } from 'mocha';
+
 import {
   isReorderPdfHostToWebviewMessage,
   isReorderPdfWebviewToHostMessage,

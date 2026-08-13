@@ -10,11 +10,11 @@
 // - process.platform (forced to win32 for the Windows branch)
 //
 // node:test module mocks require the --experimental-test-module-mocks flag. The
-// suite is imported from node:test, so under mocha (extension host) these tests
-// are never executed; every test is also skipped when the flag is absent.
+// suite is imported from node:test, so the mocha runner excludes this file via
+// --ignore and every test is also skipped when the flag is absent.
 //
 // Run with:
-//   node --experimental-test-module-mocks --test vscode/extension/out/core/test/unit/operations/terminate_process_tree.test.js
+//   node --experimental-test-module-mocks --test dist-test/core/test/unit/operations/terminate_process_tree.test.js
 
 import assert from 'node:assert/strict';
 import type { ChildProcess } from 'node:child_process';

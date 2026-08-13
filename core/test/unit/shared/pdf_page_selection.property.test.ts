@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import * as fc from 'fast-check';
 
-import { parsePdfPageSelection } from '../../../src/shared/pdf_page_selection.js';
+import { parsePdfPageSelection } from '@graphics-workbench/core/formats';
 
 interface ExpectedPageToken {
   text: string;
