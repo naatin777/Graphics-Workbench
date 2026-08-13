@@ -14,7 +14,7 @@ test('pageパラメータなしのルートはunknown page errorになる', asyn
   await expect(page.locator('#root .app')).toHaveCount(0);
 });
 
-test('previewページはpdfDataからエラーなく描画できる', async ({ page }) => {
+test('previewページはpdfSrcからエラーなく描画できる', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);

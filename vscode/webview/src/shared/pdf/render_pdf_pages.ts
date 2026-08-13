@@ -442,7 +442,7 @@ export interface PdfRenderOptions {
     standardFontDataUrl?: string;
     wasmUrl?: string;
   };
-  data?: Uint8Array | string;
+  url?: string;
   root?: Element;
   page?: {
     label?: string;
@@ -471,9 +471,9 @@ function createAbortError(): Error {
 }
 
 function createDocumentOptions(pdfSrc: string, options: PdfRenderOptions): Parameters<PdfJs['getDocument']>[0] {
-  const { resources, data } = options;
+  const { resources, url } = options;
   return {
-    ...(data === undefined ? { url: pdfSrc } : { data }),
+    url: url ?? pdfSrc,
     cMapPacked: true,
     useWorkerFetch: false,
     cMapUrl: nonEmptyOrDefault(resources?.cMapUrl, `${sharedPdfJsAssetsPath}/cmaps/`),

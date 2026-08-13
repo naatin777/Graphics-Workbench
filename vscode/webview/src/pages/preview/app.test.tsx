@@ -41,7 +41,7 @@ const pdfInit: ExtensionToWebviewMessage = {
     format: 'pdf',
     fileName: 'source.pdf',
     pageCount: 2,
-    pdfData: 'JVBERi0xLjQK',
+    pdfSrc: 'vscode-resource://source.pdf',
     resources: {
       workerSrc: 'vscode-resource://pdf.worker.mjs',
       cMapUrl: 'vscode-resource://cmaps/',
@@ -97,7 +97,7 @@ describe('PDF/TIFF Preview Webview', () => {
     document.body.innerHTML = '';
   });
 
-  test('on mount sends ready and renders PDF pages from the transferred bytes', async () => {
+  test('on mount sends ready and renders PDF pages from the provided URL', async () => {
     expect(sendMessage).toHaveBeenCalledWith({ type: 'ready' });
 
     globalThis.dispatchEvent(new MessageEvent('message', { data: pdfInit }));
@@ -106,7 +106,7 @@ describe('PDF/TIFF Preview Webview', () => {
     const options = renderPdfPages.mock.calls[0]?.[2];
     expect(renderPdfPages).toHaveBeenCalledTimes(1);
     expect(renderPdfPages.mock.calls[0]?.[0]).toBe('');
-    expect(options?.data).toEqual(new Uint8Array([37, 80, 68, 70, 45, 49, 46, 52, 10]));
+    expect(options?.url).toBe('vscode-resource://source.pdf');
     expect(options?.preview).toEqual({ maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 });
     expect(document.querySelector('.preview__toolbar h2')?.textContent).toBe('source.pdf');
     expect(document.querySelector('.page-navigator__position')?.textContent).toContain('2');

@@ -6,10 +6,9 @@ import { reorderPdfProtocol, type ReorderPdfLabels } from '@graphics-workbench/v
 import { rotatePdfProtocol, type RotatePdfLabels } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import { splitPdfProtocol, type SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import { tableEditorProtocol, type TableEditorLabels } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import type { WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
 
 import type { WebviewHost } from '@webview-shared/vscode';
-
-import type { WebviewPageId } from '../app';
 
 export function createScenarioHost(page: WebviewPageId, scenario: string): WebviewHost {
   switch (page) {
@@ -42,19 +41,25 @@ export function createScenarioHost(page: WebviewPageId, scenario: string): Webvi
 
 function previewScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(previewProtocol);
-  const sendInit = async (): Promise<void> => {
+  const sendInit = (): void => {
     channel.hostToWebview.send.init({
       format: 'pdf',
       fileName:
         scenario === 'long-filename' ? 'a-very-long-fixture-file-name-for-browser-development.pdf' : 'sample.pdf',
       pageCount: scenario === 'large' ? 8 : 3,
-      pdfData: await fixtureBase64Data(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf'),
+      pdfSrc: fixtureUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf'),
       resources: pdfJsResources(),
       preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
       labels: previewLabels,
     });
   };
-  channel.hostToWebview.on({ ready: () => void sendInit() });
+  channel.hostToWebview.on({
+    ready: () => {
+      queueMicrotask(() => {
+        sendInit();
+      });
+    },
+  });
   return scenarioHostFor(channel);
 }
 
@@ -209,20 +214,6 @@ function fixtureUrl(name: string): string {
     return new URL(name.slice(2), `${globalThis.location.origin}/`).toString();
   }
   return new URL(`/fixtures/${name}`, globalThis.location.href).toString();
-}
-
-async function fixtureBase64Data(name: string): Promise<string> {
-  const response = await fetch(fixtureUrl(name));
-  if (!response.ok) {
-    throw new Error(`Failed to load dev fixture ${name}: ${response.status}`);
-  }
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  let binary = '';
-  const chunkSize = 0x8000;
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
-  }
-  return btoa(binary);
 }
 
 const previewLabels = {
