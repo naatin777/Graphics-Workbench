@@ -44,6 +44,7 @@ suite('PDFページグループ分割', () => {
           outputPathForGroup: (groupIndex) => path.join(workspacePath.path, `group-${groupIndex + 1}.pdf`),
         },
       ],
+      runtime: {},
       runId: 'run',
     });
 
@@ -82,6 +83,7 @@ suite('PDFページグループ分割', () => {
             outputPathForGroup: () => outputPath,
           },
         ],
+        runtime: {},
         runId: 'run',
       }),
       /Preflight validation failed|Failed to parse PDF|No PDF header found/,
@@ -108,6 +110,7 @@ suite('PDFページグループ分割', () => {
             outputPathForGroup: () => outputPath,
           },
         ],
+        runtime: {},
       }),
       /out of range/,
     );
@@ -123,6 +126,7 @@ suite('PDFページグループ分割', () => {
             outputPathForGroup: () => outputPath,
           },
         ],
+        runtime: {},
       }),
       /cannot be empty/,
     );

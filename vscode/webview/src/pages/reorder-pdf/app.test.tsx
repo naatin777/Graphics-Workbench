@@ -1,7 +1,11 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { isReorderPdfHostToWebviewMessage, type ReorderPdfLabels } from '@graphics-workbench-reorder-pdf-protocol';
+import {
+  isReorderPdfHostToWebviewMessage,
+  reorderPdfProtocol,
+  type ReorderPdfLabels,
+} from '@graphics-workbench-reorder-pdf-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
@@ -69,7 +73,7 @@ const renderPdfPages = vi.hoisted(() =>
 );
 
 vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(sendMessage),
+  vscode: createTestPageHost(reorderPdfProtocol, sendMessage),
 }));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 

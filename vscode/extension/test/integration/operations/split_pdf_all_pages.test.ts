@@ -37,6 +37,7 @@ suite('PDF全ページ分割', () => {
           outputPathForPage: (page: number) => path.join(outputDirectory, `${page}.pdf`),
         },
       ],
+      runtime: {},
       runId: 'run',
     });
 
@@ -82,6 +83,7 @@ suite('PDF全ページ分割', () => {
         outputPathForPage: (page: number) =>
           path.join(workspacePath.path, path.basename(sourcePath, '.pdf'), `${page}.pdf`),
       })),
+      runtime: {},
     });
 
     for (const [sourceIndex, sourcePath] of sourcePaths.entries()) {
@@ -119,6 +121,7 @@ suite('PDF全ページ分割', () => {
             outputPathForPage: (page: number) => (page === 1 ? firstOutputPath : secondOutputPath),
           },
         ],
+        runtime: {},
       }),
       /Output file already exists/,
     );
@@ -142,6 +145,7 @@ suite('PDF全ページ分割', () => {
             outputPathForPage: () => outputPath,
           },
         ],
+        runtime: {},
       }),
       /same output/,
     );

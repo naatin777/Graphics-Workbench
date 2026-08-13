@@ -12,19 +12,19 @@
 
 選定した純粋ロジックのtestをplain Node + Mochaで、残りをVS Code Extension Hostで実行すると、同じ`test/` directoryの実行経路、script、CI jobが分かれる。Node対象をExtension Hostから除外する必要もあり、通常のtest入口だけでは全testの実行範囲を把握しにくい。
 
-これらのtestはExtension Hostで実行しても成立しており、maintainerはNode起動の速度差より、1つの明確な実行経路を優先する判断をした。
+これらのtestはExtension Hostで実行しても成立しており、maintainerはNode起動の速度差より、runtimeごとに明確な実行経路を優先する判断をした。
 
 ## 決定
 
-pre-package testはすべてVS Code Extension Hostで実行する。`npm test`はbuild後に`vscode-test`を呼び、`vscode/extension/out/core/test/**/*.test.js`と`vscode/extension/out/vscode/extension/test/**/*.test.js`を名前順に1回実行する。plain Node + Mochaを直接起動するtest scriptは持たない。module mockが必要な`terminate_process_tree.test.js`だけは`node:test` ownerとする。
+pre-package testは、VS Code APIを使うtestをVS Code Extension Hostで実行し、headless core testは`test:core`から同じExtension Host runnerを専用起動する。`npm test`はbuild後に`vscode-test`を呼び、`vscode/extension/out/vscode/extension/test/**/*.test.js`だけを実行する。core testをExtension Host suiteへ重複登録しない。plain Node + Mochaを直接起動するtest scriptは持たない。module mockが必要な`terminate_process_tree.test.js`だけは`node:test` ownerとする。
 
 `test.yml`はLinux、macOS、Windowsの各runnerで同じ`npm test`を実行する。package済みVSIXのE2Eは引き続き別のElectron Playwright workflowで扱う。
 
 ## 理由
 
-- 開発者とCIが使うruntime testの入口を1つにできる
+- 開発者とCIが使うruntime testの入口を、packageの責務ごとに明確にできる
 - test fileの所有runnerと除外listを維持しなくてよい
-- pure logicとVS Code API利用のtestを同じtest discoveryとreportingで確認できる
+- coreのheadless testとVS Code API利用のtestを、それぞれ適切なpackage入口から確認できる
 - 配布物を確認するElectron E2Eとは、対象と目的を分けたままにできる
 
 ## 代替案
@@ -39,8 +39,8 @@ VS Code API、workspace、configuration、notificationなどのoracleを失う�
 
 ## 結果・影響
 
-- pure logic testを含むすべてのpre-package testでVS Code起動のcostを受け入れる
-- `npm test`だけで全test scopeを実行できる
+- core testを含むpre-package testで必要なVS Code起動のcostを受け入れる
+- `npm test`はVS Code adapter testを、`test:core`はcore testを実行する
 - Extension Host testの3 OS実行を維持する
 - Browser Playwrightは復活させず、配布済みVSIX E2Eの責務とも混ぜない
 

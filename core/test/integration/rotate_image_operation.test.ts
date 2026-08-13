@@ -26,6 +26,7 @@ suite('ラスタ画像の回転', () => {
     try {
       const outputs = await rotateImageFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        runtime: {},
         runId: 'run',
         maxInputPixels: 1000,
       });
@@ -50,6 +51,7 @@ suite('ラスタ画像の回転', () => {
     try {
       await rotateImageFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 180 }],
+        runtime: {},
         runId: 'run',
         maxInputPixels: 1000,
       });
@@ -72,6 +74,7 @@ suite('ラスタ画像の回転', () => {
     try {
       await rotateImageFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 270 }],
+        runtime: {},
         runId: 'run',
         maxInputPixels: 1000,
       });
@@ -94,6 +97,7 @@ suite('ラスタ画像の回転', () => {
     await assert.rejects(
       rotateImageFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        runtime: {},
         maxInputPixels: 1000,
       }),
       /Only raster image files can be rotated/,
@@ -109,6 +113,7 @@ suite('ラスタ画像の回転', () => {
     await assert.rejects(
       rotateImageFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        runtime: {},
         maxInputPixels: 1000,
       }),
       /Invalid output extension/,
@@ -124,6 +129,7 @@ suite('ラスタ画像の回転', () => {
     await assert.rejects(
       rotateImageFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        runtime: {},
         maxInputPixels: 7,
       }),
       /pixel limit/i,

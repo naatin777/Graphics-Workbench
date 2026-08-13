@@ -51,6 +51,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         inputs: [{ sourcePath }],
         outputPath,
         workspacePath,
+        runtime: {},
         maxInputPixels: 1_000_000_000,
       });
 
@@ -74,6 +75,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           inputs: [{ sourcePath }],
           outputPath,
           workspacePath,
+          runtime: {},
           maxInputPixels: 99,
         }),
         /configured raster input pixel limit|pixel limit|Input image exceeds pixel limit/u,
@@ -130,6 +132,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         inputs: sourcePaths.map((sourcePath) => ({ sourcePath })),
         outputPath,
         workspacePath,
+        runtime: {},
         maxInputPixels: 1_000_000_000,
       });
 
@@ -180,6 +183,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         inputs: [{ sourcePath }],
         outputPath,
         workspacePath,
+        runtime: {},
         maxInputPixels: 1_000_000_000,
         tools: { svgToPdfTools },
         platform: 'linux',
@@ -206,6 +210,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           inputs: [{ sourcePath: fixture.sourcePath }],
           outputPath,
           workspacePath,
+          runtime: {},
           maxInputPixels: 1_000_000_000,
           tools: {
             svgToPdfTools: createStubSvgToPdfOptions(),
@@ -231,6 +236,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
         inputs: fixtures.map((fixture) => ({ sourcePath: fixture.sourcePath })),
         outputPath,
         workspacePath,
+        runtime: {},
         maxInputPixels: 1_000_000_000,
         tools: {
           svgToPdfTools: createStubSvgToPdfOptions(),
@@ -253,6 +259,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           inputs: [],
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
+          runtime: {},
           maxInputPixels: 1_000_000_000,
         }),
         /No images/,
@@ -274,6 +281,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
           inputs: [{ sourcePath }],
           outputPath: path.join(workspacePath, 'result.pdf'),
           workspacePath,
+          runtime: {},
           maxInputPixels: 1_000_000_000,
         }),
         /unsupported image format|Input file contains|not a valid|invalid/i,
@@ -296,6 +304,7 @@ suite('複数の画像を1つのPDFへ結合する', () => {
             inputs: [{ sourcePath }],
             outputPath: path.join(workspacePath, `${fileName}.output.pdf`),
             workspacePath,
+            runtime: {},
             maxInputPixels: 1_000_000_000,
           }),
           /Unsupported image input:/,

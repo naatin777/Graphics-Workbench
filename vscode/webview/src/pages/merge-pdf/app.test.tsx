@@ -1,6 +1,7 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
+import { mergePdfProtocol } from '@graphics-workbench-merge-pdf-protocol';
 import type { ExtensionToWebviewMessage, MergePdfLabels } from './messages';
 import { App } from './app';
 
@@ -8,7 +9,7 @@ const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderFirstPdfPage = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 
 vi.mock('./vscode', () => ({
-  vscode: createTestPageHost(sendMessage),
+  vscode: createTestPageHost(mergePdfProtocol, sendMessage),
 }));
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderFirstPdfPage }));
 

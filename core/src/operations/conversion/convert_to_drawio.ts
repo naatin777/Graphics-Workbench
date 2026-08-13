@@ -32,7 +32,7 @@ export interface ConvertToDrawioOptions {
     runPdfToSvg: RunPdfToSvg;
     runDrawio: RunDrawio;
   };
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runId?: string;
   maxInputPixels: number;
 }
@@ -57,12 +57,12 @@ export async function convertToDrawioFiles(options: ConvertToDrawioOptions): Pro
     ]);
   }
 
-  options.runtime?.signal?.throwIfAborted();
+  options.runtime.signal?.throwIfAborted();
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'convert-to-drawio',
     runId: options.runId,
-    ...(options.runtime !== undefined && { runtime: options.runtime }),
+    runtime: options.runtime,
     stage: async (input, _index, currentRunId, runtime) => stageDrawio(input, currentRunId, runtime, options),
   });
 }

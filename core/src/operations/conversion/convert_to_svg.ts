@@ -32,7 +32,7 @@ export interface SvgInput {
 export interface ConvertToSvgFilesOptions {
   inputs: SvgInput[];
   drawioTools: DrawioBackend;
-  runtime?: ConversionExecutionContext;
+  runtime: ConversionExecutionContext;
   runPdfToSvg: RunPdfToSvg;
   runId?: string;
   maxInputPixels: number;
@@ -69,17 +69,17 @@ interface WritePdfPageAsSvgOptions {
 
 export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Promise<CommittedConversionOutput[]> {
   const { runtime } = options;
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
   const { maxInputPixels } = options;
   validateConversions(options.inputs);
   await validatePdfPathInputs(options.inputs, 'convert-to-svg');
-  runtime?.signal?.throwIfAborted();
+  runtime.signal?.throwIfAborted();
 
   return runStagedConversionBatch({
     inputs: options.inputs,
     operationName: 'convert-to-svg',
     runId: options.runId,
-    ...(runtime !== undefined && { runtime }),
+    runtime,
     stage: async (input, index, currentRunId, batchRuntime) =>
       stageSvgConversion(input, index, currentRunId, {
         drawioTools: options.drawioTools,
