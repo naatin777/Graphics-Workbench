@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 
 import { sourceFormatForPath, type SourceFormat } from '@graphics-workbench/core/formats';
-import { listInputFixturePaths, testInputDirectory } from '../helpers/fixture_paths.js';
+import { listInputFixturePaths, testInputDirectory } from '@graphics-workbench/core/testing';
 
 const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
   avif: 2,

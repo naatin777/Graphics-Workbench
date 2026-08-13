@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "testing",
+    "outDir": "dist/testing",
+    "lib": ["ES2023", "ES2025.Regexp"]
+  },
+  "include": ["testing/**/*"],
+  "exclude": ["dist", "dist-test", "node_modules"]
+}

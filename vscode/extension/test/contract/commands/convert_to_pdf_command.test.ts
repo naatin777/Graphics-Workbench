@@ -27,7 +27,7 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
@@ -39,7 +39,6 @@ import { logicalSourcePathForOutputTemplate } from '@graphics-workbench/core/for
 
 import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
-import { requireValue } from '../../support/helpers/required.js';
 import { withWorkspaceSettings } from '../../support/helpers/workspace_settings.js';
 
 const fixturePngPath = operationPngInputPath;

@@ -14,7 +14,7 @@ import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, type PDFPage } from '../../support/helpers/pdf_document.js';
+import { PDFDocument, type PDFPage, RecordingOutputChannel } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
 
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
@@ -24,7 +24,6 @@ import { asRunId, hashFile } from '@graphics-workbench/core/runtime';
 
 import { cropConfigureFixture } from '../../support/helpers/crop_configure_fixture.js';
 import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
-import { RecordingOutputChannel } from '../../support/helpers/recording_output_channel.js';
 import { assertWorkspaceChangesSince, captureWorkspaceSnapshot } from '../../support/helpers/workspace_snapshot.js';
 
 suite('PDF configure crop処理', () => {

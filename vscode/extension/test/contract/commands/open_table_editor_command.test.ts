@@ -17,7 +17,7 @@ import path from 'node:path';
 import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 import { stubWebviewPanel, waitFor } from '../../support/helpers/webview_panel.js';
 
 suite('Open Table Editorコマンド', () => {

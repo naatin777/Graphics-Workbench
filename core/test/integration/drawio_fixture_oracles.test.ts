@@ -13,11 +13,17 @@ import {
   executeRasterConversion,
   rasterFormatSpecs,
 } from '@graphics-workbench/core/conversion';
-import { getExtensionConfiguration } from '../../../src/config/extension_configuration.js';
-import { testInputDirectory, testOutputDirectory } from '../../support/helpers/fixture_paths.js';
-import { assertPdfMatches, assertRasterMatches } from '../../support/helpers/content_assertions.js';
-import { readConfiguredConversionTools } from '../../support/helpers/external_tool_settings.js';
-import { copyInputToWorkspace, withTestWorkspace } from '../../support/helpers/test_workspace.js';
+import {
+  assertPdfMatches,
+  assertRasterMatches,
+  copyInputToWorkspace,
+  createTestRuntime,
+  defaultRasterMaxInputPixels,
+  readConfiguredConversionTools,
+  testInputDirectory,
+  testOutputDirectory,
+  withTestWorkspace,
+} from '@graphics-workbench/core/testing';
 
 const execFileAsync = promisify(execFile);
 
@@ -51,19 +57,18 @@ const invalidCases = [
 suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
   for (const fixtureCase of validCases) {
     test(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async function convertsFixtureToExpectedOutputs() {
-      const drawioPath = getExtensionConfiguration().execPath.drawio();
+      const configuredTools = readConfiguredConversionTools();
+      const { drawioPath } = configuredTools.drawioTools;
       if (drawioPath === '') {
         this.skip();
         return;
       }
-
-      const configuredTools = readConfiguredConversionTools();
       if (configuredTools.rsvgConvertPath === '') {
         this.skip();
         return;
       }
 
-      const runtime = { resolveConflicts: async () => 'overwrite' as const };
+      const { runtime } = createTestRuntime();
 
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'valid', 'drawio', fixtureCase.inputFileName);
@@ -85,7 +90,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
           runtime,
           pdfRenderTools: configuredTools.pdfRenderTools,
           drawioTools,
-          maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
+          maxInputPixels: defaultRasterMaxInputPixels,
           runId: `drawio-${fixtureCase.id}-png`,
         });
         await convertToSvgFiles({
@@ -95,7 +100,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
           runPdfToSvg: () => {
             throw new Error('drawio fixture must not include PDF input for SVG input');
           },
-          maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
+          maxInputPixels: defaultRasterMaxInputPixels,
           runId: `drawio-${fixtureCase.id}-svg`,
         });
 
@@ -103,7 +108,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
           ? convertToPdfFiles({
               inputs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
               tools: { drawioTools },
-              maxInputPixels: getExtensionConfiguration().raster.maxInputPixels(),
+              maxInputPixels: defaultRasterMaxInputPixels,
               runtime,
               runId: `drawio-${fixtureCase.id}-pdf`,
             })
@@ -146,7 +151,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
 
   for (const [index, invalidCase] of invalidCases.entries()) {
     test(`invalid/drawio/${invalidCase.fileName}を実Draw.ioでPDFへ実変換すると失敗し、出力PDFを作成しない`, async function expectsInvalidFixtureToFailWithoutOutput() {
-      const drawioPath = getExtensionConfiguration().execPath.drawio();
+      const { drawioPath } = readConfiguredConversionTools().drawioTools;
       if (drawioPath === '') {
         this.skip();
         return;
@@ -166,7 +171,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
           ],
           drawioPath,
           runDrawio: executeDrawio,
-          runtime: { resolveConflicts: async () => 'overwrite' },
+          runtime: createTestRuntime().runtime,
           runId: `drawio-invalid-${index}`,
         });
 

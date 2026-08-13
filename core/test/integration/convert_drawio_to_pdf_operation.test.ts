@@ -4,11 +4,9 @@ import { copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../../test-support/pdf_document.js';
+import { PDFDocument, requireValue, testInputDirectory } from '@graphics-workbench/core/testing';
 
 import { convertDrawioToPagePdfs, convertDrawioToSinglePdf, executeDrawio } from '@graphics-workbench/core/conversion';
-import { requireValue } from '../helpers/required.js';
-import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 const emptyDrawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'empty.drawio');

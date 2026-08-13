@@ -11,7 +11,7 @@ import {
   resolvePdfRasterPages,
   runPdfRasterConversion,
 } from '@graphics-workbench/core/conversion';
-import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { operationPdfInputDirectory } from '@graphics-workbench/core/testing';
 
 const fixturePath = path.join(operationPdfInputDirectory, 'single-page-document.pdf');
 const maxInputPixels = 268_402_689;

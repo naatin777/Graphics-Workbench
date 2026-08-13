@@ -2,7 +2,7 @@ import type { CommandDependencies } from '../../../src/commands/shared/command_d
 
 import { getExtensionConfiguration } from '../../../src/config/extension_configuration.js';
 import { fakeConfiguration } from './configuration.js';
-import { RecordingOutputChannel } from './recording_output_channel.js';
+import { RecordingOutputChannel } from '@graphics-workbench/core/testing';
 
 export function testCommandDependencies(values: Record<string, unknown> = {}): CommandDependencies {
   return {

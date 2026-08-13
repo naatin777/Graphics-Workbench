@@ -18,12 +18,11 @@ import { access, copyFile, mkdtemp, readFile, readdir, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
 
 import { convertToPdfFiles, type PdfInput, type RunDrawio } from '@graphics-workbench/core/conversion';
 import { createConversionUndoRecord, undoConversionOutputs } from '../../../src/policy/undo_last_conversion.js';
 import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
-import { requireValue } from '../../support/helpers/required.js';
 
 const fixturePath = operationPngInputPath;
 

@@ -7,13 +7,15 @@ import sharp from 'sharp';
 import { isRasterImagePath, sourceFormatForPath } from '@graphics-workbench/core/formats';
 import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import {
+  assertRasterMatches,
+  copyInputToWorkspace,
+  createTestRuntime,
   listInputFixturePathsSync,
+  readConfiguredConversionTools,
   testInputDirectory,
   testOutputDirectory,
-} from '../../support/helpers/fixture_paths.js';
-import { assertRasterMatches } from '../../support/helpers/content_assertions.js';
-import { readConfiguredConversionTools } from '../../support/helpers/external_tool_settings.js';
-import { copyInputToWorkspace, withTestWorkspace } from '../../support/helpers/test_workspace.js';
+  withTestWorkspace,
+} from '@graphics-workbench/core/testing';
 
 const unsupportedRasterFixtureRelativePaths = ['avif/animated-swirl.avif'];
 const rasterInputDirectory = path.join(testInputDirectory, 'valid');
@@ -52,7 +54,7 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
           inputs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
           pdfRenderTools,
           drawioTools,
-          runtime: { resolveConflicts: async () => 'overwrite' },
+          runtime: createTestRuntime().runtime,
           runId: `raster-${index}`,
         });
 
@@ -80,7 +82,7 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
           inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
           drawioTools,
-          runtime: { resolveConflicts: async () => 'overwrite' },
+          runtime: createTestRuntime().runtime,
           runId: 'unsupported-avif',
         }),
         /unsupported image format/u,

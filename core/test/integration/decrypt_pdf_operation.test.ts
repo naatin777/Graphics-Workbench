@@ -11,10 +11,9 @@ import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/prom
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../../test-support/pdf_document.js';
+import { PDFDocument, operationPdfInputDirectory } from '@graphics-workbench/core/testing';
 
 import { decryptPdfFiles, loadMupdf, openPdfDocument, savePdfDocument } from '@graphics-workbench/core/pdf';
-import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
 
 const password = 'secret-password';
 

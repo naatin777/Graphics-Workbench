@@ -6,8 +6,7 @@ import { XMLParser } from 'fast-xml-parser';
 import sharp from 'sharp';
 
 import { isDrawioPath, sourceFormatForPath } from '@graphics-workbench/core/formats';
-import { listInputFixturePaths, testInputDirectory } from '../helpers/fixture_paths.js';
-import { requireValue } from '../helpers/required.js';
+import { listInputFixturePaths, testInputDirectory, requireValue } from '@graphics-workbench/core/testing';
 
 const xmlParser = new XMLParser({ ignoreAttributes: false });
 

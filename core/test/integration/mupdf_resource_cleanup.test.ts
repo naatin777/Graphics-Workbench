@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { hasPdfPageContent, renderPdfPageToPng, renderPdfPageToSvg } from '@graphics-workbench/core/pdf';
-import { buildPdfFixture } from '../helpers/pdf_fixture_builder.js';
+import { buildPdfFixture } from '@graphics-workbench/core/testing';
 
 const pageCount = 12;
 const renderIterations = 200;

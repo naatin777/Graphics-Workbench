@@ -1,12 +1,12 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { findRepositoryRoot } from '../../../test-support/repository_root.js';
+import { findRepositoryRoot } from '../repository.js';
 
 export {
   listFixtureFilePaths as listInputFixturePaths,
   listFixtureFilePathsSync as listInputFixturePathsSync,
-} from '../../../test-support/fixture_files.js';
+} from '../fixture_files.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 

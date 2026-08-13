@@ -7,7 +7,7 @@ import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
 import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
 import { withWorkspaceSettings } from '../../support/helpers/workspace_settings.js';
 

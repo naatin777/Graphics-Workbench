@@ -3,10 +3,9 @@ import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../../test-support/pdf_document.js';
+import { PDFDocument, operationPngInputPath } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
 import { combineImagesToPdf, type SvgToPdfBackend } from '@graphics-workbench/core/conversion';
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
 
 const VALID_PNG = operationPngInputPath;
 

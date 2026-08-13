@@ -4,8 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { mergePdf } from '@graphics-workbench/core/pdf';
-import { PDFDocument } from '../../../test-support/pdf_document.js';
-import { operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { PDFDocument, operationPdfInputDirectory } from '@graphics-workbench/core/testing';
 
 const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');
 const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');

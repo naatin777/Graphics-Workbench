@@ -59,11 +59,5 @@ export default defineConfig({
         'unicorn/no-nested-ternary': 'off',
       },
     },
-    {
-      files: ['src/adapters/crop/run_crop_worker.ts'],
-      rules: {
-        'project/no-direct-child-process': 'off',
-      },
-    },
   ],
 });

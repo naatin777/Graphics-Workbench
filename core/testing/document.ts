@@ -4,7 +4,13 @@
 // sized/rotated pages and boxes, draw rectangles, and read page count/size/
 // boxes/rotation back.
 
-import { getPdfPageGeometry, loadMupdf, openPdfDocument, savePdfDocument } from '@graphics-workbench/core/pdf';
+import {
+  getPdfPageGeometry,
+  loadMupdf,
+  openPdfDocument,
+  savePdfDocument,
+  type MupdfPdfDocumentInstance,
+} from '@graphics-workbench/core/pdf';
 
 export interface PdfBox {
   x: number;
@@ -76,18 +82,7 @@ export class PDFDocument {
     try {
       const pages: ReadPageData[] = [];
       for (let index = 0; index < document.countPages(); index += 1) {
-        const page = document.loadPage(index);
-        try {
-          const geometry = getPdfPageGeometry(page, index + 1);
-          pages.push({
-            kind: 'read',
-            mediaBox: geometry.mediaBox,
-            cropBox: geometry.cropBox,
-            rotation: geometry.rotation,
-          });
-        } finally {
-          page.destroy();
-        }
+        pages.push(readPageGeometry(document, index + 1));
       }
       return new PDFDocument(pages);
     } finally {
@@ -174,7 +169,9 @@ export class PDFPage {
   // ponytail: drawText content is never verified by the tests (only page counts
   // and byte equality), so no text is drawn. If a test later needs text
   // extraction, embed a standard font via mupdf.addSimpleFont.
-  drawText(_text: string): void {}
+  drawText(_text: string): void {
+    return;
+  }
 
   getSize(): PdfSize {
     const box = this.mediaBox();
@@ -221,6 +218,21 @@ export class PDFPage {
     return this.state.mediaBox !== undefined
       ? boxFromArray(this.state.mediaBox)
       : { x: 0, y: 0, width: this.state.width, height: this.state.height };
+  }
+}
+
+function readPageGeometry(document: MupdfPdfDocumentInstance, pageNumber: number): ReadPageData {
+  const page = document.loadPage(pageNumber - 1);
+  try {
+    const geometry = getPdfPageGeometry(page, pageNumber);
+    return {
+      kind: 'read',
+      mediaBox: geometry.mediaBox,
+      cropBox: geometry.cropBox,
+      rotation: geometry.rotation,
+    };
+  } finally {
+    page.destroy();
   }
 }
 

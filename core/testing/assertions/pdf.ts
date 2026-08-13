@@ -6,6 +6,10 @@ import sharp from 'sharp';
 
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
 
+import { PDFDocument } from '../document.js';
+import { assertRasterMatches } from './raster.js';
+import type { RasterComparisonOptions } from './raster_content.js';
+
 export interface PdfPageVisualComparison {
   expectedPdfPath: string;
   expectedPageNumber: number;
@@ -22,26 +26,63 @@ export async function assertRenderedPdfPagesSimilar(comparison: PdfPageVisualCom
 
   const expectedPngPath = await renderPdfPage(
     comparison.expectedPdfPath,
-    comparison.expectedPageNumber,
     path.join(comparison.renderDirectory, `${comparison.renderPrefix}-expected`),
+    comparison.expectedPageNumber,
     dpi,
   );
   const actualPngPath = await renderPdfPage(
     comparison.actualPdfPath,
-    comparison.actualPageNumber,
     path.join(comparison.renderDirectory, `${comparison.renderPrefix}-actual`),
+    comparison.actualPageNumber,
     dpi,
   );
 
   await assertPngsSimilar(await readFile(expectedPngPath), await readFile(actualPngPath));
 }
 
-async function renderPdfPage(pdfPath: string, pageNumber: number, outputPrefix: string, dpi: number): Promise<string> {
-  const pdfBytes = await readFile(pdfPath);
-  const png = await renderPdfPageToPng(pdfBytes, pageNumber, { dpi });
-  const pngPath = `${outputPrefix}.png`;
-  await writeFile(pngPath, png);
-  return pngPath;
+export async function assertPdfMatches(
+  actualPath: string,
+  expectedPath: string,
+  renderDirectory: string,
+  label: string,
+  options: RasterComparisonOptions = {},
+): Promise<void> {
+  const [actual, expected] = await Promise.all([
+    PDFDocument.load(await readFile(actualPath)),
+    PDFDocument.load(await readFile(expectedPath)),
+  ]);
+  assert.strictEqual(actual.getPageCount(), expected.getPageCount(), label);
+
+  await mkdir(renderDirectory, { recursive: true });
+  for (let page = 1; page <= actual.getPageCount(); page += 1) {
+    const actualPagePath = path.join(renderDirectory, `actual-${page}.png`);
+    const expectedPagePath = path.join(renderDirectory, `expected-${page}.png`);
+    const actualPageSize = actual.getPage(page - 1)?.getSize();
+    const expectedPageSize = expected.getPage(page - 1)?.getSize();
+    if (options.rendererVariance) {
+      assert.ok(actualPageSize !== undefined && expectedPageSize !== undefined, `${label} page ${page}`);
+      assert.ok(
+        Math.abs(actualPageSize.width / expectedPageSize.width - 1) <= 0.05,
+        `${label} page ${page}: renderer output width differs by more than 5%`,
+      );
+      assert.ok(
+        Math.abs(actualPageSize.height / expectedPageSize.height - 1) <= 0.05,
+        `${label} page ${page}: renderer output height differs by more than 5%`,
+      );
+    } else {
+      assert.deepStrictEqual(actualPageSize, expectedPageSize, `${label} page ${page}`);
+    }
+    await renderPdfPage(actualPath, actualPagePath, page, 144);
+    await renderPdfPage(expectedPath, expectedPagePath, page, 144);
+    await assertRasterMatches(actualPagePath, expectedPagePath, `${label} page ${page}`, options);
+  }
+}
+
+async function renderPdfPage(sourcePath: string, outputPath: string, page: number, dpi: number): Promise<string> {
+  const pdfBytes = await readFile(sourcePath);
+  const png = await renderPdfPageToPng(pdfBytes, page, { dpi });
+  await writeFile(outputPath, png);
+  return outputPath;
 }
 
 async function assertPngsSimilar(expectedPng: Buffer, actualPng: Buffer): Promise<void> {

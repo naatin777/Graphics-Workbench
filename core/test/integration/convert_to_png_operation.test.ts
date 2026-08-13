@@ -16,8 +16,7 @@ import {
   type DrawioBackend,
   type RasterInput,
 } from '@graphics-workbench/core/conversion';
-import { buildPdfFixture } from '../helpers/pdf_fixture_builder.js';
-import { requireValue } from '../helpers/required.js';
+import { buildPdfFixture, requireValue } from '@graphics-workbench/core/testing';
 
 function stubRunPdfToPng(): never {
   throw new Error('PDF to PNG rendering must not run in this test.');

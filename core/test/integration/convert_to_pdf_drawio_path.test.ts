@@ -12,11 +12,10 @@ import { copyFile, mkdtempDisposable, mkdir, readFile, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../../test-support/pdf_document.js';
+import { PDFDocument, testInputDirectory } from '@graphics-workbench/core/testing';
 
 import { convertToPdfFiles, type DrawioBackend } from '@graphics-workbench/core/conversion';
 import { hashFile } from '@graphics-workbench/core/runtime';
-import { testInputDirectory } from '../helpers/fixture_paths.js';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 

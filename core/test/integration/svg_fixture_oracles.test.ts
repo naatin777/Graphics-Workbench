@@ -3,13 +3,15 @@ import path from 'node:path';
 import { sourceFormatForPath } from '@graphics-workbench/core/formats';
 import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
 import {
+  assertRasterMatches,
+  copyInputToWorkspace,
+  createTestRuntime,
   listInputFixturePathsSync,
+  readConfiguredConversionTools,
   testInputDirectory,
   testOutputDirectory,
-} from '../../support/helpers/fixture_paths.js';
-import { assertRasterMatches } from '../../support/helpers/content_assertions.js';
-import { readConfiguredConversionTools } from '../../support/helpers/external_tool_settings.js';
-import { copyInputToWorkspace, withTestWorkspace } from '../../support/helpers/test_workspace.js';
+  withTestWorkspace,
+} from '@graphics-workbench/core/testing';
 
 suite('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
   for (const [index, fixturePath] of listInputFixturePathsSync(path.join(testInputDirectory, 'valid', 'svg'))
@@ -28,7 +30,7 @@ suite('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
           inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
           drawioTools,
-          runtime: { resolveConflicts: async () => 'overwrite' },
+          runtime: createTestRuntime().runtime,
           runId: `svg-${index}`,
         });
 

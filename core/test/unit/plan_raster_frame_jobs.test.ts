@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { planRasterFrameJobs } from '@graphics-workbench/core/conversion';
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { operationPngInputPath } from '@graphics-workbench/core/testing';
 
 const fixturePath = operationPngInputPath;
 const maxInputPixels = 1_000_000_000;

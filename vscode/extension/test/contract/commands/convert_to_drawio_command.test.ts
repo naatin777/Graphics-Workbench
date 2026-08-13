@@ -5,7 +5,7 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { testInputDirectory } from '../../support/helpers/fixture_paths.js';
-import { requireValue } from '../../support/helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
 
 suite('Draw.ioへ変換コマンド', () => {

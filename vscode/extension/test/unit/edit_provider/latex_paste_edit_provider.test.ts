@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { access, mkdtempDisposable, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '@graphics-workbench/core/testing';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 

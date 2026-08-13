@@ -29,7 +29,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { commitStagedOutputs, CommitRollbackError, OperationCancelledError } from '@graphics-workbench/core/runtime';
-import { requireValue } from '../../helpers/required.js';
+import { requireValue } from '@graphics-workbench/core/testing';
 
 suite(
   '作業ディレクトリに置いた変換結果を出力ファイルへ反映し（既存は.previousへ退避・両方残す選択で連番保存・失敗時は元の内容へ復元）',

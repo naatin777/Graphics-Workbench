@@ -40,15 +40,23 @@
     "./table": {
       "types": "./dist/public/table.d.ts",
       "import": "./dist/public/table.js"
+    },
+    "./crop-worker": {
+      "types": "./dist/public/crop_worker.d.ts",
+      "import": "./dist/public/crop_worker.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.testing.json",
     "build:coverage": "tsc -p tsconfig.coverage.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "oxlint --type-aware src test",
-    "lint:fix": "oxlint --type-aware --fix src test",
-    "lint:audit": "oxlint --type-aware -D all -D nursery src test",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.testing.json",
+    "lint": "oxlint --config oxlint.config.ts --type-aware src test testing",
+    "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src test testing",
+    "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src test testing",
     "generate:test-output": "node scripts/generate-test-output.ts",
     "compile:test": "tsc -p tsconfig.test.json",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
@@ -61,7 +69,8 @@
     "fast-xml-parser": "5.10.1",
     "mupdf": "1.28.0",
     "p-limit": "^7.3.1",
-    "sharp": "0.35.3"
+    "sharp": "0.35.3",
+    "valibot": "1.4.2"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { planRasterSourceConversionInputs } from '@graphics-workbench/core/conversion';
 import { isEditableDrawioImagePath } from '@graphics-workbench/core/formats';
-import { operationPngInputPath } from '../helpers/fixture_paths.js';
+import { operationPngInputPath } from '@graphics-workbench/core/testing';
 
 suite('ラスター画像を出力テンプレートに従った1ページの変換処理単位（出力パス割当て）へ展開する処理', () => {
   test('PNGのラスター入力をページ1の変換処理単位へ展開し、出力テンプレートからsource-1.jpegの出力パスを生成する', async () => {
