@@ -1,19 +1,19 @@
-import { For, Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
 import { parsePdfPageSelection } from '@graphics-workbench/core/formats';
 
 import { splitPdfProtocol, type SplitPdfPageGroupRow } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
+import { createMessageReader } from '@webview-shared/messages';
 
 import { Button } from '../../shared/ui/Button';
 import { PageNavigator } from '../../shared/ui/PageNavigator';
 
 import { GroupRow } from './GroupRow';
 import { formatLabel, formatPageParseFailure } from './page_validation_messages';
-import { readSplitPdfLabels, type SplitPdfLabels } from './labels';
 import { applyPreviewZoom, capturePreviewZoomAnchor, restorePreviewZoomAnchor } from '@webview-shared/pdf/preview_zoom';
-import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
+import { createPdfPreview } from '@webview-shared/pdf/create_pdf_preview';
 import { PreviewToolbar } from './preview_toolbar';
 import { SplitPane } from '@webview-shared/SplitPane';
 import type { InputKind, PreviewMode, Row } from './types';
@@ -33,7 +33,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
 
   const [rows, setRows] = createStore<Row[]>([createRow()]);
   const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
-  const labels = (): SplitPdfLabels => readSplitPdfLabels(labelsCatalog());
+  const t = createMemo(() => createMessageReader(labelsCatalog()));
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
   const [outputPathTemplate, setOutputPathTemplate] = createSignal('');
@@ -63,7 +63,6 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       channel.send.previewLoadFailed({ message });
     },
   });
-  const currentPage = useCurrentPage(preview);
 
   const setInputRef = (rowId: number, kind: InputKind, element: HTMLInputElement): void => {
     const refs = rowRefs.get(rowId) ?? {};
@@ -180,12 +179,16 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     const parsedPages = parsePdfPageSelection(row.pages, pageCount());
 
     if (!parsedPages.ok) {
-      setApplyError(`${labels().groups.label} ${rowIndex + 1}: ${formatPageParseFailure(parsedPages, labels())}`);
+      setApplyError(
+        `${t()('webview.splitPdf.groupLabel')} ${rowIndex + 1}: ${formatPageParseFailure(parsedPages, t())}`,
+      );
       return;
     }
 
     if (row.outputName.trim().length === 0) {
-      setApplyError(`${labels().groups.label} ${rowIndex + 1}: ${labels().validation.outputNameEmpty}`);
+      setApplyError(
+        `${t()('webview.splitPdf.groupLabel')} ${rowIndex + 1}: ${t()('webview.splitPdf.outputNameEmpty')}`,
+      );
       return;
     }
 
@@ -239,28 +242,28 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       if (!parsedPages.ok) {
         return {
           rowId: row.id,
-          message: `${labels().groups.label} ${index + 1}: ${formatPageParseFailure(parsedPages, labels())}`,
+          message: `${t()('webview.splitPdf.groupLabel')} ${index + 1}: ${formatPageParseFailure(parsedPages, t())}`,
         };
       }
 
       if (row.outputName.trim().length === 0) {
         return {
           rowId: row.id,
-          message: `${labels().groups.label} ${index + 1}: ${labels().validation.outputNameEmpty}`,
+          message: `${t()('webview.splitPdf.groupLabel')} ${index + 1}: ${t()('webview.splitPdf.outputNameEmpty')}`,
         };
       }
 
       if (row.outputName.includes('\u0000') || /[\\/]/.test(row.outputName) || row.outputName.includes('..')) {
         return {
           rowId: row.id,
-          message: `${labels().groups.label} ${index + 1}: ${labels().validation.outputNamePath}`,
+          message: `${t()('webview.splitPdf.groupLabel')} ${index + 1}: ${t()('webview.splitPdf.outputNamePath')}`,
         };
       }
 
       if (outputNames.has(row.outputName)) {
         return {
           rowId: row.id,
-          message: formatLabel(labels().validation.outputNameDuplicate, row.outputName),
+          message: formatLabel(t()('webview.splitPdf.outputNameDuplicate'), row.outputName),
         };
       }
 
@@ -273,7 +276,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
 
   const apply = (): void => {
     if (!previewReady() || renderError()) {
-      setApplyError(labels().preview.applyError);
+      setApplyError(t()('webview.splitPdf.previewApplyError'));
       return;
     }
 
@@ -373,7 +376,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             preview: payload.preview,
             resources: payload.resources,
             ...(pdfPreview === undefined ? {} : { root: pdfPreview }),
-            page: { label: labels().pages.label },
+            page: { label: t()('webview.splitPdf.pageLabel') },
           },
           () => {
             setPreviewReady(true);
@@ -395,9 +398,9 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
-          <h1 class='sr-only'>{labels().header.title}</h1>
+          <h1 class='sr-only'>{t()('webview.splitPdf.title')}</h1>
           <p class='sr-only'>
-            {fileName()} | {pageCount()} {labels().pages.title}. {labels().header.description}
+            {fileName()} | {pageCount()} {t()('webview.splitPdf.pages')}. {t()('webview.splitPdf.description')}
           </p>
 
           <div class='workspace'>
@@ -407,13 +410,13 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                   ref={(element) => {
                     pdfPreview = element;
                   }}
-                  aria-label={labels().preview.ariaLabel}
+                  aria-label={t()('webview.splitPdf.previewAriaLabel')}
                   class='pdf-preview'
                   classList={{ 'pdf-preview--fit': zoomPercent() <= 100 }}
                   onWheel={zoomWithWheel}
                 >
                   <PreviewToolbar
-                    labels={labels()}
+                    t={t()}
                     previewMode={previewMode()}
                     zoomPercent={zoomPercent()}
                     onPreviewModeChange={(value) => {
@@ -434,11 +437,11 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                       class='pdf-preview__error'
                       role='status'
                     >
-                      {labels().preview.renderError}: {renderError()}
+                      {t()('webview.splitPdf.previewRenderError')}: {renderError()}
                     </p>
                   </Show>
                   <PageNavigator
-                    currentPage={currentPage() ?? 0}
+                    currentPage={preview.currentPage() ?? 0}
                     pageCount={pageCount()}
                     onPrevious={preview.goToPreviousPage}
                     onNext={preview.goToNextPage}
@@ -447,13 +450,13 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
               }
               right={
                 <section
-                  aria-label={labels().groups.title}
+                  aria-label={t()('webview.splitPdf.groups')}
                   class='panel'
                 >
                   <div class='panel__heading'>
                     <div>
-                      <h2>{labels().groups.title}</h2>
-                      <p>{labels().groups.outputOrder}</p>
+                      <h2>{t()('webview.splitPdf.groups')}</h2>
+                      <p>{t()('webview.splitPdf.outputOrder')}</p>
                     </div>
                     <button
                       class='gw-button gw-button--secondary'
@@ -463,7 +466,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                         focusInput(rowId, 'pages');
                       }}
                     >
-                      {labels().groups.add}
+                      {t()('webview.splitPdf.addGroup')}
                     </button>
                   </div>
 
@@ -474,7 +477,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                           row={row}
                           index={index}
                           rowCount={rows.length}
-                          labels={labels()}
+                          t={t()}
                           outputPathTemplate={outputPathTemplate()}
                           focused={focusedRowId() === row.id}
                           handlers={{
@@ -529,13 +532,13 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                       })()}
                       onClick={apply}
                     >
-                      {labels().actions.apply}
+                      {t()('webview.splitPdf.apply')}
                     </Button>
                     <Button
                       variant='secondary'
                       onClick={cancel}
                     >
-                      {labels().actions.cancel}
+                      {t()('webview.splitPdf.cancel')}
                     </Button>
                   </div>
                 </section>

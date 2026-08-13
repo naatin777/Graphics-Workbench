@@ -1,14 +1,14 @@
-import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { Show, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { previewProtocol, type PreviewHostToWebview } from '@graphics-workbench/vscode-protocol/preview-protocol';
 import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
-import { createPdfPreview, useCurrentPage } from '../../shared/pdf/create_pdf_preview';
+import { createMessageReader } from '@webview-shared/messages';
+import { createPdfPreview } from '../../shared/pdf/create_pdf_preview';
 import { toErrorMessage } from '../../shared/error';
 import { PageNavigator } from '../../shared/ui/PageNavigator';
 import { ToolbarButton } from '../../shared/ui/ToolbarButton';
 
 import { renderTiffPreview, type TiffRenderController } from './tiff_preview';
-import { readPreviewLabels, type PreviewLabels } from './labels';
 import {
   applyPreviewZoom,
   capturePreviewZoomAnchor,
@@ -24,7 +24,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
   const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
-  const labels = (): PreviewLabels => readPreviewLabels(labelsCatalog());
+  const t = createMemo(() => createMessageReader(labelsCatalog()));
   const [renderError, setRenderError] = createSignal('');
   const [previewZoom, setPreviewZoom] = createSignal(1);
 
@@ -42,7 +42,6 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       channel.send.previewLoadFailed({ message });
     },
   });
-  const currentPage = useCurrentPage(preview);
 
   onMount(() => {
     const unsubscribeMessages = channel.on({
@@ -87,7 +86,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
           preview: payload.preview,
           resources: payload.resources,
           page: {
-            label: labels().page.label,
+            label: t()('webview.preview.pageLabel'),
             onCreated: (pageFrame) => {
               pageFrame.classList.add('preview-page');
             },
@@ -112,7 +111,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     tiffRenderController = renderTiffPreview({
       container: pagesContainer,
       pageCount: payload.pageCount,
-      pageLabel: labels().page.label,
+      pageLabel: t()('webview.preview.pageLabel'),
       zoom: previewZoom,
       requestPage: (page) => {
         channel.send.renderPage({ page });
@@ -168,9 +167,9 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
-          <h1 class='sr-only'>{labels().title}</h1>
+          <h1 class='sr-only'>{t()('webview.preview.title')}</h1>
           <p class='sr-only'>
-            {fileName()} · {pageCount()} {labels().page.pages}. {labels().description}
+            {fileName()} · {pageCount()} {t()('webview.preview.pages')}. {t()('webview.preview.description')}
           </p>
 
           <div class='workspace'>
@@ -178,7 +177,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
               ref={(element) => {
                 previewElement = element;
               }}
-              aria-label={labels().preview.ariaLabel}
+              aria-label={t()('webview.preview.previewAriaLabel')}
               class='preview'
               classList={{ 'preview--fit': previewZoom() <= 1 }}
               onWheel={zoomWithWheel}
@@ -187,17 +186,17 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 <h2>{fileName()}</h2>
                 <div
                   class='zoom'
-                  aria-label={labels().preview.zoomLabel}
+                  aria-label={t()('webview.preview.zoomLabel')}
                 >
                   <ToolbarButton
                     icon='codicon-zoom-out'
-                    label={labels().preview.zoomOut}
+                    label={t()('webview.preview.zoomOut')}
                     onClick={zoomOut}
                   />
                   <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
                   <ToolbarButton
                     icon='codicon-zoom-in'
-                    label={labels().preview.zoomIn}
+                    label={t()('webview.preview.zoomIn')}
                     onClick={zoomIn}
                   />
                 </div>
@@ -209,7 +208,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 class='preview__pages'
               />
               <PageNavigator
-                currentPage={currentPage() ?? 0}
+                currentPage={preview.currentPage() ?? 0}
                 pageCount={pageCount()}
                 onPrevious={preview.goToPreviousPage}
                 onNext={preview.goToNextPage}
@@ -219,7 +218,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                   class='preview__error'
                   role='alert'
                 >
-                  {labels().preview.renderError}: {renderError()}
+                  {t()('webview.preview.renderError')}: {renderError()}
                 </p>
               ) : undefined}
             </section>

@@ -1,15 +1,15 @@
 import type { Accessor, JSX } from 'solid-js';
 
 import type { MergePdfSource } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import type { MessageReader } from '@webview-shared/messages';
 
-import type { MergePdfLabels } from './labels';
 import { PreviewThumbnail, type MergeThumbnailChannel, type PdfOptions } from './preview_thumbnail';
 
 export function SourceCard(props: {
   source: MergePdfSource;
   index: Accessor<number>;
   sourceCount: number;
-  labels: MergePdfLabels;
+  t: MessageReader;
   options: PdfOptions;
   channel: MergeThumbnailChannel;
   dropTargetId: string;
@@ -37,7 +37,7 @@ export function SourceCard(props: {
       <PreviewThumbnail
         source={props.source}
         options={props.options}
-        labels={props.labels}
+        t={props.t}
         channel={props.channel}
         onError={props.handlers.onPreviewError}
       />
@@ -52,8 +52,8 @@ export function SourceCard(props: {
             class='gw-toolbar-button button--handle'
             type='button'
             draggable={true}
-            aria-label={props.labels.controls.dragHandle}
-            title={props.labels.controls.dragHandle}
+            aria-label={props.t('webview.mergePdf.dragHandle')}
+            title={props.t('webview.mergePdf.dragHandle')}
             onDragStart={(event) => {
               props.handlers.onDragStart(event, props.source.sourceId);
             }}
@@ -68,8 +68,8 @@ export function SourceCard(props: {
             class='gw-toolbar-button'
             type='button'
             disabled={props.index() === 0}
-            aria-label={props.labels.controls.moveUp}
-            title={props.labels.controls.moveUp}
+            aria-label={props.t('webview.mergePdf.moveUp')}
+            title={props.t('webview.mergePdf.moveUp')}
             onClick={() => {
               props.handlers.onMove(props.source.sourceId, -1);
             }}
@@ -83,8 +83,8 @@ export function SourceCard(props: {
             class='gw-toolbar-button'
             type='button'
             disabled={props.index() === props.sourceCount - 1}
-            aria-label={props.labels.controls.moveDown}
-            title={props.labels.controls.moveDown}
+            aria-label={props.t('webview.mergePdf.moveDown')}
+            title={props.t('webview.mergePdf.moveDown')}
             onClick={() => {
               props.handlers.onMove(props.source.sourceId, 1);
             }}
@@ -97,8 +97,8 @@ export function SourceCard(props: {
           <button
             class='gw-toolbar-button button--danger'
             type='button'
-            aria-label={`${props.labels.controls.removeSource}: ${props.source.fileName}`}
-            title={props.labels.controls.removeSource}
+            aria-label={`${props.t('webview.mergePdf.removeSource')}: ${props.source.fileName}`}
+            title={props.t('webview.mergePdf.removeSource')}
             onClick={() => {
               props.handlers.onRemove(props.source.sourceId);
             }}

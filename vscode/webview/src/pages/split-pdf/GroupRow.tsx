@@ -1,15 +1,15 @@
 import type { Accessor, JSX } from 'solid-js';
 
+import type { MessageReader } from '@webview-shared/messages';
 import { ToolbarButton } from '../../shared/ui/ToolbarButton';
 
-import type { SplitPdfLabels } from './labels';
 import type { InputKind, Row } from './types';
 
 export function GroupRow(props: {
   row: Row;
   index: Accessor<number>;
   rowCount: number;
-  labels: SplitPdfLabels;
+  t: MessageReader;
   outputPathTemplate: string;
   focused: boolean;
   handlers: {
@@ -47,7 +47,7 @@ export function GroupRow(props: {
           className='drag-handle'
           draggable={true}
           icon='codicon-gripper'
-          label={`${props.labels.groups.drag} ${props.index() + 1}`}
+          label={`${props.t('webview.splitPdf.dragGroup')} ${props.index() + 1}`}
           onDragEnd={props.handlers.drag.onDragEnd}
           onDragStart={(event) => {
             props.handlers.drag.onDragStart(event, props.row.id);
@@ -57,7 +57,7 @@ export function GroupRow(props: {
           <ToolbarButton
             disabled={props.index() === 0}
             icon='codicon-chevron-up'
-            label={`${props.labels.actions.moveUp} ${props.index() + 1}`}
+            label={`${props.t('webview.splitPdf.moveUp')} ${props.index() + 1}`}
             onClick={() => {
               props.handlers.row.onMove(props.row.id, -1);
             }}
@@ -65,14 +65,14 @@ export function GroupRow(props: {
           <ToolbarButton
             disabled={props.index() === props.rowCount - 1}
             icon='codicon-chevron-down'
-            label={`${props.labels.actions.moveDown} ${props.index() + 1}`}
+            label={`${props.t('webview.splitPdf.moveDown')} ${props.index() + 1}`}
             onClick={() => {
               props.handlers.row.onMove(props.row.id, 1);
             }}
           />
           <ToolbarButton
             icon='codicon-close'
-            label={`${props.labels.groups.remove} ${props.index() + 1}`}
+            label={`${props.t('webview.splitPdf.removeGroup')} ${props.index() + 1}`}
             onClick={() => {
               props.handlers.row.onRemove(props.row.id);
             }}
@@ -82,14 +82,14 @@ export function GroupRow(props: {
 
       <div class='group-row__fields'>
         <label class='field'>
-          <span class='field__label'>{props.labels.pages.title}</span>
+          <span class='field__label'>{props.t('webview.splitPdf.pages')}</span>
           <input
             ref={(element) => {
               props.handlers.fields.setInputRef(props.row.id, 'pages', element);
             }}
-            aria-label={`${props.labels.pages.title} ${props.index() + 1}`}
+            aria-label={`${props.t('webview.splitPdf.pages')} ${props.index() + 1}`}
             class='gw-input'
-            placeholder={props.labels.pages.placeholder}
+            placeholder={props.t('webview.splitPdf.pagesPlaceholder')}
             type='text'
             value={props.row.pages}
             onFocus={() => {
@@ -104,14 +104,14 @@ export function GroupRow(props: {
           />
         </label>
         <label class='field'>
-          <span class='field__label'>{props.labels.output.name}</span>
+          <span class='field__label'>{props.t('webview.splitPdf.outputName')}</span>
           <input
             ref={(element) => {
               props.handlers.fields.setInputRef(props.row.id, 'outputName', element);
             }}
-            aria-label={`${props.labels.output.name} ${props.index() + 1}`}
+            aria-label={`${props.t('webview.splitPdf.outputName')} ${props.index() + 1}`}
             class='gw-input'
-            placeholder={props.labels.output.namePlaceholder}
+            placeholder={props.t('webview.splitPdf.outputNamePlaceholder')}
             type='text'
             value={props.row.outputName}
             onFocus={() => {
@@ -127,7 +127,7 @@ export function GroupRow(props: {
         </label>
       </div>
       <p class='group-row__output-path'>
-        <span>{props.labels.output.path}:</span>{' '}
+        <span>{props.t('webview.splitPdf.outputPath')}:</span>{' '}
         {props.outputPathTemplate.split('__GRAPHICS_WORKBENCH_OUTPUT_NAME__').join(props.row.outputName)}
       </p>
     </article>

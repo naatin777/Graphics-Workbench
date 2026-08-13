@@ -1,25 +1,24 @@
 import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/formats';
-
-import type { SplitPdfLabels } from './labels';
+import type { MessageReader } from '@webview-shared/messages';
 
 export function formatLabel(template: string, value: string): string {
   return template.replace('{0}', value);
 }
 
-export function formatPageParseFailure(failure: PdfPageSelectionParseFailure, labels: SplitPdfLabels): string {
+export function formatPageParseFailure(failure: PdfPageSelectionParseFailure, t: MessageReader): string {
   if (failure.kind === 'required') {
-    return labels.validation.pagesRequired;
+    return t('webview.splitPdf.pagesRequiredError');
   }
 
   if (failure.kind === 'wholeNumber' || failure.kind === 'malformed') {
     return failure.kind === 'wholeNumber'
-      ? formatLabel(labels.validation.pageWholeNumber, failure.token)
-      : formatLabel(labels.validation.invalidPages, failure.token);
+      ? formatLabel(t('webview.splitPdf.pageWholeNumberError'), failure.token)
+      : formatLabel(t('webview.splitPdf.invalidPages'), failure.token);
   }
 
   if (failure.kind === 'descending') {
-    return formatLabel(labels.validation.descendingPages, failure.token);
+    return formatLabel(t('webview.splitPdf.descendingPages'), failure.token);
   }
 
-  return formatLabel(labels.validation.pageOutOfRange, failure.token);
+  return formatLabel(t('webview.splitPdf.pageOutOfRangeError'), failure.token);
 }

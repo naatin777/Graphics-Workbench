@@ -1,10 +1,11 @@
 import type { JSX } from 'solid-js';
 
-import type { SplitPdfLabels } from './labels';
+import type { MessageReader } from '@webview-shared/messages';
+
 import type { PreviewMode } from './types';
 
 export function PreviewToolbar(props: {
-  labels: SplitPdfLabels;
+  t: MessageReader;
   previewMode: PreviewMode;
   zoomPercent: number;
   onPreviewModeChange: (mode: PreviewMode) => void;
@@ -13,11 +14,11 @@ export function PreviewToolbar(props: {
   return (
     <div class='pdf-preview__toolbar'>
       <div>
-        <h2>{props.labels.preview.title}</h2>
+        <h2>{props.t('webview.splitPdf.preview')}</h2>
       </div>
       <div class='preview-tools'>
         <div
-          aria-label={props.labels.preview.title}
+          aria-label={props.t('webview.splitPdf.preview')}
           class='segmented'
           role='group'
         >
@@ -30,7 +31,7 @@ export function PreviewToolbar(props: {
               props.onPreviewModeChange('focused');
             }}
           >
-            {props.labels.preview.focusedPages}
+            {props.t('webview.splitPdf.focusedPages')}
           </button>
           <button
             aria-pressed={props.previewMode === 'all'}
@@ -41,13 +42,13 @@ export function PreviewToolbar(props: {
               props.onPreviewModeChange('all');
             }}
           >
-            {props.labels.preview.allPages}
+            {props.t('webview.splitPdf.allPages')}
           </button>
         </div>
         <label class='zoom'>
-          <span class='sr-only'>{props.labels.preview.zoom}</span>
+          <span class='sr-only'>{props.t('webview.splitPdf.zoom')}</span>
           <input
-            aria-label={props.labels.preview.zoom}
+            aria-label={props.t('webview.splitPdf.zoom')}
             max='400'
             min='25'
             step='5'
@@ -59,7 +60,7 @@ export function PreviewToolbar(props: {
           />
           <span class='zoom__number'>
             <input
-              aria-label={props.labels.preview.zoom}
+              aria-label={props.t('webview.splitPdf.zoom')}
               max='400'
               min='25'
               step='5'
