@@ -5,13 +5,13 @@
 ## Packages
 
 - `core/` はfrontend-independentなheadless engineである。formats、parser/planner、conversion operation、external process、lifecycle、file-safety primitive、table domain（model/parser/renderer/LaTeX escape）を、明示されたoptionsとdependencyで実行する。frontend設定やfrontend stateは読まない。
-- `vscode/protocol/` は`@graphics-workbench/vscode-protocol` workspace packageで、Extension HostとWebviewが共有するruntime-validated message protocolのみを所有する。
+- `vscode/protocol/` は`@graphics-workbench/vscode-protocol` workspace packageで、Extension HostとWebviewが共有するruntime-validated message protocolとpage ID contractのみを所有する。`@graphics-workbench/core`には依存しない。
 - `vscode/extension/` はVS Code adapterである。command登録、`vscode.Uri`、configuration、progress/notification、Webview、editor integration、Safe Mode interaction、Undo policyを持つ。headless処理は`@graphics-workbench/core/*`の公開entry pointから利用する。
 - `vscode/webview/` はWebview frontend packageである。page UI、PDF.js rendering、browser dev用のscenario mock、Webview testsを持つ。
 - `tui/` は独立したBunのterminal adapterである。terminal input/rendering、公開するfeature subset、default、message、成功後cleanup policyを持ち、staged copyのcoreを利用する。
 - root packageは`core`、`vscode/protocol`、`vscode/extension`、`vscode/webview`をnpm workspaceとしてbuild・test・packageするcoordinatorである。
 
-依存方向は`vscode -> core`、`vscode/protocol -> core`、`tui -> core`である。coreはfrontendをimportせず、frontend同士も参照しない。`scripts/check-package-boundaries.mjs`が依存方向、package declaration、coreの公開entry pointを検証する。
+依存方向は`vscode -> core`と`tui -> core`である。coreはfrontendをimportせず、frontend同士も参照しない。`vscode/protocol`はValibot contractとpage IDのみを持ち、coreにもfrontendにも依存しない。`scripts/check-package-boundaries.mjs`が依存方向、package declaration、coreの公開entry pointを検証する。
 
 coreの公開surfaceは`conversion`、`pdf`、`formats`、`runtime`、`security`、`output`、`external-tools`、`table`に分かれる。frontendはcoreの内部file layoutへ依存しない。
 

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import { OperationCancelledError } from '@graphics-workbench/core/runtime';
+import type { WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { reportConfigureApplyError } from '../shared/report_configure_error.js';
 
@@ -47,7 +48,7 @@ export function openConfigurePanel(options: {
   };
   webview: {
     title: string;
-    pageId: string;
+    pageId: WebviewPageId;
     extensionUri: vscode.Uri;
     locale?: string;
   };

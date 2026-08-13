@@ -1,4 +1,4 @@
 export {
-  parseSplitPdfPages as parsePages,
-  type SplitPdfPageParseFailure as PageParseFailure,
-} from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+  parsePdfPageSelection as parsePages,
+  type PdfPageSelectionParseFailure as PageParseFailure,
+} from '@graphics-workbench/core/formats';

@@ -2,11 +2,6 @@ import * as v from 'valibot';
 import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
 import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
-export {
-  parsePdfPageSelection as parseSplitPdfPages,
-  type PdfPageSelectionParseFailure as SplitPdfPageParseFailure,
-} from '@graphics-workbench/core/formats';
-
 const SplitPdfLabelsSchema = v.strictObject({
   header: v.strictObject({
     title: v.string(),

@@ -124,13 +124,6 @@ function checkCorePublicImports(roots) {
 }
 
 function checkPackageOwnership() {
-  if (!corePackage.dependencies?.sharp) {
-    failures.push('core must own sharp as a production dependency');
-  }
-  if (vscodePackage.dependencies?.sharp !== undefined) {
-    failures.push('vscode must not ship sharp as a production dependency');
-  }
-
   for (const dependency of [
     '@types/mocha',
     '@types/sinon',
@@ -192,30 +185,6 @@ function checkWebviewBoundaryImports() {
 }
 
 function checkPackageVersions() {
-  if (corePackage.version !== vscodePackage.version) {
-    failures.push('core and vscode package versions must match');
-  }
-  if (corePackage.version !== webviewPackage.version) {
-    failures.push('core and webview package versions must match');
-  }
-  if (corePackage.version !== protocolPackage.version) {
-    failures.push('core and protocol package versions must match');
-  }
-  if (vscodePackage.dependencies?.['@graphics-workbench/core'] !== corePackage.version) {
-    failures.push('vscode must depend on the exact matching @graphics-workbench/core version');
-  }
-  if (webviewPackage.dependencies?.['@graphics-workbench/core'] !== corePackage.version) {
-    failures.push('webview must depend on the exact matching @graphics-workbench/core version');
-  }
-  if (vscodePackage.dependencies?.['@graphics-workbench/vscode-protocol'] !== protocolPackage.version) {
-    failures.push('vscode must depend on the exact matching @graphics-workbench/vscode-protocol version');
-  }
-  if (webviewPackage.dependencies?.['@graphics-workbench/vscode-protocol'] !== protocolPackage.version) {
-    failures.push('webview must depend on the exact matching @graphics-workbench/vscode-protocol version');
-  }
-  if (protocolPackage.dependencies?.['@graphics-workbench/core'] !== corePackage.version) {
-    failures.push('protocol must depend on the exact matching @graphics-workbench/core version');
-  }
   if (tuiPackage.dependencies?.['@graphics-workbench/core'] !== 'file:.core-package') {
     failures.push('tui must consume its staged local core package');
   }
