@@ -5,21 +5,21 @@ import * as vscode from 'vscode';
 import {
   reorderPdfProtocol,
   type ReorderPdfHostToWebview,
-  type ReorderPdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { inspectPdfSummary, reorderPdfFiles } from '@graphics-workbench/core/pdf';
-import { isAbortError } from '@graphics-workbench/core/runtime';
+import {
+  isAbortError,
+  type CommittedConversionOutput,
+  type ConversionExecutionContext,
+} from '@graphics-workbench/core/runtime';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeCatalog, localeMap } from '../../locale_map.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import {
-  runSinglePdfConfigureCommand,
-  type SinglePdfConfigureConversion,
-} from '../lifecycle/run_single_pdf_configure.js';
+import { runSinglePdfConfigureCommand } from '../lifecycle/run_single_pdf_configure.js';
 import { userMessage } from '../shared/user_messages.js';
 
 export async function reorderPdfConfigureCommand(
@@ -73,17 +73,15 @@ export async function reorderPdfConfigureCommand(
           pageCount: prepared.pageCount,
           preview: readPdfPreviewSettings(configuration),
         }),
-      isApplyMessage: isReorderApplyMessage,
-      runApply: async (message, { inputUri, workspaceFolder, prepared, runConversion }) => {
-        await applyConfiguredReorder({
+      apply: async (payload, { inputUri, workspaceFolder, prepared, runtime }) =>
+        applyConfiguredReorder({
           inputUri,
           workspacePath: workspaceFolder.uri.fsPath,
           outputPath: prepared.outputPath,
           pageCount: prepared.pageCount,
-          order: message.payload.order,
-          runConversion,
-        });
-      },
+          order: payload.order,
+          runtime,
+        }),
       onPreviewLoadFailed: (message, channel) => {
         if (message.type === 'previewLoadFailed') {
           channel?.appendLine(`[reorder-pdf-configure] preview failure: ${message.payload.message}`);
@@ -100,12 +98,6 @@ export async function reorderPdfConfigureCommand(
 
     await vscode.window.showErrorMessage(userMessage('message.reorderPdf.failed', message));
   }
-}
-
-function isReorderApplyMessage(
-  message: ReorderPdfWebviewToHost,
-): message is Extract<ReorderPdfWebviewToHost, { type: 'apply' }> {
-  return message.type === 'apply';
 }
 
 function buildReorderPdfInitMessage(params: {
@@ -134,9 +126,9 @@ async function applyConfiguredReorder(params: {
   outputPath: string;
   pageCount: number;
   order: number[];
-  runConversion: (run: SinglePdfConfigureConversion) => Promise<void>;
-}): Promise<void> {
-  const { inputUri, workspacePath, outputPath, pageCount, order, runConversion } = params;
+  runtime: ConversionExecutionContext;
+}): Promise<CommittedConversionOutput[]> {
+  const { inputUri, workspacePath, outputPath, pageCount, order, runtime } = params;
 
   if (order.length !== pageCount) {
     throw new Error(`Page order must contain exactly ${pageCount} pages.`);
@@ -148,10 +140,8 @@ async function applyConfiguredReorder(params: {
     }
   }
 
-  await runConversion(async (runtime) =>
-    reorderPdfFiles({
-      inputs: [{ sourcePath: inputUri.fsPath, workspacePath, outputPath, pageOrder: order }],
-      runtime,
-    }),
-  );
+  return reorderPdfFiles({
+    inputs: [{ sourcePath: inputUri.fsPath, workspacePath, outputPath, pageOrder: order }],
+    runtime,
+  });
 }

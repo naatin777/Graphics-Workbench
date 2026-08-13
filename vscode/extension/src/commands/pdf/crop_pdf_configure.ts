@@ -5,7 +5,6 @@ import * as vscode from 'vscode';
 import {
   type CropBox,
   type CropConfigureHostToWebview,
-  type CropConfigureWebviewToHost,
   type CropTarget,
   cropPdfProtocol,
 } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
@@ -14,16 +13,17 @@ import type { PdfPageGeometry } from '@graphics-workbench/core/pdf';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeCatalog, localeMap } from '../../locale_map.js';
-import { isAbortError } from '@graphics-workbench/core/runtime';
+import {
+  isAbortError,
+  type CommittedConversionOutput,
+  type ConversionExecutionContext,
+} from '@graphics-workbench/core/runtime';
 import { cropPdfWithConfiguredBox } from '../../adapters/crop/crop_pdf_configure.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 import { runCropWorker, type CropPdfMetadata } from '../../adapters/crop/run_crop_worker.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import {
-  runSinglePdfConfigureCommand,
-  type SinglePdfConfigureConversion,
-} from '../lifecycle/run_single_pdf_configure.js';
+import { runSinglePdfConfigureCommand } from '../lifecycle/run_single_pdf_configure.js';
 import { userMessage } from '../shared/user_messages.js';
 
 export async function cropPdfConfigureCommand(
@@ -73,20 +73,18 @@ export async function cropPdfConfigureCommand(
           pdf: prepared.pdf,
           preview: readPdfPreviewSettings(configuration),
         }),
-      isApplyMessage: isCropApplyMessage,
-      runApply: async (message, { inputUri, workspaceFolder, prepared, runConversion }) => {
-        await applyConfiguredCrop({
+      apply: async (payload, { inputUri, workspaceFolder, prepared, runtime }) =>
+        applyConfiguredCrop({
           inputUri,
           workspaceFolder,
           outputTemplate: prepared.outputTemplate,
           crop: {
-            cropBox: message.payload.cropBox,
-            target: message.payload.target,
+            cropBox: payload.cropBox,
+            target: payload.target,
             pageGeometry: prepared.pdf.pages,
           },
-          runConversion,
-        });
-      },
+          runtime,
+        }),
       onPreviewLoadFailed: (message, channel) => {
         if (message.type === 'previewLoadFailed') {
           channel?.appendLine(`[crop-pdf-configure] preview failure: ${message.payload.message}`);
@@ -104,12 +102,6 @@ export async function cropPdfConfigureCommand(
 
     await vscode.window.showErrorMessage(userMessage('message.cropPdf.failed', message));
   }
-}
-
-function isCropApplyMessage(
-  message: CropConfigureWebviewToHost,
-): message is Extract<CropConfigureWebviewToHost, { type: 'apply' }> {
-  return message.type === 'apply';
 }
 
 function buildCropPdfInitMessage(params: {
@@ -143,9 +135,9 @@ async function applyConfiguredCrop(params: {
     target: CropTarget;
     pageGeometry: PdfPageGeometry[];
   };
-  runConversion: (run: SinglePdfConfigureConversion) => Promise<void>;
-}): Promise<void> {
-  const { inputUri, workspaceFolder, outputTemplate, crop, runConversion } = params;
+  runtime: ConversionExecutionContext;
+}): Promise<CommittedConversionOutput[]> {
+  const { inputUri, workspaceFolder, outputTemplate, crop, runtime } = params;
   const sourcePath = inputUri.fsPath;
   const outputPath = resolvePdfOutputPath(outputTemplate, {
     workspacePath: workspaceFolder.uri.fsPath,
@@ -154,18 +146,16 @@ async function applyConfiguredCrop(params: {
   });
   validateCropBoxForTarget(crop.cropBox, crop.target, crop.pageGeometry);
 
-  await runConversion(async (runtime) =>
-    cropPdfWithConfiguredBox({
-      input: {
-        sourcePath,
-        workspacePath: workspaceFolder.uri.fsPath,
-        outputPath,
-        cropBox: crop.cropBox,
-        target: crop.target,
-      },
-      runtime,
-    }),
-  );
+  return cropPdfWithConfiguredBox({
+    input: {
+      sourcePath,
+      workspacePath: workspaceFolder.uri.fsPath,
+      outputPath,
+      cropBox: crop.cropBox,
+      target: crop.target,
+    },
+    runtime,
+  });
 }
 
 function validateCropBoxForTarget(cropBox: CropBox, target: CropTarget, pageGeometry: PdfPageGeometry[]): void {

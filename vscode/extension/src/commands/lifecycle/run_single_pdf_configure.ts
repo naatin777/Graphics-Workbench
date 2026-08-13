@@ -1,11 +1,12 @@
 import path from 'node:path';
 
 import * as vscode from 'vscode';
+import type * as v from 'valibot';
 
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import type { CommittedConversionOutput, ConversionExecutionContext } from '@graphics-workbench/core/runtime';
 import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
-import type { MessageProtocol, WireSchema } from '@graphics-workbench/vscode-protocol/typed-protocol';
+import type { MessageProtocol } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import type { WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
 
 import type { Configuration } from '../../generated/extension_manifest.js';
@@ -13,14 +14,14 @@ import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentati
 import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
-import { openConfigurePanel, startPdfConfigureSession } from './pdf_configure_session.js';
+import {
+  openConfigurePanel,
+  startPdfConfigureSession,
+  type ConfigureHostSchema,
+  type ConfigureWebviewSchema,
+} from './pdf_configure_session.js';
 import { withCancellationSignal } from './progress_cancellation.js';
-import { runConfiguredPdfConversion } from './run_configured_conversion.js';
 import type { ConversionCommandMessages } from './run_output_conversion.js';
-
-export type SinglePdfConfigureConversion = (
-  runtime: ConversionExecutionContext,
-) => Promise<CommittedConversionOutput[]>;
 
 export interface SinglePdfConfigurePrepareParams {
   inputUri: vscode.Uri;
@@ -39,20 +40,16 @@ export interface SinglePdfConfigureBuildInitParams<Prepared> {
 }
 
 export interface SinglePdfConfigureApplyParams<Prepared> {
-  panel: vscode.WebviewPanel;
-  signal: AbortSignal;
-  sendError: (message: string) => void;
   inputUri: vscode.Uri;
   workspaceFolder: vscode.WorkspaceFolder;
   prepared: Prepared;
-  runConversion: (run: SinglePdfConfigureConversion) => Promise<void>;
+  runtime: ConversionExecutionContext;
 }
 
 export interface RunSinglePdfConfigureOptions<
+  HostSchema extends ConfigureHostSchema,
+  WebviewSchema extends ConfigureWebviewSchema,
   Prepared,
-  InitPayload,
-  WebviewMessage extends { type: string },
-  TApply extends WebviewMessage,
 > {
   context: vscode.ExtensionContext;
   sourceUris: vscode.Uri[];
@@ -61,22 +58,25 @@ export interface RunSinglePdfConfigureOptions<
   pageId: WebviewPageId;
   panelId: string;
   panelTitle: string;
-  protocol: MessageProtocol<WireSchema, WireSchema>;
+  protocol: MessageProtocol<HostSchema, WebviewSchema>;
   operationName: string;
   messages: ConversionCommandMessages;
   prepare: (params: SinglePdfConfigurePrepareParams) => Promise<Prepared>;
-  buildInitPayload: (params: SinglePdfConfigureBuildInitParams<Prepared>) => InitPayload;
-  isApplyMessage: (message: WebviewMessage) => message is TApply;
-  runApply: (message: TApply, params: SinglePdfConfigureApplyParams<Prepared>) => Promise<void>;
-  onPreviewLoadFailed: (message: WebviewMessage, outputChannel?: LineOutputChannel) => void;
+  buildInitPayload: (
+    params: SinglePdfConfigureBuildInitParams<Prepared>,
+  ) => Extract<v.InferOutput<HostSchema>, { type: 'init' }>['payload'];
+  apply: (
+    payload: Extract<v.InferOutput<WebviewSchema>, { type: 'apply' }>['payload'],
+    params: SinglePdfConfigureApplyParams<Prepared>,
+  ) => Promise<CommittedConversionOutput[]>;
+  onPreviewLoadFailed: (message: v.InferOutput<WebviewSchema>, outputChannel?: LineOutputChannel) => void;
 }
 
 export async function runSinglePdfConfigureCommand<
+  const HostSchema extends ConfigureHostSchema,
+  const WebviewSchema extends ConfigureWebviewSchema,
   Prepared,
-  InitPayload,
-  WebviewMessage extends { type: string },
-  TApply extends WebviewMessage,
->(options: RunSinglePdfConfigureOptions<Prepared, InitPayload, WebviewMessage, TApply>): Promise<void> {
+>(options: RunSinglePdfConfigureOptions<HostSchema, WebviewSchema, Prepared>): Promise<void> {
   const {
     context,
     sourceUris,
@@ -90,8 +90,6 @@ export async function runSinglePdfConfigureCommand<
     messages,
     prepare,
     buildInitPayload,
-    isApplyMessage,
-    runApply,
     onPreviewLoadFailed,
   } = options;
   const { outputChannel } = dependencies;
@@ -147,59 +145,26 @@ export async function runSinglePdfConfigureCommand<
       locale: vscode.env.language,
     },
   });
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion, typescript/no-restricted-types -- protocolの具体型は呼び出し側で確定しているが、helperの汎用シグネチャではWireSchemaへ広がるため、セッション配線に必要な型へ境界キャストする。
-  const channel = createExtensionChannel(protocol, createWebviewTransport(configurePanel.webview)) as unknown as {
-    sendInit: (payload: InitPayload) => void;
-    sendError: (payload: { message: string }) => void;
-    subscribe: (listener: (message: WebviewMessage) => void) => () => void;
-  };
+
+  const channel = createExtensionChannel(protocol, createWebviewTransport(configurePanel.webview));
 
   startPdfConfigureSession({
     panel: configurePanel,
-    sendInit: channel.sendInit,
-    sendError: (message) => {
-      channel.sendError({ message });
-    },
-    subscribeMessages: channel.subscribe,
-    message: {
-      isApplyMessage,
-      buildInitPayload: (panel) =>
-        buildInitPayload({
-          panel,
-          inputUri,
-          workspaceFolder,
-          prepared,
-          pdfJsAssetsRoot,
-          configuration,
-        }),
-      runApply: async (message, { panel, signal, sendError: sessionSendError }) => {
-        await runApply(message, {
-          panel,
-          signal,
-          sendError: sessionSendError,
-          inputUri,
-          workspaceFolder,
-          prepared,
-          runConversion: async (run) =>
-            runConfiguredPdfConversion({
-              operationName,
-              messages,
-              outputChannel,
-              panel,
-              signal,
-              sendError: sessionSendError,
-              run,
-            }),
-        });
-      },
-      onPreviewLoadFailed,
-    },
-    error: {
-      operationName,
-      cancelledMessage: messages.cancelledMessage,
-      failedMessage: messages.failedMessage,
-    },
+    channel,
+    operationName,
+    messages,
     outputChannel,
+    buildInitPayload: (panel) =>
+      buildInitPayload({
+        panel,
+        inputUri,
+        workspaceFolder,
+        prepared,
+        pdfJsAssetsRoot,
+        configuration,
+      }),
+    apply: async (payload, { runtime }) => options.apply(payload, { inputUri, workspaceFolder, prepared, runtime }),
+    onPreviewLoadFailed,
     extensionShutdown: { context },
   });
 }

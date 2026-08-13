@@ -1,38 +1,30 @@
+/* oxlint-disable typescript/no-restricted-types -- the Configure constraint types bound each protocol's concrete message output at the validated channel boundary. */
 import * as vscode from 'vscode';
+import type * as v from 'valibot';
 
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
-import { OperationCancelledError } from '@graphics-workbench/core/runtime';
+import {
+  OperationCancelledError,
+  toErrorMessage,
+  type CommittedConversionOutput,
+  type ConversionExecutionContext,
+} from '@graphics-workbench/core/runtime';
 import type { WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
-import { reportConfigureApplyError } from '../shared/report_configure_error.js';
+import type { ExtensionChannel } from '../../presentation/webview/typed_channel.js';
+import { userMessage } from '../shared/user_messages.js';
+import { resolveOutputConflicts } from './safe_mode.js';
+import { runConversionLifecycle, type ConversionCommandMessages } from './run_output_conversion.js';
 
-export interface PdfConfigureSessionOptions<
-  WebviewMessage extends { type: string },
-  TApply extends WebviewMessage,
-  InitPayload,
-> {
-  panel: vscode.WebviewPanel;
-  sendInit: (payload: InitPayload) => void;
-  sendError: (message: string) => void;
-  subscribeMessages: (listener: (message: WebviewMessage) => void) => () => void;
-  message: {
-    isApplyMessage: (message: WebviewMessage) => message is TApply;
-    buildInitPayload: (panel: vscode.WebviewPanel) => InitPayload;
-    runApply: (
-      message: TApply,
-      context: { panel: vscode.WebviewPanel; signal: AbortSignal; sendError: (message: string) => void },
-    ) => Promise<void>;
-    onPreviewLoadFailed: (message: WebviewMessage, outputChannel?: LineOutputChannel) => void;
-  };
-  error: {
-    operationName: string;
-    cancelledMessage: string;
-    failedMessage: (reason: string) => string;
-  };
-  outputChannel?: LineOutputChannel;
-  /** When provided, aborts an in-flight apply when the extension host shuts down. */
-  extensionShutdown?: { context: vscode.ExtensionContext };
-}
+type ConfigureHostMessage = { type: 'init'; payload: unknown } | { type: 'error'; payload: { message: string } };
+type ConfigureWebviewMessage =
+  | { type: 'ready' }
+  | { type: 'cancel' }
+  | { type: 'previewLoadFailed'; payload: unknown }
+  | { type: 'apply'; payload: unknown };
+
+export type ConfigureHostSchema = v.GenericSchema<unknown, ConfigureHostMessage>;
+export type ConfigureWebviewSchema = v.GenericSchema<unknown, ConfigureWebviewMessage>;
 
 export interface PdfConfigureSession {
   panel: vscode.WebviewPanel;
@@ -70,79 +62,103 @@ export function openConfigurePanel(options: {
 
 /**
  * Owns the shared Webview Configure session: ready/init, preview failure,
- * apply lock, panel-close cancellation, and apply error routing. The caller
- * supplies the concrete channel sends and subscription, so init/error stays
- * typed by the caller's protocol without casts.
+ * apply lock, panel-close cancellation, and the output-conversion lifecycle
+ * behind the panel's apply message.
  */
 export function startPdfConfigureSession<
-  WebviewMessage extends { type: string },
-  TApply extends WebviewMessage,
-  InitPayload,
->(options: PdfConfigureSessionOptions<WebviewMessage, TApply, InitPayload>): PdfConfigureSession {
-  const { panel } = options;
+  const HostSchema extends ConfigureHostSchema,
+  const WebviewSchema extends ConfigureWebviewSchema,
+>(options: {
+  panel: vscode.WebviewPanel;
+  channel: ExtensionChannel<HostSchema, WebviewSchema>;
+  operationName: string;
+  messages: ConversionCommandMessages;
+  outputChannel: LineOutputChannel;
+  buildInitPayload: (panel: vscode.WebviewPanel) => Extract<v.InferOutput<HostSchema>, { type: 'init' }>['payload'];
+  apply: (
+    payload: Extract<v.InferOutput<WebviewSchema>, { type: 'apply' }>['payload'],
+    context: { runtime: ConversionExecutionContext },
+  ) => Promise<CommittedConversionOutput[]>;
+  onPreviewLoadFailed: (message: v.InferOutput<WebviewSchema>, outputChannel?: LineOutputChannel) => void;
+  /** When provided, aborts an in-flight apply when the extension host shuts down. */
+  extensionShutdown?: { context: vscode.ExtensionContext };
+}): PdfConfigureSession {
+  const { panel, outputChannel } = options;
+  const channel: ExtensionChannel<ConfigureHostSchema, ConfigureWebviewSchema> = options.channel;
 
   const operationController = new AbortController();
   panel.onDidDispose(() => {
-    operationController.abort(new OperationCancelledError(`${options.error.operationName} panel was closed.`));
+    operationController.abort(new OperationCancelledError(`${options.operationName} panel was closed.`));
   });
 
   if (options.extensionShutdown !== undefined) {
     options.extensionShutdown.context.subscriptions.push(
       new vscode.Disposable(() => {
         operationController.abort(
-          new OperationCancelledError(`${options.error.operationName} was cancelled during extension shutdown.`),
+          new OperationCancelledError(`${options.operationName} was cancelled during extension shutdown.`),
         );
       }),
     );
   }
 
   let isApplying = false;
-  const unsubscribeMessages = options.subscribeMessages((message) => {
-    if (message.type === 'ready') {
-      options.sendInit(options.message.buildInitPayload(panel));
-      return;
-    }
-
-    if (message.type === 'cancel') {
-      panel.dispose();
-      return;
-    }
-
-    if (message.type === 'previewLoadFailed') {
-      options.message.onPreviewLoadFailed(message, options.outputChannel);
-      return;
-    }
-
-    if (!options.message.isApplyMessage(message)) {
-      return;
-    }
-
-    if (isApplying) {
-      return;
-    }
-
-    isApplying = true;
-    void (async (): Promise<void> => {
-      try {
-        await options.message.runApply(message, {
-          panel,
-          signal: operationController.signal,
-          sendError: options.sendError,
-        });
-      } catch (error) {
-        await reportConfigureApplyError({
-          operationName: options.error.operationName,
-          error,
-          panel,
-          cancelledMessage: options.error.cancelledMessage,
-          failedMessage: options.error.failedMessage,
-          ...(options.outputChannel !== undefined && { outputChannel: options.outputChannel }),
-          sendError: options.sendError,
-        });
-      } finally {
-        isApplying = false;
+  const unsubscribeMessages = channel.subscribe((message) => {
+    switch (message.type) {
+      case 'ready': {
+        channel.send.init(options.buildInitPayload(panel));
+        return;
       }
-    })();
+      case 'cancel': {
+        panel.dispose();
+        return;
+      }
+      case 'previewLoadFailed': {
+        options.onPreviewLoadFailed(message, outputChannel);
+        return;
+      }
+      case 'apply': {
+        if (isApplying) {
+          return;
+        }
+
+        isApplying = true;
+        void (async (): Promise<void> => {
+          try {
+            await runConversionLifecycle({
+              operationName: options.operationName,
+              messages: options.messages,
+              outputChannel,
+              resolveConflicts: resolveOutputConflicts,
+              signal: operationController.signal,
+              onSuccess: async ({ undoId, successMessage }) => {
+                panel.dispose();
+                const undoAction = userMessage('message.action.undo');
+                const selectedAction = await vscode.window.showInformationMessage(successMessage, undoAction);
+                if (selectedAction === undoAction) {
+                  await vscode.commands.executeCommand('graphics-workbench.undoLastConversion', undoId);
+                }
+              },
+              onUndoUnavailable: async ({ successMessage, reason }) => {
+                panel.dispose();
+                await vscode.window.showWarningMessage(userMessage('message.undoUnavailable', successMessage, reason));
+              },
+              onError: async (error) => {
+                const errorMessage = toErrorMessage(error);
+                try {
+                  channel.send.error({ message: errorMessage });
+                } catch {
+                  // The panel may already be disposed; the error notification still informs the user.
+                }
+              },
+              run: async (runtime) => options.apply(message.payload, { runtime }),
+            });
+          } finally {
+            isApplying = false;
+          }
+        })();
+        return;
+      }
+    }
   });
   panel.onDidDispose(() => {
     unsubscribeMessages();

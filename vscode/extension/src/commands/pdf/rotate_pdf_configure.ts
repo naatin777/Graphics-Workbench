@@ -6,21 +6,21 @@ import {
   rotatePdfProtocol,
   type PdfRotationAngle,
   type RotatePdfHostToWebview,
-  type RotatePdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { inspectPdfSummary, rotatePdfFiles } from '@graphics-workbench/core/pdf';
-import { isAbortError } from '@graphics-workbench/core/runtime';
+import {
+  isAbortError,
+  type CommittedConversionOutput,
+  type ConversionExecutionContext,
+} from '@graphics-workbench/core/runtime';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeCatalog, localeMap } from '../../locale_map.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import {
-  runSinglePdfConfigureCommand,
-  type SinglePdfConfigureConversion,
-} from '../lifecycle/run_single_pdf_configure.js';
+import { runSinglePdfConfigureCommand } from '../lifecycle/run_single_pdf_configure.js';
 import { userMessage } from '../shared/user_messages.js';
 
 export async function rotatePdfConfigureCommand(
@@ -74,18 +74,16 @@ export async function rotatePdfConfigureCommand(
           pageCount: prepared.pageCount,
           preview: readPdfPreviewSettings(configuration),
         }),
-      isApplyMessage: isRotateApplyMessage,
-      runApply: async (message, { inputUri, workspaceFolder, prepared, runConversion }) => {
-        await applyConfiguredRotation({
+      apply: async (payload, { inputUri, workspaceFolder, prepared, runtime }) =>
+        applyConfiguredRotation({
           inputUri,
           workspacePath: workspaceFolder.uri.fsPath,
           outputPath: prepared.outputPath,
           pageCount: prepared.pageCount,
-          angle: message.payload.angle,
-          pageIndices: message.payload.pageIndices,
-          runConversion,
-        });
-      },
+          angle: payload.angle,
+          pageIndices: payload.pageIndices,
+          runtime,
+        }),
       onPreviewLoadFailed: (message, channel) => {
         if (message.type === 'previewLoadFailed') {
           channel?.appendLine(`[rotate-pdf-configure] preview failure: ${message.payload.message}`);
@@ -102,12 +100,6 @@ export async function rotatePdfConfigureCommand(
 
     await vscode.window.showErrorMessage(userMessage('message.rotatePdf.failed', message));
   }
-}
-
-function isRotateApplyMessage(
-  message: RotatePdfWebviewToHost,
-): message is Extract<RotatePdfWebviewToHost, { type: 'apply' }> {
-  return message.type === 'apply';
 }
 
 function buildRotatePdfInitMessage(params: {
@@ -137,9 +129,9 @@ async function applyConfiguredRotation(params: {
   pageCount: number;
   angle: PdfRotationAngle;
   pageIndices: number[];
-  runConversion: (run: SinglePdfConfigureConversion) => Promise<void>;
-}): Promise<void> {
-  const { inputUri, workspacePath, outputPath, pageCount, angle, pageIndices, runConversion } = params;
+  runtime: ConversionExecutionContext;
+}): Promise<CommittedConversionOutput[]> {
+  const { inputUri, workspacePath, outputPath, pageCount, angle, pageIndices, runtime } = params;
 
   for (const page of pageIndices) {
     if (!Number.isInteger(page) || page < 1 || page > pageCount) {
@@ -147,18 +139,16 @@ async function applyConfiguredRotation(params: {
     }
   }
 
-  await runConversion(async (runtime) =>
-    rotatePdfFiles({
-      inputs: [
-        {
-          sourcePath: inputUri.fsPath,
-          workspacePath,
-          outputPath,
-          angle,
-          pageIndices: pageIndices.map((page) => page - 1),
-        },
-      ],
-      runtime,
-    }),
-  );
+  return rotatePdfFiles({
+    inputs: [
+      {
+        sourcePath: inputUri.fsPath,
+        workspacePath,
+        outputPath,
+        angle,
+        pageIndices: pageIndices.map((page) => page - 1),
+      },
+    ],
+    runtime,
+  });
 }
