@@ -576,6 +576,13 @@ export default defineConfig({
     'project/no-pdf-bytes-in-process-ipc': 'error',
     'project/no-secret-output-log': 'error',
     'project/no-direct-child-process': 'error',
+    'project/no-frontend-terminology-in-core': 'error',
+    'project/no-frontend-package-in-core': 'error',
+    'project/no-undeclared-imports': 'error',
+    'project/no-nonpublic-core-imports': 'error',
+    'project/no-cross-frontend-imports': 'error',
+    'project/no-export-star-in-core-public': 'error',
+    'project/no-invalid-user-message': 'error',
   },
 
   overrides: [

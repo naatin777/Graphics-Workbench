@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const maxConditionalSpreadsPerObject = {
   meta: {
     type: 'suggestion',
@@ -618,6 +622,353 @@ const noDirectChildProcess = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Package boundary rules (moved from scripts/check-package-boundaries.mjs):
+// architecture rules that inspect import declarations and file locations.
+// Package metadata (dependency ownership, versions, exports, lockfiles) stays
+// in the standalone script.
+// ---------------------------------------------------------------------------
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function readJsonFile(filePath) {
+  return JSON.parse(readFileSync(filePath, 'utf8'));
+}
+
+const workspacePackages = [
+  {
+    name: 'core',
+    root: path.join(repositoryRoot, 'core'),
+    packageJson: readJsonFile(path.join(repositoryRoot, 'core', 'package.json')),
+  },
+  {
+    name: 'vscode',
+    root: path.join(repositoryRoot, 'vscode', 'extension'),
+    packageJson: readJsonFile(path.join(repositoryRoot, 'vscode', 'extension', 'package.json')),
+  },
+  {
+    name: 'protocol',
+    root: path.join(repositoryRoot, 'vscode', 'protocol'),
+    packageJson: readJsonFile(path.join(repositoryRoot, 'vscode', 'protocol', 'package.json')),
+  },
+  {
+    name: 'webview',
+    root: path.join(repositoryRoot, 'vscode', 'webview'),
+    packageJson: readJsonFile(path.join(repositoryRoot, 'vscode', 'webview', 'package.json')),
+  },
+  {
+    name: 'tui',
+    root: path.join(repositoryRoot, 'tui'),
+    packageJson: readJsonFile(path.join(repositoryRoot, 'tui', 'package.json')),
+  },
+];
+
+const publicCoreEntries = new Set(
+  Object.keys(workspacePackages[0].packageJson.exports ?? {})
+    .filter((entry) => entry.startsWith('./'))
+    .map((entry) => entry.slice(2)),
+);
+
+function resolveContextFilePath(context) {
+  return path.resolve(context.cwd, context.filename);
+}
+
+function findWorkspacePackage(filePath) {
+  const normalized = normalizeFilename(path.resolve(filePath));
+  let best;
+  for (const workspacePackage of workspacePackages) {
+    const root = normalizeFilename(workspacePackage.root);
+    if (normalized === root || normalized.startsWith(`${root}/`)) {
+      if (best === undefined || workspacePackage.root.length > best.root.length) {
+        best = workspacePackage;
+      }
+    }
+  }
+  return best;
+}
+
+function packageNameFor(specifier) {
+  const segments = specifier.split('/');
+  return specifier.startsWith('@') ? segments.slice(0, 2).join('/') : segments[0];
+}
+
+function importSourceOf(node) {
+  return node?.type === 'Literal' && typeof node.value === 'string' ? node.value : undefined;
+}
+
+function importSpecifierVisitors(onSpecifier) {
+  const handleDeclaration = (node) => {
+    const source = importSourceOf(node.source);
+    if (source !== undefined) {
+      onSpecifier(source, node);
+    }
+  };
+  return {
+    ImportDeclaration: handleDeclaration,
+    ExportNamedDeclaration: handleDeclaration,
+    ExportAllDeclaration: handleDeclaration,
+    ImportExpression(node) {
+      const source = importSourceOf(node.source);
+      if (source !== undefined) {
+        onSpecifier(source, node);
+      }
+    },
+    CallExpression(node) {
+      if (node.callee?.type === 'Identifier' && node.callee.name === 'require') {
+        const source = importSourceOf(node.arguments[0]);
+        if (source !== undefined) {
+          onSpecifier(source, node);
+        }
+      }
+    },
+  };
+}
+
+const noFrontendTerminologyInCore = {
+  meta: {
+    type: 'problem',
+    schema: [],
+  },
+
+  create(context) {
+    if (!/(?:^|\/)core\/(?:src|testing)\//u.test(normalizeFilename(context.filename))) {
+      return {};
+    }
+
+    return {
+      Program(node) {
+        if (/\b(?:VS Code|Terminal UI|TUI|Extension Host)\b/u.test(context.sourceCode.text)) {
+          context.report({
+            node,
+            message: 'core source contains frontend-specific policy terminology.',
+          });
+        }
+      },
+    };
+  },
+};
+
+const noFrontendPackageInCore = {
+  meta: {
+    type: 'problem',
+    schema: [],
+  },
+
+  create(context) {
+    if (!/(?:^|\/)core\/(?:src|testing)\//u.test(normalizeFilename(context.filename))) {
+      return {};
+    }
+
+    return importSpecifierVisitors((specifier, node) => {
+      if (specifier.startsWith('.') || specifier.startsWith('node:')) {
+        return;
+      }
+      const packageName = packageNameFor(specifier);
+      if (
+        packageName === 'vscode' ||
+        packageName === 'bun' ||
+        packageName === 'bun-types' ||
+        packageName.startsWith('@opentui/')
+      ) {
+        context.report({ node, message: `core imports frontend-only package ${specifier}` });
+      }
+    });
+  },
+};
+
+const noUndeclaredImports = {
+  meta: {
+    type: 'problem',
+    schema: [],
+  },
+
+  create(context) {
+    const workspacePackage = findWorkspacePackage(resolveContextFilePath(context));
+    if (workspacePackage === undefined) {
+      return {};
+    }
+
+    const declaredDependencies = new Set([
+      ...Object.keys(workspacePackage.packageJson.dependencies ?? {}),
+      ...Object.keys(workspacePackage.packageJson.devDependencies ?? {}),
+    ]);
+    const allowedBarePackages =
+      workspacePackage.name === 'vscode' ? ['vscode'] : workspacePackage.name === 'webview' ? ['@webview-shared'] : [];
+
+    return importSpecifierVisitors((specifier, node) => {
+      if (specifier.startsWith('.') || specifier.startsWith('node:') || specifier.startsWith('bun:')) {
+        return;
+      }
+      if (packageNameFor(specifier) === workspacePackage.packageJson.name) {
+        return;
+      }
+      if (allowedBarePackages.some((allowed) => specifier === allowed || specifier.startsWith(`${allowed}/`))) {
+        return;
+      }
+      const packageName = packageNameFor(specifier);
+      if (!declaredDependencies.has(packageName)) {
+        context.report({ node, message: `imports undeclared ${workspacePackage.name} dependency ${specifier}` });
+      }
+    });
+  },
+};
+
+const noNonPublicCoreImports = {
+  meta: {
+    type: 'problem',
+    schema: [],
+  },
+
+  create(context) {
+    if (findWorkspacePackage(resolveContextFilePath(context)) === undefined) {
+      return {};
+    }
+
+    const packagePrefix = '@graphics-workbench/core/';
+    return importSpecifierVisitors((specifier, node) => {
+      if (!specifier.startsWith(packagePrefix)) {
+        return;
+      }
+      const entry = specifier.slice(packagePrefix.length);
+      if (!publicCoreEntries.has(entry)) {
+        context.report({ node, message: `imports non-public core module ${specifier}` });
+      }
+    });
+  },
+};
+
+const noCrossFrontendImports = {
+  meta: {
+    type: 'problem',
+    schema: [],
+  },
+
+  create(context) {
+    const filePath = normalizeFilename(resolveContextFilePath(context));
+    const vscodeSourceRoot = normalizeFilename(path.join(repositoryRoot, 'vscode', 'extension'));
+    const tuiSourceRoot = normalizeFilename(path.join(repositoryRoot, 'tui'));
+    const webviewSourceRoot = normalizeFilename(path.join(repositoryRoot, 'vscode', 'webview'));
+
+    let forbiddenPackage;
+    let forbiddenSourceRoot;
+    if (filePath.startsWith(`${vscodeSourceRoot}/`)) {
+      forbiddenPackage = 'graphics-workbench-tui';
+      forbiddenSourceRoot = tuiSourceRoot;
+    } else if (filePath.startsWith(`${tuiSourceRoot}/`)) {
+      forbiddenPackage = 'vscode';
+      forbiddenSourceRoot = vscodeSourceRoot;
+    } else if (filePath.startsWith(`${webviewSourceRoot}/`)) {
+      forbiddenPackage = 'vscode';
+      forbiddenSourceRoot = vscodeSourceRoot;
+    } else {
+      return {};
+    }
+
+    return importSpecifierVisitors((specifier, node) => {
+      if (specifier === forbiddenPackage || specifier.startsWith(`${forbiddenPackage}/`)) {
+        context.report({ node, message: `imports ${forbiddenPackage} package` });
+        return;
+      }
+      if (!specifier.startsWith('.') || forbiddenSourceRoot === undefined) {
+        return;
+      }
+      const resolved = normalizeFilename(path.resolve(path.dirname(filePath), specifier));
+      if (resolved === forbiddenSourceRoot || resolved.startsWith(`${forbiddenSourceRoot}/`)) {
+        context.report({ node, message: `reaches forbidden frontend source through ${specifier}` });
+      }
+    });
+  },
+};
+
+const noExportStarInCorePublic = {
+  meta: {
+    type: 'problem',
+    schema: [],
+  },
+
+  create(context) {
+    if (!/(?:^|\/)core\/src\/public\/[^/]+\.ts$/u.test(normalizeFilename(context.filename))) {
+      return {};
+    }
+
+    return {
+      ExportAllDeclaration(node) {
+        context.report({ node, message: 'core public modules must use named exports instead of export *.' });
+      },
+    };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// NLS source-code analysis (moved from scripts/check-nls.mjs): the key set
+// consistency checks between package.nls.json files stay in the standalone
+// script, while userMessage call sites are validated here.
+// ---------------------------------------------------------------------------
+
+function readNlsMessages() {
+  try {
+    return readJsonFile(path.join(repositoryRoot, 'vscode', 'extension', 'package.nls.json'));
+  } catch {
+    return undefined;
+  }
+}
+
+const nlsEnglishMessages = readNlsMessages();
+const NLS_PLACEHOLDER_PATTERN = /\{(\d+)\}/gu;
+
+function requiredMessageArgumentCount(message) {
+  let count = 0;
+  for (const match of message.matchAll(NLS_PLACEHOLDER_PATTERN)) {
+    count = Math.max(count, Number(match[1]) + 1);
+  }
+  return count;
+}
+
+function validateUserMessageCall(key, argumentCount) {
+  if (nlsEnglishMessages === undefined) {
+    return [];
+  }
+  if (!Object.hasOwn(nlsEnglishMessages, key)) {
+    return [`userMessage call references missing NLS key ${key}`];
+  }
+  const requiredArguments = requiredMessageArgumentCount(nlsEnglishMessages[key]);
+  if (argumentCount - 1 < requiredArguments) {
+    return [`userMessage call has too few arguments for ${key}`];
+  }
+  return [];
+}
+
+const noInvalidUserMessage = {
+  meta: {
+    type: 'problem',
+    schema: [],
+  },
+
+  create(context) {
+    if (nlsEnglishMessages === undefined) {
+      return {};
+    }
+    if (!/(?:^|\/)vscode\/extension\/src\//u.test(normalizeFilename(context.filename))) {
+      return {};
+    }
+
+    return {
+      CallExpression(node) {
+        if (node.callee?.type !== 'Identifier' || node.callee.name !== 'userMessage') {
+          return;
+        }
+        const keyNode = node.arguments[0];
+        if (keyNode?.type !== 'Literal' || typeof keyNode.value !== 'string') {
+          return;
+        }
+        for (const message of validateUserMessageCall(keyNode.value, node.arguments.length)) {
+          context.report({ node, message });
+        }
+      },
+    };
+  },
+};
+
 export default {
   meta: {
     name: 'project',
@@ -634,6 +985,13 @@ export default {
     'no-pdf-bytes-in-process-ipc': noPdfBytesInProcessIpc,
     'no-secret-output-log': noSecretOutputLog,
     'no-direct-child-process': noDirectChildProcess,
+    'no-frontend-terminology-in-core': noFrontendTerminologyInCore,
+    'no-frontend-package-in-core': noFrontendPackageInCore,
+    'no-undeclared-imports': noUndeclaredImports,
+    'no-nonpublic-core-imports': noNonPublicCoreImports,
+    'no-cross-frontend-imports': noCrossFrontendImports,
+    'no-export-star-in-core-public': noExportStarInCorePublic,
+    'no-invalid-user-message': noInvalidUserMessage,
   },
 };
 
@@ -646,5 +1004,8 @@ export {
   isFixedE2EWaitCall,
   isProcessProtocolFile,
   isWebviewAppSourceFile,
+  packageNameFor,
+  requiredMessageArgumentCount,
   splitIdentifierIntoTokens,
+  validateUserMessageCall,
 };

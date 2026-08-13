@@ -19,3 +19,13 @@ export function toErrorMessage(error: unknown): string {
 
   return String(error);
 }
+
+// oxlint-disable-next-line typescript/no-restricted-types -- catchが投げる値は任意の型を取り得る。
+export function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+// oxlint-disable-next-line typescript/no-restricted-types -- catchが投げる値は任意の型を取り得る。
+export function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
+}

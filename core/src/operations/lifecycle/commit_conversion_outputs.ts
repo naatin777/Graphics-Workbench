@@ -8,14 +8,21 @@ import {
   assertPathIsNotSymbolicLink,
   assertWritablePathInWorkspace,
 } from '../../security/workspace_path.js';
+import { asError, OperationCancelledError } from '../../shared/error.js';
 
 import {
   cleanupConversionArtifacts,
+  toArtifactRoots,
   type CleanupPreservingError,
-  type ConversionArtifactRoot,
 } from './cleanup_conversion_artifacts.js';
 import { replaceFileAtomically } from './atomic_file_replace.js';
-import { OperationCancelledError } from '../../shared/error.js';
+import {
+  assertFileIdentityAtPath,
+  pathExists,
+  readFileIdentity,
+  sameFileIdentity,
+  type FileIdentity,
+} from './file_operations.js';
 import { copyFileWithAbort, type AbortableCopyFile } from './copy_file_with_abort.js';
 import type { LineOutputChannel } from '../external_tools/external_tool_ascii_scratch.js';
 import { filesHaveEqualContents, hashFile } from '../input/file_content_hash.js';
@@ -76,11 +83,6 @@ interface ResolvedOutput extends PreparedConversionOutput {
 interface ExistingOutputSnapshot {
   output: PreparedConversionOutput;
   contentHash: string;
-}
-
-interface FileIdentity {
-  dev: number;
-  ino: number;
 }
 
 function stagingBoundary(output: PreparedConversionOutput): string {
@@ -426,19 +428,6 @@ function toCommittedOutput(
   return result;
 }
 
-function toArtifactRoots(outputs: PreparedConversionOutput[]): ConversionArtifactRoot[] {
-  return outputs.flatMap((output) =>
-    output.stagingRootPath !== undefined && output.stagingRootPath !== ''
-      ? [
-          {
-            rootPath: output.stagingRootPath,
-            workspacePath: stagingBoundary(output),
-          },
-        ]
-      : [],
-  );
-}
-
 async function rollbackCommittedOutputs(
   outputs: ResolvedOutput[],
   options: CommitConversionOutputsOptions,
@@ -500,12 +489,10 @@ async function rollbackOverwrittenOutput(output: ResolvedOutput, copyFileImpl: A
 }
 
 async function rollbackNewOutput(output: ResolvedOutput, rmImpl: typeof rm): Promise<void> {
-  await assertExistingPathInWorkspace(output.outputPath, output.workspacePath);
-  const currentIdentity = await readFileIdentity(output.outputPath);
-
-  if (output.createdOutputIdentity === undefined || !sameFileIdentity(currentIdentity, output.createdOutputIdentity)) {
-    throw new Error('Output was replaced by another process; it was not removed.');
+  if (output.createdOutputIdentity === undefined) {
+    throw new Error(`No created-output identity for new output: ${output.outputPath}`);
   }
+  await assertFileIdentityAtPath(output.outputPath, output.workspacePath, output.createdOutputIdentity);
   if (output.copyCompleted && !(await filesHaveEqualContents(output.outputPath, output.stagedOutputPath))) {
     throw new Error('New output changed after commit; it was not removed.');
   }
@@ -690,18 +677,6 @@ async function isCaseInsensitiveDirectory(directory: string): Promise<boolean> {
   }
 }
 
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await access(filePath);
-    return true;
-  } catch (error) {
-    if (isFileNotFoundError(error)) {
-      return false;
-    }
-    throw error instanceof Error ? error : new Error(String(error));
-  }
-}
-
 async function assertConflictOutputsUnchanged(outputs: ResolvedOutput[]): Promise<void> {
   await Promise.all(
     outputs.map(async (output) => {
@@ -769,15 +744,6 @@ async function closeOwnedOutputHandles(outputs: ResolvedOutput[]): Promise<void>
   );
 }
 
-async function readFileIdentity(filePath: string): Promise<FileIdentity> {
-  const fileStat = await stat(filePath);
-  return { dev: fileStat.dev, ino: fileStat.ino };
-}
-
-function sameFileIdentity(first: FileIdentity, second: FileIdentity): boolean {
-  return first.dev === second.dev && first.ino === second.ino;
-}
-
 async function readFileMetadata(filePath: string): Promise<PreviousFileMetadata> {
   const fileStat = await stat(filePath);
   return {
@@ -794,14 +760,4 @@ export async function restoreFileMetadata(filePath: string, metadata: PreviousFi
 
   await chmod(filePath, metadata.mode);
   await utimes(filePath, new Date(metadata.atimeMs), new Date(metadata.mtimeMs));
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値をErrorへ正規化するヘルパー。
-function asError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
-}
-
-// oxlint-disable-next-line typescript/no-restricted-types -- catchブロックから渡される任意のthrow値の型ガード。
-function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }
