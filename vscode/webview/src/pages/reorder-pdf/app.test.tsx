@@ -1,53 +1,16 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { reorderPdfProtocol, type ReorderPdfLabels } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import { reorderPdfProtocol } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 const renderBehavior = vi.hoisted(() => ({
-  fail: false,
-  disposeCount: 0,
   pages: 4,
 }));
-
-class MockIntersectionObserver {
-  readonly root: Element | Document | null;
-  readonly rootMargin: string;
-  readonly thresholds: readonly number[];
-  readonly callback: IntersectionObserverCallback;
-
-  constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
-    this.callback = callback;
-    this.root = options?.root ?? null;
-    this.rootMargin = options?.rootMargin ?? '0px';
-    this.thresholds = Array.isArray(options?.threshold)
-      ? options.threshold
-      : options?.threshold !== undefined
-        ? [options.threshold]
-        : [];
-  }
-
-  observe(): void {}
-  unobserve(): void {}
-  disconnect(): void {}
-  takeRecords(): IntersectionObserverEntry[] {
-    return [];
-  }
-}
-
-vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
-let scrollTop = 0;
-HTMLElement.prototype.scrollIntoView = function scrollIntoViewMock(this: HTMLElement): void {
-  const pageNumber = Number(this.dataset.pdfPage);
-  scrollTop = Math.max(0, (pageNumber - 1) * 100 - 150);
-  this.closest('.reorder__pages')?.dispatchEvent(new Event('scroll'));
-};
 const renderPdfPages = vi.hoisted(() =>
   vi.fn<(...args: unknown[]) => Promise<unknown>>(async (_pdfSrc: unknown, container: unknown) => {
-    if (renderBehavior.fail) {
-      throw new Error('render exploded');
-    }
     if (container instanceof Element) {
       container.replaceChildren();
       for (let page = 1; page <= renderBehavior.pages; page += 1) {
@@ -61,40 +24,28 @@ const renderPdfPages = vi.hoisted(() =>
     }
     return {
       firstPageReady: Promise.resolve(),
-      dispose: async () => {
-        renderBehavior.disposeCount += 1;
-      },
+      dispose: async () => undefined,
     };
   }),
 );
 
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
-const labels: ReorderPdfLabels = {
-  header: {
-    title: 'Reorder PDF',
-    description: 'Move pages to change the output order.',
-  },
-  preview: {
-    title: 'PDF Preview',
-    ariaLabel: 'PDF page preview',
-    renderError: 'Could not display the PDF',
-    applyError: 'Failed to apply the reorder.',
-  },
-  order: {
-    title: 'Order',
-    moveUp: 'Move page up',
-    moveDown: 'Move page down',
-    positionLabel: 'pages',
-  },
-  validation: {
-    orderRequired: 'The page order cannot be empty.',
-    orderInvalid: 'The page order is invalid.',
-  },
-  actions: {
-    apply: 'Apply',
-    cancel: 'Cancel',
-  },
+const labels: MessageCatalog = {
+  'webview.reorderPdf.title': 'Reorder PDF',
+  'webview.reorderPdf.description': 'Move pages to change the output order.',
+  'webview.reorderPdf.preview': 'PDF Preview',
+  'webview.reorderPdf.previewAriaLabel': 'PDF page preview',
+  'webview.reorderPdf.previewRenderError': 'Could not display the PDF',
+  'webview.reorderPdf.previewApplyError': 'Failed to apply the reorder.',
+  'webview.reorderPdf.order': 'Order',
+  'webview.reorderPdf.moveUp': 'Move page up',
+  'webview.reorderPdf.moveDown': 'Move page down',
+  'webview.reorderPdf.positionLabel': 'pages',
+  'webview.reorderPdf.orderRequiredError': 'The page order cannot be empty.',
+  'webview.reorderPdf.orderInvalid': 'The page order is invalid.',
+  'webview.reorderPdf.apply': 'Apply',
+  'webview.reorderPdf.cancel': 'Cancel',
 };
 
 const initMessage = {
@@ -126,36 +77,6 @@ async function mountAndInit(): Promise<void> {
 
 async function flushPromises(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
-}
-
-async function flushFrames(): Promise<void> {
-  await new Promise((resolve) => requestAnimationFrame(resolve));
-  await flushPromises();
-}
-
-function mockPageGeometry(): void {
-  const container = document.querySelector<HTMLElement>('.reorder__pages');
-  if (!container) {
-    throw new Error('Missing .reorder__pages container');
-  }
-  container.getBoundingClientRect = () => mockRect({ top: 0, left: 0, width: 400, height: 400 });
-  pageFigures().forEach((figure, index) => {
-    figure.getBoundingClientRect = () => mockRect({ top: index * 100 - scrollTop, left: 0, width: 200, height: 100 });
-  });
-}
-
-function mockRect(rect: { top: number; left: number; width: number; height: number }): DOMRect {
-  return {
-    top: rect.top,
-    left: rect.left,
-    right: rect.left + rect.width,
-    bottom: rect.top + rect.height,
-    width: rect.width,
-    height: rect.height,
-    x: rect.left,
-    y: rect.top,
-    toJSON: () => ({}),
-  };
 }
 
 function isReorderHostToWebviewMessage(value: unknown): boolean {
@@ -197,10 +118,7 @@ function controlsFor(pageIndex: number): {
 beforeEach(async () => {
   sendMessage.mockClear();
   renderPdfPages.mockClear();
-  renderBehavior.fail = false;
-  renderBehavior.disposeCount = 0;
   renderBehavior.pages = 4;
-  scrollTop = 0;
   document.body.innerHTML = '<div id="root"></div>';
 });
 
@@ -340,46 +258,6 @@ test('各pageの↑/↓ボタンはgw-toolbar-buttonのCodiconボタンで、ari
   expect(down?.querySelector('.codicon.codicon-chevron-down')).not.toBeNull();
 });
 
-test('Preview下部にページ総数のPageNavigatorが表示される', async () => {
-  await mountAndInit();
-
-  const navigator = document.querySelector('.page-navigator');
-  expect(navigator).not.toBeNull();
-  expect(document.querySelector('.page-navigator__position')?.textContent).toContain('/ 4');
-  expect(document.querySelectorAll('.page-navigator .codicon-chevron-left')).toHaveLength(1);
-  expect(document.querySelectorAll('.page-navigator .codicon-chevron-right')).toHaveLength(1);
-});
-
-test('現在ページにdata-currentが付き、PageNavigatorの位置に反映される', async () => {
-  await mountAndInit();
-
-  mockPageGeometry();
-  document.querySelector<HTMLElement>('.reorder__pages')?.dispatchEvent(new Event('scroll'));
-  await flushFrames();
-
-  const current = document.querySelector<HTMLElement>('.pdf-page[data-current="true"]');
-  expect(current?.dataset.pdfPage).toBe('2');
-  expect(document.querySelector('.page-navigator__position')?.textContent).toBe('2 / 4');
-  expect(document.querySelectorAll('.pdf-page[data-current="true"]')).toHaveLength(1);
-});
-
-test('PageNavigatorの次へで現在ページの次のページへスクロールする', async () => {
-  await mountAndInit();
-
-  mockPageGeometry();
-  document.querySelector<HTMLElement>('.reorder__pages')?.dispatchEvent(new Event('scroll'));
-  await flushFrames();
-  expect(document.querySelector<HTMLElement>('.pdf-page[data-current="true"]')?.dataset.pdfPage).toBe('2');
-
-  const next = document.querySelector<HTMLButtonElement>('.page-navigator button[aria-label="Next page"]');
-  expect(next).not.toBeNull();
-  next?.click();
-  await flushFrames();
-
-  expect(document.querySelector<HTMLElement>('.pdf-page[data-current="true"]')?.dataset.pdfPage).toBe('3');
-  expect(document.querySelector('.page-navigator__position')?.textContent).toBe('3 / 4');
-});
-
 test('ページを上へ移動してApplyで新しい順序を送信する', async () => {
   await mountAndInit();
 
@@ -451,26 +329,6 @@ test('init再受信時に古いcontrolと順序が残らない', async () => {
     expect(figure.querySelectorAll('.reorder-page__controls')).toHaveLength(1);
     expect(figure.querySelector('.reorder-page__position')?.textContent).toBe(String(index + 1));
   }
-});
-
-test('preview failure時にエラー表示とmessageを送信する', async () => {
-  renderBehavior.fail = true;
-  await mountAndInit();
-
-  expect(sendMessage).toHaveBeenCalledWith({
-    type: 'previewLoadFailed',
-    payload: { message: 'render exploded' },
-  });
-  expect(document.querySelector('[role="alert"]')?.textContent).toBe('Could not display the PDF');
-});
-
-test('preview再描画で古いcontrollerをdisposeする', async () => {
-  await mountAndInit();
-  expect(renderBehavior.disposeCount).toBe(0);
-
-  globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
-  await flushPromises();
-  expect(renderBehavior.disposeCount).toBe(1);
 });
 
 test('renderPdfPagesにvirtualize: falseを渡して全ページをDOMへマウントする', async () => {

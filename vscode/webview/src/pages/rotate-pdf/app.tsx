@@ -4,27 +4,20 @@ import {
   PDF_ROTATION_ANGLES,
   rotatePdfProtocol,
   type PdfRotationAngle,
-  type RotatePdfHostToWebview,
-  type RotatePdfLabels,
 } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
-import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
-import { toErrorMessage } from '@webview-shared/error';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
+import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
 import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
-import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNavigator';
-import { useCurrentPage } from '@webview-shared/ui/use_current_page';
+import { PageNavigator } from '@webview-shared/ui/PageNavigator';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
+
+import { readRotatePdfLabels, type RotatePdfLabels } from './labels';
 
 export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(rotatePdfProtocol, properties.host);
-  const [labelsValue, setLabels] = createSignal<RotatePdfLabels>();
-  const labels = (): RotatePdfLabels => {
-    const value = labelsValue();
-    if (value === undefined) {
-      throw new Error('Rotate PDF labels were not initialized.');
-    }
-    return value;
-  };
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): RotatePdfLabels => readRotatePdfLabels(labelsCatalog());
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [angle, setAngle] = createSignal<PdfRotationAngle>(90);
@@ -33,15 +26,18 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   const [selectedPages, setSelectedPages] = createSignal<ReadonlySet<number>>(new Set());
 
   let pdfPages: HTMLDivElement | undefined;
-  let renderController: PdfRenderController | undefined;
-  let previewController: AbortController | undefined;
-  let previewGeneration = 0;
 
-  const { currentPage, recompute } = useCurrentPage({
+  const preview = createPdfPreview({
+    pagesContainer: () => pdfPages,
     scrollContainer: () => pdfPages,
-    getPageElements: () =>
-      pdfPages === undefined ? [] : [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')],
+    setRenderError: () => {
+      setApplyError(labels().preview.renderError);
+    },
+    onRenderError: (message) => {
+      channel.send.previewLoadFailed({ message });
+    },
   });
+  const currentPage = useCurrentPage(preview);
 
   const cancel = (): void => {
     channel.send.cancel();
@@ -52,26 +48,39 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     syncSelectionClasses();
   });
 
-  createEffect(() => {
-    currentPage();
-    syncCurrentPageOutline();
-  });
-
   onMount(() => {
     const unsubscribeMessages = channel.on({
       error: ({ message }) => {
         setApplyError(message);
       },
       init: (payload) => {
-        setLabels(payload.labels);
+        setLabelsCatalog(payload.labels);
         setFileName(payload.fileName);
         setPageCount(payload.pageCount);
         setApplyError('');
         setPreviewReady(false);
         setSelectedPages(new Set<number>());
-        const generation = previewGeneration + 1;
-        previewGeneration = generation;
-        void startPreview(payload, generation);
+        void preview.start(
+          payload.pdfSrc,
+          {
+            preview: payload.preview,
+            resources: payload.resources,
+            ...(pdfPages === undefined ? {} : { root: pdfPages }),
+            page: {
+              label: labels().preview.ariaLabel,
+              onCreated: (pageFrame, pageNumber) => {
+                pageFrame.setAttribute('role', 'checkbox');
+                pageFrame.setAttribute('tabindex', '0');
+                pageFrame.setAttribute('aria-checked', String(selectedPages().has(pageNumber)));
+                pageFrame.setAttribute('aria-label', `${labels().rotation.pageToggle} ${pageNumber}`);
+              },
+            },
+          },
+          () => {
+            setPreviewReady(true);
+            syncSelectionClasses();
+          },
+        );
       },
     });
 
@@ -126,73 +135,6 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     });
   });
 
-  onCleanup(() => {
-    previewController?.abort();
-    void renderController?.dispose();
-  });
-
-  async function startPreview(
-    payload: Extract<RotatePdfHostToWebview, { type: 'init' }>['payload'],
-    generation: number,
-  ): Promise<void> {
-    previewController?.abort();
-    const controller = new AbortController();
-    previewController = controller;
-
-    if (renderController !== undefined) {
-      await renderController.dispose();
-      renderController = undefined;
-    }
-
-    if (pdfPages === undefined) {
-      return;
-    }
-
-    const currentLabels = labels();
-
-    try {
-      renderController = await renderPdfPages(payload.pdfSrc, pdfPages, {
-        preview: payload.preview,
-        resources: payload.resources,
-        root: pdfPages,
-        page: {
-          label: currentLabels.preview.ariaLabel,
-          onCreated: (pageFrame, pageNumber) => {
-            pageFrame.setAttribute('role', 'checkbox');
-            pageFrame.setAttribute('tabindex', '0');
-            pageFrame.setAttribute('aria-checked', String(selectedPages().has(pageNumber)));
-            pageFrame.setAttribute('aria-label', `${currentLabels.rotation.pageToggle} ${pageNumber}`);
-          },
-        },
-        signal: controller.signal,
-        onRenderError: (error) => {
-          if (controller.signal.aborted) {
-            return;
-          }
-          channel.send.previewLoadFailed({ message: toErrorMessage(error) });
-        },
-      });
-
-      await renderController.firstPageReady;
-
-      if (generation !== previewGeneration || controller.signal.aborted) {
-        return;
-      }
-
-      setPreviewReady(true);
-      syncSelectionClasses();
-      recompute();
-      syncCurrentPageOutline();
-    } catch (error) {
-      if (controller.signal.aborted || generation !== previewGeneration) {
-        return;
-      }
-      const message = toErrorMessage(error);
-      channel.send.previewLoadFailed({ message });
-      setApplyError(currentLabels.preview.renderError);
-    }
-  }
-
   function togglePage(page: number): void {
     const next = new Set(selectedPages());
     if (next.has(page)) {
@@ -229,32 +171,6 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     }
   }
 
-  function syncCurrentPageOutline(): void {
-    const container = pdfPages;
-    if (!container) {
-      return;
-    }
-    const current = currentPage();
-    for (const figure of container.querySelectorAll<HTMLElement>('.pdf-page')) {
-      if (Number(figure.dataset.pdfPage) === current) {
-        figure.dataset.current = 'true';
-      } else {
-        delete figure.dataset.current;
-      }
-    }
-  }
-
-  function scrollToPage(page: number): void {
-    const container = pdfPages;
-    if (!container) {
-      return;
-    }
-    const figure = container.querySelector<HTMLElement>(`.pdf-page[data-pdf-page="${page}"]`);
-    if (figure) {
-      scrollPageIntoView(figure);
-    }
-  }
-
   function apply(): void {
     const selection = selectedPages();
     if (selection.size === 0) {
@@ -267,7 +183,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   }
 
   return (
-    <Show when={labelsValue()}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <div class='rotate'>
           <header class='rotate__header'>
@@ -301,14 +217,10 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                   aria-label={labels().preview.ariaLabel}
                 />
                 <PageNavigator
-                  currentPage={currentPage()}
+                  currentPage={currentPage() ?? 0}
                   pageCount={pageCount()}
-                  onPrevious={() => {
-                    scrollToPage(currentPage() - 1);
-                  }}
-                  onNext={() => {
-                    scrollToPage(currentPage() + 1);
-                  }}
+                  onPrevious={preview.goToPreviousPage}
+                  onNext={preview.goToNextPage}
                 />
               </section>
             }

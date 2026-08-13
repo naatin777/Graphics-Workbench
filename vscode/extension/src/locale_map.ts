@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
+
 import localeJa from '../package.nls.ja.json' with { type: 'json' };
 import localeEn from '../package.nls.json' with { type: 'json' };
 
@@ -13,3 +15,7 @@ const localeTable: Record<string, string> = {
 
 const localeString = (key: string): string => localeTable[key] ?? key;
 export const localeMap = (key: LocaleKeyType): string => localeString(key);
+
+export function localeCatalog(): MessageCatalog {
+  return { ...localeTable };
+}

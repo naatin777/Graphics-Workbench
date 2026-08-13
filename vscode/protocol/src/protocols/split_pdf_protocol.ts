@@ -1,57 +1,6 @@
 import * as v from 'valibot';
 import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
-import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
-
-const SplitPdfLabelsSchema = v.strictObject({
-  header: v.strictObject({
-    title: v.string(),
-    description: v.string(),
-  }),
-  preview: v.strictObject({
-    title: v.string(),
-    ariaLabel: v.string(),
-    renderError: v.string(),
-    applyError: v.string(),
-    allPages: v.string(),
-    focusedPages: v.string(),
-    zoom: v.string(),
-  }),
-  groups: v.strictObject({
-    title: v.string(),
-    label: v.string(),
-    add: v.string(),
-    remove: v.string(),
-    drag: v.string(),
-    outputOrder: v.string(),
-  }),
-  pages: v.strictObject({
-    title: v.string(),
-    label: v.string(),
-    placeholder: v.string(),
-  }),
-  output: v.strictObject({
-    name: v.string(),
-    namePlaceholder: v.string(),
-    path: v.string(),
-  }),
-  validation: v.strictObject({
-    pagesRequired: v.string(),
-    pageWholeNumber: v.string(),
-    pageOutOfRange: v.string(),
-    invalidPages: v.string(),
-    descendingPages: v.string(),
-    outputNameEmpty: v.string(),
-    outputNamePath: v.string(),
-    outputNameDuplicate: v.string(),
-  }),
-  actions: v.strictObject({
-    apply: v.string(),
-    cancel: v.string(),
-    moveUp: v.string(),
-    moveDown: v.string(),
-  }),
-});
-export type SplitPdfLabels = v.InferOutput<typeof SplitPdfLabelsSchema>;
+import { MessageCatalogSchema, defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
 const SplitPdfPageGroupRowSchema = v.strictObject({
   pages: v.pipe(v.array(v.pipe(v.number(), v.integer(), v.minValue(1))), v.minLength(1)),
@@ -67,7 +16,7 @@ const SplitPdfInitPayloadSchema = v.strictObject({
   outputPathTemplate: v.pipe(v.string(), v.nonEmpty()),
   resources: PdfJsResourcesSchema,
   preview: PdfPreviewSettingsSchema,
-  labels: SplitPdfLabelsSchema,
+  labels: MessageCatalogSchema,
 });
 
 const SplitPdfHostToWebviewSchema = v.variant('type', [

@@ -7,7 +7,7 @@ import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
 import { parsePdfPageSelection as parseSplitPdfPages } from '@graphics-workbench/core/formats';
 import { splitPdfByPageGroups } from '@graphics-workbench/core/pdf';
-import { splitPdfProtocol, type SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+import { splitPdfProtocol } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import { invalidPreflightInputDirectory } from '../../support/helpers/fixture_paths.js';
 
 const acceptsSplitPdfHostToWebviewMessage = (value: unknown): boolean =>
@@ -134,54 +134,40 @@ suite('PDFページグループ分割', () => {
   });
 
   test('split-pdfのメッセージ規約に合うinit/ready/previewLoadFailed/applyメッセージだけを受け入れ、追加キーや不正型を拒否する', () => {
-    const labels: SplitPdfLabels = {
-      header: {
-        title: 'Split PDF',
-        description: 'Split pages into groups.',
-      },
-      preview: {
-        title: 'Preview',
-        ariaLabel: 'PDF preview',
-        renderError: 'Could not render the PDF.',
-        applyError: 'Preview must finish before applying.',
-        allPages: 'All pages',
-        focusedPages: 'Focused',
-        zoom: 'Preview zoom',
-      },
-      groups: {
-        title: 'Groups',
-        label: 'Group',
-        add: 'Add group',
-        remove: 'Remove group',
-        drag: 'Drag group',
-        outputOrder: 'Output order',
-      },
-      pages: {
-        title: 'Pages',
-        label: 'Page',
-        placeholder: '1, 3-5',
-      },
-      output: {
-        name: 'Output name',
-        namePlaceholder: 'group-1.pdf',
-        path: 'Output path',
-      },
-      validation: {
-        pagesRequired: 'Pages are required.',
-        pageWholeNumber: 'Page must be a whole number.',
-        pageOutOfRange: 'Page is out of range.',
-        invalidPages: 'Invalid pages: {0}',
-        descendingPages: 'Descending pages: {0}',
-        outputNameEmpty: 'Output name is empty.',
-        outputNamePath: 'Output name contains a path.',
-        outputNameDuplicate: 'Output name is duplicated: {0}',
-      },
-      actions: {
-        apply: 'Apply',
-        cancel: 'Cancel',
-        moveUp: 'Move up',
-        moveDown: 'Move down',
-      },
+    const labels = {
+      'webview.splitPdf.title': 'Split PDF',
+      'webview.splitPdf.description': 'Split pages into groups.',
+      'webview.splitPdf.preview': 'Preview',
+      'webview.splitPdf.previewAriaLabel': 'PDF preview',
+      'webview.splitPdf.previewRenderError': 'Could not render the PDF.',
+      'webview.splitPdf.previewApplyError': 'Preview must finish before applying.',
+      'webview.splitPdf.allPages': 'All pages',
+      'webview.splitPdf.focusedPages': 'Focused',
+      'webview.splitPdf.zoom': 'Preview zoom',
+      'webview.splitPdf.groups': 'Groups',
+      'webview.splitPdf.groupLabel': 'Group',
+      'webview.splitPdf.addGroup': 'Add group',
+      'webview.splitPdf.removeGroup': 'Remove group',
+      'webview.splitPdf.dragGroup': 'Drag group',
+      'webview.splitPdf.outputOrder': 'Output order',
+      'webview.splitPdf.pages': 'Pages',
+      'webview.splitPdf.pageLabel': 'Page',
+      'webview.splitPdf.pagesPlaceholder': '1, 3-5',
+      'webview.splitPdf.outputName': 'Output name',
+      'webview.splitPdf.outputNamePlaceholder': 'group-1.pdf',
+      'webview.splitPdf.outputPath': 'Output path',
+      'webview.splitPdf.pagesRequiredError': 'Pages are required.',
+      'webview.splitPdf.pageWholeNumberError': 'Page must be a whole number.',
+      'webview.splitPdf.pageOutOfRangeError': 'Page is out of range.',
+      'webview.splitPdf.invalidPages': 'Invalid pages: {0}',
+      'webview.splitPdf.descendingPages': 'Descending pages: {0}',
+      'webview.splitPdf.outputNameEmpty': 'Output name is empty.',
+      'webview.splitPdf.outputNamePath': 'Output name contains a path.',
+      'webview.splitPdf.outputNameDuplicate': 'Output name is duplicated: {0}',
+      'webview.splitPdf.apply': 'Apply',
+      'webview.splitPdf.cancel': 'Cancel',
+      'webview.splitPdf.moveUp': 'Move up',
+      'webview.splitPdf.moveDown': 'Move down',
     };
 
     assert.equal(

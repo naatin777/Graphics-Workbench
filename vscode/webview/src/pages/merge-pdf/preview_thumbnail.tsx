@@ -2,13 +2,14 @@ import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import type {
   MergePdfHostToWebview,
-  MergePdfLabels,
   MergePdfSource,
   MergePdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 import type { PageProtocolClient } from '@webview-shared/vscode';
 import { renderFirstPdfPage } from '@webview-shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '@webview-shared/error';
+
+import type { MergePdfLabels } from './labels';
 
 export type PdfOptions = Pick<Extract<MergePdfHostToWebview, { type: 'init' }>['payload'], 'preview' | 'resources'>;
 export type MergeThumbnailChannel = PageProtocolClient<MergePdfWebviewToHost, MergePdfHostToWebview>;

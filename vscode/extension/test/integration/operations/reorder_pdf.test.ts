@@ -112,16 +112,20 @@ suite('PDFページ並び替え', () => {
 
 suite('Reorder PDFのWebview⇔ホスト間メッセージ型検証', () => {
   const labels = {
-    header: { title: 'Reorder PDF', description: 'description' },
-    preview: {
-      title: 'Preview',
-      ariaLabel: 'preview',
-      renderError: 'error',
-      applyError: 'error',
-    },
-    order: { title: 'Order', moveUp: 'up', moveDown: 'down', positionLabel: 'pages' },
-    validation: { orderRequired: 'required', orderInvalid: 'invalid' },
-    actions: { apply: 'Apply', cancel: 'Cancel' },
+    'webview.reorderPdf.title': 'Reorder PDF',
+    'webview.reorderPdf.description': 'description',
+    'webview.reorderPdf.preview': 'Preview',
+    'webview.reorderPdf.previewAriaLabel': 'preview',
+    'webview.reorderPdf.previewRenderError': 'error',
+    'webview.reorderPdf.previewApplyError': 'error',
+    'webview.reorderPdf.order': 'Order',
+    'webview.reorderPdf.moveUp': 'up',
+    'webview.reorderPdf.moveDown': 'down',
+    'webview.reorderPdf.positionLabel': 'pages',
+    'webview.reorderPdf.orderRequiredError': 'required',
+    'webview.reorderPdf.orderInvalid': 'invalid',
+    'webview.reorderPdf.apply': 'Apply',
+    'webview.reorderPdf.cancel': 'Cancel',
   };
 
   const initPayload = {

@@ -76,8 +76,8 @@ test('PDFプレビューのズーム入力とCtrlまたはCommandホイールが
   await selectFirstSplitPage(page);
   await expect(canvases).toHaveCount(2);
 
-  const numericZoom = page.locator('input[type="number"][aria-label="Zoom"]');
-  const rangeZoom = page.locator('input[type="range"][aria-label="Zoom"]');
+  const numericZoom = page.locator('input[type="number"][aria-label="Preview zoom"]');
+  const rangeZoom = page.locator('input[type="range"][aria-label="Preview zoom"]');
   const initialCanvasWidth = await canvases.first().evaluate((canvas) => canvas.getBoundingClientRect().width);
 
   await numericZoom.fill('200');

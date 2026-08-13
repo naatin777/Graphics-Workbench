@@ -1,127 +1,50 @@
-import { Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import {
   cropPdfProtocol,
   type CropConfigureHostToWebview,
-  type CropConfigureWebviewToHost,
-  type CropPdfLabels,
 } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
-import { renderPdfPages, type PdfRenderController } from '../../shared/pdf/render_pdf_pages';
-import { toErrorMessage } from '../../shared/error';
-import { SplitPane } from '@webview-shared/SplitPane';
-import { Button } from '../../shared/ui/Button';
-import { PageNavigator, scrollPageIntoView } from '../../shared/ui/PageNavigator';
-import { ToolbarButton } from '../../shared/ui/ToolbarButton';
-import { useCurrentPage } from '../../shared/ui/use_current_page';
-
-import { parseCropBox, parseTarget } from './crop_input';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
+import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
 import {
   applyPreviewZoom,
   capturePreviewZoomAnchor,
   clampPreviewZoom,
   restorePreviewZoomAnchor,
 } from '@webview-shared/pdf/preview_zoom';
-import { createPageProtocolClient, type PageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
+import { SplitPane } from '@webview-shared/SplitPane';
+import { Button } from '../../shared/ui/Button';
+import { PageNavigator } from '../../shared/ui/PageNavigator';
+import { ToolbarButton } from '../../shared/ui/ToolbarButton';
+
+import { parseCropBox, parseTarget } from './crop_input';
+import { readCropPdfLabels, type CropPdfLabels } from './labels';
+import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 type CropInitPayload = Extract<CropConfigureHostToWebview, { type: 'init' }>['payload'];
-type CropChannel = PageProtocolClient<CropConfigureWebviewToHost, CropConfigureHostToWebview>;
 type PageSize = { width: number; height: number; x: number; y: number };
 type CropBoxState = { left: string; bottom: string; right: string; top: string };
-type RenderPreviewOptions = {
-  payload: CropInitPayload;
-  channel: CropChannel;
-  pdf: {
-    pages: HTMLDivElement;
-    preview: HTMLElement | undefined;
-    zoom: () => number;
-  };
+
+function updatePreviewPageSize(
+  pages: HTMLDivElement,
   state: {
     pageSize: () => PageSize;
     cropBox: () => CropBoxState;
     setPageSize: (value: PageSize) => void;
     setCropBox: (value: CropBoxState) => void;
-    setRenderError: (value: string) => void;
-    setRenderController: (value: PdfRenderController) => void;
-  };
-  signal: AbortSignal;
-};
-
-async function renderPreview(options: RenderPreviewOptions): Promise<void> {
-  try {
-    const controller = await renderPdfPages(
-      options.payload.pdfSrc,
-      options.pdf.pages,
-      renderOptions(
-        options.payload,
-        options.pdf.preview,
-        options.state.setRenderError,
-        options.signal,
-        options.channel,
-      ),
-    );
-    if (options.signal.aborted) {
-      await controller.dispose();
-      return;
-    }
-    options.state.setRenderController(controller);
-    await controller.firstPageReady;
-    applyPreviewZoom(options.pdf.pages, options.pdf.zoom());
-    updatePreviewPageSize(options);
-  } catch (error) {
-    if (options.signal.aborted) {
-      return;
-    }
-    options.state.setRenderError(toErrorMessage(error));
-    throw error instanceof Error ? error : new Error(String(error));
-  }
-}
-
-function renderOptions(
-  payload: CropInitPayload,
-  pdfPreview: HTMLElement | undefined,
-  setRenderError: (value: string) => void,
-  signal: AbortSignal,
-  channel: CropChannel,
-): Parameters<typeof renderPdfPages>[2] {
-  return {
-    preview: payload.preview,
-    ...(pdfPreview !== undefined && { root: pdfPreview }),
-    resources: payload.resources,
-    page: { label: payload.labels.header.pageLabel },
-    signal,
-    onRenderError: (error) => {
-      if (signal.aborted) {
-        return;
-      }
-      const message = toErrorMessage(error);
-      setRenderError(message);
-      channel.send.previewLoadFailed({ message });
-    },
-  };
-}
-
-function updatePreviewPageSize(options: {
-  pdf: Pick<RenderPreviewOptions['pdf'], 'pages'>;
-  state: Pick<RenderPreviewOptions['state'], 'pageSize' | 'cropBox' | 'setPageSize' | 'setCropBox'>;
-}): void {
-  const size = getPreviewPageSize(options.pdf.pages);
-  if (
-    !(
-      size.width > 0 &&
-      size.height > 0 &&
-      options.state.pageSize().width === 0 &&
-      options.state.pageSize().height === 0
-    )
-  ) {
+  },
+): void {
+  const size = getPreviewPageSize(pages);
+  if (!(size.width > 0 && size.height > 0 && state.pageSize().width === 0 && state.pageSize().height === 0)) {
     return;
   }
 
-  options.state.setPageSize(size);
-  if (!isDefaultCropBox(options.state.cropBox())) {
+  state.setPageSize(size);
+  if (!isDefaultCropBox(state.cropBox())) {
     return;
   }
 
-  options.state.setCropBox({
+  state.setCropBox({
     left: '0',
     bottom: '0',
     right: size.width.toString(),
@@ -175,68 +98,29 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   const [targetType, setTargetType] = createSignal<'all' | 'selected'>('all');
   const [selectedPages, setSelectedPages] = createSignal('1');
   const [previewZoom, setPreviewZoom] = createSignal(1);
-  const [labelsValue, setLabels] = createSignal<CropPdfLabels>();
-  const labels = (): CropPdfLabels => {
-    const value = labelsValue();
-    if (value === undefined) {
-      throw new Error('Crop PDF labels were not initialized.');
-    }
-    return value;
-  };
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): CropPdfLabels => readCropPdfLabels(labelsCatalog());
   const [renderError, setRenderError] = createSignal('');
   const [inputError, setInputError] = createSignal('');
   const [isApplying, setIsApplying] = createSignal(false);
   let pdfPages: HTMLDivElement | undefined;
   let pdfPreview: HTMLElement | undefined;
   let renderPromise: Promise<void> | undefined;
-  let renderController: PdfRenderController | undefined;
-  let renderAbortController: AbortController | undefined;
 
-  const { currentPage, recompute: recomputeCurrentPage } = useCurrentPage({
+  const preview = createPdfPreview({
+    pagesContainer: () => pdfPages,
     scrollContainer: () => pdfPreview,
-    getPageElements: () => (pdfPages ? [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')] : []),
+    pageCount,
+    setRenderError,
+    onRenderError: (message) => {
+      channel.send.previewLoadFailed({ message });
+    },
   });
+  const currentPage = useCurrentPage(preview);
 
   const cancel = (): void => {
     channel.send.cancel();
   };
-
-  const goToPreviousPage = (): void => {
-    const target = pdfPages?.querySelector<HTMLElement>(`[data-pdf-page="${Math.max(currentPage() - 1, 1)}"]`);
-    if (target) {
-      scrollPageIntoView(target);
-    }
-  };
-
-  const goToNextPage = (): void => {
-    const target = pdfPages?.querySelector<HTMLElement>(
-      `[data-pdf-page="${Math.min(currentPage() + 1, pageCount())}"]`,
-    );
-    if (target) {
-      scrollPageIntoView(target);
-    }
-  };
-
-  // Re-evaluate the current page after the PDF renders or the page count changes.
-  createEffect(() => {
-    void pageCount();
-    void renderError();
-    requestAnimationFrame(() => {
-      recomputeCurrentPage();
-    });
-  });
-
-  // Sync the current-page outline onto the rendered page elements.
-  createEffect(() => {
-    const current = currentPage();
-    for (const page of pdfPages?.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]') ?? []) {
-      if (page.dataset.pdfPage === String(current)) {
-        page.dataset.current = 'true';
-      } else {
-        delete page.dataset.current;
-      }
-    }
-  });
 
   onMount(() => {
     const unsubscribeMessages = channel.on({
@@ -250,7 +134,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
         const initialGeometry = initialPageGeometry(payload);
 
         setFileName(payload.fileName);
-        setLabels(payload.labels);
+        setLabelsCatalog(payload.labels);
         setPageCount(totalPages);
         setPageSize(initialGeometry.pageSize);
         setCropBox(initialGeometry.cropBox);
@@ -264,45 +148,25 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
           return;
         }
 
-        renderAbortController?.abort();
-        void renderController?.dispose();
-        renderController = undefined;
-        const abortController = new AbortController();
-        renderAbortController = abortController;
-        renderPromise = renderPreview({
-          payload,
-          channel,
-          pdf: {
-            pages,
-            preview: pdfPreview,
-            zoom: previewZoom,
+        renderPromise = preview.start(
+          payload.pdfSrc,
+          {
+            preview: payload.preview,
+            ...(pdfPreview !== undefined && { root: pdfPreview }),
+            resources: payload.resources,
+            page: { label: labels().header.pageLabel },
           },
-          state: {
-            pageSize,
-            cropBox,
-            setPageSize: (value) => {
-              setPageSize({ ...value, x: pageSize().x, y: pageSize().y });
-            },
-            setCropBox: (value) => {
-              setCropBox(value);
-            },
-            setRenderError: (value) => {
-              setRenderError(value);
-            },
-            setRenderController: (controller) => {
-              renderController = controller;
-            },
+          () => {
+            applyPreviewZoom(pages, previewZoom());
+            updatePreviewPageSize(pages, { pageSize, cropBox, setPageSize, setCropBox });
           },
-          signal: abortController.signal,
-        });
+        );
       },
     });
 
     channel.send.ready();
     onCleanup(() => {
       unsubscribeMessages();
-      renderAbortController?.abort();
-      void renderController?.dispose();
     });
   });
 
@@ -316,9 +180,8 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       return;
     }
 
-    try {
-      await renderPromise;
-    } catch {
+    await renderPromise;
+    if (renderError()) {
       setInputError(labels().preview.applyError);
       return;
     }
@@ -363,7 +226,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     applyPreviewZoom(pdfPages, nextZoom);
     restorePreviewZoomAnchor(pdfPreview, anchor);
     requestAnimationFrame(() => {
-      recomputeCurrentPage();
+      preview.recomputeCurrentPage();
     });
   };
 
@@ -385,7 +248,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   };
 
   return (
-    <Show when={labelsValue()}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
           <h1 class='sr-only'>{labels().header.title}</h1>
@@ -433,10 +296,10 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                     class='pdf-preview__pages'
                   />
                   <PageNavigator
-                    currentPage={currentPage()}
+                    currentPage={currentPage() ?? 0}
                     pageCount={pageCount()}
-                    onPrevious={goToPreviousPage}
-                    onNext={goToNextPage}
+                    onPrevious={preview.goToPreviousPage}
+                    onNext={preview.goToNextPage}
                   />
                   {renderError() ? (
                     <p

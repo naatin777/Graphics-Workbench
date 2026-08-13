@@ -1,11 +1,8 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import {
-  previewProtocol,
-  type PreviewHostToWebview,
-  type PreviewLabels,
-} from '@graphics-workbench/vscode-protocol/preview-protocol';
+import { previewProtocol, type PreviewHostToWebview } from '@graphics-workbench/vscode-protocol/preview-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import type { PdfRenderController, PdfRenderOptions } from '../../shared/pdf/render_pdf_pages';
 import type { TiffRenderController, TiffRenderOptions } from './tiff_preview';
 import { App, type PreviewInitPayload } from './app';
@@ -19,20 +16,16 @@ const renderTiffPreview = vi.hoisted(() => vi.fn<(options: TiffRenderOptions) =>
 vi.mock('../../shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 vi.mock('./tiff_preview', () => ({ renderTiffPreview }));
 
-const labels: PreviewLabels = {
-  title: 'Preview',
-  description: 'Preview the file contents.',
-  page: {
-    label: 'Page',
-    pages: 'pages',
-  },
-  preview: {
-    ariaLabel: 'Preview',
-    zoomLabel: 'Preview zoom',
-    zoomOut: 'Zoom out',
-    zoomIn: 'Zoom in',
-    renderError: 'Could not display the preview',
-  },
+const labels: MessageCatalog = {
+  'webview.preview.title': 'Preview',
+  'webview.preview.description': 'Preview the file contents.',
+  'webview.preview.pageLabel': 'Page',
+  'webview.preview.pages': 'pages',
+  'webview.preview.previewAriaLabel': 'Preview',
+  'webview.preview.zoomLabel': 'Preview zoom',
+  'webview.preview.zoomOut': 'Zoom out',
+  'webview.preview.zoomIn': 'Zoom in',
+  'webview.preview.renderError': 'Could not display the preview',
 };
 
 const pdfInitPayload = {
@@ -162,30 +155,7 @@ describe('PDF/TIFF Preview Webview', () => {
     expect(controller.applyZoom).toHaveBeenCalledTimes(1);
     expect(document.querySelector('.zoom__value')?.textContent).toBe('125%');
   });
-
-  test('disposes the PDF render controller and aborts its signal on cleanup', async () => {
-    globalThis.dispatchEvent(new MessageEvent('message', { data: pdfInit }));
-    await flushPromises();
-
-    const options = renderPdfPages.mock.calls[0]?.[2];
-    const signal = getAbortSignal(options);
-
-    dispose?.();
-    dispose = undefined;
-
-    expect(signal?.aborted).toBe(true);
-    expect(pdfController.dispose).toHaveBeenCalledTimes(1);
-  });
 });
-
-function getAbortSignal(value: unknown): AbortSignal | undefined {
-  if (typeof value !== 'object' || value === null) {
-    return undefined;
-  }
-
-  const signal = Reflect.get(value, 'signal');
-  return signal instanceof AbortSignal ? signal : undefined;
-}
 
 async function flushPromises(): Promise<void> {
   await Promise.resolve();

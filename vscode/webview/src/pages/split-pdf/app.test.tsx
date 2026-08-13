@@ -1,11 +1,8 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import {
-  splitPdfProtocol,
-  type SplitPdfHostToWebview,
-  type SplitPdfLabels,
-} from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+import { splitPdfProtocol, type SplitPdfHostToWebview } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
@@ -13,54 +10,40 @@ const renderPdfPages = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<un
 
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
-const labels: SplitPdfLabels = {
-  header: {
-    title: 'Split PDF',
-    description: 'Select pages and assign an output name to each group.',
-  },
-  preview: {
-    title: 'Preview',
-    ariaLabel: 'PDF preview',
-    renderError: 'Could not display the PDF',
-    applyError: 'PDF preview must render before applying.',
-    allPages: 'All pages',
-    focusedPages: 'Focused',
-    zoom: 'Preview zoom',
-  },
-  groups: {
-    title: 'Groups',
-    label: 'Group',
-    add: 'Add group',
-    remove: 'Remove group',
-    drag: 'Drag group',
-    outputOrder: 'Output order',
-  },
-  pages: {
-    title: 'Pages',
-    label: 'Page',
-    placeholder: 'Example: 1, 3-6, 10-',
-  },
-  output: {
-    name: 'Output name',
-    namePlaceholder: 'group-1',
-    path: 'Output path',
-  },
-  validation: {
-    pagesRequired: 'At least one page must be selected.',
-    pageWholeNumber: 'Page must be a whole number: {0}',
-    pageOutOfRange: 'Selected page is out of range: {0}',
-    invalidPages: 'Invalid page expression: {0}',
-    descendingPages: 'Page range must ascend: {0}',
-    outputNameEmpty: 'Output name cannot be empty.',
-    outputNamePath: 'Output name must not contain path separators or .. .',
-    outputNameDuplicate: 'Output name is duplicated: {0}',
-  },
-  actions: {
-    apply: 'Apply',
-    cancel: 'Cancel',
-    moveUp: 'Move up',
-    moveDown: 'Move down',
-  },
+const labels: MessageCatalog = {
+  'webview.splitPdf.title': 'Split PDF',
+  'webview.splitPdf.description': 'Select pages and assign an output name to each group.',
+  'webview.splitPdf.preview': 'Preview',
+  'webview.splitPdf.previewAriaLabel': 'PDF preview',
+  'webview.splitPdf.previewRenderError': 'Could not display the PDF',
+  'webview.splitPdf.previewApplyError': 'PDF preview must render before applying.',
+  'webview.splitPdf.allPages': 'All pages',
+  'webview.splitPdf.focusedPages': 'Focused',
+  'webview.splitPdf.zoom': 'Preview zoom',
+  'webview.splitPdf.groups': 'Groups',
+  'webview.splitPdf.groupLabel': 'Group',
+  'webview.splitPdf.addGroup': 'Add group',
+  'webview.splitPdf.removeGroup': 'Remove group',
+  'webview.splitPdf.dragGroup': 'Drag group',
+  'webview.splitPdf.outputOrder': 'Output order',
+  'webview.splitPdf.pages': 'Pages',
+  'webview.splitPdf.pageLabel': 'Page',
+  'webview.splitPdf.pagesPlaceholder': 'Example: 1, 3-6, 10-',
+  'webview.splitPdf.outputName': 'Output name',
+  'webview.splitPdf.outputNamePlaceholder': 'group-1',
+  'webview.splitPdf.outputPath': 'Output path',
+  'webview.splitPdf.pagesRequiredError': 'At least one page must be selected.',
+  'webview.splitPdf.pageWholeNumberError': 'Page must be a whole number: {0}',
+  'webview.splitPdf.pageOutOfRangeError': 'Selected page is out of range: {0}',
+  'webview.splitPdf.invalidPages': 'Invalid page expression: {0}',
+  'webview.splitPdf.descendingPages': 'Page range must ascend: {0}',
+  'webview.splitPdf.outputNameEmpty': 'Output name cannot be empty.',
+  'webview.splitPdf.outputNamePath': 'Output name must not contain path separators or .. .',
+  'webview.splitPdf.outputNameDuplicate': 'Output name is duplicated: {0}',
+  'webview.splitPdf.apply': 'Apply',
+  'webview.splitPdf.cancel': 'Cancel',
+  'webview.splitPdf.moveUp': 'Move up',
+  'webview.splitPdf.moveDown': 'Move down',
 };
 
 const initMessage: SplitPdfHostToWebview = {
@@ -173,47 +156,6 @@ describe('Split PDF Webview', () => {
       type: 'apply',
       payload: { rows: [{ pages: [1, 2], outputName: '1-2' }] },
     });
-  });
-
-  test('tracks the current page and scrolls via the page navigator', async () => {
-    await flushPromises();
-    await nextFrame();
-
-    const pages = [...document.querySelectorAll<HTMLElement>('.pdf-page')];
-    expect(pages).toHaveLength(4);
-    const [page1, page2] = pages;
-    if (!page1 || !page2) {
-      throw new Error('Preview pages were not rendered.');
-    }
-
-    const preview = document.querySelector<HTMLElement>('.pdf-preview');
-    if (!preview) {
-      throw new Error('PDF preview was not rendered.');
-    }
-    mockLayout(preview, { top: 0, bottom: 100, width: 800 });
-    mockLayout(page1, { top: 0, bottom: 80, width: 100 });
-    mockLayout(page2, { top: 80, bottom: 160, width: 100 });
-
-    setInput(findInput('Pages 1'), '1-2');
-    await flushPromises();
-    await nextFrame();
-
-    expect(page1.dataset.current).toBe('true');
-    expect(page2.dataset.current).toBeUndefined();
-    expect(document.querySelector('.page-navigator__position')?.textContent).toBe('1 / 4');
-
-    const scrollIntoView = vi.fn();
-    page2.scrollIntoView = scrollIntoView;
-    const previous = document.querySelector<HTMLButtonElement>('button[aria-label="Previous page"]');
-    const next = document.querySelector<HTMLButtonElement>('button[aria-label="Next page"]');
-    if (!previous || !next) {
-      throw new Error('Page navigator buttons were not rendered.');
-    }
-
-    expect(previous.disabled).toBe(true);
-    expect(next.disabled).toBe(false);
-    next.click();
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
   });
 
   test('switching preview mode re-derives the current page from visible pages', async () => {

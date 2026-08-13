@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
-import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
+import { MessageCatalogSchema, defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
 const PdfPageRotationSchema = v.union([v.literal(0), v.literal(90), v.literal(180), v.literal(270)]);
 
@@ -35,53 +35,6 @@ const CropTargetSchema = v.variant('type', [
 ]);
 export type CropTarget = v.InferOutput<typeof CropTargetSchema>;
 
-const CropPdfLabelsSchema = v.strictObject({
-  header: v.strictObject({
-    title: v.string(),
-    description: v.string(),
-    pageLabel: v.string(),
-    pages: v.string(),
-  }),
-  preview: v.strictObject({
-    title: v.string(),
-    ariaLabel: v.string(),
-    zoomLabel: v.string(),
-    zoomOut: v.string(),
-    zoomIn: v.string(),
-    renderError: v.string(),
-    applyError: v.string(),
-  }),
-  cropBox: v.strictObject({
-    settingsLabel: v.string(),
-    title: v.string(),
-    left: v.string(),
-    bottom: v.string(),
-    right: v.string(),
-    top: v.string(),
-    currentPageSize: v.string(),
-  }),
-  targetPages: v.strictObject({
-    applyTo: v.string(),
-    all: v.string(),
-    pages: v.string(),
-    inputLabel: v.string(),
-    placeholder: v.string(),
-  }),
-  validation: v.strictObject({
-    cropBoxNumber: v.string(),
-    cropBoxSize: v.string(),
-    pagesRequired: v.string(),
-    pageWholeNumber: v.string(),
-    pageOutOfRange: v.string(),
-  }),
-  actions: v.strictObject({
-    apply: v.string(),
-    processing: v.string(),
-    cancel: v.string(),
-  }),
-});
-export type CropPdfLabels = v.InferOutput<typeof CropPdfLabelsSchema>;
-
 const CropPdfResourcesSchema = v.strictObject({
   workerSrc: v.string(),
   cMapUrl: v.string(),
@@ -101,7 +54,7 @@ const CropConfigureHostToWebviewSchema = v.variant('type', [
       initialPage: v.pipe(v.number(), v.integer(), v.minValue(1)),
       pageGeometry: v.array(PdfPageGeometrySchema),
       initialCropBox: CropBoxSchema,
-      labels: CropPdfLabelsSchema,
+      labels: MessageCatalogSchema,
     }),
   }),
   v.strictObject({

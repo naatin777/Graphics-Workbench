@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
-import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
+import { MessageCatalogSchema, defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
 const MergePdfSourceSchema = v.strictObject({
   sourceId: v.pipe(v.string(), v.nonEmpty()),
@@ -8,34 +8,6 @@ const MergePdfSourceSchema = v.strictObject({
   pdfSrc: WebviewUriSchema,
 });
 export type MergePdfSource = v.InferOutput<typeof MergePdfSourceSchema>;
-
-const MergePdfLabelsSchema = v.strictObject({
-  header: v.strictObject({
-    title: v.string(),
-  }),
-  sources: v.strictObject({
-    list: v.string(),
-    count: v.string(),
-  }),
-  controls: v.strictObject({
-    actions: v.string(),
-    dragHandle: v.string(),
-    moveUp: v.string(),
-    moveDown: v.string(),
-    removeSource: v.string(),
-  }),
-  preview: v.strictObject({
-    title: v.string(),
-    ariaLabel: v.string(),
-    loading: v.string(),
-    renderError: v.string(),
-  }),
-  actions: v.strictObject({
-    apply: v.string(),
-    cancel: v.string(),
-  }),
-});
-export type MergePdfLabels = v.InferOutput<typeof MergePdfLabelsSchema>;
 
 const MergePdfInitPayloadSchema = v.strictObject({
   sources: v.pipe(
@@ -47,7 +19,7 @@ const MergePdfInitPayloadSchema = v.strictObject({
   ),
   resources: PdfJsResourcesSchema,
   preview: PdfPreviewSettingsSchema,
-  labels: MergePdfLabelsSchema,
+  labels: MessageCatalogSchema,
 });
 
 const MergePdfHostToWebviewSchema = v.variant('type', [

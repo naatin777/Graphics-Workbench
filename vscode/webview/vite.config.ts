@@ -55,6 +55,21 @@ function isCssAsset(names: readonly string[], originalFileNames: readonly string
   return [...names, ...originalFileNames].some((fileName) => fileName.endsWith('.css'));
 }
 
+function parseMessageCatalog(source: string): Record<string, string> {
+  const value = JSON.parse(source);
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('package.nls.json must contain an object.');
+  }
+  const catalog: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry !== 'string') {
+      throw new Error(`package.nls.json entry "${key}" must be a string.`);
+    }
+    catalog[key] = entry;
+  }
+  return catalog;
+}
+
 function copyCodiconAssetPlugin(outDir: string): Plugin {
   return {
     name: 'copy-codicon-asset',
@@ -103,6 +118,16 @@ function browserDevelopmentAssetsPlugin(): Plugin {
   return {
     name: 'browser-development-assets',
     configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        if (request.url !== '/messages.json') {
+          next();
+          return;
+        }
+        const nlsPath = resolve(extensionRoot, 'package.nls.json');
+        const messages = parseMessageCatalog(readFileSync(nlsPath, 'utf8'));
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify(messages));
+      });
       server.middlewares.use('/fixtures', (request, response, next) => {
         const name = request.url?.replace(/^\//u, '');
         const fixture = name === undefined ? undefined : fixtureFiles.get(name);

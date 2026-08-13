@@ -5,33 +5,31 @@ import * as vscode from 'vscode';
 import {
   splitPdfProtocol,
   type SplitPdfHostToWebview,
-  type SplitPdfLabels,
   type SplitPdfPageGroupRow,
   type SplitPdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { assertPageTemplateForSplitOutput, resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
-import { localeMap } from '../../locale_map.js';
-import { splitPdfAllPages, splitPdfByPageGroups, type SplitPdfInput } from '@graphics-workbench/core/pdf';
-import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
-import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
+import { localeCatalog, localeMap } from '../../locale_map.js';
+import {
+  inspectPdfSummary,
+  splitPdfAllPages,
+  splitPdfByPageGroups,
+  type SplitPdfInput,
+} from '@graphics-workbench/core/pdf';
+import { assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { readPdfPageCount } from '../shared/read_pdf_page_count.js';
-import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
-import { runConfiguredPdfConversion } from '../lifecycle/run_configured_conversion.js';
+import {
+  runSinglePdfConfigureCommand,
+  type SinglePdfConfigureConversion,
+} from '../lifecycle/run_single_pdf_configure.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { isAbortError } from '@graphics-workbench/core/runtime';
-import { resolveSingleConfiguredPdfUri } from '../shared/command_input.js';
-import {
-  createPdfJsResources,
-  getPdfJsAssetsRoot,
-  getWebviewSharedAssetsRoot,
-} from '../../presentation/webview/pdfjs_assets.js';
-import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
+import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 
 function readSplitPdfTemplate(dependencies: CommandDependencies): string {
   return dependencies.getConfiguration().outputPath.split.pdf();
@@ -115,7 +113,70 @@ export async function splitPdfConfigureCommand(
   const { outputChannel } = dependencies;
 
   try {
-    await runSplitPdfConfigureCommand(context, sourceUris, dependencies);
+    await runSinglePdfConfigureCommand({
+      context,
+      sourceUris,
+      dependencies,
+      commandId: 'splitPdf.configure',
+      pageId: 'split-pdf',
+      panelId: 'graphics-workbench.splitPdf.configure',
+      panelTitle: localeMap('submenu.splitPdf'),
+      protocol: splitPdfProtocol,
+      operationName: 'split-pdf-configure',
+      messages: {
+        progressTitle: userMessage('message.progress.splitPdf.title', 1),
+        prepareMessage: userMessage('message.progress.preparePdfSplit'),
+        successMessage: (count) => userMessage('message.splitPdf.success', count),
+        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+        cancelledMessage: userMessage('message.splitPdf.cancelled'),
+        failedMessage: (reason) => userMessage('message.splitPdf.failed', reason),
+      },
+      prepare: async ({ inputUri, workspaceFolder, signal, report }) => {
+        report(userMessage('message.progress.analyzingPdf'));
+        const { pageCount } = await inspectPdfSummary(inputUri.fsPath, signal);
+
+        if (pageCount === 0) {
+          throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
+        }
+
+        const outputTemplate = readSplitPdfTemplate(dependencies);
+
+        if (!outputTemplate.includes('${page}')) {
+          throw new Error('outputPath.split.pdf must contain ${page} for splitPdf.configure.');
+        }
+
+        return {
+          pageCount,
+          outputTemplate,
+          outputPathTemplate: createOutputPathPreviewTemplate(outputTemplate, inputUri, workspaceFolder),
+        };
+      },
+      buildInitPayload: ({ panel, pdfJsAssetsRoot, inputUri, prepared, configuration }) =>
+        buildSplitPdfInitMessage({
+          panel,
+          pdfJsAssetsRoot,
+          inputUri,
+          pageCount: prepared.pageCount,
+          outputPathTemplate: prepared.outputPathTemplate,
+          preview: readPdfPreviewSettings(configuration),
+        }),
+      isApplyMessage: isSplitApplyMessage,
+      runApply: async (message, { inputUri, workspaceFolder, prepared, runConversion }) => {
+        await applyConfiguredSplit({
+          inputUri,
+          workspaceFolder,
+          outputTemplate: prepared.outputTemplate,
+          pageCount: prepared.pageCount,
+          rows: message.payload.rows,
+          runConversion,
+        });
+      },
+      onPreviewLoadFailed: (message, channel) => {
+        if (message.type === 'previewLoadFailed') {
+          channel?.appendLine(`[split-pdf-configure] preview failure: ${message.payload.message}`);
+        }
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel.appendLine(`[split-pdf-configure] failure: ${message}`);
@@ -126,103 +187,6 @@ export async function splitPdfConfigureCommand(
 
     await vscode.window.showErrorMessage(userMessage('message.splitPdf.failed', message));
   }
-}
-
-async function runSplitPdfConfigureCommand(
-  context: vscode.ExtensionContext,
-  sourceUris: vscode.Uri[],
-  dependencies: CommandDependencies,
-): Promise<void> {
-  const { outputChannel } = dependencies;
-  const inputUri = resolveSingleConfiguredPdfUri(sourceUris, 'splitPdf.configure');
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(inputUri);
-
-  if (!workspaceFolder) {
-    throw new Error('splitPdf.configure input must be inside the workspace.');
-  }
-
-  await assertExistingPathInWorkspace(inputUri.fsPath, workspaceFolder.uri.fsPath);
-  const pageCount = await readPdfPageCount(inputUri.fsPath, userMessage('message.progress.splitPdf.title', 1));
-
-  if (pageCount === 0) {
-    throw new Error(`PDF has no pages: ${inputUri.fsPath}`);
-  }
-
-  const outputTemplate = readSplitPdfTemplate(dependencies);
-
-  if (!outputTemplate.includes('${page}')) {
-    throw new Error('outputPath.split.pdf must contain ${page} for splitPdf.configure.');
-  }
-
-  const outputPathTemplate = createOutputPathPreviewTemplate(outputTemplate, inputUri, workspaceFolder);
-  const configuration = dependencies.getConfiguration();
-  const panelTitle = localeMap('submenu.splitPdf');
-  const appRoot = vscode.Uri.joinPath(context.extensionUri, 'media', 'webview');
-  const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
-  const webviewSharedAssetsRoot = getWebviewSharedAssetsRoot(context.extensionUri);
-  const configurePanel = openConfigurePanel({
-    panel: {
-      id: 'graphics-workbench.splitPdf.configure',
-      title: panelTitle,
-      localResourceRoots: [
-        appRoot,
-        pdfJsAssetsRoot,
-        webviewSharedAssetsRoot,
-        vscode.Uri.file(path.dirname(inputUri.fsPath)),
-      ],
-    },
-    webview: {
-      title: panelTitle,
-      pageId: 'split-pdf',
-      extensionUri: context.extensionUri,
-      locale: vscode.env.language,
-    },
-  });
-  const extensionChannel = createExtensionChannel(splitPdfProtocol, createWebviewTransport(configurePanel.webview));
-  startPdfConfigureSession({
-    panel: configurePanel,
-    sendInit: extensionChannel.send.init,
-    sendError: (message) => {
-      extensionChannel.send.error({ message });
-    },
-    subscribeMessages: (listener) => extensionChannel.subscribe(listener),
-    message: {
-      isApplyMessage: isSplitApplyMessage,
-      buildInitPayload: (panel) =>
-        buildSplitPdfInitMessage({
-          panel,
-          pdfJsAssetsRoot,
-          inputUri,
-          pageCount,
-          outputPathTemplate,
-          preview: readPdfPreviewSettings(configuration),
-        }),
-      runApply: async (message, { panel, signal, sendError }) => {
-        await applyConfiguredSplit({
-          inputUri,
-          workspaceFolder,
-          outputTemplate,
-          pageCount,
-          rows: message.payload.rows,
-          panel,
-          signal,
-          outputChannel,
-          sendError,
-        });
-      },
-      onPreviewLoadFailed: (message, channel) => {
-        if (message.type === 'previewLoadFailed') {
-          channel?.appendLine(`[split-pdf-configure] preview failure: ${message.payload.message}`);
-        }
-      },
-    },
-    error: {
-      operationName: 'split-pdf-configure',
-      cancelledMessage: userMessage('message.splitPdf.cancelled'),
-      failedMessage: (reason) => userMessage('message.splitPdf.failed', reason),
-    },
-    outputChannel,
-  });
 }
 
 function isSplitApplyMessage(
@@ -249,7 +213,7 @@ function buildSplitPdfInitMessage(params: {
     outputPathTemplate,
     resources: createPdfJsResources(panel.webview, pdfJsAssetsRoot),
     preview,
-    labels: splitPdfLabels(),
+    labels: localeCatalog(),
   };
 }
 
@@ -259,13 +223,9 @@ async function applyConfiguredSplit(params: {
   outputTemplate: string;
   pageCount: number;
   rows: SplitPdfPageGroupRow[];
-  panel: vscode.WebviewPanel;
-  signal: AbortSignal;
-  outputChannel: LineOutputChannel;
-  sendError: (message: string) => void;
+  runConversion: (run: SinglePdfConfigureConversion) => Promise<void>;
 }): Promise<void> {
-  const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, panel, signal, outputChannel, sendError } =
-    params;
+  const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, runConversion } = params;
 
   validateConfiguredRows(rows, pageCount);
   if (!outputTemplate.includes('${page}')) {
@@ -285,41 +245,27 @@ async function applyConfiguredSplit(params: {
     await assertWritablePathInWorkspace(outputPath, workspacePath);
   }
 
-  await runConfiguredPdfConversion({
-    operationName: 'split-pdf-configure',
-    messages: {
-      progressTitle: userMessage('message.progress.splitPdf.title', 1),
-      prepareMessage: userMessage('message.progress.preparePdfSplit'),
-      successMessage: (count) => userMessage('message.splitPdf.success', count),
-      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-      cancelledMessage: userMessage('message.splitPdf.cancelled'),
-      failedMessage: (reason) => userMessage('message.splitPdf.failed', reason),
-    },
-    outputChannel,
-    panel,
-    signal,
-    sendError,
-    run: async (runtime) =>
-      splitPdfByPageGroups({
-        inputs: [
-          {
-            sourcePath,
-            workspacePath,
-            pageGroups: rows.map((row) => row.pages),
-            outputPathForGroup: (groupIndex): string => {
-              const row = rows[groupIndex];
+  await runConversion(async (runtime) =>
+    splitPdfByPageGroups({
+      inputs: [
+        {
+          sourcePath,
+          workspacePath,
+          pageGroups: rows.map((row) => row.pages),
+          outputPathForGroup: (groupIndex): string => {
+            const row = rows[groupIndex];
 
-              if (!row) {
-                throw new Error(`No output name was supplied for group ${groupIndex}.`);
-              }
+            if (!row) {
+              throw new Error(`No output name was supplied for group ${groupIndex}.`);
+            }
 
-              return resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
-            },
+            return resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
           },
-        ],
-        runtime,
-      }),
-  });
+        },
+      ],
+      runtime,
+    }),
+  );
 }
 
 function validateConfiguredRows(rows: readonly SplitPdfPageGroupRow[], pageCount: number): void {
@@ -371,56 +317,4 @@ function createOutputPathPreviewTemplate(
   const relativePath = path.relative(workspaceFolder.uri.fsPath, outputPath);
 
   return relativePath.length > 0 ? relativePath : path.basename(outputPath);
-}
-
-function splitPdfLabels(): SplitPdfLabels {
-  return {
-    header: {
-      title: localeMap('webview.splitPdf.title'),
-      description: localeMap('webview.splitPdf.description'),
-    },
-    preview: {
-      title: localeMap('webview.splitPdf.preview'),
-      ariaLabel: localeMap('webview.splitPdf.previewAriaLabel'),
-      renderError: localeMap('webview.splitPdf.previewRenderError'),
-      applyError: localeMap('webview.splitPdf.previewApplyError'),
-      allPages: localeMap('webview.splitPdf.allPages'),
-      focusedPages: localeMap('webview.splitPdf.focusedPages'),
-      zoom: localeMap('webview.splitPdf.zoom'),
-    },
-    groups: {
-      title: localeMap('webview.splitPdf.groups'),
-      label: localeMap('webview.splitPdf.groupLabel'),
-      add: localeMap('webview.splitPdf.addGroup'),
-      remove: localeMap('webview.splitPdf.removeGroup'),
-      drag: localeMap('webview.splitPdf.dragGroup'),
-      outputOrder: localeMap('webview.splitPdf.outputOrder'),
-    },
-    pages: {
-      title: localeMap('webview.splitPdf.pages'),
-      label: localeMap('webview.splitPdf.pageLabel'),
-      placeholder: localeMap('webview.splitPdf.pagesPlaceholder'),
-    },
-    output: {
-      name: localeMap('webview.splitPdf.outputName'),
-      namePlaceholder: localeMap('webview.splitPdf.outputNamePlaceholder'),
-      path: localeMap('webview.splitPdf.outputPath'),
-    },
-    validation: {
-      pagesRequired: localeMap('webview.splitPdf.pagesRequiredError'),
-      pageWholeNumber: localeMap('webview.splitPdf.pageWholeNumberError'),
-      pageOutOfRange: localeMap('webview.splitPdf.pageOutOfRangeError'),
-      invalidPages: localeMap('webview.splitPdf.invalidPages'),
-      descendingPages: localeMap('webview.splitPdf.descendingPages'),
-      outputNameEmpty: localeMap('webview.splitPdf.outputNameEmpty'),
-      outputNamePath: localeMap('webview.splitPdf.outputNamePath'),
-      outputNameDuplicate: localeMap('webview.splitPdf.outputNameDuplicate'),
-    },
-    actions: {
-      apply: localeMap('webview.splitPdf.apply'),
-      cancel: localeMap('webview.splitPdf.cancel'),
-      moveUp: localeMap('webview.splitPdf.moveUp'),
-      moveDown: localeMap('webview.splitPdf.moveDown'),
-    },
-  };
 }

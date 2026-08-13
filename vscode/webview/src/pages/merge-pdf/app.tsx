@@ -1,14 +1,12 @@
 import { For, Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
-import {
-  mergePdfProtocol,
-  type MergePdfLabels,
-  type MergePdfSource,
-} from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import { mergePdfProtocol, type MergePdfSource } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { Button } from '@webview-shared/ui/Button';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 import { SourceCard } from './source_card';
+import { readMergePdfLabels, type MergePdfLabels } from './labels';
 import type { PdfOptions } from './preview_thumbnail';
 import { SplitPane } from '@webview-shared/SplitPane';
 
@@ -23,14 +21,8 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     }
     return value;
   };
-  const [labelsValue, setLabels] = createSignal<MergePdfLabels>();
-  const labels = (): MergePdfLabels => {
-    const value = labelsValue();
-    if (value === undefined) {
-      throw new Error('Merge PDF labels were not initialized.');
-    }
-    return value;
-  };
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): MergePdfLabels => readMergePdfLabels(labelsCatalog());
   const [hostError, setHostError] = createSignal('');
   const [previewErrors, setPreviewErrors] = createSignal(new Set<string>());
   const [draggedSourceId, setDraggedSourceId] = createSignal('');
@@ -51,7 +43,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
           preview: payload.preview,
           resources: payload.resources,
         });
-        setLabels(payload.labels);
+        setLabelsCatalog(payload.labels);
         setHostError('');
         setPreviewErrors(new Set<string>());
         setDraggedSourceId('');
@@ -165,7 +157,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   };
 
   return (
-    <Show when={labelsValue()}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
           <h1 class='sr-only'>{labels().header.title}</h1>

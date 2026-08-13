@@ -8,6 +8,9 @@ export interface ProtocolTransport {
 
 export type WireSchema = v.GenericSchema<unknown, { type: string }>;
 
+export const MessageCatalogSchema = v.record(v.string(), v.string());
+export type MessageCatalog = v.InferOutput<typeof MessageCatalogSchema>;
+
 export interface MessageProtocol<HostSchema extends WireSchema, WebviewSchema extends WireSchema> {
   readonly hostToWebview: HostSchema;
   readonly webviewToHost: WebviewSchema;

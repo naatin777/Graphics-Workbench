@@ -1,5 +1,6 @@
 import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/formats';
-import type { SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+
+import type { SplitPdfLabels } from './labels';
 
 export function formatLabel(template: string, value: string): string {
   return template.replace('{0}', value);

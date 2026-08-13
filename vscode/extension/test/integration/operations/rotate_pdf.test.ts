@@ -160,23 +160,23 @@ async function writePdf(filePath: string, pageCount: number, rotation = 0): Prom
 
 suite('Rotate PDFのWebview⇔ホスト間メッセージ型検証', () => {
   const labels = {
-    header: { title: 'Rotate PDF', description: 'description' },
-    preview: {
-      title: 'Preview',
-      description: 'description',
-      ariaLabel: 'preview',
-      renderError: 'error',
-      applyError: 'error',
-    },
-    rotation: {
-      title: 'Rotation',
-      angleLabel: 'angle',
-      selectAll: 'all',
-      selectAllAriaLabel: 'all',
-      pageToggle: 'toggle',
-    },
-    validation: { pagesRequired: 'required', pageOutOfRange: 'range', angleInvalid: 'invalid' },
-    actions: { apply: 'Apply', cancel: 'Cancel' },
+    'webview.rotatePdf.title': 'Rotate PDF',
+    'webview.rotatePdf.description': 'description',
+    'webview.rotatePdf.preview': 'Preview',
+    'webview.rotatePdf.previewDescription': 'description',
+    'webview.rotatePdf.previewAriaLabel': 'preview',
+    'webview.rotatePdf.previewRenderError': 'error',
+    'webview.rotatePdf.previewApplyError': 'error',
+    'webview.rotatePdf.rotation': 'Rotation',
+    'webview.rotatePdf.angleLabel': 'angle',
+    'webview.rotatePdf.selectAll': 'all',
+    'webview.rotatePdf.selectAllAriaLabel': 'all',
+    'webview.rotatePdf.pageToggle': 'toggle',
+    'webview.rotatePdf.pagesRequiredError': 'required',
+    'webview.rotatePdf.pageOutOfRangeError': 'range',
+    'webview.rotatePdf.angleInvalid': 'invalid',
+    'webview.rotatePdf.apply': 'Apply',
+    'webview.rotatePdf.cancel': 'Cancel',
   };
 
   const initPayload = {

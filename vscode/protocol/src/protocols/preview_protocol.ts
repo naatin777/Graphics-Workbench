@@ -1,26 +1,9 @@
 import * as v from 'valibot';
 import { PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
-import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
+import { MessageCatalogSchema, defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
 export const PREVIEW_FORMATS = ['pdf', 'tiff'] as const;
 export type PreviewFormat = (typeof PREVIEW_FORMATS)[number];
-
-const PreviewLabelsSchema = v.strictObject({
-  title: v.string(),
-  description: v.string(),
-  page: v.strictObject({
-    label: v.string(),
-    pages: v.string(),
-  }),
-  preview: v.strictObject({
-    ariaLabel: v.string(),
-    zoomLabel: v.string(),
-    zoomOut: v.string(),
-    zoomIn: v.string(),
-    renderError: v.string(),
-  }),
-});
-export type PreviewLabels = v.InferOutput<typeof PreviewLabelsSchema>;
 
 const PreviewPdfResourcesSchema = v.strictObject({
   workerSrc: v.string(),
@@ -33,7 +16,7 @@ const PreviewCommonInitSchema = v.strictObject({
   fileName: v.string(),
   pageCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
   preview: PdfPreviewSettingsSchema,
-  labels: PreviewLabelsSchema,
+  labels: MessageCatalogSchema,
 });
 
 const previewPdfInitSchema = v.strictObject({

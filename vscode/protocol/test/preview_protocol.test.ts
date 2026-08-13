@@ -12,16 +12,15 @@ const hostInitBase = {
   pageCount: 1,
   preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
   labels: {
-    title: 'Preview',
-    description: 'Preview the file contents.',
-    page: { label: 'Page', pages: 'pages' },
-    preview: {
-      ariaLabel: 'Preview',
-      zoomLabel: 'Preview zoom',
-      zoomOut: 'Zoom out',
-      zoomIn: 'Zoom in',
-      renderError: 'Could not display the preview',
-    },
+    'webview.preview.title': 'Preview',
+    'webview.preview.description': 'Preview the file contents.',
+    'webview.preview.pageLabel': 'Page',
+    'webview.preview.pages': 'pages',
+    'webview.preview.previewAriaLabel': 'Preview',
+    'webview.preview.zoomLabel': 'Preview zoom',
+    'webview.preview.zoomOut': 'Zoom out',
+    'webview.preview.zoomIn': 'Zoom in',
+    'webview.preview.renderError': 'Could not display the preview',
   },
 } as const;
 

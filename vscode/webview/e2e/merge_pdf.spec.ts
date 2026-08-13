@@ -13,14 +13,14 @@ test('公開UIでMerge順を変更できCancelボタンがある', async ({ page
 
   await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Merge PDF', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Merge PDFs', exact: true })).toBeVisible();
   await expect(sourceNames).toHaveText(['second.pdf', 'sample.pdf']);
 });
 
 test('2つのsourceでApplyできるが1つになると無効になる', async ({ page }) => {
   await page.goto(webviewUrl({ page: 'merge-pdf' }));
 
-  const apply = page.getByRole('button', { name: 'Apply', exact: true });
+  const apply = page.getByRole('button', { name: 'Merge', exact: true });
   await expect(page.locator('.source-card')).toHaveCount(2);
   await expect(apply).toBeEnabled();
   await apply.click();
@@ -28,7 +28,7 @@ test('2つのsourceでApplyできるが1つになると無効になる', async (
   await expect(apply).toBeEnabled();
 
   await page
-    .getByRole('button', { name: /^Remove:/ })
+    .getByRole('button', { name: /^Remove from list:/ })
     .first()
     .click();
   await expect(page.locator('.source-card')).toHaveCount(1);

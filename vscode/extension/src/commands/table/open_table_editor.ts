@@ -6,7 +6,7 @@ import {
   type InsertionFormat,
 } from '../../edit_provider/insertion_format.js';
 import { extensionIdentity } from '../../generated/extension_manifest.js';
-import { localeMap } from '../../locale_map.js';
+import { localeCatalog, localeMap } from '../../locale_map.js';
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import { getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
 import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
@@ -15,7 +15,6 @@ import {
   tableEditorProtocol,
   type TableEditorFormat,
   type TableEditorHostToWebview,
-  type TableEditorLabels,
   type TableEditorWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
 import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
@@ -130,7 +129,7 @@ function buildTableEditorInitMessage(params: {
 }): Extract<TableEditorHostToWebview, { type: 'init' }>['payload'] {
   return {
     format: params.format,
-    labels: tableEditorLabels(),
+    labels: localeCatalog(),
   };
 }
 
@@ -155,41 +154,4 @@ async function insertTableCode(params: {
   }
   outputChannel.appendLine(`[open-table-editor] inserted ${message.payload.format} table.`);
   await vscode.window.showInformationMessage(userMessage('message.tableEditor.inserted'));
-}
-
-function tableEditorLabels(): TableEditorLabels {
-  return {
-    header: {
-      title: localeMap('webview.tableEditor.header.title'),
-      description: localeMap('webview.tableEditor.header.description'),
-    },
-    input: {
-      unsupportedFile: localeMap('webview.tableEditor.input.unsupportedFile'),
-      emptyFile: localeMap('webview.tableEditor.input.emptyFile'),
-    },
-    table: {
-      addRow: localeMap('webview.tableEditor.table.addRow'),
-      addColumn: localeMap('webview.tableEditor.table.addColumn'),
-      removeRow: localeMap('webview.tableEditor.table.removeRow'),
-      removeColumn: localeMap('webview.tableEditor.table.removeColumn'),
-      alignmentLabel: localeMap('webview.tableEditor.table.alignmentLabel'),
-      alignmentLeft: localeMap('webview.tableEditor.table.alignmentLeft'),
-      alignmentCenter: localeMap('webview.tableEditor.table.alignmentCenter'),
-      alignmentRight: localeMap('webview.tableEditor.table.alignmentRight'),
-      headerToggle: localeMap('webview.tableEditor.table.headerToggle'),
-    },
-    options: {
-      formatLabel: localeMap('webview.tableEditor.options.formatLabel'),
-      formatLatex: localeMap('webview.tableEditor.options.formatLatex'),
-      formatTypst: localeMap('webview.tableEditor.options.formatTypst'),
-      formatQuarkdown: localeMap('webview.tableEditor.options.formatQuarkdown'),
-      booktabs: localeMap('webview.tableEditor.options.booktabs'),
-    },
-    preview: {
-      title: localeMap('webview.tableEditor.preview.title'),
-    },
-    actions: {
-      insert: localeMap('webview.tableEditor.actions.insert'),
-    },
-  };
 }

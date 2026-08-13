@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { customEditorContributions } from '../../generated/extension_manifest.js';
-import { localeMap } from '../../locale_map.js';
+import { localeCatalog } from '../../locale_map.js';
 import { inspectPdfSummary } from '@graphics-workbench/core/pdf';
 import { readTiffPreviewPageCount, renderTiffPreviewPage } from '../../adapters/preview/tiff_preview.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
@@ -15,7 +15,6 @@ import {
   previewProtocol,
   type PreviewFormat,
   type PreviewHostToWebview,
-  type PreviewLabels,
 } from '@graphics-workbench/vscode-protocol/preview-protocol';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -225,7 +224,7 @@ function buildInitMessage(options: {
     fileName: path.basename(uri.fsPath),
     pageCount,
     preview,
-    labels: previewLabels(),
+    labels: localeCatalog(),
   };
   if (format === 'pdf') {
     return {
@@ -243,24 +242,6 @@ function buildInitMessage(options: {
   return {
     format: 'tiff',
     ...shared,
-  };
-}
-
-function previewLabels(): PreviewLabels {
-  return {
-    title: localeMap('webview.preview.title'),
-    description: localeMap('webview.preview.description'),
-    page: {
-      label: localeMap('webview.preview.pageLabel'),
-      pages: localeMap('webview.preview.pages'),
-    },
-    preview: {
-      ariaLabel: localeMap('webview.preview.previewAriaLabel'),
-      zoomLabel: localeMap('webview.preview.zoomLabel'),
-      zoomOut: localeMap('webview.preview.zoomOut'),
-      zoomIn: localeMap('webview.preview.zoomIn'),
-      renderError: localeMap('webview.preview.renderError'),
-    },
   };
 }
 
