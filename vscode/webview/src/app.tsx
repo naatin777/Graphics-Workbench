@@ -1,5 +1,7 @@
 import type { Component, JSX } from 'solid-js';
 
+import { isWebviewPageId, type WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
+
 import { App as CropPdfPage } from './pages/crop-pdf/app';
 import { App as MergePdfPage } from './pages/merge-pdf/app';
 import { App as PreviewPage } from './pages/preview/app';
@@ -16,9 +18,7 @@ const webviewPages = {
   'rotate-pdf': RotatePdfPage,
   'split-pdf': SplitPdfPage,
   'table-editor': TableEditorPage,
-} satisfies Record<string, Component>;
-
-export type WebviewPageId = keyof typeof webviewPages;
+} satisfies Record<WebviewPageId, Component>;
 
 export function pageIdFromLocation(): WebviewPageId | undefined {
   const value = document.body.dataset.page ?? new URLSearchParams(globalThis.location.search).get('page');
@@ -33,8 +33,4 @@ export function WebviewApp(): JSX.Element {
   const Page = webviewPages[pageId];
   document.body.dataset.page = pageId;
   return <Page />;
-}
-
-function isWebviewPageId(value: string | null | undefined): value is WebviewPageId {
-  return value !== null && value !== undefined && value in webviewPages;
 }

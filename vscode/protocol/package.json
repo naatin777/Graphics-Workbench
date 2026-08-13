@@ -44,20 +44,29 @@
     "./table-editor-protocol": {
       "types": "./dist/protocols/table_editor_protocol.d.ts",
       "import": "./dist/protocols/table_editor_protocol.js"
+    },
+    "./webview-page": {
+      "types": "./dist/webview_page.d.ts",
+      "import": "./dist/webview_page.js"
     }
   },
   "scripts": {
-    "build": "npm run build -w @graphics-workbench/core && tsc -p tsconfig.json",
-    "typecheck": "npm run build -w @graphics-workbench/core && tsc --noEmit -p tsconfig.json",
-    "lint": "oxlint --config oxlint.config.ts --type-aware src",
-    "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src",
-    "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "compile:test": "tsc -p tsconfig.test.json",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "test": "npm run build && npm run compile:test && mocha \"dist-test/**/*.test.js\"",
+    "lint": "oxlint --config oxlint.config.ts --type-aware src test",
+    "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src test",
+    "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src test"
   },
   "dependencies": {
-    "@graphics-workbench/core": "0.0.1",
     "valibot": "1.4.2"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "fast-check": "^4.9.0",
+    "mocha": "^11.8.0",
     "oxlint": "^1.77.0",
     "oxlint-tsgolint": "^7.0.2001",
     "typescript": "^7.0.2"

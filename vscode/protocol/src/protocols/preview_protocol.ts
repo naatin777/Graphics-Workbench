@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { PdfPreviewSettingsSchema } from './pdf_preview_protocol.js';
+import { PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
 import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
 const PreviewFormatSchema = v.union([v.literal('pdf'), v.literal('tiff')]);
@@ -36,7 +36,7 @@ const previewHostToWebviewSchema = v.variant('type', [
       format: PreviewFormatSchema,
       fileName: v.string(),
       pageCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
-      pdfData: v.optional(v.string()),
+      pdfSrc: v.optional(WebviewUriSchema),
       resources: PreviewResourcesSchema,
       preview: PdfPreviewSettingsSchema,
       labels: PreviewLabelsSchema,

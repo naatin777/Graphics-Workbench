@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && vite build",
-    "typecheck": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && tsc --noEmit -p tsconfig.json",
-    "typecheck:test": "npm run build -w @graphics-workbench/core && npm run build -w @graphics-workbench/vscode-protocol && tsc --noEmit -p tsconfig.test.json",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "lint": "oxlint --config oxlint.config.ts --type-aware src scripts e2e vite.config.ts vitest.config.ts playwright.config.mjs",
     "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src scripts e2e vite.config.ts vitest.config.ts playwright.config.mjs",
     "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src scripts e2e vite.config.ts vitest.config.ts playwright.config.mjs",

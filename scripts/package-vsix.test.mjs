@@ -29,6 +29,7 @@ void test('production install uses packed workspaces and the selected target wit
     'linux-arm64',
     '/tmp/graphics-workbench.tgz',
     '/tmp/graphics-workbench-core.tgz',
+    '/tmp/graphics-workbench-vscode-protocol.tgz',
   );
   assert.deepStrictEqual(args.slice(0, 3), ['install', '--prefix', '/tmp/install']);
   assert.ok(args.includes('--package-lock=false'));
@@ -37,7 +38,11 @@ void test('production install uses packed workspaces and the selected target wit
   assert.ok(args.includes('--os=linux'));
   assert.ok(args.includes('--cpu=arm64'));
   assert.ok(args.includes('--libc=glibc'));
-  assert.deepStrictEqual(args.slice(-2), ['/tmp/graphics-workbench.tgz', '/tmp/graphics-workbench-core.tgz']);
+  assert.deepStrictEqual(args.slice(-3), [
+    '/tmp/graphics-workbench.tgz',
+    '/tmp/graphics-workbench-core.tgz',
+    '/tmp/graphics-workbench-vscode-protocol.tgz',
+  ]);
 });
 
 void test('production install preserves the six-platform VSIX target contract', () => {

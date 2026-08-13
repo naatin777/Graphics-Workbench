@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 
+import { suite, test } from 'mocha';
+
 import { isCropConfigureMessage } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
 
 suite('Crop PDFのWebview操作メッセージの受信判定（ready/apply/previewLoadFailed）', () => {

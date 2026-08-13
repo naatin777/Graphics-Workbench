@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { customEditorContributions } from '../../generated/extension_manifest.js';
 import { localeMap } from '../../locale_map.js';
-import { countPdfPages } from '@graphics-workbench/core/pdf';
+import { inspectPdfSummary } from '@graphics-workbench/core/pdf';
 import { readTiffPreviewPageCount, renderTiffPreviewPage } from '../../adapters/preview/tiff_preview.js';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import { getPdfJsAssetsRoot, getWebviewSharedAssetsRoot } from '../../presentation/webview/pdfjs_assets.js';
@@ -86,6 +86,7 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
         vscode.Uri.joinPath(this.extensionUri, 'media', 'webview'),
         getPdfJsAssetsRoot(this.extensionUri),
         getWebviewSharedAssetsRoot(this.extensionUri),
+        vscode.Uri.file(path.dirname(document.uri.fsPath)),
       ],
     };
 
@@ -150,7 +151,6 @@ class PreviewCustomEditorProvider implements vscode.CustomReadonlyEditorProvider
               format: this.format,
               uri: document.uri,
               pageCount: prepared.pageCount,
-              pdfData: prepared.pdfData,
               preview: previewSettings,
               webview: webviewPanel.webview,
               pdfJsAssetsRoot,
@@ -203,36 +203,29 @@ async function preparePreview(
   uri: vscode.Uri,
   maxInputPixels: number,
   signal: AbortSignal,
-): Promise<{ pageCount: number; pdfData?: string }> {
+): Promise<{ pageCount: number }> {
   if (format === 'tiff') {
     return { pageCount: await readTiffPreviewPageCount(uri.fsPath, maxInputPixels, signal) };
   }
 
-  signal.throwIfAborted();
-  const bytes = await vscode.workspace.fs.readFile(uri);
-  signal.throwIfAborted();
-  const pageCount = await countPdfPages(bytes);
-  signal.throwIfAborted();
-  // Webview postMessage serializes typed arrays as plain objects; pdf.js accepts
-  // base64-encoded PDF data instead.
-  return { pageCount, pdfData: Buffer.from(bytes).toString('base64') };
+  const summary = await inspectPdfSummary(uri.fsPath, signal);
+  return { pageCount: summary.pageCount };
 }
 
 function buildInitMessage(options: {
   format: PreviewFormat;
   uri: vscode.Uri;
   pageCount: number;
-  pdfData: string | undefined;
   preview: PdfPreviewSettings;
   webview: vscode.Webview;
   pdfJsAssetsRoot: vscode.Uri;
 }): Extract<PreviewHostToWebview, { type: 'init' }>['payload'] {
-  const { format, uri, pageCount, pdfData, preview, webview, pdfJsAssetsRoot } = options;
+  const { format, uri, pageCount, preview, webview, pdfJsAssetsRoot } = options;
   return {
     format,
     fileName: path.basename(uri.fsPath),
     pageCount,
-    ...(pdfData !== undefined && { pdfData }),
+    ...(format === 'pdf' && { pdfSrc: webview.asWebviewUri(uri).toString() }),
     resources:
       format === 'pdf'
         ? {

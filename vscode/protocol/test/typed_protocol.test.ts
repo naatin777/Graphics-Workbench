@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 
+import { suite, test } from 'mocha';
+
 import { createMockChannel } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { previewProtocol } from '@graphics-workbench/vscode-protocol/preview-protocol';
 

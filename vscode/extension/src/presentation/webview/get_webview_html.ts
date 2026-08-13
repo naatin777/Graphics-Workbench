@@ -2,11 +2,13 @@ import { randomBytes } from 'node:crypto';
 
 import * as vscode from 'vscode';
 
+import type { WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
+
 export function getWebviewHtml(params: {
   webview: Pick<vscode.Webview, 'cspSource' | 'asWebviewUri'>;
   extensionUri: vscode.Uri;
   title: string;
-  pageId: string;
+  pageId: WebviewPageId;
   locale?: string;
 }): string {
   const { webview, extensionUri, title, pageId, locale = vscode.env.language } = params;

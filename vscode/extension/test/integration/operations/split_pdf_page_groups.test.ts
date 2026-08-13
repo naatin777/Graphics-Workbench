@@ -5,13 +5,13 @@ import path from 'node:path';
 
 import { PDFDocument } from '../../support/helpers/pdf_document.js';
 
+import { parsePdfPageSelection as parseSplitPdfPages } from '@graphics-workbench/core/formats';
+import { splitPdfByPageGroups } from '@graphics-workbench/core/pdf';
 import {
   isSplitPdfHostToWebviewMessage,
   isSplitPdfWebviewToHostMessage,
-  parseSplitPdfPages,
   type SplitPdfLabels,
 } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
-import { splitPdfByPageGroups } from '@graphics-workbench/core/pdf';
 import { invalidPreflightInputDirectory } from '../../support/helpers/fixture_paths.js';
 
 suite('PDFページグループ分割', () => {

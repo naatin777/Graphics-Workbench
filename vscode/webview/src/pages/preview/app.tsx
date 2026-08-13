@@ -16,16 +16,6 @@ import {
 } from '@webview-shared/pdf/preview_zoom';
 import { vscode } from './vscode';
 
-/** Decodes the base64-encoded PDF bytes sent over Webview postMessage. */
-function decodeBase64PdfData(value: string): Uint8Array {
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return bytes;
-}
-
 export function App(): JSX.Element {
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
@@ -197,8 +187,8 @@ export function App(): JSX.Element {
         vscode.send.previewLoadFailed({ message });
       },
     };
-    if (payload.pdfData !== undefined) {
-      options.data = decodeBase64PdfData(payload.pdfData);
+    if (payload.pdfSrc !== undefined) {
+      options.url = payload.pdfSrc;
     }
     if (previewElement !== undefined) {
       options.root = previewElement;
