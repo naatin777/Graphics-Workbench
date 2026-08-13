@@ -1,6 +1,7 @@
 import { constants as fsConstants } from 'node:fs';
-import { access, copyFile, mkdir, rm, stat } from 'node:fs/promises';
+import { access, copyFile, mkdir, open, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 import {
   assertExistingPathInWorkspace,
@@ -11,6 +12,7 @@ import {
 import {
   cleanupConversionArtifacts,
   hashFile,
+  replaceFileAtomically,
   restoreFileMetadata,
   type CleanupResult,
   type ConversionArtifactRoot,
@@ -146,7 +148,7 @@ export async function undoConversionOutputs(
       await assertUndoPathsStillValid(output, validatedPaths);
 
       if (output.previousFilePath !== undefined && output.previousFilePath !== '') {
-        await copyFile(output.previousFilePath, output.outputPath);
+        await restorePreviousFileAtomically(output);
         await restoreFileMetadata(output.outputPath, output.previousFileMetadata);
       } else {
         await rm(output.outputPath);
@@ -351,6 +353,37 @@ async function assertAppliedUndoStateUnchanged(output: ConversionUndoOutput): Pr
     throw new Error(`Output changed after Undo restoration: ${output.outputPath}`);
   }
   return { kind: 'restore', currentOutputIdentity: current.identity };
+}
+
+async function restorePreviousFileAtomically(output: ConversionUndoOutput): Promise<void> {
+  if (output.previousFilePath === undefined || output.previousFilePath === '') {
+    return;
+  }
+  const temporaryPath = path.join(
+    path.dirname(output.outputPath),
+    `.${path.basename(output.outputPath)}.graphics-workbench-undo-${randomUUID()}.tmp`,
+  );
+  try {
+    await assertWritablePathInWorkspace(temporaryPath, output.workspacePath);
+    await copyFile(output.previousFilePath, temporaryPath);
+    await fsyncFile(temporaryPath);
+    // rename() atomically replaces the target on POSIX, so a crash between the
+    // copy and the rename never leaves a partially written user file; the
+    // Windows fallback removes the target first and is therefore re-validated
+    // by the caller before this point (the smallest practical window).
+    await replaceFileAtomically(temporaryPath, output.outputPath);
+  } finally {
+    await rm(temporaryPath, { force: true });
+  }
+}
+
+async function fsyncFile(filePath: string): Promise<void> {
+  const handle = await open(filePath, 'r');
+  try {
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
 }
 
 async function validateUnchangedOutput(output: ConversionUndoOutput): Promise<ValidatedUndoPaths> {

@@ -35,6 +35,7 @@ suite('画像圧縮処理', () => {
       inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       quality: 30,
       maxInputPixels: 1_000_000_000,
+      maxAnimationPixels: 500_000_000,
       runtime: {},
       runId: 'compress-image-test',
     });
@@ -60,6 +61,7 @@ suite('画像圧縮処理', () => {
       inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       quality: 80,
       maxInputPixels: 1_000_000_000,
+      maxAnimationPixels: 500_000_000,
       runtime: {},
       runId: 'compress-png-test',
     });
@@ -83,11 +85,12 @@ suite('画像圧縮処理', () => {
           sourcePath,
           outputPath,
           workspacePath: workspacePath.path,
-          animation: { pages: 2, pageHeight: 8, delay: [100, 250], loop: 3 },
+          animation: { pages: 2, width: 12, pageHeight: 8, delay: [100, 250], loop: 3 },
         },
       ],
       quality: 80,
       maxInputPixels: 1_000_000_000,
+      maxAnimationPixels: 500_000_000,
       runtime: {},
       runId: 'compress-gif-test',
     });
@@ -111,6 +114,7 @@ suite('画像圧縮処理', () => {
       inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
       quality: 80,
       maxInputPixels: 1_000_000_000,
+      maxAnimationPixels: 500_000_000,
       runtime: {},
       runId: 'compress-tiff-test',
     });
@@ -152,6 +156,36 @@ suite('画像圧縮処理', () => {
     );
   });
 
+  test('multipage TIFFの総pixelがmaxAnimationPixelsを超える場合はstaging前に失敗し、最終出力を作成しない（core所有のinvariant）', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-limit-'));
+
+    const sourcePath = path.join(workspacePath.path, 'multi.tiff');
+    const outputPath = path.join(workspacePath.path, 'multi_compressed.tiff');
+    const pages = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        sharp({ create: { width: 200, height: 200, channels: 3, background: '#336699' } })
+          .png()
+          .toBuffer(),
+      ),
+    );
+    await sharp(pages, { join: { animated: true } })
+      .tiff()
+      .toFile(sourcePath);
+
+    await assert.rejects(
+      compressImageFiles({
+        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+        quality: 80,
+        maxInputPixels: 1_000_000_000,
+        maxAnimationPixels: 100_000,
+        runtime: {},
+        runId: 'compress-image-limit-test',
+      }),
+      /exceeds the configured total animation pixel limit/iu,
+    );
+    await assert.rejects(readFile(outputPath));
+  });
+
   test('非対応入力では変換を失敗させ、最終出力を作成せず一時作業ディレクトリを削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-failure-'));
 
@@ -164,6 +198,7 @@ suite('画像圧縮処理', () => {
         inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
         quality: 80,
         maxInputPixels: 1_000_000_000,
+        maxAnimationPixels: 500_000_000,
         runtime: {},
         runId: 'compress-image-failure-test',
       }),

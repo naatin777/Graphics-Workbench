@@ -18,14 +18,16 @@
 import assert from 'node:assert/strict';
 
 import {
+  findVisibleContentBounds,
   findVisiblePixelBounds,
   hasPdfPageContent,
   loadMupdf,
   renderPdfPageToPng,
   savePdfDocument,
   type MupdfPixmap,
+  type MupdfRect,
 } from '@graphics-workbench/core/pdf';
-import { buildPdfFixture } from '@graphics-workbench/core/testing';
+import { PDFDocument, buildPdfFixture, type PDFPage } from '@graphics-workbench/core/testing';
 
 suite('DisplayList.getBoundsはcontent boundsではない（raster検出の必要性）', () => {
   test('中央にcontentがあるページでも toDisplayList().getBounds() はページ全体（mediabox）を返し、contentに縮まない', async () => {
@@ -160,10 +162,108 @@ async function buildPdfWithContent(contentOps: string): Promise<Uint8Array> {
   return savePdfDocument(document);
 }
 
+suite('offset MediaBox・回転ページでもvisible content boundsをPDF user spaceで返す', () => {
+  const cases: { label: string; configure: (page: PDFPage) => void; expected: MupdfRect }[] = [
+    {
+      label: 'offset MediaBox [100,200,400,400]ではcontentの絶対座標を返す',
+      configure: (page) => {
+        page.setMediaBox(100, 200, 300, 200);
+        page.drawRectangle({ x: 150, y: 260, width: 50, height: 60 });
+      },
+      expected: [150, 260, 200, 320],
+    },
+    {
+      label: 'negative origin MediaBox [-100,-50,200,150]では負の座標を含むcontent boundsを返す',
+      configure: (page) => {
+        page.setMediaBox(-100, -50, 300, 200);
+        page.drawRectangle({ x: -50, y: 0, width: 50, height: 50 });
+      },
+      expected: [-50, 0, 0, 50],
+    },
+    {
+      label: '/Rotate 90でもPDF user spaceの座標（回転前）を返す',
+      configure: (page) => {
+        page.setRotation({ angle: 90 });
+        page.drawRectangle({ x: 50, y: 60, width: 50, height: 60 });
+      },
+      expected: [50, 60, 100, 120],
+    },
+    {
+      label: '/Rotate 180でもPDF user spaceの座標を返す',
+      configure: (page) => {
+        page.setRotation({ angle: 180 });
+        page.drawRectangle({ x: 50, y: 60, width: 50, height: 60 });
+      },
+      expected: [50, 60, 100, 120],
+    },
+    {
+      label: '/Rotate 270でもPDF user spaceの座標を返す',
+      configure: (page) => {
+        page.setRotation({ angle: 270 });
+        page.drawRectangle({ x: 50, y: 60, width: 50, height: 60 });
+      },
+      expected: [50, 60, 100, 120],
+    },
+    {
+      label: 'offset MediaBox + /Rotate 90の組み合わせでも絶対座標を返す',
+      configure: (page) => {
+        page.setMediaBox(100, 200, 300, 200);
+        page.setRotation({ angle: 90 });
+        page.drawRectangle({ x: 150, y: 260, width: 50, height: 60 });
+      },
+      expected: [150, 260, 200, 320],
+    },
+    {
+      label: 'ページ端の1px content（左下）も見逃さない',
+      configure: (page) => {
+        page.drawRectangle({ x: 0, y: 0, width: 1, height: 1 });
+      },
+      expected: [0, 0, 1, 1],
+    },
+    {
+      label: 'ページ端の1px content（右上）も見逃さない',
+      configure: (page) => {
+        page.drawRectangle({ x: 299, y: 199, width: 1, height: 1 });
+      },
+      expected: [299, 199, 300, 200],
+    },
+  ];
+
+  for (const { label, configure, expected } of cases) {
+    test(label, async () => {
+      const bytes = await buildPdfWithConfiguredPage(configure);
+      assert.deepStrictEqual(await readVisibleContentBounds(bytes), expected);
+    });
+  }
+});
+
+async function buildPdfWithConfiguredPage(configure: (page: PDFPage) => void): Promise<Uint8Array> {
+  const document = await PDFDocument.create();
+  const page = document.addPage([300, 200]);
+  configure(page);
+  return document.save();
+}
+
+async function readVisibleContentBounds(bytes: Uint8Array): Promise<MupdfRect | undefined> {
+  const mupdf = await loadMupdf();
+  const document = mupdf.Document.openDocument(bytes);
+  const pdf = document.asPDF();
+  assert.ok(pdf);
+  const page = pdf.loadPage(0);
+  try {
+    return findVisibleContentBounds(page, mupdf);
+  } finally {
+    page.destroy();
+    pdf.destroy();
+  }
+}
+
 function makePixmap(width: number, height: number, pixels: Uint8ClampedArray): MupdfPixmap {
   return {
     getWidth: () => width,
     getHeight: () => height,
+    getX: () => 0,
+    getY: () => 0,
     getPixels: () => pixels,
     asPNG: () => new Uint8Array(),
     destroy: () => {},

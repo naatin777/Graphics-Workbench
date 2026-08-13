@@ -23,6 +23,9 @@ const MAX_CONTENT_RENDER_PIXELS = 50_000_000;
 export interface MupdfPixmap {
   getWidth(): number;
   getHeight(): number;
+  /** The pixmap's origin in device space. Full-page renders start at (0,0); rendering a sub-rectangle does not. */
+  getX(): number;
+  getY(): number;
   getPixels(): Uint8ClampedArray;
   asPNG(): Uint8Array;
   destroy(): void;
@@ -93,8 +96,8 @@ interface MupdfDevice {
   close(): void;
 }
 
-type MupdfMatrix = [number, number, number, number, number, number];
-type MupdfRect = [number, number, number, number];
+export type MupdfMatrix = [number, number, number, number, number, number];
+export type MupdfRect = [number, number, number, number];
 
 interface MupdfImage {
   getWidth(): number;
@@ -216,6 +219,14 @@ export async function renderPdfPageToPng(
  * `DisplayList.getBounds()` cannot be used for this: it returns the display
  * list's mediabox (`fz_bound_display_list` returns `list->mediabox`), i.e. the
  * page box, not the drawn content bounds.
+ *
+ * Coordinate spaces: `page.toPixmap()` renders the page into device space.
+ * `page.getTransform()` maps PDF user space to device space, and MuPDF
+ * normalizes page boxes into a device rect starting at (0,0), so a full-page
+ * pixmap always has origin (0,0) while offset MediaBoxes and /Rotate are
+ * carried by the transform. Pixel indices are pixmap-relative; mapping them
+ * back via `inverse(getTransform())` yields PDF user-space coordinates, which
+ * is the space `pdf_set_page_box` consumes.
  */
 export function findVisibleContentBounds(page: MupdfPdfPage, mupdf: MupdfModule): MupdfRect | undefined {
   const mediabox = page.getBounds('MediaBox');
@@ -236,10 +247,15 @@ export function findVisibleContentBounds(page: MupdfPdfPage, mupdf: MupdfModule)
       return undefined;
     }
     const [minX, minY, maxX, maxY] = pixelBounds;
-    const deviceRect: MupdfRect = [minX / scale, minY / scale, maxX / scale, maxY / scale];
-    // Map device (pixel) coordinates back to PDF space via the inverse page
-    // transform, so offset MediaBoxes and page rotation are handled instead of
-    // assuming a (0,0) mediabox origin and an unrotated page.
+    // The pixel bounds are pixmap-relative; a sub-rectangle render can have a
+    // non-zero pixmap origin, so translate into device space before mapping
+    // back to PDF user space via the inverse page transform.
+    const deviceRect: MupdfRect = [
+      (probePixmap.getX() + minX) / scale,
+      (probePixmap.getY() + minY) / scale,
+      (probePixmap.getX() + maxX) / scale,
+      (probePixmap.getY() + maxY) / scale,
+    ];
     return mupdf.Rect.transform(deviceRect, mupdf.Matrix.invert(page.getTransform()));
   } finally {
     probePixmap.destroy();

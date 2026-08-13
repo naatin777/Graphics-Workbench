@@ -1,8 +1,12 @@
 name: Playwright
 
-# CI is temporarily disabled (task 0224) while the development workflow is
-# reorganized. Re-enable with pull_request/push triggers when ready.
+# The packaged Electron smoke test is heavy, so it runs on main pushes (and
+# manually) instead of every pull request; PR coverage is provided by the
+# faster core/protocol/webview jobs in check.yml and test.yml.
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -34,7 +38,7 @@ jobs:
             test_command: npm run test:playwright:smoke
             artifact_suffix: windows
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/setup
 
@@ -85,7 +89,7 @@ jobs:
         shell: bash
 
       - if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: packaged-electron-playwright-${{ matrix.artifact_suffix }}
           path: |

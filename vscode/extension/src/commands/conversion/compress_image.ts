@@ -2,7 +2,6 @@ import path from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { assertAnimationPixelLimit } from '../../config/raster.js';
 import { resolveOutputPath } from '@graphics-workbench/core/output';
 import {
   compressImageFiles,
@@ -48,17 +47,9 @@ export async function compressImageCommand(sourceUris: vscode.Uri[], dependencie
       const inputs: CompressImageInput[] = [];
       for (const sourceUri of sourceUris) {
         runtime.signal?.throwIfAborted();
-        inputs.push(
-          ...(await planCompressImageInputs(
-            sourceUri,
-            outputTemplate,
-            maxInputPixels,
-            maxAnimationPixels,
-            runtime.signal,
-          )),
-        );
+        inputs.push(...(await planCompressImageInputs(sourceUri, outputTemplate, maxInputPixels, runtime.signal)));
       }
-      return compressImageFiles({ inputs, quality, maxInputPixels, runtime });
+      return compressImageFiles({ inputs, quality, maxInputPixels, maxAnimationPixels, runtime });
     },
   });
 }
@@ -67,7 +58,6 @@ async function planCompressImageInputs(
   sourceUri: vscode.Uri,
   outputTemplate: string,
   maxInputPixels: number,
-  maxAnimationPixels: number,
   signal?: AbortSignal,
 ): Promise<CompressImageInput[]> {
   signal?.throwIfAborted();
@@ -101,15 +91,6 @@ async function planCompressImageInputs(
     ? await readRasterAnimationMetadata(sourcePath, maxInputPixels)
     : undefined;
   signal?.throwIfAborted();
-  if (animation !== undefined) {
-    assertAnimationPixelLimit(
-      animation.width ?? 0,
-      animation.pageHeight,
-      animation.pages,
-      maxAnimationPixels,
-      sourcePath,
-    );
-  }
 
   return [
     {

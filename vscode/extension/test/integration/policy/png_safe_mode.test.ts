@@ -45,7 +45,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     }
 
     const stagedRoot = path.join(workspacePath, '.graphics-workbench', 'convert-to-pdf', 'batch-success');
-    assert.deepStrictEqual(new Set(await readdir(stagedRoot)), new Set(['1', '2']));
+    assert.deepStrictEqual(new Set(await readdir(stagedRoot)), new Set(['1', '2', '.graphics-workbench-owner']));
     await assert.doesNotReject(access(path.join(stagedRoot, '1', 'result.pdf')));
     await assert.doesNotReject(access(path.join(stagedRoot, '2', 'result.pdf')));
   });
