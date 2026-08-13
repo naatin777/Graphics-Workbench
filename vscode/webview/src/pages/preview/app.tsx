@@ -1,15 +1,14 @@
-import { Show, createEffect, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import {
   previewProtocol,
   type PreviewHostToWebview,
   type PreviewLabels,
 } from '@graphics-workbench/vscode-protocol/preview-protocol';
-import { renderPdfPages, type PdfRenderController, type PdfRenderOptions } from '../../shared/pdf/render_pdf_pages';
+import { createPdfPreview, useCurrentPage } from '../../shared/pdf/create_pdf_preview';
 import { toErrorMessage } from '../../shared/error';
-import { PageNavigator, scrollPageIntoView } from '../../shared/ui/PageNavigator';
+import { PageNavigator } from '../../shared/ui/PageNavigator';
 import { ToolbarButton } from '../../shared/ui/ToolbarButton';
-import { useCurrentPage } from '../../shared/ui/use_current_page';
 
 import { renderTiffPreview, type TiffRenderController } from './tiff_preview';
 import {
@@ -21,7 +20,6 @@ import {
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 export type PreviewInitPayload = Extract<PreviewHostToWebview, { type: 'init' }>['payload'];
-type PdfPreviewInitPayload = Extract<PreviewInitPayload, { format: 'pdf' }>;
 
 export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(previewProtocol, properties.host);
@@ -40,52 +38,19 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
 
   let pagesContainer: HTMLDivElement | undefined;
   let previewElement: HTMLElement | undefined;
-  let pdfRenderController: PdfRenderController | undefined;
   let tiffRenderController: TiffRenderController | undefined;
-  let renderAbortController: AbortController | undefined;
+  let tiffAbortController: AbortController | undefined;
 
-  const { currentPage, recompute: recomputeCurrentPage } = useCurrentPage({
+  const preview = createPdfPreview({
+    pagesContainer: () => pagesContainer,
     scrollContainer: () => pagesContainer,
-    getPageElements: () =>
-      pagesContainer ? [...pagesContainer.querySelectorAll<HTMLElement>('.preview-page[data-pdf-page]')] : [],
+    pageCount,
+    setRenderError,
+    onRenderError: (message) => {
+      channel.send.previewLoadFailed({ message });
+    },
   });
-
-  const goToPreviousPage = (): void => {
-    const target = pagesContainer?.querySelector<HTMLElement>(`[data-pdf-page="${Math.max(currentPage() - 1, 1)}"]`);
-    if (target) {
-      scrollPageIntoView(target);
-    }
-  };
-
-  const goToNextPage = (): void => {
-    const target = pagesContainer?.querySelector<HTMLElement>(
-      `[data-pdf-page="${Math.min(currentPage() + 1, pageCount())}"]`,
-    );
-    if (target) {
-      scrollPageIntoView(target);
-    }
-  };
-
-  // Re-evaluate the current page after the preview renders or the page count changes.
-  createEffect(() => {
-    void pageCount();
-    void renderError();
-    requestAnimationFrame(() => {
-      recomputeCurrentPage();
-    });
-  });
-
-  // Sync the current-page outline onto the rendered page elements.
-  createEffect(() => {
-    const current = currentPage();
-    for (const page of pagesContainer?.querySelectorAll<HTMLElement>('.preview-page[data-pdf-page]') ?? []) {
-      if (page.dataset.pdfPage === String(current)) {
-        page.dataset.current = 'true';
-      } else {
-        delete page.dataset.current;
-      }
-    }
-  });
+  const currentPage = useCurrentPage(preview);
 
   onMount(() => {
     const unsubscribeMessages = channel.on({
@@ -102,16 +67,14 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     channel.send.ready();
     onCleanup(() => {
       unsubscribeMessages();
-      renderAbortController?.abort();
-      void pdfRenderController?.dispose();
+      tiffAbortController?.abort();
       tiffRenderController?.dispose();
     });
   });
 
   const startRender = (payload: PreviewInitPayload): void => {
-    renderAbortController?.abort();
-    void pdfRenderController?.dispose();
-    pdfRenderController = undefined;
+    preview.dispose();
+    tiffAbortController?.abort();
     tiffRenderController?.dispose();
     tiffRenderController = undefined;
 
@@ -125,74 +88,36 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       return;
     }
 
-    const abortController = new AbortController();
-    renderAbortController = abortController;
-
     if (payload.format === 'pdf') {
-      void renderPdfPreview(payload, abortController.signal);
-    } else {
-      startTiffRender(payload, abortController.signal);
-    }
-  };
-
-  const renderPdfPreview = async (payload: PdfPreviewInitPayload, signal: AbortSignal): Promise<void> => {
-    if (!pagesContainer) {
-      return;
-    }
-    try {
-      const options = createPdfRenderOptions(payload, signal);
-      const controller = await renderPdfPages(payload.pdfSrc, pagesContainer, options);
-      if (signal.aborted) {
-        await controller.dispose();
-        return;
-      }
-      pdfRenderController = controller;
-      await controller.firstPageReady;
-      applyPreviewZoom(pagesContainer, previewZoom());
-      requestAnimationFrame(() => {
-        recomputeCurrentPage();
-      });
-    } catch (error) {
-      if (signal.aborted) {
-        return;
-      }
-      const message = toErrorMessage(error);
-      setRenderError(message);
-      channel.send.previewLoadFailed({ message });
-    }
-  };
-
-  const createPdfRenderOptions = (payload: PdfPreviewInitPayload, signal: AbortSignal): PdfRenderOptions => {
-    const options: PdfRenderOptions = {
-      preview: payload.preview,
-      resources: payload.resources,
-      page: {
-        label: payload.labels.page.label,
-        onCreated: (pageFrame) => {
-          pageFrame.classList.add('preview-page');
+      void preview.start(
+        payload.pdfSrc,
+        {
+          preview: payload.preview,
+          resources: payload.resources,
+          page: {
+            label: payload.labels.page.label,
+            onCreated: (pageFrame) => {
+              pageFrame.classList.add('preview-page');
+            },
+          },
+          ...(previewElement === undefined ? {} : { root: previewElement }),
         },
-      },
-      signal,
-      onRenderError: (error) => {
-        if (signal.aborted) {
-          return;
-        }
-        const message = toErrorMessage(error);
-        setRenderError(message);
-        channel.send.previewLoadFailed({ message });
-      },
-    };
-    if (previewElement !== undefined) {
-      options.root = previewElement;
+        () => {
+          applyPreviewZoom(pagesContainer, previewZoom());
+        },
+      );
+    } else {
+      startTiffRender(payload);
     }
-    return options;
   };
 
-  const startTiffRender = (payload: PreviewInitPayload, signal: AbortSignal): void => {
+  const startTiffRender = (payload: PreviewInitPayload): void => {
     if (!pagesContainer) {
       return;
     }
-    const controller = renderTiffPreview({
+    const abortController = new AbortController();
+    tiffAbortController = abortController;
+    tiffRenderController = renderTiffPreview({
       container: pagesContainer,
       pageCount: payload.pageCount,
       pageLabel: payload.labels.page.label,
@@ -201,16 +126,14 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
         channel.send.renderPage({ page });
       },
       onRenderError: (error) => {
-        if (signal.aborted) {
+        if (abortController.signal.aborted) {
           return;
         }
-        const message = toErrorMessage(error);
-        setRenderError(message);
+        setRenderError(toErrorMessage(error));
       },
       root: pagesContainer,
-      signal,
+      signal: abortController.signal,
     });
-    tiffRenderController = controller;
   };
 
   const updatePreviewZoom = (
@@ -229,7 +152,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     applyPreviewZoom(pagesContainer, nextZoom);
     restorePreviewZoomAnchor(pagesContainer, anchor);
     requestAnimationFrame(() => {
-      recomputeCurrentPage();
+      preview.recomputeCurrentPage();
     });
   };
 
@@ -294,10 +217,10 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 class='preview__pages'
               />
               <PageNavigator
-                currentPage={currentPage()}
+                currentPage={currentPage() ?? 0}
                 pageCount={pageCount()}
-                onPrevious={goToPreviousPage}
-                onNext={goToNextPage}
+                onPrevious={preview.goToPreviousPage}
+                onNext={preview.goToNextPage}
               />
               {renderError() ? (
                 <p

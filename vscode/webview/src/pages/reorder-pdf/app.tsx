@@ -1,16 +1,10 @@
-import { createEffect, createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
+import { createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
-import {
-  reorderPdfProtocol,
-  type ReorderPdfHostToWebview,
-  type ReorderPdfLabels,
-} from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
-import { renderPdfPages, type PdfRenderController } from '@webview-shared/pdf/render_pdf_pages';
-import { toErrorMessage } from '@webview-shared/error';
+import { reorderPdfProtocol, type ReorderPdfLabels } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
 import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
-import { PageNavigator, scrollPageIntoView } from '@webview-shared/ui/PageNavigator';
-import { useCurrentPage } from '@webview-shared/ui/use_current_page';
+import { PageNavigator } from '@webview-shared/ui/PageNavigator';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 function createToolbarButton(className: string, label: string, icon: string): HTMLButtonElement {
@@ -42,34 +36,22 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   const [previewReady, setPreviewReady] = createSignal(false);
 
   let pdfPages: HTMLDivElement | undefined;
-  let renderController: PdfRenderController | undefined;
-  let previewController: AbortController | undefined;
-  let previewGeneration = 0;
 
-  const { currentPage, recompute } = useCurrentPage({
+  const preview = createPdfPreview({
+    pagesContainer: () => pdfPages,
     scrollContainer: () => pdfPages,
-    getPageElements: () =>
-      pdfPages === undefined ? [] : [...pdfPages.querySelectorAll<HTMLElement>('.pdf-page[data-pdf-page]')],
+    setRenderError: () => {
+      setApplyError(labels().preview.renderError);
+    },
+    onRenderError: (message) => {
+      channel.send.previewLoadFailed({ message });
+    },
   });
+  const currentPage = useCurrentPage(preview);
 
   const cancel = (): void => {
     channel.send.cancel();
   };
-
-  createEffect(() => {
-    const container = pdfPages;
-    const current = currentPage();
-    if (container === undefined) {
-      return;
-    }
-    for (const figure of container.querySelectorAll<HTMLElement>('.pdf-page')) {
-      if (Number(figure.dataset.pdfPage) === current) {
-        figure.dataset.current = 'true';
-      } else {
-        delete figure.dataset.current;
-      }
-    }
-  });
 
   onMount(() => {
     const unsubscribeMessages = channel.on({
@@ -82,9 +64,20 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
         setPageCount(payload.pageCount);
         setApplyError('');
         setPreviewReady(false);
-        const generation = previewGeneration + 1;
-        previewGeneration = generation;
-        void startPreview(payload, generation);
+        void preview.start(
+          payload.pdfSrc,
+          {
+            virtualize: false,
+            resources: payload.resources,
+            preview: payload.preview,
+            page: { label: payload.labels.preview.ariaLabel },
+            ...(pdfPages === undefined ? {} : { root: pdfPages }),
+          },
+          () => {
+            ensureControls();
+            setPreviewReady(true);
+          },
+        );
       },
     });
 
@@ -114,65 +107,6 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       globalThis.removeEventListener('click', onControlClick);
     });
   });
-
-  onCleanup(() => {
-    previewController?.abort();
-    void renderController?.dispose();
-  });
-
-  async function startPreview(
-    payload: Extract<ReorderPdfHostToWebview, { type: 'init' }>['payload'],
-    generation: number,
-  ): Promise<void> {
-    previewController?.abort();
-    const controller = new AbortController();
-    previewController = controller;
-
-    if (renderController !== undefined) {
-      await renderController.dispose();
-      renderController = undefined;
-    }
-
-    if (pdfPages === undefined) {
-      return;
-    }
-
-    const currentLabels = labels();
-
-    try {
-      renderController = await renderPdfPages(payload.pdfSrc, pdfPages, {
-        virtualize: false,
-        resources: payload.resources,
-        preview: payload.preview,
-        page: { label: currentLabels.preview.ariaLabel },
-        root: pdfPages,
-        signal: controller.signal,
-        onRenderError: (error) => {
-          if (controller.signal.aborted) {
-            return;
-          }
-          channel.send.previewLoadFailed({ message: toErrorMessage(error) });
-        },
-      });
-
-      await renderController.firstPageReady;
-
-      if (generation !== previewGeneration || controller.signal.aborted) {
-        return;
-      }
-
-      ensureControls();
-      recompute();
-      setPreviewReady(true);
-    } catch (error) {
-      if (controller.signal.aborted || generation !== previewGeneration) {
-        return;
-      }
-      const message = toErrorMessage(error);
-      channel.send.previewLoadFailed({ message });
-      setApplyError(currentLabels.preview.renderError);
-    }
-  }
 
   function ensureControls(): void {
     const container = pdfPages;
@@ -215,7 +149,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       figure.before(target);
     }
     syncPositions();
-    recompute();
+    preview.recomputeCurrentPage();
   }
 
   function syncPositions(): void {
@@ -229,17 +163,6 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       if (label) {
         label.textContent = String(position + 1);
       }
-    }
-  }
-
-  function scrollToPdfPage(pageNumber: number): void {
-    const container = pdfPages;
-    if (!container) {
-      return;
-    }
-    const figure = container.querySelector<HTMLElement>(`.pdf-page[data-pdf-page="${pageNumber}"]`);
-    if (figure) {
-      scrollPageIntoView(figure);
     }
   }
 
@@ -285,14 +208,10 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                   aria-label={labels().preview.ariaLabel}
                 />
                 <PageNavigator
-                  currentPage={currentPage()}
+                  currentPage={currentPage() ?? 0}
                   pageCount={pageCount()}
-                  onPrevious={() => {
-                    scrollToPdfPage(currentPage() - 1);
-                  }}
-                  onNext={() => {
-                    scrollToPdfPage(currentPage() + 1);
-                  }}
+                  onPrevious={preview.goToPreviousPage}
+                  onNext={preview.goToNextPage}
                 />
               </section>
             }

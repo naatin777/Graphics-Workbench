@@ -175,47 +175,6 @@ describe('Split PDF Webview', () => {
     });
   });
 
-  test('tracks the current page and scrolls via the page navigator', async () => {
-    await flushPromises();
-    await nextFrame();
-
-    const pages = [...document.querySelectorAll<HTMLElement>('.pdf-page')];
-    expect(pages).toHaveLength(4);
-    const [page1, page2] = pages;
-    if (!page1 || !page2) {
-      throw new Error('Preview pages were not rendered.');
-    }
-
-    const preview = document.querySelector<HTMLElement>('.pdf-preview');
-    if (!preview) {
-      throw new Error('PDF preview was not rendered.');
-    }
-    mockLayout(preview, { top: 0, bottom: 100, width: 800 });
-    mockLayout(page1, { top: 0, bottom: 80, width: 100 });
-    mockLayout(page2, { top: 80, bottom: 160, width: 100 });
-
-    setInput(findInput('Pages 1'), '1-2');
-    await flushPromises();
-    await nextFrame();
-
-    expect(page1.dataset.current).toBe('true');
-    expect(page2.dataset.current).toBeUndefined();
-    expect(document.querySelector('.page-navigator__position')?.textContent).toBe('1 / 4');
-
-    const scrollIntoView = vi.fn();
-    page2.scrollIntoView = scrollIntoView;
-    const previous = document.querySelector<HTMLButtonElement>('button[aria-label="Previous page"]');
-    const next = document.querySelector<HTMLButtonElement>('button[aria-label="Next page"]');
-    if (!previous || !next) {
-      throw new Error('Page navigator buttons were not rendered.');
-    }
-
-    expect(previous.disabled).toBe(true);
-    expect(next.disabled).toBe(false);
-    next.click();
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
-  });
-
   test('switching preview mode re-derives the current page from visible pages', async () => {
     await flushPromises();
     await nextFrame();

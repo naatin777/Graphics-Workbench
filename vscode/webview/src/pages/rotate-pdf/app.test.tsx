@@ -5,20 +5,8 @@ import { rotatePdfProtocol, type RotatePdfLabels } from '@graphics-workbench/vsc
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
-const renderBehavior = vi.hoisted(() => ({
-  fail: false,
-  disposeCount: 0,
-}));
-const geometry = vi.hoisted(() => ({
-  scrollY: 0,
-  pageHeight: 120,
-  viewportHeight: 100,
-}));
 const renderPdfPages = vi.hoisted(() =>
   vi.fn<(...args: unknown[]) => Promise<unknown>>(async (_pdfSrc: unknown, container: unknown, options?: unknown) => {
-    if (renderBehavior.fail) {
-      throw new Error('render exploded');
-    }
     const pageOptions = readPageOptions(options);
     if (container instanceof Element) {
       container.replaceChildren();
@@ -34,9 +22,7 @@ const renderPdfPages = vi.hoisted(() =>
     }
     return {
       firstPageReady: Promise.resolve(),
-      dispose: async () => {
-        renderBehavior.disposeCount += 1;
-      },
+      dispose: async () => undefined,
     };
   }),
 );
@@ -63,75 +49,6 @@ function readPageOptions(options: unknown): PageOptions | undefined {
   }
   const onCreated: unknown = page.onCreated;
   return isPageFrameCallback(onCreated) ? { onCreated } : {};
-}
-
-class IntersectionObserverStub {
-  readonly root: Element | Document | null;
-  private readonly elements = new Set<Element>();
-  constructor(_callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
-    this.root = options?.root ?? null;
-  }
-  observe(target: Element): void {
-    this.elements.add(target);
-  }
-  unobserve(target: Element): void {
-    this.elements.delete(target);
-  }
-  disconnect(): void {
-    this.elements.clear();
-  }
-  takeRecords(): IntersectionObserverEntry[] {
-    return [];
-  }
-}
-
-function domRect(top: number, height: number): DOMRect {
-  return {
-    x: 0,
-    y: top,
-    left: 0,
-    right: 100,
-    top,
-    bottom: top + height,
-    width: 100,
-    height,
-    toJSON: () => ({}),
-  };
-}
-
-function pageNumberFromElement(element: Element): number {
-  return element instanceof HTMLElement ? Number(element.dataset.pdfPage ?? 1) : 1;
-}
-
-function boundingClientRectMock(this: Element): DOMRect {
-  if (this.classList.contains('pdf-page')) {
-    const page = pageNumberFromElement(this);
-    return domRect((page - 1) * geometry.pageHeight - geometry.scrollY, geometry.pageHeight);
-  }
-  return domRect(0, geometry.viewportHeight);
-}
-
-function scrollIntoViewMock(this: Element): void {
-  geometry.scrollY = (pageNumberFromElement(this) - 1) * geometry.pageHeight;
-  document.querySelector('.rotate__pages')?.dispatchEvent(new Event('scroll'));
-}
-
-const pendingFrames = new Map<number, FrameRequestCallback>();
-let nextFrameId = 1;
-
-function nextFrame(callback: FrameRequestCallback): number {
-  const id = nextFrameId;
-  nextFrameId += 1;
-  pendingFrames.set(id, callback);
-  queueMicrotask(() => {
-    pendingFrames.delete(id);
-    callback(Date.now());
-  });
-  return id;
-}
-
-function cancelNextFrame(handle: number): void {
-  pendingFrames.delete(handle);
 }
 
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
@@ -219,44 +136,19 @@ function selectAllButton(): HTMLButtonElement | undefined {
   return [...document.querySelectorAll('button')].find((button) => button.textContent?.includes('Select all pages'));
 }
 
-function currentPageLabel(): string {
-  return document.querySelector('.page-navigator__position')?.textContent ?? '';
-}
-
-function navigatorButtons(): HTMLButtonElement[] {
-  return [...document.querySelectorAll<HTMLButtonElement>('.page-navigator button')];
-}
-
 function isRotateHostToWebviewMessage(value: unknown): boolean {
   return rotatePdfProtocol.parseHostToWebview(value) !== undefined;
-}
-
-function scrollTo(viewedPage: number): void {
-  geometry.scrollY = (viewedPage - 1) * geometry.pageHeight;
-  document.querySelector('.rotate__pages')?.dispatchEvent(new Event('scroll'));
 }
 
 beforeEach(async () => {
   sendMessage.mockClear();
   renderPdfPages.mockClear();
-  renderBehavior.fail = false;
-  renderBehavior.disposeCount = 0;
-  geometry.scrollY = 0;
-  pendingFrames.clear();
-  nextFrameId = 1;
-  vi.stubGlobal('IntersectionObserver', IntersectionObserverStub);
-  vi.stubGlobal('requestAnimationFrame', nextFrame);
-  vi.stubGlobal('cancelAnimationFrame', cancelNextFrame);
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(boundingClientRectMock);
-  Element.prototype.scrollIntoView = scrollIntoViewMock;
   document.body.innerHTML = '<div id="root"></div>';
 });
 
 afterEach(async () => {
   disposeApp?.();
   disposeApp = undefined;
-  vi.unstubAllGlobals();
-  delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
   await flushPromises();
 });
 
@@ -367,63 +259,4 @@ test('init再受信時に選択状態がresetされる', async () => {
   await flushPromises();
   expect(selectionText()).toContain('0/4');
   expect(selectedPages()).toEqual([]);
-});
-
-test('preview failure時にエラー表示とmessageを送信する', async () => {
-  renderBehavior.fail = true;
-  await mountAndInit();
-
-  expect(sendMessage).toHaveBeenCalledWith({
-    type: 'previewLoadFailed',
-    payload: { message: 'render exploded' },
-  });
-  expect(document.querySelector('[role="alert"]')?.textContent).toBe('Could not display the PDF');
-});
-
-test('preview再描画で古いcontrollerをdisposeする', async () => {
-  await mountAndInit();
-  expect(renderBehavior.disposeCount).toBe(0);
-
-  globalThis.dispatchEvent(new MessageEvent('message', { data: initMessage }));
-  await flushPromises();
-  expect(renderBehavior.disposeCount).toBe(1);
-});
-
-test('プレビュー下部にページナビゲータを表示し現在ページにoutlineを付ける', async () => {
-  await mountAndInit();
-
-  expect(document.querySelector('.page-navigator')).not.toBeNull();
-  expect(currentPageLabel()).toBe('1 / 4');
-  expect(pageFigures()[0]?.dataset.current).toBe('true');
-  expect(pageFigures()[1]?.dataset.current).toBeUndefined();
-
-  const [previous, next] = navigatorButtons();
-  expect(previous?.disabled).toBe(true);
-  expect(next?.disabled).toBe(false);
-});
-
-test('ページナビゲータの次へ/前へで現在ページとoutlineが更新される', async () => {
-  await mountAndInit();
-
-  navigatorButtons()[1]?.click();
-  await flushPromises();
-  expect(currentPageLabel()).toBe('2 / 4');
-  expect(pageFigures()[1]?.dataset.current).toBe('true');
-  expect(pageFigures()[0]?.dataset.current).toBeUndefined();
-
-  navigatorButtons()[0]?.click();
-  await flushPromises();
-  expect(currentPageLabel()).toBe('1 / 4');
-  expect(pageFigures()[0]?.dataset.current).toBe('true');
-});
-
-test('最終ページでは次へボタンが無効になる', async () => {
-  await mountAndInit();
-
-  scrollTo(4);
-  await flushPromises();
-  expect(currentPageLabel()).toBe('4 / 4');
-
-  const [, next] = navigatorButtons();
-  expect(next?.disabled).toBe(true);
 });

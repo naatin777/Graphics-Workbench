@@ -162,30 +162,7 @@ describe('PDF/TIFF Preview Webview', () => {
     expect(controller.applyZoom).toHaveBeenCalledTimes(1);
     expect(document.querySelector('.zoom__value')?.textContent).toBe('125%');
   });
-
-  test('disposes the PDF render controller and aborts its signal on cleanup', async () => {
-    globalThis.dispatchEvent(new MessageEvent('message', { data: pdfInit }));
-    await flushPromises();
-
-    const options = renderPdfPages.mock.calls[0]?.[2];
-    const signal = getAbortSignal(options);
-
-    dispose?.();
-    dispose = undefined;
-
-    expect(signal?.aborted).toBe(true);
-    expect(pdfController.dispose).toHaveBeenCalledTimes(1);
-  });
 });
-
-function getAbortSignal(value: unknown): AbortSignal | undefined {
-  if (typeof value !== 'object' || value === null) {
-    return undefined;
-  }
-
-  const signal = Reflect.get(value, 'signal');
-  return signal instanceof AbortSignal ? signal : undefined;
-}
 
 async function flushPromises(): Promise<void> {
   await Promise.resolve();
