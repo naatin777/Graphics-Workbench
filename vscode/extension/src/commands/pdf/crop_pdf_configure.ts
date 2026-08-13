@@ -24,7 +24,7 @@ import {
 } from '../../presentation/webview/pdfjs_assets.js';
 import { createExtensionChannel, createWebviewTransport } from '../../presentation/webview/typed_channel.js';
 import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
-import { inspectCropPdfMetadata } from '../../adapters/crop/run_crop_pdf_metadata.js';
+import { runCropWorker, type CropPdfMetadata } from '../../adapters/crop/run_crop_worker.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
@@ -76,9 +76,12 @@ async function runCropPdfConfigureCommand(
     async (progress, token) =>
       withCancellationSignal(token, async (signal) => {
         progress.report({ message: userMessage('message.progress.prepareConversion', 'PDF') });
-        return inspectCropPdfMetadata(inputUri.fsPath, signal);
+        return runCropWorker({ type: 'inspect', filePath: inputUri.fsPath }, signal);
       }),
   );
+  if (pdf === undefined) {
+    throw new Error('Crop Configure metadata inspection returned no result.');
+  }
   const configuration = dependencies.getConfiguration();
   const outputTemplate = configuration.outputPath.cropPdf();
   const pdfJsAssetsRoot = getPdfJsAssetsRoot(context.extensionUri);
@@ -165,7 +168,7 @@ function buildCropPdfInitMessage(params: {
   panel: vscode.WebviewPanel;
   pdfJsAssetsRoot: vscode.Uri;
   inputUri: vscode.Uri;
-  pdf: Awaited<ReturnType<typeof inspectCropPdfMetadata>>;
+  pdf: CropPdfMetadata;
   preview: PdfPreviewSettings;
 }): Extract<CropConfigureHostToWebview, { type: 'init' }>['payload'] {
   const { panel, pdfJsAssetsRoot, inputUri, pdf, preview } = params;

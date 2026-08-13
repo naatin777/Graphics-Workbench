@@ -60,7 +60,7 @@ export default defineConfig({
       },
     },
     {
-      files: ['src/adapters/crop/run_crop_pdf_process.ts', 'src/adapters/crop/run_crop_pdf_metadata.ts'],
+      files: ['src/adapters/crop/run_crop_worker.ts'],
       rules: {
         'project/no-direct-child-process': 'off',
       },

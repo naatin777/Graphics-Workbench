@@ -287,7 +287,7 @@ function isAllowedChildProcessFile(filename) {
 
   return (
     /(?:^|\/)core\/src\/operations\/external_tools\/[^/]+\.ts$/u.test(normalized) ||
-    /(?:^|\/vscode\/extension\/src\/adapters\/crop\/)run_crop_pdf_(?:process|metadata)\.ts$/u.test(normalized)
+    /(?:^|\/vscode\/extension\/src\/adapters\/crop\/)run_crop_worker\.ts$/u.test(normalized)
   );
 }
 

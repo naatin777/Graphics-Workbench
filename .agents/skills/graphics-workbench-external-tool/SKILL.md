@@ -28,7 +28,7 @@ description: Graphics Workbenchで外部CLI / renderer / converter（Draw.io、C
 2. `graphics-workbench.execPath.*`設定は`vscode/package.json`と`vscode/src/generated/extension_manifest.ts`を正本とし、`vscode/src/config/rendering/`のadapterパターンに従う。setting値が空のときOS既定名へfallbackする既存パターンを参考にする。生成manifestは手書きしない。
 3. timeoutが必要なtoolは`core/src/config/external_tools/external_tool_settings.ts`の`ExternalToolId`、`readExternalToolTimeouts()`、`getExternalToolTimeoutMs()`と`externalTools.<id>.timeoutSeconds` manifest設定へ追加する。
 4. system dependencyなら`vscode/src/commands/shared/environment_check.ts`へ統合する。「未インストール」と「実行したが失敗」を区別し、`checkTool`パターン(probe・versionArgs・settingId)を再利用する。
-5. テスト: 純粋な引数組み立て・path解決はUnit Test、実spawn・ファイル出力・キャンセルはIntegration Test。既存のfixtureランナー(例: `run_crop_pdf_process.test.ts`のpattern)を参考にする。
+5. テスト: 純粋な引数組み立て・path解決はUnit Test、実spawn・ファイル出力・キャンセルはIntegration Test。既存のfixtureランナー(例: `run_crop_worker.test.ts`のpattern)を参考にする。
 
 ## 既存CLIのデバッグ
 

@@ -188,7 +188,7 @@ suite('PDF configure crop処理', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing output');
     const after = await captureWorkspaceSnapshot(workspacePath);
     assertWorkspaceChangesSince(before, after, {});
-    assert.ok(logs.hasLine('child-success-received'));
+    assert.ok(logs.hasLine('process-completed'));
     assert.ok(logs.hasLine('[crop-pdf-configure] staging-cleaned'));
     assert.ok(logs.hasLine('[crop-pdf-configure] operation-failed'));
     assert.equal(logs.hasLine('[crop-pdf-configure] operation-completed'), false);

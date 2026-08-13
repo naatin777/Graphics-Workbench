@@ -16,7 +16,7 @@
     },
     "vscode/extension": {
       "entry": [
-        "src/adapters/crop/crop_pdf_runner.ts",
+        "src/adapters/crop/crop_worker.ts",
         "src/commands/pdf/*.ts",
         "src/commands/conversion/*.ts",
         "src/commands/lifecycle/*.ts",

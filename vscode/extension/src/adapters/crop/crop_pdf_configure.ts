@@ -19,7 +19,7 @@ import {
   type RunId,
 } from '@graphics-workbench/core/runtime';
 
-import { runCropPdfProcess } from './run_crop_pdf_process.js';
+import { runCropWorker } from './run_crop_worker.js';
 
 export type { CropBox } from '@graphics-workbench/core/pdf';
 
@@ -112,17 +112,18 @@ async function prepareConfiguredCropOutput(
   signal?.throwIfAborted();
   await assertWritablePathInWorkspace(stagedOutputPath, input.workspacePath);
   signal?.throwIfAborted();
-  await runCropPdfProcess(
+  await runCropWorker(
     {
-      sourcePath: copiedSourcePath,
-      stagedOutputPath,
-      cropBox: input.cropBox,
-      target: input.target,
+      type: 'crop',
+      request: {
+        sourcePath: copiedSourcePath,
+        stagedOutputPath,
+        cropBox: input.cropBox,
+        target: input.target,
+      },
     },
     signal,
-    {
-      ...(runtime?.outputChannel !== undefined && { outputChannel: runtime.outputChannel }),
-    },
+    runtime?.outputChannel === undefined ? undefined : { outputChannel: runtime.outputChannel },
   );
   signal?.throwIfAborted();
   await assertExistingPathInWorkspace(stagedOutputPath, input.workspacePath);
