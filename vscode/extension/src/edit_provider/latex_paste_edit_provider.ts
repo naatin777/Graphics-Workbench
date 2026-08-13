@@ -25,7 +25,7 @@ import {
 
 import { getImageTemplates, renderTemplate, type TemplateContext } from './latex_template.js';
 import type { InsertionFormat } from './insertion_format.js';
-import { escapeLatex } from './latex_escape.js';
+import { escapeLatex } from '@graphics-workbench/core/table';
 
 const clipboardImageTypes = [
   { mime: 'image/png', ext: 'png' },

@@ -36,6 +36,10 @@
     "./external-tools": {
       "types": "./dist/public/external_tools.d.ts",
       "import": "./dist/public/external_tools.js"
+    },
+    "./table": {
+      "types": "./dist/public/table.d.ts",
+      "import": "./dist/public/table.js"
     }
   },
   "scripts": {
@@ -44,6 +48,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "oxlint --type-aware src test",
     "lint:fix": "oxlint --type-aware --fix src test",
+    "lint:audit": "oxlint --type-aware -D all -D nursery src test",
     "generate:test-output": "node scripts/generate-test-output.ts"
   },
   "dependencies": {
