@@ -1,34 +1,6 @@
 import * as v from 'valibot';
 import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
-import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
-
-const ReorderPdfLabelsSchema = v.strictObject({
-  header: v.strictObject({
-    title: v.string(),
-    description: v.string(),
-  }),
-  preview: v.strictObject({
-    title: v.string(),
-    ariaLabel: v.string(),
-    renderError: v.string(),
-    applyError: v.string(),
-  }),
-  order: v.strictObject({
-    title: v.string(),
-    moveUp: v.string(),
-    moveDown: v.string(),
-    positionLabel: v.string(),
-  }),
-  validation: v.strictObject({
-    orderRequired: v.string(),
-    orderInvalid: v.string(),
-  }),
-  actions: v.strictObject({
-    apply: v.string(),
-    cancel: v.string(),
-  }),
-});
-export type ReorderPdfLabels = v.InferOutput<typeof ReorderPdfLabelsSchema>;
+import { MessageCatalogSchema, defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
 const ReorderPdfInitPayloadSchema = v.strictObject({
   sourceId: v.pipe(v.string(), v.nonEmpty()),
@@ -37,7 +9,7 @@ const ReorderPdfInitPayloadSchema = v.strictObject({
   pdfSrc: WebviewUriSchema,
   resources: PdfJsResourcesSchema,
   preview: PdfPreviewSettingsSchema,
-  labels: ReorderPdfLabelsSchema,
+  labels: MessageCatalogSchema,
 });
 
 const ReorderPdfHostToWebviewSchema = v.variant('type', [

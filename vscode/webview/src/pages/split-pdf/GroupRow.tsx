@@ -1,9 +1,8 @@
 import type { Accessor, JSX } from 'solid-js';
 
-import type { SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
-
 import { ToolbarButton } from '../../shared/ui/ToolbarButton';
 
+import type { SplitPdfLabels } from './labels';
 import type { InputKind, Row } from './types';
 
 export function GroupRow(props: {

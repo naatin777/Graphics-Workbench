@@ -5,7 +5,6 @@ import * as vscode from 'vscode';
 import {
   reorderPdfProtocol,
   type ReorderPdfHostToWebview,
-  type ReorderPdfLabels,
   type ReorderPdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
@@ -13,7 +12,7 @@ import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { inspectPdfSummary, reorderPdfFiles } from '@graphics-workbench/core/pdf';
 import { isAbortError } from '@graphics-workbench/core/runtime';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
-import { localeMap } from '../../locale_map.js';
+import { localeCatalog, localeMap } from '../../locale_map.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -125,7 +124,7 @@ function buildReorderPdfInitMessage(params: {
     pdfSrc: panel.webview.asWebviewUri(inputUri).toString(),
     resources: createPdfJsResources(panel.webview, pdfJsAssetsRoot),
     preview,
-    labels: reorderPdfLabels(),
+    labels: localeCatalog(),
   };
 }
 
@@ -155,33 +154,4 @@ async function applyConfiguredReorder(params: {
       runtime,
     }),
   );
-}
-
-function reorderPdfLabels(): ReorderPdfLabels {
-  return {
-    header: {
-      title: localeMap('webview.reorderPdf.title'),
-      description: localeMap('webview.reorderPdf.description'),
-    },
-    preview: {
-      title: localeMap('webview.reorderPdf.preview'),
-      ariaLabel: localeMap('webview.reorderPdf.previewAriaLabel'),
-      renderError: localeMap('webview.reorderPdf.previewRenderError'),
-      applyError: localeMap('webview.reorderPdf.previewApplyError'),
-    },
-    order: {
-      title: localeMap('webview.reorderPdf.order'),
-      moveUp: localeMap('webview.reorderPdf.moveUp'),
-      moveDown: localeMap('webview.reorderPdf.moveDown'),
-      positionLabel: localeMap('webview.reorderPdf.positionLabel'),
-    },
-    validation: {
-      orderRequired: localeMap('webview.reorderPdf.orderRequiredError'),
-      orderInvalid: localeMap('webview.reorderPdf.orderInvalid'),
-    },
-    actions: {
-      apply: localeMap('webview.reorderPdf.apply'),
-      cancel: localeMap('webview.reorderPdf.cancel'),
-    },
-  };
 }

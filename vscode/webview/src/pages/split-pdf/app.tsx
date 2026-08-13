@@ -3,17 +3,15 @@ import { createStore } from 'solid-js/store';
 
 import { parsePdfPageSelection } from '@graphics-workbench/core/formats';
 
-import {
-  splitPdfProtocol,
-  type SplitPdfLabels,
-  type SplitPdfPageGroupRow,
-} from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+import { splitPdfProtocol, type SplitPdfPageGroupRow } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 
 import { Button } from '../../shared/ui/Button';
 import { PageNavigator } from '../../shared/ui/PageNavigator';
 
 import { GroupRow } from './GroupRow';
 import { formatLabel, formatPageParseFailure } from './page_validation_messages';
+import { readSplitPdfLabels, type SplitPdfLabels } from './labels';
 import { applyPreviewZoom, capturePreviewZoomAnchor, restorePreviewZoomAnchor } from '@webview-shared/pdf/preview_zoom';
 import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
 import { PreviewToolbar } from './preview_toolbar';
@@ -34,14 +32,8 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   });
 
   const [rows, setRows] = createStore<Row[]>([createRow()]);
-  const [labelsValue, setLabels] = createSignal<SplitPdfLabels>();
-  const labels = (): SplitPdfLabels => {
-    const value = labelsValue();
-    if (value === undefined) {
-      throw new Error('Split PDF labels were not initialized.');
-    }
-    return value;
-  };
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): SplitPdfLabels => readSplitPdfLabels(labelsCatalog());
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
   const [outputPathTemplate, setOutputPathTemplate] = createSignal('');
@@ -364,7 +356,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       },
       init: (payload) => {
         const firstRow = createRow();
-        setLabels(payload.labels);
+        setLabelsCatalog(payload.labels);
         setFileName(payload.fileName);
         setPageCount(payload.pageCount);
         setOutputPathTemplate(payload.outputPathTemplate);
@@ -400,7 +392,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   });
 
   return (
-    <Show when={labelsValue()}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
           <h1 class='sr-only'>{labels().header.title}</h1>

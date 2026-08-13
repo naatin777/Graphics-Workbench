@@ -1,4 +1,6 @@
-import type { CropBox, CropPdfLabels, CropTarget } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
+import type { CropBox, CropTarget } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
+
+import type { CropPdfLabels } from './labels';
 
 export type Parsed<T> = { ok: true; value: T } | { ok: false; message: string };
 

@@ -1,41 +1,35 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { tableEditorProtocol, type TableEditorLabels } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import { tableEditorProtocol } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
 
-const labels: TableEditorLabels = {
-  header: {
-    title: 'Table Editor',
-    description: 'Paste a table copied from Excel or Google Sheets, or drop a .csv or .tsv file.',
-  },
-  input: {
-    unsupportedFile: 'Unsupported file. Drop a .csv or .tsv file.',
-    emptyFile: 'The file contains no table data.',
-  },
-  table: {
-    addRow: 'Add row',
-    addColumn: 'Add column',
-    removeRow: 'Remove row',
-    removeColumn: 'Remove column',
-    alignmentLabel: 'Column alignment',
-    alignmentLeft: 'Left',
-    alignmentCenter: 'Center',
-    alignmentRight: 'Right',
-    headerToggle: 'First row is a header',
-  },
-  options: {
-    formatLabel: 'Output format',
-    formatLatex: 'LaTeX',
-    formatTypst: 'Typst',
-    formatQuarkdown: 'Quarkdown',
-    booktabs: 'Use booktabs rules',
-  },
-  preview: { title: 'Preview' },
-  actions: { insert: 'Insert' },
+const labels: MessageCatalog = {
+  'webview.tableEditor.header.title': 'Table Editor',
+  'webview.tableEditor.header.description':
+    'Paste a table copied from Excel or Google Sheets, or drop a .csv or .tsv file.',
+  'webview.tableEditor.input.unsupportedFile': 'Unsupported file. Drop a .csv or .tsv file.',
+  'webview.tableEditor.input.emptyFile': 'The file contains no table data.',
+  'webview.tableEditor.table.addRow': 'Add row',
+  'webview.tableEditor.table.addColumn': 'Add column',
+  'webview.tableEditor.table.removeRow': 'Remove row',
+  'webview.tableEditor.table.removeColumn': 'Remove column',
+  'webview.tableEditor.table.alignmentLabel': 'Column alignment',
+  'webview.tableEditor.table.alignmentLeft': 'Left',
+  'webview.tableEditor.table.alignmentCenter': 'Center',
+  'webview.tableEditor.table.alignmentRight': 'Right',
+  'webview.tableEditor.table.headerToggle': 'First row is a header',
+  'webview.tableEditor.options.formatLabel': 'Output format',
+  'webview.tableEditor.options.formatLatex': 'LaTeX',
+  'webview.tableEditor.options.formatTypst': 'Typst',
+  'webview.tableEditor.options.formatQuarkdown': 'Quarkdown',
+  'webview.tableEditor.options.booktabs': 'Use booktabs rules',
+  'webview.tableEditor.preview.title': 'Preview',
+  'webview.tableEditor.actions.insert': 'Insert',
 };
 
 const initMessage = {

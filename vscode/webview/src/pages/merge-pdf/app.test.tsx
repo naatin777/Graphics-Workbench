@@ -1,11 +1,8 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import {
-  mergePdfProtocol,
-  type MergePdfHostToWebview,
-  type MergePdfLabels,
-} from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import { mergePdfProtocol, type MergePdfHostToWebview } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
@@ -13,31 +10,21 @@ const renderFirstPdfPage = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promis
 
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderFirstPdfPage }));
 
-const labels: MergePdfLabels = {
-  header: {
-    title: 'Merge PDFs',
-  },
-  sources: {
-    list: 'PDF files',
-    count: 'files selected',
-  },
-  controls: {
-    actions: 'Actions',
-    dragHandle: 'Drag to reorder',
-    moveUp: 'Move up',
-    moveDown: 'Move down',
-    removeSource: 'Remove from list',
-  },
-  preview: {
-    title: 'Preview',
-    ariaLabel: 'First page preview',
-    loading: 'Loading preview...',
-    renderError: 'Preview unavailable',
-  },
-  actions: {
-    apply: 'Merge',
-    cancel: 'Cancel',
-  },
+const labels: MessageCatalog = {
+  'webview.mergePdf.title': 'Merge PDFs',
+  'webview.mergePdf.sourceList': 'PDF files',
+  'webview.mergePdf.sourceCount': 'files selected',
+  'webview.mergePdf.actions': 'Actions',
+  'webview.mergePdf.dragHandle': 'Drag to reorder',
+  'webview.mergePdf.moveUp': 'Move up',
+  'webview.mergePdf.moveDown': 'Move down',
+  'webview.mergePdf.removeSource': 'Remove from list',
+  'webview.mergePdf.preview': 'Preview',
+  'webview.mergePdf.previewAriaLabel': 'First page preview',
+  'webview.mergePdf.previewLoading': 'Loading preview...',
+  'webview.mergePdf.previewRenderError': 'Preview unavailable',
+  'webview.mergePdf.apply': 'Merge',
+  'webview.mergePdf.cancel': 'Cancel',
 };
 
 const initMessage: MergePdfHostToWebview = {

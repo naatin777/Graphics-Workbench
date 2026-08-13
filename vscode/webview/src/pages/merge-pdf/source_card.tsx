@@ -1,7 +1,8 @@
 import type { Accessor, JSX } from 'solid-js';
 
-import type { MergePdfLabels, MergePdfSource } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import type { MergePdfSource } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 
+import type { MergePdfLabels } from './labels';
 import { PreviewThumbnail, type MergeThumbnailChannel, type PdfOptions } from './preview_thumbnail';
 
 export function SourceCard(props: {

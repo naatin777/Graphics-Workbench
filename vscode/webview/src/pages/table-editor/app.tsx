@@ -1,10 +1,7 @@
 import { createMemo, createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
-import {
-  tableEditorProtocol,
-  type TableEditorFormat,
-  type TableEditorLabels,
-} from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import { tableEditorProtocol, type TableEditorFormat } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import {
   addTableColumn,
   addTableRow,
@@ -26,6 +23,8 @@ import {
 } from '@graphics-workbench/core/table';
 import { Button } from '@webview-shared/ui/Button';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
+
+import { readTableEditorLabels, type TableEditorLabels } from './labels';
 
 const INITIAL_ROW_COUNT = 2;
 const INITIAL_COLUMN_COUNT = 3;
@@ -59,7 +58,10 @@ function handleDragOver(event: DragEvent): void {
 
 export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(tableEditorProtocol, properties.host);
-  const [labels, setLabels] = createSignal<TableEditorLabels>();
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): TableEditorLabels => readTableEditorLabels(labelsCatalog());
+  const currentLabels = (): TableEditorLabels | undefined =>
+    Object.keys(labelsCatalog()).length > 0 ? labels() : undefined;
   const [model, setModel] = createSignal<TableModel>(createTableModel(INITIAL_ROW_COUNT, INITIAL_COLUMN_COUNT, 1));
   const [format, setFormat] = createSignal<TableEditorFormat>('latex');
   const [booktabs, setBooktabs] = createSignal(true);
@@ -126,13 +128,13 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     } else if (fileName.endsWith('.tsv')) {
       loadRows(parseTsv(await file.text()));
     } else {
-      setStatus(labels()?.input.unsupportedFile);
+      setStatus(currentLabels()?.input.unsupportedFile);
     }
   }
 
   function loadRows(rows: string[][]): void {
     if (rows.length === 0) {
-      setStatus(labels()?.input.emptyFile);
+      setStatus(currentLabels()?.input.emptyFile);
       return;
     }
     setModel((current) => tableModelFromRows(rows, current.headerRows));
@@ -148,8 +150,8 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       error: ({ message }) => {
         setHostError(message);
       },
-      init: ({ labels: initialLabels, format: initialFormat }) => {
-        setLabels(initialLabels);
+      init: ({ labels: initialCatalog, format: initialFormat }) => {
+        setLabelsCatalog(initialCatalog);
         setFormat(initialFormat);
         setModel(createTableModel(INITIAL_ROW_COUNT, INITIAL_COLUMN_COUNT, 1));
         setHostError(undefined);
@@ -171,11 +173,11 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   });
 
   return (
-    <Show when={labels() !== undefined}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       <div class='table-editor'>
         <header class='table-editor__header'>
-          <h1>{labels()?.header.title}</h1>
-          <p>{labels()?.header.description}</p>
+          <h1>{labels().header.title}</h1>
+          <p>{labels().header.description}</p>
         </header>
 
         <Show when={hostError() !== undefined || status() !== undefined}>
@@ -198,7 +200,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 class='codicon codicon-add'
                 aria-hidden='true'
               />
-              {labels()?.table.addRow}
+              {labels().table.addRow}
             </Button>
             <Button
               variant='secondary'
@@ -209,7 +211,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 class='codicon codicon-add'
                 aria-hidden='true'
               />
-              {labels()?.table.addColumn}
+              {labels().table.addColumn}
             </Button>
           </div>
 
@@ -223,19 +225,19 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                       <select
                         class='gw-select'
                         value={column.alignment}
-                        aria-label={`${labels()?.table.alignmentLabel} ${columnIndex + 1}`}
+                        aria-label={`${labels().table.alignmentLabel} ${columnIndex + 1}`}
                         onInput={(event) => {
                           handleAlignmentChange(columnIndex, parseAlignment(event.currentTarget.value));
                         }}
                       >
-                        <option value='left'>{labels()?.table.alignmentLeft}</option>
-                        <option value='center'>{labels()?.table.alignmentCenter}</option>
-                        <option value='right'>{labels()?.table.alignmentRight}</option>
+                        <option value='left'>{labels().table.alignmentLeft}</option>
+                        <option value='center'>{labels().table.alignmentCenter}</option>
+                        <option value='right'>{labels().table.alignmentRight}</option>
                       </select>
                       <button
                         class='gw-toolbar-button'
                         type='button'
-                        aria-label={`${labels()?.table.removeColumn} ${columnIndex + 1}`}
+                        aria-label={`${labels().table.removeColumn} ${columnIndex + 1}`}
                         disabled={model().columns.length <= 1}
                         onClick={() => {
                           handleRemoveColumn(columnIndex);
@@ -261,7 +263,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                       <button
                         class='gw-toolbar-button'
                         type='button'
-                        aria-label={`${labels()?.table.removeRow} ${rowIndex + 1}`}
+                        aria-label={`${labels().table.removeRow} ${rowIndex + 1}`}
                         disabled={model().rows.length <= 1}
                         onClick={() => {
                           handleRemoveRow(rowIndex);
@@ -294,7 +296,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
 
         <section class='table-editor__section table-editor__options'>
           <label class='field'>
-            <span class='field__label'>{labels()?.options.formatLabel}</span>
+            <span class='field__label'>{labels().options.formatLabel}</span>
             <select
               class='gw-select'
               value={format()}
@@ -302,9 +304,9 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 setFormat(parseFormat(event.currentTarget.value));
               }}
             >
-              <option value='latex'>{labels()?.options.formatLatex}</option>
-              <option value='typst'>{labels()?.options.formatTypst}</option>
-              <option value='quarkdown'>{labels()?.options.formatQuarkdown}</option>
+              <option value='latex'>{labels().options.formatLatex}</option>
+              <option value='typst'>{labels().options.formatTypst}</option>
+              <option value='quarkdown'>{labels().options.formatQuarkdown}</option>
             </select>
           </label>
           <label class='table-editor__toggle'>
@@ -315,7 +317,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 handleHeaderToggle(event.currentTarget.checked);
               }}
             />
-            {labels()?.table.headerToggle}
+            {labels().table.headerToggle}
           </label>
           <Show when={format() === 'latex'}>
             <label class='table-editor__toggle'>
@@ -326,13 +328,13 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                   setBooktabs(event.currentTarget.checked);
                 }}
               />
-              {labels()?.options.booktabs}
+              {labels().options.booktabs}
             </label>
           </Show>
         </section>
 
         <section class='table-editor__section table-editor__preview'>
-          <h2 class='table-editor__preview-title'>{labels()?.preview.title}</h2>
+          <h2 class='table-editor__preview-title'>{labels().preview.title}</h2>
           <pre class='table-editor__code'>{preview()}</pre>
         </section>
 
@@ -341,7 +343,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             variant='primary'
             onClick={handleInsert}
           >
-            {labels()?.actions.insert}
+            {labels().actions.insert}
           </Button>
         </footer>
       </div>

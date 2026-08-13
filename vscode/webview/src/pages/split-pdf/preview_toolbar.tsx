@@ -1,6 +1,6 @@
-import type { SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import type { JSX } from 'solid-js';
 
+import type { SplitPdfLabels } from './labels';
 import type { PreviewMode } from './types';
 
 export function PreviewToolbar(props: {

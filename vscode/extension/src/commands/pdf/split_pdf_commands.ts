@@ -5,14 +5,13 @@ import * as vscode from 'vscode';
 import {
   splitPdfProtocol,
   type SplitPdfHostToWebview,
-  type SplitPdfLabels,
   type SplitPdfPageGroupRow,
   type SplitPdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { assertPageTemplateForSplitOutput, resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
-import { localeMap } from '../../locale_map.js';
+import { localeCatalog, localeMap } from '../../locale_map.js';
 import {
   inspectPdfSummary,
   splitPdfAllPages,
@@ -214,7 +213,7 @@ function buildSplitPdfInitMessage(params: {
     outputPathTemplate,
     resources: createPdfJsResources(panel.webview, pdfJsAssetsRoot),
     preview,
-    labels: splitPdfLabels(),
+    labels: localeCatalog(),
   };
 }
 
@@ -318,56 +317,4 @@ function createOutputPathPreviewTemplate(
   const relativePath = path.relative(workspaceFolder.uri.fsPath, outputPath);
 
   return relativePath.length > 0 ? relativePath : path.basename(outputPath);
-}
-
-function splitPdfLabels(): SplitPdfLabels {
-  return {
-    header: {
-      title: localeMap('webview.splitPdf.title'),
-      description: localeMap('webview.splitPdf.description'),
-    },
-    preview: {
-      title: localeMap('webview.splitPdf.preview'),
-      ariaLabel: localeMap('webview.splitPdf.previewAriaLabel'),
-      renderError: localeMap('webview.splitPdf.previewRenderError'),
-      applyError: localeMap('webview.splitPdf.previewApplyError'),
-      allPages: localeMap('webview.splitPdf.allPages'),
-      focusedPages: localeMap('webview.splitPdf.focusedPages'),
-      zoom: localeMap('webview.splitPdf.zoom'),
-    },
-    groups: {
-      title: localeMap('webview.splitPdf.groups'),
-      label: localeMap('webview.splitPdf.groupLabel'),
-      add: localeMap('webview.splitPdf.addGroup'),
-      remove: localeMap('webview.splitPdf.removeGroup'),
-      drag: localeMap('webview.splitPdf.dragGroup'),
-      outputOrder: localeMap('webview.splitPdf.outputOrder'),
-    },
-    pages: {
-      title: localeMap('webview.splitPdf.pages'),
-      label: localeMap('webview.splitPdf.pageLabel'),
-      placeholder: localeMap('webview.splitPdf.pagesPlaceholder'),
-    },
-    output: {
-      name: localeMap('webview.splitPdf.outputName'),
-      namePlaceholder: localeMap('webview.splitPdf.outputNamePlaceholder'),
-      path: localeMap('webview.splitPdf.outputPath'),
-    },
-    validation: {
-      pagesRequired: localeMap('webview.splitPdf.pagesRequiredError'),
-      pageWholeNumber: localeMap('webview.splitPdf.pageWholeNumberError'),
-      pageOutOfRange: localeMap('webview.splitPdf.pageOutOfRangeError'),
-      invalidPages: localeMap('webview.splitPdf.invalidPages'),
-      descendingPages: localeMap('webview.splitPdf.descendingPages'),
-      outputNameEmpty: localeMap('webview.splitPdf.outputNameEmpty'),
-      outputNamePath: localeMap('webview.splitPdf.outputNamePath'),
-      outputNameDuplicate: localeMap('webview.splitPdf.outputNameDuplicate'),
-    },
-    actions: {
-      apply: localeMap('webview.splitPdf.apply'),
-      cancel: localeMap('webview.splitPdf.cancel'),
-      moveUp: localeMap('webview.splitPdf.moveUp'),
-      moveDown: localeMap('webview.splitPdf.moveDown'),
-    },
-  };
 }

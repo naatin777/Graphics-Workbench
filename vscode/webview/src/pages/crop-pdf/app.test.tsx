@@ -4,8 +4,8 @@ import { createTestPageHost } from '../../test_support/mock_page_host';
 import {
   cropPdfProtocol,
   type CropConfigureHostToWebview,
-  type CropPdfLabels,
 } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
@@ -13,50 +13,37 @@ const renderPdfPages = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<un
 
 vi.mock('../../shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
-const labels: CropPdfLabels = {
-  header: {
-    title: 'Custom Crop',
-    description: 'Adjust the PDF crop area.',
-    pageLabel: 'Page',
-    pages: 'pages',
-  },
-  preview: {
-    title: 'Preview',
-    ariaLabel: 'PDF preview',
-    zoomLabel: 'Preview zoom',
-    zoomOut: 'Zoom out',
-    zoomIn: 'Zoom in',
-    renderError: 'Could not display the PDF',
-    applyError: 'PDF preview must render before applying.',
-  },
-  cropBox: {
-    settingsLabel: 'Crop settings',
-    title: 'Crop box',
-    left: 'Left',
-    bottom: 'Bottom',
-    right: 'Right',
-    top: 'Top',
-    currentPageSize: 'Page size',
-  },
-  targetPages: {
-    applyTo: 'Apply to',
-    all: 'All pages',
-    pages: 'Pages',
-    inputLabel: 'Pages',
-    placeholder: '1, 3–5',
-  },
-  validation: {
-    cropBoxNumber: '{0} must be a number.',
-    cropBoxSize: 'Crop box must have positive width and height.',
-    pagesRequired: 'At least one page must be selected.',
-    pageWholeNumber: 'Page must be a whole number: {0}',
-    pageOutOfRange: 'Selected page is out of range: {0}',
-  },
-  actions: {
-    apply: 'Apply',
-    processing: 'Processing…',
-    cancel: 'Cancel',
-  },
+const labels: MessageCatalog = {
+  'webview.cropPdf.title': 'Custom Crop',
+  'webview.cropPdf.description': 'Adjust the PDF crop area.',
+  'webview.cropPdf.pageLabel': 'Page',
+  'webview.cropPdf.pages': 'Pages',
+  'webview.cropPdf.preview': 'Preview',
+  'webview.cropPdf.previewAriaLabel': 'PDF preview',
+  'webview.cropPdf.previewZoom': 'Preview zoom',
+  'webview.cropPdf.zoomOut': 'Zoom out',
+  'webview.cropPdf.zoomIn': 'Zoom in',
+  'webview.cropPdf.previewRenderError': 'Could not display the PDF',
+  'webview.cropPdf.previewApplyError': 'PDF preview must render before applying.',
+  'webview.cropPdf.cropSettings': 'Crop settings',
+  'webview.cropPdf.cropBox': 'Crop box',
+  'webview.cropPdf.left': 'Left',
+  'webview.cropPdf.bottom': 'Bottom',
+  'webview.cropPdf.right': 'Right',
+  'webview.cropPdf.top': 'Top',
+  'webview.cropPdf.currentPageSize': 'Page size',
+  'webview.cropPdf.applyTo': 'Apply to',
+  'webview.cropPdf.allPages': 'All pages',
+  'webview.cropPdf.pagesInput': 'Pages',
+  'webview.cropPdf.pagesPlaceholder': '1, 3–5',
+  'webview.cropPdf.cropBoxNumberError': '{0} must be a number.',
+  'webview.cropPdf.cropBoxSizeError': 'Crop box must have positive width and height.',
+  'webview.cropPdf.pagesRequiredError': 'At least one page must be selected.',
+  'webview.cropPdf.pageWholeNumberError': 'Page must be a whole number: {0}',
+  'webview.cropPdf.pageOutOfRangeError': 'Selected page is out of range: {0}',
+  'webview.cropPdf.apply': 'Apply',
+  'webview.cropPdf.processing': 'Processing…',
+  'webview.cropPdf.cancel': 'Cancel',
 };
 
 const initMessage: CropConfigureHostToWebview = {

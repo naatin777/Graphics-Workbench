@@ -1,50 +1,14 @@
 import * as v from 'valibot';
-import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
+import { MessageCatalogSchema, defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
 const TABLE_EDITOR_FORMATS = ['latex', 'typst', 'quarkdown'] as const;
 export type TableEditorFormat = (typeof TABLE_EDITOR_FORMATS)[number];
 
 const TableEditorFormatSchema = v.union(TABLE_EDITOR_FORMATS.map((format) => v.literal(format)));
 
-const TableEditorLabelsSchema = v.strictObject({
-  header: v.strictObject({
-    title: v.string(),
-    description: v.string(),
-  }),
-  input: v.strictObject({
-    unsupportedFile: v.string(),
-    emptyFile: v.string(),
-  }),
-  table: v.strictObject({
-    addRow: v.string(),
-    addColumn: v.string(),
-    removeRow: v.string(),
-    removeColumn: v.string(),
-    alignmentLabel: v.string(),
-    alignmentLeft: v.string(),
-    alignmentCenter: v.string(),
-    alignmentRight: v.string(),
-    headerToggle: v.string(),
-  }),
-  options: v.strictObject({
-    formatLabel: v.string(),
-    formatLatex: v.string(),
-    formatTypst: v.string(),
-    formatQuarkdown: v.string(),
-    booktabs: v.string(),
-  }),
-  preview: v.strictObject({
-    title: v.string(),
-  }),
-  actions: v.strictObject({
-    insert: v.string(),
-  }),
-});
-export type TableEditorLabels = v.InferOutput<typeof TableEditorLabelsSchema>;
-
 const TableEditorInitPayloadSchema = v.strictObject({
   format: TableEditorFormatSchema,
-  labels: TableEditorLabelsSchema,
+  labels: MessageCatalogSchema,
 });
 
 const TableEditorHostToWebviewSchema = v.variant('type', [

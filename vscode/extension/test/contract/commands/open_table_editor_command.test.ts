@@ -49,8 +49,8 @@ suite('Open Table Editorコマンド', () => {
       const initMessage = panel.postMessage.firstCall.args[0];
       assert.strictEqual(initMessage.type, 'init');
       assert.strictEqual(initMessage.payload.format, 'latex');
-      assert.ok(initMessage.payload.labels.header.title.length > 0);
-      assert.ok(initMessage.payload.labels.table.headerToggle.length > 0);
+      assert.ok(initMessage.payload.labels['webview.tableEditor.header.title'].length > 0);
+      assert.ok(initMessage.payload.labels['webview.tableEditor.table.headerToggle'].length > 0);
     } finally {
       sandbox.restore();
     }

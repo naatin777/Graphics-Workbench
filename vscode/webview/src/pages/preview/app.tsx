@@ -1,16 +1,14 @@
 import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
-import {
-  previewProtocol,
-  type PreviewHostToWebview,
-  type PreviewLabels,
-} from '@graphics-workbench/vscode-protocol/preview-protocol';
+import { previewProtocol, type PreviewHostToWebview } from '@graphics-workbench/vscode-protocol/preview-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { createPdfPreview, useCurrentPage } from '../../shared/pdf/create_pdf_preview';
 import { toErrorMessage } from '../../shared/error';
 import { PageNavigator } from '../../shared/ui/PageNavigator';
 import { ToolbarButton } from '../../shared/ui/ToolbarButton';
 
 import { renderTiffPreview, type TiffRenderController } from './tiff_preview';
+import { readPreviewLabels, type PreviewLabels } from './labels';
 import {
   applyPreviewZoom,
   capturePreviewZoomAnchor,
@@ -25,14 +23,8 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(previewProtocol, properties.host);
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(1);
-  const [labelsValue, setLabels] = createSignal<PreviewLabels>();
-  const labels = (): PreviewLabels => {
-    const value = labelsValue();
-    if (value === undefined) {
-      throw new Error('Preview labels were not initialized.');
-    }
-    return value;
-  };
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): PreviewLabels => readPreviewLabels(labelsCatalog());
   const [renderError, setRenderError] = createSignal('');
   const [previewZoom, setPreviewZoom] = createSignal(1);
 
@@ -80,7 +72,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
 
     setFileName(payload.fileName);
     setPageCount(payload.pageCount);
-    setLabels(payload.labels);
+    setLabelsCatalog(payload.labels);
     setRenderError('');
     setPreviewZoom(1);
 
@@ -95,7 +87,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
           preview: payload.preview,
           resources: payload.resources,
           page: {
-            label: payload.labels.page.label,
+            label: labels().page.label,
             onCreated: (pageFrame) => {
               pageFrame.classList.add('preview-page');
             },
@@ -120,7 +112,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     tiffRenderController = renderTiffPreview({
       container: pagesContainer,
       pageCount: payload.pageCount,
-      pageLabel: payload.labels.page.label,
+      pageLabel: labels().page.label,
       zoom: previewZoom,
       requestPage: (page) => {
         channel.send.renderPage({ page });
@@ -173,7 +165,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   };
 
   return (
-    <Show when={labelsValue()}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
           <h1 class='sr-only'>{labels().title}</h1>

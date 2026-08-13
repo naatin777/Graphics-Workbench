@@ -3,8 +3,8 @@ import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 import {
   cropPdfProtocol,
   type CropConfigureHostToWebview,
-  type CropPdfLabels,
 } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
 import {
   applyPreviewZoom,
@@ -18,6 +18,7 @@ import { PageNavigator } from '../../shared/ui/PageNavigator';
 import { ToolbarButton } from '../../shared/ui/ToolbarButton';
 
 import { parseCropBox, parseTarget } from './crop_input';
+import { readCropPdfLabels, type CropPdfLabels } from './labels';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 type CropInitPayload = Extract<CropConfigureHostToWebview, { type: 'init' }>['payload'];
@@ -97,14 +98,8 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   const [targetType, setTargetType] = createSignal<'all' | 'selected'>('all');
   const [selectedPages, setSelectedPages] = createSignal('1');
   const [previewZoom, setPreviewZoom] = createSignal(1);
-  const [labelsValue, setLabels] = createSignal<CropPdfLabels>();
-  const labels = (): CropPdfLabels => {
-    const value = labelsValue();
-    if (value === undefined) {
-      throw new Error('Crop PDF labels were not initialized.');
-    }
-    return value;
-  };
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): CropPdfLabels => readCropPdfLabels(labelsCatalog());
   const [renderError, setRenderError] = createSignal('');
   const [inputError, setInputError] = createSignal('');
   const [isApplying, setIsApplying] = createSignal(false);
@@ -139,7 +134,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
         const initialGeometry = initialPageGeometry(payload);
 
         setFileName(payload.fileName);
-        setLabels(payload.labels);
+        setLabelsCatalog(payload.labels);
         setPageCount(totalPages);
         setPageSize(initialGeometry.pageSize);
         setCropBox(initialGeometry.cropBox);
@@ -159,7 +154,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             preview: payload.preview,
             ...(pdfPreview !== undefined && { root: pdfPreview }),
             resources: payload.resources,
-            page: { label: payload.labels.header.pageLabel },
+            page: { label: labels().header.pageLabel },
           },
           () => {
             applyPreviewZoom(pages, previewZoom());
@@ -253,7 +248,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   };
 
   return (
-    <Show when={labelsValue()}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
           <h1 class='sr-only'>{labels().header.title}</h1>

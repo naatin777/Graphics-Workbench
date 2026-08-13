@@ -5,11 +5,10 @@ import * as vscode from 'vscode';
 import {
   mergePdfProtocol,
   type MergePdfHostToWebview,
-  type MergePdfLabels,
   type MergePdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
-import { localeMap } from '../../locale_map.js';
+import { localeCatalog, localeMap } from '../../locale_map.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { mergePdf } from '@graphics-workbench/core/pdf';
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
@@ -192,7 +191,7 @@ function buildMergePdfInitMessage(params: {
     })),
     resources: createPdfJsResources(panel.webview, pdfJsAssetsRoot),
     preview,
-    labels: buildMergePdfLabels(),
+    labels: localeCatalog(),
   };
 }
 
@@ -266,35 +265,6 @@ function resolveConfiguredSources(sourceById: ReadonlyMap<string, vscode.Uri>, s
   }
 
   return resolvedUris;
-}
-
-function buildMergePdfLabels(): MergePdfLabels {
-  return {
-    header: {
-      title: localeMap('webview.mergePdf.title'),
-    },
-    sources: {
-      list: localeMap('webview.mergePdf.sourceList'),
-      count: localeMap('webview.mergePdf.sourceCount'),
-    },
-    controls: {
-      actions: localeMap('webview.mergePdf.actions'),
-      dragHandle: localeMap('webview.mergePdf.dragHandle'),
-      moveUp: localeMap('webview.mergePdf.moveUp'),
-      moveDown: localeMap('webview.mergePdf.moveDown'),
-      removeSource: localeMap('webview.mergePdf.removeSource'),
-    },
-    preview: {
-      title: localeMap('webview.mergePdf.preview'),
-      ariaLabel: localeMap('webview.mergePdf.previewAriaLabel'),
-      loading: localeMap('webview.mergePdf.previewLoading'),
-      renderError: localeMap('webview.mergePdf.previewRenderError'),
-    },
-    actions: {
-      apply: localeMap('webview.mergePdf.apply'),
-      cancel: localeMap('webview.mergePdf.cancel'),
-    },
-  };
 }
 
 function assertPdfUris(sourceUris: readonly vscode.Uri[]): void {

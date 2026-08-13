@@ -10,8 +10,8 @@ import {
 test('Crop PDF Configureを開きPDFを表示できる', async ({ page }) => {
   await page.goto(webviewUrl({ page: 'crop-pdf' }));
 
-  await expect(page.getByRole('heading', { name: 'Crop PDF', exact: true })).toBeVisible();
-  await expect(page.locator('p.sr-only').first()).toContainText('sample.pdf · 3 pages');
+  await expect(page.getByRole('heading', { name: 'Custom Crop', exact: true })).toBeVisible();
+  await expect(page.locator('p.sr-only').first()).toContainText('sample.pdf · 3 Pages');
 
   const preview = page.getByRole('region', { name: 'Preview' });
   const settings = page.getByRole('region', { name: 'Crop settings' });
@@ -99,7 +99,7 @@ test('不正なCrop boxはエラーになり、正しい値のApply中はProcess
   await right.fill('100');
   await top.fill('200');
   await settings.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('Crop box is too small.');
+  await expect(page.getByRole('alert')).toContainText('Crop box must have positive width and height.');
 
   await left.fill('20');
   await bottom.fill('30');
@@ -107,7 +107,7 @@ test('不正なCrop boxはエラーになり、正しい値のApply中はProcess
   await top.fill('280');
   await settings.getByRole('button', { name: 'Apply', exact: true }).click();
 
-  const processing = settings.getByRole('button', { name: 'Processing', exact: true });
+  const processing = settings.getByRole('button', { name: 'Processing…', exact: true });
   await expect(processing).toBeVisible();
   await expect(processing).toBeDisabled();
   await expect(settings).toHaveAttribute('aria-busy', 'true');

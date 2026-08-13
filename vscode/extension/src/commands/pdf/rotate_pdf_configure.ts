@@ -6,7 +6,6 @@ import {
   rotatePdfProtocol,
   type PdfRotationAngle,
   type RotatePdfHostToWebview,
-  type RotatePdfLabels,
   type RotatePdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
@@ -14,7 +13,7 @@ import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { inspectPdfSummary, rotatePdfFiles } from '@graphics-workbench/core/pdf';
 import { isAbortError } from '@graphics-workbench/core/runtime';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
-import { localeMap } from '../../locale_map.js';
+import { localeCatalog, localeMap } from '../../locale_map.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -127,7 +126,7 @@ function buildRotatePdfInitMessage(params: {
     pdfSrc: panel.webview.asWebviewUri(inputUri).toString(),
     resources: createPdfJsResources(panel.webview, pdfJsAssetsRoot),
     preview,
-    labels: rotatePdfLabels(),
+    labels: localeCatalog(),
   };
 }
 
@@ -162,36 +161,4 @@ async function applyConfiguredRotation(params: {
       runtime,
     }),
   );
-}
-
-function rotatePdfLabels(): RotatePdfLabels {
-  return {
-    header: {
-      title: localeMap('webview.rotatePdf.title'),
-      description: localeMap('webview.rotatePdf.description'),
-    },
-    preview: {
-      title: localeMap('webview.rotatePdf.preview'),
-      description: localeMap('webview.rotatePdf.previewDescription'),
-      ariaLabel: localeMap('webview.rotatePdf.previewAriaLabel'),
-      renderError: localeMap('webview.rotatePdf.previewRenderError'),
-      applyError: localeMap('webview.rotatePdf.previewApplyError'),
-    },
-    rotation: {
-      title: localeMap('webview.rotatePdf.rotation'),
-      angleLabel: localeMap('webview.rotatePdf.angleLabel'),
-      selectAll: localeMap('webview.rotatePdf.selectAll'),
-      selectAllAriaLabel: localeMap('webview.rotatePdf.selectAllAriaLabel'),
-      pageToggle: localeMap('webview.rotatePdf.pageToggle'),
-    },
-    validation: {
-      pagesRequired: localeMap('webview.rotatePdf.pagesRequiredError'),
-      pageOutOfRange: localeMap('webview.rotatePdf.pageOutOfRangeError'),
-      angleInvalid: localeMap('webview.rotatePdf.angleInvalid'),
-    },
-    actions: {
-      apply: localeMap('webview.rotatePdf.apply'),
-      cancel: localeMap('webview.rotatePdf.cancel'),
-    },
-  };
 }

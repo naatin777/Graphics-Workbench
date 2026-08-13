@@ -6,7 +6,6 @@ import {
   type CropBox,
   type CropConfigureHostToWebview,
   type CropConfigureWebviewToHost,
-  type CropPdfLabels,
   type CropTarget,
   cropPdfProtocol,
 } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
@@ -14,7 +13,7 @@ import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf
 import type { PdfPageGeometry } from '@graphics-workbench/core/pdf';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
-import { localeMap } from '../../locale_map.js';
+import { localeCatalog, localeMap } from '../../locale_map.js';
 import { isAbortError } from '@graphics-workbench/core/runtime';
 import { cropPdfWithConfiguredBox } from '../../adapters/crop/crop_pdf_configure.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
@@ -131,7 +130,7 @@ function buildCropPdfInitMessage(params: {
     initialPage: 1,
     pageGeometry: pdf.pages,
     initialCropBox: initialCropBoxForPages(pdf.pages),
-    labels: cropPdfLabels(),
+    labels: localeCatalog(),
   };
 }
 
@@ -216,52 +215,4 @@ function initialCropBoxForPages(pageGeometry: PdfPageGeometry[]): CropBox {
         right: firstPage.cropBox.x + firstPage.cropBox.width,
         top: firstPage.cropBox.y + firstPage.cropBox.height,
       };
-}
-
-function cropPdfLabels(): CropPdfLabels {
-  return {
-    header: {
-      title: localeMap('webview.cropPdf.title'),
-      description: localeMap('webview.cropPdf.description'),
-      pageLabel: localeMap('webview.cropPdf.pageLabel'),
-      pages: localeMap('webview.cropPdf.pages'),
-    },
-    preview: {
-      title: localeMap('webview.cropPdf.preview'),
-      ariaLabel: localeMap('webview.cropPdf.previewAriaLabel'),
-      zoomLabel: localeMap('webview.cropPdf.previewZoom'),
-      zoomOut: localeMap('webview.cropPdf.zoomOut'),
-      zoomIn: localeMap('webview.cropPdf.zoomIn'),
-      renderError: localeMap('webview.cropPdf.previewRenderError'),
-      applyError: localeMap('webview.cropPdf.previewApplyError'),
-    },
-    cropBox: {
-      settingsLabel: localeMap('webview.cropPdf.cropSettings'),
-      title: localeMap('webview.cropPdf.cropBox'),
-      left: localeMap('webview.cropPdf.left'),
-      bottom: localeMap('webview.cropPdf.bottom'),
-      right: localeMap('webview.cropPdf.right'),
-      top: localeMap('webview.cropPdf.top'),
-      currentPageSize: localeMap('webview.cropPdf.currentPageSize'),
-    },
-    targetPages: {
-      applyTo: localeMap('webview.cropPdf.applyTo'),
-      all: localeMap('webview.cropPdf.allPages'),
-      pages: localeMap('webview.cropPdf.pages'),
-      inputLabel: localeMap('webview.cropPdf.pagesInput'),
-      placeholder: localeMap('webview.cropPdf.pagesPlaceholder'),
-    },
-    validation: {
-      cropBoxNumber: localeMap('webview.cropPdf.cropBoxNumberError'),
-      cropBoxSize: localeMap('webview.cropPdf.cropBoxSizeError'),
-      pagesRequired: localeMap('webview.cropPdf.pagesRequiredError'),
-      pageWholeNumber: localeMap('webview.cropPdf.pageWholeNumberError'),
-      pageOutOfRange: localeMap('webview.cropPdf.pageOutOfRangeError'),
-    },
-    actions: {
-      apply: localeMap('webview.cropPdf.apply'),
-      processing: localeMap('webview.cropPdf.processing'),
-      cancel: localeMap('webview.cropPdf.cancel'),
-    },
-  };
 }

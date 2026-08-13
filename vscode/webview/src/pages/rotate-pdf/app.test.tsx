@@ -1,7 +1,8 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { rotatePdfProtocol, type RotatePdfLabels } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
+import { rotatePdfProtocol } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
@@ -53,34 +54,24 @@ function readPageOptions(options: unknown): PageOptions | undefined {
 
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
-const labels: RotatePdfLabels = {
-  header: {
-    title: 'Rotate PDF',
-    description: 'Select the pages to rotate and the rotation angle.',
-  },
-  preview: {
-    title: 'PDF Preview',
-    description: 'Selected pages',
-    ariaLabel: 'PDF page preview',
-    renderError: 'Could not display the PDF',
-    applyError: 'PDF preview must render before applying.',
-  },
-  rotation: {
-    title: 'Rotation',
-    angleLabel: 'Rotation angle',
-    selectAll: 'Select all pages',
-    selectAllAriaLabel: 'Toggle selection of all pages',
-    pageToggle: 'Toggle page selection',
-  },
-  validation: {
-    pagesRequired: 'Select at least one page to rotate.',
-    pageOutOfRange: 'A selected page is out of range.',
-    angleInvalid: 'Select a rotation angle.',
-  },
-  actions: {
-    apply: 'Apply',
-    cancel: 'Cancel',
-  },
+const labels: MessageCatalog = {
+  'webview.rotatePdf.title': 'Rotate PDF',
+  'webview.rotatePdf.description': 'Select the pages to rotate and the rotation angle.',
+  'webview.rotatePdf.preview': 'PDF Preview',
+  'webview.rotatePdf.previewDescription': 'Selected pages',
+  'webview.rotatePdf.previewAriaLabel': 'PDF page preview',
+  'webview.rotatePdf.previewRenderError': 'Could not display the PDF',
+  'webview.rotatePdf.previewApplyError': 'PDF preview must render before applying.',
+  'webview.rotatePdf.rotation': 'Rotation',
+  'webview.rotatePdf.angleLabel': 'Rotation angle',
+  'webview.rotatePdf.selectAll': 'Select all pages',
+  'webview.rotatePdf.selectAllAriaLabel': 'Toggle selection of all pages',
+  'webview.rotatePdf.pageToggle': 'Toggle page selection',
+  'webview.rotatePdf.pagesRequiredError': 'Select at least one page to rotate.',
+  'webview.rotatePdf.pageOutOfRangeError': 'A selected page is out of range.',
+  'webview.rotatePdf.angleInvalid': 'Select a rotation angle.',
+  'webview.rotatePdf.apply': 'Apply',
+  'webview.rotatePdf.cancel': 'Cancel',
 };
 
 const initMessage = {

@@ -1,7 +1,8 @@
 import { render } from 'solid-js/web';
 
 import { createTestPageHost } from '../../test_support/mock_page_host';
-import { reorderPdfProtocol, type ReorderPdfLabels } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import { reorderPdfProtocol } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { App } from './app';
 
 const sendMessage = vi.hoisted(() => vi.fn<(message: unknown) => void>());
@@ -30,31 +31,21 @@ const renderPdfPages = vi.hoisted(() =>
 
 vi.mock('@webview-shared/pdf/render_pdf_pages', () => ({ renderPdfPages }));
 
-const labels: ReorderPdfLabels = {
-  header: {
-    title: 'Reorder PDF',
-    description: 'Move pages to change the output order.',
-  },
-  preview: {
-    title: 'PDF Preview',
-    ariaLabel: 'PDF page preview',
-    renderError: 'Could not display the PDF',
-    applyError: 'Failed to apply the reorder.',
-  },
-  order: {
-    title: 'Order',
-    moveUp: 'Move page up',
-    moveDown: 'Move page down',
-    positionLabel: 'pages',
-  },
-  validation: {
-    orderRequired: 'The page order cannot be empty.',
-    orderInvalid: 'The page order is invalid.',
-  },
-  actions: {
-    apply: 'Apply',
-    cancel: 'Cancel',
-  },
+const labels: MessageCatalog = {
+  'webview.reorderPdf.title': 'Reorder PDF',
+  'webview.reorderPdf.description': 'Move pages to change the output order.',
+  'webview.reorderPdf.preview': 'PDF Preview',
+  'webview.reorderPdf.previewAriaLabel': 'PDF page preview',
+  'webview.reorderPdf.previewRenderError': 'Could not display the PDF',
+  'webview.reorderPdf.previewApplyError': 'Failed to apply the reorder.',
+  'webview.reorderPdf.order': 'Order',
+  'webview.reorderPdf.moveUp': 'Move page up',
+  'webview.reorderPdf.moveDown': 'Move page down',
+  'webview.reorderPdf.positionLabel': 'pages',
+  'webview.reorderPdf.orderRequiredError': 'The page order cannot be empty.',
+  'webview.reorderPdf.orderInvalid': 'The page order is invalid.',
+  'webview.reorderPdf.apply': 'Apply',
+  'webview.reorderPdf.cancel': 'Cancel',
 };
 
 const initMessage = {

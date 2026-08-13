@@ -1,40 +1,9 @@
 import * as v from 'valibot';
 import { PdfJsResourcesSchema, PdfPreviewSettingsSchema, WebviewUriSchema } from './pdf_preview_protocol.js';
-import { defineProtocol, type ProtocolMessage } from './typed_protocol.js';
+import { MessageCatalogSchema, defineProtocol, type ProtocolMessage } from './typed_protocol.js';
 
 export const PDF_ROTATION_ANGLES = [90, 180, 270] as const;
 export type PdfRotationAngle = (typeof PDF_ROTATION_ANGLES)[number];
-
-const RotatePdfLabelsSchema = v.strictObject({
-  header: v.strictObject({
-    title: v.string(),
-    description: v.string(),
-  }),
-  preview: v.strictObject({
-    title: v.string(),
-    description: v.string(),
-    ariaLabel: v.string(),
-    renderError: v.string(),
-    applyError: v.string(),
-  }),
-  rotation: v.strictObject({
-    title: v.string(),
-    angleLabel: v.string(),
-    selectAll: v.string(),
-    selectAllAriaLabel: v.string(),
-    pageToggle: v.string(),
-  }),
-  validation: v.strictObject({
-    pagesRequired: v.string(),
-    pageOutOfRange: v.string(),
-    angleInvalid: v.string(),
-  }),
-  actions: v.strictObject({
-    apply: v.string(),
-    cancel: v.string(),
-  }),
-});
-export type RotatePdfLabels = v.InferOutput<typeof RotatePdfLabelsSchema>;
 
 const RotatePdfInitPayloadSchema = v.strictObject({
   sourceId: v.pipe(v.string(), v.nonEmpty()),
@@ -43,7 +12,7 @@ const RotatePdfInitPayloadSchema = v.strictObject({
   pdfSrc: WebviewUriSchema,
   resources: PdfJsResourcesSchema,
   preview: PdfPreviewSettingsSchema,
-  labels: RotatePdfLabelsSchema,
+  labels: MessageCatalogSchema,
 });
 
 const RotatePdfHostToWebviewSchema = v.variant('type', [

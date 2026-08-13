@@ -4,24 +4,20 @@ import {
   PDF_ROTATION_ANGLES,
   rotatePdfProtocol,
   type PdfRotationAngle,
-  type RotatePdfLabels,
 } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
 import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
 import { PageNavigator } from '@webview-shared/ui/PageNavigator';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
+import { readRotatePdfLabels, type RotatePdfLabels } from './labels';
+
 export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(rotatePdfProtocol, properties.host);
-  const [labelsValue, setLabels] = createSignal<RotatePdfLabels>();
-  const labels = (): RotatePdfLabels => {
-    const value = labelsValue();
-    if (value === undefined) {
-      throw new Error('Rotate PDF labels were not initialized.');
-    }
-    return value;
-  };
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): RotatePdfLabels => readRotatePdfLabels(labelsCatalog());
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [angle, setAngle] = createSignal<PdfRotationAngle>(90);
@@ -58,7 +54,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
         setApplyError(message);
       },
       init: (payload) => {
-        setLabels(payload.labels);
+        setLabelsCatalog(payload.labels);
         setFileName(payload.fileName);
         setPageCount(payload.pageCount);
         setApplyError('');
@@ -71,12 +67,12 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             resources: payload.resources,
             ...(pdfPages === undefined ? {} : { root: pdfPages }),
             page: {
-              label: payload.labels.preview.ariaLabel,
+              label: labels().preview.ariaLabel,
               onCreated: (pageFrame, pageNumber) => {
                 pageFrame.setAttribute('role', 'checkbox');
                 pageFrame.setAttribute('tabindex', '0');
                 pageFrame.setAttribute('aria-checked', String(selectedPages().has(pageNumber)));
-                pageFrame.setAttribute('aria-label', `${payload.labels.rotation.pageToggle} ${pageNumber}`);
+                pageFrame.setAttribute('aria-label', `${labels().rotation.pageToggle} ${pageNumber}`);
               },
             },
           },
@@ -187,7 +183,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   }
 
   return (
-    <Show when={labelsValue()}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <div class='rotate'>
           <header class='rotate__header'>

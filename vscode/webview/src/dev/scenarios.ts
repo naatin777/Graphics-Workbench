@@ -1,14 +1,32 @@
-import { createMockChannel, type MockChannel } from '@graphics-workbench/vscode-protocol/typed-protocol';
-import { cropPdfProtocol, type CropPdfLabels } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
-import { mergePdfProtocol, type MergePdfLabels } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
-import { previewProtocol, type PreviewLabels } from '@graphics-workbench/vscode-protocol/preview-protocol';
-import { reorderPdfProtocol, type ReorderPdfLabels } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
-import { rotatePdfProtocol, type RotatePdfLabels } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
-import { splitPdfProtocol, type SplitPdfLabels } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
-import { tableEditorProtocol, type TableEditorLabels } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
+import {
+  createMockChannel,
+  type MockChannel,
+  type MessageCatalog,
+} from '@graphics-workbench/vscode-protocol/typed-protocol';
+import { cropPdfProtocol } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
+import { mergePdfProtocol } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
+import { previewProtocol } from '@graphics-workbench/vscode-protocol/preview-protocol';
+import { reorderPdfProtocol } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import { rotatePdfProtocol } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
+import { splitPdfProtocol } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
+import { tableEditorProtocol } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
 import type { WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
 
 import type { WebviewHost } from '@webview-shared/vscode';
+
+let catalogPromise: Promise<MessageCatalog> | undefined;
+async function messagesCatalog(): Promise<MessageCatalog> {
+  catalogPromise ??= fetchMessagesCatalog();
+  return catalogPromise;
+}
+async function fetchMessagesCatalog(): Promise<MessageCatalog> {
+  const response = await fetch('/messages.json');
+  if (!response.ok) {
+    throw new Error(`Failed to load messages catalog: ${response.status}`);
+  }
+  const value: unknown = await response.json();
+  return value as MessageCatalog;
+}
 
 export function createScenarioHost(page: WebviewPageId, scenario: string): WebviewHost {
   switch (page) {
@@ -41,7 +59,12 @@ export function createScenarioHost(page: WebviewPageId, scenario: string): Webvi
 
 function previewScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(previewProtocol);
-  const sendInit = (): void => {
+  channel.host.on({
+    ready: () => {
+      void sendInit();
+    },
+  });
+  async function sendInit(): Promise<void> {
     channel.host.send.init({
       format: 'pdf',
       fileName:
@@ -50,16 +73,9 @@ function previewScenarioHost(scenario: string): WebviewHost {
       pdfSrc: fixtureUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf'),
       resources: pdfJsResources(),
       preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
-      labels: previewLabels,
+      labels: await messagesCatalog(),
     });
-  };
-  channel.host.on({
-    ready: () => {
-      queueMicrotask(() => {
-        sendInit();
-      });
-    },
-  });
+  }
   return scenarioHostFor(channel);
 }
 
@@ -67,11 +83,12 @@ function tableEditorScenarioHost(): WebviewHost {
   const channel = createMockChannel(tableEditorProtocol);
   channel.host.on({
     ready: () => {
-      queueMicrotask(() => {
-        channel.host.send.init({ format: 'latex', labels: tableEditorLabels });
-      });
+      void sendInit();
     },
   });
+  async function sendInit(): Promise<void> {
+    channel.host.send.init({ format: 'latex', labels: await messagesCatalog() });
+  }
   return scenarioHostFor(channel);
 }
 
@@ -79,23 +96,24 @@ function cropPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(cropPdfProtocol);
   channel.host.on({
     ready: () => {
-      queueMicrotask(() => {
-        const pageCount = scenario === 'large' ? 8 : 3;
-        channel.host.send.init({
-          ...pdfPayloadBase(scenario),
-          initialPage: 1,
-          pageGeometry: Array.from({ length: pageCount }, (_, index) => ({
-            page: index + 1,
-            mediaBox: { x: 0, y: 0, width: 612, height: 792 },
-            cropBox: { x: 0, y: 0, width: 612, height: 792 },
-            rotation: 0,
-          })),
-          initialCropBox: { left: 0, bottom: 0, right: 612, top: 792 },
-          labels: cropPdfLabels,
-        });
-      });
+      void sendInit();
     },
   });
+  async function sendInit(): Promise<void> {
+    const pageCount = scenario === 'large' ? 8 : 3;
+    channel.host.send.init({
+      ...pdfPayloadBase(scenario),
+      initialPage: 1,
+      pageGeometry: Array.from({ length: pageCount }, (_, index) => ({
+        page: index + 1,
+        mediaBox: { x: 0, y: 0, width: 612, height: 792 },
+        cropBox: { x: 0, y: 0, width: 612, height: 792 },
+        rotation: 0,
+      })),
+      initialCropBox: { left: 0, bottom: 0, right: 612, top: 792 },
+      labels: await messagesCatalog(),
+    });
+  }
   return scenarioHostFor(channel);
 }
 
@@ -105,19 +123,20 @@ function mergePdfScenarioHost(scenario: string): WebviewHost {
   const pdfSrc = fixtureUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf');
   channel.host.on({
     ready: () => {
-      queueMicrotask(() => {
-        channel.host.send.init({
-          sources: [
-            { sourceId: 'one', fileName, pdfSrc },
-            { sourceId: 'two', fileName: 'second.pdf', pdfSrc },
-          ],
-          resources: pdfJsResources(),
-          preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
-          labels: mergePdfLabels,
-        });
-      });
+      void sendInit();
     },
   });
+  async function sendInit(): Promise<void> {
+    channel.host.send.init({
+      sources: [
+        { sourceId: 'one', fileName, pdfSrc },
+        { sourceId: 'two', fileName: 'second.pdf', pdfSrc },
+      ],
+      resources: pdfJsResources(),
+      preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
+      labels: await messagesCatalog(),
+    });
+  }
   return scenarioHostFor(channel);
 }
 
@@ -125,16 +144,17 @@ function splitPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(splitPdfProtocol);
   channel.host.on({
     ready: () => {
-      queueMicrotask(() => {
-        channel.host.send.init({
-          sourceId: 'browser-fixture',
-          ...pdfPayloadBase(scenario),
-          outputPathTemplate: 'sample-${page}.pdf',
-          labels: splitPdfLabels,
-        });
-      });
+      void sendInit();
     },
   });
+  async function sendInit(): Promise<void> {
+    channel.host.send.init({
+      sourceId: 'browser-fixture',
+      ...pdfPayloadBase(scenario),
+      outputPathTemplate: 'sample-${page}.pdf',
+      labels: await messagesCatalog(),
+    });
+  }
   return scenarioHostFor(channel);
 }
 
@@ -142,15 +162,16 @@ function rotatePdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(rotatePdfProtocol);
   channel.host.on({
     ready: () => {
-      queueMicrotask(() => {
-        channel.host.send.init({
-          sourceId: 'browser-fixture',
-          ...pdfPayloadBase(scenario),
-          labels: rotatePdfLabels,
-        });
-      });
+      void sendInit();
     },
   });
+  async function sendInit(): Promise<void> {
+    channel.host.send.init({
+      sourceId: 'browser-fixture',
+      ...pdfPayloadBase(scenario),
+      labels: await messagesCatalog(),
+    });
+  }
   return scenarioHostFor(channel);
 }
 
@@ -158,15 +179,16 @@ function reorderPdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(reorderPdfProtocol);
   channel.host.on({
     ready: () => {
-      queueMicrotask(() => {
-        channel.host.send.init({
-          sourceId: 'browser-fixture',
-          ...pdfPayloadBase(scenario),
-          labels: reorderPdfLabels,
-        });
-      });
+      void sendInit();
     },
   });
+  async function sendInit(): Promise<void> {
+    channel.host.send.init({
+      sourceId: 'browser-fixture',
+      ...pdfPayloadBase(scenario),
+      labels: await messagesCatalog(),
+    });
+  }
   return scenarioHostFor(channel);
 }
 
@@ -216,168 +238,3 @@ function fixtureUrl(name: string): string {
 function assetUrl(name: string): string {
   return new URL(`/${name}`, globalThis.location.href).toString();
 }
-
-const previewLabels = {
-  title: 'Preview',
-  description: 'Preview the file contents.',
-  page: { label: 'Page', pages: 'pages' },
-  preview: {
-    ariaLabel: 'Preview',
-    zoomLabel: 'Preview zoom',
-    zoomOut: 'Zoom out',
-    zoomIn: 'Zoom in',
-    renderError: 'Could not display the preview',
-  },
-} satisfies PreviewLabels;
-
-const tableEditorLabels = {
-  header: { title: 'Table Editor', description: 'Create a table from plain text.' },
-  input: { unsupportedFile: 'This file is not a supported table.', emptyFile: 'The file is empty.' },
-  table: {
-    addRow: 'Add row',
-    addColumn: 'Add column',
-    removeRow: 'Remove row',
-    removeColumn: 'Remove column',
-    alignmentLabel: 'Alignment',
-    alignmentLeft: 'Left',
-    alignmentCenter: 'Center',
-    alignmentRight: 'Right',
-    headerToggle: 'Header row',
-  },
-  options: {
-    formatLabel: 'Format',
-    formatLatex: 'LaTeX',
-    formatTypst: 'Typst',
-    formatQuarkdown: 'Quarkdown',
-    booktabs: 'Booktabs',
-  },
-  preview: { title: 'Preview' },
-  actions: { insert: 'Insert' },
-} satisfies TableEditorLabels;
-
-const cropPdfLabels = {
-  header: { title: 'Crop PDF', description: 'Crop the document.', pageLabel: 'Page', pages: 'pages' },
-  preview: {
-    title: 'Preview',
-    ariaLabel: 'Preview',
-    zoomLabel: 'Preview zoom',
-    zoomOut: 'Zoom out',
-    zoomIn: 'Zoom in',
-    renderError: 'Could not display the preview',
-    applyError: 'Could not apply the operation',
-  },
-  cropBox: {
-    settingsLabel: 'Crop settings',
-    title: 'Crop box',
-    left: 'Left',
-    bottom: 'Bottom',
-    right: 'Right',
-    top: 'Top',
-    currentPageSize: 'Current page size',
-  },
-  targetPages: {
-    applyTo: 'Apply to',
-    all: 'All pages',
-    pages: 'Selected pages',
-    inputLabel: 'Pages',
-    placeholder: '1-3',
-  },
-  validation: {
-    cropBoxNumber: 'Enter a number.',
-    cropBoxSize: 'Crop box is too small.',
-    pagesRequired: 'Pages are required.',
-    pageWholeNumber: 'Use whole page numbers.',
-    pageOutOfRange: 'Page is out of range.',
-  },
-  actions: { apply: 'Apply', processing: 'Processing', cancel: 'Cancel' },
-} satisfies CropPdfLabels;
-
-const mergePdfLabels = {
-  header: { title: 'Merge PDF' },
-  sources: { list: 'Files', count: 'files' },
-  controls: {
-    actions: 'Actions',
-    dragHandle: 'Drag',
-    moveUp: 'Move up',
-    moveDown: 'Move down',
-    removeSource: 'Remove',
-  },
-  preview: {
-    title: 'Preview',
-    ariaLabel: 'Preview',
-    loading: 'Loading',
-    renderError: 'Could not display the preview',
-  },
-  actions: { apply: 'Apply', cancel: 'Cancel' },
-} satisfies MergePdfLabels;
-
-const splitPdfLabels = {
-  header: { title: 'Split PDF', description: 'Split selected pages.' },
-  preview: {
-    title: 'Preview',
-    ariaLabel: 'Preview',
-    renderError: 'Could not display the preview',
-    applyError: 'Could not apply the operation',
-    allPages: 'All pages',
-    focusedPages: 'Focused pages',
-    zoom: 'Zoom',
-  },
-  groups: {
-    title: 'Groups',
-    label: 'Group',
-    add: 'Add group',
-    remove: 'Remove group',
-    drag: 'Drag',
-    outputOrder: 'Output order',
-  },
-  pages: { title: 'Pages', label: 'Page', placeholder: '1-3' },
-  output: { name: 'Output name', namePlaceholder: 'part', path: 'Output path' },
-  validation: {
-    pagesRequired: 'Pages are required.',
-    pageWholeNumber: 'Use whole page numbers.',
-    pageOutOfRange: 'Page is out of range.',
-    invalidPages: 'Invalid pages.',
-    descendingPages: 'Pages must be ascending.',
-    outputNameEmpty: 'Output name is required.',
-    outputNamePath: 'Output name must be a file name.',
-    outputNameDuplicate: 'Output names must be unique.',
-  },
-  actions: { apply: 'Apply', cancel: 'Cancel', moveUp: 'Move up', moveDown: 'Move down' },
-} satisfies SplitPdfLabels;
-
-const rotatePdfLabels = {
-  header: { title: 'Rotate PDF', description: 'Rotate selected pages.' },
-  preview: {
-    title: 'Preview',
-    description: 'Preview the file contents.',
-    ariaLabel: 'Preview',
-    renderError: 'Could not display the preview',
-    applyError: 'Could not apply the operation',
-  },
-  rotation: {
-    title: 'Rotation',
-    angleLabel: 'Angle',
-    selectAll: 'Select all',
-    selectAllAriaLabel: 'Select all pages',
-    pageToggle: 'Page',
-  },
-  validation: {
-    pagesRequired: 'Select at least one page.',
-    pageOutOfRange: 'Page is out of range.',
-    angleInvalid: 'Invalid angle.',
-  },
-  actions: { apply: 'Apply', cancel: 'Cancel' },
-} satisfies RotatePdfLabels;
-
-const reorderPdfLabels = {
-  header: { title: 'Reorder PDF', description: 'Change page order.' },
-  preview: {
-    title: 'Preview',
-    ariaLabel: 'Preview',
-    renderError: 'Could not display the preview',
-    applyError: 'Could not apply the operation',
-  },
-  order: { title: 'Order', moveUp: 'Move up', moveDown: 'Move down', positionLabel: 'Position' },
-  validation: { orderRequired: 'Add at least one page.', orderInvalid: 'Invalid order.' },
-  actions: { apply: 'Apply', cancel: 'Cancel' },
-} satisfies ReorderPdfLabels;

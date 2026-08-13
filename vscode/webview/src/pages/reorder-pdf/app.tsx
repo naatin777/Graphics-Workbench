@@ -1,11 +1,14 @@
 import { createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
-import { reorderPdfProtocol, type ReorderPdfLabels } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import { reorderPdfProtocol } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
+import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
 import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
 import { PageNavigator } from '@webview-shared/ui/PageNavigator';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
+
+import { readReorderPdfLabels, type ReorderPdfLabels } from './labels';
 
 function createToolbarButton(className: string, label: string, icon: string): HTMLButtonElement {
   const button = document.createElement('button');
@@ -22,14 +25,8 @@ function createToolbarButton(className: string, label: string, icon: string): HT
 
 export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(reorderPdfProtocol, properties.host);
-  const [labelsValue, setLabels] = createSignal<ReorderPdfLabels>();
-  const labels = (): ReorderPdfLabels => {
-    const value = labelsValue();
-    if (value === undefined) {
-      throw new Error('Reorder PDF labels were not initialized.');
-    }
-    return value;
-  };
+  const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
+  const labels = (): ReorderPdfLabels => readReorderPdfLabels(labelsCatalog());
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [applyError, setApplyError] = createSignal('');
@@ -59,7 +56,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
         setApplyError(message);
       },
       init: (payload) => {
-        setLabels(payload.labels);
+        setLabelsCatalog(payload.labels);
         setFileName(payload.fileName);
         setPageCount(payload.pageCount);
         setApplyError('');
@@ -70,7 +67,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             virtualize: false,
             resources: payload.resources,
             preview: payload.preview,
-            page: { label: payload.labels.preview.ariaLabel },
+            page: { label: labels().preview.ariaLabel },
             ...(pdfPages === undefined ? {} : { root: pdfPages }),
           },
           () => {
@@ -185,7 +182,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   }
 
   return (
-    <Show when={labelsValue()}>
+    <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <div class='reorder'>
           <header class='reorder__header'>
