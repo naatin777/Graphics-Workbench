@@ -7,24 +7,14 @@
 // Mocked:
 // - なし。mupdfと実ファイルを使用する
 //
-// Not tested:
-// - VS CodeのwithProgress UI
-// - Configure Webviewのページ移動操作
-
 import assert from 'node:assert/strict';
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 
-import { reorderPdfProtocol } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import { reorderPdfFiles } from '@graphics-workbench/core/pdf';
-
-const acceptsReorderPdfHostToWebviewMessage = (value: unknown): boolean =>
-  reorderPdfProtocol.parseHostToWebview(value) !== undefined;
-const acceptsReorderPdfWebviewToHostMessage = (value: unknown): boolean =>
-  reorderPdfProtocol.parseWebviewToHost(value) !== undefined;
 
 suite('PDFページ並び替え', () => {
   test('3ページのPDFへページ順[3,1,2]を指定すると、出力PDFは3ページを保ちながら元の3・1・2ページ目の順に並ぶ', async () => {
@@ -107,70 +97,6 @@ suite('PDFページ並び替え', () => {
     );
 
     await assert.rejects(access(outputPath));
-  });
-});
-
-suite('Reorder PDFのWebview⇔ホスト間メッセージ型検証', () => {
-  const labels = {
-    'webview.reorderPdf.title': 'Reorder PDF',
-    'webview.reorderPdf.description': 'description',
-    'webview.reorderPdf.preview': 'Preview',
-    'webview.reorderPdf.previewAriaLabel': 'preview',
-    'webview.reorderPdf.previewRenderError': 'error',
-    'webview.reorderPdf.previewApplyError': 'error',
-    'webview.reorderPdf.order': 'Order',
-    'webview.reorderPdf.moveUp': 'up',
-    'webview.reorderPdf.moveDown': 'down',
-    'webview.reorderPdf.positionLabel': 'pages',
-    'webview.reorderPdf.orderRequiredError': 'required',
-    'webview.reorderPdf.orderInvalid': 'invalid',
-    'webview.reorderPdf.apply': 'Apply',
-    'webview.reorderPdf.cancel': 'Cancel',
-  };
-
-  const initPayload = {
-    sourceId: 'source-1',
-    fileName: 'source.pdf',
-    pageCount: 3,
-    pdfSrc: 'vscode-resource://source.pdf',
-    resources: {
-      workerSrc: 'vscode-resource://pdf.worker.mjs',
-      cMapUrl: 'vscode-resource://cmaps/',
-      standardFontDataUrl: 'vscode-resource://standard_fonts/',
-      wasmUrl: 'vscode-resource://wasm/',
-    },
-    preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
-    labels,
-  };
-
-  test('必須フィールドをすべて持つ正しいinitメッセージは受け入れられる', () => {
-    assert.strictEqual(acceptsReorderPdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
-  });
-
-  test('applyメッセージのページ順が空の場合は拒否される', () => {
-    assert.strictEqual(acceptsReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order: [] } }), false);
-  });
-
-  test('applyメッセージのページ順[3,1,2]が定義された配列を持つ場合は受け入れられる', () => {
-    assert.strictEqual(acceptsReorderPdfWebviewToHostMessage({ type: 'apply', payload: { order: [3, 1, 2] } }), true);
-  });
-
-  test('initメッセージに定義外のsourcePathキーが含まれる場合は拒否される', () => {
-    assert.strictEqual(
-      acceptsReorderPdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
-      false,
-    );
-  });
-
-  test('メッセージ共通枠で許されないrequestIdキーを最上位に付けると拒否される', () => {
-    assert.strictEqual(
-      acceptsReorderPdfWebviewToHostMessage({
-        type: 'apply',
-        payload: { order: [2, 1] },
-        requestId: 'request-1',
-      }),
-      false,
-    );
   });
 });
 

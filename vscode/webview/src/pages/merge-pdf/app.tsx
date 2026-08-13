@@ -1,14 +1,14 @@
-import { For, Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { For, Show, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import { mergePdfProtocol, type MergePdfSource } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
+import { createMessageReader } from '@webview-shared/messages';
 import { Button } from '@webview-shared/ui/Button';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
+import { SplitPane } from '@webview-shared/SplitPane';
 
 import { SourceCard } from './source_card';
-import { readMergePdfLabels, type MergePdfLabels } from './labels';
 import type { PdfOptions } from './preview_thumbnail';
-import { SplitPane } from '@webview-shared/SplitPane';
 
 export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(mergePdfProtocol, properties.host);
@@ -22,7 +22,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     return value;
   };
   const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
-  const labels = (): MergePdfLabels => readMergePdfLabels(labelsCatalog());
+  const t = createMemo(() => createMessageReader(labelsCatalog()));
   const [hostError, setHostError] = createSignal('');
   const [previewErrors, setPreviewErrors] = createSignal(new Set<string>());
   const [draggedSourceId, setDraggedSourceId] = createSignal('');
@@ -149,7 +149,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     }
 
     if (previewErrors().size > 0) {
-      setHostError(labels().preview.renderError);
+      setHostError(t()('webview.mergePdf.previewRenderError'));
       return;
     }
 
@@ -160,7 +160,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
-          <h1 class='sr-only'>{labels().header.title}</h1>
+          <h1 class='sr-only'>{t()('webview.mergePdf.title')}</h1>
 
           <div class='workspace'>
             <SplitPane
@@ -171,7 +171,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 >
                   <div class='panel__header'>
                     <div>
-                      <h2 id='source-list-title'>{labels().sources.list}</h2>
+                      <h2 id='source-list-title'>{t()('webview.mergePdf.sourceList')}</h2>
                     </div>
                   </div>
 
@@ -191,7 +191,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                           source={source}
                           index={index}
                           sourceCount={sources().length}
-                          labels={labels()}
+                          t={t()}
                           options={pdfOptions()}
                           channel={channel}
                           dropTargetId={dropTargetId()}
@@ -217,24 +217,24 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                   class='panel action-panel'
                   aria-labelledby='actions-title'
                 >
-                  <h2 id='actions-title'>{labels().controls.actions}</h2>
+                  <h2 id='actions-title'>{t()('webview.mergePdf.actions')}</h2>
                   <p class='action-panel__count'>
-                    {sources().length} {labels().sources.count}
+                    {sources().length} {t()('webview.mergePdf.sourceCount')}
                   </p>
-                  <p class='action-panel__hint'>{labels().preview.title}</p>
+                  <p class='action-panel__hint'>{t()('webview.mergePdf.preview')}</p>
                   <div class='actions gw-actions'>
                     <Button
                       variant='primary'
                       disabled={sources().length < 2}
                       onClick={apply}
                     >
-                      {labels().actions.apply}
+                      {t()('webview.mergePdf.apply')}
                     </Button>
                     <Button
                       variant='secondary'
                       onClick={cancel}
                     >
-                      {labels().actions.cancel}
+                      {t()('webview.mergePdf.cancel')}
                     </Button>
                   </div>
                 </aside>

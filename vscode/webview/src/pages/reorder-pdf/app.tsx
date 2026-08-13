@@ -1,14 +1,13 @@
-import { createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
+import { createMemo, createSignal, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
 import { reorderPdfProtocol } from '@graphics-workbench/vscode-protocol/reorder-pdf-protocol';
 import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
-import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
+import { createMessageReader } from '@webview-shared/messages';
+import { createPdfPreview } from '@webview-shared/pdf/create_pdf_preview';
 import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
 import { PageNavigator } from '@webview-shared/ui/PageNavigator';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
-
-import { readReorderPdfLabels, type ReorderPdfLabels } from './labels';
 
 function createToolbarButton(className: string, label: string, icon: string): HTMLButtonElement {
   const button = document.createElement('button');
@@ -26,7 +25,7 @@ function createToolbarButton(className: string, label: string, icon: string): HT
 export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(reorderPdfProtocol, properties.host);
   const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
-  const labels = (): ReorderPdfLabels => readReorderPdfLabels(labelsCatalog());
+  const t = createMemo(() => createMessageReader(labelsCatalog()));
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [applyError, setApplyError] = createSignal('');
@@ -38,13 +37,12 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     pagesContainer: () => pdfPages,
     scrollContainer: () => pdfPages,
     setRenderError: () => {
-      setApplyError(labels().preview.renderError);
+      setApplyError(t()('webview.reorderPdf.previewRenderError'));
     },
     onRenderError: (message) => {
       channel.send.previewLoadFailed({ message });
     },
   });
-  const currentPage = useCurrentPage(preview);
 
   const cancel = (): void => {
     channel.send.cancel();
@@ -67,7 +65,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             virtualize: false,
             resources: payload.resources,
             preview: payload.preview,
-            page: { label: labels().preview.ariaLabel },
+            page: { label: t()('webview.reorderPdf.previewAriaLabel') },
             ...(pdfPages === undefined ? {} : { root: pdfPages }),
           },
           () => {
@@ -118,8 +116,12 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       controls.className = 'reorder-page__controls';
       const position = document.createElement('span');
       position.className = 'reorder-page__position';
-      const up = createToolbarButton('reorder-page__move-up', labels().order.moveUp, 'codicon-chevron-up');
-      const down = createToolbarButton('reorder-page__move-down', labels().order.moveDown, 'codicon-chevron-down');
+      const up = createToolbarButton('reorder-page__move-up', t()('webview.reorderPdf.moveUp'), 'codicon-chevron-up');
+      const down = createToolbarButton(
+        'reorder-page__move-down',
+        t()('webview.reorderPdf.moveDown'),
+        'codicon-chevron-down',
+      );
       controls.append(position, up, down);
       figure.append(controls);
     }
@@ -173,7 +175,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     );
 
     if (order.length === 0) {
-      setApplyError(labels().validation.orderRequired);
+      setApplyError(t()('webview.reorderPdf.orderRequiredError'));
       return;
     }
 
@@ -186,8 +188,8 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       {(_labels) => (
         <div class='reorder'>
           <header class='reorder__header'>
-            <h1>{labels().header.title}</h1>
-            <p class='reorder__description'>{labels().header.description}</p>
+            <h1>{t()('webview.reorderPdf.title')}</h1>
+            <p class='reorder__description'>{t()('webview.reorderPdf.description')}</p>
             <p class='reorder__file'>{fileName()}</p>
           </header>
 
@@ -195,17 +197,17 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             left={
               <section class='reorder__preview'>
                 <div class='reorder__preview-toolbar'>
-                  <span>{labels().preview.title}</span>
+                  <span>{t()('webview.reorderPdf.preview')}</span>
                 </div>
                 <div
                   ref={(element) => {
                     pdfPages = element;
                   }}
                   class='reorder__pages'
-                  aria-label={labels().preview.ariaLabel}
+                  aria-label={t()('webview.reorderPdf.previewAriaLabel')}
                 />
                 <PageNavigator
-                  currentPage={currentPage() ?? 0}
+                  currentPage={preview.currentPage() ?? 0}
                   pageCount={pageCount()}
                   onPrevious={preview.goToPreviousPage}
                   onNext={preview.goToNextPage}
@@ -215,7 +217,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             right={
               <section class='reorder__panel'>
                 <p class='reorder__selection'>
-                  {pageCount()} {labels().order.positionLabel}
+                  {pageCount()} {t()('webview.reorderPdf.positionLabel')}
                 </p>
 
                 {applyError() !== '' && <p role='alert'>{applyError()}</p>}
@@ -226,13 +228,13 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                     disabled={!previewReady()}
                     onClick={apply}
                   >
-                    {labels().actions.apply}
+                    {t()('webview.reorderPdf.apply')}
                   </Button>
                   <Button
                     variant='secondary'
                     onClick={cancel}
                   >
-                    {labels().actions.cancel}
+                    {t()('webview.reorderPdf.cancel')}
                   </Button>
                 </div>
               </section>

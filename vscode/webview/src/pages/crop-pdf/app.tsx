@@ -1,11 +1,12 @@
-import { Show, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
+import { Show, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js';
 
 import {
   cropPdfProtocol,
   type CropConfigureHostToWebview,
 } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
 import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
-import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
+import { createMessageReader } from '@webview-shared/messages';
+import { createPdfPreview } from '@webview-shared/pdf/create_pdf_preview';
 import {
   applyPreviewZoom,
   capturePreviewZoomAnchor,
@@ -18,7 +19,6 @@ import { PageNavigator } from '../../shared/ui/PageNavigator';
 import { ToolbarButton } from '../../shared/ui/ToolbarButton';
 
 import { parseCropBox, parseTarget } from './crop_input';
-import { readCropPdfLabels, type CropPdfLabels } from './labels';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
 type CropInitPayload = Extract<CropConfigureHostToWebview, { type: 'init' }>['payload'];
@@ -99,7 +99,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   const [selectedPages, setSelectedPages] = createSignal('1');
   const [previewZoom, setPreviewZoom] = createSignal(1);
   const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
-  const labels = (): CropPdfLabels => readCropPdfLabels(labelsCatalog());
+  const t = createMemo(() => createMessageReader(labelsCatalog()));
   const [renderError, setRenderError] = createSignal('');
   const [inputError, setInputError] = createSignal('');
   const [isApplying, setIsApplying] = createSignal(false);
@@ -116,7 +116,6 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       channel.send.previewLoadFailed({ message });
     },
   });
-  const currentPage = useCurrentPage(preview);
 
   const cancel = (): void => {
     channel.send.cancel();
@@ -154,7 +153,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             preview: payload.preview,
             ...(pdfPreview !== undefined && { root: pdfPreview }),
             resources: payload.resources,
-            page: { label: labels().header.pageLabel },
+            page: { label: t()('webview.cropPdf.pageLabel') },
           },
           () => {
             applyPreviewZoom(pages, previewZoom());
@@ -176,18 +175,18 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     }
 
     if (!renderPromise) {
-      setInputError(labels().preview.applyError);
+      setInputError(t()('webview.cropPdf.previewApplyError'));
       return;
     }
 
     await renderPromise;
     if (renderError()) {
-      setInputError(labels().preview.applyError);
+      setInputError(t()('webview.cropPdf.previewApplyError'));
       return;
     }
 
-    const parsedCropBox = parseCropBox(cropBox(), labels());
-    const target = parseTarget(targetType(), selectedPages(), pageCount(), labels());
+    const parsedCropBox = parseCropBox(cropBox(), t());
+    const target = parseTarget(targetType(), selectedPages(), pageCount(), t());
 
     if (!parsedCropBox.ok) {
       setInputError(parsedCropBox.message);
@@ -251,9 +250,9 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     <Show when={Object.keys(labelsCatalog()).length > 0}>
       {(_labels) => (
         <main class='app'>
-          <h1 class='sr-only'>{labels().header.title}</h1>
+          <h1 class='sr-only'>{t()('webview.cropPdf.title')}</h1>
           <p class='sr-only'>
-            {fileName()} · {pageCount()} {labels().header.pages}. {labels().header.description}
+            {fileName()} · {pageCount()} {t()('webview.cropPdf.pages')}. {t()('webview.cropPdf.description')}
           </p>
 
           <div class='workspace'>
@@ -263,28 +262,28 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                   ref={(element) => {
                     pdfPreview = element;
                   }}
-                  aria-label={labels().preview.ariaLabel}
+                  aria-label={t()('webview.cropPdf.previewAriaLabel')}
                   class='pdf-preview'
                   classList={{ 'pdf-preview--fit': previewZoom() <= 1 }}
                   onWheel={zoomWithWheel}
                 >
                   <div class='pdf-preview__toolbar'>
                     <div>
-                      <h2>{labels().preview.title}</h2>
+                      <h2>{t()('webview.cropPdf.preview')}</h2>
                     </div>
                     <div
                       class='zoom'
-                      aria-label={labels().preview.zoomLabel}
+                      aria-label={t()('webview.cropPdf.previewZoom')}
                     >
                       <ToolbarButton
                         icon='codicon-zoom-out'
-                        label={labels().preview.zoomOut}
+                        label={t()('webview.cropPdf.zoomOut')}
                         onClick={zoomOut}
                       />
                       <span class='zoom__value'>{Math.round(previewZoom() * 100)}%</span>
                       <ToolbarButton
                         icon='codicon-zoom-in'
-                        label={labels().preview.zoomIn}
+                        label={t()('webview.cropPdf.zoomIn')}
                         onClick={zoomIn}
                       />
                     </div>
@@ -296,7 +295,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                     class='pdf-preview__pages'
                   />
                   <PageNavigator
-                    currentPage={currentPage() ?? 0}
+                    currentPage={preview.currentPage() ?? 0}
                     pageCount={pageCount()}
                     onPrevious={preview.goToPreviousPage}
                     onNext={preview.goToNextPage}
@@ -306,23 +305,23 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                       class='pdf-preview__error'
                       role='alert'
                     >
-                      {labels().preview.renderError}: {renderError()}
+                      {t()('webview.cropPdf.previewRenderError')}: {renderError()}
                     </p>
                   ) : undefined}
                 </section>
               }
               right={
                 <section
-                  aria-label={labels().cropBox.settingsLabel}
+                  aria-label={t()('webview.cropPdf.cropSettings')}
                   aria-busy={isApplying()}
                   class='panel'
                 >
                   <div class='panel__group'>
-                    <h2>{labels().cropBox.title}</h2>
+                    <h2>{t()('webview.cropPdf.cropBox')}</h2>
 
                     <div class='crop-grid'>
                       <label class='field'>
-                        <span class='field__label'>{labels().cropBox.left}</span>
+                        <span class='field__label'>{t()('webview.cropPdf.left')}</span>
                         <input
                           class='gw-input'
                           disabled={isApplying()}
@@ -336,7 +335,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                       </label>
 
                       <label class='field'>
-                        <span class='field__label'>{labels().cropBox.bottom}</span>
+                        <span class='field__label'>{t()('webview.cropPdf.bottom')}</span>
                         <input
                           class='gw-input'
                           disabled={isApplying()}
@@ -350,7 +349,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                       </label>
 
                       <label class='field'>
-                        <span class='field__label'>{labels().cropBox.right}</span>
+                        <span class='field__label'>{t()('webview.cropPdf.right')}</span>
                         <input
                           class='gw-input'
                           disabled={isApplying()}
@@ -364,7 +363,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                       </label>
 
                       <label class='field'>
-                        <span class='field__label'>{labels().cropBox.top}</span>
+                        <span class='field__label'>{t()('webview.cropPdf.top')}</span>
                         <input
                           class='gw-input'
                           disabled={isApplying()}
@@ -379,12 +378,12 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                     </div>
 
                     <p class='panel__hint'>
-                      {labels().cropBox.currentPageSize}: {pageSize().width} × {pageSize().height} pt
+                      {t()('webview.cropPdf.currentPageSize')}: {pageSize().width} × {pageSize().height} pt
                     </p>
                   </div>
 
                   <fieldset class='gw-radio-group'>
-                    <legend>{labels().targetPages.applyTo}</legend>
+                    <legend>{t()('webview.cropPdf.applyTo')}</legend>
 
                     <label class='gw-radio-option'>
                       <input
@@ -396,7 +395,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                           setTargetType('all');
                         }}
                       />
-                      {labels().targetPages.all}
+                      {t()('webview.cropPdf.allPages')}
                     </label>
 
                     <label class='gw-radio-option'>
@@ -409,15 +408,15 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                           setTargetType('selected');
                         }}
                       />
-                      {labels().targetPages.pages}
+                      {t()('webview.cropPdf.pages')}
                     </label>
 
                     <label class='field'>
-                      <span class='field__label'>{labels().targetPages.inputLabel}</span>
+                      <span class='field__label'>{t()('webview.cropPdf.pagesInput')}</span>
                       <input
                         class='gw-input'
                         disabled={isApplying() || targetType() !== 'selected'}
-                        placeholder={labels().targetPages.placeholder}
+                        placeholder={t()('webview.cropPdf.pagesPlaceholder')}
                         type='text'
                         value={selectedPages()}
                         onInput={(event) => {
@@ -444,13 +443,13 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                         void applyCrop();
                       }}
                     >
-                      {isApplying() ? labels().actions.processing : labels().actions.apply}
+                      {isApplying() ? t()('webview.cropPdf.processing') : t()('webview.cropPdf.apply')}
                     </Button>
                     <Button
                       variant='secondary'
                       onClick={cancel}
                     >
-                      {labels().actions.cancel}
+                      {t()('webview.cropPdf.cancel')}
                     </Button>
                   </div>
                 </section>

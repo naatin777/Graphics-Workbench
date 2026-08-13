@@ -50,6 +50,17 @@ export {
 } from '../operations/conversion/pdf_raster_conversion.js';
 export { planPdfPageJobs, type PdfPageInput, type PdfPageSource } from '../operations/conversion/plan_pdf_page_jobs.js';
 export {
+  planPdfPageConversionInputs,
+  planRasterConversionInputs,
+  planRasterFrameJobs,
+  planRasterFrameJobsFromMetadata,
+  planRasterSourceConversionInputs,
+  type PlanRasterConversionInputsOptions,
+  type PlanRasterSourceConversionInputsOptions,
+  type RasterFrameAnalysis,
+  type RasterFramePlanOptions,
+} from '../operations/conversion/plan_conversion_inputs.js';
+export {
   executeRasterConversion,
   rasterFormatSpecs,
   type ExecuteRasterConversionOptions,

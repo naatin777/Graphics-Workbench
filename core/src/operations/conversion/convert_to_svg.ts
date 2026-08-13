@@ -1,4 +1,4 @@
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { XMLParser } from 'fast-xml-parser';
@@ -12,6 +12,7 @@ import {
 } from '../../shared/source_format.js';
 
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
+import { renderPdfPageToSvg } from '../pdf/mupdf.js';
 import { validatePdfPathInputs } from '../pdf/pdf_path_validation.js';
 import { toErrorMessage, isAbortError } from '../../shared/error.js';
 
@@ -33,7 +34,7 @@ export interface ConvertToSvgFilesOptions {
   inputs: SvgInput[];
   drawioTools: DrawioBackend;
   runtime: ConversionExecutionContext;
-  runPdfToSvg: RunPdfToSvg;
+  runPdfToSvg?: RunPdfToSvg;
   runId?: string;
   maxInputPixels: number;
 }
@@ -74,6 +75,7 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
   validateConversions(options.inputs);
   await validatePdfPathInputs(options.inputs, 'convert-to-svg');
   runtime.signal?.throwIfAborted();
+  const runPdfToSvg = options.runPdfToSvg ?? renderPdfToSvgFile;
 
   return runStagedConversionBatch({
     inputs: options.inputs,
@@ -83,11 +85,23 @@ export async function convertToSvgFiles(options: ConvertToSvgFilesOptions): Prom
     stage: async (input, index, currentRunId, batchRuntime) =>
       stageSvgConversion(input, index, currentRunId, {
         drawioTools: options.drawioTools,
-        runPdfToSvg: options.runPdfToSvg,
+        runPdfToSvg,
         maxInputPixels,
         signal: batchRuntime.signal,
       }),
   });
+}
+
+async function renderPdfToSvgFile(
+  sourcePath: string,
+  outputPath: string,
+  page: number,
+  signal: AbortSignal,
+): Promise<void> {
+  signal.throwIfAborted();
+  const svg = await renderPdfPageToSvg(await readFile(sourcePath), page);
+  signal.throwIfAborted();
+  await writeFile(outputPath, svg, 'utf8');
 }
 
 async function stageSvgConversion(

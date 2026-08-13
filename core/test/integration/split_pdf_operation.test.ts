@@ -1,26 +1,23 @@
 // Test target:
-// - 1件以上のPDFを1ページごとに分割し、全成功後に出力すること
+// - 1件以上のPDFを1ページごとまたはページグループごとに分割し、全成功後に出力すること
+// - ページ式の解析が入力順の展開・重複保持・不正式の拒否を正しく行うこと
 // - 既存出力、出力重複、キャンセル時に出力を反映しないこと
 // - 固定fixtureの各分割ページが元PDFの対応ページと同じ描画内容であること
 //
 // Mocked:
 // - なし。mupdfと実ファイルを使用する
 //
-// Not tested:
-// - VS CodeのwithProgress UI
-// - commandからのURI選択
-
 import assert from 'node:assert/strict';
 import { access, copyFile, mkdir, mkdtemp, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '../../support/helpers/pdf_document.js';
+import { PDFDocument } from '../../../test-support/pdf_document.js';
 
-import { splitPdfAllPages } from '@graphics-workbench/core/pdf';
-
-import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
-import { assertRenderedPdfPagesSimilar } from '../../support/helpers/pdf_visual_assertions.js';
+import { parsePdfPageSelection as parseSplitPdfPages } from '@graphics-workbench/core/formats';
+import { splitPdfAllPages, splitPdfByPageGroups } from '@graphics-workbench/core/pdf';
+import { invalidPreflightInputDirectory, operationPdfInputDirectory } from '../helpers/fixture_paths.js';
+import { assertRenderedPdfPagesSimilar } from '../helpers/pdf_visual_assertions.js';
 
 suite('PDF全ページ分割', () => {
   test('multi-page-table.pdfの全ページを1から始まるページ番号で1ページずつのPDFへ分割し、各分割ページが元の対応ページと同じ描画内容であることを確認する', async () => {
@@ -179,11 +176,140 @@ suite('PDF全ページ分割', () => {
   });
 });
 
+suite('PDFページグループ分割', () => {
+  test('ページ式"10, 3-5, 3, -2, 7-"を10ページのPDFで解析すると、入力順のまま範囲を展開し重複を保持したページ列を返す', () => {
+    assert.deepEqual(parseSplitPdfPages('10, 3-5, 3, -2, 7-', 10), {
+      ok: true,
+      pages: [10, 3, 4, 5, 3, 1, 2, 7, 8, 9, 10],
+    });
+  });
+
+  test('空の式やカンマ連続（1,,3）、降順範囲（3-1）、ページ数超過（4）のページ式は解析失敗にする', () => {
+    assert.equal(parseSplitPdfPages('1,,3', 3).ok, false);
+    assert.equal(parseSplitPdfPages('-', 3).ok, false);
+    assert.equal(parseSplitPdfPages('3-1', 3).ok, false);
+    assert.equal(parseSplitPdfPages('4', 3).ok, false);
+  });
+
+  test('ページグループ[[3,1,3],[2]]を指定すると、group1は3→1→3の順で重複を保持し、group2は2ページ目だけのPDFとして生成する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const sourcePath = path.join(workspacePath.path, 'source.pdf');
+
+    await writePdfWithWidths(sourcePath, [101, 102, 103]);
+
+    await splitPdfByPageGroups({
+      inputs: [
+        {
+          sourcePath,
+          workspacePath: workspacePath.path,
+          pageGroups: [[3, 1, 3], [2]],
+          outputPathForGroup: (groupIndex) => path.join(workspacePath.path, `group-${groupIndex + 1}.pdf`),
+        },
+      ],
+      runtime: {},
+      runId: 'run',
+    });
+
+    const firstGroup = await PDFDocument.load(await readFile(path.join(workspacePath.path, 'group-1.pdf')));
+    const secondGroup = await PDFDocument.load(await readFile(path.join(workspacePath.path, 'group-2.pdf')));
+
+    assert.deepEqual(
+      firstGroup.getPages().map((page) => page.getWidth()),
+      [103, 101, 103],
+    );
+    assert.deepEqual(
+      secondGroup.getPages().map((page) => page.getWidth()),
+      [102],
+    );
+    await access(
+      path.join(workspacePath.path, '.graphics-workbench', 'split-pdf', 'run', '1-source', 'groups', '1.pdf'),
+    );
+  });
+
+  test('分割処理の事前検証で拒否され、一時領域も分割出力も作成しない', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const sourcePath = path.join(workspacePath.path, 'source.pdf');
+    const outputPath = path.join(workspacePath.path, 'group.pdf');
+    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'split-pdf', 'run');
+    const invalidPdfPath = path.join(invalidPreflightInputDirectory, 'not-a-pdf.pdf');
+
+    await copyFile(invalidPdfPath, sourcePath);
+
+    await assert.rejects(
+      splitPdfByPageGroups({
+        inputs: [
+          {
+            sourcePath,
+            workspacePath: workspacePath.path,
+            pageGroups: [[1]],
+            outputPathForGroup: () => outputPath,
+          },
+        ],
+        runtime: {},
+        runId: 'run',
+      }),
+      /Preflight validation failed|Failed to parse PDF|No PDF header found/,
+    );
+
+    await assert.rejects(access(outputPath));
+    await assert.rejects(access(stagingRootPath));
+  });
+
+  test('ページ数の範囲外グループ（[1,3]）と空グループ（[]）は出力前に拒否して出力PDFを作成しない', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const sourcePath = path.join(workspacePath.path, 'source.pdf');
+    const outputPath = path.join(workspacePath.path, 'group.pdf');
+
+    await writePdfWithWidths(sourcePath, [101, 102]);
+
+    await assert.rejects(
+      splitPdfByPageGroups({
+        inputs: [
+          {
+            sourcePath,
+            workspacePath: workspacePath.path,
+            pageGroups: [[1, 3]],
+            outputPathForGroup: () => outputPath,
+          },
+        ],
+        runtime: {},
+      }),
+      /out of range/,
+    );
+    await assert.rejects(access(outputPath));
+
+    await assert.rejects(
+      splitPdfByPageGroups({
+        inputs: [
+          {
+            sourcePath,
+            workspacePath: workspacePath.path,
+            pageGroups: [[]],
+            outputPathForGroup: () => outputPath,
+          },
+        ],
+        runtime: {},
+      }),
+      /cannot be empty/,
+    );
+  });
+});
+
 async function writePdf(filePath: string, pageCount: number): Promise<void> {
   const document = await PDFDocument.create();
 
   for (let page = 1; page <= pageCount; page++) {
     document.addPage([100 + page, 200 + page]);
+  }
+
+  await writeFile(filePath, await document.save());
+}
+
+async function writePdfWithWidths(filePath: string, widths: readonly number[]): Promise<void> {
+  const document = await PDFDocument.create();
+
+  for (const width of widths) {
+    document.addPage([width, 200]);
   }
 
   await writeFile(filePath, await document.save());

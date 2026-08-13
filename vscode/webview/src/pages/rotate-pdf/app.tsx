@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type JSX } from 'solid-js';
 
 import {
   PDF_ROTATION_ANGLES,
@@ -6,18 +6,17 @@ import {
   type PdfRotationAngle,
 } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import type { MessageCatalog } from '@graphics-workbench/vscode-protocol/typed-protocol';
-import { createPdfPreview, useCurrentPage } from '@webview-shared/pdf/create_pdf_preview';
+import { createMessageReader } from '@webview-shared/messages';
+import { createPdfPreview } from '@webview-shared/pdf/create_pdf_preview';
 import { SplitPane } from '@webview-shared/SplitPane';
 import { Button } from '@webview-shared/ui/Button';
 import { PageNavigator } from '@webview-shared/ui/PageNavigator';
 import { createPageProtocolClient, type WebviewHost } from '@webview-shared/vscode';
 
-import { readRotatePdfLabels, type RotatePdfLabels } from './labels';
-
 export function App(properties: { host: WebviewHost }): JSX.Element {
   const channel = createPageProtocolClient(rotatePdfProtocol, properties.host);
   const [labelsCatalog, setLabelsCatalog] = createSignal<MessageCatalog>({});
-  const labels = (): RotatePdfLabels => readRotatePdfLabels(labelsCatalog());
+  const t = createMemo(() => createMessageReader(labelsCatalog()));
   const [fileName, setFileName] = createSignal('');
   const [pageCount, setPageCount] = createSignal(0);
   const [angle, setAngle] = createSignal<PdfRotationAngle>(90);
@@ -31,13 +30,12 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
     pagesContainer: () => pdfPages,
     scrollContainer: () => pdfPages,
     setRenderError: () => {
-      setApplyError(labels().preview.renderError);
+      setApplyError(t()('webview.rotatePdf.previewRenderError'));
     },
     onRenderError: (message) => {
       channel.send.previewLoadFailed({ message });
     },
   });
-  const currentPage = useCurrentPage(preview);
 
   const cancel = (): void => {
     channel.send.cancel();
@@ -67,12 +65,12 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             resources: payload.resources,
             ...(pdfPages === undefined ? {} : { root: pdfPages }),
             page: {
-              label: labels().preview.ariaLabel,
+              label: t()('webview.rotatePdf.previewAriaLabel'),
               onCreated: (pageFrame, pageNumber) => {
                 pageFrame.setAttribute('role', 'checkbox');
                 pageFrame.setAttribute('tabindex', '0');
                 pageFrame.setAttribute('aria-checked', String(selectedPages().has(pageNumber)));
-                pageFrame.setAttribute('aria-label', `${labels().rotation.pageToggle} ${pageNumber}`);
+                pageFrame.setAttribute('aria-label', `${t()('webview.rotatePdf.pageToggle')} ${pageNumber}`);
               },
             },
           },
@@ -174,7 +172,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
   function apply(): void {
     const selection = selectedPages();
     if (selection.size === 0) {
-      setApplyError(labels().validation.pagesRequired);
+      setApplyError(t()('webview.rotatePdf.pagesRequiredError'));
       return;
     }
     setApplyError('');
@@ -187,8 +185,8 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
       {(_labels) => (
         <div class='rotate'>
           <header class='rotate__header'>
-            <h1>{labels().header.title}</h1>
-            <p class='rotate__description'>{labels().header.description}</p>
+            <h1>{t()('webview.rotatePdf.title')}</h1>
+            <p class='rotate__description'>{t()('webview.rotatePdf.description')}</p>
             <p class='rotate__file'>{fileName()}</p>
           </header>
 
@@ -196,17 +194,17 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             left={
               <section
                 class='rotate__preview'
-                aria-label={labels().preview.ariaLabel}
+                aria-label={t()('webview.rotatePdf.previewAriaLabel')}
               >
                 <div class='rotate__preview-toolbar'>
-                  <span>{labels().preview.title}</span>
+                  <span>{t()('webview.rotatePdf.preview')}</span>
                   <button
                     type='button'
                     class='gw-button gw-button--secondary gw-button--small'
                     onClick={toggleSelectAll}
-                    aria-label={labels().rotation.selectAllAriaLabel}
+                    aria-label={t()('webview.rotatePdf.selectAllAriaLabel')}
                   >
-                    {labels().rotation.selectAll}
+                    {t()('webview.rotatePdf.selectAll')}
                   </button>
                 </div>
                 <div
@@ -214,10 +212,10 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                     pdfPages = element;
                   }}
                   class='rotate__pages'
-                  aria-label={labels().preview.ariaLabel}
+                  aria-label={t()('webview.rotatePdf.previewAriaLabel')}
                 />
                 <PageNavigator
-                  currentPage={currentPage() ?? 0}
+                  currentPage={preview.currentPage() ?? 0}
                   pageCount={pageCount()}
                   onPrevious={preview.goToPreviousPage}
                   onNext={preview.goToNextPage}
@@ -227,11 +225,11 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
             right={
               <section class='rotate__panel'>
                 <fieldset class='rotate__angle'>
-                  <legend>{labels().rotation.title}</legend>
+                  <legend>{t()('webview.rotatePdf.rotation')}</legend>
                   <div
                     class='gw-radio-group'
                     role='radiogroup'
-                    aria-label={labels().rotation.angleLabel}
+                    aria-label={t()('webview.rotatePdf.angleLabel')}
                   >
                     <For each={PDF_ROTATION_ANGLES}>
                       {(value) => (
@@ -253,7 +251,7 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                 </fieldset>
 
                 <p class='rotate__selection'>
-                  {labels().preview.description} {selectedPages().size}/{pageCount()}
+                  {t()('webview.rotatePdf.previewDescription')} {selectedPages().size}/{pageCount()}
                 </p>
 
                 {applyError() !== '' && <p role='alert'>{applyError()}</p>}
@@ -264,13 +262,13 @@ export function App(properties: { host: WebviewHost }): JSX.Element {
                     disabled={!previewReady()}
                     onClick={apply}
                   >
-                    {labels().actions.apply}
+                    {t()('webview.rotatePdf.apply')}
                   </Button>
                   <Button
                     variant='secondary'
                     onClick={cancel}
                   >
-                    {labels().actions.cancel}
+                    {t()('webview.rotatePdf.cancel')}
                   </Button>
                 </div>
               </section>

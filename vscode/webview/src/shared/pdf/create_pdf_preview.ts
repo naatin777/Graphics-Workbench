@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount, type Accessor } from 'solid-js';
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 
 import { toErrorMessage } from '../error';
 import { scrollPageIntoView } from '../ui/PageNavigator';
@@ -16,12 +16,6 @@ export interface PdfPreview {
   readonly scrollPageIntoView: (page: number) => void;
   readonly goToPreviousPage: () => void;
   readonly goToNextPage: () => void;
-  readonly isCurrentGeneration: (generation: number) => boolean;
-  readonly nextGeneration: () => number;
-}
-
-export function useCurrentPage(preview: PdfPreview): Accessor<number | undefined> {
-  return preview.currentPage;
 }
 
 export function createPdfPreview(options: {
@@ -262,7 +256,5 @@ export function createPdfPreview(options: {
         scrollPageIntoView(element);
       }
     },
-    isCurrentGeneration: (candidate) => candidate === generation,
-    nextGeneration: () => generation + 1,
   };
 }

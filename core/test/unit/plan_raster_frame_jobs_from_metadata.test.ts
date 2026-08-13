@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-import {
-  planRasterFrameJobsFromMetadata,
-  type RasterFramePlanOptions,
-} from '../../../src/commands/conversion/plan_raster_frame_jobs.js';
+import { planRasterFrameJobsFromMetadata, type RasterFramePlanOptions } from '@graphics-workbench/core/conversion';
 
 const workspacePath = process.platform === 'win32' ? 'C:\\test-workspace' : '/test-workspace';
 

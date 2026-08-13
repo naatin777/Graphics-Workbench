@@ -6,7 +6,6 @@ import {
   splitPdfProtocol,
   type SplitPdfHostToWebview,
   type SplitPdfPageGroupRow,
-  type SplitPdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { assertPageTemplateForSplitOutput, resolvePdfOutputPath } from '@graphics-workbench/core/output';
@@ -21,14 +20,15 @@ import {
 import { assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import {
-  runSinglePdfConfigureCommand,
-  type SinglePdfConfigureConversion,
-} from '../lifecycle/run_single_pdf_configure.js';
+import { runSinglePdfConfigureCommand } from '../lifecycle/run_single_pdf_configure.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/runtime';
+import {
+  isAbortError,
+  type CommittedConversionOutput,
+  type ConversionExecutionContext,
+} from '@graphics-workbench/core/runtime';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 
 function readSplitPdfTemplate(dependencies: CommandDependencies): string {
@@ -160,17 +160,15 @@ export async function splitPdfConfigureCommand(
           outputPathTemplate: prepared.outputPathTemplate,
           preview: readPdfPreviewSettings(configuration),
         }),
-      isApplyMessage: isSplitApplyMessage,
-      runApply: async (message, { inputUri, workspaceFolder, prepared, runConversion }) => {
-        await applyConfiguredSplit({
+      apply: async (payload, { inputUri, workspaceFolder, prepared, runtime }) =>
+        applyConfiguredSplit({
           inputUri,
           workspaceFolder,
           outputTemplate: prepared.outputTemplate,
           pageCount: prepared.pageCount,
-          rows: message.payload.rows,
-          runConversion,
-        });
-      },
+          rows: payload.rows,
+          runtime,
+        }),
       onPreviewLoadFailed: (message, channel) => {
         if (message.type === 'previewLoadFailed') {
           channel?.appendLine(`[split-pdf-configure] preview failure: ${message.payload.message}`);
@@ -187,12 +185,6 @@ export async function splitPdfConfigureCommand(
 
     await vscode.window.showErrorMessage(userMessage('message.splitPdf.failed', message));
   }
-}
-
-function isSplitApplyMessage(
-  message: SplitPdfWebviewToHost,
-): message is Extract<SplitPdfWebviewToHost, { type: 'apply' }> {
-  return message.type === 'apply';
 }
 
 function buildSplitPdfInitMessage(params: {
@@ -223,9 +215,9 @@ async function applyConfiguredSplit(params: {
   outputTemplate: string;
   pageCount: number;
   rows: SplitPdfPageGroupRow[];
-  runConversion: (run: SinglePdfConfigureConversion) => Promise<void>;
-}): Promise<void> {
-  const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, runConversion } = params;
+  runtime: ConversionExecutionContext;
+}): Promise<CommittedConversionOutput[]> {
+  const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, runtime } = params;
 
   validateConfiguredRows(rows, pageCount);
   if (!outputTemplate.includes('${page}')) {
@@ -245,27 +237,25 @@ async function applyConfiguredSplit(params: {
     await assertWritablePathInWorkspace(outputPath, workspacePath);
   }
 
-  await runConversion(async (runtime) =>
-    splitPdfByPageGroups({
-      inputs: [
-        {
-          sourcePath,
-          workspacePath,
-          pageGroups: rows.map((row) => row.pages),
-          outputPathForGroup: (groupIndex): string => {
-            const row = rows[groupIndex];
+  return splitPdfByPageGroups({
+    inputs: [
+      {
+        sourcePath,
+        workspacePath,
+        pageGroups: rows.map((row) => row.pages),
+        outputPathForGroup: (groupIndex): string => {
+          const row = rows[groupIndex];
 
-            if (!row) {
-              throw new Error(`No output name was supplied for group ${groupIndex}.`);
-            }
+          if (!row) {
+            throw new Error(`No output name was supplied for group ${groupIndex}.`);
+          }
 
-            return resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
-          },
+          return resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
         },
-      ],
-      runtime,
-    }),
-  );
+      },
+    ],
+    runtime,
+  });
 }
 
 function validateConfiguredRows(rows: readonly SplitPdfPageGroupRow[], pageCount: number): void {

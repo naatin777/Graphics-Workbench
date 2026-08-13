@@ -6,24 +6,14 @@
 // Mocked:
 // - なし。mupdfと実ファイルを使用する
 //
-// Not tested:
-// - VS CodeのwithProgress UI
-// - QuickPickの角度選択
-
 import assert from 'node:assert/strict';
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { degrees, PDFDocument } from '../../support/helpers/pdf_document.js';
+import { degrees, PDFDocument } from '../../../test-support/pdf_document.js';
 
-import { rotatePdfProtocol } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 import { rotatePdfFiles } from '@graphics-workbench/core/pdf';
-
-const acceptsRotatePdfHostToWebviewMessage = (value: unknown): boolean =>
-  rotatePdfProtocol.parseHostToWebview(value) !== undefined;
-const acceptsRotatePdfWebviewToHostMessage = (value: unknown): boolean =>
-  rotatePdfProtocol.parseWebviewToHost(value) !== undefined;
 
 suite('PDFページ回転', () => {
   test('3ページのPDFへ角度90を指定すると、出力PDFは3ページを保ったまま全ページの回転角を90度として保存する', async () => {
@@ -157,83 +147,3 @@ async function writePdf(filePath: string, pageCount: number, rotation = 0): Prom
   }
   await writeFile(filePath, await document.save());
 }
-
-suite('Rotate PDFのWebview⇔ホスト間メッセージ型検証', () => {
-  const labels = {
-    'webview.rotatePdf.title': 'Rotate PDF',
-    'webview.rotatePdf.description': 'description',
-    'webview.rotatePdf.preview': 'Preview',
-    'webview.rotatePdf.previewDescription': 'description',
-    'webview.rotatePdf.previewAriaLabel': 'preview',
-    'webview.rotatePdf.previewRenderError': 'error',
-    'webview.rotatePdf.previewApplyError': 'error',
-    'webview.rotatePdf.rotation': 'Rotation',
-    'webview.rotatePdf.angleLabel': 'angle',
-    'webview.rotatePdf.selectAll': 'all',
-    'webview.rotatePdf.selectAllAriaLabel': 'all',
-    'webview.rotatePdf.pageToggle': 'toggle',
-    'webview.rotatePdf.pagesRequiredError': 'required',
-    'webview.rotatePdf.pageOutOfRangeError': 'range',
-    'webview.rotatePdf.angleInvalid': 'invalid',
-    'webview.rotatePdf.apply': 'Apply',
-    'webview.rotatePdf.cancel': 'Cancel',
-  };
-
-  const initPayload = {
-    sourceId: 'source-1',
-    fileName: 'source.pdf',
-    pageCount: 3,
-    pdfSrc: 'vscode-resource://source.pdf',
-    resources: {
-      workerSrc: 'vscode-resource://pdf.worker.mjs',
-      cMapUrl: 'vscode-resource://cmaps/',
-      standardFontDataUrl: 'vscode-resource://standard_fonts/',
-      wasmUrl: 'vscode-resource://wasm/',
-    },
-    preview: { maxCanvasPixels: 40000000, maxDevicePixelRatio: 2 },
-    labels,
-  };
-
-  test('必須フィールドをすべて持つ正しいinitメッセージは受け入れられる', () => {
-    assert.strictEqual(acceptsRotatePdfHostToWebviewMessage({ type: 'init', payload: initPayload }), true);
-  });
-
-  test('applyメッセージの角度が45度のように90度の倍数でない場合は拒否される', () => {
-    assert.strictEqual(
-      acceptsRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 45, pageIndices: [1] } }),
-      false,
-    );
-  });
-
-  test('applyメッセージのページ選択が空の場合は拒否される', () => {
-    assert.strictEqual(
-      acceptsRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 90, pageIndices: [] } }),
-      false,
-    );
-  });
-
-  test('applyメッセージの角度180とページ選択[1,3]が定義に合う場合は受け入れられる', () => {
-    assert.strictEqual(
-      acceptsRotatePdfWebviewToHostMessage({ type: 'apply', payload: { angle: 180, pageIndices: [1, 3] } }),
-      true,
-    );
-  });
-
-  test('initメッセージに定義外のsourcePathキーが含まれる場合は拒否される', () => {
-    assert.strictEqual(
-      acceptsRotatePdfHostToWebviewMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }),
-      false,
-    );
-  });
-
-  test('メッセージ共通枠で許されないrequestIdキーを最上位に付けると拒否される', () => {
-    assert.strictEqual(
-      acceptsRotatePdfWebviewToHostMessage({
-        type: 'apply',
-        payload: { angle: 90, pageIndices: [1] },
-        requestId: 'request-1',
-      }),
-      false,
-    );
-  });
-});

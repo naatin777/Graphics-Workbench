@@ -17,11 +17,12 @@ import {
   type TableEditorHostToWebview,
   type TableEditorWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/table-editor-protocol';
-import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_configure_session.js';
+import { openConfigurePanel } from '../lifecycle/pdf_configure_session.js';
+import { reportConfigureApplyError } from '../shared/report_configure_error.js';
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { userMessage } from '../shared/user_messages.js';
 
-type TableEditorInsertMessage = Extract<TableEditorWebviewToHost, { type: 'insert' }>;
+type TableEditorInsertPayload = Extract<TableEditorWebviewToHost, { type: 'insert' }>['payload'];
 
 interface InsertionTarget {
   editor: vscode.TextEditor;
@@ -68,29 +69,42 @@ async function runOpenTableEditorCommand(dependencies: CommandDependencies): Pro
     },
   });
   const extensionChannel = createExtensionChannel(tableEditorProtocol, createWebviewTransport(configurePanel.webview));
-  startPdfConfigureSession({
-    panel: configurePanel,
-    sendInit: extensionChannel.send.init,
-    sendError: (message) => {
-      extensionChannel.send.error({ message });
+  let isInserting = false;
+  const unsubscribe = extensionChannel.on({
+    ready: () => {
+      extensionChannel.send.init(buildTableEditorInitMessage({ format: initialFormatFor(target) }));
     },
-    subscribeMessages: (listener) => extensionChannel.subscribe(listener),
-    message: {
-      isApplyMessage: isTableEditorInsertMessage,
-      buildInitPayload: () => buildTableEditorInitMessage({ format: initialFormatFor(target) }),
-      runApply: async (message) => {
-        await insertTableCode({ target, message, outputChannel });
-      },
-      onPreviewLoadFailed: (message, channel) => {
-        channel?.appendLine(`[open-table-editor] unexpected message: ${JSON.stringify(message)}`);
-      },
+    cancel: () => {
+      configurePanel.dispose();
     },
-    error: {
-      operationName: 'open-table-editor',
-      cancelledMessage: userMessage('message.tableEditor.cancelled'),
-      failedMessage: (reason) => userMessage('message.tableEditor.applyFailed', reason),
+    insert: (payload) => {
+      if (isInserting) {
+        return;
+      }
+      isInserting = true;
+      void (async (): Promise<void> => {
+        try {
+          await insertTableCode({ target, payload, outputChannel });
+        } catch (error) {
+          await reportConfigureApplyError({
+            operationName: 'open-table-editor',
+            error,
+            panel: configurePanel,
+            cancelledMessage: userMessage('message.tableEditor.cancelled'),
+            failedMessage: (reason) => userMessage('message.tableEditor.applyFailed', reason),
+            outputChannel,
+            sendError: (message) => {
+              extensionChannel.send.error({ message });
+            },
+          });
+        } finally {
+          isInserting = false;
+        }
+      })();
     },
-    outputChannel,
+  });
+  configurePanel.onDidDispose(() => {
+    unsubscribe();
   });
 }
 
@@ -120,10 +134,6 @@ function insertionFormatForDocument(document: vscode.TextDocument): InsertionFor
   return undefined;
 }
 
-function isTableEditorInsertMessage(message: TableEditorWebviewToHost): message is TableEditorInsertMessage {
-  return message.type === 'insert';
-}
-
 function buildTableEditorInitMessage(params: {
   format: TableEditorFormat;
 }): Extract<TableEditorHostToWebview, { type: 'init' }>['payload'] {
@@ -135,10 +145,10 @@ function buildTableEditorInitMessage(params: {
 
 async function insertTableCode(params: {
   target: InsertionTarget | undefined;
-  message: TableEditorInsertMessage;
+  payload: TableEditorInsertPayload;
   outputChannel: LineOutputChannel;
 }): Promise<void> {
-  const { target, message, outputChannel } = params;
+  const { target, payload, outputChannel } = params;
   if (target === undefined) {
     throw new Error(userMessage('message.tableEditor.noTarget'));
   }
@@ -147,11 +157,11 @@ async function insertTableCode(params: {
     throw new Error(userMessage('message.tableEditor.targetClosed'));
   }
   const succeeded = await editor.edit((editBuilder) => {
-    editBuilder.insert(editor.selection.active, message.payload.code);
+    editBuilder.insert(editor.selection.active, payload.code);
   });
   if (!succeeded) {
     throw new Error(userMessage('message.tableEditor.targetNotModifiable'));
   }
-  outputChannel.appendLine(`[open-table-editor] inserted ${message.payload.format} table.`);
+  outputChannel.appendLine(`[open-table-editor] inserted ${payload.format} table.`);
   await vscode.window.showInformationMessage(userMessage('message.tableEditor.inserted'));
 }

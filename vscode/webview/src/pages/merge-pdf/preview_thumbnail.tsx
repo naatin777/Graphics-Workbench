@@ -6,10 +6,9 @@ import type {
   MergePdfWebviewToHost,
 } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 import type { PageProtocolClient } from '@webview-shared/vscode';
+import type { MessageReader } from '@webview-shared/messages';
 import { renderFirstPdfPage } from '@webview-shared/pdf/render_pdf_pages';
 import { toErrorMessage } from '@webview-shared/error';
-
-import type { MergePdfLabels } from './labels';
 
 export type PdfOptions = Pick<Extract<MergePdfHostToWebview, { type: 'init' }>['payload'], 'preview' | 'resources'>;
 export type MergeThumbnailChannel = PageProtocolClient<MergePdfWebviewToHost, MergePdfHostToWebview>;
@@ -17,7 +16,7 @@ export type MergeThumbnailChannel = PageProtocolClient<MergePdfWebviewToHost, Me
 export function PreviewThumbnail(props: {
   source: MergePdfSource;
   options: PdfOptions;
-  labels: MergePdfLabels;
+  t: MessageReader;
   channel: MergeThumbnailChannel;
   onError: () => void;
 }): JSX.Element {
@@ -86,7 +85,7 @@ export function PreviewThumbnail(props: {
         frame = element;
       }}
       class='thumbnail'
-      aria-label={`${props.labels.preview.ariaLabel}: ${props.source.fileName}`}
+      aria-label={`${props.t('webview.mergePdf.previewAriaLabel')}: ${props.source.fileName}`}
       aria-busy={status() === 'loading'}
     >
       <canvas
@@ -94,18 +93,18 @@ export function PreviewThumbnail(props: {
           canvas = element;
         }}
         class='thumbnail__canvas'
-        aria-label={`${props.labels.preview.title}: ${props.source.fileName}`}
+        aria-label={`${props.t('webview.mergePdf.preview')}: ${props.source.fileName}`}
       />
       <Show when={status() === 'waiting' || status() === 'loading'}>
-        <span class='thumbnail__status'>{props.labels.preview.loading}</span>
+        <span class='thumbnail__status'>{props.t('webview.mergePdf.previewLoading')}</span>
       </Show>
       <Show when={status() === 'error'}>
         <span
           class='thumbnail__status thumbnail__status--error'
           role='img'
-          aria-label={props.labels.preview.renderError}
+          aria-label={props.t('webview.mergePdf.previewRenderError')}
         >
-          {props.labels.preview.renderError}
+          {props.t('webview.mergePdf.previewRenderError')}
         </span>
       </Show>
     </div>
