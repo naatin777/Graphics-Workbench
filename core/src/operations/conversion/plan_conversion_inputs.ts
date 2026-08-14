@@ -116,6 +116,8 @@ export interface PlanRasterSourceConversionInputsOptions {
   maxInputPixels: number;
   signal?: AbortSignal;
   isDrawioImagePath: (path: string) => boolean;
+  frameMode?: 'first' | 'all';
+  maxAnimationPixels?: number;
 }
 
 export async function planRasterSourceConversionInputs(
@@ -123,7 +125,30 @@ export async function planRasterSourceConversionInputs(
 ): Promise<RasterInput[]> {
   const page = options.page ?? (options.isDrawioImagePath(options.sourcePath) ? '1' : undefined);
   if (isRasterImagePath(options.sourcePath)) {
-    return planRasterFrameItems(options);
+    const frameOptions: {
+      sourcePath: string;
+      workspacePath: string;
+      workspaceName: string;
+      outputTemplate: string;
+      allowedExtensions: readonly string[];
+      maxInputPixels: number;
+      frameMode?: 'first' | 'all';
+      maxAnimationPixels?: number;
+    } = {
+      sourcePath: options.sourcePath,
+      workspacePath: options.workspacePath,
+      workspaceName: options.workspaceName,
+      outputTemplate: options.outputTemplate,
+      allowedExtensions: options.allowedExtensions,
+      maxInputPixels: options.maxInputPixels,
+    };
+    if (options.frameMode !== undefined) {
+      frameOptions.frameMode = options.frameMode;
+    }
+    if (options.maxAnimationPixels !== undefined) {
+      frameOptions.maxAnimationPixels = options.maxAnimationPixels;
+    }
+    return planRasterFrameItems(frameOptions);
   }
 
   options.signal?.throwIfAborted();
@@ -256,6 +281,8 @@ export async function planRasterConversionInputs(options: PlanRasterConversionIn
     outputTemplate,
     allowedExtensions: spec.extensions,
     maxInputPixels: options.maxInputPixels,
+    frameMode: options.frameMode,
+    ...(options.maxAnimationPixels !== undefined && { maxAnimationPixels: options.maxAnimationPixels }),
     ...(options.signal !== undefined && { signal: options.signal }),
     isDrawioImagePath: options.isDrawioImagePath,
   });

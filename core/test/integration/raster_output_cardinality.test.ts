@@ -3,24 +3,26 @@ import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { requireValue, readPdfPages } from '@graphics-workbench/core/testing';
+import { requireValue, readPdfPages, testConversionConfiguration } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
 
 import {
-  convertToPdfFiles,
-  executeDrawio,
-  executeRasterConversion,
-  rasterFormatSpecs,
+  convertSinglePdf,
+  convertSinglePng,
+  convertSingleJpeg,
+  convertSingleWebp,
+  convertSingleAvif,
+  convertSingleGif,
+  convertSingleTiff,
+  type ConversionSource,
+  type ConversionConfiguration,
 } from '@graphics-workbench/core/conversion';
 
 const inputFormats = ['gif', 'tiff'] as const;
 const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif', 'gif', 'tiff'] as const;
 
-function stubRunPdfToPng(): never {
-  throw new Error('PDF to PNG rendering must not run in this test.');
-}
 describe('GIF/TIFFを各出力形式へ変換する', () => {
-  it('2フレームのGIF/TIFFをPDFへ変換すると全フレームを2ページへ展開し、他のラスター出力へは先頭フレームだけを4x4の赤画像として出力する', async () => {
+  it('2フレームのGIF/TIFFをPDFへ変換すると全フレームを2ページへ展開し、他のラスター出力へは先頭フレームだけを4x4の赤画像として出力する（GIF→WebPはアニメーションを保持する）', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-additional-image-output-'));
 
     for (const inputFormat of inputFormats) {
@@ -32,7 +34,7 @@ describe('GIF/TIFFを各出力形式へ変換する', () => {
           continue;
         }
         const outputPath = path.join(workspacePath.path, `source-${inputFormat}.${outputFormat}`);
-        await convertImage(inputFormat, outputFormat, sourcePath, outputPath, workspacePath.path);
+        await convertImage(outputFormat, sourcePath, outputPath, workspacePath.path);
         await assertOutput(inputFormat, outputFormat, outputPath);
       }
     }
@@ -40,38 +42,45 @@ describe('GIF/TIFFを各出力形式へ変換する', () => {
 });
 
 async function convertImage(
-  inputFormat: (typeof inputFormats)[number],
   outputFormat: (typeof outputFormats)[number],
   sourcePath: string,
   outputPath: string,
   workspacePath: string,
 ): Promise<void> {
-  const item = { sourcePath, outputPath, workspacePath };
+  const source: ConversionSource = {
+    sourcePath,
+    workspacePath,
+    workspaceName: path.basename(workspacePath),
+  };
   const runtime = { resolveConflicts: async (): Promise<'overwrite'> => 'overwrite' };
+  const configuration: ConversionConfiguration = testConversionConfiguration({
+    maxInputPixels: 100_000_000,
+    maxAnimationPixels: 100_000_000,
+    webpEffort: 0,
+    avifEffort: 0,
+  });
+  const outputTemplate = `\${fileDirname}/${path.basename(outputPath)}`;
 
   if (outputFormat === 'pdf') {
-    await convertToPdfFiles({
-      inputs: [item],
-      runtime,
-      maxInputPixels: 100_000_000,
-    });
+    const result = await convertSinglePdf([source], outputTemplate, configuration, runtime);
+    if (result.isErr()) {
+      throw result.error;
+    }
     return;
   }
 
-  const common = {
-    inputs: [item],
-    pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
-    drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
-    runtime,
-    maxInputPixels: 100_000_000,
-    runId: `${inputFormat}-${outputFormat}`,
-  };
-
-  await executeRasterConversion({
-    ...common,
-    spec: rasterFormatSpecs[outputFormat],
-    ...((outputFormat === 'webp' || outputFormat === 'avif') && { outputOptions: { effort: 0 } }),
-  });
+  const single = {
+    png: convertSinglePng,
+    jpeg: convertSingleJpeg,
+    webp: convertSingleWebp,
+    avif: convertSingleAvif,
+    gif: convertSingleGif,
+    tiff: convertSingleTiff,
+  } as const;
+  const result = await single[outputFormat]([source], outputTemplate, configuration, runtime);
+  if (result.isErr()) {
+    throw result.error;
+  }
 }
 
 async function writeAnimatedImageTestData(filePath: string, format: (typeof inputFormats)[number]): Promise<void> {
@@ -120,8 +129,13 @@ async function assertOutput(
   const metadata = await sharp(buffer).metadata();
   // sharpのmetadataはAVIFを'heif'として報告する。
   assert.strictEqual(metadata.format, outputFormat === 'avif' ? 'heif' : outputFormat);
-  // GIF/TIFFを静止ラスター出力へ変換した場合、先頭フレームだけを1ページに保つ。
-  assert.strictEqual(metadata.pages ?? 1, 1, `input ${inputFormat} must keep only the first frame for ${outputFormat}`);
+  // GIF→WebPだけはアニメーションを保持し2ページになる。それ以外は先頭フレームだけを1ページに保つ。
+  const expectedPages = inputFormat === 'gif' && outputFormat === 'webp' ? 2 : 1;
+  assert.strictEqual(
+    metadata.pages ?? 1,
+    expectedPages,
+    `input ${inputFormat} page count for ${outputFormat} must be ${expectedPages}`,
+  );
   assert.strictEqual(metadata.width, 4);
   assert.strictEqual(metadata.height, 4);
 

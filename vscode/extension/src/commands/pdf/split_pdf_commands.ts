@@ -17,18 +17,15 @@ import {
   splitPdfByPageGroups,
   type SplitPdfInput,
 } from '@graphics-workbench/core/pdf';
+import { toConversionResult, type ConversionResult } from '@graphics-workbench/core/conversion';
 import { assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
+import { isAbortError, type ConversionExecutionContext } from '@graphics-workbench/core/runtime';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runSinglePdfConfigureCommand } from '../lifecycle/run_single_pdf_configure.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import {
-  isAbortError,
-  type CommittedConversionOutput,
-  type ConversionExecutionContext,
-} from '@graphics-workbench/core/runtime';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 
 function readSplitPdfTemplate(dependencies: CommandDependencies): string {
@@ -40,39 +37,32 @@ export async function splitPdfAllPagesCommand(
   dependencies: CommandDependencies,
 ): Promise<void> {
   const { outputChannel } = dependencies;
-  try {
-    if (sourceUris.length === 0) {
-      throw new Error('No PDF files were selected.');
-    }
-
-    const outputTemplate = readSplitPdfTemplate(dependencies);
-    // 分割コマンドの出力テンプレートは本質的に${page}を持つ必要がある。
-    // 欠落すると全ページが同一パスへ衝突し、最後のページだけが残る。
-    assertPageTemplateForSplitOutput(outputTemplate, 2);
-    const inputs = sourceUris.map((sourceUri) => planSplitPdfInput(sourceUri, outputTemplate));
-    await runConversionLifecycle({
-      operationName: 'split-pdf',
-      outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: {
-        progressTitle: userMessage('message.progress.splitPdf.title', inputs.length),
-        prepareMessage: userMessage('message.progress.preparePdfSplit'),
-        successMessage: (count) => userMessage('message.splitPdf.success', count),
-        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-        cancelledMessage: userMessage('message.splitPdf.cancelled'),
-        failedMessage: (reason) => userMessage('message.splitPdf.failed', reason),
-      },
-      run: async (runtime) => splitPdfAllPages({ inputs, runtime }),
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.splitPdf.cancelled'));
-      return;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage('message.splitPdf.failed', message));
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage(userMessage('message.splitPdf.failed', 'No PDF files were selected.'));
+    return;
   }
+
+  const outputTemplate = readSplitPdfTemplate(dependencies);
+  // 分割コマンドの出力テンプレートは本質的に${page}を持つ必要がある。
+  // 欠落すると全ページが同一パスへ衝突し、最後のページだけが残る。
+  assertPageTemplateForSplitOutput(outputTemplate, 2);
+  await runConversionLifecycle({
+    operationName: 'split-pdf',
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: {
+      progressTitle: userMessage('message.progress.splitPdf.title', sourceUris.length),
+      prepareMessage: userMessage('message.progress.preparePdfSplit'),
+      successMessage: (count) => userMessage('message.splitPdf.success', count),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage('message.splitPdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.splitPdf.failed', reason),
+    },
+    run: async (runtime) => {
+      const inputs = sourceUris.map((sourceUri) => planSplitPdfInput(sourceUri, outputTemplate));
+      return toConversionResult(async () => splitPdfAllPages({ inputs, runtime }), runtime.signal);
+    },
+  });
 }
 
 function planSplitPdfInput(sourceUri: vscode.Uri, outputTemplate: string): SplitPdfInput {
@@ -216,46 +206,48 @@ async function applyConfiguredSplit(params: {
   pageCount: number;
   rows: SplitPdfPageGroupRow[];
   runtime: ConversionExecutionContext;
-}): Promise<CommittedConversionOutput[]> {
+}): Promise<ConversionResult> {
   const { inputUri, workspaceFolder, outputTemplate, pageCount, rows, runtime } = params;
 
-  validateConfiguredRows(rows, pageCount);
-  if (!outputTemplate.includes('${page}')) {
-    throw new Error('outputPath.split.pdf must contain ${page} for splitPdf.configure.');
-  }
+  return toConversionResult(async () => {
+    validateConfiguredRows(rows, pageCount);
+    if (!outputTemplate.includes('${page}')) {
+      throw new Error('outputPath.split.pdf must contain ${page} for splitPdf.configure.');
+    }
 
-  const sourcePath = inputUri.fsPath;
-  const workspacePath = workspaceFolder.uri.fsPath;
-  const outputContext = {
-    workspacePath,
-    workspaceName: workspaceFolder.name,
-    sourcePath,
-  };
+    const sourcePath = inputUri.fsPath;
+    const workspacePath = workspaceFolder.uri.fsPath;
+    const outputContext = {
+      workspacePath,
+      workspaceName: workspaceFolder.name,
+      sourcePath,
+    };
 
-  for (const row of rows) {
-    const outputPath = resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
-    await assertWritablePathInWorkspace(outputPath, workspacePath);
-  }
+    for (const row of rows) {
+      const outputPath = resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
+      await assertWritablePathInWorkspace(outputPath, workspacePath);
+    }
 
-  return splitPdfByPageGroups({
-    inputs: [
-      {
-        sourcePath,
-        workspacePath,
-        pageGroups: rows.map((row) => row.pages),
-        outputPathForGroup: (groupIndex): string => {
-          const row = rows[groupIndex];
+    return splitPdfByPageGroups({
+      inputs: [
+        {
+          sourcePath,
+          workspacePath,
+          pageGroups: rows.map((row) => row.pages),
+          outputPathForGroup: (groupIndex): string => {
+            const row = rows[groupIndex];
 
-          if (!row) {
-            throw new Error(`No output name was supplied for group ${groupIndex}.`);
-          }
+            if (!row) {
+              throw new Error(`No output name was supplied for group ${groupIndex}.`);
+            }
 
-          return resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
+            return resolvePdfOutputPath(outputTemplate, { ...outputContext, page: row.outputName });
+          },
         },
-      },
-    ],
-    runtime,
-  });
+      ],
+      runtime,
+    });
+  }, runtime.signal);
 }
 
 function validateConfiguredRows(rows: readonly SplitPdfPageGroupRow[], pageCount: number): void {

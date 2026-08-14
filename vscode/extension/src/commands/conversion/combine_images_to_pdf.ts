@@ -1,17 +1,16 @@
 import * as vscode from 'vscode';
 
-import { combineImagesToPdf } from '@graphics-workbench/core/conversion';
+import { convertCombinePdf } from '@graphics-workbench/core/conversion';
 import { assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
-import type { Configuration } from '../../generated/extension_manifest.js';
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 import { assertRandomTemplateForCombine, createRandomToken, resolveOutputPath } from '@graphics-workbench/core/output';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createSvgToPdfBackend } from './convert_to_pdf.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import { localeMap } from '../../locale_map.js';
+import { toConversionConfiguration } from '../shared/conversion_adapter.js';
 
 export async function combineImagesToPdfCommand(
   sourceUris: vscode.Uri[],
@@ -116,28 +115,32 @@ async function runCombineConversion(options: {
   sourceUris: vscode.Uri[];
   outputPath: string;
   workspacePath: string;
-  configuration: Configuration;
+  configuration: ReturnType<CommandDependencies['getConfiguration']>;
   outputChannel: LineOutputChannel;
 }): Promise<void> {
   const { configuration } = options;
-  const svgToPdfTools = createSvgToPdfBackend(configuration);
-  const inputs = options.sourceUris.map((sourceUri) => ({ sourcePath: sourceUri.fsPath }));
+  const sources = options.sourceUris.map((sourceUri) => {
+    const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
+    return {
+      sourcePath: sourceUri.fsPath,
+      workspacePath: options.workspacePath,
+      workspaceName: workspace?.name ?? '',
+    };
+  });
 
   await runConversionLifecycle({
     operationName: 'combine-images-to-pdf',
     outputChannel: options.outputChannel,
     resolveConflicts: resolveOutputConflicts,
-    messages: createOutputConversionMessages('PDF', inputs.length),
+    messages: createOutputConversionMessages('PDF', sources.length),
     run: async (runtime) =>
-      combineImagesToPdf({
-        inputs,
-        outputPath: options.outputPath,
-        workspacePath: options.workspacePath,
+      convertCombinePdf(
+        sources,
+        options.outputPath,
+        options.workspacePath,
+        toConversionConfiguration(configuration),
         runtime,
-        maxInputPixels: configuration.raster.maxInputPixels(),
-        tools: { svgToPdfTools },
-        platform: process.platform,
-      }),
+      ),
   });
 }
 

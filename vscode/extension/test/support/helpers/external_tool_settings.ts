@@ -4,7 +4,7 @@ import {
   executeDrawio,
   type DrawioBackend,
   type PdfRenderBackend,
-} from '@graphics-workbench/core/conversion';
+} from '@graphics-workbench/core/external-tools';
 
 export function readConfiguredConversionTools(): {
   pdfRenderTools: PdfRenderBackend;

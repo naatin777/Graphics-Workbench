@@ -55,9 +55,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "test": "npm run build && vitest run",
-    "lint": "oxlint --config oxlint.config.ts --type-aware src test",
-    "lint:fix": "oxlint --config oxlint.config.ts --type-aware --fix src test",
-    "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src test"
+    "lint": "oxlint --type-aware src test",
+    "lint:fix": "oxlint --type-aware --fix src test",
+    "lint:audit": "oxlint --type-aware -D all -D nursery src test"
   },
   "dependencies": {
     "valibot": "1.4.2"

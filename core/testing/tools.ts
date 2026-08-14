@@ -1,17 +1,6 @@
-import {
-  createPdfRenderBackend,
-  executeDrawio,
-  type DrawioBackend,
-  type PdfRenderBackend,
-} from '@graphics-workbench/core/conversion';
+import type { ConversionConfiguration } from '@graphics-workbench/core/conversion';
 
 export const defaultRasterMaxInputPixels = 268_402_689;
-
-export interface ConfiguredConversionTools {
-  pdfRenderTools: PdfRenderBackend;
-  rsvgConvertPath: string;
-  drawioTools: DrawioBackend;
-}
 
 /**
  * External tool paths are injected explicitly through environment variables;
@@ -37,13 +26,36 @@ export function requireConfiguredTool(environmentVariable: string, toolName: str
   return configured;
 }
 
-export function readConfiguredConversionTools(): ConfiguredConversionTools {
+export function readConfiguredConversionConfiguration(): ConversionConfiguration {
   return {
-    pdfRenderTools: createPdfRenderBackend(),
-    rsvgConvertPath: requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH', 'rsvg-convert'),
-    drawioTools: {
-      drawioPath: requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io'),
-      runDrawio: executeDrawio,
+    maxInputPixels: defaultRasterMaxInputPixels,
+    maxAnimationPixels: defaultRasterMaxInputPixels,
+    platform: process.platform,
+    svgToPdf: {
+      engine: 'rsvg-convert',
+      rsvgConvertPath: requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH', 'rsvg-convert'),
+      chromePath: '',
     },
+    drawioPath: requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io'),
+    avifEffort: 4,
+    webpEffort: 4,
+  };
+}
+
+/** Builds a minimal {@link ConversionConfiguration} that does not probe external tools. */
+export function testConversionConfiguration(overrides: Partial<ConversionConfiguration> = {}): ConversionConfiguration {
+  return {
+    maxInputPixels: defaultRasterMaxInputPixels,
+    maxAnimationPixels: defaultRasterMaxInputPixels,
+    platform: process.platform,
+    svgToPdf: {
+      engine: 'rsvg-convert',
+      rsvgConvertPath: 'rsvg-convert',
+      chromePath: 'chrome',
+    },
+    drawioPath: 'drawio',
+    avifEffort: 4,
+    webpEffort: 4,
+    ...overrides,
   };
 }

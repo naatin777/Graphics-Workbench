@@ -5,52 +5,44 @@ import * as vscode from 'vscode';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { localeMap } from '../../locale_map.js';
 import { encryptPdfFiles, type EncryptPdfInput } from '@graphics-workbench/core/pdf';
+import { toConversionResult } from '@graphics-workbench/core/conversion';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/runtime';
 
 export async function encryptPdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const { outputChannel } = dependencies;
-  try {
-    if (sourceUris.length === 0) {
-      throw new Error('No PDF files were selected.');
-    }
-
-    const password = await promptForPassword();
-
-    if (password === undefined) {
-      return;
-    }
-
-    const configuration = dependencies.getConfiguration();
-    const outputTemplate = configuration.outputPath.encryptPdf();
-    const inputs = sourceUris.map((sourceUri) => planEncryptPdfInput(sourceUri, outputTemplate));
-    await runConversionLifecycle({
-      operationName: 'encrypt-pdf',
-      outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: {
-        progressTitle: userMessage('message.progress.encryptPdf.title', inputs.length),
-        prepareMessage: userMessage('message.progress.prepareEncryptPdf'),
-        successMessage: (count) => userMessage('message.encryptPdf.success', count),
-        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-        cancelledMessage: userMessage('message.encryptPdf.cancelled'),
-        failedMessage: (reason) => userMessage('message.encryptPdf.failed', reason),
-      },
-      run: async (runtime) => encryptPdfFiles({ inputs, password, runtime }),
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.encryptPdf.cancelled'));
-      return;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage('message.encryptPdf.failed', message));
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage(userMessage('message.encryptPdf.failed', 'No PDF files were selected.'));
+    return;
   }
+
+  const password = await promptForPassword();
+  if (password === undefined) {
+    return;
+  }
+
+  const configuration = dependencies.getConfiguration();
+  const outputTemplate = configuration.outputPath.encryptPdf();
+  await runConversionLifecycle({
+    operationName: 'encrypt-pdf',
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: {
+      progressTitle: userMessage('message.progress.encryptPdf.title', sourceUris.length),
+      prepareMessage: userMessage('message.progress.prepareEncryptPdf'),
+      successMessage: (count) => userMessage('message.encryptPdf.success', count),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage('message.encryptPdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.encryptPdf.failed', reason),
+    },
+    run: async (runtime) => {
+      const inputs = sourceUris.map((sourceUri) => planEncryptPdfInput(sourceUri, outputTemplate));
+      return toConversionResult(async () => encryptPdfFiles({ inputs, password, runtime }), runtime.signal);
+    },
+  });
 }
 
 async function promptForPassword(): Promise<string | undefined> {

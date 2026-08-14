@@ -1,4 +1,42 @@
-export { combineImagesToPdf, type CombineImagesToPdfOptions } from '../operations/conversion/combine_images_to_pdf.js';
+export {
+  convertSinglePdf,
+  convertSingleSvg,
+  convertSinglePng,
+  convertSingleJpeg,
+  convertSingleWebp,
+  convertSingleAvif,
+  convertSingleGif,
+  convertSingleTiff,
+  convertSingleDrawio,
+} from '../operations/conversion/convert_single.js';
+export {
+  convertSplitPdf,
+  convertSplitSvg,
+  convertSplitPng,
+  convertSplitJpeg,
+  convertSplitWebp,
+  convertSplitAvif,
+  convertSplitGif,
+  convertSplitTiff,
+} from '../operations/conversion/convert_split.js';
+export { convertCombinePdf } from '../operations/conversion/convert_combine.js';
+export {
+  CancelledError,
+  InvalidInputError,
+  UnsupportedFormatError,
+  ExternalToolError,
+  FileSystemError,
+  OutputConflictError,
+  conversionErrorMessage,
+  isConversionCancelled,
+  toConversionResult,
+  type ConversionConfiguration,
+  type ConversionError,
+  type ConversionResult,
+  type ConversionSource,
+} from '../operations/conversion/convert_errors.js';
+export { assertAnimationPixelLimit } from '../operations/conversion/animation_pixel_limit.js';
+export { createDrawioXml, parseSvgSize, type DrawioPage } from '../operations/conversion/convert_to_drawio.js';
 export {
   compressibleFormatForPath,
   compressImageFiles,
@@ -6,83 +44,16 @@ export {
   type CompressImageInput,
   type CompressImageOptions,
 } from '../operations/conversion/compress_image.js';
-export { assertAnimationPixelLimit } from '../operations/conversion/animation_pixel_limit.js';
-export {
-  convertDrawioToPagePdfs,
-  convertDrawioToSinglePdf,
-  type DrawioPdfInput,
-} from '../operations/conversion/convert_drawio_to_pdf.js';
-export {
-  convertToDrawioFiles,
-  createDrawioXml,
-  parseSvgSize,
-  type ConvertToDrawioOptions,
-  type DrawioComposeInput,
-  type DrawioPage,
-} from '../operations/conversion/convert_to_drawio.js';
 export {
   convertToPdfFiles,
-  executeChrome,
-  executeRsvgConvert,
-  validateGeneratedPdf,
-  validateSvgToPdfOptions,
-  writeSourceAsPdf,
   type ConvertToPdfFilesOptions,
   type PdfInput,
-  type WriteSourceAsPdfOptions,
 } from '../operations/conversion/convert_to_pdf.js';
 export {
-  convertToSvgFiles,
-  type ConvertToSvgFilesOptions,
-  type SvgInput,
-} from '../operations/conversion/convert_to_svg.js';
-export {
-  artifactsForOutputs,
-  inspectPdfRasterSource,
-  planPdfRasterConversion,
-  resolvePdfRasterPages,
-  runPdfRasterConversion,
-  type PdfRasterArtifact,
-  type PdfRasterConversionPlan,
-  type PdfRasterConversionResult,
-  type PdfRasterPageSelection,
-  type PdfRasterSource,
-  type PdfRasterTarget,
-} from '../operations/conversion/pdf_raster_conversion.js';
-export {
-  planPdfPageItems,
-  type PdfPageInput,
-  type PdfPageSource,
-} from '../operations/conversion/plan_pdf_page_items.js';
-export {
-  planPdfPageConversionInputs,
-  planRasterConversionInputs,
-  planRasterFrameItems,
-  planRasterFrameItemsFromMetadata,
-  planRasterSourceConversionInputs,
-  type PlanRasterConversionInputsOptions,
-  type PlanRasterSourceConversionInputsOptions,
-  type RasterFrameAnalysis,
-  type RasterFramePlanOptions,
-} from '../operations/conversion/plan_conversion_inputs.js';
-export {
-  executeRasterConversion,
-  rasterFormatSpecs,
-  type ExecuteRasterConversionOptions,
-  type RasterConversionTarget,
-  type RasterFormatSpec,
-  type RasterInput,
-} from '../operations/conversion/raster_conversion.js';
-export type { CommittedConversionOutput } from '../operations/lifecycle/commit_conversion_outputs.js';
-export {
   closeRasterPipeline,
-  formatRasterInputPixelLimitMessage,
-  isRasterInputPixelLimitError,
   openRasterInput,
-  rasterAnimationEncoderOptions,
   readRasterAnimationMetadata,
   type RasterAnimationMetadata,
-  type RasterPipeline,
 } from '../operations/conversion/raster_input.js';
 export {
   IMAGE_ROTATION_ANGLES,
@@ -91,10 +62,3 @@ export {
   type RotateImageInput,
   type RotateImageOptions,
 } from '../operations/conversion/rotate_image.js';
-export { executeDrawio, type DrawioBackend, type RunDrawio } from '../operations/conversion/tools/drawio_tools.js';
-export {
-  createPdfRenderBackend,
-  type PdfRenderBackend,
-  type RunPdfToSvg,
-} from '../operations/conversion/tools/pdf_render_tools.js';
-export type { SvgToPdfBackend } from '../operations/conversion/tools/svg_to_pdf_tools.js';

@@ -1,11 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { PdfRasterSource } from '@graphics-workbench/core/conversion';
 import type { TerminalKey, TerminalScreen } from '../src/screen.js';
 import { conflictDecision, runTerminalUi } from '../src/app.js';
-import type { TerminalUiConversionResult } from '../src/conversion_adapter.js';
+import type { TerminalUiConversionResult, TerminalUiPdfSource } from '../src/conversion_adapter.js';
 
-const source: PdfRasterSource = {
+const source: TerminalUiPdfSource = {
   sourcePath: '/tmp/paper.pdf',
   workspacePath: '/tmp',
   workspaceName: 'tmp',
@@ -13,8 +12,7 @@ const source: PdfRasterSource = {
 };
 
 const successfulResult: TerminalUiConversionResult = {
-  artifacts: [],
-  outputs: [{ outputPath: '/tmp/paper/1.png', workspacePath: '/tmp', sha256: 'testdata' }],
+  outputs: [{ outputPath: '/tmp/paper/1.png' }],
   cleanup: { attempted: 1, succeeded: 1, failures: [] },
 };
 

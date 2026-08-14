@@ -1,15 +1,18 @@
 import { defineConfig } from 'oxlint';
 
-import baseConfig from '../oxlint.base.ts';
+import rootConfig, { projectRules } from '../oxlint.config.ts';
 
 export default defineConfig({
-  extends: [baseConfig],
+  extends: [rootConfig],
   jsPlugins: [
     {
       name: 'project',
       specifier: '../scripts/oxlint-project-plugin.mjs',
     },
   ],
+  rules: {
+    ...projectRules,
+  },
   overrides: [
     {
       // The testing kit runs outside a single TS program (testkit types come

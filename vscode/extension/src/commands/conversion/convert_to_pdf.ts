@@ -1,36 +1,20 @@
 import * as vscode from 'vscode';
 
+import { convertSinglePdf } from '@graphics-workbench/core/conversion';
 import type { Configuration } from '../../generated/extension_manifest.js';
-
-import { isSupportedPdfConversionSource, logicalSourcePathForOutputTemplate } from '@graphics-workbench/core/formats';
-import { resolveChromeExecutablePath } from '../../config/rendering/chrome_cli_options.js';
-import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
-import {
-  convertToPdfFiles,
-  executeChrome,
-  executeRsvgConvert,
-  validateSvgToPdfOptions,
-  type PdfInput,
-  type SvgToPdfBackend,
-} from '@graphics-workbench/core/conversion';
-import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
+import { toConversionConfiguration, toConversionSources } from '../shared/conversion_adapter.js';
+
+export function outputTemplateForSource(configuration: Configuration): string {
+  return configuration.outputPath.single.pdf();
+}
 
 export async function convertToPdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const { outputChannel } = dependencies;
-  await convertSelectedSourcesToPdf(sourceUris, dependencies, outputChannel);
-}
-
-async function convertSelectedSourcesToPdf(
-  sourceUris: vscode.Uri[],
-  dependencies: CommandDependencies,
-  outputChannel: LineOutputChannel,
-): Promise<void> {
   if (sourceUris.length === 0) {
     await vscode.window.showErrorMessage(userMessage('message.convertToPdf.failed', 'No files were selected.'));
     return;
@@ -50,71 +34,12 @@ async function convertSelectedSourcesToPdf(
     },
     run: async (runtime) => {
       const configuration = dependencies.getConfiguration();
-      const maxInputPixels = configuration.raster.maxInputPixels();
-      const svgToPdfTools = createSvgToPdfBackend(configuration);
-      validateSvgToPdfOptions(svgToPdfTools);
-      const drawioTools = createDrawioBackend(configuration);
-      const plannedInputs: PdfInput[] = [];
-      const outputTemplate = outputTemplateForSource(configuration);
-      for (const sourceUri of sourceUris) {
-        runtime.signal?.throwIfAborted();
-        plannedInputs.push(
-          ...(await planToPdfInputs(sourceUri, outputTemplate, logicalSourcePathForOutputTemplate(sourceUri.fsPath))),
-        );
-      }
-      runtime.signal?.throwIfAborted();
-      return convertToPdfFiles({
-        inputs: plannedInputs,
-        maxInputPixels,
-        tools: { svgToPdfTools, drawioTools },
+      return convertSinglePdf(
+        toConversionSources(sourceUris),
+        configuration.outputPath.single.pdf(),
+        toConversionConfiguration(configuration),
         runtime,
-      });
+      );
     },
   });
-}
-
-export function outputTemplateForSource(configuration: Configuration): string {
-  return configuration.outputPath.single.pdf();
-}
-
-export function createSvgToPdfBackend(configuration: Configuration): SvgToPdfBackend {
-  return {
-    engine: configuration.convertToPdf.svg.engine(),
-    rsvgConvertPath: configuration.execPath.rsvgConvert(),
-    chromePath: resolveChromeExecutablePath(configuration),
-    runRsvgConvert: executeRsvgConvert,
-    runChrome: executeChrome,
-  };
-}
-
-async function planToPdfInputs(
-  sourceUri: vscode.Uri,
-  outputTemplate: string,
-  templateSourcePath: string,
-): Promise<PdfInput[]> {
-  if (sourceUri.scheme !== 'file') {
-    throw new Error(`Only local image files are supported: ${sourceUri.toString()}`);
-  }
-
-  const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
-
-  if (!workspace) {
-    throw new Error(`The image must be inside an open workspace: ${sourceUri.fsPath}`);
-  }
-
-  if (!isSupportedPdfConversionSource(sourceUri.fsPath)) {
-    throw new Error(`Unsupported input format: ${sourceUri.fsPath}`);
-  }
-
-  return [
-    {
-      sourcePath: sourceUri.fsPath,
-      workspacePath: workspace.uri.fsPath,
-      outputPath: resolvePdfOutputPath(outputTemplate, {
-        sourcePath: templateSourcePath,
-        workspacePath: workspace.uri.fsPath,
-        workspaceName: workspace.name,
-      }),
-    },
-  ];
 }

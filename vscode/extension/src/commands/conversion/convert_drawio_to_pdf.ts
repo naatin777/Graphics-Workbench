@@ -1,130 +1,77 @@
 import * as vscode from 'vscode';
 
-import type { Configuration } from '../../generated/extension_manifest.js';
-import { isDrawioPath } from '@graphics-workbench/core/formats';
-import { assertPageTemplateForSplitOutput } from '@graphics-workbench/core/output';
-import type { CommittedConversionOutput, ConversionExecutionContext } from '@graphics-workbench/core/runtime';
-import {
-  convertDrawioToPagePdfs,
-  convertDrawioToSinglePdf,
-  executeDrawio,
-  type DrawioPdfInput,
-} from '@graphics-workbench/core/conversion';
+import { convertSinglePdf, convertSplitPdf } from '@graphics-workbench/core/conversion';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
+import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
 import type { LocaleKeyType } from '../../locale_map.js';
+import { toConversionConfiguration, toConversionSources } from '../shared/conversion_adapter.js';
 
 export async function convertDrawioToPagePdfsCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  await runDrawioToPdfLifecycle(sourceUris, dependencies, {
-    operationName: 'convert-drawio-to-pdf',
-    readTemplate: (configuration) => configuration.outputPath.split.pdf(),
-    validateTemplate: (template) => {
-      assertPageTemplateForSplitOutput(template, 2);
-    },
-    messageKeys: {
-      progressTitle: 'message.progress.convertDrawioToPagePdfs.title',
-      success: 'message.convertDrawioToPagePdfs.success',
-      cancelled: 'message.convertDrawioToPagePdfs.cancelled',
-      failed: 'message.convertDrawioToPagePdfs.failed',
-    },
-    run: async (inputs, drawioPath, runtime) =>
-      convertDrawioToPagePdfs({ inputs, drawioPath, runDrawio: executeDrawio, runtime }),
-  });
+  await runDrawioToPdf(sourceUris, dependencies, { split: true });
 }
 
 export async function convertDrawioToSinglePdfCommand(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
 ): Promise<void> {
-  await runDrawioToPdfLifecycle(sourceUris, dependencies, {
-    operationName: 'convert-drawio-to-single-pdf',
-    readTemplate: (configuration) => configuration.outputPath.single.pdf(),
-    messageKeys: {
-      progressTitle: 'message.progress.convertDrawioToSinglePdf.title',
-      success: 'message.convertDrawioToSinglePdf.success',
-      cancelled: 'message.convertDrawioToSinglePdf.cancelled',
-      failed: 'message.convertDrawioToSinglePdf.failed',
-    },
-    run: async (inputs, drawioPath, runtime) =>
-      convertDrawioToSinglePdf({ inputs, drawioPath, runDrawio: executeDrawio, runtime }),
-  });
+  await runDrawioToPdf(sourceUris, dependencies, { split: false });
 }
 
-async function runDrawioToPdfLifecycle(
+async function runDrawioToPdf(
   sourceUris: vscode.Uri[],
   dependencies: CommandDependencies,
-  options: {
-    operationName: string;
-    readTemplate: (configuration: Configuration) => string;
-    validateTemplate?: (template: string) => void;
-    messageKeys: {
-      progressTitle: LocaleKeyType;
-      success: LocaleKeyType;
-      cancelled: LocaleKeyType;
-      failed: LocaleKeyType;
-    };
-    run: (
-      inputs: DrawioPdfInput[],
-      drawioPath: string,
-      runtime: ConversionExecutionContext,
-    ) => Promise<CommittedConversionOutput[]>;
-  },
+  options: { split: boolean },
 ): Promise<void> {
-  try {
-    if (sourceUris.length === 0) {
-      throw new Error('No Draw.io files were selected.');
-    }
-
-    const configuration = dependencies.getConfiguration();
-    const outputTemplate = options.readTemplate(configuration);
-    options.validateTemplate?.(outputTemplate);
-    const inputs = sourceUris.map((sourceUri) => planDrawioPdfInput(sourceUri, outputTemplate));
-    const drawioPath = configuration.execPath.drawio();
-
-    await runConversionLifecycle({
-      operationName: options.operationName,
-      outputChannel: dependencies.outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: {
-        progressTitle: userMessage(options.messageKeys.progressTitle, inputs.length),
-        prepareMessage: userMessage('message.progress.prepareConversion', 'Draw.io PDF'),
-        successMessage: (count) => userMessage(options.messageKeys.success, count),
-        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-        cancelledMessage: userMessage(options.messageKeys.cancelled),
-        failedMessage: (reason) => userMessage(options.messageKeys.failed, reason),
-      },
-      run: async (runtime) => options.run(inputs, drawioPath, runtime),
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage(options.messageKeys.failed, message));
-  }
-}
-
-function planDrawioPdfInput(sourceUri: vscode.Uri, outputTemplate: string): DrawioPdfInput {
-  if (sourceUri.scheme !== 'file') {
-    throw new Error(`Only local Draw.io files are supported: ${sourceUri.toString()}`);
+  const { outputChannel } = dependencies;
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage(
+      userMessage('message.convertToOutput.failed', 'PDF', 'No files were selected.'),
+    );
+    return;
   }
 
-  const workspace = vscode.workspace.getWorkspaceFolder(sourceUri);
-  if (!workspace) {
-    throw new Error(`The Draw.io file must be inside an open workspace: ${sourceUri.fsPath}`);
-  }
+  const configuration = dependencies.getConfiguration();
+  const split = options.split;
+  const operationName = split ? 'convert-drawio-to-pdf' : 'convert-drawio-to-single-pdf';
+  const outputTemplate = split ? configuration.outputPath.split.pdf() : configuration.outputPath.single.pdf();
+  const messagePrefix: LocaleKeyType = split
+    ? 'message.progress.convertDrawioToPagePdfs.title'
+    : 'message.progress.convertDrawioToSinglePdf.title';
+  const successKey: LocaleKeyType = split
+    ? 'message.convertDrawioToPagePdfs.success'
+    : 'message.convertDrawioToSinglePdf.success';
+  const cancelledKey: LocaleKeyType = split
+    ? 'message.convertDrawioToPagePdfs.cancelled'
+    : 'message.convertDrawioToSinglePdf.cancelled';
+  const failedKey: LocaleKeyType = split
+    ? 'message.convertDrawioToPagePdfs.failed'
+    : 'message.convertDrawioToSinglePdf.failed';
 
-  if (!isDrawioPath(sourceUri.fsPath)) {
-    throw new Error(`Only Draw.io files are supported: ${sourceUri.fsPath}`);
-  }
-
-  return {
-    sourcePath: sourceUri.fsPath,
-    outputTemplate,
-    workspacePath: workspace.uri.fsPath,
-    workspaceName: workspace.name,
-  };
+  await runConversionLifecycle({
+    operationName,
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: {
+      progressTitle: userMessage(messagePrefix, sourceUris.length),
+      prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
+      successMessage: (count) => userMessage(successKey, count),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage(cancelledKey),
+      failedMessage: (reason) => userMessage(failedKey, reason),
+    },
+    run: async (runtime) => {
+      const sources = toConversionSources(sourceUris);
+      const conversionConfig = toConversionConfiguration(configuration);
+      if (split) {
+        return convertSplitPdf(sources, outputTemplate, conversionConfig, runtime);
+      }
+      return convertSinglePdf(sources, outputTemplate, conversionConfig, runtime);
+    },
+  });
 }

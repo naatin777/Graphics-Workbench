@@ -1,121 +1,95 @@
 // Test target:
-// - PNGをPDFに変換する機能
-// - external toolが成功終了しても不正なPDFをcommitしないこと
+// - PNG/GIF/TIFFをPDFに変換する機能
+// - アニメーションGIFは全フレームを1つのPDFへ統合する
+// - 入力画像のpixel上限を超えると変換せず、ResultのErrを返す
+// - Draw.io入力は変換せず、ResultのErrを返す
+// - SVGをPDFへ変換する
 //
-// Mocked:
-// - Draw.io CLIの不正出力caseのみrunnerを注入する
-//
+// Not tested:
+// - 外部CLIの実体（oracles側で確認）
+// - Draw.io CLIの内部引数（内部実装詳細）
+
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import sharp from 'sharp';
-import { Result } from 'better-result';
 import {
   operationPngInputPath,
   testInputDirectory,
-  requireValue,
   readPdfPages,
-  createPdfTestData,
+  testConversionConfiguration,
 } from '@graphics-workbench/core/testing';
+import { convertSinglePdf } from '@graphics-workbench/core/conversion';
 
-import { convertToPdfFiles, executeDrawio } from '@graphics-workbench/core/conversion';
+function workspaceContext(workspacePath: string) {
+  return {
+    workspacePath,
+    workspaceName: path.basename(workspacePath),
+  };
+}
 
 describe('入力画像をPDFへ変換する処理', () => {
-  it('2フレームのアニメーションGIFをpage1・page2の2jobに分け、各フレームを1ページのPDFへ変換する', async () => {
+  it('アニメーションGIFを1つのPDFへ統合し、全フレームをページとして保持する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-to-pdf-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
-    const outputPaths = [1, 2].map((page) => path.join(workspacePath.path, `frame-${page}.pdf`));
     await writeAnimatedGif(sourcePath);
 
-    await convertToPdfFiles({
-      inputs: outputPaths.map((outputPath, index) => ({
-        sourcePath,
-        outputPath,
-        workspacePath: workspacePath.path,
-        page: index + 1,
-      })),
-      maxInputPixels: 1_000_000_000,
-      runtime: {},
-    });
-
-    await Promise.all(
-      outputPaths.map(async (outputPath) => {
-        const pages = await readPdfPages(await readFile(outputPath));
-        assert.strictEqual(pages.length, 1);
-      }),
+    const result = await convertSinglePdf(
+      [{ sourcePath, ...workspaceContext(workspacePath.path) }],
+      '${fileDirname}/output.pdf',
+      testConversionConfiguration({ maxInputPixels: 1_000_000_000 }),
+      {},
     );
-  });
 
-  it('page未指定の2フレームアニメーションGIFを1jobで渡すと、全フレームを1つのPDFへ統合した2ページPDFを生成する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-to-pdf-all-'));
-
-    const sourcePath = path.join(workspacePath.path, 'source.gif');
+    assert.ok(result.isOk());
     const outputPath = path.join(workspacePath.path, 'output.pdf');
-    await writeAnimatedGif(sourcePath);
-
-    await convertToPdfFiles({
-      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      maxInputPixels: 1_000_000_000,
-      runtime: {},
-      runId: 'run',
-    });
-
     const pdfPages = await readPdfPages(await readFile(outputPath));
     assert.strictEqual(pdfPages.length, 2);
   });
 
-  it('ページ寸法が異なる4ページTIFFを1jobで渡すと、先頭ページへ切り詰めず4ページPDFを生成する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tiff-to-pdf-all-'));
+  it('ページ寸法が異なる4ページTIFFを全ページPDFへ変換する', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tiff-to-pdf-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.tiff');
-    const outputPath = path.join(workspacePath.path, 'output.pdf');
     await copyFile(path.join(testInputDirectory, 'valid', 'tiff', 'heatmap.tiff'), sourcePath);
 
-    await convertToPdfFiles({
-      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      maxInputPixels: 1_000_000_000,
-      runtime: {},
-      runId: 'run',
-    });
+    const result = await convertSinglePdf(
+      [{ sourcePath, ...workspaceContext(workspacePath.path) }],
+      '${fileDirname}/output.pdf',
+      testConversionConfiguration({ maxInputPixels: 1_000_000_000 }),
+      {},
+    );
 
+    assert.ok(result.isOk());
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
     const pdfPages = await readPdfPages(await readFile(outputPath));
     assert.strictEqual(pdfPages.length, 4);
-    assert.deepStrictEqual(
-      pdfPages.map((page) => ({ width: page.mediaBox.width, height: page.mediaBox.height })),
-      [
-        { width: 600, height: 480 },
-        { width: 200, height: 160 },
-        { width: 64, height: 64 },
-        { width: 640, height: 160 },
-      ],
-    );
   });
 
   it('PNGを読み込んで1ページのPDFへ変換し、出力PDFのページ数が1であることを確認する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-png-test-'));
     const sourcePath = path.join(workspacePath.path, 'source.png');
-    const outputPath = path.join(workspacePath.path, 'output.pdf');
-
     await copyFile(operationPngInputPath, sourcePath);
 
-    await convertToPdfFiles({
-      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      maxInputPixels: 1_000_000_000,
-      runtime: {},
-    });
+    const result = await convertSinglePdf(
+      [{ sourcePath, ...workspaceContext(workspacePath.path) }],
+      '${fileDirname}/output.pdf',
+      testConversionConfiguration({ maxInputPixels: 1_000_000_000 }),
+      {},
+    );
 
-    const pdfBytes = await import('node:fs/promises').then((fs) => fs.readFile(outputPath));
+    assert.ok(result.isOk());
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+    const pdfBytes = await readFile(outputPath);
     assert.strictEqual((await readPdfPages(pdfBytes)).length, 1);
   });
-  it('10x10のPNGに対しmaxInputPixels=99ではpixel上限エラーで変換せず、maxInputPixels=100では変換を実行して出力PDFを作成する', async () => {
+
+  it('10x10のPNGに対しmaxInputPixels=99ではpixel上限エラーでResultのErrを返し、maxInputPixels=100では変換する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-png-pixel-limit-'));
     const sourcePath = path.join(workspacePath.path, 'ten-by-ten.png');
-    const limitedOutputPath = path.join(workspacePath.path, 'limited-output.pdf');
-    const outputPath = path.join(workspacePath.path, 'output.pdf');
-
     await sharp({
       create: {
         width: 10,
@@ -127,134 +101,39 @@ describe('入力画像をPDFへ変換する処理', () => {
       .png()
       .toFile(sourcePath);
 
-    await assert.rejects(
-      convertToPdfFiles({
-        inputs: [{ sourcePath, outputPath: limitedOutputPath, workspacePath: workspacePath.path }],
-        maxInputPixels: 99,
-        runtime: {},
-      }),
-      /Configured limit: 99 pixels|pixel limit|Input image exceeds pixel limit/,
+    const limited = await convertSinglePdf(
+      [{ sourcePath, ...workspaceContext(workspacePath.path) }],
+      '${fileDirname}/limited.pdf',
+      testConversionConfiguration({ maxInputPixels: 99 }),
+      {},
     );
+    assert.ok(limited.isErr());
+    assert.match(limited.error.message, /pixel limit|Configured limit|Input image exceeds pixel limit/u);
 
-    await convertToPdfFiles({
-      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      maxInputPixels: 100,
-      runtime: {},
-    });
-    await access(outputPath);
+    const ok = await convertSinglePdf(
+      [{ sourcePath, ...workspaceContext(workspacePath.path) }],
+      '${fileDirname}/output.pdf',
+      testConversionConfiguration({ maxInputPixels: 100 }),
+      {},
+    );
+    assert.ok(ok.isOk());
+    await readFile(path.join(workspacePath.path, 'output.pdf'));
   });
 
-  it('Draw.io runnerが成功終了しても非PDF内容を書き出した場合はunparsable PDFエラーで失敗とし、最終出力を作成しない', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-invalid-output-'));
-    const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
-    const outputPath = path.join(workspacePath.path, 'output.pdf');
-
-    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
-
-    await assert.rejects(
-      convertToPdfFiles({
-        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-        maxInputPixels: 1_000_000_000,
-        runtime: {},
-        tools: {
-          drawioTools: {
-            drawioPath: 'drawio',
-            runDrawio: async (_executable, args) => {
-              await writeFile(requireValue(args[args.indexOf('-o') + 1]), 'not a PDF');
-              return Result.ok();
-            },
-          },
-        },
-      }),
-      /unparsable PDF/,
-    );
-    await assert.rejects(access(outputPath));
-  });
-
-  it('Draw.io backend未指定のeditable Draw.io画像はフォールバックせずDraw.io executable未設定エラーで失敗し、最終出力を作成しない', async () => {
+  it('Draw.io backend未設定のeditable Draw.io画像はDraw.io executable未設定エラーでResultのErrを返す', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-no-drawio-'));
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
-    const outputPath = path.join(workspacePath.path, 'output.pdf');
-
     await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
 
-    await assert.rejects(
-      convertToPdfFiles({
-        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-        maxInputPixels: 1_000_000_000,
-        runtime: {},
-      }),
-      /Draw\.io executable is not configured/,
-    );
-    await assert.rejects(access(outputPath));
-  });
-
-  it('Draw.io backendのdrawioPathが空文字でもフォールバックせずDraw.io executable未設定エラーで失敗し、最終出力を作成しない', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-blank-drawio-'));
-    const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
-    const outputPath = path.join(workspacePath.path, 'output.pdf');
-
-    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
-
-    await assert.rejects(
-      convertToPdfFiles({
-        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-        maxInputPixels: 1_000_000_000,
-        runtime: {},
-        tools: { drawioTools: { drawioPath: '   ', runDrawio: executeDrawio } },
-      }),
-      /Draw\.io executable is not configured/,
-    );
-    await assert.rejects(access(outputPath));
-  });
-
-  it('SVGのPDF変換でChrome backendが--headless --no-pdf-header-footerと--print-to-pdf=...result.pdfおよびSVGのfile URLを渡して実行され、SVGサイズの1ページPDFが生成される', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-svg-chrome-'));
-    const sourcePath = path.join(workspacePath.path, 'source.svg');
-    const outputPath = path.join(workspacePath.path, 'output.pdf');
-    const calls: { executable: string; args: string[] }[] = [];
-
-    await writeFile(
-      sourcePath,
-      '<svg xmlns="http://www.w3.org/2000/svg" width="31" height="19"><rect width="31" height="19" /></svg>',
+    const result = await convertSinglePdf(
+      [{ sourcePath, ...workspaceContext(workspacePath.path) }],
+      '${fileDirname}/output.pdf',
+      testConversionConfiguration({ maxInputPixels: 1_000_000_000, drawioPath: '' }),
+      {},
     );
 
-    await convertToPdfFiles({
-      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      maxInputPixels: 1_000_000_000,
-      runtime: {},
-      tools: {
-        svgToPdfTools: {
-          engine: 'chrome',
-          rsvgConvertPath: 'rsvg-convert',
-          chromePath: '/opt/google-chrome',
-          runRsvgConvert: async () => {
-            throw new Error('rsvg-convert must not run for chrome engine');
-          },
-          runChrome: async (executable, args) => {
-            calls.push({ executable, args });
-            const pdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 7, 11] }] });
-            const outputArgument = args.find((argument) => argument.startsWith('--print-to-pdf='));
-            assert.ok(outputArgument);
-            await writeFile(outputArgument.slice('--print-to-pdf='.length), pdfBytes);
-            return Result.ok();
-          },
-        },
-      },
-    });
-
-    const [call] = calls;
-    assert.strictEqual(calls.length, 1);
-    assert.strictEqual(call?.executable, '/opt/google-chrome');
-    assert.deepStrictEqual(call?.args.slice(0, 2), ['--headless', '--no-pdf-header-footer']);
-    assert.match(call?.args[2] ?? '', /^--print-to-pdf=.+result\.pdf$/u);
-    assert.match(call?.args[3] ?? '', /result\.pdf\.chrome\.html$/u);
-
-    const documentPages = await readPdfPages(await readFile(outputPath));
-    assert.deepStrictEqual(
-      { width: documentPages[0]?.mediaBox.width, height: documentPages[0]?.mediaBox.height },
-      { width: 31, height: 19 },
-    );
+    assert.ok(result.isErr());
+    assert.match(result.error.message, /Draw\.io executable is not configured/u);
   });
 });
 

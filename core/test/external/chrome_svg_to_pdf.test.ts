@@ -5,9 +5,14 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
-import { convertToPdfFiles, executeChrome } from '@graphics-workbench/core/conversion';
+import { convertSinglePdf } from '@graphics-workbench/core/conversion';
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
-import { readPdfPages, requireConfiguredTool, testInputDirectory } from '@graphics-workbench/core/testing';
+import {
+  readPdfPages,
+  requireConfiguredTool,
+  testConversionConfiguration,
+  testInputDirectory,
+} from '@graphics-workbench/core/testing';
 
 describe('実ChromeによるSVG→PDF印刷', () => {
   it('31x19 SVGいっぱいの矩形をPDFへ印刷すると、ページ全体に内容が残る', async () => {
@@ -18,22 +23,28 @@ describe('実ChromeによるSVG→PDF印刷', () => {
     const outputPath = path.join(workspacePath.path, 'output.pdf');
     await copyFile(path.join(testInputDirectory, 'valid', 'svg', 'solid-rect-31x19.svg'), sourcePath);
 
-    await convertToPdfFiles({
-      inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
-      maxInputPixels: 1_000_000_000,
-      runtime: {},
-      tools: {
-        svgToPdfTools: {
+    const result = await convertSinglePdf(
+      [
+        {
+          sourcePath,
+          workspacePath: workspacePath.path,
+          workspaceName: path.basename(workspacePath.path),
+        },
+      ],
+      '${fileDirname}/output.pdf',
+      testConversionConfiguration({
+        maxInputPixels: 1_000_000_000,
+        svgToPdf: {
           engine: 'chrome',
           rsvgConvertPath: 'rsvg-convert',
           chromePath,
-          runRsvgConvert: async () => {
-            throw new Error('rsvg-convert must not run for chrome engine');
-          },
-          runChrome: executeChrome,
         },
-      },
-    });
+      }),
+      {},
+    );
+    if (result.isErr()) {
+      throw result.error;
+    }
 
     const pdfPages = await readPdfPages(await readFile(outputPath));
     assert.deepStrictEqual(

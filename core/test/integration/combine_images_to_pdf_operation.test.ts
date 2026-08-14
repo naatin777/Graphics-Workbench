@@ -1,21 +1,25 @@
 import assert from 'node:assert/strict';
-import { copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import {
   operationPngInputPath,
-  createPdfTestData,
   readPdfPages,
+  testConversionConfiguration,
   testInputDirectory,
 } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
-import { Result } from 'better-result';
-import { combineImagesToPdf, type SvgToPdfBackend } from '@graphics-workbench/core/conversion';
+
+import {
+  convertCombinePdf,
+  type ConversionConfiguration,
+  type ConversionSource,
+} from '@graphics-workbench/core/conversion';
 
 const VALID_PNG = operationPngInputPath;
 
-type SupportedInputFormat = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff' | 'svg';
+type SupportedInputFormat = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff';
 
 interface SupportedInputTestData {
   format: SupportedInputFormat;
@@ -49,7 +53,6 @@ const supportedInputTestData: SupportedInputTestData[] = [
       { width: 640, height: 160 },
     ],
   },
-  { format: 'svg', relativePath: 'valid/svg/solid-rect-31x19.svg', pageSizes: [{ width: 31, height: 19 }] },
 ];
 
 interface InputTestData extends SupportedInputTestData {
@@ -62,6 +65,18 @@ async function copyTestDataTo(workspacePath: string, name: string): Promise<stri
   return destination;
 }
 
+function source(workspacePath: string, sourcePath: string): ConversionSource {
+  return {
+    sourcePath,
+    workspacePath,
+    workspaceName: path.basename(workspacePath),
+  };
+}
+
+function configuration(maxInputPixels: number): ConversionConfiguration {
+  return testConversionConfiguration({ maxInputPixels });
+}
+
 describe('複数の画像を1つのPDFへ結合する', () => {
   it('単一のPNG画像を読み込んで1ページのPDFを出力する', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
@@ -70,13 +85,16 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const sourcePath = await copyTestDataTo(workspacePath, 'input.png');
     const outputPath = path.join(workspacePath, 'result.pdf');
 
-    await combineImagesToPdf({
-      inputs: [{ sourcePath }],
+    const result = await convertCombinePdf(
+      [source(workspacePath, sourcePath)],
       outputPath,
       workspacePath,
-      runtime: {},
-      maxInputPixels: 1_000_000_000,
-    });
+      configuration(1_000_000_000),
+      {},
+    );
+    if (result.isErr()) {
+      throw result.error;
+    }
 
     const pdfBytes = await readFile(outputPath);
     assert.strictEqual((await readPdfPages(pdfBytes)).length, 1);
@@ -89,16 +107,20 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const sourcePath = await copyTestDataTo(workspacePath, 'input.png');
     const outputPath = path.join(workspacePath, 'result.pdf');
 
-    await assert.rejects(
-      combineImagesToPdf({
-        inputs: [{ sourcePath }],
-        outputPath,
-        workspacePath,
-        runtime: {},
-        maxInputPixels: 99,
-      }),
+    const result = await convertCombinePdf(
+      [source(workspacePath, sourcePath)],
+      outputPath,
+      workspacePath,
+      configuration(99),
+      {},
+    );
+
+    assert.ok(result.isErr(), 'pixel limit should reject before conversion');
+    assert.match(
+      result.error.message,
       /configured raster input pixel limit|pixel limit|Input image exceeds pixel limit/u,
     );
+    await assert.rejects(readFile(outputPath));
   });
 
   it('3つのPNG画像を選択順に読み込み、3ページのPDFを生成し、進捗を1/3・2/3・3/3の順で報告する', async () => {
@@ -113,13 +135,16 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const outputPath = path.join(workspacePath, 'result.pdf');
     const progress: [number, number][] = [];
 
-    await combineImagesToPdf({
-      inputs: sourcePaths.map((sourcePath) => ({ sourcePath })),
+    const result = await convertCombinePdf(
+      sourcePaths.map((sourcePath) => source(workspacePath, sourcePath)),
       outputPath,
       workspacePath,
-      maxInputPixels: 1_000_000_000,
-      runtime: { reportProgress: (completed, total) => progress.push([completed, total]) },
-    });
+      configuration(1_000_000_000),
+      { reportProgress: (completed, total) => progress.push([completed, total]) },
+    );
+    if (result.isErr()) {
+      throw result.error;
+    }
 
     const pdfBytes = await readFile(outputPath);
     assert.strictEqual((await readPdfPages(pdfBytes)).length, 3);
@@ -140,13 +165,16 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     ]);
     const outputPath = path.join(workspacePath, 'result.pdf');
 
-    await combineImagesToPdf({
-      inputs: sourcePaths.map((sourcePath) => ({ sourcePath })),
+    const result = await convertCombinePdf(
+      sourcePaths.map((sourcePath) => source(workspacePath, sourcePath)),
       outputPath,
       workspacePath,
-      runtime: {},
-      maxInputPixels: 1_000_000_000,
-    });
+      configuration(1_000_000_000),
+      {},
+    );
+    if (result.isErr()) {
+      throw result.error;
+    }
 
     const outputPages = await readPdfPages(await readFile(outputPath));
     assert.strictEqual(outputPages.length, 2);
@@ -158,7 +186,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     }
   });
 
-  it('SVGを設定したrsvg-convertへ--format=pdf --outputで渡し、SVGのpixel寸法（31x19）をそのままpointとして正規化したページを出力する', async () => {
+  it('SVGをSVG-to-PDF backend未設定で結合すると「SVG-to-PDF backend is not configured」エラーで拒否し、出力PDFを作成しない', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
@@ -166,44 +194,26 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const outputPath = path.join(workspacePath, 'result.pdf');
     await copyFile(path.join(testInputDirectory, 'valid', 'svg', 'solid-rect-31x19.svg'), sourcePath);
 
-    const sourcePdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 7, 11] }] });
-    const calls: string[][] = [];
-    const svgToPdfTools: SvgToPdfBackend = {
-      engine: 'rsvg-convert',
-      rsvgConvertPath: 'configured-rsvg-convert',
-      chromePath: '',
-      runRsvgConvert: async (executable, args) => {
-        calls.push([executable, ...args]);
-        const outputArgumentIndex = args.indexOf('--output') + 1;
-        const stagedPath = args[outputArgumentIndex];
-        assert.ok(stagedPath);
-        await writeFile(stagedPath, sourcePdfBytes);
-        return Result.ok();
-      },
-      runChrome: async () => {
-        throw new Error('chrome must not run for rsvg-convert engine');
-      },
-    };
-
-    await combineImagesToPdf({
-      inputs: [{ sourcePath }],
+    const result = await convertCombinePdf(
+      [source(workspacePath, sourcePath)],
       outputPath,
       workspacePath,
-      runtime: {},
-      maxInputPixels: 1_000_000_000,
-      tools: { svgToPdfTools },
-      platform: 'linux',
-    });
-
-    const outputPages = await readPdfPages(await readFile(outputPath));
-    assert.deepStrictEqual(
-      { width: outputPages[0]?.mediaBox.width, height: outputPages[0]?.mediaBox.height },
-      { width: 31, height: 19 },
+      testConversionConfiguration({
+        maxInputPixels: 1_000_000_000,
+        svgToPdf: { engine: 'rsvg-convert', rsvgConvertPath: '', chromePath: 'chrome' },
+      }),
+      {},
     );
-    assert.deepStrictEqual(calls[0]?.slice(0, 3), ['configured-rsvg-convert', '--format=pdf', '--output']);
+
+    assert.ok(result.isErr(), 'SVG without a configured backend should fail');
+    assert.match(
+      result.error.message,
+      /Rsvg-convert executable is not configured|SVG-to-PDF backend is not configured/u,
+    );
+    await assert.rejects(readFile(outputPath));
   });
 
-  it('対応する全入力形式（PNG/JPEG/WebP/AVIF/GIF/TIFF/SVG）をそれぞれ単独で1PDFへ変換し、各ページサイズを入力の寸法と一致させる', async () => {
+  it('対応する全入力形式（PNG/JPEG/WebP/AVIF/GIF/TIFF）をそれぞれ単独で1PDFへ変換し、各ページサイズを入力の寸法と一致させる', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
@@ -212,17 +222,16 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     for (const testDataItem of testDataItems) {
       const outputPath = path.join(workspacePath, `${testDataItem.format}-result.pdf`);
 
-      await combineImagesToPdf({
-        inputs: [{ sourcePath: testDataItem.sourcePath }],
+      const result = await convertCombinePdf(
+        [source(workspacePath, testDataItem.sourcePath)],
         outputPath,
         workspacePath,
-        runtime: {},
-        maxInputPixels: 1_000_000_000,
-        tools: {
-          svgToPdfTools: createStubSvgToPdfOptions(),
-        },
-        platform: process.platform,
-      });
+        configuration(1_000_000_000),
+        {},
+      );
+      if (result.isErr()) {
+        throw result.error;
+      }
 
       await assertPdfPageSizes(outputPath, expectedPdfPageSizes([testDataItem]));
     }
@@ -235,17 +244,16 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const testDataItems = await writeSupportedInputTestData(workspacePath);
     const outputPath = path.join(workspacePath, 'mixed-result.pdf');
 
-    await combineImagesToPdf({
-      inputs: testDataItems.map((testDataItem) => ({ sourcePath: testDataItem.sourcePath })),
+    const result = await convertCombinePdf(
+      testDataItems.map((testDataItem) => source(workspacePath, testDataItem.sourcePath)),
       outputPath,
       workspacePath,
-      runtime: {},
-      maxInputPixels: 1_000_000_000,
-      tools: {
-        svgToPdfTools: createStubSvgToPdfOptions(),
-      },
-      platform: process.platform,
-    });
+      configuration(1_000_000_000),
+      {},
+    );
+    if (result.isErr()) {
+      throw result.error;
+    }
 
     await assertPdfPageSizes(outputPath, expectedPdfPageSizes(testDataItems));
   });
@@ -254,16 +262,16 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
-    await assert.rejects(
-      combineImagesToPdf({
-        inputs: [],
-        outputPath: path.join(workspacePath, 'result.pdf'),
-        workspacePath,
-        runtime: {},
-        maxInputPixels: 1_000_000_000,
-      }),
-      /No images/,
+    const result = await convertCombinePdf(
+      [],
+      path.join(workspacePath, 'result.pdf'),
+      workspacePath,
+      configuration(1_000_000_000),
+      {},
     );
+
+    assert.ok(result.isErr(), 'empty input batch should fail');
+    assert.match(result.error.message, /No images/u);
   });
 
   it('破損したPNGを渡すと、変換を停止してunsupported image format系エラーを返す', async () => {
@@ -273,14 +281,17 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const sourcePath = path.join(workspacePath, 'bad.png');
     await copyFile(path.join(testInputDirectory, 'invalid', 'png', 'truncated.png'), sourcePath);
 
-    await assert.rejects(
-      combineImagesToPdf({
-        inputs: [{ sourcePath }],
-        outputPath: path.join(workspacePath, 'result.pdf'),
-        workspacePath,
-        runtime: {},
-        maxInputPixels: 1_000_000_000,
-      }),
+    const result = await convertCombinePdf(
+      [source(workspacePath, sourcePath)],
+      path.join(workspacePath, 'result.pdf'),
+      workspacePath,
+      configuration(1_000_000_000),
+      {},
+    );
+
+    assert.ok(result.isErr(), 'corrupted PNG should fail');
+    assert.match(
+      result.error.message,
       /unsupported image format|Input file contains|not a valid|invalid|corrupt header/i,
     );
   });
@@ -298,16 +309,16 @@ describe('複数の画像を1つのPDFへ結合する', () => {
       const sourcePath = path.join(workspacePath, fileName);
       await copyFile(path.join(testInputDirectory, relativePath), sourcePath);
 
-      await assert.rejects(
-        combineImagesToPdf({
-          inputs: [{ sourcePath }],
-          outputPath: path.join(workspacePath, `${fileName}.output.pdf`),
-          workspacePath,
-          runtime: {},
-          maxInputPixels: 1_000_000_000,
-        }),
-        /Unsupported image input:/,
+      const result = await convertCombinePdf(
+        [source(workspacePath, sourcePath)],
+        path.join(workspacePath, `${fileName}.output.pdf`),
+        workspacePath,
+        configuration(1_000_000_000),
+        {},
       );
+
+      assert.ok(result.isErr(), `${fileName} should be rejected`);
+      assert.match(result.error.message, /Unsupported image input:/u);
     }
   });
 });
@@ -334,26 +345,6 @@ async function writeSupportedInputTestData(workspacePath: string): Promise<Input
   }
 
   return testDataItems;
-}
-
-function createStubSvgToPdfOptions(): SvgToPdfBackend {
-  return {
-    engine: 'rsvg-convert',
-    rsvgConvertPath: 'configured-rsvg-convert',
-    chromePath: '',
-    runRsvgConvert: async (_executable, args) => {
-      const outputArgumentIndex = args.indexOf('--output') + 1;
-      const outputPath = args[outputArgumentIndex];
-      assert.ok(outputPath);
-
-      const sourcePdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 1, 1] }] });
-      await writeFile(outputPath, sourcePdfBytes);
-      return Result.ok();
-    },
-    runChrome: async () => {
-      throw new Error('chrome must not run for rsvg-convert engine');
-    },
-  };
 }
 
 async function assertPdfPageSizes(

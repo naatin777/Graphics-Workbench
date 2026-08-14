@@ -10,11 +10,8 @@ import {
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { inspectPdfSummary, rotatePdfFiles } from '@graphics-workbench/core/pdf';
-import {
-  isAbortError,
-  type CommittedConversionOutput,
-  type ConversionExecutionContext,
-} from '@graphics-workbench/core/runtime';
+import { toConversionResult, type ConversionResult } from '@graphics-workbench/core/conversion';
+import { isAbortError, type ConversionExecutionContext } from '@graphics-workbench/core/runtime';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeCatalog, localeMap } from '../../locale_map.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
@@ -130,25 +127,27 @@ async function applyConfiguredRotation(params: {
   angle: PdfRotationAngle;
   pageIndices: number[];
   runtime: ConversionExecutionContext;
-}): Promise<CommittedConversionOutput[]> {
+}): Promise<ConversionResult> {
   const { inputUri, workspacePath, outputPath, pageCount, angle, pageIndices, runtime } = params;
 
-  for (const page of pageIndices) {
-    if (!Number.isInteger(page) || page < 1 || page > pageCount) {
-      throw new Error(`Page ${page} is out of range.`);
+  return toConversionResult(async () => {
+    for (const page of pageIndices) {
+      if (!Number.isInteger(page) || page < 1 || page > pageCount) {
+        throw new Error(`Page ${page} is out of range.`);
+      }
     }
-  }
 
-  return rotatePdfFiles({
-    inputs: [
-      {
-        sourcePath: inputUri.fsPath,
-        workspacePath,
-        outputPath,
-        angle,
-        pageIndices: pageIndices.map((page) => page - 1),
-      },
-    ],
-    runtime,
-  });
+    return rotatePdfFiles({
+      inputs: [
+        {
+          sourcePath: inputUri.fsPath,
+          workspacePath,
+          outputPath,
+          angle,
+          pageIndices: pageIndices.map((page) => page - 1),
+        },
+      ],
+      runtime,
+    });
+  }, runtime.signal);
 }

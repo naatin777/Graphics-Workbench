@@ -21,7 +21,8 @@ import path from 'node:path';
 import { requireValue, createPdfTestData, readPdfPages } from '@graphics-workbench/core/testing';
 import { Result } from 'better-result';
 
-import { convertToPdfFiles, type PdfInput, type RunDrawio } from '@graphics-workbench/core/conversion';
+import { convertToPdfFiles, type PdfInput } from '@graphics-workbench/core/conversion';
+import type { RunDrawio } from '@graphics-workbench/core/external-tools';
 import { createConversionUndoRecord, undoConversionOutputs } from '../../../src/policy/undo_last_conversion.js';
 import { operationPngInputPath } from '../../support/helpers/testdata_paths.js';
 

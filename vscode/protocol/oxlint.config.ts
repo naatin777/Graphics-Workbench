@@ -1,15 +1,18 @@
 import { defineConfig } from 'oxlint';
 
-import baseConfig, { extensionOnly, restrictedImports } from '../../oxlint.base.ts';
+import rootConfig, { extensionOnly, projectRules, restrictedImports } from '../../oxlint.config.ts';
 
 export default defineConfig({
-  extends: [baseConfig],
+  extends: [rootConfig],
   jsPlugins: [
     {
       name: 'project',
       specifier: '../../scripts/oxlint-project-plugin.mjs',
     },
   ],
+  rules: {
+    ...projectRules,
+  },
   overrides: [
     {
       files: ['src/**/*.ts'],

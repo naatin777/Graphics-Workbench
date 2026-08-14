@@ -1,12 +1,33 @@
+// Test target:
+// - 複数の入力画像・PDFを1つのDraw.io XML（.drawio）へ集約する
+// - PDFの各ページをPDF→SVG変換へ通して1ページずつSVGデータURIへ展開する
+// - アニメーションGIF/WebP・マルチページTIFFの先頭フレームをPNGデータURIへ正規化する
+// - editable画像（.drawio.png/.drawio.svg）のDraw.io CLI export失敗時に出力を作らない
+//
+// Not tested:
+// - Draw.io CLI実体によるeditable画像exportの成功（external oracles側で確認）
+
 import assert from 'node:assert/strict';
 import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { Result } from 'better-result';
 
-import { convertToDrawioFiles, createDrawioXml, parseSvgSize } from '@graphics-workbench/core/conversion';
-import { requireValue, createPdfTestData } from '@graphics-workbench/core/testing';
+import {
+  convertSingleDrawio,
+  createDrawioXml,
+  parseSvgSize,
+  type ConversionSource,
+} from '@graphics-workbench/core/conversion';
+import { createPdfTestData, testConversionConfiguration } from '@graphics-workbench/core/testing';
+
+function sourceAt(workspacePath: string, sourcePath: string): ConversionSource {
+  return {
+    sourcePath,
+    workspacePath,
+    workspaceName: path.basename(workspacePath),
+  };
+}
 
 describe('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
   it('XML生成で各画像を1つのshape=imageオブジェクトにし、同名ページをnameとname-2へ連番化する', () => {
@@ -27,11 +48,10 @@ describe('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () =
     assert.throws(() => parseSvgSize('<svg/>'), /dimensions/);
   });
 
-  it('PNGと2ページPDFを1つのdrawioへ集約し、PDFの各ページ（1・2）をPDF→SVG変換処理（runPdfToSvg）へ順に通して1ページずつ画像化したXMLを生成する', async () => {
+  it('PNGと2ページPDFを1つのdrawioへ集約し、PDFの各ページ（1・2）をPDF→SVG変換処理へ順に通して1ページずつSVGデータURIとして画像化したXMLを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-to-drawio-'));
     const imagePath = path.join(workspacePath.path, 'image.png');
     const pdfPath = path.join(workspacePath.path, 'input.pdf');
-    const outputPath = path.join(workspacePath.path, 'combined.drawio');
     await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
       .png()
       .toFile(imagePath);
@@ -39,29 +59,21 @@ describe('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () =
       pages: [{ mediaBox: [0, 0, 100, 50] }, { mediaBox: [0, 0, 80, 40] }],
     });
     await writeFile(pdfPath, pdfBytes);
-    const calls: number[] = [];
-    await convertToDrawioFiles({
-      maxInputPixels: 1_000_000_000,
-      inputs: [
-        { inputs: [{ sourcePath: imagePath }, { sourcePath: pdfPath }], outputPath, workspacePath: workspacePath.path },
-      ],
-      tools: {
-        drawioPath: 'drawio',
-        runPdfToSvg: async (_source, output, page) => {
-          calls.push(page);
-          await writeFile(output, '<svg width="100" height="50"/>');
-        },
-        runDrawio: async () => {
-          throw new Error('drawio export must not be used for .drawio output');
-        },
-      },
-      runId: 'test',
-      runtime: { resolveConflicts: async () => 'overwrite' },
-    });
-    const xml = await readFile(outputPath, 'utf8');
-    assert.deepStrictEqual(calls, [1, 2]);
+
+    const result = await convertSingleDrawio(
+      [sourceAt(workspacePath.path, imagePath), sourceAt(workspacePath.path, pdfPath)],
+      '${fileDirname}/combined.drawio',
+      testConversionConfiguration({ maxInputPixels: 1_000_000_000, drawioPath: 'drawio' }),
+      { resolveConflicts: async () => 'overwrite' },
+    );
+    if (result.isErr()) {
+      throw result.error;
+    }
+
+    const xml = await readFile(path.join(workspacePath.path, 'combined.drawio'), 'utf8');
     assert.strictEqual((xml.match(/shape=image/g) ?? []).length, 3);
     assert.match(xml, /data:image\/svg\+xml;base64/);
+    assert.match(xml, /data:image\/png;base64/);
   });
 
   it('アニメーションGIF/WebP・マルチページTIFFの先頭フレームをPNGデータURIへ正規化し、ページ寸法20x10をXML（pageWidth/pageHeight/mxGeometry）へ設定する', async () => {
@@ -77,123 +89,46 @@ describe('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () =
       ['animated.webp', 'webp'],
       ['multipage.tiff', 'tiff'],
     ] as const;
+    const sources: ConversionSource[] = [];
     for (const [name, format] of inputs) {
       const animatedImage = sharp([red, blue], { join: { animated: true } });
-      await animatedImage[format]().toFile(path.join(workspacePath.path, name));
+      const sourcePath = path.join(workspacePath.path, name);
+      await animatedImage[format]().toFile(sourcePath);
+      sources.push(sourceAt(workspacePath.path, sourcePath));
     }
 
-    const outputPath = path.join(workspacePath.path, 'result.drawio');
-    await convertToDrawioFiles({
-      maxInputPixels: 1_000_000_000,
-      inputs: [
-        {
-          inputs: inputs.map(([name]) => ({ sourcePath: path.join(workspacePath.path, name) })),
-          outputPath,
-          workspacePath: workspacePath.path,
-        },
-      ],
-      tools: {
-        drawioPath: 'drawio',
-        runPdfToSvg: async () => {
-          throw new Error('pdf input must not be used in this test');
-        },
-        runDrawio: async () => {
-          throw new Error('drawio export must not be used for .drawio output');
-        },
-      },
-      runId: 'raster-frames',
-      runtime: { resolveConflicts: async () => 'overwrite' },
-    });
+    const result = await convertSingleDrawio(
+      sources,
+      '${fileDirname}/result.drawio',
+      testConversionConfiguration({ maxInputPixels: 1_000_000_000, drawioPath: 'drawio' }),
+      { resolveConflicts: async () => 'overwrite' },
+    );
+    if (result.isErr()) {
+      throw result.error;
+    }
 
-    const xml = await readFile(outputPath, 'utf8');
+    const xml = await readFile(path.join(workspacePath.path, 'result.drawio'), 'utf8');
     assert.strictEqual((xml.match(/shape=image/g) ?? []).length, 3);
     assert.strictEqual((xml.match(/data:image\/png;base64,/g) ?? []).length, 3);
     assert.strictEqual((xml.match(/pageWidth="20" pageHeight="10"/g) ?? []).length, 3);
     assert.strictEqual((xml.match(/<mxGeometry width="20" height="10"/g) ?? []).length, 3);
   });
 
-  it('editableなPNG/SVGを一時Draw.io XMLとしてDesktop CLI（--export --format --embed-diagram）へ渡し、生成されたPNG/SVGを結果ファイルへ反映する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-to-drawio-editable-'));
-    const imagePath = path.join(workspacePath.path, 'image.png');
-    await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
-      .png()
-      .toFile(imagePath);
-
-    for (const extension of ['.dio.png', '.dio.svg']) {
-      const outputPath = path.join(workspacePath.path, `result${extension}`);
-      let call: { executable: string; args: string[] } | undefined;
-      await convertToDrawioFiles({
-        maxInputPixels: 1_000_000_000,
-        inputs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath: workspacePath.path }],
-        tools: {
-          drawioPath: '/custom/drawio',
-          runPdfToSvg: async () => {
-            throw new Error('pdf input must not be used in this test');
-          },
-          runDrawio: async (executable, args) => {
-            call = { executable, args };
-            const generatedOutputPath = requireValue(args[args.indexOf('--output') + 1]);
-            if (generatedOutputPath.endsWith('.png')) {
-              const png = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
-                .png()
-                .toBuffer();
-              await writeFile(generatedOutputPath, Buffer.concat([png, Buffer.from('mxfile')]));
-            } else {
-              await writeFile(generatedOutputPath, '<svg width="20" height="10"><metadata>mxfile</metadata></svg>');
-            }
-            return Result.ok();
-          },
-        },
-        runId: extension.slice(1),
-        runtime: { resolveConflicts: async () => 'overwrite' },
-      });
-
-      assert.strictEqual(call?.executable, '/custom/drawio');
-      assert.deepStrictEqual(call?.args.slice(0, 6), [
-        '--export',
-        '--format',
-        extension === '.dio.png' ? 'png' : 'svg',
-        '--output',
-        path.join(
-          workspacePath.path,
-          '.graphics-workbench',
-          'convert-to-drawio',
-          extension.slice(1),
-          `result${extension.endsWith('.png') ? '.png' : '.svg'}`,
-        ),
-        '--embed-diagram',
-      ]);
-      assert.match(call?.args[6] ?? '', /source\.drawio$/);
-      assert.ok((await readFile(outputPath)).length > 0);
-    }
-  });
-
-  it('editable画像のDraw.io CLI exportが失敗した場合はエラーをそのまま返し、別形式へのfallbackや出力ファイル作成はしない', async () => {
+  it('editable画像（.drawio.png）のDraw.io CLI exportが失敗した場合は出力を作らずエラーのResultを返す', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-to-drawio-failure-'));
     const imagePath = path.join(workspacePath.path, 'image.png');
-    const outputPath = path.join(workspacePath.path, 'result.dio.png');
     await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
       .png()
       .toFile(imagePath);
 
-    await assert.rejects(
-      convertToDrawioFiles({
-        maxInputPixels: 1_000_000_000,
-        inputs: [{ inputs: [{ sourcePath: imagePath }], outputPath, workspacePath: workspacePath.path }],
-        tools: {
-          drawioPath: 'drawio',
-          runPdfToSvg: async () => {
-            throw new Error('pdf input must not be used in this test');
-          },
-          runDrawio: async () => {
-            throw new Error('Draw.io export failed');
-          },
-        },
-        runId: 'failure',
-        runtime: { resolveConflicts: async () => 'overwrite' },
-      }),
-      /Draw\.io export failed/,
+    const result = await convertSingleDrawio(
+      [sourceAt(workspacePath.path, imagePath)],
+      '${fileDirname}/result.drawio.png',
+      testConversionConfiguration({ maxInputPixels: 1_000_000_000, drawioPath: 'drawio-export-does-not-exist' }),
+      { resolveConflicts: async () => 'overwrite' },
     );
-    await assert.rejects(readFile(outputPath));
+
+    assert.ok(result.isErr(), 'Draw.io CLI export failure should produce an error Result');
+    await assert.rejects(readFile(path.join(workspacePath.path, 'result.drawio.png')));
   });
 });
