@@ -27,86 +27,81 @@ const sourceJpegBase64 =
   '/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAANABEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCbAL6KAA//2Q==';
 
 suite('変換成功後の通知・Undo・Reveal実行の失敗を変換失敗として表示しない成功後処理の分離', () => {
+  let sandbox: ReturnType<typeof createSandbox>;
+
+  setup(() => {
+    sandbox = createSandbox();
+  });
+
+  teardown(() => {
+    sandbox.restore();
+  });
+
   test('PNG変換が成功して出力ファイルsource.pngを作成した後、成功通知のshowInformationMessageが失敗しても、それを変換失敗としてエラー通知しない', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       path.join(workspaceFolder.uri.fsPath, 'gw-lifecycle-phase-'),
     );
 
-    try {
-      const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
-      await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
+    const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
+    await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
 
-      sandbox.stub(vscode.window, 'showInformationMessage').rejects(new Error('UI failed after input.'));
-      const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showInformationMessage').rejects(new Error('UI failed after input.'));
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
-      await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
+    await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
 
-      assert.ok(showErrorMessage.notCalled, '成功後のUI失敗を変換失敗として表示してはいけない');
-      await access(path.join(temporaryDirectory.path, 'source.png'));
+    assert.ok(showErrorMessage.notCalled, '成功後のUI失敗を変換失敗として表示してはいけない');
+    await access(path.join(temporaryDirectory.path, 'source.png'));
 
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
-    } finally {
-      sandbox.restore();
-    }
+    await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
   });
 
   test('変換成功後、成功通知でUndoボタンを選択した際にUndo commandの呼び出しが失敗しても、それを変換失敗としてエラー通知しない', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       path.join(workspaceFolder.uri.fsPath, 'gw-lifecycle-phase-undo-'),
     );
 
-    try {
-      const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
-      await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
+    const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
+    await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
 
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves({
-        title: localeMap('message.action.undo'),
-      });
-      const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-      const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').rejects(new Error('Undo UI failed.'));
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves({
+      title: localeMap('message.action.undo'),
+    });
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').rejects(new Error('Undo UI failed.'));
 
-      await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
+    await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
 
-      assert.ok(showErrorMessage.notCalled, 'Undo実行失敗を変換失敗として表示してはいけない');
-      await access(path.join(temporaryDirectory.path, 'source.png'));
+    assert.ok(showErrorMessage.notCalled, 'Undo実行失敗を変換失敗として表示してはいけない');
+    await access(path.join(temporaryDirectory.path, 'source.png'));
 
-      executeCommand.restore();
-      await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
-    } finally {
-      sandbox.restore();
-    }
+    executeCommand.restore();
+    await vscode.commands.executeCommand('graphics-workbench.undoLastConversion');
   });
 
   test('変換成功後の成功通知でReveal in Explorerを選択すると、生成された出力ファイルsource.pngのfile URIをrevealInExplorerで表示する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       path.join(workspaceFolder.uri.fsPath, 'gw-lifecycle-phase-reveal-'),
     );
 
-    try {
-      const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
-      await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
+    const sourcePath = path.join(temporaryDirectory.path, 'source.jpeg');
+    await writeFile(sourcePath, Buffer.from(sourceJpegBase64, 'base64'));
 
-      sandbox
-        .stub(vscode.window, 'showInformationMessage')
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- showInformationMessage returns the clicked string item; sinon types it as MessageItem.
-        .resolves(localeMap('message.action.revealInExplorer') as unknown as vscode.MessageItem);
-      const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').resolves(undefined);
+    sandbox
+      .stub(vscode.window, 'showInformationMessage')
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- showInformationMessage returns the clicked string item; sinon types it as MessageItem.
+      .resolves(localeMap('message.action.revealInExplorer') as unknown as vscode.MessageItem);
+    const executeCommand = sandbox.stub(vscode.commands, 'executeCommand').resolves(undefined);
 
-      await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
+    await convertToRasterCommand([vscode.Uri.file(sourcePath)], liveCommandDependencies(), { target: 'png' });
 
-      const revealCall = executeCommand.getCalls().find((call) => call.args[0] === 'revealInExplorer');
-      assert.ok(revealCall, 'revealInExplorerが呼ばれること');
-      const uri: vscode.Uri = revealCall.args[1];
-      assert.strictEqual(uri.scheme, 'file');
-      assert.strictEqual(uri.fsPath, path.join(temporaryDirectory.path, 'source.png'));
-    } finally {
-      sandbox.restore();
-    }
+    const revealCall = executeCommand.getCalls().find((call) => call.args[0] === 'revealInExplorer');
+    assert.ok(revealCall, 'revealInExplorerが呼ばれること');
+    const uri: vscode.Uri = revealCall.args[1];
+    assert.strictEqual(uri.scheme, 'file');
+    assert.strictEqual(uri.fsPath, path.join(temporaryDirectory.path, 'source.png'));
   });
 });

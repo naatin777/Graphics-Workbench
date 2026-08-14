@@ -21,69 +21,72 @@ const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-te
 const longFixturePath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
 
 suite('PDF結合コマンド', () => {
+  let sandbox: ReturnType<typeof createSandbox>;
+
+  setup(() => {
+    sandbox = createSandbox();
+  });
+
+  teardown(() => {
+    sandbox.restore();
+  });
+
   test('選択された2つのPDFを先頭から順に読み込み、それぞれの全ページを同じ順序で1つの出力PDFへ書き出し、2件の成功通知を出す', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-'),
     );
 
-    try {
-      const firstPdfPath = path.join(temporaryDirectory.path, 'q a.PDF');
-      const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
-      const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
-      const renderDirectory = path.join(temporaryDirectory.path, 'rendered');
+    const firstPdfPath = path.join(temporaryDirectory.path, 'q a.PDF');
+    const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
+    const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
+    const renderDirectory = path.join(temporaryDirectory.path, 'rendered');
 
-      await copyFile(firstFixturePath, firstPdfPath);
-      await copyFile(secondFixturePath, secondPdfPath);
-      await mkdir(renderDirectory);
+    await copyFile(firstFixturePath, firstPdfPath);
+    await copyFile(secondFixturePath, secondPdfPath);
+    await mkdir(renderDirectory);
 
-      sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
-      const showInformationMessage = sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
+    const showInformationMessage = sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.mergePdf.selectedFiles',
-        vscode.Uri.file(firstPdfPath),
-        [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath)],
-      );
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.mergePdf.selectedFiles',
+      vscode.Uri.file(firstPdfPath),
+      [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath)],
+    );
 
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const mergedPages = await readPdfPages(await readFile(outputPath));
-      const firstPages = await readPdfPages(await readFile(firstPdfPath));
-      const secondPages = await readPdfPages(await readFile(secondPdfPath));
-      const expectedPageSizes = [...firstPages, ...secondPages].map((page) => page.mediaBox);
+    const mergedPages = await readPdfPages(await readFile(outputPath));
+    const firstPages = await readPdfPages(await readFile(firstPdfPath));
+    const secondPages = await readPdfPages(await readFile(secondPdfPath));
+    const expectedPageSizes = [...firstPages, ...secondPages].map((page) => page.mediaBox);
 
-      assert.strictEqual(mergedPages.length, expectedPageSizes.length);
-      assert.deepStrictEqual(
-        mergedPages.map((page) => page.mediaBox),
-        expectedPageSizes,
-      );
-      assert.ok((await stat(outputPath)).size > 0);
-      assert.ok(
-        showInformationMessage.calledWith(localeMap('message.mergePdf.success').replace('{0}', '2'), match.any),
-      );
+    assert.strictEqual(mergedPages.length, expectedPageSizes.length);
+    assert.deepStrictEqual(
+      mergedPages.map((page) => page.mediaBox),
+      expectedPageSizes,
+    );
+    assert.ok((await stat(outputPath)).size > 0);
+    assert.ok(showInformationMessage.calledWith(localeMap('message.mergePdf.success').replace('{0}', '2'), match.any));
 
-      let outputPageNumber = 1;
-      for (const [sourceIndex, sourcePath] of [firstPdfPath, secondPdfPath].entries()) {
-        const sourcePageCount = (await readPdfPages(await readFile(sourcePath))).length;
-        for (let sourcePageNumber = 1; sourcePageNumber <= sourcePageCount; sourcePageNumber += 1) {
-          await assertRenderedPdfPagesSimilar({
-            expectedPdfPath: sourcePath,
-            expectedPageNumber: sourcePageNumber,
-            actualPdfPath: outputPath,
-            actualPageNumber: outputPageNumber,
-            renderDirectory,
-            renderPrefix: `merge-${sourceIndex + 1}-${sourcePageNumber}`,
-          });
-          outputPageNumber += 1;
-        }
+    let outputPageNumber = 1;
+    for (const [sourceIndex, sourcePath] of [firstPdfPath, secondPdfPath].entries()) {
+      const sourcePageCount = (await readPdfPages(await readFile(sourcePath))).length;
+      for (let sourcePageNumber = 1; sourcePageNumber <= sourcePageCount; sourcePageNumber += 1) {
+        await assertRenderedPdfPagesSimilar({
+          expectedPdfPath: sourcePath,
+          expectedPageNumber: sourcePageNumber,
+          actualPdfPath: outputPath,
+          actualPageNumber: outputPageNumber,
+          renderDirectory,
+          renderPrefix: `merge-${sourceIndex + 1}-${sourcePageNumber}`,
+        });
+        outputPageNumber += 1;
       }
-    } finally {
-      sandbox.restore();
     }
   });
 
@@ -91,247 +94,212 @@ suite('PDF結合コマンド', () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-long-command-'),
     );
 
-    try {
-      const longPdfPath = path.join(temporaryDirectory.path, 'long-input.pdf');
-      const secondPdfPath = path.join(temporaryDirectory.path, 'second-input.pdf');
-      const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
-      await copyFile(longFixturePath, longPdfPath);
-      await copyFile(secondFixturePath, secondPdfPath);
+    const longPdfPath = path.join(temporaryDirectory.path, 'long-input.pdf');
+    const secondPdfPath = path.join(temporaryDirectory.path, 'second-input.pdf');
+    const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
+    await copyFile(longFixturePath, longPdfPath);
+    await copyFile(secondFixturePath, secondPdfPath);
 
-      sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.mergePdf.selectedFiles',
-        vscode.Uri.file(longPdfPath),
-        [vscode.Uri.file(longPdfPath), vscode.Uri.file(secondPdfPath)],
-      );
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.mergePdf.selectedFiles',
+      vscode.Uri.file(longPdfPath),
+      [vscode.Uri.file(longPdfPath), vscode.Uri.file(secondPdfPath)],
+    );
 
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const mergedPages = await readPdfPages(await readFile(outputPath));
-      assert.strictEqual(mergedPages.length, 17);
-      assert.ok((await stat(outputPath)).size > 0);
-    } finally {
-      sandbox.restore();
-    }
+    const mergedPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(mergedPages.length, 17);
+    assert.ok((await stat(outputPath)).size > 0);
   });
 
   test('選択にworkspace外へ解決するsymlinkのPDFが含まれる場合はConfigureのWebviewを開かず、エラー通知を表示する', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-configure-'),
     );
     await using outsideDirectory = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-pdf-outside-'));
 
-    try {
-      const firstPdfPath = path.join(temporaryDirectory.path, 'first.pdf');
-      const outsidePdfPath = path.join(outsideDirectory.path, 'second.pdf');
-      const linkedDirectory = path.join(temporaryDirectory.path, 'linked');
-      const linkedPdfPath = path.join(linkedDirectory, 'second.pdf');
-      await copyFile(firstFixturePath, firstPdfPath);
-      await copyFile(secondFixturePath, outsidePdfPath);
-      await symlink(outsideDirectory.path, linkedDirectory, process.platform === 'win32' ? 'junction' : 'dir');
+    const firstPdfPath = path.join(temporaryDirectory.path, 'first.pdf');
+    const outsidePdfPath = path.join(outsideDirectory.path, 'second.pdf');
+    const linkedDirectory = path.join(temporaryDirectory.path, 'linked');
+    const linkedPdfPath = path.join(linkedDirectory, 'second.pdf');
+    await copyFile(firstFixturePath, firstPdfPath);
+    await copyFile(secondFixturePath, outsidePdfPath);
+    await symlink(outsideDirectory.path, linkedDirectory, process.platform === 'win32' ? 'junction' : 'dir');
 
-      const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-      const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
 
-      await mergePdfConfigureCommand(
-        { extensionUri: vscode.Uri.file(compiledTestDirectory) },
-        [vscode.Uri.file(firstPdfPath), vscode.Uri.file(linkedPdfPath)],
-        testCommandDependencies(),
-      );
+    await mergePdfConfigureCommand(
+      { extensionUri: vscode.Uri.file(compiledTestDirectory) },
+      [vscode.Uri.file(firstPdfPath), vscode.Uri.file(linkedPdfPath)],
+      testCommandDependencies(),
+    );
 
-      assert.strictEqual(createWebviewPanel.called, false);
-      assert.strictEqual(showErrorMessage.calledOnce, true);
-    } finally {
-      sandbox.restore();
-    }
+    assert.strictEqual(createWebviewPanel.called, false);
+    assert.strictEqual(showErrorMessage.calledOnce, true);
   });
 
   test('選択にPDF以外のファイル（.txt）が含まれる場合は保存ダイアログを表示せず結合を開始せず、エラー通知を出して出力ファイルも作成しない', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
-    try {
-      const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
-      const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
-      const textPath = path.join(temporaryDirectory.path, 'notes.txt');
-      await copyFile(firstFixturePath, firstPdfPath);
-      await copyFile(secondFixturePath, secondPdfPath);
-      await writeFile(textPath, 'not a PDF');
+    const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
+    const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
+    const textPath = path.join(temporaryDirectory.path, 'notes.txt');
+    await copyFile(firstFixturePath, firstPdfPath);
+    await copyFile(secondFixturePath, secondPdfPath);
+    await writeFile(textPath, 'not a PDF');
 
-      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
-      const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.mergePdf.selectedFiles',
-        vscode.Uri.file(firstPdfPath),
-        [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath), vscode.Uri.file(textPath)],
-      );
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.mergePdf.selectedFiles',
+      vscode.Uri.file(firstPdfPath),
+      [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath), vscode.Uri.file(textPath)],
+    );
 
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      assert.strictEqual(showSaveDialog.called, false);
-      assert.strictEqual(showErrorMessage.calledOnce, true);
-      await assert.rejects(access(path.join(temporaryDirectory.path, 'merged.pdf')));
-    } finally {
-      sandbox.restore();
-    }
+    assert.strictEqual(showSaveDialog.called, false);
+    assert.strictEqual(showErrorMessage.calledOnce, true);
+    await assert.rejects(access(path.join(temporaryDirectory.path, 'merged.pdf')));
   });
 
   test('選択にfileスキームでないURI（untitled:）が含まれる場合は保存ダイアログを表示せず結合を開始せず、エラー通知を出す', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
-    try {
-      const firstPdfPath = path.join(temporaryDirectory.path, 'first.pdf');
-      const secondPdfPath = path.join(temporaryDirectory.path, 'second.pdf');
-      await copyFile(firstFixturePath, firstPdfPath);
-      await copyFile(secondFixturePath, secondPdfPath);
+    const firstPdfPath = path.join(temporaryDirectory.path, 'first.pdf');
+    const secondPdfPath = path.join(temporaryDirectory.path, 'second.pdf');
+    await copyFile(firstFixturePath, firstPdfPath);
+    await copyFile(secondFixturePath, secondPdfPath);
 
-      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
-      const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.mergePdf.selectedFiles',
-        vscode.Uri.file(firstPdfPath),
-        [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath), vscode.Uri.parse('untitled:notes.pdf')],
-      );
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.mergePdf.selectedFiles',
+      vscode.Uri.file(firstPdfPath),
+      [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath), vscode.Uri.parse('untitled:notes.pdf')],
+    );
 
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      assert.strictEqual(showSaveDialog.called, false);
-      assert.strictEqual(showErrorMessage.calledOnce, true);
-    } finally {
-      sandbox.restore();
-    }
+    assert.strictEqual(showSaveDialog.called, false);
+    assert.strictEqual(showErrorMessage.calledOnce, true);
   });
 
   test('選択がPDF1ファイルのみの場合は結合に必要な2ファイル以上を満たさないため、保存ダイアログを表示せずエラー通知を出す', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
-    try {
-      const pdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
-      await copyFile(firstFixturePath, pdfPath);
+    const pdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
+    await copyFile(firstFixturePath, pdfPath);
 
-      const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
-      const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.mergePdf.selectedFiles',
-        vscode.Uri.file(pdfPath),
-        [vscode.Uri.file(pdfPath)],
-      );
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.mergePdf.selectedFiles',
+      vscode.Uri.file(pdfPath),
+      [vscode.Uri.file(pdfPath)],
+    );
 
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      assert.strictEqual(showSaveDialog.called, false);
-      assert.strictEqual(showErrorMessage.calledOnce, true);
-    } finally {
-      sandbox.restore();
-    }
+    assert.strictEqual(showSaveDialog.called, false);
+    assert.strictEqual(showErrorMessage.calledOnce, true);
   });
 
   test('出力先に既存PDFがあり上書き確認でOverwriteを選択した場合は、既存出力を結合結果の4ページPDFで置き換える', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
-    try {
-      const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
-      const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
-      const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
-      await copyFile(firstFixturePath, firstPdfPath);
-      await copyFile(secondFixturePath, secondPdfPath);
-      await copyFile(firstFixturePath, outputPath);
+    const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
+    const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
+    const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
+    await copyFile(firstFixturePath, firstPdfPath);
+    await copyFile(secondFixturePath, secondPdfPath);
+    await copyFile(firstFixturePath, outputPath);
 
-      sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showWarningMessage').resolves({ title: localeMap('message.safeMode.overwrite') });
-      sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showWarningMessage').resolves({ title: localeMap('message.safeMode.overwrite') });
+    sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.mergePdf.selectedFiles',
-        vscode.Uri.file(firstPdfPath),
-        [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath)],
-      );
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.mergePdf.selectedFiles',
+      vscode.Uri.file(firstPdfPath),
+      [vscode.Uri.file(firstPdfPath), vscode.Uri.file(secondPdfPath)],
+    );
 
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const mergedPages = await readPdfPages(await readFile(outputPath));
-      assert.strictEqual(mergedPages.length, 4);
-      assert.ok((await stat(outputPath)).size > 0);
-    } finally {
-      sandbox.restore();
-    }
+    const mergedPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(mergedPages.length, 4);
+    assert.ok((await stat(outputPath)).size > 0);
   });
 
   test('結合対象に不正な内容のPDFが含まれ結合途中で失敗する場合は、既存の出力ファイルを元の内容のまま変更しない', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       `${path.join(workspaceFolder.uri.fsPath, 'gw-merge-pdf-command-')}-`,
     );
 
-    try {
-      const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
-      const brokenPdfPath = path.join(temporaryDirectory.path, 'broken.pdf');
-      const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
-      await copyFile(firstFixturePath, firstPdfPath);
-      await writeFile(brokenPdfPath, 'not a PDF');
-      await copyFile(firstFixturePath, outputPath);
-      const originalOutputBytes = await readFile(outputPath);
+    const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
+    const brokenPdfPath = path.join(temporaryDirectory.path, 'broken.pdf');
+    const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
+    await copyFile(firstFixturePath, firstPdfPath);
+    await writeFile(brokenPdfPath, 'not a PDF');
+    await copyFile(firstFixturePath, outputPath);
+    const originalOutputBytes = await readFile(outputPath);
 
-      sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
 
-      const commandExecution = vscode.commands.executeCommand(
-        'graphics-workbench.mergePdf.selectedFiles',
-        vscode.Uri.file(firstPdfPath),
-        [vscode.Uri.file(firstPdfPath), vscode.Uri.file(brokenPdfPath)],
-      );
+    const commandExecution = vscode.commands.executeCommand(
+      'graphics-workbench.mergePdf.selectedFiles',
+      vscode.Uri.file(firstPdfPath),
+      [vscode.Uri.file(firstPdfPath), vscode.Uri.file(brokenPdfPath)],
+    );
 
-      await runCommandAndClearNotificationsUntilDone(commandExecution);
+    await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      assert.deepStrictEqual(await readFile(outputPath), originalOutputBytes);
-    } finally {
-      sandbox.restore();
-    }
+    assert.deepStrictEqual(await readFile(outputPath), originalOutputBytes);
   });
 });

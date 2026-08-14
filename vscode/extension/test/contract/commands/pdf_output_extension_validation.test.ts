@@ -24,8 +24,18 @@ import { withWorkspaceSettings } from '../../support/helpers/workspace_settings.
 const invalidPdfTemplate = '${fileDirname}/result.png';
 
 suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前に拒否する拡張子検証', () => {
+  let sandbox: ReturnType<typeof createSandbox>;
+
+  setup(() => {
+    sandbox = createSandbox();
+  });
+
+  teardown(() => {
+    sandbox.restore();
+  });
+
   test('rotatePdfの出力パス設定が.pngで終わる場合は、Quick回転の適用処理（withProgress）を開始せず、無効な拡張子のエラー通知を出す', async () => {
-    await withPdfSource(async (sourcePath, sandbox) => {
+    await withPdfSource(async (sourcePath) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const withProgress = sandbox
         .stub(vscode.window, 'withProgress')
@@ -44,7 +54,7 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
   });
 
   test('rotatePdfの出力パス設定が.pngで終わる場合は、ConfigureのWebviewを開く前にエラー通知を出して画面を作成しない', async () => {
-    await withPdfSource(async (sourcePath, sandbox) => {
+    await withPdfSource(async (sourcePath) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
 
@@ -58,7 +68,7 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
   });
 
   test('reorderPdfの出力パス設定が.pngで終わる場合は、ConfigureのWebviewを開く前にエラー通知を出して画面を作成しない', async () => {
-    await withPdfSource(async (sourcePath, sandbox) => {
+    await withPdfSource(async (sourcePath) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
 
@@ -72,7 +82,7 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
   });
 
   test('cropPdfの出力パス設定が.pngで終わる場合は、Autoトリミングの適用処理（withProgress）を開始せず、無効な拡張子のエラー通知を出す', async () => {
-    await withPdfSource(async (sourcePath, sandbox) => {
+    await withPdfSource(async (sourcePath) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const withProgress = sandbox
         .stub(vscode.window, 'withProgress')
@@ -91,7 +101,7 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
   });
 
   test('split.pdfの出力パステンプレートが.pngで終わる場合は、ConfigureのWebviewを開く前にエラー通知を出して画面を作成しない', async () => {
-    await withPdfSource(async (sourcePath, sandbox) => {
+    await withPdfSource(async (sourcePath) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const createWebviewPanel = sandbox.stub(vscode.window, 'createWebviewPanel');
 
@@ -108,7 +118,7 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
   });
 
   test('encryptPdfの出力パス設定が.pngで終わる場合は、暗号化処理（withProgress）を開始せず、無効な拡張子のエラー通知を出す', async () => {
-    await withPdfSource(async (sourcePath, sandbox) => {
+    await withPdfSource(async (sourcePath) => {
       const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
       const withProgress = sandbox
         .stub(vscode.window, 'withProgress')
@@ -126,53 +136,41 @@ suite('PDF出力コマンドが.pdf以外の出力パス設定を変換開始前
 
   test('convertToPdf（SVG入力）の出力パス設定が.pngで終わる場合は、共通lifecycleでplanning errorを通知する', async () => {
     const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       path.join(workspaceFolder.uri.fsPath, 'gw-pdf-extension-validation-'),
     );
 
-    try {
-      const sourcePath = path.join(temporaryDirectory.path, 'source.svg');
-      await copyFile(path.join(testInputDirectory, 'valid', 'svg', 'gradient-card.svg'), sourcePath);
-      const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-      const withProgress = sandbox.stub(vscode.window, 'withProgress').callsFake(async (_options, task) =>
-        task(
-          { report: () => undefined },
-          {
-            isCancellationRequested: false,
-            onCancellationRequested: () => ({ dispose: () => undefined }),
-          },
-        ),
-      );
+    const sourcePath = path.join(temporaryDirectory.path, 'source.svg');
+    await copyFile(path.join(testInputDirectory, 'valid', 'svg', 'gradient-card.svg'), sourcePath);
+    const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    const withProgress = sandbox.stub(vscode.window, 'withProgress').callsFake(async (_options, task) =>
+      task(
+        { report: () => undefined },
+        {
+          isCancellationRequested: false,
+          onCancellationRequested: () => ({ dispose: () => undefined }),
+        },
+      ),
+    );
 
-      await withWorkspaceSettings({ 'graphics-workbench.outputPath.single.pdf': invalidPdfTemplate }, async () => {
-        await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
-      });
+    await withWorkspaceSettings({ 'graphics-workbench.outputPath.single.pdf': invalidPdfTemplate }, async () => {
+      await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
+    });
 
-      assertShowExtensionError(showErrorMessage);
-      assert.ok(withProgress.calledOnce);
-    } finally {
-      sandbox.restore();
-    }
+    assertShowExtensionError(showErrorMessage);
+    assert.ok(withProgress.calledOnce);
   });
 });
 
-async function withPdfSource(
-  run: (sourcePath: string, sandbox: ReturnType<typeof createSandbox>) => Promise<void>,
-): Promise<void> {
+async function withPdfSource(run: (sourcePath: string) => Promise<void>): Promise<void> {
   const workspaceFolder = requireValue(vscode.workspace.workspaceFolders?.[0]);
-  const sandbox = createSandbox();
   await using temporaryDirectory = await mkdtempDisposable(
     path.join(workspaceFolder.uri.fsPath, 'gw-pdf-extension-validation-'),
   );
 
-  try {
-    const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
-    await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
-    await run(sourcePath, sandbox);
-  } finally {
-    sandbox.restore();
-  }
+  const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
+  await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
+  await run(sourcePath);
 }
 
 function assertShowExtensionError(showErrorMessage: sinon.SinonStub): void {
