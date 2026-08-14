@@ -9,9 +9,15 @@ import {
 } from './extension-host-coverage.mjs';
 
 test('normalizeExtensionHostSourcePath: LCOVの相対パスをcanonicalなcore/src・vscode/extension/src形式へ変換する', () => {
-  assert.strictEqual(normalizeExtensionHostSourcePath('../../core/src/operations/foo.ts'), 'core/src/operations/foo.ts');
+  assert.strictEqual(
+    normalizeExtensionHostSourcePath('../../core/src/operations/foo.ts'),
+    'core/src/operations/foo.ts',
+  );
   assert.strictEqual(normalizeExtensionHostSourcePath('src/extension.ts'), 'vscode/extension/src/extension.ts');
-  assert.strictEqual(normalizeExtensionHostSourcePath('src/commands/convert_to_pdf.ts'), 'vscode/extension/src/commands/convert_to_pdf.ts');
+  assert.strictEqual(
+    normalizeExtensionHostSourcePath('src/commands/convert_to_pdf.ts'),
+    'vscode/extension/src/commands/convert_to_pdf.ts',
+  );
   assert.strictEqual(normalizeExtensionHostSourcePath('core/src/foo.ts'), 'core/src/foo.ts');
   assert.strictEqual(normalizeExtensionHostSourcePath('vscode/extension/src/foo.ts'), 'vscode/extension/src/foo.ts');
   assert.strictEqual(normalizeExtensionHostSourcePath('foo.ts'), 'foo.ts');
@@ -48,10 +54,7 @@ test('buildExtensionHostRuntimeCoverageGlobsはcore/distとextensionのout配下
   const repositoryDirectory = '/repo';
   const globs = buildExtensionHostRuntimeCoverageGlobs(repositoryDirectory);
 
-  assert.deepStrictEqual(globs, [
-    '/repo/core/dist/**/*.js',
-    '/repo/vscode/extension/out/vscode/extension/src/**/*.js',
-  ]);
+  assert.deepStrictEqual(globs, ['/repo/core/dist/**/*.js', '/repo/vscode/extension/out/vscode/extension/src/**/*.js']);
 });
 
 test('verifyExtensionHostLcov: extension package基準のsrc/...とcore/src/...のLCOVを受け入れる', () => {

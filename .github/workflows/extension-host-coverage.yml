@@ -1,0 +1,85 @@
+name: Extension Host coverage (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      label:
+        required: true
+        type: string
+      test_command:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  extension-host:
+    name: Extension Host coverage (${{ inputs.label }})
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - uses: ./.github/actions/setup
+
+      - name: Build extension and Webview
+        run: npm run build
+        shell: bash
+
+      - if: inputs.os == 'ubuntu-latest'
+        run: |
+          TOOL_PATHS="$(bash .github/scripts/install-test-tools-linux.sh)"
+          printf '%s\n' "$TOOL_PATHS" | grep '^GRAPHICS_WORKBENCH_TEST_' >> "$GITHUB_ENV"
+          printf '%s\n' "$TOOL_PATHS"
+        shell: bash
+
+      - if: inputs.os == 'macos-latest'
+        run: |
+          TOOL_PATHS="$(bash .github/scripts/install-image-tools-macos.sh)"
+          printf '%s\n' "$TOOL_PATHS" | grep '^GRAPHICS_WORKBENCH_TEST_' >> "$GITHUB_ENV"
+          printf '%s\n' "$TOOL_PATHS"
+        shell: bash
+
+      - if: inputs.os == 'windows-latest'
+        run: |
+          $toolPaths = & .github/scripts/install-image-tools-windows.ps1
+          $toolPaths | Where-Object { $_ -like 'GRAPHICS_WORKBENCH_TEST_*' } | Add-Content -Path $env:GITHUB_ENV
+        shell: pwsh
+
+      - if: inputs.os != 'windows-latest'
+        run: bash .github/scripts/verify-image-tools-unix.sh
+        shell: bash
+
+      - if: inputs.os == 'windows-latest'
+        run: .github/scripts/verify-image-tools-windows.ps1
+        shell: pwsh
+
+      - name: Run VS Code Extension Host tests with coverage
+        run: ${{ inputs.test_command }}
+        shell: bash
+        env:
+          GRAPHICS_WORKBENCH_VSCODE_TEST_USER_DATA_DIR: .vscode-test-ci-data
+
+      - if: always()
+        name: Upload VS Code coverage
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: vscode-extension-host-coverage-${{ inputs.label }}
+          path: coverage/vscode/
+          if-no-files-found: ignore
+
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: extension-host-test-${{ inputs.label }}
+          path: .vscode-test-ci-data/
+          if-no-files-found: ignore
+
+      - if: always()
+        name: Cleanup VS Code test data
+        run: |
+          node --input-type=module -e "import { rm } from 'node:fs/promises'; await rm('.vscode-test-ci-data', { recursive: true, force: true, maxRetries: 20, retryDelay: 200 });"

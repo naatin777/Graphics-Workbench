@@ -26,7 +26,7 @@ suite('生成された設定スキーマ検証', () => {
 
     assert.strictEqual(configuration.execPath.drawio(), 'drawio');
     assert.strictEqual(configuration.execPath.rsvgConvert(), 'rsvg-convert');
-    assert.strictEqual(configuration.execPath.chrome(), '');
+    assert.strictEqual(configuration.execPath.chrome(), 'auto');
     assert.strictEqual(configuration.preview.maxCanvasPixels(), 40_000_000);
     assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
     assert.strictEqual(configuration.performance.maxConcurrentHeavyProcesses(), 2);

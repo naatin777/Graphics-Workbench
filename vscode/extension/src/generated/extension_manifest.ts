@@ -541,7 +541,7 @@ function createConfigurationInternal(configurationReader: ConfigurationReader) {
     execPath: {
       drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', 'drawio'),
       rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
-      chrome: defineConfiguration<string>(configurationReader, 'execPath.chrome', ''),
+      chrome: defineConfiguration<string>(configurationReader, 'execPath.chrome', 'auto'),
     },
     externalTools: {
       drawio: {
