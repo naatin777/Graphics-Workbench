@@ -2,19 +2,13 @@ import assert from 'node:assert/strict';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 
-import sharp from 'sharp';
-
 import { isRasterImagePath, sourceFormatForPath } from '@graphics-workbench/core/formats';
-import {
-  executeRasterConversion,
-  rasterFormatSpecs,
-  createPdfRenderBackend,
-} from '@graphics-workbench/core/conversion';
+import { convertSinglePng, convertSplitPng, type ConversionSource } from '@graphics-workbench/core/conversion';
 import {
   assertRasterMatches,
   copyInputToWorkspace,
-  createTestRuntime,
   listInputTestDataPathsSync,
+  testConversionConfiguration,
   testInputDirectory,
   testOutputDirectory,
   withTestWorkspace,
@@ -38,9 +32,7 @@ describe('ラスターテストデータのPNG変換内容を固定正解と比�
   for (const [index, testDataPath] of supportedRasterTestDataPaths.entries()) {
     it(`${path.relative(rasterInputDirectory, testDataPath)}をworkspaceへコピーし、複数フレームなら2ページ目を指定してPNGへ変換すると、テストデータ固定のexpected.pngと内容が一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const pdfRenderTools = createPdfRenderBackend();
         const sourcePath = await copyInputTestDataToWorkspace(testDataPath, index, workspacePath);
-        const outputPath = path.join(workspacePath, 'converted outputs', `${index}.png`);
         const sourceFormat = sourceFormatForPath(testDataPath);
         assert.notStrictEqual(sourceFormat, undefined, testDataPath);
         const expectedPath = path.join(
@@ -49,19 +41,27 @@ describe('ラスターテストデータのPNG変換内容を固定正解と比�
           sourceName(testDataPath),
           'expected.png',
         );
-        const page = await secondPageIfAnimated(sourcePath);
+        const source: ConversionSource = {
+          sourcePath,
+          workspacePath,
+          workspaceName: path.basename(workspacePath),
+        };
 
-        await executeRasterConversion({
-          spec: rasterFormatSpecs.png,
-          maxInputPixels: 1_000_000_000,
-          inputs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
-          pdfRenderTools,
-          runtime: createTestRuntime().runtime,
-          runId: `raster-${index}`,
-        });
+        const result = await convertSplitPng(
+          [source],
+          `\${fileDirname}/converted outputs/${index}-\${page}.png`,
+          testConversionConfiguration({ maxInputPixels: 1_000_000_000 }),
+          {},
+        );
+        if (result.isErr()) {
+          throw result.error;
+        }
 
+        const output = result.value.length > 1 ? result.value[1] : result.value[0];
+        assert.ok(output, `${testDataPath} should produce a PNG output`);
+        const page = result.value.length > 1 ? 2 : undefined;
         await assertRasterMatches(
-          outputPath,
+          output.outputPath,
           expectedPath,
           `${testDataPath}${page === undefined ? '' : ` page ${page}`}`,
         );
@@ -73,22 +73,18 @@ describe('ラスターテストデータのPNG変換内容を固定正解と比�
     const testDataPath = path.join(testInputDirectory, 'valid', unsupportedRasterTestDataRelativePaths[0] ?? '');
 
     await withTestWorkspace(async (workspacePath) => {
-      const pdfRenderTools = createPdfRenderBackend();
       const sourcePath = await copyInputToWorkspace(testDataPath, workspacePath, 'unsupported sequence.avif');
-      const outputPath = path.join(workspacePath, 'unsupported-output.png');
 
-      await assert.rejects(
-        executeRasterConversion({
-          spec: rasterFormatSpecs.png,
-          maxInputPixels: 1_000_000_000,
-          inputs: [{ sourcePath, outputPath, workspacePath }],
-          pdfRenderTools,
-          runtime: createTestRuntime().runtime,
-          runId: 'unsupported-avif',
-        }),
-        /unsupported image format/u,
+      const result = await convertSinglePng(
+        [{ sourcePath, workspacePath, workspaceName: path.basename(workspacePath) }],
+        '${fileDirname}/unsupported-output.png',
+        testConversionConfiguration({ maxInputPixels: 1_000_000_000 }),
+        {},
       );
-      await assert.rejects(access(outputPath));
+
+      assert.ok(result.isErr(), 'animated AVIF should not convert to PNG');
+      assert.match(result.error.message, /unsupported image format/u);
+      await assert.rejects(access(path.join(workspacePath, 'unsupported-output.png')));
     });
   });
 });
@@ -104,13 +100,7 @@ async function copyInputTestDataToWorkspace(
       : index % 3 === 1
         ? `nested directory/diagram français 🚀 ${index}${path.extname(testDataPath)}`
         : `nested/δεδομένα/source.final ${index}${path.extname(testDataPath)}`;
-  const sourcePath = await copyInputToWorkspace(testDataPath, workspacePath, destinationPath);
-  return sourcePath;
-}
-
-async function secondPageIfAnimated(sourcePath: string): Promise<number | undefined> {
-  const metadata = await sharp(sourcePath).metadata();
-  return metadata.pages !== undefined && metadata.pages > 1 ? 2 : undefined;
+  return copyInputToWorkspace(testDataPath, workspacePath, destinationPath);
 }
 
 function sourceName(testDataPath: string): string {

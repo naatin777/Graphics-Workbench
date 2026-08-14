@@ -6,9 +6,9 @@ import type { LineOutputChannel } from '@graphics-workbench/core/external-tools'
 import {
   OperationCancelledError,
   toErrorMessage,
-  type CommittedConversionOutput,
   type ConversionExecutionContext,
 } from '@graphics-workbench/core/runtime';
+import type { ConversionResult } from '@graphics-workbench/core/conversion';
 import type { WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
 import { getWebviewHtml } from '../../presentation/webview/get_webview_html.js';
 import type { ExtensionChannel } from '../../presentation/webview/typed_channel.js';
@@ -78,7 +78,7 @@ export function startPdfConfigureSession<
   apply: (
     payload: Extract<v.InferOutput<WebviewSchema>, { type: 'apply' }>['payload'],
     context: { runtime: ConversionExecutionContext },
-  ) => Promise<CommittedConversionOutput[]>;
+  ) => Promise<ConversionResult>;
   onPreviewLoadFailed: (message: v.InferOutput<WebviewSchema>, outputChannel?: LineOutputChannel) => void;
   /** When provided, aborts an in-flight apply when the extension host shuts down. */
   extensionShutdown?: { context: vscode.ExtensionContext };

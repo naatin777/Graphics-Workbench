@@ -16,9 +16,9 @@ import { localeCatalog, localeMap } from '../../locale_map.js';
 import {
   isAbortError,
   OperationCancelledError,
-  type CommittedConversionOutput,
   type ConversionExecutionContext,
 } from '@graphics-workbench/core/runtime';
+import { toConversionResult, type ConversionResult } from '@graphics-workbench/core/conversion';
 import { cropPdfWithConfiguredBox } from '../../adapters/crop/crop_pdf_configure.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 import { runCropWorker, type CropPdfMetadata } from '@graphics-workbench/core/crop-worker';
@@ -145,26 +145,28 @@ async function applyConfiguredCrop(params: {
     pageGeometry: PdfPageGeometry[];
   };
   runtime: ConversionExecutionContext;
-}): Promise<CommittedConversionOutput[]> {
+}): Promise<ConversionResult> {
   const { inputUri, workspaceFolder, outputTemplate, crop, runtime } = params;
-  const sourcePath = inputUri.fsPath;
-  const outputPath = resolvePdfOutputPath(outputTemplate, {
-    workspacePath: workspaceFolder.uri.fsPath,
-    workspaceName: workspaceFolder.name,
-    sourcePath,
-  });
-  validateCropBoxForTarget(crop.cropBox, crop.target, crop.pageGeometry);
-
-  return cropPdfWithConfiguredBox({
-    input: {
-      sourcePath,
+  return toConversionResult(async () => {
+    const sourcePath = inputUri.fsPath;
+    const outputPath = resolvePdfOutputPath(outputTemplate, {
       workspacePath: workspaceFolder.uri.fsPath,
-      outputPath,
-      cropBox: crop.cropBox,
-      target: crop.target,
-    },
-    runtime,
-  });
+      workspaceName: workspaceFolder.name,
+      sourcePath,
+    });
+    validateCropBoxForTarget(crop.cropBox, crop.target, crop.pageGeometry);
+
+    return cropPdfWithConfiguredBox({
+      input: {
+        sourcePath,
+        workspacePath: workspaceFolder.uri.fsPath,
+        outputPath,
+        cropBox: crop.cropBox,
+        target: crop.target,
+      },
+      runtime,
+    });
+  }, runtime.signal);
 }
 
 function validateCropBoxForTarget(cropBox: CropBox, target: CropTarget, pageGeometry: PdfPageGeometry[]): void {

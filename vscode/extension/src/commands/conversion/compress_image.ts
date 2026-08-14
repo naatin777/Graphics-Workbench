@@ -7,6 +7,7 @@ import {
   compressImageFiles,
   compressibleFormatForPath,
   readRasterAnimationMetadata,
+  toConversionResult,
   type CompressImageInput,
   type CompressibleImageFormat,
 } from '@graphics-workbench/core/conversion';
@@ -49,7 +50,10 @@ export async function compressImageCommand(sourceUris: vscode.Uri[], dependencie
         runtime.signal?.throwIfAborted();
         inputs.push(...(await planCompressImageInputs(sourceUri, outputTemplate, maxInputPixels, runtime.signal)));
       }
-      return compressImageFiles({ inputs, quality, maxInputPixels, maxAnimationPixels, runtime });
+      return toConversionResult(
+        async () => compressImageFiles({ inputs, quality, maxInputPixels, maxAnimationPixels, runtime }),
+        runtime.signal,
+      );
     },
   });
 }

@@ -9,52 +9,44 @@ import {
   type PdfRotationAngle,
   type RotatePdfInput,
 } from '@graphics-workbench/core/pdf';
+import { toConversionResult } from '@graphics-workbench/core/conversion';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError } from '@graphics-workbench/core/runtime';
 
 export async function rotatePdfCommand(sourceUris: vscode.Uri[], dependencies: CommandDependencies): Promise<void> {
   const { outputChannel } = dependencies;
-  try {
-    if (sourceUris.length === 0) {
-      throw new Error('No PDF files were selected.');
-    }
-
-    const angle = await pickRotationAngle();
-
-    if (angle === undefined) {
-      return;
-    }
-
-    const configuration = dependencies.getConfiguration();
-    const outputTemplate = configuration.outputPath.rotatePdf();
-    const inputs = sourceUris.map((sourceUri) => planRotatePdfInput(sourceUri, outputTemplate, angle));
-    await runConversionLifecycle({
-      operationName: 'rotate-pdf',
-      outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: {
-        progressTitle: userMessage('message.progress.rotatePdf.title', inputs.length),
-        prepareMessage: userMessage('message.progress.prepareRotatePdf'),
-        successMessage: (count) => userMessage('message.rotatePdf.success', count),
-        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-        cancelledMessage: userMessage('message.rotatePdf.cancelled'),
-        failedMessage: (reason) => userMessage('message.rotatePdf.failed', reason),
-      },
-      run: async (runtime) => rotatePdfFiles({ inputs, runtime }),
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.rotatePdf.cancelled'));
-      return;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage('message.rotatePdf.failed', message));
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage(userMessage('message.rotatePdf.failed', 'No PDF files were selected.'));
+    return;
   }
+
+  const angle = await pickRotationAngle();
+  if (angle === undefined) {
+    return;
+  }
+
+  const configuration = dependencies.getConfiguration();
+  const outputTemplate = configuration.outputPath.rotatePdf();
+  await runConversionLifecycle({
+    operationName: 'rotate-pdf',
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: {
+      progressTitle: userMessage('message.progress.rotatePdf.title', sourceUris.length),
+      prepareMessage: userMessage('message.progress.prepareRotatePdf'),
+      successMessage: (count) => userMessage('message.rotatePdf.success', count),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage('message.rotatePdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.rotatePdf.failed', reason),
+    },
+    run: async (runtime) => {
+      const inputs = sourceUris.map((sourceUri) => planRotatePdfInput(sourceUri, outputTemplate, angle));
+      return toConversionResult(async () => rotatePdfFiles({ inputs, runtime }), runtime.signal);
+    },
+  });
 }
 
 async function pickRotationAngle(): Promise<PdfRotationAngle | undefined> {

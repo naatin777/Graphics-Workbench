@@ -8,9 +8,12 @@ import test from 'node:test';
 
 void test('@graphics-workbench/core/conversion exposes the conversion API from dist', async () => {
   const module = await import('@graphics-workbench/core/conversion');
-  assert.equal(typeof module.combineImagesToPdf, 'function');
-  assert.equal(typeof module.convertToPdfFiles, 'function');
-  assert.equal(typeof module.executeRasterConversion, 'function');
+  assert.equal(typeof module.convertSinglePdf, 'function');
+  assert.equal(typeof module.convertSinglePng, 'function');
+  assert.equal(typeof module.convertSplitPdf, 'function');
+  assert.equal(typeof module.convertSplitPng, 'function');
+  assert.equal(typeof module.convertCombinePdf, 'function');
+  assert.equal(typeof module.convertSingleDrawio, 'function');
 });
 
 void test('@graphics-workbench/core/pdf exposes the PDF operations API from dist', async () => {

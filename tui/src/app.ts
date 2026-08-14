@@ -6,21 +6,17 @@ import {
   type ConversionExecutionContext,
   type OutputConflictDecision,
 } from '@graphics-workbench/core/runtime';
-import type { PdfPageSelectionParseFailure } from '@graphics-workbench/core/formats';
-import {
-  planPdfRasterConversion,
-  type PdfRasterPageSelection,
-  type PdfRasterSource,
-} from '@graphics-workbench/core/conversion';
 
 import type { TerminalKey, TerminalScreen } from './screen.js';
 import { terminalUiDefaults } from './defaults.js';
 import {
   availableTerminalUiRasterTargets,
-  inspectPdfRasterSource,
-  resolvePdfRasterPages,
+  inspectTerminalUiSource,
+  resolveTerminalUiPages,
   runTerminalPdfRasterConversion,
+  type TerminalUiPageSelection,
   type TerminalUiPdfRasterPlan,
+  type TerminalUiPdfSource,
   type TerminalUiConversionResult,
   type TerminalUiRasterTarget,
 } from './conversion_adapter.js';
@@ -29,9 +25,9 @@ type PageMode = 'all' | 'range';
 type ConflictAction = 'cancel' | 'replace' | 'rename';
 type AppState =
   | { kind: 'loading'; sourcePath: string }
-  | { kind: 'format'; source: PdfRasterSource; selectedIndex: number }
-  | { kind: 'pages'; source: PdfRasterSource; target: TerminalUiRasterTarget; selectedIndex: number }
-  | { kind: 'range'; source: PdfRasterSource; target: TerminalUiRasterTarget; value: string; error?: string }
+  | { kind: 'format'; source: TerminalUiPdfSource; selectedIndex: number }
+  | { kind: 'pages'; source: TerminalUiPdfSource; target: TerminalUiRasterTarget; selectedIndex: number }
+  | { kind: 'range'; source: TerminalUiPdfSource; target: TerminalUiRasterTarget; value: string; error?: string }
   | { kind: 'review'; plan: TerminalUiPdfRasterPlan }
   | { kind: 'converting'; plan: TerminalUiPdfRasterPlan; completed: number; total: number; message: string }
   | {
@@ -44,12 +40,12 @@ type AppState =
   | { kind: 'result'; status: 'success' | 'cancelled' | 'error'; title: string; details: string[] };
 
 interface AppDependencies {
-  inspectSource: typeof inspectPdfRasterSource;
+  inspectSource: typeof inspectTerminalUiSource;
   runConversion: typeof runTerminalPdfRasterConversion;
 }
 
 const defaultDependencies: AppDependencies = {
-  inspectSource: inspectPdfRasterSource,
+  inspectSource: inspectTerminalUiSource,
   runConversion: runTerminalPdfRasterConversion,
 };
 
@@ -87,7 +83,7 @@ export async function runTerminalUi(
         kind: 'converting',
         plan,
         completed: 0,
-        total: plan.inputs.length,
+        total: plan.inputCount,
         message: 'Cancellation requested; waiting for active work to stop…',
       };
       render();
@@ -116,7 +112,7 @@ export async function runTerminalUi(
       kind: 'converting',
       plan,
       completed: 0,
-      total: plan.inputs.length,
+      total: plan.inputCount,
       message: `Converting PDF → ${targetLabel(plan.target)}`,
     };
     render();
@@ -238,12 +234,12 @@ export async function runTerminalUi(
           };
           render();
         } else if (isEnter(key)) {
-          const selection: PdfRasterPageSelection = { kind: 'range', value: state.value };
-          const parsed = resolvePdfRasterPages(selection, state.source.pageCount);
+          const selection: TerminalUiPageSelection = { kind: 'range', value: state.value };
+          const parsed = resolveTerminalUiPages(selection, state.source.pageCount);
           if (parsed.ok) {
             state = createReviewState(state.source, state.target, selection);
           } else {
-            state = { ...state, error: formatPdfPageSelectionError(parsed, state.source.pageCount) };
+            state = { ...state, error: parsed.error };
           }
           render();
         } else if (/^[\d,\s-]$/u.test(key.sequence)) {
@@ -280,7 +276,7 @@ export async function runTerminalUi(
             kind: 'converting',
             plan,
             completed: 0,
-            total: plan.inputs.length,
+            total: plan.inputCount,
             message: 'Cancelling because output conflicts were not accepted…',
           };
           render();
@@ -297,7 +293,7 @@ export async function runTerminalUi(
               kind: 'converting',
               plan,
               completed: 0,
-              total: plan.inputs.length,
+              total: plan.inputCount,
               message: 'Applying conflict decision…',
             };
             render();
@@ -367,18 +363,29 @@ export function conflictDecision(action: ConflictAction): OutputConflictDecision
 }
 
 function createReviewState(
-  source: PdfRasterSource,
+  source: TerminalUiPdfSource,
   target: TerminalUiRasterTarget,
-  selection: PdfRasterPageSelection,
+  selection: TerminalUiPageSelection,
 ): AppState {
-  return {
-    kind: 'review',
-    plan: planPdfRasterConversion({
+  const pages = resolveTerminalUiPages(selection, source.pageCount);
+  if (!pages.ok) {
+    return {
+      kind: 'range',
       source,
       target,
-      selection,
+      value: selection.kind === 'range' ? selection.value : '',
+      error: pages.error,
+    };
+  }
+  return {
+    kind: 'review',
+    plan: {
+      target,
+      source,
       outputTemplate: terminalUiDefaults.outputTemplate[target],
-    }),
+      pages: pages.pages,
+      inputCount: pages.pages.length,
+    },
   };
 }
 
@@ -433,15 +440,15 @@ function renderState(state: AppState): string {
       );
     }
     case 'review': {
-      const outputLines = state.plan.inputs.slice(0, 5).map((input) => `  ${input.outputPath}`);
-      if (state.plan.inputs.length > 5) {
-        outputLines.push(`  …and ${state.plan.inputs.length - 5} more`);
+      const outputLines = state.plan.pages.slice(0, 5).map((page) => `  Page ${page}`);
+      if (state.plan.pages.length > 5) {
+        outputLines.push(`  …and ${state.plan.pages.length - 5} more`);
       }
       return lines(
         `Convert PDF → ${targetLabel(state.plan.target)}`,
         '',
         `Source  ${state.plan.source.sourcePath}`,
-        `Pages   ${state.plan.inputs.map((input) => input.page).join(', ')}`,
+        `Pages   ${state.plan.pages.join(', ')}`,
         '',
         'Output',
         ...outputLines,
@@ -488,27 +495,6 @@ function renderState(state: AppState): string {
 
 function outputTemplateFor(target: TerminalUiRasterTarget): string {
   return terminalUiDefaults.outputTemplate[target];
-}
-
-function formatPdfPageSelectionError(failure: PdfPageSelectionParseFailure, pageCount: number): string {
-  switch (failure.kind) {
-    case 'required': {
-      return 'Enter at least one PDF page.';
-    }
-    case 'wholeNumber': {
-      return `PDF pages must be whole numbers: ${failure.token}`;
-    }
-    case 'descending': {
-      return `PDF page ranges must be ascending: ${failure.token}`;
-    }
-    case 'outOfRange': {
-      return `PDF pages must be between 1 and ${pageCount}: ${failure.token}`;
-    }
-    case 'malformed': {
-      return `Invalid PDF page range: ${failure.token}`;
-    }
-  }
-  throw new Error('Unsupported PDF page selection error.');
 }
 
 function targetLabel(target: TerminalUiRasterTarget): string {

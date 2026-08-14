@@ -2,14 +2,11 @@ import assert from 'node:assert/strict';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  executeRasterConversion,
-  rasterFormatSpecs,
-  createPdfRenderBackend,
-} from '@graphics-workbench/core/conversion';
+import { convertSplitPng } from '@graphics-workbench/core/conversion';
 import {
   copyInputToWorkspace,
   createTestRuntime,
+  testConversionConfiguration,
   testInputDirectory,
   withTestWorkspace,
 } from '@graphics-workbench/core/testing';
@@ -30,23 +27,19 @@ const invalidCases = [
 describe('不正なテスト入力の実変換エラー', () => {
   for (const [index, invalidCase] of invalidCases.entries()) {
     it(`${invalidCase.directory}/${invalidCase.fileName}を実際に${invalidCase.outputFormat.toUpperCase()}へ変換すると変換失敗となり、出力ファイルを生成しない`, async () => {
-      const pdfRenderTools = createPdfRenderBackend();
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'invalid', invalidCase.directory, invalidCase.fileName);
         const destinationPath = workspaceDestinationPath(invalidCase.fileName, index);
         const sourcePath = await copyInputToWorkspace(inputPath, workspacePath, destinationPath);
 
         const outputPath = path.join(workspacePath, 'invalid input outputs', `${index}.${invalidCase.outputFormat}`);
-        const input = executeRasterConversion({
-          spec: rasterFormatSpecs.png,
-          maxInputPixels: 1_000_000_000,
-          inputs: [{ sourcePath, outputPath, workspacePath }],
-          pdfRenderTools,
-          runtime: createTestRuntime().runtime,
-          runId: `invalid-${index}`,
-        });
-
-        await assert.rejects(input, `${invalidCase.directory}/${invalidCase.fileName}`);
+        const result = await convertSplitPng(
+          [{ sourcePath, workspacePath, workspaceName: path.basename(workspacePath) }],
+          `\${fileDirname}/invalid input outputs/${index}.png`,
+          testConversionConfiguration({ maxInputPixels: 1_000_000_000 }),
+          createTestRuntime().runtime,
+        );
+        assert.ok(result.isErr(), `${invalidCase.directory}/${invalidCase.fileName} conversion should fail`);
         await assert.rejects(access(outputPath));
       });
     });

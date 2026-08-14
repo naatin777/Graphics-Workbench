@@ -2,7 +2,12 @@ import * as vscode from 'vscode';
 import path from 'node:path';
 
 import {
-  isAbortError,
+  conversionErrorMessage,
+  isConversionCancelled,
+  type ConversionError,
+  type ConversionResult,
+} from '@graphics-workbench/core/conversion';
+import {
   toErrorMessage,
   type CommittedConversionOutput,
   type ConversionExecutionContext,
@@ -51,8 +56,7 @@ export interface ConversionLifecycleCallbacks {
   /** Runs instead of the default undo-unavailable warning. */
   onUndoUnavailable?: (options: { successMessage: string; reason: string }) => Promise<void>;
   /** Runs after the failure notification so callers can route the error (e.g. to a Webview). */
-  // oxlint-disable-next-line typescript/no-restricted-types -- catch由来エラーを通知するコールバック。
-  onError?: (error: unknown) => Promise<void>;
+  onError?: (error: ConversionError) => Promise<void>;
 }
 
 /** Owns progress, cancellation, Undo registration, and user notifications for output conversion. */
@@ -62,13 +66,13 @@ export async function runConversionLifecycle(
     messages: ConversionCommandMessages;
     outputChannel: LineOutputChannel;
     resolveConflicts: NonNullable<ConversionExecutionContext['resolveConflicts']>;
-    run: (runtime: ConversionExecutionContext) => Promise<CommittedConversionOutput[]>;
+    run: (runtime: ConversionExecutionContext) => Promise<ConversionResult>;
   } & ConversionLifecycleCallbacks,
 ): Promise<void> {
   let outputs: CommittedConversionOutput[];
 
   try {
-    outputs = await vscode.window.withProgress(
+    const result = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
         title: options.messages.progressTitle,
@@ -90,17 +94,16 @@ export async function runConversionLifecycle(
           options.signal,
         ),
     );
-  } catch (error) {
-    if (isAbortError(error)) {
-      options.outputChannel.appendLine(`[${options.operationName}] cancellation requested`);
-      await vscode.window.showInformationMessage(options.messages.cancelledMessage);
+    if (result.isErr()) {
+      await notifyConversionError(result.error, options);
       return;
     }
-
-    const reason = toErrorMessage(error);
+    outputs = result.value;
+  } catch (error) {
+    // Unexpected programmer errors still surface as failures.
+    const reason = error instanceof Error ? error.message : String(error);
     options.outputChannel.appendLine(`[${options.operationName}] failure: ${reason}`);
     await vscode.window.showErrorMessage(options.messages.failedMessage(reason));
-    await options.onError?.(error);
     return;
   }
 
@@ -167,4 +170,24 @@ async function revealOutputsInExplorer(outputs: CommittedConversionOutput[]): Pr
   }
 
   await vscode.commands.executeCommand('revealInExplorer', vscode.Uri.file(path.dirname(first.outputPath)));
+}
+
+async function notifyConversionError(
+  error: ConversionError,
+  options: {
+    operationName: string;
+    messages: ConversionCommandMessages;
+    outputChannel: LineOutputChannel;
+    onError?: (error: ConversionError) => Promise<void>;
+  },
+): Promise<void> {
+  const reason = conversionErrorMessage(error);
+  if (isConversionCancelled(error)) {
+    options.outputChannel.appendLine(`[${options.operationName}] cancellation requested`);
+    await vscode.window.showInformationMessage(options.messages.cancelledMessage);
+    return;
+  }
+  options.outputChannel.appendLine(`[${options.operationName}] failure: ${reason}`);
+  await vscode.window.showErrorMessage(options.messages.failedMessage(reason));
+  await options.onError?.(error);
 }

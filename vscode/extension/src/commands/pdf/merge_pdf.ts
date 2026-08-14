@@ -7,6 +7,7 @@ import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf
 import { localeCatalog, localeMap } from '../../locale_map.js';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { mergePdf } from '@graphics-workbench/core/pdf';
+import { toConversionResult } from '@graphics-workbench/core/conversion';
 import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
@@ -14,7 +15,7 @@ import { openConfigurePanel, startPdfConfigureSession } from '../lifecycle/pdf_c
 import { runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { isAbortError, OperationCancelledError } from '@graphics-workbench/core/runtime';
+import { OperationCancelledError } from '@graphics-workbench/core/runtime';
 import {
   createPdfJsResources,
   getPdfJsAssetsRoot,
@@ -27,53 +28,46 @@ export async function mergePdfSelectedFilesCommand(
   dependencies: CommandDependencies,
 ): Promise<void> {
   const { outputChannel } = dependencies;
-  try {
-    assertPdfUris(sourceUris);
-
-    if (sourceUris.length < 2) {
-      throw new Error('Select at least two PDF files.');
-    }
-
-    const workspace = await requireCommonWorkspace(sourceUris);
-    const outputUri = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(path.join(workspace.uri.fsPath, 'merged.pdf')),
-      filters: { PDF: ['pdf'] },
-      saveLabel: 'Merge',
-    });
-
-    if (!outputUri) {
-      return;
-    }
-
-    await runConversionLifecycle({
-      operationName: 'merge-pdf',
-      outputChannel,
-      resolveConflicts: resolveOutputConflicts,
-      messages: {
-        progressTitle: userMessage('message.progress.mergePdf.title', sourceUris.length),
-        prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
-        successMessage: () => userMessage('message.mergePdf.success', sourceUris.length),
-        undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
-        cancelledMessage: userMessage('message.mergePdf.cancelled'),
-        failedMessage: (reason) => userMessage('message.mergePdf.failed', reason),
-      },
-      run: async (runtime) =>
-        mergePdf({
-          sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
-          outputPath: outputUri.fsPath,
-          workspacePath: workspace.uri.fsPath,
-          runtime,
-        }),
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      await vscode.window.showInformationMessage(userMessage('message.mergePdf.cancelled'));
-      return;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(userMessage('message.mergePdf.failed', message));
+  assertPdfUris(sourceUris);
+  if (sourceUris.length < 2) {
+    await vscode.window.showErrorMessage(userMessage('message.mergePdf.failed', 'Select at least two PDF files.'));
+    return;
   }
+
+  const workspace = await requireCommonWorkspace(sourceUris);
+  const outputUri = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.file(path.join(workspace.uri.fsPath, 'merged.pdf')),
+    filters: { PDF: ['pdf'] },
+    saveLabel: 'Merge',
+  });
+  if (!outputUri) {
+    return;
+  }
+
+  await runConversionLifecycle({
+    operationName: 'merge-pdf',
+    outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: {
+      progressTitle: userMessage('message.progress.mergePdf.title', sourceUris.length),
+      prepareMessage: userMessage('message.progress.prepareConversion', 'PDF'),
+      successMessage: () => userMessage('message.mergePdf.success', sourceUris.length),
+      undoUnavailableMessage: (success, reason) => userMessage('message.undoUnavailable', success, reason),
+      cancelledMessage: userMessage('message.mergePdf.cancelled'),
+      failedMessage: (reason) => userMessage('message.mergePdf.failed', reason),
+    },
+    run: async (runtime) =>
+      toConversionResult(
+        async () =>
+          mergePdf({
+            sourcePaths: sourceUris.map((sourceUri) => sourceUri.fsPath),
+            outputPath: outputUri.fsPath,
+            workspacePath: workspace.uri.fsPath,
+            runtime,
+          }),
+        runtime.signal,
+      ),
+  });
 }
 
 export async function mergePdfConfigureCommand(
@@ -150,12 +144,16 @@ export async function mergePdfConfigureCommand(
           throw new OperationCancelledError('Merge Configure output selection was cancelled.');
         }
 
-        return mergePdf({
-          sourcePaths: resolvedSourceUris.map((sourceUri) => sourceUri.fsPath),
-          outputPath: outputUri.fsPath,
-          workspacePath: workspace.uri.fsPath,
-          runtime,
-        });
+        return toConversionResult(
+          async () =>
+            mergePdf({
+              sourcePaths: resolvedSourceUris.map((sourceUri) => sourceUri.fsPath),
+              outputPath: outputUri.fsPath,
+              workspacePath: workspace.uri.fsPath,
+              runtime,
+            }),
+          runtime.signal,
+        );
       },
       onPreviewLoadFailed: (message, channel) => {
         if (message.type === 'previewLoadFailed') {

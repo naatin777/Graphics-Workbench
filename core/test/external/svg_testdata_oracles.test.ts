@@ -1,17 +1,15 @@
 import path from 'node:path';
 
 import { sourceFormatForPath } from '@graphics-workbench/core/formats';
-import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
+import { convertSinglePng } from '@graphics-workbench/core/conversion';
 import {
   assertRasterMatches,
   copyInputToWorkspace,
-  createTestRuntime,
+  readConfiguredConversionConfiguration,
   listInputTestDataPathsSync,
-  readConfiguredConversionTools,
   testInputDirectory,
   testOutputDirectory,
   withTestWorkspace,
-  requireConfiguredTool,
 } from '@graphics-workbench/core/testing';
 
 describe('SVG テストデータをPNGへ変換して固定正解と比較する', () => {
@@ -19,28 +17,31 @@ describe('SVG テストデータをPNGへ変換して固定正解と比較する
     .filter((candidatePath) => sourceFormatForPath(candidatePath) === 'svg')
     .entries()) {
     it(`svg/${path.basename(testDataPath)}をworkspaceへコピーしてPNGへ変換すると、renderer差を許容して固定正解expected.pngと内容が一致する`, async () => {
-      const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
-      requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io');
+      const configuration = readConfiguredConversionConfiguration();
       await withTestWorkspace(async (workspacePath) => {
         const sourcePath = await copyInputToWorkspace(
           testDataPath,
           workspacePath,
           workspaceSourcePath(testDataPath, index),
         );
-        const outputPath = path.join(workspacePath, 'converted', `svg-${index}.png`);
+        const outputTemplate = '${fileDirname}/${fileBasenameNoExtension}.png';
         const expectedPath = path.join(testOutputDirectory, 'svg', sourceName(testDataPath), 'expected.png');
 
-        await executeRasterConversion({
-          spec: rasterFormatSpecs.png,
-          maxInputPixels: 1_000_000_000,
-          inputs: [{ sourcePath, outputPath, workspacePath }],
-          pdfRenderTools,
-          drawioTools,
-          runtime: createTestRuntime().runtime,
-          runId: `svg-${index}`,
-        });
+        const result = await convertSinglePng(
+          [{ sourcePath, workspacePath, workspaceName: path.basename(workspacePath) }],
+          outputTemplate,
+          configuration,
+          {},
+        );
+        if (result.isErr()) {
+          throw result.error;
+        }
+        const [output] = result.value;
+        if (output === undefined) {
+          throw new Error('Conversion produced no output.');
+        }
 
-        await assertRasterMatches(outputPath, expectedPath, testDataPath, { rendererVariance: true });
+        await assertRasterMatches(output.outputPath, expectedPath, testDataPath, { rendererVariance: true });
       });
     });
   }

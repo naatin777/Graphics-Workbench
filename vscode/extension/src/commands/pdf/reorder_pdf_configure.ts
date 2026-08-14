@@ -9,11 +9,8 @@ import {
 import type { PdfPreviewSettings } from '@graphics-workbench/vscode-protocol/pdf-preview-protocol';
 import { resolvePdfOutputPath } from '@graphics-workbench/core/output';
 import { inspectPdfSummary, reorderPdfFiles } from '@graphics-workbench/core/pdf';
-import {
-  isAbortError,
-  type CommittedConversionOutput,
-  type ConversionExecutionContext,
-} from '@graphics-workbench/core/runtime';
+import { toConversionResult, type ConversionResult } from '@graphics-workbench/core/conversion';
+import { isAbortError, type ConversionExecutionContext } from '@graphics-workbench/core/runtime';
 import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeCatalog, localeMap } from '../../locale_map.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
@@ -127,21 +124,23 @@ async function applyConfiguredReorder(params: {
   pageCount: number;
   order: number[];
   runtime: ConversionExecutionContext;
-}): Promise<CommittedConversionOutput[]> {
+}): Promise<ConversionResult> {
   const { inputUri, workspacePath, outputPath, pageCount, order, runtime } = params;
 
-  if (order.length !== pageCount) {
-    throw new Error(`Page order must contain exactly ${pageCount} pages.`);
-  }
-
-  for (const page of order) {
-    if (!Number.isInteger(page) || page < 1 || page > pageCount) {
-      throw new Error(`Page ${page} is out of range.`);
+  return toConversionResult(async () => {
+    if (order.length !== pageCount) {
+      throw new Error(`Page order must contain exactly ${pageCount} pages.`);
     }
-  }
 
-  return reorderPdfFiles({
-    inputs: [{ sourcePath: inputUri.fsPath, workspacePath, outputPath, pageOrder: order }],
-    runtime,
-  });
+    for (const page of order) {
+      if (!Number.isInteger(page) || page < 1 || page > pageCount) {
+        throw new Error(`Page ${page} is out of range.`);
+      }
+    }
+
+    return reorderPdfFiles({
+      inputs: [{ sourcePath: inputUri.fsPath, workspacePath, outputPath, pageOrder: order }],
+      runtime,
+    });
+  }, runtime.signal);
 }

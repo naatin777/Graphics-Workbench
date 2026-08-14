@@ -4,7 +4,8 @@ import * as vscode from 'vscode';
 import type * as v from 'valibot';
 
 import type { LineOutputChannel } from '@graphics-workbench/core/external-tools';
-import type { CommittedConversionOutput, ConversionExecutionContext } from '@graphics-workbench/core/runtime';
+import type { ConversionExecutionContext } from '@graphics-workbench/core/runtime';
+import type { ConversionResult } from '@graphics-workbench/core/conversion';
 import { assertExistingPathInWorkspace } from '@graphics-workbench/core/security';
 import type { MessageProtocol } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import type { WebviewPageId } from '@graphics-workbench/vscode-protocol/webview-page';
@@ -68,7 +69,7 @@ export interface RunSinglePdfConfigureOptions<
   apply: (
     payload: Extract<v.InferOutput<WebviewSchema>, { type: 'apply' }>['payload'],
     params: SinglePdfConfigureApplyParams<Prepared>,
-  ) => Promise<CommittedConversionOutput[]>;
+  ) => Promise<ConversionResult>;
   onPreviewLoadFailed: (message: v.InferOutput<WebviewSchema>, outputChannel?: LineOutputChannel) => void;
 }
 

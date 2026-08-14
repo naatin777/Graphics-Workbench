@@ -36,8 +36,8 @@ export { requireValue } from './required.js';
 export { createTestRuntime, type CreateTestRuntimeOptions, type TestRuntime } from './runtime.js';
 export {
   defaultRasterMaxInputPixels,
-  readConfiguredConversionTools,
+  readConfiguredConversionConfiguration,
   requireConfiguredTool,
-  type ConfiguredConversionTools,
+  testConversionConfiguration,
 } from './tools.js';
 export { copyInputToWorkspace, withTestWorkspace } from './workspace.js';

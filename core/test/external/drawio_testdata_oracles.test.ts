@@ -6,24 +6,19 @@ import { promisify } from 'node:util';
 
 import { isDrawioImagePath } from '@graphics-workbench/core/formats';
 import {
-  convertDrawioToSinglePdf,
-  convertToPdfFiles,
-  convertToSvgFiles,
-  executeDrawio,
-  executeRasterConversion,
-  rasterFormatSpecs,
+  convertSinglePng,
+  convertSinglePdf,
+  convertSingleSvg,
+  convertSplitPdf,
 } from '@graphics-workbench/core/conversion';
 import {
   assertPdfMatches,
   assertRasterMatches,
   copyInputToWorkspace,
-  createTestRuntime,
-  defaultRasterMaxInputPixels,
-  readConfiguredConversionTools,
+  readConfiguredConversionConfiguration,
   testInputDirectory,
   testOutputDirectory,
   withTestWorkspace,
-  requireConfiguredTool,
 } from '@graphics-workbench/core/testing';
 
 const execFileAsync = promisify(execFile);
@@ -58,10 +53,7 @@ const invalidCases = [
 describe('Draw.io テストデータの実変換と固定正解データの比較', () => {
   for (const testDataCase of validCases) {
     it(`${testDataCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async () => {
-      const configuredTools = readConfiguredConversionTools();
-      const { drawioTools } = configuredTools;
-
-      const { runtime } = createTestRuntime();
+      const configuration = readConfiguredConversionConfiguration();
 
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'valid', 'drawio', testDataCase.inputFileName);
@@ -75,60 +67,36 @@ describe('Draw.io テストデータの実変換と固定正解データの比�
         const renderedActualSvgPath = path.join(outputDirectory, 'actual-svg.png');
         const renderedExpectedSvgPath = path.join(outputDirectory, 'expected-svg.png');
         const expectedDirectory = path.join(testOutputDirectory, 'drawio', testDataCase.id);
+        const source = { sourcePath, workspacePath, workspaceName: path.basename(workspacePath) };
 
-        await executeRasterConversion({
-          spec: rasterFormatSpecs.png,
-          inputs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
-          runtime,
-          pdfRenderTools: configuredTools.pdfRenderTools,
-          drawioTools,
-          maxInputPixels: defaultRasterMaxInputPixels,
-          runId: `drawio-${testDataCase.id}-png`,
-        });
-        await convertToSvgFiles({
-          inputs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
-          runtime: {},
-          drawioTools,
-          runPdfToSvg: () => {
-            throw new Error('drawio テストデータ must not include PDF input for SVG input');
-          },
-          maxInputPixels: defaultRasterMaxInputPixels,
-          runId: `drawio-${testDataCase.id}-svg`,
-        });
+        const pngResult = await convertSinglePng([source], '${fileDirname}/actual.png', configuration, {});
+        if (pngResult.isErr()) {
+          throw pngResult.error;
+        }
+        const svgResult = await convertSingleSvg([source], '${fileDirname}/actual.svg', configuration, {});
+        if (svgResult.isErr()) {
+          throw svgResult.error;
+        }
 
-        await (isDrawioImagePath(sourcePath)
-          ? convertToPdfFiles({
-              inputs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
-              tools: { drawioTools },
-              maxInputPixels: defaultRasterMaxInputPixels,
-              runtime,
-              runId: `drawio-${testDataCase.id}-pdf`,
-            })
-          : convertDrawioToSinglePdf({
-              inputs: [
-                {
-                  sourcePath,
-                  outputTemplate: `\${workspaceFolder}/${testDataCase.outputDirectory}/actual.pdf`,
-                  workspacePath,
-                  workspaceName: path.basename(workspacePath),
-                },
-              ],
-              drawioPath: drawioTools.drawioPath,
-              runDrawio: executeDrawio,
-              runtime,
-              runId: `drawio-${testDataCase.id}-native-pdf`,
-            }));
+        const pdfResult = await (isDrawioImagePath(sourcePath)
+          ? convertSinglePdf([source], '${fileDirname}/actual.pdf', configuration, {})
+          : convertSplitPdf(
+              [source],
+              `\${workspaceFolder}/${testDataCase.outputDirectory}/actual.pdf`,
+              configuration,
+              {},
+            ));
+        if (pdfResult.isErr()) {
+          throw pdfResult.error;
+        }
 
         await assertRasterMatches(actualPngPath, path.join(expectedDirectory, 'expected.png'), `PNG: ${sourcePath}`, {
           rendererVariance: true,
         });
 
-        await renderSvg(actualSvgPath, renderedActualSvgPath, configuredTools.rsvgConvertPath);
-        await renderSvg(
-          path.join(expectedDirectory, 'expected.svg'),
-          renderedExpectedSvgPath,
-          configuredTools.rsvgConvertPath,
-        );
+        const rsvgConvertPath = configuration.svgToPdf?.rsvgConvertPath ?? '';
+        await renderSvg(actualSvgPath, renderedActualSvgPath, rsvgConvertPath);
+        await renderSvg(path.join(expectedDirectory, 'expected.svg'), renderedExpectedSvgPath, rsvgConvertPath);
         await assertRasterMatches(renderedActualSvgPath, renderedExpectedSvgPath, `SVG: ${sourcePath}`);
 
         await assertPdfMatches(
@@ -143,27 +111,21 @@ describe('Draw.io テストデータの実変換と固定正解データの比�
 
   for (const [index, invalidCase] of invalidCases.entries()) {
     it(`invalid/drawio/${invalidCase.fileName}を実Draw.ioでPDFへ実変換すると失敗し、出力PDFを作成しない`, async () => {
-      const drawioPath = requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io');
+      const configuration = readConfiguredConversionConfiguration();
 
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'invalid', 'drawio', invalidCase.fileName);
         const sourcePath = await copyInputToWorkspace(inputPath, workspacePath, invalidCase.workspaceSourcePath);
-        const input = convertDrawioToSinglePdf({
-          inputs: [
-            {
-              sourcePath,
-              outputTemplate: `\${workspaceFolder}/invalid-output-${index}.pdf`,
-              workspacePath,
-              workspaceName: path.basename(workspacePath),
-            },
-          ],
-          drawioPath,
-          runDrawio: executeDrawio,
-          runtime: createTestRuntime().runtime,
-          runId: `drawio-invalid-${index}`,
-        });
+        const source = { sourcePath, workspacePath, workspaceName: path.basename(workspacePath) };
 
-        await assert.rejects(input, invalidCase.fileName);
+        const result = await convertSplitPdf(
+          [source],
+          `\${workspaceFolder}/invalid-output-${index}.pdf`,
+          configuration,
+          {},
+        );
+
+        assert.ok(result.isErr(), `expected failure for ${invalidCase.fileName}`);
         await assert.rejects(access(path.join(workspacePath, `invalid-output-${index}.pdf`)));
       });
     });

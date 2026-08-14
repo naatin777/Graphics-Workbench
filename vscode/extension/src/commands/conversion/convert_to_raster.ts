@@ -1,100 +1,75 @@
 import * as vscode from 'vscode';
 
-import type { Configuration } from '../../generated/extension_manifest.js';
 import {
-  createPdfRenderBackend,
-  executeRasterConversion,
-  rasterFormatSpecs,
-  type DrawioBackend,
-  type PdfRenderBackend,
-  type RasterConversionTarget,
-  type RasterFormatSpec,
-  type RasterInput,
+  convertSinglePng,
+  convertSingleJpeg,
+  convertSingleWebp,
+  convertSingleAvif,
+  convertSingleGif,
+  convertSingleTiff,
+  convertSplitPng,
+  convertSplitJpeg,
+  convertSplitWebp,
+  convertSplitAvif,
+  convertSplitGif,
+  convertSplitTiff,
+  type ConversionResult,
 } from '@graphics-workbench/core/conversion';
+
 import type { CommandDependencies } from '../shared/command_dependencies.js';
-import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.js';
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { planRasterConversionItems } from './plan_conversion_items.js';
+import { toConversionConfiguration, toConversionSources } from '../shared/conversion_adapter.js';
+import type { Configuration } from '../../generated/extension_manifest.js';
 
 export interface ConvertToRasterCommandOptions {
-  target: RasterConversionTarget;
+  target: 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff';
   /** アニメーション入力を1ファイルに保持するか、フレームごとに分割するか。 */
   animatedInputMode?: 'single' | 'split';
 }
 
-interface RasterBackendTools {
-  drawioTools: DrawioBackend;
-  pdfRenderTools: PdfRenderBackend;
-  outputOptions?: { effort: number };
-}
+type ImageConverter = (
+  sources: ReturnType<typeof toConversionSources>,
+  outputTemplate: string,
+  configuration: ReturnType<typeof toConversionConfiguration>,
+  runtime: Parameters<Parameters<typeof runConversionLifecycle>[0]['run']>[0],
+) => Promise<ConversionResult>;
 
-function createRasterBackendTools(configuration: Configuration, spec: RasterFormatSpec): RasterBackendTools {
-  const tools: RasterBackendTools = {
-    drawioTools: createDrawioBackend(configuration),
-    pdfRenderTools: createPdfRenderBackend(),
-  };
-  if (spec.target === 'avif') {
-    tools.outputOptions = { effort: configuration.convertToAvif.effort() };
-  } else if (spec.target === 'webp') {
-    tools.outputOptions = { effort: configuration.convertToWebp.effort() };
-  }
-  return tools;
-}
+const SINGLE_CONVERTERS = {
+  png: convertSinglePng,
+  jpeg: convertSingleJpeg,
+  webp: convertSingleWebp,
+  avif: convertSingleAvif,
+  gif: convertSingleGif,
+  tiff: convertSingleTiff,
+} satisfies Record<ConvertToRasterCommandOptions['target'], ImageConverter>;
 
-async function runRasterCommand(options: {
-  sourceUris: vscode.Uri[];
-  dependencies: CommandDependencies;
-  spec: RasterFormatSpec;
-  animatedInputMode?: 'single' | 'split' | undefined;
-}): Promise<void> {
-  const { sourceUris, spec } = options;
-  if (sourceUris.length === 0) {
-    await vscode.window.showErrorMessage(
-      userMessage('message.convertToOutput.failed', spec.label, 'No files were selected.'),
-    );
-    return;
-  }
+const SPLIT_CONVERTERS = {
+  png: convertSplitPng,
+  jpeg: convertSplitJpeg,
+  webp: convertSplitWebp,
+  avif: convertSplitAvif,
+  gif: convertSplitGif,
+  tiff: convertSplitTiff,
+} satisfies Record<ConvertToRasterCommandOptions['target'], ImageConverter>;
 
-  const { outputChannel } = options.dependencies;
-  const animated = spec.animatedInputExtension !== undefined;
-  await runConversionLifecycle({
-    operationName: spec.operationName,
-    outputChannel,
-    resolveConflicts: resolveOutputConflicts,
-    messages: createOutputConversionMessages(spec.label, sourceUris.length),
-    run: async (runtime) => {
-      const configuration = options.dependencies.getConfiguration();
-      const maxInputPixels = configuration.raster.maxInputPixels();
-      const prepared = createRasterBackendTools(configuration, spec);
-      const maxAnimationPixels = animated ? configuration.raster.maxAnimationPixels() : undefined;
-      const plannedInputs: RasterInput[] = [];
-      for (const sourceUri of sourceUris) {
-        runtime.signal?.throwIfAborted();
-        plannedInputs.push(
-          ...(await planRasterConversionItems(sourceUri, spec, {
-            configuration,
-            maxInputPixels,
-            ...(maxAnimationPixels === undefined ? {} : { maxAnimationPixels }),
-            frameMode: options.animatedInputMode === 'split' ? 'all' : 'first',
-            runtime,
-          })),
-        );
-      }
-      return executeRasterConversion({
-        inputs: plannedInputs,
-        spec,
-        runtime,
-        maxInputPixels,
-        drawioTools: prepared.drawioTools,
-        pdfRenderTools: prepared.pdfRenderTools,
-        ...(prepared.outputOptions !== undefined && {
-          outputOptions: prepared.outputOptions,
-        }),
-      });
-    },
-  });
+const TARGET_LABEL = {
+  png: 'PNG',
+  jpeg: 'JPEG',
+  webp: 'WebP',
+  avif: 'AVIF',
+  gif: 'GIF',
+  tiff: 'TIFF',
+} as const satisfies Record<ConvertToRasterCommandOptions['target'], string>;
+
+function readOutputTemplate(
+  configuration: Configuration,
+  target: ConvertToRasterCommandOptions['target'],
+  split: boolean,
+): string {
+  const templates = split ? configuration.outputPath.split : configuration.outputPath.single;
+  return templates[target]();
 }
 
 export async function convertToRasterCommand(
@@ -102,11 +77,28 @@ export async function convertToRasterCommand(
   dependencies: CommandDependencies,
   options: ConvertToRasterCommandOptions,
 ): Promise<void> {
-  const { target, animatedInputMode } = options;
-  await runRasterCommand({
-    sourceUris,
-    dependencies,
-    spec: rasterFormatSpecs[target],
-    animatedInputMode,
+  if (sourceUris.length === 0) {
+    await vscode.window.showErrorMessage(
+      userMessage('message.convertToOutput.failed', TARGET_LABEL[options.target], 'No files were selected.'),
+    );
+    return;
+  }
+
+  const configuration = dependencies.getConfiguration();
+  const splitMode = options.animatedInputMode === 'split';
+  const converter = splitMode ? SPLIT_CONVERTERS[options.target] : SINGLE_CONVERTERS[options.target];
+
+  await runConversionLifecycle({
+    operationName: `${splitMode ? 'split' : 'convert'}-${options.target}`,
+    outputChannel: dependencies.outputChannel,
+    resolveConflicts: resolveOutputConflicts,
+    messages: createOutputConversionMessages(TARGET_LABEL[options.target], sourceUris.length),
+    run: async (runtime) =>
+      converter(
+        toConversionSources(sourceUris),
+        readOutputTemplate(configuration, options.target, splitMode),
+        toConversionConfiguration(configuration),
+        runtime,
+      ),
   });
 }
