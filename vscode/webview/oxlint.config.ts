@@ -1,6 +1,6 @@
 import { defineConfig } from 'oxlint';
 
-import baseConfig, { browserOnly, restrictedImports } from '../../oxlint.base.ts';
+import rootConfig, { browserOnly, projectRules, restrictedImports } from '../../oxlint.config.ts';
 
 const untypedBoundaryRules = {
   'typescript/no-restricted-types': 'off',
@@ -23,13 +23,16 @@ const testRules = {
 };
 
 export default defineConfig({
-  extends: [baseConfig],
+  extends: [rootConfig],
   jsPlugins: [
     {
       name: 'project',
       specifier: '../../scripts/oxlint-project-plugin.mjs',
     },
   ],
+  rules: {
+    ...projectRules,
+  },
   overrides: [
     {
       files: ['src/**/*.ts', 'src/**/*.tsx'],
