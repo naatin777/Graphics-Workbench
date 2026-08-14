@@ -58,21 +58,17 @@ jobs:
         run: INSTALL_DRAWIO=1 bash .github/scripts/install-test-tools-linux.sh
         shell: bash
 
-      - name: Install Chromium for the Chrome integration tests
-        run: npx playwright install chromium
-        shell: bash
-
       - name: Inject tool paths
         shell: bash
         run: |
           {
             echo "GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=$(command -v rsvg-convert)"
             echo "GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH=$(command -v drawio)"
-            echo "GRAPHICS_WORKBENCH_TEST_CHROME_PATH=$(find "$HOME/.cache/ms-playwright" -name chrome -type f | head -1)"
+            echo "GRAPHICS_WORKBENCH_TEST_CHROME_PATH=$(command -v google-chrome)"
           } >> "$GITHUB_ENV"
 
-      - name: Run Core external-tool integration tests
-        run: npm run test:external -w core
+      - name: Run Core external-tool integration tests (with Xvfb for Draw.io)
+        run: xvfb-run -a npm run test:external -w core
         shell: bash
 
   protocol:
