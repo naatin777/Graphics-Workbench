@@ -339,6 +339,7 @@
   "message.tableEditor.inserted": "表を挿入しました。",
   "message.environmentCheck.available": "利用可能",
   "message.environmentCheck.notFound": "{0}が見つかりません",
+  "message.environmentCheck.notConfigured": "{0}が設定されていません。設定で{1}を設定してください。",
   "message.environmentCheck.timedOut": "{0}の確認がタイムアウトしました",
   "message.environmentCheck.failed": "{0}の確認に失敗しました: {1}",
   "message.environmentCheck.tool.drawio": "Draw.io",
