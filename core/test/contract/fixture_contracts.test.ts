@@ -13,7 +13,7 @@ const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
   jpeg: 2,
   pdf: 4,
   png: 3,
-  svg: 4,
+  svg: 5,
   tiff: 2,
   webp: 2,
 };

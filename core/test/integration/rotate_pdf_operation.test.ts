@@ -7,7 +7,7 @@
 // - なし。mupdfと実ファイルを使用する
 //
 import assert from 'node:assert/strict';
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -16,7 +16,8 @@ import { readPdfPages, createPdfFixture } from '@graphics-workbench/core/testing
 
 describe('PDFページ回転', () => {
   it('3ページのPDFへ角度90を指定すると、出力PDFは3ページを保ったまま全ページの回転角を90度として保存する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
@@ -36,12 +37,12 @@ describe('PDFページ回転', () => {
         assert.strictEqual(page.rotation, 90);
       }
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('既に90度回転している1ページのPDFにさらに90度回転を適用すると、既存の回転角に加算して180度として保存する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-pre-rotated-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-pre-rotated-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 1, 90);
@@ -57,12 +58,12 @@ describe('PDFページ回転', () => {
       assert.strictEqual(outputPages.length, 1);
       assert.strictEqual(outputPages[0]?.rotation, 180);
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('3ページのPDFで2番目のページだけに角度180を指定すると、2番目のページだけ回転角180度になり他のページは0度のままになる', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
@@ -79,12 +80,12 @@ describe('PDFページ回転', () => {
       assert.strictEqual(outputPages[1]?.rotation, 180);
       assert.strictEqual(outputPages[2]?.rotation, 0);
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('出力先ファイルが既に存在する場合は回転を開始せず、既存の出力ファイルも変更しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 1);
@@ -102,7 +103,8 @@ describe('PDFページ回転', () => {
   });
 
   it('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     const abortController = new AbortController();
@@ -121,7 +123,8 @@ describe('PDFページ回転', () => {
   });
 
   it('2ページのPDFに対して範囲外のページ番号5を指定すると、out of rangeエラーで失敗する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 2);

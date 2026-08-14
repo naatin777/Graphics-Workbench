@@ -8,7 +8,7 @@
 // - なし。mupdfと実ファイルを使用する
 //
 import assert from 'node:assert/strict';
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -17,7 +17,8 @@ import { createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing
 
 describe('PDFページ並び替え', () => {
   it('3ページのPDFへページ順[3,1,2]を指定すると、出力PDFは3ページを保ちながら元の3・1・2ページ目の順に並ぶ', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-reorder-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
@@ -34,12 +35,12 @@ describe('PDFページ並び替え', () => {
       assert.strictEqual(outputPages.length, 3);
       assert.deepStrictEqual(readPageWidths(outputPages), [102, 100, 101]);
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('3ページのPDFにページ順[1,2]や[1,1,2]のように全ページをちょうど1回ずつ含まない順列以外を指定すると、ページ数不一致や重複として失敗する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-reorder-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
@@ -62,7 +63,8 @@ describe('PDFページ並び替え', () => {
   });
 
   it('出力先ファイルが既に存在する場合は並び替えを開始せず、既存の出力ファイルも変更しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-reorder-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 2);
@@ -80,7 +82,8 @@ describe('PDFページ並び替え', () => {
   });
 
   it('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-reorder-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     const abortController = new AbortController();

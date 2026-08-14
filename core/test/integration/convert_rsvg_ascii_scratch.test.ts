@@ -13,7 +13,7 @@
 
 import assert from 'node:assert/strict';
 import { constants } from 'node:fs';
-import { access, copyFile, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtempDisposable, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -62,102 +62,90 @@ interface FixedFixtureWorkspace {
 
 describe('Windowsでrsvg-convertへUnicode入力をASCIIのみの一時作業ディレクトリ（スクラッチ）経由で渡してPDFへ変換する', () => {
   it('Unicodeの論理pathを維持したまま、ASCIIスクラッチ上のinput.svg/output.pdfへrsvg-convertを実行してPDFへ変換し、成功後にスクラッチの両ファイルを削除する', async () => {
-    const paths = await prepareFixedFixtureWorkspace();
+    await using paths = await prepareFixedFixtureWorkspace();
     let toolInputPath: string | undefined;
     let toolOutputPath: string | undefined;
 
-    try {
-      const sourceBytes = await readFile(paths.sourcePath);
-      const pdfBytes = await readFile(pdfFixturePath);
+    const sourceBytes = await readFile(paths.sourcePath);
+    const pdfBytes = await readFile(pdfFixturePath);
 
-      await convertToPdfFilesWithScratch({
+    await convertToPdfFilesWithScratch({
+      inputs: [createJob(paths)],
+      tools: {
+        svgToPdfTools: createSvgToPdfOptions(async (executable, args) => {
+          toolInputPath = assertRsvgToolPaths(executable, args, paths);
+          toolOutputPath = outputPathFromArgs(args);
+          assert.deepStrictEqual(await readFile(toolInputPath), sourceBytes);
+          await writeFile(toolOutputPath, pdfBytes);
+        }),
+      },
+      platform: 'win32',
+      scratchBaseCandidates: [paths.scratchBasePath],
+      runId: 'windows-rsvg-pdf',
+      maxInputPixels: 1_000_000_000,
+      runtime: {},
+    });
+
+    const requiredInputPath = requiredPath(toolInputPath, 'tool入力path');
+    const requiredOutputPath = requiredPath(toolOutputPath, 'tool出力path');
+    await assertReadablePdf(paths.outputPath);
+    assert.deepStrictEqual(await readFile(paths.sourcePath), sourceBytes);
+    await assertFileDoesNotExist(requiredInputPath);
+    await assertFileDoesNotExist(requiredOutputPath);
+  });
+
+  it('rsvg-convertが期待した出力pathと異なる別名PDFを書き出した場合は成功扱いせず、論理出力PDFを作らずにエラーにする', async () => {
+    await using paths = await prepareFixedFixtureWorkspace();
+    let unexpectedOutputPath: string | undefined;
+
+    await assert.rejects(
+      convertToPdfFilesWithScratch({
         inputs: [createJob(paths)],
         tools: {
-          svgToPdfTools: createSvgToPdfOptions(async (executable, args) => {
-            toolInputPath = assertRsvgToolPaths(executable, args, paths);
-            toolOutputPath = outputPathFromArgs(args);
-            assert.deepStrictEqual(await readFile(toolInputPath), sourceBytes);
-            await writeFile(toolOutputPath, pdfBytes);
+          svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
+            const outputPath = outputPathFromArgs(args);
+            unexpectedOutputPath = path.join(path.dirname(outputPath), 'output-garbled.pdf');
+            await copyFile(pdfFixturePath, unexpectedOutputPath);
           }),
         },
         platform: 'win32',
         scratchBaseCandidates: [paths.scratchBasePath],
-        runId: 'windows-rsvg-pdf',
+        runId: 'windows-rsvg-alias',
         maxInputPixels: 1_000_000_000,
         runtime: {},
-      });
+      }),
+    );
 
-      const requiredInputPath = requiredPath(toolInputPath, 'tool入力path');
-      const requiredOutputPath = requiredPath(toolOutputPath, 'tool出力path');
-      await assertReadablePdf(paths.outputPath);
-      assert.deepStrictEqual(await readFile(paths.sourcePath), sourceBytes);
-      await assertFileDoesNotExist(requiredInputPath);
-      await assertFileDoesNotExist(requiredOutputPath);
-    } finally {
-      await rm(paths.testRootPath, { recursive: true, force: true });
-    }
-  });
-
-  it('rsvg-convertが期待した出力pathと異なる別名PDFを書き出した場合は成功扱いせず、論理出力PDFを作らずにエラーにする', async () => {
-    const paths = await prepareFixedFixtureWorkspace();
-    let unexpectedOutputPath: string | undefined;
-
-    try {
-      await assert.rejects(
-        convertToPdfFilesWithScratch({
-          inputs: [createJob(paths)],
-          tools: {
-            svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
-              const outputPath = outputPathFromArgs(args);
-              unexpectedOutputPath = path.join(path.dirname(outputPath), 'output-garbled.pdf');
-              await copyFile(pdfFixturePath, unexpectedOutputPath);
-            }),
-          },
-          platform: 'win32',
-          scratchBaseCandidates: [paths.scratchBasePath],
-          runId: 'windows-rsvg-alias',
-          maxInputPixels: 1_000_000_000,
-          runtime: {},
-        }),
-      );
-
-      const requiredUnexpectedPath = requiredPath(unexpectedOutputPath, '別名tool出力path');
-      assert.strictEqual(isPathInside(paths.scratchBasePath, requiredUnexpectedPath), true);
-      await access(requiredUnexpectedPath, constants.F_OK);
-      await assertFileDoesNotExist(paths.outputPath);
-    } finally {
-      await rm(paths.testRootPath, { recursive: true, force: true });
-    }
+    const requiredUnexpectedPath = requiredPath(unexpectedOutputPath, '別名tool出力path');
+    assert.strictEqual(isPathInside(paths.scratchBasePath, requiredUnexpectedPath), true);
+    await access(requiredUnexpectedPath, constants.F_OK);
+    await assertFileDoesNotExist(paths.outputPath);
   });
 
   it('rsvg-convertが期待した出力pathへ0 byteのPDFを書き出した場合も成功扱いせず、論理出力PDFを作らずにエラーにする', async () => {
-    const paths = await prepareFixedFixtureWorkspace();
+    await using paths = await prepareFixedFixtureWorkspace();
     let toolOutputPath: string | undefined;
 
-    try {
-      await assert.rejects(
-        convertToPdfFilesWithScratch({
-          inputs: [createJob(paths)],
-          tools: {
-            svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
-              toolOutputPath = outputPathFromArgs(args);
-              await writeFile(toolOutputPath, Buffer.alloc(0));
-            }),
-          },
-          platform: 'win32',
-          scratchBaseCandidates: [paths.scratchBasePath],
-          runId: 'windows-rsvg-empty',
-          maxInputPixels: 1_000_000_000,
-          runtime: {},
-        }),
-      );
+    await assert.rejects(
+      convertToPdfFilesWithScratch({
+        inputs: [createJob(paths)],
+        tools: {
+          svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
+            toolOutputPath = outputPathFromArgs(args);
+            await writeFile(toolOutputPath, Buffer.alloc(0));
+          }),
+        },
+        platform: 'win32',
+        scratchBaseCandidates: [paths.scratchBasePath],
+        runId: 'windows-rsvg-empty',
+        maxInputPixels: 1_000_000_000,
+        runtime: {},
+      }),
+    );
 
-      const requiredOutputPath = requiredPath(toolOutputPath, '0 byte tool出力path');
-      assert.strictEqual((await stat(requiredOutputPath)).size, 0);
-      await assertFileDoesNotExist(paths.outputPath);
-    } finally {
-      await rm(paths.testRootPath, { recursive: true, force: true });
-    }
+    const requiredOutputPath = requiredPath(toolOutputPath, '0 byte tool出力path');
+    assert.strictEqual((await stat(requiredOutputPath)).size, 0);
+    await assertFileDoesNotExist(paths.outputPath);
   });
 });
 
@@ -208,8 +196,9 @@ function outputPathFromArgs(args: string[]): string {
   return outputPath;
 }
 
-async function prepareFixedFixtureWorkspace(): Promise<FixedFixtureWorkspace> {
-  const testRootPath = await mkdtemp(path.join(os.tmpdir(), 'gw-rsvg-scratch-test-'));
+async function prepareFixedFixtureWorkspace(): Promise<FixedFixtureWorkspace & AsyncDisposable> {
+  const disposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rsvg-scratch-test-'));
+  const testRootPath = disposable.path;
   const workspacePath = path.join(testRootPath, 'workspace 日本語 हिन्दी 🌹');
   const scratchBasePath = path.join(testRootPath, 'scratch');
   const sourcePath = path.join(workspacePath, complexSourceFileName);
@@ -224,6 +213,7 @@ async function prepareFixedFixtureWorkspace(): Promise<FixedFixtureWorkspace> {
     scratchBasePath: await realpath(scratchBasePath),
     sourcePath,
     outputPath,
+    [Symbol.asyncDispose]: () => disposable[Symbol.asyncDispose](),
   };
 }
 

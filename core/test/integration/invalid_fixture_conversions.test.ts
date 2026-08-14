@@ -20,20 +20,14 @@ const invalidCases = [
   { directory: 'pdf', fileName: 'truncated.pdf', outputFormat: 'png' },
   { directory: 'png', fileName: 'not-an-image.png', outputFormat: 'png' },
   { directory: 'png', fileName: 'truncated.png', outputFormat: 'png' },
-  { directory: 'svg', fileName: 'malformed.svg', outputFormat: 'png' },
   { directory: 'tiff', fileName: 'truncated.tiff', outputFormat: 'png' },
   { directory: 'webp', fileName: 'truncated.webp', outputFormat: 'png' },
 ] as const;
 
 describe('不正なテスト入力の実変換エラー', () => {
   for (const [index, invalidCase] of invalidCases.entries()) {
-    it(`${invalidCase.directory}/${invalidCase.fileName}を実際に${invalidCase.outputFormat.toUpperCase()}へ変換すると変換失敗となり、出力ファイルを生成しない`, async (ctx) => {
+    it(`${invalidCase.directory}/${invalidCase.fileName}を実際に${invalidCase.outputFormat.toUpperCase()}へ変換すると変換失敗となり、出力ファイルを生成しない`, async () => {
       const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
-      // SVG→PNGはDraw.io CLI経由のため、Draw.ioが注入されていない環境ではskipする。
-      if (invalidCase.directory === 'svg' && drawioTools.drawioPath === '') {
-        ctx.skip();
-        return;
-      }
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'invalid', invalidCase.directory, invalidCase.fileName);
         const destinationPath = workspaceDestinationPath(invalidCase.fileName, index);

@@ -7,7 +7,7 @@
 // - なし。実mupdfと実ファイルを使用する
 //
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -19,7 +19,8 @@ const password = 'secret-password';
 
 describe('パスワード付きPDFの復号化', () => {
   it('mupdfでAES-256暗号化したmulti-page-table.pdfを指定パスワードで復号し、パスワード不要で読み取れるPDFとして出力する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-decrypt-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
@@ -44,12 +45,12 @@ describe('パスワード付きPDFの復号化', () => {
         decryptedDocument.destroy();
       }
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('誤ったパスワードを渡すと復号に失敗し、出力ファイルを作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-decrypt-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);

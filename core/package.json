@@ -62,7 +62,9 @@
     "test": "npm run build && vitest run",
     "test:module-mocks": "node --experimental-test-module-mocks --test test/unit/operations/terminate_process_tree.test.ts",
     "test:coverage": "npm run build && vitest run --coverage",
-    "test:shuffle": "npm run build && vitest run --sequence.shuffle --sequence.seed=1"
+    "test:shuffle": "npm run build && vitest run --sequence.shuffle --sequence.seed=1",
+    "test:external": "npm run build && node --env-file-if-exists=../.env.test.local ../node_modules/vitest/vitest.mjs run --config vitest.external.config.ts",
+    "test:shuffle:seed": "npm run build && vitest run --sequence.shuffle --sequence.seed=$SEED"
   },
   "dependencies": {
     "fast-xml-parser": "5.10.1",

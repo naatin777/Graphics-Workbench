@@ -39,7 +39,7 @@
     "lint:audit": "oxlint --config oxlint.config.ts --type-aware -D all -D nursery src test",
     "compile:test": "npm run clean:test && tsc -p tsconfig.test.json",
     "clean:test": "node -e \"const fs = require('node:fs'); for (const p of ['out/vscode/extension/test', 'out/test']) fs.rmSync(p, { recursive: true, force: true })\"",
-    "test": "vscode-test",
+    "test": "node --env-file-if-exists=../../.env.test.local ../../node_modules/@vscode/test-cli/out/bin.mjs",
     "test:playwright:smoke": "playwright test --config playwright.config.mjs --project=vscode-electron electron/packaged_conversion_smoke.spec.ts"
   },
   "dependencies": {

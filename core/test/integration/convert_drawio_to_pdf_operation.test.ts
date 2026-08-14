@@ -6,7 +6,7 @@ import path from 'node:path';
 
 import { requireValue, testInputDirectory, createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
 
-import { convertDrawioToPagePdfs, convertDrawioToSinglePdf, executeDrawio } from '@graphics-workbench/core/conversion';
+import { convertDrawioToPagePdfs, convertDrawioToSinglePdf } from '@graphics-workbench/core/conversion';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 const emptyDrawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'empty.drawio');
@@ -140,41 +140,6 @@ describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
       outputs.map(({ outputPath }) => outputPath),
       [path.join(workspacePath.path, '_CON.pdf'), path.join(workspacePath.path, '_con-2.pdf')],
     );
-  });
-
-  it('設定されたDraw.io CLIを実際に起動し、全ページを3ページの1つのPDFへ変換する（設定が空ならskipする）', async (ctx) => {
-    const drawioPath = process.env.GRAPHICS_WORKBENCH_DRAWIO_PATH ?? '';
-    if (drawioPath === '') {
-      ctx.skip();
-      return;
-    }
-
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-pdf-real-'));
-
-    const sourcePath = path.join(workspacePath.path, 'source.drawio');
-    const outputPath = path.join(workspacePath.path, 'all-pages.pdf');
-    await copyFile(drawioFixturePath, sourcePath);
-
-    const outputs = await convertDrawioToSinglePdf({
-      inputs: [
-        {
-          sourcePath,
-          outputTemplate: '${fileDirname}/all-pages.pdf',
-          workspacePath: workspacePath.path,
-          workspaceName: path.basename(workspacePath.path),
-        },
-      ],
-      drawioPath,
-      runDrawio: executeDrawio,
-      runId: 'real-cli-test',
-      runtime: { resolveConflicts: async () => 'overwrite' },
-    });
-
-    assert.deepStrictEqual(
-      outputs.map(({ outputPath: actualPath }) => actualPath),
-      [outputPath],
-    );
-    assert.strictEqual((await readPdfPages(await readFile(outputPath))).length, 3);
   });
 
   it('コンテンツのないDraw.ioファイルはCLIを起動せず「no content to export」エラーを返し、出力PDFも作成しない', async () => {

@@ -31,18 +31,21 @@ for (const entry of readdirSync(testWorkspaceDirectory)) {
 
 if (existsSync(settingsSourcePath)) {
   const settings = JSON.parse(readFileSync(settingsSourcePath, 'utf8'));
-  const toolCommands = [
-    ['graphics-workbench.execPath.rsvgConvert', 'rsvg-convert'],
-    ['graphics-workbench.execPath.drawio', 'drawio'],
-    ['graphics-workbench.execPath.chrome', 'google-chrome'],
+  const toolSettings = [
+    ['graphics-workbench.execPath.rsvgConvert', 'GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH', 'rsvg-convert'],
+    ['graphics-workbench.execPath.drawio', 'GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'drawio'],
+    ['graphics-workbench.execPath.chrome', 'GRAPHICS_WORKBENCH_TEST_CHROME_PATH', 'google-chrome'],
   ];
 
-  for (const [key, command] of toolCommands) {
+  for (const [key, environmentVariable, command] of toolSettings) {
     if (typeof settings[key] !== 'string' || settings[key] === '') {
+      const configured = process.env[environmentVariable];
       const resolved =
-        key === 'graphics-workbench.execPath.drawio'
-          ? (resolveExecutable(command) ?? resolveDrawioExecutable())
-          : resolveExecutable(command);
+        configured !== undefined && configured !== ''
+          ? configured
+          : key === 'graphics-workbench.execPath.drawio'
+            ? (resolveExecutable(command) ?? resolveDrawioExecutable())
+            : resolveExecutable(command);
       if (resolved !== undefined) {
         settings[key] = resolved;
       }

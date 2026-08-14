@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "..",
     "outDir": "dist-test",
-    "lib": ["ES2023", "ES2025.Regexp"],
+    "lib": ["ES2024", "ES2025.Regexp"],
     "types": ["node", "vitest/globals"]
   },
   "include": ["test/**/*"],

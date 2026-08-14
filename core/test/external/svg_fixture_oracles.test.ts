@@ -11,18 +11,16 @@ import {
   testInputDirectory,
   testOutputDirectory,
   withTestWorkspace,
+  requireConfiguredTool,
 } from '@graphics-workbench/core/testing';
 
 describe('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
   for (const [index, fixturePath] of listInputFixturePathsSync(path.join(testInputDirectory, 'valid', 'svg'))
     .filter((candidatePath) => sourceFormatForPath(candidatePath) === 'svg')
     .entries()) {
-    it(`svg/${path.basename(fixturePath)}をworkspaceへコピーしてPNGへ変換すると、renderer差を許容して固定正解expected.pngと内容が一致する`, async (ctx) => {
+    it(`svg/${path.basename(fixturePath)}をworkspaceへコピーしてPNGへ変換すると、renderer差を許容して固定正解expected.pngと内容が一致する`, async () => {
       const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
-      if (drawioTools.drawioPath === '') {
-        ctx.skip();
-        return;
-      }
+      requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io');
       await withTestWorkspace(async (workspacePath) => {
         const sourcePath = await copyInputToWorkspace(
           fixturePath,

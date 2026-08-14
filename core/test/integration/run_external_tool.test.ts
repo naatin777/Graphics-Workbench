@@ -13,7 +13,7 @@
 // - platform-specific exit codes beyond non-zero
 
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdtempDisposable, readFile, rm } from 'node:fs/promises';
+import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -218,27 +218,25 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
   });
 
   it('timeoutMs 200を過ぎても終了しない子プロセスは終了させてrejectする', async () => {
-    const startedPath = path.join(await mkdtemp(path.join(os.tmpdir(), 'gw-ext-tool-timeout-')), 'started.txt');
+    await using outsideDirectoryDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-ext-tool-timeout-'));
+    const outsideDirectory = outsideDirectoryDisposable.path;
+    const startedPath = path.join(outsideDirectory, 'started.txt');
 
-    try {
-      await assert.rejects(
-        runExternalTool({
-          toolName: 'timeout-tool',
-          executable: process.execPath,
-          args: [
-            '-e',
-            `require('fs').writeFileSync(${JSON.stringify(startedPath)}, 'started');
+    await assert.rejects(
+      runExternalTool({
+        toolName: 'timeout-tool',
+        executable: process.execPath,
+        args: [
+          '-e',
+          `require('fs').writeFileSync(${JSON.stringify(startedPath)}, 'started');
              setTimeout(() => {}, 30000);`,
-          ],
-          timeoutMs: 200,
-        }),
-        (error: unknown) => error instanceof Error,
-      );
+        ],
+        timeoutMs: 200,
+      }),
+      (error: unknown) => error instanceof Error,
+    );
 
-      await assert.doesNotReject(import('node:fs/promises').then((fs) => fs.stat(startedPath)));
-    } finally {
-      await rm(path.dirname(startedPath), { recursive: true, force: true });
-    }
+    await assert.doesNotReject(import('node:fs/promises').then((fs) => fs.stat(startedPath)));
   });
 });
 

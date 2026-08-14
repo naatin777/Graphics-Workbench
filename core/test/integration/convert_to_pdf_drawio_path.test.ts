@@ -21,9 +21,10 @@ const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unic
 
 describe('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io画像のPDF変換', () => {
   it('空白とUnicodeを含むフォルダ名・ファイル名のfixtureを、入力pathと一時作業ディレクトリ内の中間PDF出力pathをそのままDraw.io実行関数へ渡して3ページPDFへ変換し、元fixtureファイルを変更しない', async () => {
-    await using testRootPath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-complex-path-'));
+    await using testRootPathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-complex-path-'));
+    const testRootPath = testRootPathDisposable.path;
     const workspacePath = path.join(
-      testRootPath.path,
+      testRootPath,
       'workspace 日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹　ＡＢＣ',
     );
     const inputDirectory = path.join(workspacePath, '入力 フォルダ　図面 العربية');
@@ -85,7 +86,7 @@ describe('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.i
     assert.deepStrictEqual(await readFile(sourcePath), originalSourceBytes);
 
     const actualPages = await readPdfPages(await readFile(outputPath));
-    const expectedPages = await readPdfPages(await writeDrawioPdf(path.join(testRootPath.path, 'expected.pdf'), 3));
+    const expectedPages = await readPdfPages(await writeDrawioPdf(path.join(testRootPath, 'expected.pdf'), 3));
     assert.strictEqual(actualPages.length, 3);
     assert.strictEqual(actualPages.length, expectedPages.length);
     assert.deepStrictEqual(

@@ -34,5 +34,11 @@ export { RecordingOutputChannel } from './output_channel.js';
 export { findRepositoryRoot } from './repository.js';
 export { requireValue } from './required.js';
 export { createTestRuntime, type CreateTestRuntimeOptions, type TestRuntime } from './runtime.js';
-export { defaultRasterMaxInputPixels, readConfiguredConversionTools, type ConfiguredConversionTools } from './tools.js';
+export {
+  defaultRasterMaxInputPixels,
+  readConfiguredConversionTools,
+  readExternalTestSettings,
+  requireConfiguredTool,
+  type ConfiguredConversionTools,
+} from './tools.js';
 export { copyInputToWorkspace, withTestWorkspace } from './workspace.js';

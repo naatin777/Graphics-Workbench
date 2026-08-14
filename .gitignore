@@ -22,3 +22,4 @@ coverage/
 vscode/extension/test/support/workspace/*
 !vscode/extension/test/support/workspace/.gitkeep
 .vscode-test-ci-host/
+.env.test.local
