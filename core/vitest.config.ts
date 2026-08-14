@@ -1,4 +1,25 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from 'vitest/config';
+
+const coreDirectory = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * The core tests exercise the TypeScript sources directly instead of the
+ * built dist. Coverage then maps the same sources it executed. The built
+ * package exports are verified separately by the package-export smoke test.
+ */
+export const coreSourceAlias = [
+  {
+    find: /^@graphics-workbench\/core\/(conversion|pdf|formats|runtime|security|output|external-tools|table|crop-worker)$/u,
+    replacement: path.join(coreDirectory, 'src/public/$1.ts'),
+  },
+  {
+    find: /^@graphics-workbench\/core\/testing$/u,
+    replacement: path.join(coreDirectory, 'testing/index.ts'),
+  },
+];
 
 export default defineConfig({
   test: {
@@ -19,6 +40,9 @@ export default defineConfig({
       reporter: ['text-summary', 'html', 'lcov'],
       reportsDirectory: '../coverage/core',
       include: ['src/**/*.ts'],
+    },
+    resolve: {
+      alias: coreSourceAlias,
     },
   },
 });
