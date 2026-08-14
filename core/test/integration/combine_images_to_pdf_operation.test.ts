@@ -14,22 +14,45 @@ import { combineImagesToPdf, type SvgToPdfBackend } from '@graphics-workbench/co
 
 const VALID_PNG = operationPngInputPath;
 
-const supportedInputFixtures = [
-  { format: 'png', relativePath: 'valid/png/transparent-shapes.png' },
-  { format: 'jpeg', relativePath: 'valid/jpeg/color-map.jpeg' },
-  { format: 'webp', relativePath: 'valid/webp/heatmap.webp' },
-  { format: 'avif', relativePath: 'valid/avif/vortex-vector-field.avif' },
-  { format: 'gif', relativePath: 'valid/gif/rotating-vector-field.gif' },
-  { format: 'tiff', relativePath: 'valid/tiff/heatmap.tiff' },
-  { format: 'svg', relativePath: 'valid/svg/solid-rect-31x19.svg' },
-] as const;
+type SupportedInputFormat = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff' | 'svg';
 
-type SupportedInputFormat = (typeof supportedInputFixtures)[number]['format'];
-
-interface InputFixture {
+interface SupportedInputFixture {
   format: SupportedInputFormat;
-  sourcePath: string;
+  relativePath: string;
   pageSizes: { width: number; height: number }[];
+}
+
+// 期待値はtest/inputの固定fixtureの実寸をコミットしたもの。テスト実行時の
+// sharp解釈（ページ数・サイズ）とproductionの解釈が同時に誤っていてもpass
+// しないよう、期待値はここに固定し、metadataはfixtureのドリフト検出に使う。
+const repeatedPageSizes = (count: number, width: number, height: number): { width: number; height: number }[] =>
+  Array.from({ length: count }, () => ({ width, height }));
+
+const supportedInputFixtures: SupportedInputFixture[] = [
+  { format: 'png', relativePath: 'valid/png/transparent-shapes.png', pageSizes: [{ width: 320, height: 200 }] },
+  { format: 'jpeg', relativePath: 'valid/jpeg/color-map.jpeg', pageSizes: [{ width: 384, height: 288 }] },
+  { format: 'webp', relativePath: 'valid/webp/heatmap.webp', pageSizes: [{ width: 600, height: 480 }] },
+  { format: 'avif', relativePath: 'valid/avif/vortex-vector-field.avif', pageSizes: [{ width: 600, height: 600 }] },
+  {
+    format: 'gif',
+    relativePath: 'valid/gif/rotating-vector-field.gif',
+    pageSizes: repeatedPageSizes(30, 240, 240),
+  },
+  {
+    format: 'tiff',
+    relativePath: 'valid/tiff/heatmap.tiff',
+    pageSizes: [
+      { width: 600, height: 480 },
+      { width: 200, height: 160 },
+      { width: 64, height: 64 },
+      { width: 640, height: 160 },
+    ],
+  },
+  { format: 'svg', relativePath: 'valid/svg/solid-rect-31x19.svg', pageSizes: [{ width: 31, height: 19 }] },
+];
+
+interface InputFixture extends SupportedInputFixture {
+  sourcePath: string;
 }
 
 async function copyFixtureTo(workspacePath: string, name: string): Promise<string> {
@@ -295,15 +318,17 @@ async function writeSupportedInputFixtures(workspacePath: string): Promise<Input
     await copyFile(path.join(testInputDirectory, fixture.relativePath), sourcePath);
 
     const metadata = await sharp(sourcePath).metadata();
-    assert.ok(metadata.width !== undefined && metadata.height !== undefined, `${fixture.format} metadata size`);
-    const pageSizes: { width: number; height: number }[] = [];
-    for (let page = 0; page < (metadata.pages ?? 1); page += 1) {
+    assert.strictEqual(metadata.pages ?? 1, fixture.pageSizes.length, `${fixture.format} page count`);
+    for (let page = 0; page < fixture.pageSizes.length; page += 1) {
       const pageMetadata = await sharp(sourcePath, { page }).metadata();
-      assert.ok(pageMetadata.width !== undefined && pageMetadata.height !== undefined, `${fixture.format} page size`);
-      pageSizes.push({ width: pageMetadata.width, height: pageMetadata.height });
+      assert.deepStrictEqual(
+        { width: pageMetadata.width, height: pageMetadata.height },
+        fixture.pageSizes[page],
+        `${fixture.format} page ${page} size`,
+      );
     }
 
-    fixtures.push({ ...fixture, sourcePath, pageSizes });
+    fixtures.push({ ...fixture, sourcePath });
   }
 
   return fixtures;

@@ -17,6 +17,10 @@ import sharp from 'sharp';
 import { rotateImageFiles } from '@graphics-workbench/core/conversion';
 import { operationPngInputPath, testInputDirectory } from '@graphics-workbench/core/testing';
 
+// test/input/valid/png/transparent-shapes.pngの実寸をコミットした期待値。
+const SOURCE_PNG_WIDTH = 320;
+const SOURCE_PNG_HEIGHT = 200;
+
 interface SourcePng {
   sourcePath: string;
   width: number;
@@ -139,7 +143,9 @@ async function copySourcePng(workspacePath: string): Promise<SourcePng> {
   const sourcePath = path.join(workspacePath, 'source.png');
   await copyFile(operationPngInputPath, sourcePath);
 
+  // fixtureの実寸がコミット済み期待値からドリフトしていないか確認する。
   const metadata = await sharp(sourcePath).metadata();
-  assert.ok(metadata.width !== undefined && metadata.height !== undefined, 'source png metadata size');
-  return { sourcePath, width: metadata.width, height: metadata.height };
+  assert.strictEqual(metadata.width, SOURCE_PNG_WIDTH, 'source png width');
+  assert.strictEqual(metadata.height, SOURCE_PNG_HEIGHT, 'source png height');
+  return { sourcePath, width: SOURCE_PNG_WIDTH, height: SOURCE_PNG_HEIGHT };
 }
