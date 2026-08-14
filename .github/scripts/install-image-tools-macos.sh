@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# e2e tools used by conversion tests on macOS.
+# Installs the image conversion tools and prints GRAPHICS_WORKBENCH_TEST_*
+# lines to stdout for the workflow to inject via $GITHUB_ENV. Human-readable
+# progress goes to stderr so stdout stays machine-parseable.
+
+echo "Installing librsvg via Homebrew..." >&2
 brew install librsvg
 
 rsvg_convert_path="$(command -v rsvg-convert)"
@@ -12,14 +16,8 @@ if [[ ! -x "${chrome_path}" ]]; then
 	exit 1
 fi
 
-settings_dir="vscode/test/support/vscode-settings"
-mkdir -p "$settings_dir"
-cat > "$settings_dir/settings.json" <<EOF
-{
-    "graphics-workbench.execPath.rsvgConvert": "${rsvg_convert_path}",
-    "graphics-workbench.execPath.chrome": "${chrome_path}"
-}
-EOF
+printf 'GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=%s\n' "${rsvg_convert_path}"
+printf 'GRAPHICS_WORKBENCH_TEST_CHROME_PATH=%s\n' "${chrome_path}"
 
 # Draw.io CLI is only needed by the packaged Playwright Draw.io -> PDF smoke,
 # not by the Extension Host suite (whose Draw.io oracle tests skip without it).
@@ -44,9 +42,5 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 		exit 1
 	fi
 
-	node -e "const fs = require('node:fs'); const p = '${settings_dir}/settings.json'; const s = JSON.parse(fs.readFileSync(p, 'utf8')); s['graphics-workbench.execPath.drawio'] = process.argv[1]; fs.writeFileSync(p, JSON.stringify(s, null, 4) + '\n');" "${drawio_path}"
-
-	echo "Draw.io: ${drawio_path}"
+	printf 'GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH=%s\n' "${drawio_path}"
 fi
-
-cat "$settings_dir/settings.json"

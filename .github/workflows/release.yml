@@ -48,15 +48,21 @@ jobs:
               shell: bash
 
             - if: matrix.os == 'ubuntu-latest'
-              run: bash .github/scripts/install-test-tools-linux.sh
+              run: |
+                TOOL_PATHS="$(bash .github/scripts/install-test-tools-linux.sh)"
+                printf '%s\n' "$TOOL_PATHS" >> "$GITHUB_ENV"
               shell: bash
 
             - if: matrix.os == 'macos-latest'
-              run: bash .github/scripts/install-image-tools-macos.sh
+              run: |
+                TOOL_PATHS="$(bash .github/scripts/install-image-tools-macos.sh)"
+                printf '%s\n' "$TOOL_PATHS" >> "$GITHUB_ENV"
               shell: bash
 
             - if: matrix.os == 'windows-latest'
-              run: .github/scripts/install-image-tools-windows.ps1
+              run: |
+                $toolPaths = & .github/scripts/install-image-tools-windows.ps1
+                Add-Content -Path $env:GITHUB_ENV -Value $toolPaths
               shell: pwsh
 
             - if: matrix.os != 'windows-latest'
@@ -246,22 +252,23 @@ jobs:
               shell: bash
 
             - if: matrix.os == 'ubuntu-latest'
-              run: bash .github/scripts/install-test-tools-linux.sh
+              run: |
+                TOOL_PATHS="$(INSTALL_DRAWIO=1 bash .github/scripts/install-test-tools-linux.sh)"
+                printf '%s\n' "$TOOL_PATHS" >> "$GITHUB_ENV"
               shell: bash
-              env:
-                INSTALL_DRAWIO: "1"
 
             - if: matrix.os == 'macos-latest'
-              run: bash .github/scripts/install-image-tools-macos.sh
+              run: |
+                TOOL_PATHS="$(INSTALL_DRAWIO=1 bash .github/scripts/install-image-tools-macos.sh)"
+                printf '%s\n' "$TOOL_PATHS" >> "$GITHUB_ENV"
               shell: bash
-              env:
-                INSTALL_DRAWIO: "1"
 
             - if: matrix.os == 'windows-latest'
-              run: .github/scripts/install-image-tools-windows.ps1
+              run: |
+                $env:INSTALL_DRAWIO = '1'
+                $toolPaths = & .github/scripts/install-image-tools-windows.ps1
+                Add-Content -Path $env:GITHUB_ENV -Value $toolPaths
               shell: pwsh
-              env:
-                INSTALL_DRAWIO: "1"
 
             - if: matrix.os != 'windows-latest'
               run: bash .github/scripts/verify-image-tools-unix.sh
