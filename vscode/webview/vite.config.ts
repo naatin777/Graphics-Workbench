@@ -10,7 +10,7 @@ const extensionRoot = resolve(webviewRoot, '..', 'extension');
 const repositoryRoot = resolve(webviewRoot, '..', '..');
 const outputRoot = resolve(extensionRoot, 'media', 'webview');
 
-const fixtureFiles = new Map([
+const testDataFiles = new Map([
   ['single-page-document.pdf', resolve(repositoryRoot, 'test', 'input', 'valid', 'pdf', 'single-page-document.pdf')],
   ['multi-page-table.pdf', resolve(repositoryRoot, 'test', 'input', 'valid', 'pdf', 'multi-page-table.pdf')],
 ]);
@@ -128,14 +128,14 @@ function browserDevelopmentAssetsPlugin(): Plugin {
         response.setHeader('Content-Type', 'application/json');
         response.end(JSON.stringify(messages));
       });
-      server.middlewares.use('/fixtures', (request, response, next) => {
+      server.middlewares.use('/testData', (request, response, next) => {
         const name = request.url?.replace(/^\//u, '');
-        const fixture = name === undefined ? undefined : fixtureFiles.get(name);
-        if (fixture === undefined) {
+        const testData = name === undefined ? undefined : testDataFiles.get(name);
+        if (testData === undefined) {
           next();
           return;
         }
-        const requestPath = resolve(fixture);
+        const requestPath = resolve(testData);
         if (relative(repositoryRoot, requestPath).startsWith('..')) {
           response.statusCode = 403;
           response.end('Forbidden');

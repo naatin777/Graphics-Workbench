@@ -18,6 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { operationSvgInputPath, operationPdfInputDirectory, readPdfPages } from '@graphics-workbench/core/testing';
+import { Result } from 'better-result';
 
 import {
   convertToPdfFiles,
@@ -25,8 +26,8 @@ import {
   type SvgToPdfBackend,
 } from '@graphics-workbench/core/conversion';
 
-const svgFixturePath = operationSvgInputPath;
-const pdfFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
+const svgTestDataPath = operationSvgInputPath;
+const pdfTestDataPath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 const complexSourceFileName =
   '　日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹 ＡＢＣ１２３①.svg';
 const complexOutputFileName = '結果 한국어 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹　ＡＢＣ①.pdf';
@@ -36,7 +37,7 @@ interface WindowsScratchOptions {
   scratchBaseCandidates: readonly string[];
 }
 
-type RunRsvgConvert = (executable: string, args: string[], signal?: AbortSignal) => Promise<void>;
+type RunRsvgConvert = SvgToPdfBackend['runRsvgConvert'];
 
 interface RsvgToPdfOptions extends SvgToPdfBackend {
   runRsvgConvert: RunRsvgConvert;
@@ -52,7 +53,7 @@ type ConvertToPdfFilesWithScratch = (
 // Implementation Phaseで追加するplatform・scratch・runnerの注入契約を、失敗テストでも型安全に呼ぶ。
 const convertToPdfFilesWithScratch = convertToPdfFiles as ConvertToPdfFilesWithScratch;
 
-interface FixedFixtureWorkspace {
+interface FixedTestDataWorkspace {
   testRootPath: string;
   workspacePath: string;
   scratchBasePath: string;
@@ -62,21 +63,22 @@ interface FixedFixtureWorkspace {
 
 describe('Windowsでrsvg-convertへUnicode入力をASCIIのみの一時作業ディレクトリ（スクラッチ）経由で渡してPDFへ変換する', () => {
   it('Unicodeの論理pathを維持したまま、ASCIIスクラッチ上のinput.svg/output.pdfへrsvg-convertを実行してPDFへ変換し、成功後にスクラッチの両ファイルを削除する', async () => {
-    await using paths = await prepareFixedFixtureWorkspace();
+    await using paths = await prepareFixedTestDataWorkspace();
     let toolInputPath: string | undefined;
     let toolOutputPath: string | undefined;
 
     const sourceBytes = await readFile(paths.sourcePath);
-    const pdfBytes = await readFile(pdfFixturePath);
+    const pdfBytes = await readFile(pdfTestDataPath);
 
     await convertToPdfFilesWithScratch({
-      inputs: [createJob(paths)],
+      inputs: [createItem(paths)],
       tools: {
         svgToPdfTools: createSvgToPdfOptions(async (executable, args) => {
           toolInputPath = assertRsvgToolPaths(executable, args, paths);
           toolOutputPath = outputPathFromArgs(args);
           assert.deepStrictEqual(await readFile(toolInputPath), sourceBytes);
           await writeFile(toolOutputPath, pdfBytes);
+          return Result.ok();
         }),
       },
       platform: 'win32',
@@ -95,17 +97,18 @@ describe('Windowsでrsvg-convertへUnicode入力をASCIIのみの一時作業デ
   });
 
   it('rsvg-convertが期待した出力pathと異なる別名PDFを書き出した場合は成功扱いせず、論理出力PDFを作らずにエラーにする', async () => {
-    await using paths = await prepareFixedFixtureWorkspace();
+    await using paths = await prepareFixedTestDataWorkspace();
     let unexpectedOutputPath: string | undefined;
 
     await assert.rejects(
       convertToPdfFilesWithScratch({
-        inputs: [createJob(paths)],
+        inputs: [createItem(paths)],
         tools: {
           svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
             const outputPath = outputPathFromArgs(args);
             unexpectedOutputPath = path.join(path.dirname(outputPath), 'output-garbled.pdf');
-            await copyFile(pdfFixturePath, unexpectedOutputPath);
+            await copyFile(pdfTestDataPath, unexpectedOutputPath);
+            return Result.ok();
           }),
         },
         platform: 'win32',
@@ -123,16 +126,17 @@ describe('Windowsでrsvg-convertへUnicode入力をASCIIのみの一時作業デ
   });
 
   it('rsvg-convertが期待した出力pathへ0 byteのPDFを書き出した場合も成功扱いせず、論理出力PDFを作らずにエラーにする', async () => {
-    await using paths = await prepareFixedFixtureWorkspace();
+    await using paths = await prepareFixedTestDataWorkspace();
     let toolOutputPath: string | undefined;
 
     await assert.rejects(
       convertToPdfFilesWithScratch({
-        inputs: [createJob(paths)],
+        inputs: [createItem(paths)],
         tools: {
           svgToPdfTools: createSvgToPdfOptions(async (_executable, args) => {
             toolOutputPath = outputPathFromArgs(args);
             await writeFile(toolOutputPath, Buffer.alloc(0));
+            return Result.ok();
           }),
         },
         platform: 'win32',
@@ -161,7 +165,7 @@ function createSvgToPdfOptions(runRsvgConvert: RunRsvgConvert): RsvgToPdfOptions
   };
 }
 
-function createJob(paths: FixedFixtureWorkspace) {
+function createItem(paths: FixedTestDataWorkspace) {
   return {
     sourcePath: paths.sourcePath,
     outputPath: paths.outputPath,
@@ -169,7 +173,7 @@ function createJob(paths: FixedFixtureWorkspace) {
   };
 }
 
-function assertRsvgToolPaths(executable: string, args: string[], paths: FixedFixtureWorkspace): string {
+function assertRsvgToolPaths(executable: string, args: string[], paths: FixedTestDataWorkspace): string {
   assert.strictEqual(executable, 'rsvg-convert');
   assert.strictEqual(args[0], '--format=pdf');
   assert.strictEqual(args[1], '--output');
@@ -196,7 +200,7 @@ function outputPathFromArgs(args: string[]): string {
   return outputPath;
 }
 
-async function prepareFixedFixtureWorkspace(): Promise<FixedFixtureWorkspace & AsyncDisposable> {
+async function prepareFixedTestDataWorkspace(): Promise<FixedTestDataWorkspace & AsyncDisposable> {
   const disposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rsvg-scratch-test-'));
   const testRootPath = disposable.path;
   const workspacePath = path.join(testRootPath, 'workspace 日本語 हिन्दी 🌹');
@@ -205,7 +209,7 @@ async function prepareFixedFixtureWorkspace(): Promise<FixedFixtureWorkspace & A
   const outputPath = path.join(workspacePath, complexOutputFileName);
 
   await Promise.all([mkdir(workspacePath, { recursive: true }), mkdir(scratchBasePath, { recursive: true })]);
-  await copyFile(svgFixturePath, sourcePath);
+  await copyFile(svgTestDataPath, sourcePath);
 
   return {
     testRootPath,

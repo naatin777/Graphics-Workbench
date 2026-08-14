@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 
 import type { ElectronApplication, Page, TestInfo } from '@playwright/test';
 
-import { testVscodeSettingsPath } from '../../../support/helpers/fixture_paths.js';
+import { testVscodeSettingsPath } from '../../../support/helpers/testdata_paths.js';
 
 const execFileAsync = promisify(execFile);
 const WINDOWS_REMOVE_TIMEOUT_MS = 10_000;

@@ -17,7 +17,7 @@ import path from 'node:path';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPdfInputDirectory, testInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPdfInputDirectory, testInputDirectory } from '../../support/helpers/testdata_paths.js';
 import { requireValue } from '@graphics-workbench/core/testing';
 import { withWorkspaceSettings } from '../../support/helpers/workspace_settings.js';
 

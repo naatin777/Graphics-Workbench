@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import { mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { requireValue, createPdfFixture } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfTestData } from '@graphics-workbench/core/testing';
 import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
@@ -40,7 +40,7 @@ suite('Reorder PDF ConfigureコマンドがWebviewから送られた重複order�
     const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
     await writeFile(
       sourcePath,
-      await createPdfFixture({ pages: [{ mediaBox: [0, 0, 100, 100] }, { mediaBox: [0, 0, 100, 100] }] }),
+      await createPdfTestData({ pages: [{ mediaBox: [0, 0, 100, 100] }, { mediaBox: [0, 0, 100, 100] }] }),
     );
 
     const getPanel = stubWebviewPanel(sandbox);

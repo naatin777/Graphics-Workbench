@@ -7,7 +7,7 @@ import path from 'node:path';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPdfInputDirectory, operationPngInputPath } from '../support/helpers/fixture_paths.js';
+import { operationPdfInputDirectory, operationPngInputPath } from '../support/helpers/testdata_paths.js';
 import { extensionIdentity } from '../../src/generated/extension_manifest.js';
 
 suite('拡張機能のactivateとworkspace内ファイルへの変換コマンド実行', () => {

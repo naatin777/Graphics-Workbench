@@ -5,30 +5,31 @@ import path from 'node:path';
 
 import {
   operationPngInputPath,
-  createPdfFixture,
+  createPdfTestData,
   readPdfPages,
   testInputDirectory,
 } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
+import { Result } from 'better-result';
 import { combineImagesToPdf, type SvgToPdfBackend } from '@graphics-workbench/core/conversion';
 
 const VALID_PNG = operationPngInputPath;
 
 type SupportedInputFormat = 'png' | 'jpeg' | 'webp' | 'avif' | 'gif' | 'tiff' | 'svg';
 
-interface SupportedInputFixture {
+interface SupportedInputTestData {
   format: SupportedInputFormat;
   relativePath: string;
   pageSizes: { width: number; height: number }[];
 }
 
-// 期待値はtest/inputの固定fixtureの実寸をコミットしたもの。テスト実行時の
+// 期待値はtest/inputの固定testDataItemの実寸をコミットしたもの。テスト実行時の
 // sharp解釈（ページ数・サイズ）とproductionの解釈が同時に誤っていてもpass
-// しないよう、期待値はここに固定し、metadataはfixtureのドリフト検出に使う。
+// しないよう、期待値はここに固定し、metadataはtestDataItemのドリフト検出に使う。
 const repeatedPageSizes = (count: number, width: number, height: number): { width: number; height: number }[] =>
   Array.from({ length: count }, () => ({ width, height }));
 
-const supportedInputFixtures: SupportedInputFixture[] = [
+const supportedInputTestData: SupportedInputTestData[] = [
   { format: 'png', relativePath: 'valid/png/transparent-shapes.png', pageSizes: [{ width: 320, height: 200 }] },
   { format: 'jpeg', relativePath: 'valid/jpeg/color-map.jpeg', pageSizes: [{ width: 384, height: 288 }] },
   { format: 'webp', relativePath: 'valid/webp/heatmap.webp', pageSizes: [{ width: 600, height: 480 }] },
@@ -51,11 +52,11 @@ const supportedInputFixtures: SupportedInputFixture[] = [
   { format: 'svg', relativePath: 'valid/svg/solid-rect-31x19.svg', pageSizes: [{ width: 31, height: 19 }] },
 ];
 
-interface InputFixture extends SupportedInputFixture {
+interface InputTestData extends SupportedInputTestData {
   sourcePath: string;
 }
 
-async function copyFixtureTo(workspacePath: string, name: string): Promise<string> {
+async function copyTestDataTo(workspacePath: string, name: string): Promise<string> {
   const destination = path.join(workspacePath, name);
   await copyFile(VALID_PNG, destination);
   return destination;
@@ -66,7 +67,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
-    const sourcePath = await copyFixtureTo(workspacePath, 'input.png');
+    const sourcePath = await copyTestDataTo(workspacePath, 'input.png');
     const outputPath = path.join(workspacePath, 'result.pdf');
 
     await combineImagesToPdf({
@@ -85,7 +86,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
-    const sourcePath = await copyFixtureTo(workspacePath, 'input.png');
+    const sourcePath = await copyTestDataTo(workspacePath, 'input.png');
     const outputPath = path.join(workspacePath, 'result.pdf');
 
     await assert.rejects(
@@ -105,9 +106,9 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const workspacePath = workspacePathDisposable.path;
 
     const sourcePaths = await Promise.all([
-      copyFixtureTo(workspacePath, 'a.png'),
-      copyFixtureTo(workspacePath, 'b.png'),
-      copyFixtureTo(workspacePath, 'c.png'),
+      copyTestDataTo(workspacePath, 'a.png'),
+      copyTestDataTo(workspacePath, 'b.png'),
+      copyTestDataTo(workspacePath, 'c.png'),
     ]);
     const outputPath = path.join(workspacePath, 'result.pdf');
     const progress: [number, number][] = [];
@@ -134,8 +135,8 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const workspacePath = workspacePathDisposable.path;
 
     const sourcePaths = await Promise.all([
-      copyFixtureTo(workspacePath, 'a.png'),
-      copyFixtureTo(workspacePath, 'b.png'),
+      copyTestDataTo(workspacePath, 'a.png'),
+      copyTestDataTo(workspacePath, 'b.png'),
     ]);
     const outputPath = path.join(workspacePath, 'result.pdf');
 
@@ -165,7 +166,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const outputPath = path.join(workspacePath, 'result.pdf');
     await copyFile(path.join(testInputDirectory, 'valid', 'svg', 'solid-rect-31x19.svg'), sourcePath);
 
-    const sourcePdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 7, 11] }] });
+    const sourcePdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 7, 11] }] });
     const calls: string[][] = [];
     const svgToPdfTools: SvgToPdfBackend = {
       engine: 'rsvg-convert',
@@ -177,6 +178,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
         const stagedPath = args[outputArgumentIndex];
         assert.ok(stagedPath);
         await writeFile(stagedPath, sourcePdfBytes);
+        return Result.ok();
       },
       runChrome: async () => {
         throw new Error('chrome must not run for rsvg-convert engine');
@@ -205,13 +207,13 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
-    const fixtures = await writeSupportedInputFixtures(workspacePath);
+    const testDataItems = await writeSupportedInputTestData(workspacePath);
 
-    for (const fixture of fixtures) {
-      const outputPath = path.join(workspacePath, `${fixture.format}-result.pdf`);
+    for (const testDataItem of testDataItems) {
+      const outputPath = path.join(workspacePath, `${testDataItem.format}-result.pdf`);
 
       await combineImagesToPdf({
-        inputs: [{ sourcePath: fixture.sourcePath }],
+        inputs: [{ sourcePath: testDataItem.sourcePath }],
         outputPath,
         workspacePath,
         runtime: {},
@@ -222,7 +224,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
         platform: process.platform,
       });
 
-      await assertPdfPageSizes(outputPath, expectedPdfPageSizes([fixture]));
+      await assertPdfPageSizes(outputPath, expectedPdfPageSizes([testDataItem]));
     }
   });
 
@@ -230,11 +232,11 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
-    const fixtures = await writeSupportedInputFixtures(workspacePath);
+    const testDataItems = await writeSupportedInputTestData(workspacePath);
     const outputPath = path.join(workspacePath, 'mixed-result.pdf');
 
     await combineImagesToPdf({
-      inputs: fixtures.map((fixture) => ({ sourcePath: fixture.sourcePath })),
+      inputs: testDataItems.map((testDataItem) => ({ sourcePath: testDataItem.sourcePath })),
       outputPath,
       workspacePath,
       runtime: {},
@@ -245,7 +247,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
       platform: process.platform,
     });
 
-    await assertPdfPageSizes(outputPath, expectedPdfPageSizes(fixtures));
+    await assertPdfPageSizes(outputPath, expectedPdfPageSizes(testDataItems));
   });
 
   it('画像が0件の場合は「No images」エラーを返す', async () => {
@@ -310,28 +312,28 @@ describe('複数の画像を1つのPDFへ結合する', () => {
   });
 });
 
-async function writeSupportedInputFixtures(workspacePath: string): Promise<InputFixture[]> {
-  const fixtures: InputFixture[] = [];
+async function writeSupportedInputTestData(workspacePath: string): Promise<InputTestData[]> {
+  const testDataItems: InputTestData[] = [];
 
-  for (const fixture of supportedInputFixtures) {
-    const sourcePath = path.join(workspacePath, `source-${fixture.format}.${fixture.format}`);
-    await copyFile(path.join(testInputDirectory, fixture.relativePath), sourcePath);
+  for (const testDataItem of supportedInputTestData) {
+    const sourcePath = path.join(workspacePath, `source-${testDataItem.format}.${testDataItem.format}`);
+    await copyFile(path.join(testInputDirectory, testDataItem.relativePath), sourcePath);
 
     const metadata = await sharp(sourcePath).metadata();
-    assert.strictEqual(metadata.pages ?? 1, fixture.pageSizes.length, `${fixture.format} page count`);
-    for (let page = 0; page < fixture.pageSizes.length; page += 1) {
+    assert.strictEqual(metadata.pages ?? 1, testDataItem.pageSizes.length, `${testDataItem.format} page count`);
+    for (let page = 0; page < testDataItem.pageSizes.length; page += 1) {
       const pageMetadata = await sharp(sourcePath, { page }).metadata();
       assert.deepStrictEqual(
         { width: pageMetadata.width, height: pageMetadata.height },
-        fixture.pageSizes[page],
-        `${fixture.format} page ${page} size`,
+        testDataItem.pageSizes[page],
+        `${testDataItem.format} page ${page} size`,
       );
     }
 
-    fixtures.push({ ...fixture, sourcePath });
+    testDataItems.push({ ...testDataItem, sourcePath });
   }
 
-  return fixtures;
+  return testDataItems;
 }
 
 function createStubSvgToPdfOptions(): SvgToPdfBackend {
@@ -344,8 +346,9 @@ function createStubSvgToPdfOptions(): SvgToPdfBackend {
       const outputPath = args[outputArgumentIndex];
       assert.ok(outputPath);
 
-      const sourcePdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 1, 1] }] });
+      const sourcePdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 1, 1] }] });
       await writeFile(outputPath, sourcePdfBytes);
+      return Result.ok();
     },
     runChrome: async () => {
       throw new Error('chrome must not run for rsvg-convert engine');
@@ -369,6 +372,6 @@ async function assertPdfPageSizes(
   }
 }
 
-function expectedPdfPageSizes(fixtures: InputFixture[]): { width: number; height: number }[] {
-  return fixtures.flatMap((fixture) => fixture.pageSizes);
+function expectedPdfPageSizes(testDataItems: InputTestData[]): { width: number; height: number }[] {
+  return testDataItems.flatMap((testDataItem) => testDataItem.pageSizes);
 }

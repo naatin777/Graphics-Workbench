@@ -2,7 +2,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
-  isEditableDrawioImagePath,
+  isDrawioImagePath,
   isNativeDrawioPath,
   type RASTER_FORMATS,
   isSameSourceFormat,
@@ -147,7 +147,7 @@ async function writeSourceAsRaster(
   const { sourcePath } = input;
   const extension = path.extname(sourcePath).toLowerCase();
 
-  if (isEditableDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
+  if (isDrawioImagePath(sourcePath) || isNativeDrawioPath(sourcePath)) {
     await writeDrawioAsRaster(input, paths, context);
     return;
   }
@@ -316,7 +316,7 @@ function validateConversions(inputs: RasterInput[], spec: RasterFormatSpec): voi
 
   for (const input of inputs) {
     if (
-      !isEditableDrawioImagePath(input.sourcePath) &&
+      !isDrawioImagePath(input.sourcePath) &&
       !isNativeDrawioPath(input.sourcePath) &&
       isSameSourceFormat(input.sourcePath, spec.target)
     ) {

@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { planRasterSourceConversionInputs } from '@graphics-workbench/core/conversion';
-import { isEditableDrawioImagePath } from '@graphics-workbench/core/formats';
+import { isDrawioImagePath } from '@graphics-workbench/core/formats';
 import { operationPngInputPath } from '@graphics-workbench/core/testing';
 
 describe('ラスター画像を出力テンプレートに従った1ページの変換処理単位（出力パス割当て）へ展開する処理', () => {
@@ -22,7 +22,7 @@ describe('ラスター画像を出力テンプレートに従った1ページの
       outputTemplate: '${fileDirname}/${fileBasenameNoExtension}-${page}.jpeg',
       allowedExtensions: ['.jpeg'],
       maxInputPixels: 1_000_000_000,
-      isEditableDrawioImagePath,
+      isDrawioImagePath,
     });
 
     assert.deepStrictEqual(jobs, [

@@ -1,17 +1,17 @@
 import { getPdfPageGeometry, loadMupdf, openPdfDocument, savePdfDocument } from '@graphics-workbench/core/pdf';
 
-export interface PdfFixturePage {
+export interface PdfTestDataPage {
   mediaBox: [number, number, number, number];
   cropBox?: [number, number, number, number];
   rotation?: number;
   contents?: string[];
 }
 
-export interface PdfFixtureOptions {
-  pages: PdfFixturePage[];
+export interface PdfTestDataOptions {
+  pages: PdfTestDataPage[];
 }
 
-export interface PdfFixturePageGeometry {
+export interface PdfTestDataPageGeometry {
   mediaBox: { x: number; y: number; width: number; height: number };
   cropBox: { x: number; y: number; width: number; height: number };
   rotation: number;
@@ -23,7 +23,7 @@ export interface PdfFixturePageGeometry {
  * geometry pipeline, so a coordinate misunderstanding cannot cancel out
  * between generator and reader.
  */
-export async function createPdfFixture(options: PdfFixtureOptions): Promise<Uint8Array> {
+export async function createPdfTestData(options: PdfTestDataOptions): Promise<Uint8Array> {
   const mupdf = await loadMupdf();
   const document = new mupdf.PDFDocument();
   try {
@@ -61,12 +61,12 @@ export function fillRectangle(options: {
 /**
  * Reads every page's geometry from a PDF through the production MuPDF
  * pipeline (`getPdfPageGeometry`). Used to verify operation outputs, never to
- * build fixtures.
+ * build test data.
  */
-export async function readPdfPages(bytes: Uint8Array): Promise<PdfFixturePageGeometry[]> {
+export async function readPdfPages(bytes: Uint8Array): Promise<PdfTestDataPageGeometry[]> {
   const document = await openPdfDocument(bytes);
   try {
-    const pages: PdfFixturePageGeometry[] = [];
+    const pages: PdfTestDataPageGeometry[] = [];
     for (let index = 0; index < document.countPages(); index += 1) {
       pages.push(readPageGeometry(document, index + 1));
     }
@@ -79,7 +79,7 @@ export async function readPdfPages(bytes: Uint8Array): Promise<PdfFixturePageGeo
 function readPageGeometry(
   document: Awaited<ReturnType<typeof openPdfDocument>>,
   pageNumber: number,
-): PdfFixturePageGeometry {
+): PdfTestDataPageGeometry {
   const page = document.loadPage(pageNumber - 1);
   try {
     const geometry = getPdfPageGeometry(page, pageNumber);

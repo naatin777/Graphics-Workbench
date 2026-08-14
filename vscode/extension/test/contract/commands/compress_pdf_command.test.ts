@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { requireValue, createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfTestData, readPdfPages } from '@graphics-workbench/core/testing';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
@@ -22,7 +22,7 @@ suite('PDF圧縮コマンド', () => {
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     await writeFile(
       sourcePath,
-      await createPdfFixture({ pages: [{ mediaBox: [0, 0, 200, 150] }, { mediaBox: [0, 0, 200, 150] }] }),
+      await createPdfTestData({ pages: [{ mediaBox: [0, 0, 200, 150] }, { mediaBox: [0, 0, 200, 150] }] }),
     );
 
     const commandExecution = vscode.commands.executeCommand(

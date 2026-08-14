@@ -20,7 +20,7 @@ export interface PdfPageInput {
  * Selected page numbers remain 1-based and duplicate selections are collapsed
  * while preserving the user's first-seen order.
  */
-export function planPdfPageJobs(
+export function planPdfPageItems(
   source: PdfPageSource,
   pageCount: number,
   outputTemplate: string,

@@ -68,6 +68,7 @@
     "test:package-exports": "npm run build && node --test test/package-exports-smoke.test.mjs"
   },
   "dependencies": {
+    "better-result": "^3.0.1",
     "fast-xml-parser": "5.10.1",
     "mupdf": "1.28.0",
     "p-queue": "9.3.3",

@@ -11,14 +11,14 @@ import * as vscode from 'vscode';
 import { localeMap } from '../../../src/locale_map.js';
 import { mergePdfConfigureCommand } from '../../../src/commands/pdf/merge_pdf.js';
 
-import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPdfInputDirectory } from '../../support/helpers/testdata_paths.js';
 import { testCommandDependencies } from '../../support/helpers/command_dependencies.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
 
 const compiledTestDirectory = path.dirname(fileURLToPath(import.meta.url));
-const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');
-const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
-const longFixturePath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
+const firstTestDataPath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');
+const secondTestDataPath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
+const longTestDataPath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
 
 suite('PDF結合コマンド', () => {
   let sandbox: ReturnType<typeof createSandbox>;
@@ -44,8 +44,8 @@ suite('PDF結合コマンド', () => {
     const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
     const renderDirectory = path.join(temporaryDirectory.path, 'rendered');
 
-    await copyFile(firstFixturePath, firstPdfPath);
-    await copyFile(secondFixturePath, secondPdfPath);
+    await copyFile(firstTestDataPath, firstPdfPath);
+    await copyFile(secondTestDataPath, secondPdfPath);
     await mkdir(renderDirectory);
 
     sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
@@ -101,8 +101,8 @@ suite('PDF結合コマンド', () => {
     const longPdfPath = path.join(temporaryDirectory.path, 'long-input.pdf');
     const secondPdfPath = path.join(temporaryDirectory.path, 'second-input.pdf');
     const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
-    await copyFile(longFixturePath, longPdfPath);
-    await copyFile(secondFixturePath, secondPdfPath);
+    await copyFile(longTestDataPath, longPdfPath);
+    await copyFile(secondTestDataPath, secondPdfPath);
 
     sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
     sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
@@ -134,8 +134,8 @@ suite('PDF結合コマンド', () => {
     const outsidePdfPath = path.join(outsideDirectory.path, 'second.pdf');
     const linkedDirectory = path.join(temporaryDirectory.path, 'linked');
     const linkedPdfPath = path.join(linkedDirectory, 'second.pdf');
-    await copyFile(firstFixturePath, firstPdfPath);
-    await copyFile(secondFixturePath, outsidePdfPath);
+    await copyFile(firstTestDataPath, firstPdfPath);
+    await copyFile(secondTestDataPath, outsidePdfPath);
     await symlink(outsideDirectory.path, linkedDirectory, process.platform === 'win32' ? 'junction' : 'dir');
 
     const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
@@ -162,8 +162,8 @@ suite('PDF結合コマンド', () => {
     const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
     const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
     const textPath = path.join(temporaryDirectory.path, 'notes.txt');
-    await copyFile(firstFixturePath, firstPdfPath);
-    await copyFile(secondFixturePath, secondPdfPath);
+    await copyFile(firstTestDataPath, firstPdfPath);
+    await copyFile(secondTestDataPath, secondPdfPath);
     await writeFile(textPath, 'not a PDF');
 
     const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
@@ -193,8 +193,8 @@ suite('PDF結合コマンド', () => {
 
     const firstPdfPath = path.join(temporaryDirectory.path, 'first.pdf');
     const secondPdfPath = path.join(temporaryDirectory.path, 'second.pdf');
-    await copyFile(firstFixturePath, firstPdfPath);
-    await copyFile(secondFixturePath, secondPdfPath);
+    await copyFile(firstTestDataPath, firstPdfPath);
+    await copyFile(secondTestDataPath, secondPdfPath);
 
     const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
     const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
@@ -221,7 +221,7 @@ suite('PDF結合コマンド', () => {
     );
 
     const pdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
-    await copyFile(firstFixturePath, pdfPath);
+    await copyFile(firstTestDataPath, pdfPath);
 
     const showSaveDialog = sandbox.stub(vscode.window, 'showSaveDialog');
     const showErrorMessage = sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
@@ -250,9 +250,9 @@ suite('PDF結合コマンド', () => {
     const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
     const secondPdfPath = path.join(temporaryDirectory.path, ' 薔薇🌹.pdf');
     const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
-    await copyFile(firstFixturePath, firstPdfPath);
-    await copyFile(secondFixturePath, secondPdfPath);
-    await copyFile(firstFixturePath, outputPath);
+    await copyFile(firstTestDataPath, firstPdfPath);
+    await copyFile(secondTestDataPath, secondPdfPath);
+    await copyFile(firstTestDataPath, outputPath);
 
     sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));
     sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
@@ -283,9 +283,9 @@ suite('PDF結合コマンド', () => {
     const firstPdfPath = path.join(temporaryDirectory.path, 'q a.pdf');
     const brokenPdfPath = path.join(temporaryDirectory.path, 'broken.pdf');
     const outputPath = path.join(temporaryDirectory.path, 'merged.pdf');
-    await copyFile(firstFixturePath, firstPdfPath);
+    await copyFile(firstTestDataPath, firstPdfPath);
     await writeFile(brokenPdfPath, 'not a PDF');
-    await copyFile(firstFixturePath, outputPath);
+    await copyFile(firstTestDataPath, outputPath);
     const originalOutputBytes = await readFile(outputPath);
 
     sandbox.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file(outputPath));

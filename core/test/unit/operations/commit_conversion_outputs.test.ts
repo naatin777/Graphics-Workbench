@@ -36,9 +36,9 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
-    await writeFixture(stagedOutputPath, 'new');
-    await writeFixture(outputPath, 'old');
-    await writeFixture(path.join(workspacePath, 'sample-1.pdf'), 'old-1');
+    await writeTestData(stagedOutputPath, 'new');
+    await writeTestData(outputPath, 'old');
+    await writeTestData(path.join(workspacePath, 'sample-1.pdf'), 'old-1');
 
     const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
       resolveConflicts: async () => 'keep-both',
@@ -56,8 +56,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
       ['first', 'second'].map(async (name) => {
         const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
         const outputPath = path.join(workspacePath, `${name}.pdf`);
-        await writeFixture(stagedOutputPath, `new-${name}`);
-        await writeFixture(outputPath, `old-${name}`);
+        await writeTestData(stagedOutputPath, `new-${name}`);
+        await writeTestData(outputPath, `old-${name}`);
         return { stagedOutputPath, outputPath, workspacePath };
       }),
     );
@@ -82,8 +82,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const firstOutputPath = path.join(workspacePath, 'Figure.pdf');
     const secondOutputPath = path.join(workspacePath, 'figure.pdf');
 
-    await writeFixture(firstStagedPath, 'first');
-    await writeFixture(secondStagedPath, 'second');
+    await writeTestData(firstStagedPath, 'first');
+    await writeTestData(secondStagedPath, 'second');
     const probePath = path.join(workspacePath, `.case-probe-${crypto.randomUUID()}`);
     await writeFile(probePath, '');
     let caseInsensitive = false;
@@ -116,8 +116,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const firstOutputPath = path.join(workspacePath, 'Cafe\u0301.pdf');
     const secondOutputPath = path.join(workspacePath, 'Café.pdf');
 
-    await writeFixture(firstStagedPath, 'first');
-    await writeFixture(secondStagedPath, 'second');
+    await writeTestData(firstStagedPath, 'first');
+    await writeTestData(secondStagedPath, 'second');
     await assert.rejects(
       commitStagedOutputs([
         { stagedOutputPath: firstStagedPath, outputPath: firstOutputPath, workspacePath },
@@ -132,8 +132,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
-    await writeFixture(stagedOutputPath, 'new');
-    await writeFixture(outputPath, 'old');
+    await writeTestData(stagedOutputPath, 'new');
+    await writeTestData(outputPath, 'old');
 
     await assert.rejects(
       commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
@@ -150,8 +150,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
-    await writeFixture(stagedOutputPath, 'new');
-    await writeFixture(outputPath, 'old');
+    await writeTestData(stagedOutputPath, 'new');
+    await writeTestData(outputPath, 'old');
 
     const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
       resolveConflicts: async () => 'overwrite',
@@ -170,8 +170,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const outputPath = path.join(workspacePath, 'sample.pdf');
     const originalMtime = new Date(2005, 5, 15, 12, 34, 56, 789);
 
-    await writeFixture(stagedOutputPath, 'new');
-    await writeFixture(outputPath, 'old');
+    await writeTestData(stagedOutputPath, 'new');
+    await writeTestData(outputPath, 'old');
     await utimes(outputPath, originalMtime, originalMtime);
     if (process.platform !== 'win32') {
       await chmod(outputPath, 0o640);
@@ -196,8 +196,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
       ['first', 'second'].map(async (name) => {
         const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
         const outputPath = path.join(workspacePath, `${name}.pdf`);
-        await writeFixture(stagedOutputPath, `new-${name}`);
-        await writeFixture(outputPath, `old-${name}`);
+        await writeTestData(stagedOutputPath, `new-${name}`);
+        await writeTestData(outputPath, `old-${name}`);
         return { stagedOutputPath, outputPath, workspacePath };
       }),
     );
@@ -230,8 +230,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
-    await writeFixture(stagedOutputPath, 'new');
-    await writeFixture(outputPath, 'old');
+    await writeTestData(stagedOutputPath, 'new');
+    await writeTestData(outputPath, 'old');
 
     await assert.rejects(
       commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
@@ -270,8 +270,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
       ['first', 'second'].map(async (name) => {
         const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
         const outputPath = path.join(workspacePath, `${name}.pdf`);
-        await writeFixture(stagedOutputPath, `new-${name}`);
-        await writeFixture(outputPath, `old-${name}`);
+        await writeTestData(stagedOutputPath, `new-${name}`);
+        await writeTestData(outputPath, `old-${name}`);
         return { stagedOutputPath, outputPath, workspacePath };
       }),
     );
@@ -314,8 +314,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     const controller = new AbortController();
-    await writeFixture(stagedOutputPath, 'new');
-    await writeFixture(outputPath, 'old');
+    await writeTestData(stagedOutputPath, 'new');
+    await writeTestData(outputPath, 'old');
     let copyCount = 0;
     let renameCount = 0;
 
@@ -350,8 +350,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
       ['first', 'second'].map(async (name) => {
         const stagedOutputPath = path.join(stagingRootPath, `${name}.pdf`);
         const outputPath = path.join(workspacePath, `${name}.pdf`);
-        await writeFixture(stagedOutputPath, `new-${name}`);
-        await writeFixture(outputPath, `old-${name}`);
+        await writeTestData(stagedOutputPath, `new-${name}`);
+        await writeTestData(outputPath, `old-${name}`);
         return { stagedOutputPath, outputPath, workspacePath, stagingRootPath };
       }),
     );
@@ -396,8 +396,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
-    await writeFixture(stagedOutputPath, 'new');
-    await writeFixture(outputPath, 'old');
+    await writeTestData(stagedOutputPath, 'new');
+    await writeTestData(outputPath, 'old');
 
     await assert.rejects(
       commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
@@ -418,8 +418,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const targetPath = path.join(workspacePath, 'target.pdf');
     const outputPath = path.join(workspacePath, 'link.pdf');
-    await writeFixture(stagedOutputPath, 'converted');
-    await writeFixture(targetPath, 'original target');
+    await writeTestData(stagedOutputPath, 'converted');
+    await writeTestData(targetPath, 'original target');
     await symlink(targetPath, outputPath);
 
     await assert.rejects(
@@ -443,7 +443,7 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const displacedDirectory = path.join(workspacePath, 'outputs-before-swap');
     const outputPath = path.join(outputDirectory, 'result.pdf');
     const outsideOutputPath = path.join(outsidePath.path, 'result.pdf');
-    await writeFixture(stagedOutputPath, '');
+    await writeTestData(stagedOutputPath, '');
     await truncate(stagedOutputPath, 128 * 1024 * 1024);
     await mkdir(outputDirectory);
     let swapPromise: Promise<void> | undefined;
@@ -475,8 +475,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
-    await writeFixture(stagedOutputPath, 'converted');
-    await writeFixture(outputPath, 'original');
+    await writeTestData(stagedOutputPath, 'converted');
+    await writeTestData(outputPath, 'original');
     let backupStarted = false;
 
     await assert.rejects(
@@ -502,8 +502,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
-    await writeFixture(stagedOutputPath, 'converted');
-    await writeFixture(outputPath, 'original');
+    await writeTestData(stagedOutputPath, 'converted');
+    await writeTestData(outputPath, 'original');
     let copyCount = 0;
 
     await assert.rejects(
@@ -529,8 +529,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
-    await writeFixture(stagedOutputPath, 'converted');
-    await writeFixture(outputPath, 'original');
+    await writeTestData(stagedOutputPath, 'converted');
+    await writeTestData(outputPath, 'original');
     let copyCount = 0;
 
     await assert.rejects(
@@ -559,7 +559,7 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     const unrelatedPath = path.join(workspacePath, 'unrelated.txt');
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
     await mkdir(stagedOutputPath);
-    await writeFixture(unrelatedPath, 'keep');
+    await writeTestData(unrelatedPath, 'keep');
 
     await assert.rejects(commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }]));
 
@@ -574,7 +574,7 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 });
 
-async function writeFixture(filePath: string, contents: string): Promise<void> {
+async function writeTestData(filePath: string, contents: string): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, contents);
 }

@@ -1,4 +1,4 @@
-import { createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
+import { createPdfTestData, readPdfPages } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { access, mkdtempDisposable, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -11,7 +11,7 @@ import {
   undoLastConversionCommand,
 } from '../../../src/commands/lifecycle/undo_last_conversion.js';
 import { LatexPasteEditProvider } from '../../../src/edit_provider/latex_paste_edit_provider.js';
-import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath } from '../../support/helpers/testdata_paths.js';
 import { liveCommandDependencies } from '../../support/helpers/command_dependencies.js';
 
 suite('LaTeXクリップボード画像挿入', () => {
@@ -354,7 +354,7 @@ function normalizeSnippetValue(value: string): string {
 
 async function createPdfBytes(_text: string): Promise<Buffer> {
   // Content text is not verified by these tests; a blank page is sufficient.
-  return Buffer.from(await createPdfFixture({ pages: [{ mediaBox: [0, 0, 200, 100] }] }));
+  return Buffer.from(await createPdfTestData({ pages: [{ mediaBox: [0, 0, 200, 100] }] }));
 }
 
 async function findFiles(rootPath: string, predicate: (filePath: string) => boolean): Promise<string[]> {

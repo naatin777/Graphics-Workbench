@@ -6,7 +6,7 @@ import sharp from 'sharp';
 
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
 
-import { readPdfPages } from '../fixtures/pdf.js';
+import { readPdfPages } from '../testdata/pdf_testdata.js';
 import { assertRasterMatches } from './raster.js';
 import type { RasterComparisonOptions } from './raster_content.js';
 

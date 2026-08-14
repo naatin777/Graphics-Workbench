@@ -1,4 +1,4 @@
-export const cropConfigureFixture = {
+export const cropConfigureTestData = {
   fileName: 'multilingual-text.pdf',
   expectedCroppedPageFileName: 'a a-1-crop.pdf',
   complexUnicodeFileName: '　日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹 ＡＢＣ１２３①.pdf',

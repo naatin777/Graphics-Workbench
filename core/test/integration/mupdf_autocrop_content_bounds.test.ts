@@ -26,7 +26,7 @@ import {
   type MupdfPixmap,
   type MupdfRect,
 } from '@graphics-workbench/core/pdf';
-import { createPdfFixture, fillRectangle, type PdfFixturePage } from '@graphics-workbench/core/testing';
+import { createPdfTestData, fillRectangle, type PdfTestDataPage } from '@graphics-workbench/core/testing';
 
 describe('DisplayList.getBoundsはcontent boundsではない（raster検出の必要性）', () => {
   it('中央にcontentがあるページでも toDisplayList().getBounds() はページ全体（mediabox）を返し、contentに縮まない', async () => {
@@ -143,17 +143,17 @@ describe('pdfcrop互換のvisible content検出（白背景render・純白だけ
 });
 
 async function buildCenteredContentPdf(): Promise<Uint8Array> {
-  return createPdfFixture({
+  return createPdfTestData({
     pages: [{ mediaBox: [0, 0, 300, 200], contents: [fillRectangle({ x: 100, y: 50, width: 100, height: 100 })] }],
   });
 }
 
 async function buildBlankPdf(): Promise<Uint8Array> {
-  return createPdfFixture({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
+  return createPdfTestData({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
 }
 
 async function buildPdfWithWhiteBackground(): Promise<Uint8Array> {
-  return createPdfFixture({
+  return createPdfTestData({
     pages: [
       {
         mediaBox: [0, 0, 300, 200],
@@ -164,7 +164,7 @@ async function buildPdfWithWhiteBackground(): Promise<Uint8Array> {
 }
 
 async function buildPdfWithWhiteBackgroundAndCenterContent(): Promise<Uint8Array> {
-  return createPdfFixture({
+  return createPdfTestData({
     pages: [
       {
         mediaBox: [0, 0, 300, 200],
@@ -178,7 +178,7 @@ async function buildPdfWithWhiteBackgroundAndCenterContent(): Promise<Uint8Array
 }
 
 async function buildPdfWithNearWhiteCenterContent(): Promise<Uint8Array> {
-  return createPdfFixture({
+  return createPdfTestData({
     pages: [
       {
         mediaBox: [0, 0, 300, 200],
@@ -191,7 +191,7 @@ async function buildPdfWithNearWhiteCenterContent(): Promise<Uint8Array> {
 }
 
 describe('offset MediaBox・回転ページでもvisible content boundsをPDF user spaceで返す', () => {
-  const cases: { label: string; page: PdfFixturePage; expected: MupdfRect }[] = [
+  const cases: { label: string; page: PdfTestDataPage; expected: MupdfRect }[] = [
     {
       label: 'offset MediaBox [100,200,400,400]ではcontentの絶対座標を返す',
       page: { mediaBox: [100, 200, 400, 400], contents: [fillRectangle({ x: 150, y: 260, width: 50, height: 60 })] },
@@ -252,7 +252,7 @@ describe('offset MediaBox・回転ページでもvisible content boundsをPDF us
 
   for (const { label, page, expected } of cases) {
     it(label, async () => {
-      const bytes = await createPdfFixture({ pages: [page] });
+      const bytes = await createPdfTestData({ pages: [page] });
       assert.deepStrictEqual(await readVisibleContentBounds(bytes), expected);
     });
   }

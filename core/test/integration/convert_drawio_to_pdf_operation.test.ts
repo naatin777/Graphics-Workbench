@@ -4,19 +4,20 @@ import { copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 
-import { requireValue, testInputDirectory, createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
+import { requireValue, testInputDirectory, createPdfTestData, readPdfPages } from '@graphics-workbench/core/testing';
+import { Result } from 'better-result';
 
 import { convertDrawioToPagePdfs, convertDrawioToSinglePdf } from '@graphics-workbench/core/conversion';
 
-const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
-const emptyDrawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'empty.drawio');
+const drawioTestDataPath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
+const emptyDrawioTestDataPath = path.join(testInputDirectory, 'valid', 'drawio', 'empty.drawio');
 
 describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
   it('drawioファイルを一時作業ディレクトリへ複製してpage-pdfsモードでDraw.io CLIを実行し、ページ名ごとのPDF（各1ページ）を生成して元ファイルは変更しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-pdf-'));
 
     const sourcePath = path.join(workspacePath.path, 'q a.drawio');
-    await copyFile(drawioFixturePath, sourcePath);
+    await copyFile(drawioTestDataPath, sourcePath);
     const originalSource = await readFile(sourcePath, 'utf8');
     const calls: string[][] = [];
 
@@ -38,6 +39,7 @@ describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
         assert.notStrictEqual(stagedSourcePath, sourcePath);
         await writeFile(stagedSourcePath, `${originalSource}\n<!-- mutated staged source -->`);
         await writePdfPages(requireValue(args[args.indexOf('-o') + 1]), 3);
+        return Result.ok();
       },
     });
 
@@ -84,7 +86,7 @@ describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
 
     const sourcePath = path.join(workspacePath.path, 'q a.drawio');
     const outputPath = path.join(workspacePath.path, 'all-pages.pdf');
-    await copyFile(drawioFixturePath, sourcePath);
+    await copyFile(drawioTestDataPath, sourcePath);
 
     const outputs = await convertDrawioToSinglePdf({
       inputs: [
@@ -100,6 +102,7 @@ describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
       runtime: { resolveConflicts: async () => 'overwrite' },
       runDrawio: async (_executable, args) => {
         await writePdfPages(requireValue(args[args.indexOf('-o') + 1]), 3);
+        return Result.ok();
       },
     });
 
@@ -133,6 +136,7 @@ describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
       runtime: { resolveConflicts: async () => 'overwrite' },
       runDrawio: async (_executable, args) => {
         await writePdfPages(requireValue(args[args.indexOf('-o') + 1]), 2);
+        return Result.ok();
       },
     });
 
@@ -146,7 +150,7 @@ describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-pdf-empty-'));
 
     const sourcePath = path.join(workspacePath.path, 'empty.drawio');
-    await copyFile(emptyDrawioFixturePath, sourcePath);
+    await copyFile(emptyDrawioTestDataPath, sourcePath);
     let cliCalled = false;
 
     await assert.rejects(
@@ -164,6 +168,7 @@ describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
         runtime: { resolveConflicts: async () => 'overwrite' },
         runDrawio: async () => {
           cliCalled = true;
+          return Result.ok();
         },
       }),
       /no content to export/u,
@@ -175,7 +180,7 @@ describe('Draw.ioファイルをDraw.io CLI経由でPDFへ変換する', () => {
 });
 
 async function writePdfPages(filePath: string, pageCount: number): Promise<void> {
-  const bytes = await createPdfFixture({
+  const bytes = await createPdfTestData({
     pages: Array.from({ length: pageCount }, () => ({ mediaBox: [0, 0, 200, 200] })),
   });
   await writeFile(filePath, bytes);

@@ -33,6 +33,11 @@ export {
 export {
   runExternalTool,
   terminateProcessTree,
+  ExternalToolCancelledError,
+  ExternalToolFailedError,
+  ExternalToolSpawnError,
+  ExternalToolTimedOutError,
+  type ExternalToolError,
   type ExternalToolResult,
 } from '../operations/external_tools/run_external_tool.js';
 export {

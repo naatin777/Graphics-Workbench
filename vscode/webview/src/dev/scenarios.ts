@@ -68,9 +68,9 @@ function previewScenarioHost(scenario: string): WebviewHost {
     channel.host.send.init({
       format: 'pdf',
       fileName:
-        scenario === 'long-filename' ? 'a-very-long-fixture-file-name-for-browser-development.pdf' : 'sample.pdf',
+        scenario === 'long-filename' ? 'a-very-long-testData-file-name-for-browser-development.pdf' : 'sample.pdf',
       pageCount: scenario === 'large' ? 8 : 3,
-      pdfSrc: fixtureUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf'),
+      pdfSrc: testDataUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf'),
       resources: pdfJsResources(),
       preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
       labels: await messagesCatalog(),
@@ -119,8 +119,8 @@ function cropPdfScenarioHost(scenario: string): WebviewHost {
 
 function mergePdfScenarioHost(scenario: string): WebviewHost {
   const channel = createMockChannel(mergePdfProtocol);
-  const fileName = scenario === 'long-filename' ? 'a-very-long-fixture-file-name.pdf' : 'sample.pdf';
-  const pdfSrc = fixtureUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf');
+  const fileName = scenario === 'long-filename' ? 'a-very-long-testData-file-name.pdf' : 'sample.pdf';
+  const pdfSrc = testDataUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf');
   channel.host.on({
     ready: () => {
       void sendInit();
@@ -149,7 +149,7 @@ function splitPdfScenarioHost(scenario: string): WebviewHost {
   });
   async function sendInit(): Promise<void> {
     channel.host.send.init({
-      sourceId: 'browser-fixture',
+      sourceId: 'browser-testData',
       ...pdfPayloadBase(scenario),
       outputPathTemplate: 'sample-${page}.pdf',
       labels: await messagesCatalog(),
@@ -167,7 +167,7 @@ function rotatePdfScenarioHost(scenario: string): WebviewHost {
   });
   async function sendInit(): Promise<void> {
     channel.host.send.init({
-      sourceId: 'browser-fixture',
+      sourceId: 'browser-testData',
       ...pdfPayloadBase(scenario),
       labels: await messagesCatalog(),
     });
@@ -184,7 +184,7 @@ function reorderPdfScenarioHost(scenario: string): WebviewHost {
   });
   async function sendInit(): Promise<void> {
     channel.host.send.init({
-      sourceId: 'browser-fixture',
+      sourceId: 'browser-testData',
       ...pdfPayloadBase(scenario),
       labels: await messagesCatalog(),
     });
@@ -214,9 +214,9 @@ function pdfPayloadBase(scenario: string): {
   preview: { maxCanvasPixels: number; maxDevicePixelRatio: number };
 } {
   return {
-    fileName: scenario === 'long-filename' ? 'a-very-long-fixture-file-name.pdf' : 'sample.pdf',
+    fileName: scenario === 'long-filename' ? 'a-very-long-testData-file-name.pdf' : 'sample.pdf',
     pageCount: scenario === 'large' ? 8 : 3,
-    pdfSrc: fixtureUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf'),
+    pdfSrc: testDataUrl(scenario === 'large' ? 'multi-page-table.pdf' : 'single-page-document.pdf'),
     resources: pdfJsResources(),
     preview: { maxCanvasPixels: 40_000_000, maxDevicePixelRatio: 2 },
   };
@@ -231,8 +231,8 @@ function pdfJsResources(): { workerSrc: string; cMapUrl: string; standardFontDat
   };
 }
 
-function fixtureUrl(name: string): string {
-  return new URL(`/fixtures/${name}`, globalThis.location.href).toString();
+function testDataUrl(name: string): string {
+  return new URL(`/testdata/${name}`, globalThis.location.href).toString();
 }
 
 function assetUrl(name: string): string {

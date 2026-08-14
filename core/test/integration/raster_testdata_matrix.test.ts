@@ -14,39 +14,39 @@ import {
   assertRasterMatches,
   copyInputToWorkspace,
   createTestRuntime,
-  listInputFixturePathsSync,
+  listInputTestDataPathsSync,
   testInputDirectory,
   testOutputDirectory,
   withTestWorkspace,
 } from '@graphics-workbench/core/testing';
 
-const unsupportedRasterFixtureRelativePaths = ['avif/animated-swirl.avif'];
+const unsupportedRasterTestDataRelativePaths = ['avif/animated-swirl.avif'];
 const rasterInputDirectory = path.join(testInputDirectory, 'valid');
-const rasterFixtureFormats = ['avif', 'gif', 'jpeg', 'tiff', 'webp'];
-const supportedRasterFixturePaths = rasterFixtureFormats
-  .flatMap((format) => listInputFixturePathsSync(path.join(rasterInputDirectory, format)))
+const rasterTestDataFormats = ['avif', 'gif', 'jpeg', 'tiff', 'webp'];
+const supportedRasterTestDataPaths = rasterTestDataFormats
+  .flatMap((format) => listInputTestDataPathsSync(path.join(rasterInputDirectory, format)))
   .filter(isRasterImagePath)
-  .filter((fixturePath) => path.extname(fixturePath).toLowerCase() !== '.png')
+  .filter((testDataPath) => path.extname(testDataPath).toLowerCase() !== '.png')
   .filter(
-    (fixturePath) =>
-      !unsupportedRasterFixtureRelativePaths.includes(
-        path.relative(rasterInputDirectory, fixturePath).split(path.sep).join('/'),
+    (testDataPath) =>
+      !unsupportedRasterTestDataRelativePaths.includes(
+        path.relative(rasterInputDirectory, testDataPath).split(path.sep).join('/'),
       ),
   );
 
-describe('ラスターfixtureのPNG変換内容を固定正解と比較する', () => {
-  for (const [index, fixturePath] of supportedRasterFixturePaths.entries()) {
-    it(`${path.relative(rasterInputDirectory, fixturePath)}をworkspaceへコピーし、複数フレームなら2ページ目を指定してPNGへ変換すると、fixture固定のexpected.pngと内容が一致する`, async () => {
+describe('ラスターテストデータのPNG変換内容を固定正解と比較する', () => {
+  for (const [index, testDataPath] of supportedRasterTestDataPaths.entries()) {
+    it(`${path.relative(rasterInputDirectory, testDataPath)}をworkspaceへコピーし、複数フレームなら2ページ目を指定してPNGへ変換すると、テストデータ固定のexpected.pngと内容が一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
         const pdfRenderTools = createPdfRenderBackend();
-        const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index, workspacePath);
+        const sourcePath = await copyInputTestDataToWorkspace(testDataPath, index, workspacePath);
         const outputPath = path.join(workspacePath, 'converted outputs', `${index}.png`);
-        const sourceFormat = sourceFormatForPath(fixturePath);
-        assert.notStrictEqual(sourceFormat, undefined, fixturePath);
+        const sourceFormat = sourceFormatForPath(testDataPath);
+        assert.notStrictEqual(sourceFormat, undefined, testDataPath);
         const expectedPath = path.join(
           testOutputDirectory,
           sourceFormat ?? 'unknown',
-          sourceName(fixturePath),
+          sourceName(testDataPath),
           'expected.png',
         );
         const page = await secondPageIfAnimated(sourcePath);
@@ -63,18 +63,18 @@ describe('ラスターfixtureのPNG変換内容を固定正解と比較する', 
         await assertRasterMatches(
           outputPath,
           expectedPath,
-          `${fixturePath}${page === undefined ? '' : ` page ${page}`}`,
+          `${testDataPath}${page === undefined ? '' : ` page ${page}`}`,
         );
       });
     });
   }
 
   it('avif/animated-swirl.avifをPNGへ変換するとunsupported image formatエラーで失敗し、出力ファイルも作成しない', async () => {
-    const fixturePath = path.join(testInputDirectory, 'valid', unsupportedRasterFixtureRelativePaths[0] ?? '');
+    const testDataPath = path.join(testInputDirectory, 'valid', unsupportedRasterTestDataRelativePaths[0] ?? '');
 
     await withTestWorkspace(async (workspacePath) => {
       const pdfRenderTools = createPdfRenderBackend();
-      const sourcePath = await copyInputToWorkspace(fixturePath, workspacePath, 'unsupported sequence.avif');
+      const sourcePath = await copyInputToWorkspace(testDataPath, workspacePath, 'unsupported sequence.avif');
       const outputPath = path.join(workspacePath, 'unsupported-output.png');
 
       await assert.rejects(
@@ -93,14 +93,18 @@ describe('ラスターfixtureのPNG変換内容を固定正解と比較する', 
   });
 });
 
-async function copyInputFixtureToWorkspace(fixturePath: string, index: number, workspacePath: string): Promise<string> {
+async function copyInputTestDataToWorkspace(
+  testDataPath: string,
+  index: number,
+  workspacePath: string,
+): Promise<string> {
   const destinationPath =
     index % 3 === 0
-      ? `raster root input ${index}${path.extname(fixturePath)}`
+      ? `raster root input ${index}${path.extname(testDataPath)}`
       : index % 3 === 1
-        ? `nested directory/diagram français 🚀 ${index}${path.extname(fixturePath)}`
-        : `nested/δεδομένα/source.final ${index}${path.extname(fixturePath)}`;
-  const sourcePath = await copyInputToWorkspace(fixturePath, workspacePath, destinationPath);
+        ? `nested directory/diagram français 🚀 ${index}${path.extname(testDataPath)}`
+        : `nested/δεδομένα/source.final ${index}${path.extname(testDataPath)}`;
+  const sourcePath = await copyInputToWorkspace(testDataPath, workspacePath, destinationPath);
   return sourcePath;
 }
 
@@ -109,6 +113,6 @@ async function secondPageIfAnimated(sourcePath: string): Promise<number | undefi
   return metadata.pages !== undefined && metadata.pages > 1 ? 2 : undefined;
 }
 
-function sourceName(fixturePath: string): string {
-  return path.basename(fixturePath, path.extname(fixturePath));
+function sourceName(testDataPath: string): string {
+  return path.basename(testDataPath, path.extname(testDataPath));
 }

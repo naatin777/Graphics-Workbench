@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { planRasterConversionInputs, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
-import { isEditableDrawioImagePath } from '@graphics-workbench/core/formats';
-import { createPdfFixture } from '@graphics-workbench/core/testing';
+import { isDrawioImagePath } from '@graphics-workbench/core/formats';
+import { createPdfTestData } from '@graphics-workbench/core/testing';
 
 const simpleFormats = [
   { spec: rasterFormatSpecs.png, extension: 'png', unsupportedLabel: 'PNG' },
@@ -36,7 +36,7 @@ describe('PDFの各ページをラスター変換処理単位（出力パス割�
         splitOutputTemplate: `\${fileDirname}/\${fileBasenameNoExtension}/\${page}.${extension}`,
         frameMode: 'first',
         maxInputPixels,
-        isEditableDrawioImagePath,
+        isDrawioImagePath,
       });
 
       assert.deepStrictEqual(
@@ -80,7 +80,7 @@ describe('PDFの各ページをラスター変換処理単位（出力パス割�
           splitOutputTemplate: `\${fileDirname}/\${fileBasenameNoExtension}/\${page}.${extension}`,
           frameMode: 'first',
           maxInputPixels,
-          isEditableDrawioImagePath,
+          isDrawioImagePath,
         }),
         new RegExp(`Unsupported input for ${unsupportedLabel} input: ${RegExp.escape(sourcePath)}`),
       );
@@ -89,5 +89,5 @@ describe('PDFの各ページをラスター変換処理単位（出力パス割�
 });
 
 async function buildPdfWithPages(...sizes: [number, number][]): Promise<Uint8Array> {
-  return createPdfFixture({ pages: sizes.map(([width, height]) => ({ mediaBox: [0, 0, width, height] })) });
+  return createPdfTestData({ pages: sizes.map(([width, height]) => ({ mediaBox: [0, 0, width, height] })) });
 }

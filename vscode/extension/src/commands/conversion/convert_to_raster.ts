@@ -16,7 +16,7 @@ import { createDrawioBackend } from '../../config/rendering/drawio_cli_options.j
 import { createOutputConversionMessages, runConversionLifecycle } from '../lifecycle/run_output_conversion.js';
 import { resolveOutputConflicts } from '../lifecycle/safe_mode.js';
 import { userMessage } from '../shared/user_messages.js';
-import { planRasterConversionJobs } from './plan_conversion_jobs.js';
+import { planRasterConversionItems } from './plan_conversion_items.js';
 
 export interface ConvertToRasterCommandOptions {
   target: RasterConversionTarget;
@@ -73,7 +73,7 @@ async function runRasterCommand(options: {
       for (const sourceUri of sourceUris) {
         runtime.signal?.throwIfAborted();
         plannedInputs.push(
-          ...(await planRasterConversionJobs(sourceUri, spec, {
+          ...(await planRasterConversionItems(sourceUri, spec, {
             configuration,
             maxInputPixels,
             ...(maxAnimationPixels === undefined ? {} : { maxAnimationPixels }),

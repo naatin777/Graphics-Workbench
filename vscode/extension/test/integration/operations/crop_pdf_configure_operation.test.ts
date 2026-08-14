@@ -1,5 +1,5 @@
 // Test target:
-// - 固定PDF fixtureを使った全ページ・選択ページのconfigure crop結果
+// - 固定PDF テストデータを使った全ページ・選択ページのconfigure crop結果
 // - 日本語、絵文字、空白を含む入力名とoutputPathテンプレート
 //
 // Mocked:
@@ -22,8 +22,8 @@ import { resolveOutputPath } from '@graphics-workbench/core/output';
 import { cropPdfWithConfiguredBox, type CropBox } from '../../../src/adapters/crop/crop_pdf_configure.js';
 import { asRunId, hashFile } from '@graphics-workbench/core/runtime';
 
-import { cropConfigureFixture } from '../../support/helpers/crop_configure_fixture.js';
-import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { cropConfigureTestData } from '../../support/helpers/crop_configure_testdata.js';
+import { operationPdfInputDirectory } from '../../support/helpers/testdata_paths.js';
 import { assertWorkspaceChangesSince, captureWorkspaceSnapshot } from '../../support/helpers/workspace_snapshot.js';
 
 suite('PDF configure crop処理', () => {
@@ -40,12 +40,12 @@ suite('PDF configure crop処理', () => {
     );
   });
 
-  test('固定fixtureの全ページを同じcropBoxでcropし、元のMediaBoxを維持したまま1・2ページ目とも描画内容の位置を保って出力し、一時作業ディレクトリの検証と処理完了のログを記録する', async () => {
+  test('固定テストデータの全ページを同じcropBoxでcropし、元のMediaBoxを維持したまま1・2ページ目とも描画内容の位置を保って出力し、一時作業ディレクトリの検証と処理完了のログを記録する', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
     const renderDirectory = await createTemporaryRenderDirectory(temporaryDirectories);
-    const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, '入力 PDF');
+    const sourcePath = await copyTestDataToWorkspace(workspacePath, cropConfigureTestData.fileName, '入力 PDF');
     const outputPath = path.join(workspacePath, '出力 PDF', 'q a-all-crop.pdf');
-    const { cropBox } = cropConfigureFixture;
+    const { cropBox } = cropConfigureTestData;
     const logs = new RecordingOutputChannel();
     const before = await captureWorkspaceSnapshot(workspacePath);
 
@@ -107,12 +107,12 @@ suite('PDF configure crop処理', () => {
     });
   });
 
-  test('pages[1,1]で選択された1ページ目だけをcropし、未選択の2ページ目のMediaBox・CropBoxと元fixtureファイルを変更しない', async () => {
+  test('pages[1,1]で選択された1ページ目だけをcropし、未選択の2ページ目のMediaBox・CropBoxと元テストデータファイルを変更しない', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
     const renderDirectory = await createTemporaryRenderDirectory(temporaryDirectories);
-    const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, '選択元');
+    const sourcePath = await copyTestDataToWorkspace(workspacePath, cropConfigureTestData.fileName, '選択元');
     const outputPath = path.join(workspacePath, '選択結果', 'q a-selected-crop.pdf');
-    const { cropBox } = cropConfigureFixture;
+    const { cropBox } = cropConfigureTestData;
     const before = await captureWorkspaceSnapshot(workspacePath);
 
     await cropPdfWithConfiguredBox({
@@ -150,7 +150,10 @@ suite('PDF configure crop処理', () => {
       prefix: 'unselected-page',
     });
 
-    assert.deepStrictEqual(await readFile(sourcePath), await readFile(inputFixturePath(cropConfigureFixture.fileName)));
+    assert.deepStrictEqual(
+      await readFile(sourcePath),
+      await readFile(inputTestDataPath(cropConfigureTestData.fileName)),
+    );
     const after = await captureWorkspaceSnapshot(workspacePath);
     assertWorkspaceChangesSince(before, after, {
       created: [
@@ -164,7 +167,7 @@ suite('PDF configure crop処理', () => {
 
   test('crop処理の子プロセス成功後に出力先への反映が既存ファイルで失敗すると、既存出力を維持したまま一時作業領域を削除し、失敗ログを記録して完了ログを記録しない', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
-    const sourcePath = await copyFixtureToWorkspace(workspacePath, cropConfigureFixture.fileName, 'commit失敗元');
+    const sourcePath = await copyTestDataToWorkspace(workspacePath, cropConfigureTestData.fileName, 'commit失敗元');
     const outputPath = path.join(workspacePath, 'commit-failure', 'result.pdf');
     const logs = new RecordingOutputChannel();
     await mkdir(path.dirname(outputPath), { recursive: true });
@@ -177,7 +180,7 @@ suite('PDF configure crop処理', () => {
           sourcePath,
           workspacePath,
           outputPath,
-          cropBox: cropConfigureFixture.cropBox,
+          cropBox: cropConfigureTestData.cropBox,
           target: { type: 'all' },
         },
         createRunId: () => asRunId('commit-failure'),
@@ -195,15 +198,15 @@ suite('PDF configure crop処理', () => {
     assert.equal(logs.hasLine('[crop-pdf-configure] operation-completed'), false);
   });
 
-  test('多言語・複雑なUnicode・半角全角空白を含む入力名を6種類のoutputPathテンプレートで解決し、各パターンで1ページPDFのcrop出力を作成して元fixtureを変更しない', async () => {
+  test('多言語・複雑なUnicode・半角全角空白を含む入力名を6種類のoutputPathテンプレートで解決し、各パターンで1ページPDFのcrop出力を作成して元テストデータを変更しない', async () => {
     const workspacePath = await createTemporaryWorkspace(temporaryDirectories);
-    const sourceFixtureFileName = 'single-page-document.pdf';
-    const sourceFileName = cropConfigureFixture.complexUnicodeFileName;
+    const sourceTestDataFileName = 'single-page-document.pdf';
+    const sourceFileName = cropConfigureTestData.complexUnicodeFileName;
     const sourceBaseName = path.basename(sourceFileName, path.extname(sourceFileName));
     const relativeSourceDirectory = '入力 Multilingual　자료🌏';
-    const sourcePath = await copyFixtureToWorkspace(
+    const sourcePath = await copyTestDataToWorkspace(
       workspacePath,
-      sourceFixtureFileName,
+      sourceTestDataFileName,
       relativeSourceDirectory,
       sourceFileName,
     );
@@ -281,11 +284,11 @@ suite('PDF configure crop処理', () => {
       cases.map(({ expectedPath }) => expectedPath),
     );
     assert.strictEqual(path.basename(sourcePath), sourceFileName);
-    assert.deepStrictEqual(await readFile(sourcePath), await readFile(inputFixturePath(sourceFixtureFileName)));
+    assert.deepStrictEqual(await readFile(sourcePath), await readFile(inputTestDataPath(sourceTestDataFileName)));
   });
 });
 
-function inputFixturePath(fileName: string): string {
+function inputTestDataPath(fileName: string): string {
   return path.join(operationPdfInputDirectory, fileName);
 }
 
@@ -301,7 +304,7 @@ async function createTemporaryRenderDirectory(temporaryDirectories: string[]): P
   return renderDirectory;
 }
 
-async function copyFixtureToWorkspace(
+async function copyTestDataToWorkspace(
   workspacePath: string,
   fileName: string,
   relativeDirectory: string,
@@ -310,7 +313,7 @@ async function copyFixtureToWorkspace(
   const directory = path.join(workspacePath, relativeDirectory);
   const destination = path.join(directory, destinationFileName);
   await mkdir(directory, { recursive: true });
-  await copyFile(inputFixturePath(fileName), destination);
+  await copyFile(inputTestDataPath(fileName), destination);
   return destination;
 }
 

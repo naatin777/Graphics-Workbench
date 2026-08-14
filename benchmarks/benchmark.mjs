@@ -13,25 +13,25 @@ const defaultIterations = 10;
 const defaultWarmupIterations = 3;
 const maxInputPixels = 50_000_000;
 
-const pdfFixtures = [
+const pdfTestData = [
   {
     size: 'small',
     relativePath: 'test/input/valid/pdf/single-page-document.pdf',
-    description: '1 page / 6.8 KiB fixture',
+    description: '1 page / 6.8 KiB testData',
   },
   {
     size: 'medium',
     relativePath: 'test/input/valid/pdf/multi-page-table.pdf',
-    description: '2 page / 43 KiB fixture',
+    description: '2 page / 43 KiB testData',
   },
   {
     size: 'large',
     relativePath: 'test/input/valid/pdf/multi-page-mixed-content.pdf',
-    description: '15 page / 656 KiB fixture',
+    description: '15 page / 656 KiB testData',
   },
 ];
 
-const sharpFixtures = [
+const sharpTestData = [
   {
     size: 'small',
     relativePath: 'test/input/valid/png/grayscale-gradient.png',
@@ -49,7 +49,7 @@ const sharpFixtures = [
   },
 ];
 
-const pixelFixtures = [
+const pixelTestData = [
   { size: 'small', width: 384, height: 288, description: '384 × 288 RGB / 0.11 MP' },
   { size: 'medium', width: 1280, height: 960, description: '1280 × 960 RGB / 1.23 MP' },
   { size: 'large', width: 2560, height: 1920, description: '2560 × 1920 RGB / 4.92 MP' },
@@ -210,15 +210,15 @@ async function loadRuntime() {
 async function buildScenarios(runtime, requestedId) {
   const scenarios = [];
 
-  for (const fixture of pixelFixtures) {
-    const id = `mupdf-pixel-scan/${fixture.size}`;
+  for (const testData of pixelTestData) {
+    const id = `mupdf-pixel-scan/${testData.size}`;
     if (!wantsScenario(requestedId, id)) {
       continue;
     }
-    const pixels = createWorstCasePixels(fixture.width, fixture.height);
+    const pixels = createWorstCasePixels(testData.width, testData.height);
     const pixmap = {
-      getWidth: () => fixture.width,
-      getHeight: () => fixture.height,
+      getWidth: () => testData.width,
+      getHeight: () => testData.height,
       getPixels: () => pixels,
       asPNG: () => new Uint8Array(),
       destroy: () => undefined,
@@ -226,26 +226,26 @@ async function buildScenarios(runtime, requestedId) {
     scenarios.push({
       id,
       family: 'MuPDF pixel/content scan',
-      size: fixture.size,
-      input: fixture.description,
-      workUnit: `${fixture.width * fixture.height} RGB pixels scanned`,
+      size: testData.size,
+      input: testData.description,
+      workUnit: `${testData.width * testData.height} RGB pixels scanned`,
       run: () => {
         const bounds = runtime.mupdf.findVisiblePixelBounds(pixmap);
         if (bounds === undefined) {
-          throw new Error(`Expected visible content in ${fixture.size} pixel fixture.`);
+          throw new Error(`Expected visible content in ${testData.size} pixel testData.`);
         }
         return bounds;
       },
     });
   }
 
-  for (const fixture of pdfFixtures) {
-    const contentScanId = `mupdf-content-scan/${fixture.size}`;
-    const rasterId = `mupdf-pdf-raster/${fixture.size}`;
+  for (const testData of pdfTestData) {
+    const contentScanId = `mupdf-content-scan/${testData.size}`;
+    const rasterId = `mupdf-pdf-raster/${testData.size}`;
     if (!wantsScenario(requestedId, contentScanId) && !wantsScenario(requestedId, rasterId)) {
       continue;
     }
-    const sourcePath = path.join(repositoryRoot, fixture.relativePath);
+    const sourcePath = path.join(repositoryRoot, testData.relativePath);
     const bytes = await readFile(sourcePath);
     const pageCount = await runtime.mupdf.countPdfPages(bytes);
     const pages = Array.from({ length: pageCount }, (_value, index) => index + 1);
@@ -254,8 +254,8 @@ async function buildScenarios(runtime, requestedId) {
       scenarios.push({
         id: contentScanId,
         family: 'MuPDF PDF content scan',
-        size: fixture.size,
-        input: fixture.description,
+        size: testData.size,
+        input: testData.description,
         workUnit: `${pageCount} page content probes per operation`,
         run: async () => {
           let visiblePages = 0;
@@ -265,7 +265,7 @@ async function buildScenarios(runtime, requestedId) {
             }
           }
           if (visiblePages === 0) {
-            throw new Error(`Expected visible content in ${fixture.relativePath}.`);
+            throw new Error(`Expected visible content in ${testData.relativePath}.`);
           }
           return visiblePages;
         },
@@ -276,8 +276,8 @@ async function buildScenarios(runtime, requestedId) {
       scenarios.push({
         id: rasterId,
         family: 'MuPDF PDF raster',
-        size: fixture.size,
-        input: fixture.description,
+        size: testData.size,
+        input: testData.description,
         workUnit: `${pageCount} pages rendered to PNG buffers per operation`,
         run: async () => {
           let outputBytes = 0;
@@ -285,7 +285,7 @@ async function buildScenarios(runtime, requestedId) {
             outputBytes += (await runtime.mupdf.renderPdfPageToPng(bytes, page)).byteLength;
           }
           if (outputBytes === 0) {
-            throw new Error(`Expected PNG output from ${fixture.relativePath}.`);
+            throw new Error(`Expected PNG output from ${testData.relativePath}.`);
           }
           return outputBytes;
         },
@@ -293,22 +293,22 @@ async function buildScenarios(runtime, requestedId) {
     }
   }
 
-  for (const fixture of sharpFixtures) {
-    const sourcePath = path.join(repositoryRoot, fixture.relativePath);
-    const id = `sharp-raster-encode/${fixture.size}`;
+  for (const testData of sharpTestData) {
+    const sourcePath = path.join(repositoryRoot, testData.relativePath);
+    const id = `sharp-raster-encode/${testData.size}`;
     if (wantsScenario(requestedId, id)) {
       scenarios.push({
         id,
         family: 'Sharp path-backed raster decode/encode',
-        size: fixture.size,
-        input: fixture.description,
+        size: testData.size,
+        input: testData.description,
         workUnit: 'source decode and PNG encode to an in-memory buffer',
         run: async () => {
           const pipeline = runtime.rasterInput.openRasterInput(sourcePath, maxInputPixels);
           try {
             const output = await pipeline.png().toBuffer();
             if (output.byteLength === 0) {
-              throw new Error(`Expected PNG output from ${fixture.relativePath}.`);
+              throw new Error(`Expected PNG output from ${testData.relativePath}.`);
             }
             return output.byteLength;
           } finally {
@@ -365,7 +365,7 @@ async function runColdScenario(scenario) {
     maxMs: childResult.elapsedMs,
     memory: childResult.memory,
     responsiveness: childResult.responsiveness,
-    note: 'Fresh Node child; includes module load and fixture read/setup.',
+    note: 'Fresh Node child; includes module load and testData read/setup.',
   };
 }
 
@@ -429,7 +429,7 @@ async function runWarmScenario(scenario, Bench, options) {
     hz: taskResult.hz,
     memory: memorySummary(before, after, peakRss),
     responsiveness,
-    note: 'Same process after fixed warmup; fixture data is reused in memory.',
+    note: 'Same process after fixed warmup; testData data is reused in memory.',
   };
 }
 
@@ -511,7 +511,7 @@ function renderMarkdown(report) {
     `Environment: ${report.node}, ${report.platform}, ${report.cpu} (${report.cpuCount} logical CPUs), ${report.memory}`,
     `Harness: tinybench ${report.tinybench}; mode=${report.configuration.mode}; measured iterations=${report.configuration.iterations}; warmup iterations=${report.configuration.warmupIterations}`,
     '',
-    'Cold runs are one operation in a fresh Node child and include module loading plus fixture setup. Warm runs reuse the loaded modules and fixture data after the fixed warmup. `mean/p50/p95/p99` are milliseconds per operation; PDF rows process every page in the named fixture.',
+    'Cold runs are one operation in a fresh Node child and include module loading plus testData setup. Warm runs reuse the loaded modules and testData data after the fixed warmup. `mean/p50/p95/p99` are milliseconds per operation; PDF rows process every page in the named testData.',
     '',
     '| Scenario | Mode | Input/work unit | Samples | Mean ms | p50 ms | p95 ms | p99 ms | Peak RSS MiB | RSS Δ MiB | Host proxy p95/max ms |',
     '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',

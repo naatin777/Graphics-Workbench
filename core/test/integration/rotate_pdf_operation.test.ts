@@ -12,7 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { rotatePdfFiles } from '@graphics-workbench/core/pdf';
-import { readPdfPages, createPdfFixture } from '@graphics-workbench/core/testing';
+import { readPdfPages, createPdfTestData } from '@graphics-workbench/core/testing';
 
 describe('PDFページ回転', () => {
   it('3ページのPDFへ角度90を指定すると、出力PDFは3ページを保ったまま全ページの回転角を90度として保存する', async () => {
@@ -131,7 +131,7 @@ describe('PDFページ回転', () => {
 });
 
 async function writePdf(filePath: string, pageCount: number, rotation = 0): Promise<void> {
-  const bytes = await createPdfFixture({
+  const bytes = await createPdfTestData({
     pages: Array.from({ length: pageCount }, (_, index) => ({
       mediaBox: [0, 0, 100 + index, 200],
       ...(rotation === 0 ? {} : { rotation }),

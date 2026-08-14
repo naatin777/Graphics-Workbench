@@ -2,7 +2,7 @@
 // - runExternalTool passes array args to executable and returns stdout/stderr
 // - tool name and execution info are logged to Output Channel
 // - secret arguments are redacted from logs but passed unchanged to the process
-// - non-zero exit rejects and preserves stderr and original cause
+// - non-zero exit returns an Err with stderr and original cause
 // - AbortSignal cancels the child process without producing final output
 //
 // Mocked:
@@ -17,52 +17,61 @@ import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { runExternalTool } from '@graphics-workbench/core/external-tools';
+import {
+  runExternalTool,
+  ExternalToolCancelledError,
+  ExternalToolFailedError,
+  ExternalToolTimedOutError,
+} from '@graphics-workbench/core/external-tools';
 
 describe('外部CLIツールを起動して標準出力・標準エラーを取得する処理の正常実行', () => {
   it('executableへ配列argsを渡して実行すると、プロセスが書き出したstdoutとstderrをそのまま取得する', async () => {
     const lines: string[] = [];
     const result = await runExternalTool({
-      toolName: 'fixture-tool',
+      toolName: 'testdata-tool',
       executable: process.execPath,
       args: ['-e', "process.stdout.write('ok'); process.stderr.write('warn')"],
       outputChannel: { appendLine: (line) => lines.push(line) },
     });
 
-    assert.strictEqual(result.stdout, 'ok');
-    assert.strictEqual(result.stderr, 'warn');
+    assert.ok(result.isOk());
+    assert.strictEqual(result.value.stdout, 'ok');
+    assert.strictEqual(result.value.stderr, 'warn');
   });
 
   it('timeoutMsを指定せずに400ms待ってexit 0する子プロセスはタイマーなしで正常終了する', async () => {
     const result = await runExternalTool({
-      toolName: 'fixture-tool',
+      toolName: 'testdata-tool',
       executable: process.execPath,
       args: ['-e', 'setTimeout(() => process.exit(0), 400)'],
     });
 
-    assert.strictEqual(result.stdout, '');
+    assert.ok(result.isOk());
+    assert.strictEqual(result.value.stdout, '');
   });
 
   it('timeoutMs 0を指定してもタイマーを作らず、遅れてexit 0する子プロセスを最後まで待って正常終了する', async () => {
     const result = await runExternalTool({
-      toolName: 'fixture-tool',
+      toolName: 'testdata-tool',
       executable: process.execPath,
       args: ['-e', 'setTimeout(() => process.exit(0), 400)'],
       timeoutMs: 0,
     });
 
-    assert.strictEqual(result.stdout, '');
+    assert.ok(result.isOk());
+    assert.strictEqual(result.value.stdout, '');
   });
 
   it('tool名と実行ファイル・引数をOutput Channelの[my-tool]行へ記録する', async () => {
     const lines: string[] = [];
-    await runExternalTool({
+    const result = await runExternalTool({
       toolName: 'my-tool',
       executable: process.execPath,
       args: ['-e', '1'],
       outputChannel: { appendLine: (line) => lines.push(line) },
     });
 
+    assert.ok(result.isOk());
     assert.ok(
       lines.some((line) => line.includes('[my-tool] executable:')),
       'should log executable',
@@ -77,7 +86,7 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
 describe('外部CLIツールを起動して標準出力・標準エラーを取得する処理のログredaction', () => {
   it('secret引数は実行ログへ一切出力されない', async () => {
     const lines: string[] = [];
-    await runExternalTool({
+    const result = await runExternalTool({
       toolName: 'redact-tool',
       executable: process.execPath,
       args: ['-e', '1', 'super-secret-token'],
@@ -85,12 +94,13 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
       redactArgument: (_argument, index) => (index === 2 ? '<redacted>' : _argument),
     });
 
+    assert.ok(result.isOk());
     assert.ok(!lines.some((line) => line.includes('super-secret-token')), 'secret must not appear in logs');
   });
 
   it('secret引数は<redacted>へ置き換えられてログに現れる', async () => {
     const lines: string[] = [];
-    await runExternalTool({
+    const result = await runExternalTool({
       toolName: 'redact-tool',
       executable: process.execPath,
       args: ['-e', '1', 'super-secret-token'],
@@ -98,6 +108,7 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
       redactArgument: (_argument, index) => (index === 2 ? '<redacted>' : _argument),
     });
 
+    assert.ok(result.isOk());
     assert.ok(
       lines.some((line) => line.includes('<redacted>')),
       'redacted value should appear in logs',
@@ -108,7 +119,7 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-ext-tool-redaction-'));
     const receivedPath = path.join(workspacePath.path, 'received.txt');
 
-    await runExternalTool({
+    const result = await runExternalTool({
       toolName: 'redact-tool',
       executable: process.execPath,
       args: [
@@ -119,34 +130,34 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
       redactArgument: (_argument, index) => (index === 2 ? '<redacted>' : _argument),
     });
 
+    assert.ok(result.isOk());
     const received = await readFile(receivedPath, 'utf8');
     assert.strictEqual(received, 'super-secret-token', 'process should receive the original argument');
   });
 });
 
 describe('外部CLIツールを起動して標準出力・標準エラーを取得する処理の実行失敗', () => {
-  it('子プロセスが非0のexit codeで終了するとrejectする', async () => {
-    await assert.rejects(
-      runExternalTool({
-        toolName: 'fail-tool',
-        executable: process.execPath,
-        args: ['-e', 'process.exit(1)'],
-      }),
-      (error: unknown) => error instanceof Error,
-    );
+  it('子プロセスが非0のexit codeで終了するとExternalToolFailedErrorで失敗する', async () => {
+    const result = await runExternalTool({
+      toolName: 'fail-tool',
+      executable: process.execPath,
+      args: ['-e', 'process.exit(1)'],
+    });
+
+    assert.ok(result.isErr());
+    assert.ok(result.error instanceof ExternalToolFailedError);
   });
 
   it('非0 exitの失敗時はtool名のfailure行をOutput Channelへ書き、stderrの内容も含める', async () => {
     const lines: string[] = [];
-    await assert.rejects(
-      runExternalTool({
-        toolName: 'fail-tool',
-        executable: process.execPath,
-        args: ['-e', "process.stderr.write('boom'); process.exit(2)"],
-        outputChannel: { appendLine: (line) => lines.push(line) },
-      }),
-    );
+    const result = await runExternalTool({
+      toolName: 'fail-tool',
+      executable: process.execPath,
+      args: ['-e', "process.stderr.write('boom'); process.exit(2)"],
+      outputChannel: { appendLine: (line) => lines.push(line) },
+    });
 
+    assert.ok(result.isErr());
     assert.ok(
       lines.some((line) => line.includes('[fail-tool] failure:')),
       'should log failure',
@@ -157,20 +168,18 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
     );
   });
 
-  it('exit code 42で終了すると、終了コードとstderrをerrorのmessageとプロパティに保持してrejectする', async () => {
-    try {
-      await runExternalTool({
-        toolName: 'fail-tool',
-        executable: process.execPath,
-        args: ['-e', "process.stderr.write('failure detail'); process.exit(42)"],
-      });
-      assert.fail('should have rejected');
-    } catch (error: unknown) {
-      assert.ok(error instanceof Error);
-      assert.strictEqual(error.message, 'fail-tool failed (exited with code 42, signal none)');
-      assert.ok('stderr' in error);
-      assert.strictEqual(error.stderr, 'failure detail');
-    }
+  it('exit code 42で終了すると、終了コードとstderrをExternalToolFailedErrorのプロパティに保持する', async () => {
+    const result = await runExternalTool({
+      toolName: 'fail-tool',
+      executable: process.execPath,
+      args: ['-e', "process.stderr.write('failure detail'); process.exit(42)"],
+    });
+
+    assert.ok(result.isErr());
+    assert.ok(result.error instanceof ExternalToolFailedError);
+    assert.strictEqual(result.error.message, 'fail-tool failed (exited with code 42, signal none)');
+    assert.strictEqual(result.error.stderr, 'failure detail');
+    assert.strictEqual(result.error.exitCode, 42);
   });
 });
 
@@ -188,10 +197,11 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
     });
 
     // The tool is not killed for flooding stdout/stderr; only a bounded tail is retained.
-    assert.ok(result.stdout.length <= 300 * 1024, 'stdout should be bounded to the retained tail');
-    assert.ok(result.stderr.length <= 300 * 1024, 'stderr should be bounded to the retained tail');
-    assert.ok(result.stdout.endsWith('x'), 'stdout tail should preserve the end of the output');
-    assert.ok(result.stderr.endsWith('y'), 'stderr tail should preserve the end of the output');
+    assert.ok(result.isOk());
+    assert.ok(result.value.stdout.length <= 300 * 1024, 'stdout should be bounded to the retained tail');
+    assert.ok(result.value.stderr.length <= 300 * 1024, 'stderr should be bounded to the retained tail');
+    assert.ok(result.value.stdout.endsWith('x'), 'stdout tail should preserve the end of the output');
+    assert.ok(result.value.stderr.endsWith('y'), 'stderr tail should preserve the end of the output');
   });
 
   it('日本語や絵文字の大量出力もバイト単位で300KB以下に制限しつつ250KB以上の末尾と終端文字列を保持してデコードできる', async () => {
@@ -207,41 +217,42 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
 
     // Multi-byte characters must not be truncated to an empty or short tail (a
     // UTF-16 slice index is not a byte index), and the retained tail must decode.
-    assert.ok(Buffer.byteLength(result.stdout) <= 300 * 1024, 'stdout should be bounded to the retained tail');
-    assert.ok(Buffer.byteLength(result.stderr) <= 300 * 1024, 'stderr should be bounded to the retained tail');
-    assert.ok(Buffer.byteLength(result.stdout) >= 250 * 1024, 'stdout tail should honor the retention cap');
-    assert.ok(Buffer.byteLength(result.stderr) >= 250 * 1024, 'stderr tail should honor the retention cap');
-    assert.ok(result.stdout.endsWith('STDOUT_TAIL'), 'stdout tail should preserve the end of the output');
-    assert.ok(result.stderr.endsWith('STDERR_TAIL'), 'stderr tail should preserve the end of the output');
-    assert.ok(result.stdout.includes('日本語'), 'stdout tail should decode multi-byte characters');
-    assert.ok(result.stderr.includes('😀'), 'stderr tail should decode multi-byte characters');
+    assert.ok(result.isOk());
+    assert.ok(Buffer.byteLength(result.value.stdout) <= 300 * 1024, 'stdout should be bounded to the retained tail');
+    assert.ok(Buffer.byteLength(result.value.stderr) <= 300 * 1024, 'stderr should be bounded to the retained tail');
+    assert.ok(Buffer.byteLength(result.value.stdout) >= 250 * 1024, 'stdout tail should honor the retention cap');
+    assert.ok(Buffer.byteLength(result.value.stderr) >= 250 * 1024, 'stderr tail should honor the retention cap');
+    assert.ok(result.value.stdout.endsWith('STDOUT_TAIL'), 'stdout tail should preserve the end of the output');
+    assert.ok(result.value.stderr.endsWith('STDERR_TAIL'), 'stderr tail should preserve the end of the output');
+    assert.ok(result.value.stdout.includes('日本語'), 'stdout tail should decode multi-byte characters');
+    assert.ok(result.value.stderr.includes('😀'), 'stderr tail should decode multi-byte characters');
   });
 
-  it('timeoutMs 200を過ぎても終了しない子プロセスは終了させてrejectする', async () => {
+  it('timeoutMs 200を過ぎても終了しない子プロセスは終了させてExternalToolTimedOutErrorで失敗する', async () => {
     await using outsideDirectoryDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-ext-tool-timeout-'));
     const outsideDirectory = outsideDirectoryDisposable.path;
     const startedPath = path.join(outsideDirectory, 'started.txt');
 
-    await assert.rejects(
-      runExternalTool({
-        toolName: 'timeout-tool',
-        executable: process.execPath,
-        args: [
-          '-e',
-          `require('fs').writeFileSync(${JSON.stringify(startedPath)}, 'started');
-             setTimeout(() => {}, 30000);`,
-        ],
-        timeoutMs: 200,
-      }),
-      (error: unknown) => error instanceof Error,
-    );
+    const result = await runExternalTool({
+      toolName: 'timeout-tool',
+      executable: process.execPath,
+      args: [
+        '-e',
+        `require('fs').writeFileSync(${JSON.stringify(startedPath)}, 'started');
+           setTimeout(() => {}, 30000);`,
+      ],
+      timeoutMs: 200,
+    });
 
+    assert.ok(result.isErr());
+    assert.ok(result.error instanceof ExternalToolTimedOutError);
+    assert.match(result.error.message, /timed out after 200ms/);
     await assert.doesNotReject(import('node:fs/promises').then((fs) => fs.stat(startedPath)));
   });
 });
 
 describe('外部CLIツールを起動して標準出力・標準エラーを取得する処理のキャンセル', () => {
-  it('startedファイルを書いた子プロセスをAbortSignalでabortすると、完了前に停止されAbortErrorでrejectしsentinelファイルも作られない', async () => {
+  it('startedファイルを書いた子プロセスをAbortSignalでabortすると、完了前に停止されExternalToolCancelledErrorで失敗しsentinelファイルも作られない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-ext-tool-cancel-'));
     const sentinelPath = path.join(workspacePath.path, 'sentinel.txt');
     const startedPath = path.join(workspacePath.path, 'started.txt');
@@ -264,10 +275,9 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
 
     controller.abort();
 
-    await assert.rejects(promise, (error: unknown) => {
-      assert.ok(error instanceof Error);
-      return error.name === 'AbortError' || error.name === 'Canceled';
-    });
+    const result = await promise;
+    assert.ok(result.isErr());
+    assert.ok(result.error instanceof ExternalToolCancelledError);
 
     // The sentinel file should NOT exist (child was cancelled before completion)
     let sentinelExists = false;
@@ -297,12 +307,13 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
     await new Promise((resolve) => setTimeout(resolve, 200));
     controller.abort();
 
-    await assert.rejects(promise);
+    const result = await promise;
+    assert.ok(result.isErr());
 
     assert.ok(!lines.some((line) => line.includes('super-secret-token')), 'secret must not leak in cancellation log');
   });
 
-  it('SIGTERMを無視する子プロセスは終了猶予期間を過ぎると強制終了され、AbortErrorでrejectする', async () => {
+  it('SIGTERMを無視する子プロセスは終了猶予期間を過ぎると強制終了され、ExternalToolCancelledErrorで失敗する', async () => {
     const controller = new AbortController();
 
     const promise = runExternalTool({
@@ -316,12 +327,9 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
     await new Promise((resolve) => setTimeout(resolve, 200));
     controller.abort();
 
-    // The child ignores SIGTERM, so runExternalTool must force-kill it after the
-    // termination grace period and reject.
-    await assert.rejects(promise, (error: unknown) => {
-      assert.ok(error instanceof Error);
-      return error.name === 'AbortError' || error.name === 'Canceled';
-    });
+    const result = await promise;
+    assert.ok(result.isErr());
+    assert.ok(result.error instanceof ExternalToolCancelledError);
   });
 
   it('外部toolの子孫プロセスもprocess treeごと停止し、abort後はheartbeatファイルの増加が止まる', async () => {
@@ -353,7 +361,8 @@ describe('外部CLIツールを起動して標準出力・標準エラーを取�
     assert.ok(stillGrowing > beforeAbort, 'descendant heartbeat should grow before abort');
 
     controller.abort();
-    await assert.rejects(promise);
+    const result = await promise;
+    assert.ok(result.isErr());
 
     // After abort the descendant heartbeat must stop growing, which proves the
     // descendant process was actually terminated (not merely scheduled to die).

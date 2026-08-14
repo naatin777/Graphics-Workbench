@@ -6,13 +6,13 @@ import { statSync } from 'node:fs';
 import type { ElectronApplication, JSHandle, Page, TestInfo } from '@playwright/test';
 import { downloadAndUnzipVSCode } from '@vscode/test-electron';
 
-import { cropConfigureFixture } from '../../../support/helpers/crop_configure_fixture.js';
+import { cropConfigureTestData } from '../../../support/helpers/crop_configure_testdata.js';
 import {
   operationPdfInputDirectory,
   operationPngInputPath,
   projectRootDirectory,
   testWorkspaceDirectory,
-} from '../../../support/helpers/fixture_paths.js';
+} from '../../../support/helpers/testdata_paths.js';
 import { disposeElectronTest, writeVscodeUserSettings } from './vscode_electron_test.js';
 import { installPackagedVsix } from './packaged_vsix.js';
 
@@ -35,7 +35,7 @@ export interface ElectronTestEnv {
   files: {
     inputPath: string;
     outputPath: string;
-    sourceFixtureBytes: Uint8Array;
+    sourceTestDataBytes: Uint8Array;
   };
 }
 
@@ -49,8 +49,8 @@ export interface PreparedElectronTest {
 export interface ElectronTestOptions {
   colorTheme?: string;
   extraSettings?: Record<string, unknown>;
-  copyFixtures?: boolean;
-  pdfFixtureFileName?: string;
+  copyTestData?: boolean;
+  pdfTestDataFileName?: string;
   prepared?: PreparedElectronTest;
   viewportWidth?: number;
 }
@@ -141,8 +141,8 @@ export async function setupElectronTest(
 ): Promise<ElectronTestEnv> {
   const colorTheme = options.colorTheme ?? 'Default Dark Modern';
   const extraSettings = options.extraSettings ?? {};
-  const copyFixtures = options.copyFixtures ?? true;
-  const pdfFixtureFileName = options.pdfFixtureFileName ?? cropConfigureFixture.fileName;
+  const copyTestData = options.copyTestData ?? true;
+  const pdfTestDataFileName = options.pdfTestDataFileName ?? cropConfigureTestData.fileName;
   const { prepared } = options;
   const contentSize = {
     width: options.viewportWidth ?? defaultElectronContentSize.width,
@@ -158,10 +158,10 @@ export async function setupElectronTest(
   const extensionsDir = prepared?.extensionsDir ?? join(temporaryRoot, 'extensions');
 
   const projectRoot = projectRootDirectory;
-  const sourceFixture = join(operationPdfInputDirectory, pdfFixtureFileName);
-  const rasterSourceFixture = operationPngInputPath;
-  const inputPath = join(workspacePath, pdfFixtureFileName);
-  const outputPath = join(workspacePath, `${pdfFixtureFileName.replace(/\.pdf$/i, '')}-crop.pdf`);
+  const sourceTestData = join(operationPdfInputDirectory, pdfTestDataFileName);
+  const rasterSourceTestData = operationPngInputPath;
+  const inputPath = join(workspacePath, pdfTestDataFileName);
+  const outputPath = join(workspacePath, `${pdfTestDataFileName.replace(/\.pdf$/i, '')}-crop.pdf`);
 
   const directories = [
     mkdir(workspacePath, { recursive: true }),
@@ -173,14 +173,14 @@ export async function setupElectronTest(
   }
   await Promise.all(directories);
 
-  if (copyFixtures) {
+  if (copyTestData) {
     await Promise.all([
-      cp(sourceFixture, inputPath),
-      cp(rasterSourceFixture, join(workspacePath, 'packaged-raster-input.png')),
+      cp(sourceTestData, inputPath),
+      cp(rasterSourceTestData, join(workspacePath, 'packaged-raster-input.png')),
     ]);
   }
 
-  const sourceFixtureBytes = copyFixtures ? await readFile(sourceFixture) : new Uint8Array();
+  const sourceTestDataBytes = copyTestData ? await readFile(sourceTestData) : new Uint8Array();
 
   await writeVscodeUserSettings(userSettingsPath, colorTheme, {
     ...extraSettings,
@@ -230,6 +230,6 @@ export async function setupElectronTest(
   return {
     app: { electronApp, window },
     directories: { workspacePath, userDataDir, sharedDataDir, extensionsDir, temporaryRoot },
-    files: { inputPath, outputPath, sourceFixtureBytes },
+    files: { inputPath, outputPath, sourceTestDataBytes },
   };
 }

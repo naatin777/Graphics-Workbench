@@ -11,7 +11,7 @@
 // - crop処理本体
 // - OSが返すfilesystem error文言
 
-import { createPdfFixture } from '@graphics-workbench/core/testing';
+import { createPdfTestData } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { access, mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -46,7 +46,7 @@ suite('PDF crop outputPath検証', () => {
     const configuration = vscode.workspace.getConfiguration('graphics-workbench');
 
     const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
-    await writeFile(sourcePath, await createPdfFixture({ pages: [{ mediaBox: [0, 0, 100, 100] }] }));
+    await writeFile(sourcePath, await createPdfTestData({ pages: [{ mediaBox: [0, 0, 100, 100] }] }));
     await configuration.update(
       'outputPath.cropPdf',
       '${fileDirname}/invalid\u0000.pdf',

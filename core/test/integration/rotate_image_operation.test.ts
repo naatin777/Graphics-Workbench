@@ -143,7 +143,7 @@ async function copySourcePng(workspacePath: string): Promise<SourcePng> {
   const sourcePath = path.join(workspacePath, 'source.png');
   await copyFile(operationPngInputPath, sourcePath);
 
-  // fixtureの実寸がコミット済み期待値からドリフトしていないか確認する。
+  // テストデータの実寸がコミット済み期待値からドリフトしていないか確認する。
   const metadata = await sharp(sourcePath).metadata();
   assert.strictEqual(metadata.width, SOURCE_PNG_WIDTH, 'source png width');
   assert.strictEqual(metadata.height, SOURCE_PNG_HEIGHT, 'source png height');

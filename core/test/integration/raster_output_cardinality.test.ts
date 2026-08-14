@@ -25,7 +25,7 @@ describe('GIF/TIFFを各出力形式へ変換する', () => {
 
     for (const inputFormat of inputFormats) {
       const sourcePath = path.join(workspacePath.path, `source.${inputFormat}`);
-      await writeAnimatedImageFixture(sourcePath, inputFormat);
+      await writeAnimatedImageTestData(sourcePath, inputFormat);
 
       for (const outputFormat of outputFormats) {
         if (outputFormat === inputFormat) {
@@ -46,12 +46,12 @@ async function convertImage(
   outputPath: string,
   workspacePath: string,
 ): Promise<void> {
-  const job = { sourcePath, outputPath, workspacePath };
+  const item = { sourcePath, outputPath, workspacePath };
   const runtime = { resolveConflicts: async (): Promise<'overwrite'> => 'overwrite' };
 
   if (outputFormat === 'pdf') {
     await convertToPdfFiles({
-      inputs: [job],
+      inputs: [item],
       runtime,
       maxInputPixels: 100_000_000,
     });
@@ -59,7 +59,7 @@ async function convertImage(
   }
 
   const common = {
-    inputs: [job],
+    inputs: [item],
     pdfRenderTools: { runPdfToPng: stubRunPdfToPng },
     drawioTools: { drawioPath: 'drawio', runDrawio: executeDrawio },
     runtime,
@@ -74,7 +74,7 @@ async function convertImage(
   });
 }
 
-async function writeAnimatedImageFixture(filePath: string, format: (typeof inputFormats)[number]): Promise<void> {
+async function writeAnimatedImageTestData(filePath: string, format: (typeof inputFormats)[number]): Promise<void> {
   const red = await sharp({
     create: {
       width: 4,

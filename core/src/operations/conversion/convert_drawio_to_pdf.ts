@@ -3,11 +3,7 @@ import path from 'node:path';
 
 import { XMLParser } from 'fast-xml-parser';
 
-import {
-  isDrawioPath,
-  isEditableDrawioImagePath,
-  logicalSourcePathForOutputTemplate,
-} from '../../shared/source_format.js';
+import { isDrawioPath, isDrawioImagePath, logicalSourcePathForOutputTemplate } from '../../shared/source_format.js';
 import { isWindowsReservedPathComponent, resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 
@@ -19,6 +15,7 @@ import { runStagedConversionBatch } from '../lifecycle/run_staged_conversion_bat
 import type { ConversionExecutionContext, ResolvedConversionRuntime } from '../lifecycle/conversion_runtime.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
 import { stagingRootPathFor } from '../lifecycle/run_id.js';
+import { throwExternalToolResult } from '../external_tools/run_external_tool.js';
 import { validateGeneratedPdf } from './convert_to_pdf.js';
 
 export interface DrawioPdfInput {
@@ -258,7 +255,7 @@ async function prepareDrawioInput(options: {
   const drawioSourcePath = path.join(options.stageDirectory, 'source.drawio');
   await assertWritablePathInWorkspace(drawioSourcePath, options.workspacePath);
   options.runtime.signal.throwIfAborted();
-  await (isEditableDrawioImagePath(options.sourcePath)
+  await (isDrawioImagePath(options.sourcePath)
     ? runDrawioCommand(
         options.drawioPath,
         ['-x', '-f', 'xml', '-o', drawioSourcePath, options.sourcePath],
@@ -331,7 +328,7 @@ async function runDrawioCommand(
   runtime: ResolvedConversionRuntime,
   runDrawio: RunDrawio,
 ): Promise<void> {
-  await runDrawio(executable, args, runtime.signal, runtime.outputChannel);
+  throwExternalToolResult(await runDrawio(executable, args, runtime.signal, runtime.outputChannel));
 }
 
 async function validateInputPaths(inputs: DrawioPdfInput[], operationName: string): Promise<void> {

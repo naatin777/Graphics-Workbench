@@ -4,7 +4,7 @@ import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { isEditableDrawioImagePath } from '@graphics-workbench/core/formats';
+import { isDrawioImagePath } from '@graphics-workbench/core/formats';
 import {
   convertDrawioToSinglePdf,
   convertToPdfFiles,
@@ -38,7 +38,7 @@ const validCases = [
   {
     id: 'multi-object-diagram',
     inputFileName: 'multi-object-diagram.drawio.png',
-    workspaceSourcePath: 'fixtures with spaces/diagram résumé 🚀.drawio.png',
+    workspaceSourcePath: 'テストデータs with spaces/diagram résumé 🚀.drawio.png',
     outputDirectory: '変換結果/PNG source',
   },
   {
@@ -55,18 +55,18 @@ const invalidCases = [
   { fileName: 'truncated-embedded-image.drawio.png', workspaceSourcePath: 'broken/élément 🚧.drawio.png' },
 ] as const;
 
-describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
-  for (const fixtureCase of validCases) {
-    it(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async () => {
+describe('Draw.io テストデータの実変換と固定正解データの比較', () => {
+  for (const testDataCase of validCases) {
+    it(`${testDataCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async () => {
       const configuredTools = readConfiguredConversionTools();
       const { drawioTools } = configuredTools;
 
       const { runtime } = createTestRuntime();
 
       await withTestWorkspace(async (workspacePath) => {
-        const inputPath = path.join(testInputDirectory, 'valid', 'drawio', fixtureCase.inputFileName);
-        const sourcePath = await copyInputToWorkspace(inputPath, workspacePath, fixtureCase.workspaceSourcePath);
-        const outputDirectory = path.join(workspacePath, fixtureCase.outputDirectory);
+        const inputPath = path.join(testInputDirectory, 'valid', 'drawio', testDataCase.inputFileName);
+        const sourcePath = await copyInputToWorkspace(inputPath, workspacePath, testDataCase.workspaceSourcePath);
+        const outputDirectory = path.join(workspacePath, testDataCase.outputDirectory);
         await mkdir(outputDirectory, { recursive: true });
 
         const actualPngPath = path.join(outputDirectory, 'actual.png');
@@ -74,7 +74,7 @@ describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
         const actualPdfPath = path.join(outputDirectory, 'actual.pdf');
         const renderedActualSvgPath = path.join(outputDirectory, 'actual-svg.png');
         const renderedExpectedSvgPath = path.join(outputDirectory, 'expected-svg.png');
-        const expectedDirectory = path.join(testOutputDirectory, 'drawio', fixtureCase.id);
+        const expectedDirectory = path.join(testOutputDirectory, 'drawio', testDataCase.id);
 
         await executeRasterConversion({
           spec: rasterFormatSpecs.png,
@@ -83,32 +83,32 @@ describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
           pdfRenderTools: configuredTools.pdfRenderTools,
           drawioTools,
           maxInputPixels: defaultRasterMaxInputPixels,
-          runId: `drawio-${fixtureCase.id}-png`,
+          runId: `drawio-${testDataCase.id}-png`,
         });
         await convertToSvgFiles({
           inputs: [{ sourcePath, outputPath: actualSvgPath, workspacePath }],
           runtime: {},
           drawioTools,
           runPdfToSvg: () => {
-            throw new Error('drawio fixture must not include PDF input for SVG input');
+            throw new Error('drawio テストデータ must not include PDF input for SVG input');
           },
           maxInputPixels: defaultRasterMaxInputPixels,
-          runId: `drawio-${fixtureCase.id}-svg`,
+          runId: `drawio-${testDataCase.id}-svg`,
         });
 
-        await (isEditableDrawioImagePath(sourcePath)
+        await (isDrawioImagePath(sourcePath)
           ? convertToPdfFiles({
               inputs: [{ sourcePath, outputPath: actualPdfPath, workspacePath }],
               tools: { drawioTools },
               maxInputPixels: defaultRasterMaxInputPixels,
               runtime,
-              runId: `drawio-${fixtureCase.id}-pdf`,
+              runId: `drawio-${testDataCase.id}-pdf`,
             })
           : convertDrawioToSinglePdf({
               inputs: [
                 {
                   sourcePath,
-                  outputTemplate: `\${workspaceFolder}/${fixtureCase.outputDirectory}/actual.pdf`,
+                  outputTemplate: `\${workspaceFolder}/${testDataCase.outputDirectory}/actual.pdf`,
                   workspacePath,
                   workspaceName: path.basename(workspacePath),
                 },
@@ -116,7 +116,7 @@ describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
               drawioPath: drawioTools.drawioPath,
               runDrawio: executeDrawio,
               runtime,
-              runId: `drawio-${fixtureCase.id}-native-pdf`,
+              runId: `drawio-${testDataCase.id}-native-pdf`,
             }));
 
         await assertRasterMatches(actualPngPath, path.join(expectedDirectory, 'expected.png'), `PNG: ${sourcePath}`, {

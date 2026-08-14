@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { expect, test, type TestInfo } from '@playwright/test';
 import sharp from 'sharp';
 
-import { cropConfigureFixture } from '../../support/helpers/crop_configure_fixture.js';
-import { operationDrawioInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { cropConfigureTestData } from '../../support/helpers/crop_configure_testdata.js';
+import { operationDrawioInputDirectory } from '../../support/helpers/testdata_paths.js';
 import { resetTestWorkspace } from '../../support/helpers/test_workspace.js';
 import {
   convertPdfToJpeg,
@@ -27,8 +27,8 @@ import {
 
 const packagedVsixPath = resolvePackagedVsixPath();
 const unicodePdfFileName = '資料 sample.pdf';
-const drawioFixtureFileName = 'unicode-page-names.drawio';
-const drawioFixturePath = join(operationDrawioInputDirectory, drawioFixtureFileName);
+const drawioTestDataFileName = 'unicode-page-names.drawio';
+const drawioTestDataPath = join(operationDrawioInputDirectory, drawioTestDataFileName);
 const expectedDrawioPageCount = 3;
 
 let preparedElectronTest: PreparedElectronTest | undefined;
@@ -103,23 +103,25 @@ test('package済みVSIXのCrop ConfigureからHost bridgeを通してPDFを変�
   try {
     env = await setupElectronTest(playwright._electron, packagedVsixPath, {
       ...preparedOptions(testInfo),
-      pdfFixtureFileName: cropConfigureFixture.fileName,
+      pdfTestDataFileName: cropConfigureTestData.fileName,
     });
     consoleMessages = collectConsoleMessages(env);
 
-    const { frame, settings } = await openCropPdfConfigure(env.app.window, cropConfigureFixture.fileName);
+    const { frame, settings } = await openCropPdfConfigure(env.app.window, cropConfigureTestData.fileName);
     await expect(frame.getByRole('heading', { name: 'Custom Crop', exact: true })).toBeVisible();
 
     await settings
       .getByRole('spinbutton', { name: 'Left', exact: true })
-      .fill(String(cropConfigureFixture.cropBox.left));
+      .fill(String(cropConfigureTestData.cropBox.left));
     await settings
       .getByRole('spinbutton', { name: 'Bottom', exact: true })
-      .fill(String(cropConfigureFixture.cropBox.bottom));
+      .fill(String(cropConfigureTestData.cropBox.bottom));
     await settings
       .getByRole('spinbutton', { name: 'Right', exact: true })
-      .fill(String(cropConfigureFixture.cropBox.right));
-    await settings.getByRole('spinbutton', { name: 'Top', exact: true }).fill(String(cropConfigureFixture.cropBox.top));
+      .fill(String(cropConfigureTestData.cropBox.right));
+    await settings
+      .getByRole('spinbutton', { name: 'Top', exact: true })
+      .fill(String(cropConfigureTestData.cropBox.top));
     await settings.getByRole('button', { name: 'Apply', exact: true }).click();
 
     await expect(env.app.window.getByText('Cropped 1 PDF file(s).', { exact: true })).toBeVisible();
@@ -138,10 +140,10 @@ test('package済みVSIXのCrop ConfigureからHost bridgeを通してPDFを変�
     for (const [index, page] of outputPages.entries()) {
       expect(page.mediaBox).toEqual(inputPages[index]?.mediaBox);
       expect(page.cropBox).toEqual({
-        x: cropConfigureFixture.cropBox.left,
-        y: cropConfigureFixture.cropBox.bottom,
-        width: cropConfigureFixture.cropBox.right - cropConfigureFixture.cropBox.left,
-        height: cropConfigureFixture.cropBox.top - cropConfigureFixture.cropBox.bottom,
+        x: cropConfigureTestData.cropBox.left,
+        y: cropConfigureTestData.cropBox.bottom,
+        width: cropConfigureTestData.cropBox.right - cropConfigureTestData.cropBox.left,
+        height: cropConfigureTestData.cropBox.top - cropConfigureTestData.cropBox.bottom,
       });
     }
     await env.app.window.keyboard.press('Escape');
@@ -249,10 +251,10 @@ test('package済みVSIXからDraw.io CLIでDraw.ioをPDFへ変換できる', asy
     env = await setupElectronTest(playwright._electron, packagedVsixPath, preparedOptions(testInfo));
     consoleMessages = collectConsoleMessages(env);
 
-    await cp(drawioFixturePath, join(env.directories.workspacePath, drawioFixtureFileName));
+    await cp(drawioTestDataPath, join(env.directories.workspacePath, drawioTestDataFileName));
 
     const explorer = env.app.window.getByRole('tree', { name: 'Files Explorer' });
-    const drawioEntry = explorer.getByRole('treeitem', { name: drawioFixtureFileName });
+    const drawioEntry = explorer.getByRole('treeitem', { name: drawioTestDataFileName });
     await expect(drawioEntry).toBeVisible();
     await selectExplorerEntry(drawioEntry);
     await drawioEntry.press('Shift+F10');
@@ -269,7 +271,7 @@ test('package済みVSIXからDraw.io CLIでDraw.ioをPDFへ変換できる', asy
       env.app.window.getByRole('alert').filter({ hasText: 'Converted 1 Draw.io file(s) to one PDF each.' }),
     ).toBeVisible({ timeout: 60_000 });
 
-    const outputPath = join(env.directories.workspacePath, `${drawioFixtureFileName.replace(/\.drawio$/u, '')}.pdf`);
+    const outputPath = join(env.directories.workspacePath, `${drawioTestDataFileName.replace(/\.drawio$/u, '')}.pdf`);
     await expect
       .poll(
         async () => {

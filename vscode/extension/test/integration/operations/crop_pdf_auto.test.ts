@@ -8,7 +8,7 @@
 // - VS Codeのcommand UI
 // - withProgressの表示
 
-import { createPdfFixture, fillRectangle, readPdfPages } from '@graphics-workbench/core/testing';
+import { createPdfTestData, fillRectangle, readPdfPages } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -21,7 +21,7 @@ suite('PDF自動crop処理', () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output', 'source-crop.pdf');
-    await writeFixturePdf(sourcePath);
+    await writeTestDataPdf(sourcePath);
 
     await cropPdfFiles({
       inputs: [{ sourcePath, workspacePath, outputPath }],
@@ -60,7 +60,7 @@ suite('PDF自動crop処理', () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'blank.pdf');
     const outputPath = path.join(workspacePath, 'blank-crop.pdf');
-    await writeFile(sourcePath, await createPdfFixture({ pages: [{ mediaBox: [0, 0, 320, 180] }] }));
+    await writeFile(sourcePath, await createPdfTestData({ pages: [{ mediaBox: [0, 0, 320, 180] }] }));
 
     await cropPdfFiles({
       inputs: [{ sourcePath, workspacePath, outputPath }],
@@ -89,7 +89,7 @@ suite('PDF自動crop処理', () => {
     const outputPath = path.join(workspacePath, 'geometry-crop.pdf');
     await writeFile(
       sourcePath,
-      await createPdfFixture({
+      await createPdfTestData({
         pages: [
           {
             mediaBox: [100, 200, 500, 500],
@@ -227,8 +227,8 @@ suite('PDF自動crop処理', () => {
   });
 });
 
-async function writeFixturePdf(filePath: string): Promise<void> {
-  const bytes = await createPdfFixture({
+async function writeTestDataPdf(filePath: string): Promise<void> {
+  const bytes = await createPdfTestData({
     pages: [
       {
         mediaBox: [0, 0, 300, 200],
@@ -244,7 +244,7 @@ async function writeFixturePdf(filePath: string): Promise<void> {
 }
 
 async function writeSinglePagePdf(filePath: string): Promise<void> {
-  const bytes = await createPdfFixture({
+  const bytes = await createPdfTestData({
     pages: [
       {
         mediaBox: [0, 0, 100, 100],

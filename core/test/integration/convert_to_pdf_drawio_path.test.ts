@@ -1,8 +1,8 @@
 // Test target:
-// - 実Draw.io fixtureを複雑な入力pathへコピーしてPDF変換できること
+// - 実Draw.io テストデータを複雑な入力pathへコピーしてPDF変換できること
 // - Draw.io runnerへ入力pathと中間PDF出力pathをそのまま渡すこと
 // - Draw.ioページ名、入力・出力のフォルダ名とファイル名に空白やUnicodeがあっても壊れないこと
-// - 変換後PDFがfixtureと同じページ数・ページサイズで読み取れること
+// - 変換後PDFがテストデータと同じページ数・ページサイズで読み取れること
 //
 // Mocked:
 // - Draw.io CLIの実行。CIにDraw.io Desktopを必須化せず、CLI境界へ渡すpathと出力の反映を検証する。
@@ -12,15 +12,16 @@ import { copyFile, mkdtempDisposable, mkdir, readFile, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 
-import { testInputDirectory, readPdfPages, createPdfFixture } from '@graphics-workbench/core/testing';
+import { testInputDirectory, readPdfPages, createPdfTestData } from '@graphics-workbench/core/testing';
+import { Result } from 'better-result';
 
 import { convertToPdfFiles, type DrawioBackend } from '@graphics-workbench/core/conversion';
 import { hashFile } from '@graphics-workbench/core/runtime';
 
-const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
+const drawioTestDataPath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 
 describe('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io画像のPDF変換', () => {
-  it('空白とUnicodeを含むフォルダ名・ファイル名のfixtureを、入力pathと一時作業ディレクトリ内の中間PDF出力pathをそのままDraw.io実行関数へ渡して3ページPDFへ変換し、元fixtureファイルを変更しない', async () => {
+  it('空白とUnicodeを含むフォルダ名・ファイル名のテストデータを、入力pathと一時作業ディレクトリ内の中間PDF出力pathをそのままDraw.io実行関数へ渡して3ページPDFへ変換し、元テストデータファイルを変更しない', async () => {
     await using testRootPathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-complex-path-'));
     const testRootPath = testRootPathDisposable.path;
     const workspacePath = path.join(
@@ -34,7 +35,7 @@ describe('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.i
 
     await mkdir(inputDirectory, { recursive: true });
     await mkdir(outputDirectory, { recursive: true });
-    await copyFile(drawioFixturePath, sourcePath);
+    await copyFile(drawioTestDataPath, sourcePath);
     const originalSourceBytes = await readFile(sourcePath);
     const sourceText = originalSourceBytes.toString('utf8');
     assert.match(sourceText, /name=" ペ　ー　ジ 1"/u);
@@ -54,6 +55,7 @@ describe('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.i
         assert.ok(path.isAbsolute(toolOutputPath));
         assert.match(toolOutputPath, /workspace .*ＡＢＣ/u);
         await writeDrawioPdf(toolOutputPath, 3);
+        return Result.ok();
       },
     };
 
@@ -97,7 +99,7 @@ describe('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.i
 });
 
 async function writeDrawioPdf(filePath: string, pageCount: number): Promise<Uint8Array> {
-  const bytes = await createPdfFixture({
+  const bytes = await createPdfTestData({
     pages: Array.from({ length: pageCount }, () => ({ mediaBox: [0, 0, 200, 200] })),
   });
   await writeFile(filePath, bytes);

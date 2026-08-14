@@ -4,11 +4,13 @@ export {
   type PdfPageSelectionParseResult,
 } from '../shared/pdf_page_selection.js';
 export {
-  EDITABLE_DRAWIO_FORMATS,
+  DRAWIO_IMAGE_FORMATS,
   RASTER_FORMATS,
   SOURCE_FORMATS,
+  isDrawioImagePath,
   isDrawioPath,
-  isEditableDrawioImagePath,
+  isDrawioPngPath,
+  isDrawioSvgPath,
   isNativeDrawioPath,
   isRasterFormat,
   isRasterImagePath,

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 
 import { getPdfPageGeometry, openPdfDocument } from '@graphics-workbench/core/pdf';
-import { createPdfFixture } from '@graphics-workbench/core/testing';
+import { createPdfTestData } from '@graphics-workbench/core/testing';
 
 describe('PDFページのジオメトリ取得', () => {
   it('負のオフセットや90/270度回転を持つPDFページから、絶対座標のMediaBox/CropBoxと正規化されない回転角をそのまま返す', async () => {
-    const bytes = await createPdfFixture({
+    const bytes = await createPdfTestData({
       pages: [
         { mediaBox: [100, 200, 700, 1000], cropBox: [120, 220, 620, 920], rotation: 90 },
         { mediaBox: [-10, -20, 390, 280], cropBox: [-5, -10, 195, 140], rotation: 270 },

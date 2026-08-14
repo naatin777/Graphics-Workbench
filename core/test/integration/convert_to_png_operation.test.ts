@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import sharp from 'sharp';
+import { Result } from 'better-result';
 
 import {
   executeDrawio,
@@ -16,7 +17,7 @@ import {
   type DrawioBackend,
   type RasterInput,
 } from '@graphics-workbench/core/conversion';
-import { createPdfFixture, requireValue, testInputDirectory } from '@graphics-workbench/core/testing';
+import { createPdfTestData, requireValue, testInputDirectory } from '@graphics-workbench/core/testing';
 
 function stubRunPdfToPng(): never {
   throw new Error('PDF to PNG rendering must not run in this test.');
@@ -70,10 +71,11 @@ describe('アニメーション画像とDraw.io画像をPNGへ変換する処理
         assert.ok(outputFlagIndex >= 0);
         const pdfPath = args[outputFlagIndex + 1];
         assert.ok(pdfPath);
-        await writeFile(pdfPath, await createPdfFixture({ pages: [{ mediaBox: [0, 0, 32, 24] }] }));
+        await writeFile(pdfPath, await createPdfTestData({ pages: [{ mediaBox: [0, 0, 32, 24] }] }));
+        return Result.ok();
       },
     };
-    const job: RasterInput = {
+    const item: RasterInput = {
       sourcePath,
       outputPath,
       workspacePath: workspacePath.path,
@@ -83,7 +85,7 @@ describe('アニメーション画像とDraw.io画像をPNGへ変換する処理
     await executeRasterConversion({
       spec: rasterFormatSpecs.png,
       maxInputPixels: 1_000_000_000,
-      inputs: [job],
+      inputs: [item],
       pdfRenderTools: {
         runPdfToPng: async (pdfPath, pngPath, page) => {
           assert.ok(pdfPath.endsWith('.pdf'));
