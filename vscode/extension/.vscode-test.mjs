@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,50 +31,25 @@ for (const entry of readdirSync(testWorkspaceDirectory)) {
 if (existsSync(settingsSourcePath)) {
   const settings = JSON.parse(readFileSync(settingsSourcePath, 'utf8'));
   const toolSettings = [
-    ['graphics-workbench.execPath.rsvgConvert', 'GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH', 'rsvg-convert'],
-    ['graphics-workbench.execPath.drawio', 'GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'drawio'],
-    ['graphics-workbench.execPath.chrome', 'GRAPHICS_WORKBENCH_TEST_CHROME_PATH', 'google-chrome'],
+    ['graphics-workbench.execPath.rsvgConvert', 'GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH'],
+    ['graphics-workbench.execPath.drawio', 'GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH'],
+    ['graphics-workbench.execPath.chrome', 'GRAPHICS_WORKBENCH_TEST_CHROME_PATH'],
   ];
 
-  for (const [key, environmentVariable, command] of toolSettings) {
-    if (typeof settings[key] !== 'string' || settings[key] === '') {
-      const configured = process.env[environmentVariable];
-      const resolved =
-        configured !== undefined && configured !== ''
-          ? configured
-          : key === 'graphics-workbench.execPath.drawio'
-            ? (resolveExecutable(command) ?? resolveDrawioExecutable())
-            : resolveExecutable(command);
-      if (resolved !== undefined) {
-        settings[key] = resolved;
-      }
+  // The GRAPHICS_WORKBENCH_TEST_* variables are the single source of external
+  // tool paths for the test bootstrap: a value already present wins over the
+  // settings file, and an unset variable leaves the setting untouched (the CI
+  // provisioning scripts write machine paths there; local runs without env
+  // get the product's missing-path behavior).
+  for (const [key, environmentVariable] of toolSettings) {
+    const configured = process.env[environmentVariable];
+    if (configured !== undefined && configured !== '') {
+      settings[key] = configured;
     }
   }
 
   mkdirSync(path.dirname(settingsTargetPath), { recursive: true });
   writeFileSync(settingsTargetPath, JSON.stringify(settings, null, 2));
-}
-
-function resolveExecutable(command) {
-  const lookupCommand = process.platform === 'win32' ? 'where' : 'which';
-
-  try {
-    const output = execFileSync(lookupCommand, [command], { encoding: 'utf8' });
-    return output
-      .split(/\r?\n/u)
-      .find((line) => line.trim() !== '')
-      ?.trim();
-  } catch {
-    return undefined;
-  }
-}
-
-function resolveDrawioExecutable() {
-  if (process.platform !== 'darwin') {
-    return undefined;
-  }
-  const appPath = '/Applications/draw.io.app/Contents/MacOS/draw.io';
-  return existsSync(appPath) ? appPath : undefined;
 }
 
 export default defineConfig({

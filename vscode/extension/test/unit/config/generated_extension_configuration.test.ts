@@ -21,10 +21,12 @@ suite('生成された設定スキーマ検証', () => {
     assert.throws(() => configuration.cropPdf.marginOptions(), /Invalid configuration/);
   });
 
-  test('設定を何も与えない場合、Draw.io commandと各runtime設定のmanifest既定値を返す', () => {
+  test('設定を何も与えない場合、各execPathは空文字を返す（未設定＝missing）', () => {
     const configuration = fakeConfiguration();
 
-    assert.strictEqual(configuration.execPath.drawio(), 'drawio');
+    assert.strictEqual(configuration.execPath.drawio(), '');
+    assert.strictEqual(configuration.execPath.rsvgConvert(), '');
+    assert.strictEqual(configuration.execPath.chrome(), '');
     assert.strictEqual(configuration.preview.maxCanvasPixels(), 40_000_000);
     assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);
     assert.strictEqual(configuration.performance.maxConcurrentHeavyProcesses(), 2);
@@ -32,11 +34,16 @@ suite('生成された設定スキーマ検証', () => {
     assert.strictEqual(configuration.externalTools.rsvgConvert.timeoutSeconds(), 0);
   });
 
-  test('execPath.drawioとexecPath.rsvgConvertを明示的に空文字へ変更した場合はfallbackせず空文字をそのまま返す', () => {
-    const configuration = fakeConfiguration({ 'execPath.drawio': '', 'execPath.rsvgConvert': '' });
+  test('execPath.drawio・execPath.rsvgConvert・execPath.chromeを明示的に空文字や空白へ変更した場合はfallbackせず空文字をそのまま返す', () => {
+    const configuration = fakeConfiguration({
+      'execPath.drawio': '',
+      'execPath.rsvgConvert': '   ',
+      'execPath.chrome': '',
+    });
 
     assert.strictEqual(configuration.execPath.drawio(), '');
-    assert.strictEqual(configuration.execPath.rsvgConvert(), '');
+    assert.strictEqual(configuration.execPath.rsvgConvert(), '   ');
+    assert.strictEqual(configuration.execPath.chrome(), '');
   });
 
   test('outputPath.split.pdfを明示的に空文字へ変更した場合は、invalid configurationとして扱い既定テンプレートへフォールバックしない', () => {

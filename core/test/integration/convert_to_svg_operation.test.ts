@@ -9,11 +9,11 @@
 // - Safe Modeダイアログの画面表示
 
 import assert from 'node:assert/strict';
-import { access, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdtempDisposable, readFile, writeFile, copyFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { requireValue, createPdfFixture } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfFixture, testInputDirectory } from '@graphics-workbench/core/testing';
 
 import { convertToSvgFiles, executeDrawio } from '@graphics-workbench/core/conversion';
 
@@ -28,7 +28,7 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'source', '1.svg');
     const drawioCalls: string[][] = [];
-    await writeFile(sourcePath, 'editable drawio image placeholder');
+    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
 
     await convertToSvgFiles({
       inputs: [
@@ -70,7 +70,7 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'source.svg');
-    await writeFile(sourcePath, 'editable drawio image placeholder');
+    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
 
     await assert.rejects(
       convertToSvgFiles({
@@ -96,7 +96,7 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'source', '1.svg');
-    await writeFile(sourcePath, 'editable drawio image placeholder');
+    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
 
     await assert.rejects(
       convertToSvgFiles({

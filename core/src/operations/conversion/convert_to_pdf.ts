@@ -45,7 +45,10 @@ import type { SvgToPdfBackend } from './tools/svg_to_pdf_tools.js';
 const svgExtension = '.svg';
 
 export function validateSvgToPdfOptions(options: SvgToPdfBackend): void {
-  if (options.engine === 'chrome' && options.chromePath === '') {
+  if (options.engine === 'rsvg-convert' && options.rsvgConvertPath.trim() === '') {
+    throw new Error('Rsvg-convert executable is not configured. Set graphics-workbench.execPath.rsvgConvert.');
+  }
+  if (options.engine === 'chrome' && options.chromePath.trim() === '') {
     throw new Error('Chrome executable is not configured. Set graphics-workbench.execPath.chrome.');
   }
 }
@@ -253,7 +256,7 @@ async function writeDrawioAsPdf(
   signal: AbortSignal,
   drawio?: DrawioBackend,
 ): Promise<void> {
-  if (drawio === undefined) {
+  if (drawio === undefined || drawio.drawioPath.trim() === '') {
     throw new Error('Draw.io executable is not configured. Set graphics-workbench.execPath.drawio.');
   }
   signal.throwIfAborted();

@@ -19,7 +19,7 @@ import {
   createPdfFixture,
 } from '@graphics-workbench/core/testing';
 
-import { convertToPdfFiles } from '@graphics-workbench/core/conversion';
+import { convertToPdfFiles, executeDrawio } from '@graphics-workbench/core/conversion';
 
 describe('入力画像をPDFへ変換する処理', () => {
   it('2フレームのアニメーションGIFをpage1・page2の2jobに分け、各フレームを1ページのPDFへ変換する', async () => {
@@ -148,7 +148,7 @@ describe('入力画像をPDFへ変換する処理', () => {
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
 
-    await writeFile(sourcePath, 'editable drawio image placeholder');
+    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
 
     await assert.rejects(
       convertToPdfFiles({
@@ -174,13 +174,32 @@ describe('入力画像をPDFへ変換する処理', () => {
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
 
-    await writeFile(sourcePath, 'editable drawio image placeholder');
+    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
 
     await assert.rejects(
       convertToPdfFiles({
         inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
         maxInputPixels: 1_000_000_000,
         runtime: {},
+      }),
+      /Draw\.io executable is not configured/,
+    );
+    await assert.rejects(access(outputPath));
+  });
+
+  it('Draw.io backendのdrawioPathが空文字でもフォールバックせずDraw.io executable未設定エラーで失敗し、最終出力を作成しない', async () => {
+    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-blank-drawio-'));
+    const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
+    const outputPath = path.join(workspacePath.path, 'output.pdf');
+
+    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
+
+    await assert.rejects(
+      convertToPdfFiles({
+        inputs: [{ sourcePath, outputPath, workspacePath: workspacePath.path }],
+        maxInputPixels: 1_000_000_000,
+        runtime: {},
+        tools: { drawioTools: { drawioPath: '   ', runDrawio: executeDrawio } },
       }),
       /Draw\.io executable is not configured/,
     );

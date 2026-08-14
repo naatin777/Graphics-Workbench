@@ -57,9 +57,12 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
     const probed: string[] = [];
 
     const map = entryMap(
-      await checkWithProbe(async ({ toolName }) => {
-        probed.push(toolName);
-      }),
+      await checkWithProbe(
+        async ({ toolName }) => {
+          probed.push(toolName);
+        },
+        { 'execPath.chrome': 'chrome-path' },
+      ),
     );
 
     assert.strictEqual(probed.filter((toolName) => toolName === TOOL_BROWSER).length, 1);
@@ -76,7 +79,11 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
             throw notFound(toolName);
           }
         },
-        { 'convertToPdf.svg.engine': 'rsvg-convert' },
+        {
+          'convertToPdf.svg.engine': 'rsvg-convert',
+          'execPath.rsvgConvert': 'rsvg-path',
+          'execPath.chrome': 'chrome-path',
+        },
       ),
     );
 
@@ -88,11 +95,14 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
 
   test('Draw.ioが見つからない場合はローカルpathをdetailへ漏らさずDraw.io settingを返す', async () => {
     const map = entryMap(
-      await checkWithProbe(async ({ toolName }) => {
-        if (toolName === TOOL_DRAWIO) {
-          throw Object.assign(new Error('spawn LOCAL_DRAWIO_PATH ENOENT'), { code: 'ENOENT' });
-        }
-      }),
+      await checkWithProbe(
+        async ({ toolName }) => {
+          if (toolName === TOOL_DRAWIO) {
+            throw Object.assign(new Error('spawn LOCAL_DRAWIO_PATH ENOENT'), { code: 'ENOENT' });
+          }
+        },
+        { 'execPath.drawio': 'drawio-path' },
+      ),
     );
 
     const drawio = map.get('drawio');
@@ -105,13 +115,62 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
     assert.ok(!drawio?.detail.includes('LOCAL_DRAWIO_PATH'));
   });
 
+  test('3ツールのexecPathが未設定の場合はprobeせずにmissing（notConfigured）を返す', async () => {
+    let probed = false;
+    const map = entryMap(
+      await checkWithProbe(async () => {
+        probed = true;
+      }),
+    );
+
+    assert.strictEqual(probed, false);
+    assert.deepStrictEqual(map.get('drawio'), {
+      id: 'drawio',
+      available: false,
+      detail: userMessage('message.environmentCheck.notConfigured', TOOL_DRAWIO, 'graphics-workbench.execPath.drawio'),
+      settingId: 'graphics-workbench.execPath.drawio',
+    });
+    assert.deepStrictEqual(map.get('svg-to-pdf'), {
+      id: 'svg-to-pdf',
+      available: false,
+      detail: userMessage('message.environmentCheck.notConfigured', TOOL_BROWSER, 'graphics-workbench.execPath.chrome'),
+      settingId: 'graphics-workbench.execPath.chrome',
+    });
+  });
+
+  test('execPathを空白文字列で明示しても未設定と同じmissing（notConfigured）になり、各ツールのsettingIdを返す', async () => {
+    let probed = false;
+    const map = entryMap(
+      await checkWithProbe(
+        async () => {
+          probed = true;
+        },
+        {
+          'execPath.drawio': '   ',
+          'execPath.rsvgConvert': '',
+          'execPath.chrome': '  ',
+          'convertToPdf.svg.engine': 'rsvg-convert',
+        },
+      ),
+    );
+
+    assert.strictEqual(probed, false);
+    assert.strictEqual(map.get('drawio')?.available, false);
+    assert.strictEqual(map.get('drawio')?.settingId, 'graphics-workbench.execPath.drawio');
+    assert.strictEqual(map.get('svg-to-pdf')?.available, false);
+    assert.strictEqual(map.get('svg-to-pdf')?.settingId, 'graphics-workbench.execPath.rsvgConvert');
+  });
+
   test('timeoutと一般的な起動失敗を利用不可detailへ変換する', async () => {
     const timedOut = entryMap(
-      await checkWithProbe(async ({ toolName }) => {
-        if (toolName === TOOL_BROWSER) {
-          throw new Error('Chrome timed out after 10000ms');
-        }
-      }),
+      await checkWithProbe(
+        async ({ toolName }) => {
+          if (toolName === TOOL_BROWSER) {
+            throw new Error('Chrome timed out after 10000ms');
+          }
+        },
+        { 'execPath.chrome': 'chrome-path' },
+      ),
     );
     assert.strictEqual(
       timedOut.get('svg-to-pdf')?.detail,
@@ -119,11 +178,14 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
     );
 
     const failed = entryMap(
-      await checkWithProbe(async ({ toolName }) => {
-        if (toolName === TOOL_DRAWIO) {
-          throw new Error('exit 2');
-        }
-      }),
+      await checkWithProbe(
+        async ({ toolName }) => {
+          if (toolName === TOOL_DRAWIO) {
+            throw new Error('exit 2');
+          }
+        },
+        { 'execPath.drawio': 'drawio-path' },
+      ),
     );
     assert.strictEqual(
       failed.get('drawio')?.detail,

@@ -109,6 +109,16 @@ async function checkTool(params: {
 }): Promise<ToolAvailability> {
   const { toolLabel, executable, versionArgs, settingId, timeoutMs, signal, probe } = params;
 
+  // An unset or blank setting is a missing tool: report it without probing an
+  // empty executable, which would only surface as a meaningless spawn error.
+  if (executable.trim() === '') {
+    return {
+      available: false,
+      detail: userMessage('message.environmentCheck.notConfigured', toolLabel, settingId),
+      settingId,
+    };
+  }
+
   try {
     await probe({ toolName: toolLabel, executable, versionArgs, signal, timeoutMs });
     return { available: true, detail: userMessage('message.environmentCheck.available'), settingId };

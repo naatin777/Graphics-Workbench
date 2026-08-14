@@ -339,6 +339,7 @@
   "message.tableEditor.inserted": "Table inserted.",
   "message.environmentCheck.available": "Available",
   "message.environmentCheck.notFound": "{0} not found",
+  "message.environmentCheck.notConfigured": "{0} is not configured. Set {1} in settings.",
   "message.environmentCheck.timedOut": "{0} check timed out",
   "message.environmentCheck.failed": "{0} check failed: {1}",
   "message.environmentCheck.tool.drawio": "Draw.io",

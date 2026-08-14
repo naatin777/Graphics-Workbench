@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import PQueue from 'p-queue';
 
-import { runHeavyProcess } from '@graphics-workbench/core/external-tools';
+import { runHeavyProcess, enqueueHeavyProcess } from '@graphics-workbench/core/external-tools';
 
 describe('重処理の共有実行キュー（p-queue）', () => {
   it('同時実行数を1にしたキューで先頭タスクの実行中に待機させた2件目をキャンセルすると、開始前にキャンセルとしてrejectされ、先頭の完了後も2件目のタスク本体は実行されない', async () => {
@@ -126,8 +126,6 @@ describe('重処理の共有実行キュー（p-queue）', () => {
   it('shutdown相当（AbortController.abort）は待機中taskだけをキャンセルし、実行中taskの完了を妨げず、以後のtaskを拒否する', async () => {
     const queue = new PQueue({ concurrency: 1 });
     const shutdownController = new AbortController();
-    const combined = (signal?: AbortSignal): AbortSignal =>
-      signal === undefined ? shutdownController.signal : AbortSignal.any([signal, shutdownController.signal]);
 
     const firstStarted = Promise.withResolvers<void>();
     const releaseFirst = Promise.withResolvers<void>();
@@ -138,19 +136,16 @@ describe('重処理の共有実行キュー（p-queue）', () => {
     await firstStarted.promise;
 
     let queuedStarted = false;
-    const queued = queue.add(
-      async () => {
-        queuedStarted = true;
-      },
-      { signal: combined() },
-    );
+    const queued = enqueueHeavyProcess(queue, shutdownController.signal, async () => {
+      queuedStarted = true;
+    });
 
     shutdownController.abort();
     await assert.rejects(queued, { name: 'AbortError' });
     assert.strictEqual(queuedStarted, false);
 
-    const rejected = queue.add(async () => 'never', { signal: combined() });
-    await assert.rejects(rejected, { name: 'AbortError' });
+    const rejected = enqueueHeavyProcess(queue, shutdownController.signal, async () => 'never');
+    await assert.rejects(rejected, /Heavy process queue was stopped/u);
 
     releaseFirst.resolve();
     await first;
@@ -172,5 +167,54 @@ describe('重処理の共有実行キュー（p-queue）', () => {
 
   it('runHeavyProcessはsignalなしでも正常に実行して結果を返す', async () => {
     assert.strictEqual(await runHeavyProcess(async () => 'value'), 'value');
+  });
+
+  it('実行開始後にsignalがabortしても、runHeavyProcessは実taskの完了を待って成功結果を返す（abort reasonで即rejectしない）', async () => {
+    const abortController = new AbortController();
+    const started = Promise.withResolvers<void>();
+    const finished = Promise.withResolvers<void>();
+    const running = runHeavyProcess(async () => {
+      started.resolve();
+      await finished.promise;
+      return 'completed';
+    }, abortController.signal);
+    await started.promise;
+
+    abortController.abort();
+    finished.resolve();
+    assert.strictEqual(await running, 'completed');
+  });
+
+  it('実行開始後にsignalがabortしても、runHeavyProcessは実task自身の失敗reasonでrejectする（abort reasonに置き換えない）', async () => {
+    const abortController = new AbortController();
+    const started = Promise.withResolvers<void>();
+    const finished = Promise.withResolvers<void>();
+    const running = runHeavyProcess(async () => {
+      started.resolve();
+      await finished.promise;
+      throw new Error('task failure');
+    }, abortController.signal);
+    await started.promise;
+
+    abortController.abort();
+    finished.resolve();
+    await assert.rejects(running, /task failure/u);
+  });
+
+  it('実行開始後にsignalがabortしてtaskがsignalを自ら観測した場合は、実taskのOperationCancelledErrorでrejectする', async () => {
+    const abortController = new AbortController();
+    const started = Promise.withResolvers<void>();
+    const finished = Promise.withResolvers<void>();
+    const running = runHeavyProcess(async () => {
+      started.resolve();
+      await finished.promise;
+      abortController.signal.throwIfAborted();
+      return 'completed';
+    }, abortController.signal);
+    await started.promise;
+
+    abortController.abort();
+    finished.resolve();
+    await assert.rejects(running, { name: 'AbortError' });
   });
 });

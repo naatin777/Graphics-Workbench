@@ -65,7 +65,7 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 	node -e "const fs = require('node:fs'); const p = '${settings_dir}/settings.json'; const s = JSON.parse(fs.readFileSync(p, 'utf8')); s['graphics-workbench.execPath.drawio'] = process.argv[1]; fs.writeFileSync(p, JSON.stringify(s, null, 4) + '\n');" "${drawio_path}"
 
 	echo "Draw.io: ${drawio_path}"
-	"${drawio_path}" --version 2>&1 | head -1 || true
+	xvfb-run -a "${drawio_path}" --version 2>&1 | head -1 || true
 fi
 
 cat "$settings_dir/settings.json"

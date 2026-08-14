@@ -3,7 +3,7 @@
 // - Draw.io runnerを注入しても、最終出力は読み取り可能なPNGとして反映されること
 
 import assert from 'node:assert/strict';
-import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
+import { mkdtempDisposable, readFile, writeFile, copyFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -16,7 +16,7 @@ import {
   type DrawioBackend,
   type RasterInput,
 } from '@graphics-workbench/core/conversion';
-import { createPdfFixture, requireValue } from '@graphics-workbench/core/testing';
+import { createPdfFixture, requireValue, testInputDirectory } from '@graphics-workbench/core/testing';
 
 function stubRunPdfToPng(): never {
   throw new Error('PDF to PNG rendering must not run in this test.');
@@ -60,7 +60,7 @@ describe('アニメーション画像とDraw.io画像をPNGへ変換する処理
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'source.png');
-    await writeFile(sourcePath, 'editable drawio image placeholder');
+    await copyFile(path.join(testInputDirectory, 'valid', 'drawio', 'multi-object-diagram.drawio.png'), sourcePath);
     const drawioCalls: string[][] = [];
     const drawio: DrawioBackend = {
       drawioPath: 'drawio',

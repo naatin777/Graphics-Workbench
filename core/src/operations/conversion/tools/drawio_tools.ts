@@ -19,6 +19,9 @@ export async function executeDrawio(
   signal: AbortSignal,
   outputChannel?: LineOutputChannel,
 ): Promise<void> {
+  if (executable.trim() === '') {
+    throw new Error('Draw.io executable is not configured. Set graphics-workbench.execPath.drawio.');
+  }
   const toolOptions: Parameters<typeof runExternalTool>[0] = {
     toolId: 'drawio',
     toolName: 'drawio',
