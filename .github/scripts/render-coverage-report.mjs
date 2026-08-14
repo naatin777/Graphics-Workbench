@@ -17,11 +17,8 @@ const EXTENSION_REPORTS = [
   ['Windows', 'vscode-extension-host-coverage-Windows/lcov.info'],
 ];
 
-const WEBVIEW_REPORTS = [
-  ['crop_pdf', 'webview-vitest-coverage/crop_pdf/lcov.info'],
-  ['merge_pdf', 'webview-vitest-coverage/merge_pdf/lcov.info'],
-  ['split_pdf', 'webview-vitest-coverage/split_pdf/lcov.info'],
-];
+// The webview Vitest job uploads a single merged coverage report.
+const WEBVIEW_REPORT = 'webview-vitest-coverage/lcov.info';
 
 const PRIORITY_FILE_LIMIT = 15;
 
@@ -142,30 +139,6 @@ function parseLcov(content, fallbackPrefix) {
   }
 
   return files;
-}
-
-/**
- * @param {CoverageMap[]} maps
- * @returns {CoverageMap}
- */
-function mergeCoverageMaps(maps) {
-  /** @type {CoverageMap} */
-  const merged = new Map();
-  for (const files of maps) {
-    for (const [filePath, lines] of files) {
-      if (!merged.has(filePath)) {
-        merged.set(filePath, new Map());
-      }
-      const target = merged.get(filePath);
-      if (!target) {
-        throw new Error(`Coverage file was not initialized: ${filePath}`);
-      }
-      for (const [lineNumber, hits] of lines) {
-        target.set(lineNumber, (target.get(lineNumber) ?? 0) + hits);
-      }
-    }
-  }
-  return merged;
 }
 
 /**
@@ -408,7 +381,7 @@ function renderWebviewCoverage(output, summary) {
     '<details>',
     '<summary><strong>Webview summary</strong></summary>',
     '',
-    'Line-level Vitest coverage for Crop PDF, Merge PDF, and Split PDF is merged with shared code deduplicated.',
+    'Line-level Vitest coverage for the webview source tree.',
     '',
     '| Line coverage | covered / total | Source files | 0% files |',
     '|---:|---:|---:|---:|',
@@ -476,30 +449,28 @@ function renderReport(extensionReports, webviewSummary) {
   return `${output.join('\n')}\n`;
 }
 
-async function main(argv) {
-  const { input, output } = readArguments(argv);
-
+export async function generateCoverageReport(inputDirectory, outputPath) {
   /** @type {ExtensionReport[]} */
   const extensionReports = [];
   for (const [os, relativePath] of EXTENSION_REPORTS) {
-    const content = await readFile(path.join(input, relativePath), 'utf8');
+    const content = await readFile(path.join(inputDirectory, relativePath), 'utf8');
     extensionReports.push({ os, summary: summarizeExtensionCoverage(content, os) });
   }
 
-  /** @type {CoverageMap[]} */
-  const webviewCoverageMaps = [];
-  for (const [appName, relativePath] of WEBVIEW_REPORTS) {
-    const content = await readFile(path.join(input, relativePath), 'utf8');
-    webviewCoverageMaps.push(parseLcov(content, `webview/apps/${appName}/`));
-  }
-  const webviewSummary = summarize(mergeCoverageMaps(webviewCoverageMaps), (filePath) =>
+  const webviewContent = await readFile(path.join(inputDirectory, WEBVIEW_REPORT), 'utf8');
+  const webviewSummary = summarize(parseLcov(webviewContent, 'webview/'), (filePath) =>
     filePath.startsWith('webview/'),
   );
   if (webviewSummary.files.size === 0) {
     throw new Error('Webview coverage is empty');
   }
 
-  await writeFile(output, renderReport(extensionReports, webviewSummary), 'utf8');
+  await writeFile(outputPath, renderReport(extensionReports, webviewSummary), 'utf8');
+}
+
+async function main(argv) {
+  const { input, output } = readArguments(argv);
+  await generateCoverageReport(input, output);
 }
 
 if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
