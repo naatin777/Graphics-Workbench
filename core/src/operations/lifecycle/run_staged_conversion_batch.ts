@@ -82,11 +82,16 @@ export async function runStagedConversionBatch<Conversion extends { workspacePat
         const failure =
           settled.find((result) => result.status === 'rejected' && !isAbortError(result.reason)) ??
           settled.find((result) => result.status === 'rejected');
+
+        // 最初に失敗したstageのerrorがabort reasonとして固定されている。
+        // input index順ではなく「時間的に最初の失敗」をroot causeとして返す。
+        if (signal.aborted) {
+          const rootFailure = signal.reason;
+          throw rootFailure instanceof Error ? rootFailure : new Error(String(rootFailure));
+        }
         if (failure?.status === 'rejected') {
           throw failure.reason instanceof Error ? failure.reason : new Error(String(failure.reason));
         }
-
-        signal.throwIfAborted();
         const stagedOutputs = settled.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
         const commitOptions: CommitConversionOutputsOptions = { signal, operationName: options.operationName };
         if (runtime.resolveConflicts !== undefined) {
