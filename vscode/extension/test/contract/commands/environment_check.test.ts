@@ -130,7 +130,7 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
     assert.strictEqual(map.get('drawio')?.settingId, 'graphics-workbench.execPath.drawio');
   });
 
-  test('execPathを空白文字列で明示しても、Draw.io・rsvg-convertはmissing（notConfigured）になり、Chromeはplatform既定パスへfallbackしてprobeされる', async () => {
+  test('execPathを空白文字列で明示すると3ツールすべてmissing（notConfigured）になり、probeしない', async () => {
     const probed: string[] = [];
     const map = entryMap(
       await checkWithProbe(
@@ -146,11 +146,15 @@ suite('Controlsの機能availabilityを構築する外部tool probe', () => {
       ),
     );
 
-    assert.strictEqual(map.get('drawio')?.available, false);
-    assert.strictEqual(map.get('drawio')?.settingId, 'graphics-workbench.execPath.drawio');
+    assert.deepStrictEqual(map.get('drawio'), {
+      id: 'drawio',
+      available: false,
+      detail: userMessage('message.environmentCheck.notConfigured', TOOL_DRAWIO, 'graphics-workbench.execPath.drawio'),
+      settingId: 'graphics-workbench.execPath.drawio',
+    });
     assert.strictEqual(map.get('svg-to-pdf')?.available, false);
     assert.strictEqual(map.get('svg-to-pdf')?.settingId, 'graphics-workbench.execPath.rsvgConvert');
-    assert.ok(probed.includes(TOOL_BROWSER));
+    assert.strictEqual(probed.length, 0);
   });
 
   test('timeoutと一般的な起動失敗を利用不可detailへ変換する', async () => {

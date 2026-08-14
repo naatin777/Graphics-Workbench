@@ -40,7 +40,7 @@
     "compile:test": "npm run clean:test && tsc -p tsconfig.test.json",
     "clean:test": "node -e \"const fs = require('node:fs'); for (const p of ['out/vscode/extension/test', 'out/test']) fs.rmSync(p, { recursive: true, force: true })\"",
     "test": "node --env-file-if-exists=../../.env.test.local ../../node_modules/@vscode/test-cli/out/bin.mjs",
-    "test:playwright:smoke": "playwright test --config playwright.config.mjs --project=vscode-electron electron/packaged_conversion_smoke.spec.ts"
+    "test:playwright:smoke": "node --env-file-if-exists=../../.env.test.local ../../node_modules/@playwright/test/cli.js test --config playwright.config.mjs --project=vscode-electron electron/packaged_conversion_smoke.spec.ts"
   },
   "dependencies": {
     "@graphics-workbench/core": "0.0.1",
@@ -583,7 +583,7 @@
         },
         "graphics-workbench.execPath.chrome": {
           "type": "string",
-          "default": "",
+          "default": "auto",
           "scope": "machine",
           "description": "%config.execPath.chrome%"
         },

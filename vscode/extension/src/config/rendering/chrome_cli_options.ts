@@ -1,20 +1,14 @@
 import type { Configuration } from '../../generated/extension_manifest.js';
 
 /**
- * Resolves the Chrome executable path, falling back to the platform default
- * when the setting is blank. Production resolves tools from the explicit
- * setting first and falls back to the OS default command; tests inject the
- * path explicitly via GRAPHICS_WORKBENCH_TEST_* instead.
+ * The explicit "use the OS default" value for graphics-workbench.execPath.chrome.
+ * An unset setting resolves to this; a blank setting means "explicitly
+ * disabled" and is reported as-is, matching the other execPath tools.
  */
-export function resolveChromeExecutablePath(
-  configuration: Configuration,
-  platform: NodeJS.Platform = process.platform,
-): string {
-  const configuredPath = configuration.execPath.chrome().trim();
-  if (configuredPath !== '') {
-    return configuredPath;
-  }
+export const chromeAutoValue = 'auto';
 
+/** Returns the per-OS default Chrome executable path. */
+export function defaultChromeExecutablePath(platform: NodeJS.Platform): string {
   if (platform === 'darwin') {
     return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
   }
@@ -24,4 +18,20 @@ export function resolveChromeExecutablePath(
   }
 
   return 'google-chrome';
+}
+
+/**
+ * Resolves the Chrome executable path. `auto` (the default) selects the OS
+ * default path; a blank setting is an explicit disable and is returned as-is
+ * so the caller can report it as notConfigured.
+ */
+export function resolveChromeExecutablePath(
+  configuration: Configuration,
+  platform: NodeJS.Platform = process.platform,
+): string {
+  const configuredPath = configuration.execPath.chrome().trim();
+  if (configuredPath === chromeAutoValue) {
+    return defaultChromeExecutablePath(platform);
+  }
+  return configuredPath;
 }
