@@ -23,6 +23,7 @@ import {
   testInputDirectory,
   testOutputDirectory,
   withTestWorkspace,
+  requireConfiguredTool,
 } from '@graphics-workbench/core/testing';
 
 const execFileAsync = promisify(execFile);
@@ -56,17 +57,10 @@ const invalidCases = [
 
 describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
   for (const fixtureCase of validCases) {
-    it(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async (ctx) => {
+    it(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async () => {
       const configuredTools = readConfiguredConversionTools();
-      const { drawioPath } = configuredTools.drawioTools;
-      if (drawioPath === '') {
-        ctx.skip();
-        return;
-      }
-      if (configuredTools.rsvgConvertPath === '') {
-        ctx.skip();
-        return;
-      }
+      const drawioPath = requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io');
+      requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH', 'rsvg-convert');
 
       const { runtime } = createTestRuntime();
 
@@ -150,12 +144,8 @@ describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
   }
 
   for (const [index, invalidCase] of invalidCases.entries()) {
-    it(`invalid/drawio/${invalidCase.fileName}を実Draw.ioでPDFへ実変換すると失敗し、出力PDFを作成しない`, async (ctx) => {
-      const { drawioPath } = readConfiguredConversionTools().drawioTools;
-      if (drawioPath === '') {
-        ctx.skip();
-        return;
-      }
+    it(`invalid/drawio/${invalidCase.fileName}を実Draw.ioでPDFへ実変換すると失敗し、出力PDFを作成しない`, async () => {
+      const drawioPath = requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io');
 
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'invalid', 'drawio', invalidCase.fileName);

@@ -8,7 +8,7 @@
 // - なし。mupdfと実ファイルを使用する
 //
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdir, mkdtemp, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -25,16 +25,17 @@ import { splitPdfAllPages, splitPdfByPageGroups } from '@graphics-workbench/core
 
 describe('PDF全ページ分割', () => {
   it('multi-page-table.pdfの全ページを1から始まるページ番号で1ページずつのPDFへ分割し、各分割ページが元の対応ページと同じ描画内容であることを確認する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
-    const sourcePath = path.join(workspacePath.path, 'multi-page-table.pdf');
-    const outputDirectory = path.join(workspacePath.path, 'source');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const sourcePath = path.join(workspacePath, 'multi-page-table.pdf');
+    const outputDirectory = path.join(workspacePath, 'source');
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
 
     await splitPdfAllPages({
       inputs: [
         {
           sourcePath,
-          workspacePath: workspacePath.path,
+          workspacePath,
           outputPathForPage: (page: number) => path.join(outputDirectory, `${page}.pdf`),
         },
       ],
@@ -51,27 +52,22 @@ describe('PDF全ページ分割', () => {
         expectedPageNumber: page,
         actualPdfPath: outputPath,
         actualPageNumber: 1,
-        renderDirectory: path.join(workspacePath.path, 'rendered'),
+        renderDirectory: path.join(workspacePath, 'rendered'),
         renderPrefix: `split-single-${page}`,
       });
     }
 
-    const stagingDirectory = path.join(
-      workspacePath.path,
-      '.graphics-workbench',
-      'split-pdf',
-      'run',
-      '1-multi-page-table',
-    );
+    const stagingDirectory = path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run', '1-multi-page-table');
     await assert.doesNotReject(access(path.join(stagingDirectory, 'multi-page-table.pdf')));
     await assert.doesNotReject(access(path.join(stagingDirectory, 'pages', '1.pdf')));
     await assert.doesNotReject(access(path.join(stagingDirectory, 'pages', '2.pdf')));
   });
 
   it('複数のPDFをまとめて分割し、すべての入力の分割が成功した後に各ページを出力して元の対応ページと描画内容を比較する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePaths = ['multi-page-table.pdf', 'multilingual-text.pdf'].map((fileName) =>
-      path.join(workspacePath.path, fileName),
+      path.join(workspacePath, fileName),
     );
 
     await Promise.all(sourcePaths.map((sourcePath) => copyFile(fixturePath(path.basename(sourcePath)), sourcePath)));
@@ -79,9 +75,8 @@ describe('PDF全ページ分割', () => {
     await splitPdfAllPages({
       inputs: sourcePaths.map((sourcePath) => ({
         sourcePath,
-        workspacePath: workspacePath.path,
-        outputPathForPage: (page: number) =>
-          path.join(workspacePath.path, path.basename(sourcePath, '.pdf'), `${page}.pdf`),
+        workspacePath,
+        outputPathForPage: (page: number) => path.join(workspacePath, path.basename(sourcePath, '.pdf'), `${page}.pdf`),
       })),
       runtime: {},
     });
@@ -89,14 +84,14 @@ describe('PDF全ページ分割', () => {
     for (const [sourceIndex, sourcePath] of sourcePaths.entries()) {
       const sourcePageCount = (await readPdfPages(await readFile(sourcePath))).length;
       for (let page = 1; page <= sourcePageCount; page += 1) {
-        const outputPath = path.join(workspacePath.path, path.basename(sourcePath, '.pdf'), `${page}.pdf`);
+        const outputPath = path.join(workspacePath, path.basename(sourcePath, '.pdf'), `${page}.pdf`);
         await assert.doesNotReject(access(outputPath));
         await assertRenderedPdfPagesSimilar({
           expectedPdfPath: sourcePath,
           expectedPageNumber: page,
           actualPdfPath: outputPath,
           actualPageNumber: 1,
-          renderDirectory: path.join(workspacePath.path, 'rendered'),
+          renderDirectory: path.join(workspacePath, 'rendered'),
           renderPrefix: `split-multiple-${sourceIndex + 1}-${page}`,
         });
       }
@@ -104,7 +99,8 @@ describe('PDF全ページ分割', () => {
   });
 
   it('分割先のページ出力ファイルが既に存在する場合は分割を開始せず、他ページの出力も作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-split-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const firstOutputPath = path.join(workspacePath, 'source', '1.pdf');
     const secondOutputPath = path.join(workspacePath, 'source', '2.pdf');
@@ -131,7 +127,8 @@ describe('PDF全ページ分割', () => {
   });
 
   it('複数ページが同じ出力パスを指す場合はsame outputエラーで失敗し、出力ファイルを作成しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-split-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'same.pdf');
     await writePdf(sourcePath, 2);
@@ -154,7 +151,8 @@ describe('PDF全ページ分割', () => {
   });
 
   it('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-split-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'source', '1.pdf');
     const abortController = new AbortController();
@@ -195,8 +193,9 @@ describe('PDFページグループ分割', () => {
   });
 
   it('ページグループ[[3,1,3],[2]]を指定すると、group1は3→1→3の順で重複を保持し、group2は2ページ目だけのPDFとして生成する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
-    const sourcePath = path.join(workspacePath.path, 'source.pdf');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const sourcePath = path.join(workspacePath, 'source.pdf');
 
     await writePdfWithWidths(sourcePath, [101, 102, 103]);
 
@@ -204,17 +203,17 @@ describe('PDFページグループ分割', () => {
       inputs: [
         {
           sourcePath,
-          workspacePath: workspacePath.path,
+          workspacePath,
           pageGroups: [[3, 1, 3], [2]],
-          outputPathForGroup: (groupIndex) => path.join(workspacePath.path, `group-${groupIndex + 1}.pdf`),
+          outputPathForGroup: (groupIndex) => path.join(workspacePath, `group-${groupIndex + 1}.pdf`),
         },
       ],
       runtime: {},
       runId: 'run',
     });
 
-    const firstGroup = await readPdfPages(await readFile(path.join(workspacePath.path, 'group-1.pdf')));
-    const secondGroup = await readPdfPages(await readFile(path.join(workspacePath.path, 'group-2.pdf')));
+    const firstGroup = await readPdfPages(await readFile(path.join(workspacePath, 'group-1.pdf')));
+    const secondGroup = await readPdfPages(await readFile(path.join(workspacePath, 'group-2.pdf')));
 
     assert.deepEqual(
       firstGroup.map((page) => page.mediaBox.width),
@@ -224,16 +223,15 @@ describe('PDFページグループ分割', () => {
       secondGroup.map((page) => page.mediaBox.width),
       [102],
     );
-    await access(
-      path.join(workspacePath.path, '.graphics-workbench', 'split-pdf', 'run', '1-source', 'groups', '1.pdf'),
-    );
+    await access(path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run', '1-source', 'groups', '1.pdf'));
   });
 
   it('分割処理の事前検証で拒否され、一時領域も分割出力も作成しない', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
-    const sourcePath = path.join(workspacePath.path, 'source.pdf');
-    const outputPath = path.join(workspacePath.path, 'group.pdf');
-    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'split-pdf', 'run');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const sourcePath = path.join(workspacePath, 'source.pdf');
+    const outputPath = path.join(workspacePath, 'group.pdf');
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'split-pdf', 'run');
     const invalidPdfPath = path.join(invalidPreflightInputDirectory, 'not-a-pdf.pdf');
 
     await copyFile(invalidPdfPath, sourcePath);
@@ -243,7 +241,7 @@ describe('PDFページグループ分割', () => {
         inputs: [
           {
             sourcePath,
-            workspacePath: workspacePath.path,
+            workspacePath,
             pageGroups: [[1]],
             outputPathForGroup: () => outputPath,
           },
@@ -259,9 +257,10 @@ describe('PDFページグループ分割', () => {
   });
 
   it('ページ数の範囲外グループ（[1,3]）と空グループ（[]）は出力前に拒否して出力PDFを作成しない', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
-    const sourcePath = path.join(workspacePath.path, 'source.pdf');
-    const outputPath = path.join(workspacePath.path, 'group.pdf');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-split-groups-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const sourcePath = path.join(workspacePath, 'source.pdf');
+    const outputPath = path.join(workspacePath, 'group.pdf');
 
     await writePdfWithWidths(sourcePath, [101, 102]);
 
@@ -270,7 +269,7 @@ describe('PDFページグループ分割', () => {
         inputs: [
           {
             sourcePath,
-            workspacePath: workspacePath.path,
+            workspacePath,
             pageGroups: [[1, 3]],
             outputPathForGroup: () => outputPath,
           },
@@ -286,7 +285,7 @@ describe('PDFページグループ分割', () => {
         inputs: [
           {
             sourcePath,
-            workspacePath: workspacePath.path,
+            workspacePath,
             pageGroups: [[]],
             outputPathForGroup: () => outputPath,
           },

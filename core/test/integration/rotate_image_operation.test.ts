@@ -8,7 +8,7 @@
 // - なし。sharpと実ファイルを使用する
 //
 import assert from 'node:assert/strict';
-import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtempDisposable, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -18,7 +18,8 @@ import { rotateImageFiles } from '@graphics-workbench/core/conversion';
 
 describe('ラスタ画像の回転', () => {
   it('4x2のPNGを90度回転すると、2x4のPNGとして出力される', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.png');
     await writeImage(sourcePath, 4, 2);
@@ -38,12 +39,12 @@ describe('ラスタ画像の回転', () => {
       assert.strictEqual(metadata.width, 2);
       assert.strictEqual(metadata.height, 4);
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('4x2のPNGを180度回転すると、4x2のまま出力される', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.png');
     await writeImage(sourcePath, 4, 2);
@@ -61,12 +62,12 @@ describe('ラスタ画像の回転', () => {
       assert.strictEqual(metadata.width, 4);
       assert.strictEqual(metadata.height, 2);
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('4x2のPNGを270度回転すると、2x4のPNGとして出力される', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.png');
     await writeImage(sourcePath, 4, 2);
@@ -84,12 +85,12 @@ describe('ラスタ画像の回転', () => {
       assert.strictEqual(metadata.width, 2);
       assert.strictEqual(metadata.height, 4);
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('SVGなど非ラスタの入力は拒否される', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.svg');
     const outputPath = path.join(workspacePath, 'output.svg');
     await writeFile(sourcePath, '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
@@ -105,7 +106,8 @@ describe('ラスタ画像の回転', () => {
   });
 
   it('出力拡張子がラスタ形式でない場合は拒否される', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.txt');
     await writeImage(sourcePath, 4, 2);
@@ -121,7 +123,8 @@ describe('ラスタ画像の回転', () => {
   });
 
   it('画素上限を超える入力は拒否され、出力ファイルは作成されない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.png');
     await writeImage(sourcePath, 4, 2);

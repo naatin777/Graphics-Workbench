@@ -7,7 +7,7 @@
 // - なし。実mupdfと実ファイルを使用する
 //
 import assert from 'node:assert/strict';
-import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -19,7 +19,8 @@ const password = 'secret-password';
 
 describe('PDFのパスワード暗号化', () => {
   it('multi-page-table.pdfを指定パスワードでmupdfにより暗号化して出力し、needsPassword=trueで正しいパスワードでのみ認証できるPDFになっていることを検証する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-encrypt-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'multi-page-table.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
@@ -49,12 +50,14 @@ describe('PDFのパスワード暗号化', () => {
         wrongPasswordDocument.destroy();
       }
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
   it('MuPDF option parserが扱えないカンマまたは等号を含むパスワードは暗号化を開始せず明示的に拒否する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-password-validation-'));
+    await using workspacePathDisposable = await mkdtempDisposable(
+      path.join(os.tmpdir(), 'gw-encrypt-password-validation-'),
+    );
+    const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath);
@@ -72,7 +75,6 @@ describe('PDFのパスワード暗号化', () => {
         await assert.rejects(access(outputPath));
       }
     } finally {
-      await rm(workspacePath, { recursive: true, force: true });
     }
   });
 });

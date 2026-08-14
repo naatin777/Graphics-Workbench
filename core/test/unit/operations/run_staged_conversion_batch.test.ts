@@ -197,8 +197,9 @@ describe('変換出力を一時領域へ書き出し、全件成功後に最終�
         ),
       ]);
       abortController.abort();
-      await new Promise<void>((resolve) => setImmediate(resolve));
 
+      // 2つのslotは両方ともreleaseStagesまで占有されるため、待機中stageは
+      // abortとは無関係に開始不可能で確定する。
       assert.strictEqual(queuedStageStarted, false);
       await assert.doesNotReject(access(path.join(stagingRootPath, 'job-1')));
 

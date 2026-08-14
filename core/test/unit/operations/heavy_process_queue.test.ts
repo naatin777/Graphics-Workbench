@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-invalid-void-type -- Promise.withResolvers requires a type argument; void expresses the intended signal. */
 import assert from 'node:assert/strict';
 
 import PQueue from 'p-queue';
@@ -7,15 +8,15 @@ import { runHeavyProcess } from '@graphics-workbench/core/external-tools';
 describe('重処理の共有実行キュー（p-queue）', () => {
   it('同時実行数を1にしたキューで先頭タスクの実行中に待機させた2件目をキャンセルすると、開始前にキャンセルとしてrejectされ、先頭の完了後も2件目のタスク本体は実行されない', async () => {
     const queue = new PQueue({ concurrency: 1 });
-    let releaseFirst!: () => void;
+    const firstStarted = Promise.withResolvers<void>();
+    const releaseFirst = Promise.withResolvers<void>();
+    const first = queue.add(async () => {
+      firstStarted.resolve();
+      await releaseFirst.promise;
+    }, {});
+    await firstStarted.promise;
+
     let secondStarted = false;
-    const first = queue.add(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseFirst = resolve;
-        }),
-      {},
-    );
     const abortController = new AbortController();
     const second = queue.add(
       async () => {
@@ -26,7 +27,7 @@ describe('重処理の共有実行キュー（p-queue）', () => {
 
     abortController.abort();
     await assert.rejects(second, { name: 'AbortError' });
-    releaseFirst();
+    releaseFirst.resolve();
     await first;
     assert.strictEqual(secondStarted, false);
   });
@@ -44,60 +45,56 @@ describe('重処理の共有実行キュー（p-queue）', () => {
 
   it('concurrencyを増やすと待機中のtaskが追加slotで開始され、実行中taskはそのまま継続する', async () => {
     const queue = new PQueue({ concurrency: 1 });
-    let releaseFirst!: () => void;
-    const first = queue.add(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseFirst = resolve;
-        }),
-      {},
-    );
+    const firstStarted = Promise.withResolvers<void>();
+    const releaseFirst = Promise.withResolvers<void>();
+    const first = queue.add(async () => {
+      firstStarted.resolve();
+      await releaseFirst.promise;
+    }, {});
+    await firstStarted.promise;
+
     let secondStarted = false;
     const second = queue.add(async () => {
       secondStarted = true;
     }, {});
-
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    // concurrency 1のslotはfirstが占有しているため、secondは未開始で確定する。
     assert.strictEqual(secondStarted, false);
     queue.concurrency = 2;
     await second;
     assert.strictEqual(secondStarted, true);
 
-    releaseFirst();
+    releaseFirst.resolve();
     await first;
   });
 
   it('concurrencyを下げても実行中taskは継続し、新しいtaskは実行中slotが空くまで待機する', async () => {
     const queue = new PQueue({ concurrency: 2 });
-    let releaseFirst!: () => void;
-    let releaseSecond!: () => void;
-    const first = queue.add(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseFirst = resolve;
-        }),
-      {},
-    );
-    const second = queue.add(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseSecond = resolve;
-        }),
-      {},
-    );
+    const firstStarted = Promise.withResolvers<void>();
+    const releaseFirst = Promise.withResolvers<void>();
+    const secondStarted = Promise.withResolvers<void>();
+    const releaseSecond = Promise.withResolvers<void>();
+    const first = queue.add(async () => {
+      firstStarted.resolve();
+      await releaseFirst.promise;
+    }, {});
+    const second = queue.add(async () => {
+      secondStarted.resolve();
+      await releaseSecond.promise;
+    }, {});
+    await Promise.all([firstStarted.promise, secondStarted.promise]);
+
     let thirdStarted = false;
     const third = queue.add(async () => {
       thirdStarted = true;
     }, {});
 
-    await new Promise<void>((resolve) => setImmediate(resolve));
     queue.concurrency = 1;
-    releaseFirst();
+    releaseFirst.resolve();
     await first;
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    // secondがslotを占有しているため、thirdは未開始で確定する。
     assert.strictEqual(thirdStarted, false);
 
-    releaseSecond();
+    releaseSecond.resolve();
     await Promise.all([second, third]);
     assert.strictEqual(thirdStarted, true);
   });
@@ -105,20 +102,24 @@ describe('重処理の共有実行キュー（p-queue）', () => {
   it('実行開始後にsignalがabortするとadd()はそのreasonでrejectされるが、task本体は中断されず最後まで実行される', async () => {
     const queue = new PQueue({ concurrency: 1 });
     const abortController = new AbortController();
+    const started = Promise.withResolvers<void>();
+    const finished = Promise.withResolvers<void>();
     let completed = false;
     const running = queue.add(
       async () => {
-        await new Promise<void>((resolve) => setTimeout(resolve, 30));
+        started.resolve();
+        await finished.promise;
         completed = true;
         return 'completed';
       },
       { signal: abortController.signal },
     );
+    await started.promise;
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 10));
     abortController.abort();
     await assert.rejects(running, { name: 'AbortError' });
-    await new Promise<void>((resolve) => setTimeout(resolve, 40));
+    finished.resolve();
+    await Promise.resolve();
     assert.strictEqual(completed, true);
   });
 
@@ -128,14 +129,14 @@ describe('重処理の共有実行キュー（p-queue）', () => {
     const combined = (signal?: AbortSignal): AbortSignal =>
       signal === undefined ? shutdownController.signal : AbortSignal.any([signal, shutdownController.signal]);
 
-    let releaseFirst!: () => void;
-    const first = queue.add(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseFirst = resolve;
-        }),
-      {},
-    );
+    const firstStarted = Promise.withResolvers<void>();
+    const releaseFirst = Promise.withResolvers<void>();
+    const first = queue.add(async () => {
+      firstStarted.resolve();
+      await releaseFirst.promise;
+    }, {});
+    await firstStarted.promise;
+
     let queuedStarted = false;
     const queued = queue.add(
       async () => {
@@ -143,7 +144,6 @@ describe('重処理の共有実行キュー（p-queue）', () => {
       },
       { signal: combined() },
     );
-    await new Promise<void>((resolve) => setImmediate(resolve));
 
     shutdownController.abort();
     await assert.rejects(queued, { name: 'AbortError' });
@@ -152,7 +152,7 @@ describe('重処理の共有実行キュー（p-queue）', () => {
     const rejected = queue.add(async () => 'never', { signal: combined() });
     await assert.rejects(rejected, { name: 'AbortError' });
 
-    releaseFirst();
+    releaseFirst.resolve();
     await first;
   });
 

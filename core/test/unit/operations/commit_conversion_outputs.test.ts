@@ -14,16 +14,15 @@ import {
   copyFile,
   lstat,
   mkdir,
-  mkdtemp,
   mkdtempDisposable,
   readFile,
   rename,
-  rm,
   stat,
   symlink,
   truncate,
   utimes,
   writeFile,
+  rm,
 } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -33,7 +32,8 @@ import { requireValue } from '@graphics-workbench/core/testing';
 
 describe('作業ディレクトリに置いた変換結果を出力ファイルへ反映し（既存は.previousへ退避・両方残す選択で連番保存・失敗時は元の内容へ復元）', () => {
   it('既存のsample.pdfとsample-1.pdfが両方ある状態で両方保持する選択肢を選ぶと、変換結果を未使用の最小連番sample-2.pdfへ保存し、既存2ファイルは変更しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
@@ -50,7 +50,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('2件の出力が両方とも既存でも、競合判断のresolveConflictsは1回だけ呼び、その1回の呼び出しに両方の出力pathを渡す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const outputs = await Promise.all(
       ['first', 'second'].map(async (name) => {
         const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
@@ -74,15 +75,16 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('実volumeのcase sensitivityをprobeで判定し、case-insensitiveなvolumeではFigure.pdfとfigure.pdfを同一出力としてエラーにし、case-sensitiveなら両方commitする', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-case-test-'));
-    const firstStagedPath = path.join(workspacePath.path, '.graphics-workbench', 'first.pdf');
-    const secondStagedPath = path.join(workspacePath.path, '.graphics-workbench', 'second.pdf');
-    const firstOutputPath = path.join(workspacePath.path, 'Figure.pdf');
-    const secondOutputPath = path.join(workspacePath.path, 'figure.pdf');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-case-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const firstStagedPath = path.join(workspacePath, '.graphics-workbench', 'first.pdf');
+    const secondStagedPath = path.join(workspacePath, '.graphics-workbench', 'second.pdf');
+    const firstOutputPath = path.join(workspacePath, 'Figure.pdf');
+    const secondOutputPath = path.join(workspacePath, 'figure.pdf');
 
     await writeFixture(firstStagedPath, 'first');
     await writeFixture(secondStagedPath, 'second');
-    const probePath = path.join(workspacePath.path, `.case-probe-${crypto.randomUUID()}`);
+    const probePath = path.join(workspacePath, `.case-probe-${crypto.randomUUID()}`);
     await writeFile(probePath, '');
     let caseInsensitive = false;
     try {
@@ -94,8 +96,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     await rm(probePath, { force: true });
 
     const outputs = [
-      { stagedOutputPath: firstStagedPath, outputPath: firstOutputPath, workspacePath: workspacePath.path },
-      { stagedOutputPath: secondStagedPath, outputPath: secondOutputPath, workspacePath: workspacePath.path },
+      { stagedOutputPath: firstStagedPath, outputPath: firstOutputPath, workspacePath },
+      { stagedOutputPath: secondStagedPath, outputPath: secondOutputPath, workspacePath },
     ];
 
     if (caseInsensitive) {
@@ -107,25 +109,27 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('UnicodeのNFC正規化後に同一path（Cafe+U+0301とCafé）へ解決する2件の出力は、重複として/same output/エラーで拒否する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-unicode-test-'));
-    const firstStagedPath = path.join(workspacePath.path, '.graphics-workbench', 'first.pdf');
-    const secondStagedPath = path.join(workspacePath.path, '.graphics-workbench', 'second.pdf');
-    const firstOutputPath = path.join(workspacePath.path, 'Cafe\u0301.pdf');
-    const secondOutputPath = path.join(workspacePath.path, 'Café.pdf');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-unicode-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const firstStagedPath = path.join(workspacePath, '.graphics-workbench', 'first.pdf');
+    const secondStagedPath = path.join(workspacePath, '.graphics-workbench', 'second.pdf');
+    const firstOutputPath = path.join(workspacePath, 'Cafe\u0301.pdf');
+    const secondOutputPath = path.join(workspacePath, 'Café.pdf');
 
     await writeFixture(firstStagedPath, 'first');
     await writeFixture(secondStagedPath, 'second');
     await assert.rejects(
       commitStagedOutputs([
-        { stagedOutputPath: firstStagedPath, outputPath: firstOutputPath, workspacePath: workspacePath.path },
-        { stagedOutputPath: secondStagedPath, outputPath: secondOutputPath, workspacePath: workspacePath.path },
+        { stagedOutputPath: firstStagedPath, outputPath: firstOutputPath, workspacePath },
+        { stagedOutputPath: secondStagedPath, outputPath: secondOutputPath, workspacePath },
       ]),
       /same output/,
     );
   });
 
   it('既存出力に対して競合判断でcancelを選ぶと、cancelledエラーを返して既存の出力ファイルを変更しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
@@ -142,7 +146,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('overwriteを選ぶと、上書き前に既存の出力内容を.previous backupへコピーしてから変換結果で上書きする', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
@@ -159,9 +164,10 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('overwrite前に既存出力のmode（0o640）とmtimeを記録したmetadataを返し、Windows以外ではmodeも検証する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath.path, '.graphics-workbench', 'result.pdf');
-    const outputPath = path.join(workspacePath.path, 'sample.pdf');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
+    const outputPath = path.join(workspacePath, 'sample.pdf');
     const originalMtime = new Date(2005, 5, 15, 12, 34, 56, 789);
 
     await writeFixture(stagedOutputPath, 'new');
@@ -171,7 +177,7 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
       await chmod(outputPath, 0o640);
     }
 
-    const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path }], {
+    const committed = await commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
       resolveConflicts: async () => 'overwrite',
     });
 
@@ -184,7 +190,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('1件目をcommitした後、2件目のcopyが失敗した場合は両方の出力を元の内容（old-first/old-second）へ復元し、1件目のmtimeも元へ戻す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const outputs = await Promise.all(
       ['first', 'second'].map(async (name) => {
         const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
@@ -219,7 +226,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('overwrite中のcopy失敗が起きた場合も、.previous backupから元の出力（old）を復元する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
@@ -242,7 +250,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('新規出力の反映が一時ファイルへのコピーで失敗した場合、作成途中の出力ファイルを削除して不完全なファイルを残さない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
     const outputPath = path.join(workspacePath, 'new.pdf');
@@ -255,7 +264,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('2件目出力をcommitした直後のキャンセルで2件目のrollbackが失敗すると、CommitRollbackErrorに元のcancelとrollback失敗した出力pathを保持し、Output Channelへ「rollback failed」を記録する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const outputs = await Promise.all(
       ['first', 'second'].map(async (name) => {
         const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', `${name}.pdf`);
@@ -299,7 +309,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('上書き用の一時ファイルへのコピー完了時にキャンセルされた場合は、最終出力のrenameを開始せず元の出力（old）を維持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     const controller = new AbortController();
@@ -332,7 +343,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('commit後に他プロセスが出力を外部変更した場合、rollbackではその出力を上書きせず、外部変更を保持したまま元内容のrecovery backup（.previous）を残す', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const outputs = await Promise.all(
       ['first', 'second'].map(async (name) => {
@@ -380,7 +392,8 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('競合判断中に出力が外部変更された場合はoverwriteを開始せず「changed before overwrite」エラーを返し、変更後の内容を保持する', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-commit-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
     const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'new');
@@ -400,16 +413,17 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('workspace内の既存ファイルを指すsymlinkを出力先としてoverwriteしようとした場合は、link自体をregular fileへ置換せず拒否してlink先の内容も維持する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath.path, '.graphics-workbench', 'result.pdf');
-    const targetPath = path.join(workspacePath.path, 'target.pdf');
-    const outputPath = path.join(workspacePath.path, 'link.pdf');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
+    const targetPath = path.join(workspacePath, 'target.pdf');
+    const outputPath = path.join(workspacePath, 'link.pdf');
     await writeFixture(stagedOutputPath, 'converted');
     await writeFixture(targetPath, 'original target');
     await symlink(targetPath, outputPath);
 
     await assert.rejects(
-      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }], {
         resolveConflicts: async () => 'overwrite',
       }),
       /Symbolic link output cannot be replaced safely/,
@@ -420,12 +434,13 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('新規出力のstaged hash中に親directoryがworkspace外へのsymlinkへ差し替えられた場合は、境界外へ変換結果を作成せずcommitを拒否する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-parent-race-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-parent-race-'));
+    const workspacePath = workspacePathDisposable.path;
     await using outsidePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-parent-race-outside-'));
-    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
-    const outputDirectory = path.join(workspacePath.path, 'outputs');
-    const displacedDirectory = path.join(workspacePath.path, 'outputs-before-swap');
+    const outputDirectory = path.join(workspacePath, 'outputs');
+    const displacedDirectory = path.join(workspacePath, 'outputs-before-swap');
     const outputPath = path.join(outputDirectory, 'result.pdf');
     const outsideOutputPath = path.join(outsidePath.path, 'result.pdf');
     await writeFixture(stagedOutputPath, '');
@@ -434,7 +449,7 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
     let swapPromise: Promise<void> | undefined;
 
     await assert.rejects(
-      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], {
         outputChannel: {
           appendLine: (line) => {
             if (line.includes('conflict decision') && swapPromise === undefined) {
@@ -455,16 +470,17 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('競合判断後の上書き前バックアップ作成中に既存出力が外部編集され、バックアップにも編集後内容がコピーされた場合は、競合表示前のSHA-256との不一致でcommitを中止して外部編集後の内容を保持する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
-    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
-    const outputPath = path.join(workspacePath.path, 'sample.pdf');
+    const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'converted');
     await writeFixture(outputPath, 'original');
     let backupStarted = false;
 
     await assert.rejects(
-      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], {
         resolveConflicts: async () => 'overwrite',
         copyFile: async (source, destination, flags) => {
           if (!backupStarted) {
@@ -481,16 +497,17 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('上書き用の一時ファイルへ変換結果をコピーした直後に既存出力が外部編集された場合は、最終置換前の再検証で中止して外部編集後の内容を保持する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
-    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
-    const outputPath = path.join(workspacePath.path, 'sample.pdf');
+    const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'converted');
     await writeFixture(outputPath, 'original');
     let copyCount = 0;
 
     await assert.rejects(
-      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], {
         resolveConflicts: async () => 'overwrite',
         copyFile: async (source, destination, flags) => {
           await copyFile(source, destination, flags);
@@ -507,16 +524,17 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('上書き用の一時ファイルへのコピーが既存出力の外部編集後に失敗した場合は、まだ最終出力を変更していないため前回内容を復元せず外部編集後の内容を保持する', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
-    const stagingRootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const stagingRootPath = path.join(workspacePath, '.graphics-workbench', 'run');
     const stagedOutputPath = path.join(stagingRootPath, 'result.pdf');
-    const outputPath = path.join(workspacePath.path, 'sample.pdf');
+    const outputPath = path.join(workspacePath, 'sample.pdf');
     await writeFixture(stagedOutputPath, 'converted');
     await writeFixture(outputPath, 'original');
     let copyCount = 0;
 
     await assert.rejects(
-      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path, stagingRootPath }], {
+      commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath, stagingRootPath }], {
         resolveConflicts: async () => 'overwrite',
         copyFile: async (source, destination, flags) => {
           await copyFile(source, destination, flags);
@@ -534,15 +552,16 @@ describe('作業ディレクトリに置いた変換結果を出力ファイル�
   });
 
   it('新規出力のrollbackは対象の出力ファイルだけを削除し、workspace内の無関係なファイル（unrelated.txt）は残す', async () => {
-    await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
-    const stagedOutputPath = path.join(workspacePath.path, '.graphics-workbench', 'result.pdf');
-    const outputPath = path.join(workspacePath.path, 'sample.pdf');
-    const unrelatedPath = path.join(workspacePath.path, 'unrelated.txt');
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-commit-test-'));
+    const workspacePath = workspacePathDisposable.path;
+    const stagedOutputPath = path.join(workspacePath, '.graphics-workbench', 'result.pdf');
+    const outputPath = path.join(workspacePath, 'sample.pdf');
+    const unrelatedPath = path.join(workspacePath, 'unrelated.txt');
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
     await mkdir(stagedOutputPath);
     await writeFixture(unrelatedPath, 'keep');
 
-    await assert.rejects(commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath: workspacePath.path }]));
+    await assert.rejects(commitStagedOutputs([{ stagedOutputPath, outputPath, workspacePath }]));
 
     assert.strictEqual(await readFile(unrelatedPath, 'utf8'), 'keep');
   });

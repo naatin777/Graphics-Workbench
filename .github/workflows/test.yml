@@ -24,20 +24,55 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - run: bash .github/scripts/install-test-tools-linux.sh
-        shell: bash
-
-      - name: Inject installed conversion tool paths
-        shell: bash
-        run: |
-          echo "GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=$(command -v rsvg-convert)" >> "$GITHUB_ENV"
-
       - name: Run Core unit and integration tests
         run: npm run test -w core
         shell: bash
 
-      - name: Run Core tests in shuffled order
+      - name: Run Core tests in shuffled order (fixed seed)
         run: npm run test:shuffle -w core
+        shell: bash
+
+      - name: Run Core tests in shuffled order (run-derived seed)
+        if: github.event_name == 'pull_request'
+        run: SEED=$(( GITHUB_RUN_NUMBER % 1000 )) npm run test:shuffle:seed -w core
+        shell: bash
+
+      - name: Run Core tests in shuffled order (main seeds)
+        if: github.event_name != 'pull_request'
+        run: |
+          for seed in 1 42 777; do
+            SEED=$seed npm run test:shuffle:seed -w core || exit 1
+          done
+        shell: bash
+
+  core-external:
+    name: Core external-tool integration (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - uses: ./.github/actions/setup
+
+      - name: Install conversion tools with pinned versions
+        run: INSTALL_DRAWIO=1 bash .github/scripts/install-test-tools-linux.sh
+        shell: bash
+
+      - name: Install Chromium for the Chrome integration tests
+        run: npx playwright install chromium
+        shell: bash
+
+      - name: Inject tool paths
+        shell: bash
+        run: |
+          {
+            echo "GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=$(command -v rsvg-convert)"
+            echo "GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH=$(command -v drawio)"
+            echo "GRAPHICS_WORKBENCH_TEST_CHROME_PATH=$(find "$HOME/.cache/ms-playwright" -name chrome -type f | head -1)"
+          } >> "$GITHUB_ENV"
+
+      - name: Run Core external-tool integration tests
+        run: npm run test:external -w core
         shell: bash
 
   protocol:

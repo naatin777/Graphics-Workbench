@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -7,7 +7,8 @@ import { filesHaveEqualContents, hashFile } from '@graphics-workbench/core/runti
 
 describe('大きなファイルの内容ハッシュ比較', () => {
   it('同一内容の2ファイルはhashFileが一致してfilesHaveEqualContentsがtrueになり、末尾が異なるファイルに対してはfalseを返し、元ファイルは変更しない', async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-hash-test-'));
+    await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-hash-test-'));
+    const workspacePath = workspacePathDisposable.path;
     const firstPath = path.join(workspacePath, 'first.bin');
     const secondPath = path.join(workspacePath, 'second.bin');
     const differentPath = path.join(workspacePath, 'different.bin');
@@ -22,7 +23,5 @@ describe('大きなファイルの内容ハッシュ比較', () => {
     assert.strictEqual(await filesHaveEqualContents(firstPath, secondPath), true);
     assert.strictEqual(await filesHaveEqualContents(firstPath, differentPath), false);
     assert.strictEqual((await readFile(firstPath)).length, contents.length);
-
-    await rm(workspacePath, { recursive: true, force: true });
   });
 });
