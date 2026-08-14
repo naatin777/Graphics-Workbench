@@ -5,13 +5,16 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import { isRasterImagePath, sourceFormatForPath } from '@graphics-workbench/core/formats';
-import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
+import {
+  executeRasterConversion,
+  rasterFormatSpecs,
+  createPdfRenderBackend,
+} from '@graphics-workbench/core/conversion';
 import {
   assertRasterMatches,
   copyInputToWorkspace,
   createTestRuntime,
   listInputFixturePathsSync,
-  readConfiguredConversionTools,
   testInputDirectory,
   testOutputDirectory,
   withTestWorkspace,
@@ -35,7 +38,7 @@ describe('ラスターfixtureのPNG変換内容を固定正解と比較する', 
   for (const [index, fixturePath] of supportedRasterFixturePaths.entries()) {
     it(`${path.relative(rasterInputDirectory, fixturePath)}をworkspaceへコピーし、複数フレームなら2ページ目を指定してPNGへ変換すると、fixture固定のexpected.pngと内容が一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
+        const pdfRenderTools = createPdfRenderBackend();
         const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index, workspacePath);
         const outputPath = path.join(workspacePath, 'converted outputs', `${index}.png`);
         const sourceFormat = sourceFormatForPath(fixturePath);
@@ -53,7 +56,6 @@ describe('ラスターfixtureのPNG変換内容を固定正解と比較する', 
           maxInputPixels: 1_000_000_000,
           inputs: [{ sourcePath, outputPath, workspacePath, ...(page === undefined ? {} : { page }) }],
           pdfRenderTools,
-          drawioTools,
           runtime: createTestRuntime().runtime,
           runId: `raster-${index}`,
         });
@@ -71,7 +73,7 @@ describe('ラスターfixtureのPNG変換内容を固定正解と比較する', 
     const fixturePath = path.join(testInputDirectory, 'valid', unsupportedRasterFixtureRelativePaths[0] ?? '');
 
     await withTestWorkspace(async (workspacePath) => {
-      const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
+      const pdfRenderTools = createPdfRenderBackend();
       const sourcePath = await copyInputToWorkspace(fixturePath, workspacePath, 'unsupported sequence.avif');
       const outputPath = path.join(workspacePath, 'unsupported-output.png');
 
@@ -81,7 +83,6 @@ describe('ラスターfixtureのPNG変換内容を固定正解と比較する', 
           maxInputPixels: 1_000_000_000,
           inputs: [{ sourcePath, outputPath, workspacePath }],
           pdfRenderTools,
-          drawioTools,
           runtime: createTestRuntime().runtime,
           runId: 'unsupported-avif',
         }),

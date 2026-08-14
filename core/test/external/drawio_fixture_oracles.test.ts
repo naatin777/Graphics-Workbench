@@ -59,8 +59,7 @@ describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
   for (const fixtureCase of validCases) {
     it(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async () => {
       const configuredTools = readConfiguredConversionTools();
-      const drawioPath = requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io');
-      requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH', 'rsvg-convert');
+      const { drawioTools } = configuredTools;
 
       const { runtime } = createTestRuntime();
 
@@ -77,7 +76,6 @@ describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
         const renderedExpectedSvgPath = path.join(outputDirectory, 'expected-svg.png');
         const expectedDirectory = path.join(testOutputDirectory, 'drawio', fixtureCase.id);
 
-        const drawioTools = { drawioPath, runDrawio: executeDrawio };
         await executeRasterConversion({
           spec: rasterFormatSpecs.png,
           inputs: [{ sourcePath, outputPath: actualPngPath, workspacePath }],
@@ -115,7 +113,7 @@ describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
                   workspaceName: path.basename(workspacePath),
                 },
               ],
-              drawioPath,
+              drawioPath: drawioTools.drawioPath,
               runDrawio: executeDrawio,
               runtime,
               runId: `drawio-${fixtureCase.id}-native-pdf`,

@@ -37,7 +37,6 @@ export { createTestRuntime, type CreateTestRuntimeOptions, type TestRuntime } fr
 export {
   defaultRasterMaxInputPixels,
   readConfiguredConversionTools,
-  readExternalTestSettings,
   requireConfiguredTool,
   type ConfiguredConversionTools,
 } from './tools.js';
