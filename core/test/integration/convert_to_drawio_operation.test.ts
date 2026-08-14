@@ -5,10 +5,10 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import { convertToDrawioFiles, createDrawioXml, parseSvgSize } from '@graphics-workbench/core/conversion';
-import { requireValue } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfFixture } from '@graphics-workbench/core/testing';
 
-suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
-  test('XML生成で各画像を1つのshape=imageオブジェクトにし、同名ページをnameとname-2へ連番化する', () => {
+describe('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
+  it('XML生成で各画像を1つのshape=imageオブジェクトにし、同名ページをnameとname-2へ連番化する', () => {
     const xml = createDrawioXml([
       { name: 'same', dataUri: 'data:image/png;base64,AA==', width: 10, height: 20 },
       { name: 'same', dataUri: 'data:image/svg+xml;base64,BB==', width: 30, height: 40 },
@@ -18,7 +18,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     assert.strictEqual((xml.match(/shape=image/g) ?? []).length, 2);
   });
 
-  test('SVGサイズをwidth/height（ptはpxへ変換）で判定し、片方だけならviewBoxの比率から補完し、両方無ければdimensionsエラーを返す', () => {
+  it('SVGサイズをwidth/height（ptはpxへ変換）で判定し、片方だけならviewBoxの比率から補完し、両方無ければdimensionsエラーを返す', () => {
     assert.deepStrictEqual(parseSvgSize('<svg width="12pt" height="8pt"/>'), { width: 12, height: 8 });
     assert.deepStrictEqual(parseSvgSize('<svg viewBox="0 0 640 480"/>'), { width: 640, height: 480 });
     assert.deepStrictEqual(parseSvgSize('<svg width="320" viewBox="0 0 640 480"/>'), { width: 320, height: 240 });
@@ -26,7 +26,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     assert.throws(() => parseSvgSize('<svg/>'), /dimensions/);
   });
 
-  test('PNGと2ページPDFを1つのdrawioへ集約し、PDFの各ページ（1・2）をPDF→SVG変換処理（runPdfToSvg）へ順に通して1ページずつ画像化したXMLを生成する', async () => {
+  it('PNGと2ページPDFを1つのdrawioへ集約し、PDFの各ページ（1・2）をPDF→SVG変換処理（runPdfToSvg）へ順に通して1ページずつ画像化したXMLを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-to-drawio-'));
     const imagePath = path.join(workspacePath.path, 'image.png');
     const pdfPath = path.join(workspacePath.path, 'input.pdf');
@@ -34,11 +34,10 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
       .png()
       .toFile(imagePath);
-    const { PDFDocument } = await import('@graphics-workbench/core/testing');
-    const pdf = await PDFDocument.create();
-    pdf.addPage([100, 50]);
-    pdf.addPage([80, 40]);
-    await writeFile(pdfPath, await pdf.save());
+    const pdfBytes = await createPdfFixture({
+      pages: [{ mediaBox: [0, 0, 100, 50] }, { mediaBox: [0, 0, 80, 40] }],
+    });
+    await writeFile(pdfPath, pdfBytes);
     const calls: number[] = [];
     await convertToDrawioFiles({
       maxInputPixels: 1_000_000_000,
@@ -64,7 +63,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     assert.match(xml, /data:image\/svg\+xml;base64/);
   });
 
-  test('アニメーションGIF/WebP・マルチページTIFFの先頭フレームをPNGデータURIへ正規化し、ページ寸法20x10をXML（pageWidth/pageHeight/mxGeometry）へ設定する', async () => {
+  it('アニメーションGIF/WebP・マルチページTIFFの先頭フレームをPNGデータURIへ正規化し、ページ寸法20x10をXML（pageWidth/pageHeight/mxGeometry）へ設定する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-to-drawio-raster-frames-'));
     const red = await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
       .png()
@@ -112,7 +111,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     assert.strictEqual((xml.match(/<mxGeometry width="20" height="10"/g) ?? []).length, 3);
   });
 
-  test('editableなPNG/SVGを一時Draw.io XMLとしてDesktop CLI（--export --format --embed-diagram）へ渡し、生成されたPNG/SVGを結果ファイルへ反映する', async () => {
+  it('editableなPNG/SVGを一時Draw.io XMLとしてDesktop CLI（--export --format --embed-diagram）へ渡し、生成されたPNG/SVGを結果ファイルへ反映する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-to-drawio-editable-'));
     const imagePath = path.join(workspacePath.path, 'image.png');
     await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
@@ -167,7 +166,7 @@ suite('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
     }
   });
 
-  test('editable画像のDraw.io CLI exportが失敗した場合はエラーをそのまま返し、別形式へのfallbackや出力ファイル作成はしない', async () => {
+  it('editable画像のDraw.io CLI exportが失敗した場合はエラーをそのまま返し、別形式へのfallbackや出力ファイル作成はしない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-to-drawio-failure-'));
     const imagePath = path.join(workspacePath.path, 'image.png');
     const outputPath = path.join(workspacePath.path, 'result.dio.png');

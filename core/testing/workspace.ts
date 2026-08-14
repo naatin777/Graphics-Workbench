@@ -1,36 +1,24 @@
-import { copyFile, mkdir, mkdtemp, readdir, rm } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtempDisposable } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-let workspaceDirectory: string | undefined;
-
-async function resolveWorkspaceRoot(): Promise<string> {
-  workspaceDirectory ??= await mkdtemp(path.join(os.tmpdir(), 'graphics-workbench-test-workspace-'));
-  return workspaceDirectory;
-}
-
+/**
+ * Runs the callback against a fresh, test-private temporary workspace that is
+ * removed when the callback finishes. Tests never share a workspace, so
+ * parallel execution cannot have one test deleting another test's files.
+ */
 export async function withTestWorkspace<T>(callback: (workspacePath: string) => Promise<T>): Promise<T> {
-  const workspacePath = await resolveWorkspaceRoot();
-  await clearWorkspace(workspacePath);
-
-  try {
-    return await callback(workspacePath);
-  } finally {
-    await clearWorkspace(workspacePath);
-  }
+  await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'graphics-workbench-test-workspace-'));
+  return await callback(workspace.path);
 }
 
-export async function copyInputToWorkspace(inputPath: string, relativeDestinationPath: string): Promise<string> {
-  const workspacePath = await resolveWorkspaceRoot();
+export async function copyInputToWorkspace(
+  inputPath: string,
+  workspacePath: string,
+  relativeDestinationPath: string,
+): Promise<string> {
   const destinationPath = path.join(workspacePath, relativeDestinationPath);
   await mkdir(path.dirname(destinationPath), { recursive: true });
   await copyFile(inputPath, destinationPath);
   return destinationPath;
-}
-
-async function clearWorkspace(workspacePath: string): Promise<void> {
-  const entries = await readdir(workspacePath, { withFileTypes: true });
-  await Promise.all(
-    entries.map((entry) => rm(path.join(workspacePath, entry.name), { recursive: entry.isDirectory(), force: true })),
-  );
 }

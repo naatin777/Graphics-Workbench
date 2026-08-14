@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 
-import { suite, test } from 'mocha';
-
 import { splitPdfProtocol } from '@graphics-workbench/vscode-protocol/split-pdf-protocol';
 
 const acceptsHostMessage = (value: unknown): boolean => splitPdfProtocol.parseHostToWebview(value) !== undefined;
@@ -59,8 +57,8 @@ const initPayload = {
   labels,
 };
 
-suite('Split PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/ready/previewLoadFailed/apply）', () => {
-  test('必須フィールドをすべて持つinitメッセージと、ready/previewLoadFailed/非空ページ行を持つapplyメッセージを受け入れる', () => {
+describe('Split PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/ready/previewLoadFailed/apply）', () => {
+  it('必須フィールドをすべて持つinitメッセージと、ready/previewLoadFailed/非空ページ行を持つapplyメッセージを受け入れる', () => {
     assert.equal(acceptsHostMessage({ type: 'init', payload: initPayload }), true);
     assert.equal(acceptsWebviewMessage({ type: 'ready' }), true);
     assert.equal(acceptsWebviewMessage({ type: 'previewLoadFailed', payload: { message: 'preview failed' } }), true);
@@ -70,7 +68,7 @@ suite('Split PDFのWebviewとホスト間で送受信するメッセージ形式
     );
   });
 
-  test('定義外キー・不正型・空ページ行・requestId付きready・空typeを持つメッセージを拒否する', () => {
+  it('定義外キー・不正型・空ページ行・requestId付きready・空typeを持つメッセージを拒否する', () => {
     assert.equal(acceptsHostMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }), false);
     assert.equal(acceptsWebviewMessage({ type: 'ready', requestId: 'request-1' }), false);
     assert.equal(acceptsWebviewMessage({ type: 'ready', payload: undefined }), false);

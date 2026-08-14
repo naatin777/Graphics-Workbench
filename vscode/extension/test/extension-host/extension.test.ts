@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { copyFile, mkdtempDisposable, readFile } from 'node:fs/promises';
+
+import { readPdfPages } from '@graphics-workbench/core/testing';
 import path from 'node:path';
 
 import { createSandbox } from 'sinon';
@@ -51,9 +53,8 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
 
       await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
 
-      const { PDFDocument } = await import('@graphics-workbench/core/testing');
-      const pdf = await PDFDocument.load(await readFile(outputPath));
-      assert.strictEqual(pdf.getPageCount(), 1);
+      const pdfPages = await readPdfPages(await readFile(outputPath));
+      assert.strictEqual(pdfPages.length, 1);
     } finally {
       sandbox.restore();
     }
@@ -78,9 +79,8 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
       await vscode.commands.executeCommand('graphics-workbench.cropPdf.auto', vscode.Uri.file(sourcePath));
 
       const croppedPath = path.join(temporaryDirectory.path, 'document-crop.pdf');
-      const { PDFDocument } = await import('@graphics-workbench/core/testing');
-      const pdf = await PDFDocument.load(await readFile(croppedPath));
-      assert.strictEqual(pdf.getPageCount(), 2);
+      const pdfPages = await readPdfPages(await readFile(croppedPath));
+      assert.strictEqual(pdfPages.length, 2);
     } finally {
       sandbox.restore();
     }
@@ -102,12 +102,10 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
 
       await vscode.commands.executeCommand('graphics-workbench.splitPdf.allPages', vscode.Uri.file(sourcePath));
 
-      const { PDFDocument } = await import('@graphics-workbench/core/testing');
       const splitOutputDir = path.join(temporaryDirectory.path, 'split-test');
       for (const page of [1, 2]) {
         const pagePath = path.join(splitOutputDir, `${page}.pdf`);
-        const pdf = await PDFDocument.load(await readFile(pagePath));
-        assert.strictEqual(pdf.getPageCount(), 1);
+        assert.strictEqual((await readPdfPages(await readFile(pagePath))).length, 1);
       }
     } finally {
       sandbox.restore();

@@ -1,8 +1,8 @@
+import { createPdfFixture } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdtempDisposable, rm } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '@graphics-workbench/core/testing';
 import * as vscode from 'vscode';
 
 import { LatexDropEditProvider } from '../../../src/edit_provider/latex_drop_edit_provider.js';
@@ -213,9 +213,8 @@ function normalizeSnippetValue(value: string): string {
 }
 
 async function writePdf(uri: vscode.Uri): Promise<void> {
-  const document = await PDFDocument.create();
-  document.addPage([120, 80]);
-  await vscode.workspace.fs.writeFile(uri, await document.save());
+  const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 120, 80] }] });
+  await vscode.workspace.fs.writeFile(uri, pdfBytes);
 }
 
 async function createTemporaryWorkspaceDirectory(prefix: string): Promise<string> {

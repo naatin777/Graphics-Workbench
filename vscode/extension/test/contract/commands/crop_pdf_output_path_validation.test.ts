@@ -11,11 +11,11 @@
 // - crop処理本体
 // - OSが返すfilesystem error文言
 
+import { createPdfFixture } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { access, mkdtempDisposable, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '@graphics-workbench/core/testing';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
@@ -35,9 +35,7 @@ suite('PDF crop outputPath検証', () => {
 
     try {
       const sourcePath = path.join(temporaryDirectory.path, 'source.pdf');
-      const document = await PDFDocument.create();
-      document.addPage([100, 100]);
-      await writeFile(sourcePath, await document.save());
+      await writeFile(sourcePath, await createPdfFixture({ pages: [{ mediaBox: [0, 0, 100, 100] }] }));
       await configuration.update(
         'outputPath.cropPdf',
         '${fileDirname}/invalid\u0000.pdf',

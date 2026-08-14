@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
@@ -20,10 +20,10 @@ suite('PDF圧縮コマンド', () => {
       path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-compress-pdf-'),
     );
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
-    const document = await PDFDocument.create();
-    document.addPage([200, 150]);
-    document.addPage([200, 150]);
-    await writeFile(sourcePath, await document.save());
+    await writeFile(
+      sourcePath,
+      await createPdfFixture({ pages: [{ mediaBox: [0, 0, 200, 150] }, { mediaBox: [0, 0, 200, 150] }] }),
+    );
 
     const commandExecution = vscode.commands.executeCommand(
       'graphics-workbench.compressPdf',
@@ -34,7 +34,7 @@ suite('PDF圧縮コマンド', () => {
     assert.strictEqual(showInformationMessage.firstCall?.args.length, 3);
 
     const outputPath = path.join(workspacePath.path, 'source_compressed.pdf');
-    const output = await PDFDocument.load(await readFile(outputPath));
-    assert.strictEqual(output.getPageCount(), 2);
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(outputPages.length, 2);
   });
 });

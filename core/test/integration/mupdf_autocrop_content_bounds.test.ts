@@ -23,14 +23,13 @@ import {
   hasPdfPageContent,
   loadMupdf,
   renderPdfPageToPng,
-  savePdfDocument,
   type MupdfPixmap,
   type MupdfRect,
 } from '@graphics-workbench/core/pdf';
-import { PDFDocument, buildPdfFixture, type PDFPage } from '@graphics-workbench/core/testing';
+import { createPdfFixture, fillRectangle, type PdfFixturePage } from '@graphics-workbench/core/testing';
 
-suite('DisplayList.getBoundsはcontent boundsではない（raster検出の必要性）', () => {
-  test('中央にcontentがあるページでも toDisplayList().getBounds() はページ全体（mediabox）を返し、contentに縮まない', async () => {
+describe('DisplayList.getBoundsはcontent boundsではない（raster検出の必要性）', () => {
+  it('中央にcontentがあるページでも toDisplayList().getBounds() はページ全体（mediabox）を返し、contentに縮まない', async () => {
     const bytes = await buildCenteredContentPdf();
     const { default: mupdf } = await import('mupdf');
     const document = mupdf.Document.openDocument(bytes);
@@ -60,7 +59,7 @@ suite('DisplayList.getBoundsはcontent boundsではない（raster検出の必�
     }
   });
 
-  test('空ページの toDisplayList().getBounds() もページ全体を返し、『contentなし』と区別できない', async () => {
+  it('空ページの toDisplayList().getBounds() もページ全体を返し、『contentなし』と区別できない', async () => {
     const bytes = await buildBlankPdf();
     const { default: mupdf } = await import('mupdf');
     const document = mupdf.Document.openDocument(bytes);
@@ -80,7 +79,7 @@ suite('DisplayList.getBoundsはcontent boundsではない（raster検出の必�
     }
   });
 
-  test('raster検出は中央のcontentだけへ縮み、空ページはcontentなしと判定する（現行semanticsを維持）', async () => {
+  it('raster検出は中央のcontentだけへ縮み、空ページはcontentなしと判定する（現行semanticsを維持）', async () => {
     const contentBytes = await buildCenteredContentPdf();
     const blankBytes = await buildBlankPdf();
 
@@ -94,15 +93,15 @@ suite('DisplayList.getBoundsはcontent boundsではない（raster検出の必�
   });
 });
 
-suite('pdfcrop互換のvisible content検出（白背景render・純白だけがbackground）', () => {
-  test('全面の白rectangleだけのページはcontentなしと判定する（pdfcropと同じく白は墨ではない）', async () => {
-    const bytes = await buildPdfWithContent('q 1 1 1 rg 0 0 300 200 re f Q');
+describe('pdfcrop互換のvisible content検出（白背景render・純白だけがbackground）', () => {
+  it('全面の白rectangleだけのページはcontentなしと判定する（pdfcropと同じく白は墨ではない）', async () => {
+    const bytes = await buildPdfWithWhiteBackground();
 
     assert.strictEqual(await hasPdfPageContent(bytes, 1), false);
   });
 
-  test('全面の白rectangle＋中央contentはcontentとして検出し、cropContentで白rectangleを含む余白をtrimする', async () => {
-    const bytes = await buildPdfWithContent('q 1 1 1 rg 0 0 300 200 re f Q q 0 0 0 rg 100 50 100 100 re f Q');
+  it('全面の白rectangle＋中央contentはcontentとして検出し、cropContentで白rectangleを含む余白をtrimする', async () => {
+    const bytes = await buildPdfWithWhiteBackgroundAndCenterContent();
 
     assert.strictEqual(await hasPdfPageContent(bytes, 1), true);
     const croppedPng = await renderPdfPageToPng(bytes, 1, { cropContent: true });
@@ -111,8 +110,8 @@ suite('pdfcrop互換のvisible content検出（白背景render・純白だけが
     assert.ok(pngHeight(croppedPng) < pngHeight(fullPng), '白rectangle背景が余白としてtrimされていない');
   });
 
-  test('薄いグレー（#FCFCFC）もcontentとして検出する（純白 #FFFFFF だけがbackground）', async () => {
-    const bytes = await buildPdfWithContent('q 0.988235294 0.988235294 0.988235294 rg 100 50 100 100 re f Q');
+  it('薄いグレー（#FCFCFC）もcontentとして検出する（純白 #FFFFFF だけがbackground）', async () => {
+    const bytes = await buildPdfWithNearWhiteCenterContent();
 
     assert.strictEqual(await hasPdfPageContent(bytes, 1), true);
     const croppedPng = await renderPdfPageToPng(bytes, 1, { cropContent: true });
@@ -120,7 +119,7 @@ suite('pdfcrop互換のvisible content検出（白背景render・純白だけが
     assert.ok(pngWidth(croppedPng) < pngWidth(fullPng), '#FCFCFCがcontentとして検出されていない');
   });
 
-  test('buffer長がRGB layoutと矛盾するpixmapは、白ページと誤認せずinvariant違反としてthrowする', () => {
+  it('buffer長がRGB layoutと矛盾するpixmapは、白ページと誤認せずinvariant違反としてthrowする', () => {
     assert.throws(
       () => findVisiblePixelBounds(makePixmap(2, 2, new Uint8ClampedArray(2 * 2 * 2))),
       /does not match the DeviceRGB layout/,
@@ -131,7 +130,7 @@ suite('pdfcrop互換のvisible content検出（白背景render・純白だけが
     );
   });
 
-  test('純白だけのbufferはcontentなし、1バイトでも非白を含むbufferはboundsを返す', () => {
+  it('純白だけのbufferはcontentなし、1バイトでも非白を含むbufferはboundsを返す', () => {
     const white = new Uint8ClampedArray(3 * 3 * 3);
     white.fill(255);
     assert.strictEqual(findVisiblePixelBounds(makePixmap(3, 3, white)), undefined);
@@ -144,105 +143,120 @@ suite('pdfcrop互換のvisible content検出（白背景render・純白だけが
 });
 
 async function buildCenteredContentPdf(): Promise<Uint8Array> {
-  return buildPdfFixture([{ width: 300, height: 200, contentOperations: 'q 0 0 0 rg 100 50 100 100 re f Q' }]);
+  return createPdfFixture({
+    pages: [{ mediaBox: [0, 0, 300, 200], contents: [fillRectangle({ x: 100, y: 50, width: 100, height: 100 })] }],
+  });
 }
 
 async function buildBlankPdf(): Promise<Uint8Array> {
-  return buildPdfFixture([{ width: 300, height: 200 }]);
+  return createPdfFixture({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
 }
 
-async function buildPdfWithContent(contentOps: string): Promise<Uint8Array> {
-  const mupdf = await loadMupdf();
-  const document = new mupdf.PDFDocument();
-  const page = document.newDictionary();
-  page.put('Type', document.newName('Page'));
-  page.put('MediaBox', [0, 0, 300, 200]);
-  page.put('Contents', document.addStream(contentOps, null));
-  document.insertPage(0, document.addObject(page));
-  return savePdfDocument(document);
+async function buildPdfWithWhiteBackground(): Promise<Uint8Array> {
+  return createPdfFixture({
+    pages: [
+      {
+        mediaBox: [0, 0, 300, 200],
+        contents: [fillRectangle({ x: 0, y: 0, width: 300, height: 200, color: [1, 1, 1] })],
+      },
+    ],
+  });
 }
 
-suite('offset MediaBox・回転ページでもvisible content boundsをPDF user spaceで返す', () => {
-  const cases: { label: string; configure: (page: PDFPage) => void; expected: MupdfRect }[] = [
+async function buildPdfWithWhiteBackgroundAndCenterContent(): Promise<Uint8Array> {
+  return createPdfFixture({
+    pages: [
+      {
+        mediaBox: [0, 0, 300, 200],
+        contents: [
+          fillRectangle({ x: 0, y: 0, width: 300, height: 200, color: [1, 1, 1] }),
+          fillRectangle({ x: 100, y: 50, width: 100, height: 100 }),
+        ],
+      },
+    ],
+  });
+}
+
+async function buildPdfWithNearWhiteCenterContent(): Promise<Uint8Array> {
+  return createPdfFixture({
+    pages: [
+      {
+        mediaBox: [0, 0, 300, 200],
+        contents: [
+          fillRectangle({ x: 100, y: 50, width: 100, height: 100, color: [0.988235294, 0.988235294, 0.988235294] }),
+        ],
+      },
+    ],
+  });
+}
+
+describe('offset MediaBox・回転ページでもvisible content boundsをPDF user spaceで返す', () => {
+  const cases: { label: string; page: PdfFixturePage; expected: MupdfRect }[] = [
     {
       label: 'offset MediaBox [100,200,400,400]ではcontentの絶対座標を返す',
-      configure: (page) => {
-        page.setMediaBox(100, 200, 300, 200);
-        page.drawRectangle({ x: 150, y: 260, width: 50, height: 60 });
-      },
+      page: { mediaBox: [100, 200, 400, 400], contents: [fillRectangle({ x: 150, y: 260, width: 50, height: 60 })] },
       expected: [150, 260, 200, 320],
     },
     {
       label: 'negative origin MediaBox [-100,-50,200,150]では負の座標を含むcontent boundsを返す',
-      configure: (page) => {
-        page.setMediaBox(-100, -50, 300, 200);
-        page.drawRectangle({ x: -50, y: 0, width: 50, height: 50 });
-      },
+      page: { mediaBox: [-100, -50, 200, 150], contents: [fillRectangle({ x: -50, y: 0, width: 50, height: 50 })] },
       expected: [-50, 0, 0, 50],
     },
     {
       label: '/Rotate 90でもPDF user spaceの座標（回転前）を返す',
-      configure: (page) => {
-        page.setRotation({ angle: 90 });
-        page.drawRectangle({ x: 50, y: 60, width: 50, height: 60 });
+      page: {
+        mediaBox: [0, 0, 300, 200],
+        rotation: 90,
+        contents: [fillRectangle({ x: 50, y: 60, width: 50, height: 60 })],
       },
       expected: [50, 60, 100, 120],
     },
     {
       label: '/Rotate 180でもPDF user spaceの座標を返す',
-      configure: (page) => {
-        page.setRotation({ angle: 180 });
-        page.drawRectangle({ x: 50, y: 60, width: 50, height: 60 });
+      page: {
+        mediaBox: [0, 0, 300, 200],
+        rotation: 180,
+        contents: [fillRectangle({ x: 50, y: 60, width: 50, height: 60 })],
       },
       expected: [50, 60, 100, 120],
     },
     {
       label: '/Rotate 270でもPDF user spaceの座標を返す',
-      configure: (page) => {
-        page.setRotation({ angle: 270 });
-        page.drawRectangle({ x: 50, y: 60, width: 50, height: 60 });
+      page: {
+        mediaBox: [0, 0, 300, 200],
+        rotation: 270,
+        contents: [fillRectangle({ x: 50, y: 60, width: 50, height: 60 })],
       },
       expected: [50, 60, 100, 120],
     },
     {
       label: 'offset MediaBox + /Rotate 90の組み合わせでも絶対座標を返す',
-      configure: (page) => {
-        page.setMediaBox(100, 200, 300, 200);
-        page.setRotation({ angle: 90 });
-        page.drawRectangle({ x: 150, y: 260, width: 50, height: 60 });
+      page: {
+        mediaBox: [100, 200, 400, 400],
+        rotation: 90,
+        contents: [fillRectangle({ x: 150, y: 260, width: 50, height: 60 })],
       },
       expected: [150, 260, 200, 320],
     },
     {
       label: 'ページ端の1px content（左下）も見逃さない',
-      configure: (page) => {
-        page.drawRectangle({ x: 0, y: 0, width: 1, height: 1 });
-      },
+      page: { mediaBox: [0, 0, 300, 200], contents: [fillRectangle({ x: 0, y: 0, width: 1, height: 1 })] },
       expected: [0, 0, 1, 1],
     },
     {
       label: 'ページ端の1px content（右上）も見逃さない',
-      configure: (page) => {
-        page.drawRectangle({ x: 299, y: 199, width: 1, height: 1 });
-      },
+      page: { mediaBox: [0, 0, 300, 200], contents: [fillRectangle({ x: 299, y: 199, width: 1, height: 1 })] },
       expected: [299, 199, 300, 200],
     },
   ];
 
-  for (const { label, configure, expected } of cases) {
-    test(label, async () => {
-      const bytes = await buildPdfWithConfiguredPage(configure);
+  for (const { label, page, expected } of cases) {
+    it(label, async () => {
+      const bytes = await createPdfFixture({ pages: [page] });
       assert.deepStrictEqual(await readVisibleContentBounds(bytes), expected);
     });
   }
 });
-
-async function buildPdfWithConfiguredPage(configure: (page: PDFPage) => void): Promise<Uint8Array> {
-  const document = await PDFDocument.create();
-  const page = document.addPage([300, 200]);
-  configure(page);
-  return document.save();
-}
 
 async function readVisibleContentBounds(bytes: Uint8Array): Promise<MupdfRect | undefined> {
   const mupdf = await loadMupdf();

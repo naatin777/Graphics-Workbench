@@ -10,17 +10,14 @@ export {
 } from './assertions/raster_content.js';
 export { assertSvgStructureMatches } from './assertions/svg.js';
 export {
-  PDFDocument,
-  PDFPage,
-  degrees,
-  rgb,
-  type PdfBox,
-  type PdfRotation,
-  type PdfSize,
-  type RgbColor,
-} from './document.js';
+  createPdfFixture,
+  fillRectangle,
+  readPdfPages,
+  type PdfFixtureOptions,
+  type PdfFixturePage,
+  type PdfFixturePageGeometry,
+} from './fixtures/pdf.js';
 export { listFixtureFilePaths, listFixtureFilePathsSync } from './fixture_files.js';
-export { buildPdfFixture, type PdfFixturePage } from './fixtures/pdf.js';
 export {
   invalidPreflightInputDirectory,
   listInputFixturePaths,

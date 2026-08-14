@@ -13,13 +13,19 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import sharp from 'sharp';
-import { PDFDocument, operationPngInputPath, testInputDirectory, requireValue } from '@graphics-workbench/core/testing';
+import {
+  operationPngInputPath,
+  testInputDirectory,
+  requireValue,
+  readPdfPages,
+  createPdfFixture,
+} from '@graphics-workbench/core/testing';
 
 import { convertToPdfFiles, executeChrome, validateSvgToPdfOptions } from '@graphics-workbench/core/conversion';
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
 
-suite('入力画像をPDFへ変換する処理', () => {
-  test('2フレームのアニメーションGIFをpage1・page2の2jobに分け、各フレームを1ページのPDFへ変換する', async () => {
+describe('入力画像をPDFへ変換する処理', () => {
+  it('2フレームのアニメーションGIFをpage1・page2の2jobに分け、各フレームを1ページのPDFへ変換する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-to-pdf-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
@@ -39,13 +45,13 @@ suite('入力画像をPDFへ変換する処理', () => {
 
     await Promise.all(
       outputPaths.map(async (outputPath) => {
-        const document = await PDFDocument.load(await readFile(outputPath));
-        assert.strictEqual(document.getPageCount(), 1);
+        const pages = await readPdfPages(await readFile(outputPath));
+        assert.strictEqual(pages.length, 1);
       }),
     );
   });
 
-  test('page未指定の2フレームアニメーションGIFを1jobで渡すと、全フレームを1つのPDFへ統合した2ページPDFを生成する', async () => {
+  it('page未指定の2フレームアニメーションGIFを1jobで渡すと、全フレームを1つのPDFへ統合した2ページPDFを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-gif-to-pdf-all-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
@@ -59,11 +65,11 @@ suite('入力画像をPDFへ変換する処理', () => {
       runId: 'run',
     });
 
-    const pdf = await PDFDocument.load(await readFile(outputPath));
-    assert.strictEqual(pdf.getPageCount(), 2);
+    const pdfPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(pdfPages.length, 2);
   });
 
-  test('ページ寸法が異なる4ページTIFFを1jobで渡すと、先頭ページへ切り詰めず4ページPDFを生成する', async () => {
+  it('ページ寸法が異なる4ページTIFFを1jobで渡すと、先頭ページへ切り詰めず4ページPDFを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-tiff-to-pdf-all-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.tiff');
@@ -77,10 +83,10 @@ suite('入力画像をPDFへ変換する処理', () => {
       runId: 'run',
     });
 
-    const pdf = await PDFDocument.load(await readFile(outputPath));
-    assert.strictEqual(pdf.getPageCount(), 4);
+    const pdfPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(pdfPages.length, 4);
     assert.deepStrictEqual(
-      [0, 1, 2, 3].map((index) => pdf.getPage(index).getSize()),
+      pdfPages.map((page) => ({ width: page.mediaBox.width, height: page.mediaBox.height })),
       [
         { width: 600, height: 480 },
         { width: 200, height: 160 },
@@ -90,7 +96,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     );
   });
 
-  test('PNGを読み込んで1ページのPDFへ変換し、出力PDFのページ数が1であることを確認する', async () => {
+  it('PNGを読み込んで1ページのPDFへ変換し、出力PDFのページ数が1であることを確認する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-png-test-'));
     const sourcePath = path.join(workspacePath.path, 'source.png');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -103,11 +109,10 @@ suite('入力画像をPDFへ変換する処理', () => {
       runtime: {},
     });
 
-    const { PDFDocument: LoadedPdfDocument } = await import('@graphics-workbench/core/testing');
-    const pdf = await LoadedPdfDocument.load(await import('node:fs/promises').then((fs) => fs.readFile(outputPath)));
-    assert.strictEqual(pdf.getPageCount(), 1);
+    const pdfBytes = await import('node:fs/promises').then((fs) => fs.readFile(outputPath));
+    assert.strictEqual((await readPdfPages(pdfBytes)).length, 1);
   });
-  test('10x10のPNGに対しmaxInputPixels=99ではpixel上限エラーで変換せず、maxInputPixels=100では変換を実行して出力PDFを作成する', async () => {
+  it('10x10のPNGに対しmaxInputPixels=99ではpixel上限エラーで変換せず、maxInputPixels=100では変換を実行して出力PDFを作成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-png-pixel-limit-'));
     const sourcePath = path.join(workspacePath.path, 'ten-by-ten.png');
     const limitedOutputPath = path.join(workspacePath.path, 'limited-output.pdf');
@@ -141,7 +146,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await access(outputPath);
   });
 
-  test('Draw.io runnerが成功終了しても非PDF内容を書き出した場合はunparsable PDFエラーで失敗とし、最終出力を作成しない', async () => {
+  it('Draw.io runnerが成功終了しても非PDF内容を書き出した場合はunparsable PDFエラーで失敗とし、最終出力を作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-invalid-output-'));
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -167,7 +172,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('Draw.io backend未指定のeditable Draw.io画像はフォールバックせずDraw.io executable未設定エラーで失敗し、最終出力を作成しない', async () => {
+  it('Draw.io backend未指定のeditable Draw.io画像はフォールバックせずDraw.io executable未設定エラーで失敗し、最終出力を作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-no-drawio-'));
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -185,7 +190,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('SVGのPDF変換でChrome backendが--headless --no-pdf-header-footerと--print-to-pdf=...result.pdfおよびSVGのfile URLを渡して実行され、SVGサイズの1ページPDFが生成される', async () => {
+  it('SVGのPDF変換でChrome backendが--headless --no-pdf-header-footerと--print-to-pdf=...result.pdfおよびSVGのfile URLを渡して実行され、SVGサイズの1ページPDFが生成される', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-svg-chrome-'));
     const sourcePath = path.join(workspacePath.path, 'source.svg');
     const outputPath = path.join(workspacePath.path, 'output.pdf');
@@ -210,11 +215,10 @@ suite('入力画像をPDFへ変換する処理', () => {
           },
           runChrome: async (executable, args) => {
             calls.push({ executable, args });
-            const pdf = await PDFDocument.create();
-            pdf.addPage([7, 11]);
+            const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 7, 11] }] });
             const outputArgument = args.find((argument) => argument.startsWith('--print-to-pdf='));
             assert.ok(outputArgument);
-            await writeFile(outputArgument.slice('--print-to-pdf='.length), await pdf.save());
+            await writeFile(outputArgument.slice('--print-to-pdf='.length), pdfBytes);
           },
         },
       },
@@ -227,14 +231,17 @@ suite('入力画像をPDFへ変換する処理', () => {
     assert.match(call?.args[2] ?? '', /^--print-to-pdf=.+result\.pdf$/u);
     assert.match(call?.args[3] ?? '', /result\.pdf\.chrome\.html$/u);
 
-    const document = await PDFDocument.load(await readFile(outputPath));
-    assert.deepStrictEqual(document.getPage(0).getSize(), { width: 31, height: 19 });
+    const documentPages = await readPdfPages(await readFile(outputPath));
+    assert.deepStrictEqual(
+      { width: documentPages[0]?.mediaBox.width, height: documentPages[0]?.mediaBox.height },
+      { width: 31, height: 19 },
+    );
   });
 
-  test('実Chromeで31x19 SVGいっぱいの矩形をPDFへ印刷すると、ページ全体に内容が残る', async function chromeSvgContentTest() {
+  it('実Chromeで31x19 SVGいっぱいの矩形をPDFへ印刷すると、ページ全体に内容が残る', async (ctx) => {
     const chromePath = await findChromeExecutable();
     if (chromePath === undefined) {
-      this.skip();
+      ctx.skip();
       return;
     }
 
@@ -263,8 +270,11 @@ suite('入力画像をPDFへ変換する処理', () => {
       },
     });
 
-    const pdf = await PDFDocument.load(await readFile(outputPath));
-    assert.deepStrictEqual(pdf.getPage(0).getSize(), { width: 31, height: 19 });
+    const pdfPages = await readPdfPages(await readFile(outputPath));
+    assert.deepStrictEqual(
+      { width: pdfPages[0]?.mediaBox.width, height: pdfPages[0]?.mediaBox.height },
+      { width: 31, height: 19 },
+    );
     const rendered = await renderPdfPageToPng(await readFile(outputPath), 1, { dpi: 72 });
     const { data, info } = await sharp(rendered).raw().toBuffer({ resolveWithObject: true });
     let redPixels = 0;
@@ -279,7 +289,7 @@ suite('入力画像をPDFへ変換する処理', () => {
     );
   });
 
-  test('Chrome方式でchromePathが空文字の設定をvalidateSvgToPdfOptionsへ渡すとChrome executable未設定エラーを投げる', () => {
+  it('Chrome方式でchromePathが空文字の設定をvalidateSvgToPdfOptionsへ渡すとChrome executable未設定エラーを投げる', () => {
     assert.throws(
       () =>
         validateSvgToPdfOptions({

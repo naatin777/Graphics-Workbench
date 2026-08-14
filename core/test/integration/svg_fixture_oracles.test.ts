@@ -13,14 +13,22 @@ import {
   withTestWorkspace,
 } from '@graphics-workbench/core/testing';
 
-suite('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
+describe('SVG fixtureをPNGへ変換して固定正解と比較する', () => {
   for (const [index, fixturePath] of listInputFixturePathsSync(path.join(testInputDirectory, 'valid', 'svg'))
     .filter((candidatePath) => sourceFormatForPath(candidatePath) === 'svg')
     .entries()) {
-    test(`svg/${path.basename(fixturePath)}をworkspaceへコピーしてPNGへ変換すると、renderer差を許容して固定正解expected.pngと内容が一致する`, async () => {
+    it(`svg/${path.basename(fixturePath)}をworkspaceへコピーしてPNGへ変換すると、renderer差を許容して固定正解expected.pngと内容が一致する`, async (ctx) => {
+      const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
+      if (drawioTools.drawioPath === '') {
+        ctx.skip();
+        return;
+      }
       await withTestWorkspace(async (workspacePath) => {
-        const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
-        const sourcePath = await copyInputToWorkspace(fixturePath, workspaceSourcePath(fixturePath, index));
+        const sourcePath = await copyInputToWorkspace(
+          fixturePath,
+          workspacePath,
+          workspaceSourcePath(fixturePath, index),
+        );
         const outputPath = path.join(workspacePath, 'converted', `svg-${index}.png`);
         const expectedPath = path.join(testOutputDirectory, 'svg', sourceName(fixturePath), 'expected.png');
 

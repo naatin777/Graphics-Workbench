@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict';
 
-import { suite, test } from 'mocha';
-
 import { cropPdfProtocol } from '@graphics-workbench/vscode-protocol/crop-pdf-protocol';
 
 const acceptsWebviewMessage = (value: unknown): boolean => cropPdfProtocol.parseWebviewToHost(value) !== undefined;
 
-suite('Crop PDFのWebview操作メッセージの受信判定（ready/apply/previewLoadFailed）', () => {
-  test('cropBoxの4座標がすべて有限数値で、targetがselected・正の整数pagesであるapplyメッセージを受け入れる', () => {
+describe('Crop PDFのWebview操作メッセージの受信判定（ready/apply/previewLoadFailed）', () => {
+  it('cropBoxの4座標がすべて有限数値で、targetがselected・正の整数pagesであるapplyメッセージを受け入れる', () => {
     assert.equal(
       acceptsWebviewMessage({
         type: 'apply',
@@ -20,7 +18,7 @@ suite('Crop PDFのWebview操作メッセージの受信判定（ready/apply/prev
     );
   });
 
-  test('messageだけを持つpreviewLoadFailedメッセージを受け入れ、cropBox座標にNaNを含むapplyメッセージは有限数値チェックで拒否する', () => {
+  it('messageだけを持つpreviewLoadFailedメッセージを受け入れ、cropBox座標にNaNを含むapplyメッセージは有限数値チェックで拒否する', () => {
     assert.equal(
       acceptsWebviewMessage({
         type: 'previewLoadFailed',
@@ -40,7 +38,7 @@ suite('Crop PDFのWebview操作メッセージの受信判定（ready/apply/prev
     );
   });
 
-  test('readyにrequestId等の余分なトップレベルキーを持つ場合・payloadにmessage以外のcodeを持つ場合・applyにsourcePathを持つ場合・typeが空文字の場合をすべて拒否する', () => {
+  it('readyにrequestId等の余分なトップレベルキーを持つ場合・payloadにmessage以外のcodeを持つ場合・applyにsourcePathを持つ場合・typeが空文字の場合をすべて拒否する', () => {
     assert.equal(acceptsWebviewMessage({ type: 'ready', requestId: 'request-1' }), false);
     assert.equal(
       acceptsWebviewMessage({ type: 'previewLoadFailed', payload: { message: 'failed', code: 'E_FAIL' } }),

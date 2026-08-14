@@ -5,8 +5,8 @@ import path from 'node:path';
 
 import { cleanupStaleWorkspaceStagingRoots, markStagingRootOwned } from '@graphics-workbench/core/runtime';
 
-suite('workspace staging GC', () => {
-  test('ownerプロセスが生きているstaging rootは保持し、死亡・マーカーなしのrootは削除する', async () => {
+describe('workspace staging GC', () => {
+  it('ownerプロセスが生きているstaging rootは保持し、死亡・マーカーなしのrootは削除する', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staging-gc-'));
 
     const liveRun = path.join(workspace.path, '.graphics-workbench', 'compress-image', 'live-run');
@@ -38,7 +38,7 @@ suite('workspace staging GC', () => {
     assert.deepStrictEqual(await readdir(path.join(workspace.path, '.graphics-workbench')), ['compress-image']);
   });
 
-  test('死んだPIDのマーカーは削除対象、自プロセスPIDのマーカーは保持対象と判定する', async () => {
+  it('死んだPIDのマーカーは削除対象、自プロセスPIDのマーカーは保持対象と判定する', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staging-gc-pid-'));
 
     const deadRun = path.join(workspace.path, '.graphics-workbench', 'crop-pdf', 'dead-run');
@@ -58,13 +58,13 @@ suite('workspace staging GC', () => {
     assert.strictEqual(await pathExists(selfMarkerPath), true);
   });
 
-  test('workspaceに.graphics-workbenchが無い場合は何もせず成功する', async () => {
+  it('workspaceに.graphics-workbenchが無い場合は何もせず成功する', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staging-gc-empty-'));
     await cleanupStaleWorkspaceStagingRoots(workspace.path);
     assert.strictEqual(await pathExists(path.join(workspace.path, '.graphics-workbench')), false);
   });
 
-  test('markStagingRootOwnedはrootを作成して自プロセスPIDのマーカーを書く', async () => {
+  it('markStagingRootOwnedはrootを作成して自プロセスPIDのマーカーを書く', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-staging-gc-mark-'));
 
     const rootPath = path.join(workspace.path, '.graphics-workbench', 'merge-pdf', 'run-1');

@@ -15,11 +15,11 @@
 // - VS Codeのprogress notificationの画面表示
 // - cancellation tokenのUI操作
 
+import { createPdfFixture } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '@graphics-workbench/core/testing';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
@@ -108,10 +108,10 @@ async function removeTemporaryDirectory(directoryPath: string): Promise<void> {
 }
 
 async function writeTwoPagePdf(filePath: string): Promise<void> {
-  const document = await PDFDocument.create();
-  document.addPage([72, 36]);
-  document.addPage([36, 72]);
-  await writeFile(filePath, await document.save());
+  const bytes = await createPdfFixture({
+    pages: [{ mediaBox: [0, 0, 72, 36] }, { mediaBox: [0, 0, 36, 72] }],
+  });
+  await writeFile(filePath, bytes);
 }
 
 async function assertGeneratedSvg(filePath: string): Promise<void> {

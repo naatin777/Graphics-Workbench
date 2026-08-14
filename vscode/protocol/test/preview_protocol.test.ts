@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 
-import { suite, test } from 'mocha';
-
 import { previewProtocol } from '@graphics-workbench/vscode-protocol/preview-protocol';
 
 const acceptsWebviewMessage = (value: unknown): boolean => previewProtocol.parseWebviewToHost(value) !== undefined;
@@ -31,13 +29,13 @@ const hostPdfResources = {
   wasmUrl: 'vscode-resource://wasm/',
 } as const;
 
-suite('PDF/TIFF previewのWebview操作メッセージの受信判定（ready/renderPage/previewLoadFailed）', () => {
-  test('readyとcancelを余分なキーなしで受け入れる', () => {
+describe('PDF/TIFF previewのWebview操作メッセージの受信判定（ready/renderPage/previewLoadFailed）', () => {
+  it('readyとcancelを余分なキーなしで受け入れる', () => {
     assert.equal(acceptsWebviewMessage({ type: 'ready' }), true);
     assert.equal(acceptsWebviewMessage({ type: 'cancel' }), true);
   });
 
-  test('正の整数pageを持つrenderPageを受け入れ、0・負数・小数・文字列のpageは拒否する', () => {
+  it('正の整数pageを持つrenderPageを受け入れ、0・負数・小数・文字列のpageは拒否する', () => {
     assert.equal(acceptsWebviewMessage({ type: 'renderPage', payload: { page: 1 } }), true);
     assert.equal(acceptsWebviewMessage({ type: 'renderPage', payload: { page: 0 } }), false);
     assert.equal(acceptsWebviewMessage({ type: 'renderPage', payload: { page: -1 } }), false);
@@ -45,7 +43,7 @@ suite('PDF/TIFF previewのWebview操作メッセージの受信判定（ready/re
     assert.equal(acceptsWebviewMessage({ type: 'renderPage', payload: { page: '1' } }), false);
   });
 
-  test('messageを持つpreviewLoadFailedを受け入れ、message以外のkey・payloadの欠落・typeの空文字を拒否する', () => {
+  it('messageを持つpreviewLoadFailedを受け入れ、message以外のkey・payloadの欠落・typeの空文字を拒否する', () => {
     assert.equal(acceptsWebviewMessage({ type: 'previewLoadFailed', payload: { message: 'failed' } }), true);
     assert.equal(
       acceptsWebviewMessage({ type: 'previewLoadFailed', payload: { message: 'failed', code: 'E_FAIL' } }),
@@ -55,13 +53,13 @@ suite('PDF/TIFF previewのWebview操作メッセージの受信判定（ready/re
     assert.equal(acceptsWebviewMessage({ type: '' }), false);
   });
 
-  test('unknown type・payload不足・余分なトップレベルキーを拒否する', () => {
+  it('unknown type・payload不足・余分なトップレベルキーを拒否する', () => {
     assert.equal(acceptsWebviewMessage({ type: 'unknown' }), false);
     assert.equal(acceptsWebviewMessage({ type: 'renderPage' }), false);
     assert.equal(acceptsWebviewMessage({ type: 'ready', requestId: 'request-1' }), false);
   });
 
-  test('PDF initはpdfSrcと全PDF.js resourceを必須とし、TIFF initはpdfSrc/resource無しで受け入れる', () => {
+  it('PDF initはpdfSrcと全PDF.js resourceを必須とし、TIFF initはpdfSrc/resource無しで受け入れる', () => {
     const pdfInit = {
       type: 'init',
       payload: {

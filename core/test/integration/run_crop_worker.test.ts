@@ -13,15 +13,15 @@ import {
   type CropWorkerChild,
 } from '@graphics-workbench/core/crop-worker';
 import {
-  PDFDocument,
   RecordingOutputChannel,
   invalidPreflightInputDirectory,
   operationPdfInputDirectory,
+  readPdfPages,
 } from '@graphics-workbench/core/testing';
 
 const fixtureRunnerPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../fixtures/crop_process_fixture_runner.js',
+  '../fixtures/crop_process_fixture_runner.ts',
 );
 
 // mupdf re-serializes page boxes with limited float precision, so compare
@@ -43,9 +43,9 @@ function assertBoxEquals(
   );
 }
 
-suite('Crop workerで単一リクエストを処理してIPCの結果を確定する', () => {
+describe('Crop workerで単一リクエストを処理してIPCの結果を確定する', () => {
   suite('request/resultスキーマは余分なキーや不正な型を拒否する', () => {
-    test('有効なcrop・inspectリクエストと結果を受け入れ、余分なキーや誤った型を拒否する', () => {
+    it('有効なcrop・inspectリクエストと結果を受け入れ、余分なキーや誤った型を拒否する', () => {
       const cropRequest = {
         type: 'crop' as const,
         request: createTestRequest('/workspace', '/workspace/staging/result.pdf'),
@@ -97,7 +97,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
   });
 
   suite('実workerプロセスと実ファイルでCropとinspectを実行する', () => {
-    test('multilingual-text.pdfを全ページCropして一時作業ディレクトリのresult.pdfへ出力し、CropBoxの更新とログ順序を確認する', async () => {
+    it('multilingual-text.pdfを全ページCropして一時作業ディレクトリのresult.pdfへ出力し、CropBoxの更新とログ順序を確認する', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const sourcePath = path.join(workspacePath, 'multilingual-text.pdf');
         const stagedOutputPath = path.join(workspacePath, 'staging', 'result.pdf');
@@ -114,10 +114,10 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
         );
         assert.strictEqual(result, undefined);
 
-        const outputDocument = await PDFDocument.load(await readFile(stagedOutputPath));
-        assert.strictEqual(outputDocument.getPageCount(), 2);
-        for (const page of outputDocument.getPages()) {
-          assertBoxEquals(page.getCropBox(), {
+        const outputPages = await readPdfPages(await readFile(stagedOutputPath));
+        assert.strictEqual(outputPages.length, 2);
+        for (const page of outputPages) {
+          assertBoxEquals(page.cropBox, {
             x: cropBox.left,
             y: cropBox.bottom,
             width: cropBox.right - cropBox.left,
@@ -136,7 +136,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       });
     });
 
-    test('multilingual-text.pdfをinspectするとpageCountとページgeometryを返す', async () => {
+    it('multilingual-text.pdfをinspectするとpageCountとページgeometryを返す', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const sourcePath = path.join(workspacePath, 'input.pdf');
         await copyFile(path.join(operationPdfInputDirectory, 'multilingual-text.pdf'), sourcePath);
@@ -155,7 +155,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       });
     });
 
-    test('壊れたPDFを実workerへ渡すと、子の失敗結果を記録して処理失敗になり、出力を作成しない', async () => {
+    it('壊れたPDFを実workerへ渡すと、子の失敗結果を記録して処理失敗になり、出力を作成しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const sourcePath = path.join(workspacePath, 'invalid.pdf');
         const stagedOutputPath = path.join(workspacePath, 'staging', 'result.pdf');
@@ -186,7 +186,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       });
     });
 
-    test('hang-with-descendant fixture実行中にAbortSignalでcancelすると、子プロセスと子孫をまとめて終了させてOperationCancelledErrorで止まり、一時出力を作成しない', async () => {
+    it('hang-with-descendant fixture実行中にAbortSignalでcancelすると、子プロセスと子孫をまとめて終了させてOperationCancelledErrorで止まり、一時出力を作成しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const pidFile = path.join(workspacePath, 'descendant.pid');
         const controller = new AbortController();
@@ -213,7 +213,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       });
     });
 
-    test('request受信後にexit code 23で終了するfixtureは異常終了として扱い、一時出力を作成せず失敗する', async () => {
+    it('request受信後にexit code 23で終了するfixtureは異常終了として扱い、一時出力を作成せず失敗する', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const stagedOutputPath = path.join(workspacePath, 'staging', 'result.pdf');
         await mkdir(path.dirname(stagedOutputPath), { recursive: true });
@@ -235,7 +235,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
   });
 
   suite('Fakeの子プロセスで、親側がIPC結果とキャンセル・異常終了の判定を行う', () => {
-    test('有効なok:true結果を受信した場合は成功で確定し、message/exit監視を解放する', async () => {
+    it('有効なok:true結果を受信した場合は成功で確定し、message/exit監視を解放する', async () => {
       const child = new FakeCropWorkerChild();
       const logs = new RecordingOutputChannel();
       const operation = runCropWorker(
@@ -253,7 +253,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       assertNoLog(logs, /operation-failed|operation-cancelled/iu);
     });
 
-    test('ok:false結果は子のエラーメッセージで失敗する', async () => {
+    it('ok:false結果は子のエラーメッセージで失敗する', async () => {
       const child = new FakeCropWorkerChild();
       const operation = runCropWorker({ type: 'inspect', filePath: '/workspace/input.pdf' }, undefined, {
         launcher: () => child,
@@ -263,7 +263,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       await assert.rejects(operation, /child failed/iu);
     });
 
-    test('プロセス起動が失敗した場合はrequest送信前に1回だけchild-spawn-failedを記録して失敗する', async () => {
+    it('プロセス起動が失敗した場合はrequest送信前に1回だけchild-spawn-failedを記録して失敗する', async () => {
       const logs = new RecordingOutputChannel();
       let launcherCalls = 0;
       await assert.rejects(
@@ -281,7 +281,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       assertNoLog(logs, /request-sent|result-received|process-completed|operation-cancelled/iu);
     });
 
-    test('childのerrorイベントを受けた場合はそのエラーで失敗する', async () => {
+    it('childのerrorイベントを受けた場合はそのエラーで失敗する', async () => {
       const child = new FakeCropWorkerChild();
       const operation = runCropWorker({ type: 'inspect', filePath: '/workspace/input.pdf' }, undefined, {
         launcher: () => child,
@@ -291,7 +291,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       await assert.rejects(operation, /child crashed/iu);
     });
 
-    test('結果メッセージなしでexitした場合はexited without a resultとして失敗する', async () => {
+    it('結果メッセージなしでexitした場合はexited without a resultとして失敗する', async () => {
       const child = new FakeCropWorkerChild();
       const operation = runCropWorker(
         { type: 'crop', request: createTestRequest('/workspace', '/workspace/staging/result.pdf') },
@@ -303,7 +303,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       await assert.rejects(operation, /exited without a result/iu);
     });
 
-    test('不正な結果メッセージを受信した場合はprotocol errorとして失敗し、監視を解放して秘密payloadをログへ出さない', async () => {
+    it('不正な結果メッセージを受信した場合はprotocol errorとして失敗し、監視を解放して秘密payloadをログへ出さない', async () => {
       const child = new FakeCropWorkerChild();
       const logs = new RecordingOutputChannel();
       const operation = runCropWorker(
@@ -319,7 +319,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       assert.strictEqual(child.listenerCount('exit'), 0);
     });
 
-    test('実行中にAbortSignalでcancelするとterminateProcessTreeを呼び出してOperationCancelledErrorで失敗し、監視を解放する', async () => {
+    it('実行中にAbortSignalでcancelするとterminateProcessTreeを呼び出してOperationCancelledErrorで失敗し、監視を解放する', async () => {
       const child = new FakeCropWorkerChild();
       const controller = new AbortController();
       const logs = new RecordingOutputChannel();
@@ -338,7 +338,7 @@ suite('Crop workerで単一リクエストを処理してIPCの結果を確定�
       assertNoLog(logs, /result-received|process-completed/iu);
     });
 
-    test('起動前にAbortSignalがcancel済みの場合はプロセスを起動せずOperationCancelledErrorで失敗する', async () => {
+    it('起動前にAbortSignalがcancel済みの場合はプロセスを起動せずOperationCancelledErrorで失敗する', async () => {
       const controller = new AbortController();
       controller.abort();
       let launcherCalls = 0;

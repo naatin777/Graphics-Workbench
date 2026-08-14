@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 
-import { suite, test } from 'mocha';
-
 import { rotatePdfProtocol } from '@graphics-workbench/vscode-protocol/rotate-pdf-protocol';
 
 const acceptsHostMessage = (value: unknown): boolean => rotatePdfProtocol.parseHostToWebview(value) !== undefined;
@@ -42,13 +40,13 @@ const initPayload = {
   labels,
 };
 
-suite('Rotate PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/apply）', () => {
-  test('必須フィールドをすべて持つinitメッセージと、90度倍数の角度と非空ページ選択を持つapplyメッセージを受け入れる', () => {
+describe('Rotate PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/apply）', () => {
+  it('必須フィールドをすべて持つinitメッセージと、90度倍数の角度と非空ページ選択を持つapplyメッセージを受け入れる', () => {
     assert.equal(acceptsHostMessage({ type: 'init', payload: initPayload }), true);
     assert.equal(acceptsWebviewMessage({ type: 'apply', payload: { angle: 180, pageIndices: [1, 3] } }), true);
   });
 
-  test('90度倍数でない角度・空のページ選択・定義外キー・最上位のrequestIdを持つメッセージを拒否する', () => {
+  it('90度倍数でない角度・空のページ選択・定義外キー・最上位のrequestIdを持つメッセージを拒否する', () => {
     assert.equal(acceptsWebviewMessage({ type: 'apply', payload: { angle: 45, pageIndices: [1] } }), false);
     assert.equal(acceptsWebviewMessage({ type: 'apply', payload: { angle: 90, pageIndices: [] } }), false);
     assert.equal(acceptsHostMessage({ type: 'init', payload: { ...initPayload, sourcePath: '/not-allowed' } }), false);

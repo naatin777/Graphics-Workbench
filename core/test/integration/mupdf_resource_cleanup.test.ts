@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 
 import { hasPdfPageContent, renderPdfPageToPng, renderPdfPageToSvg } from '@graphics-workbench/core/pdf';
-import { buildPdfFixture } from '@graphics-workbench/core/testing';
+import { createPdfFixture, fillRectangle } from '@graphics-workbench/core/testing';
 
 const pageCount = 12;
 const renderIterations = 200;
 
-suite('MuPDF WASMリソースの解放', () => {
-  test('12ページのPDFを200回連続でページごとにhasPdfPageContent・PNG/SVG renderすると、render前後のプロセスRSS増加が150MiB未満に収まりWASMメモリがリークしない', async () => {
+describe('MuPDF WASMリソースの解放', () => {
+  it('12ページのPDFを200回連続でページごとにhasPdfPageContent・PNG/SVG renderすると、render前後のプロセスRSS増加が150MiB未満に収まりWASMメモリがリークしない', async () => {
     const bytes = await createMultiPagePdf(pageCount);
 
     // Warm up the module, JIT, and first allocations before measuring.
@@ -36,11 +36,10 @@ async function renderOnePage(bytes: Uint8Array, page: number): Promise<void> {
 }
 
 async function createMultiPagePdf(pageCountValue: number): Promise<Uint8Array> {
-  return buildPdfFixture(
-    Array.from({ length: pageCountValue }, () => ({
-      width: 200,
-      height: 200,
-      contentOperations: 'q 0 0 0 rg 20 20 100 100 re f Q',
+  return createPdfFixture({
+    pages: Array.from({ length: pageCountValue }, () => ({
+      mediaBox: [0, 0, 200, 200],
+      contents: [fillRectangle({ x: 20, y: 20, width: 100, height: 100 })],
     })),
-  );
+  });
 }

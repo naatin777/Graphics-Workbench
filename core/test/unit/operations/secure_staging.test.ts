@@ -3,8 +3,8 @@ import { access, readFile, stat, writeFile } from 'node:fs/promises';
 
 import { cleanupStaleSecurePdfStagingRoots, createSecurePdfStagingRoot } from '@graphics-workbench/core/runtime';
 
-suite('機密PDFの中間ディレクトリを作成し、heartbeatから保存期間を判定して掃除する', () => {
-  test('作成直後のrootは維持し、不在PIDを記録した24時間超過のold rootだけを削除する', async () => {
+describe('機密PDFの中間ディレクトリを作成し、heartbeatから保存期間を判定して掃除する', () => {
+  it('作成直後のrootは維持し、不在PIDを記録した24時間超過のold rootだけを削除する', async () => {
     const activeRoot = await createSecurePdfStagingRoot('test-active');
     const oldRoot = await createSecurePdfStagingRoot('test-old');
     const oldManifest = JSON.parse(await readFile(`${oldRoot}/manifest.json`, 'utf8'));
@@ -36,7 +36,7 @@ suite('機密PDFの中間ディレクトリを作成し、heartbeatから保存�
     }
   });
 
-  test('24時間を超えたrootはPIDが現在も存在していてもheartbeatが古ければ削除する', async () => {
+  it('24時間を超えたrootはPIDが現在も存在していてもheartbeatが古ければ削除する', async () => {
     const staleRoot = await createSecurePdfStagingRoot('test-stale-pid');
     try {
       const manifestPath = `${staleRoot}/manifest.json`;

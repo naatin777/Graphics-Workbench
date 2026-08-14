@@ -11,14 +11,14 @@ import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/prom
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, operationPdfInputDirectory } from '@graphics-workbench/core/testing';
+import { operationPdfInputDirectory, readPdfPages } from '@graphics-workbench/core/testing';
 
 import { decryptPdfFiles, loadMupdf, openPdfDocument, savePdfDocument } from '@graphics-workbench/core/pdf';
 
 const password = 'secret-password';
 
-suite('パスワード付きPDFの復号化', () => {
-  test('mupdfでAES-256暗号化したmulti-page-table.pdfを指定パスワードで復号し、パスワード不要で読み取れるPDFとして出力する', async () => {
+describe('パスワード付きPDFの復号化', () => {
+  it('mupdfでAES-256暗号化したmulti-page-table.pdfを指定パスワードで復号し、パスワード不要で読み取れるPDFとして出力する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -33,8 +33,8 @@ suite('パスワード付きPDFの復号化', () => {
         runId: 'run',
       });
 
-      const decrypted = await PDFDocument.load(await readFile(outputPath));
-      assert.ok(decrypted.getPageCount() >= 1);
+      const decryptedPages = await readPdfPages(await readFile(outputPath));
+      assert.ok(decryptedPages.length >= 1);
 
       const mupdf = await loadMupdf();
       const decryptedDocument = mupdf.Document.openDocument(await readFile(outputPath));
@@ -48,7 +48,7 @@ suite('パスワード付きPDFの復号化', () => {
     }
   });
 
-  test('誤ったパスワードを渡すと復号に失敗し、出力ファイルを作成しない', async () => {
+  it('誤ったパスワードを渡すと復号に失敗し、出力ファイルを作成しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-decrypt-test-'));
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');

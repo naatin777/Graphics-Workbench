@@ -20,8 +20,8 @@ const splitOutputTemplate = {
   png: '${fileDirname}/${fileBasenameNoExtension}/${page}.png',
 } as const;
 
-suite('Headless PDF→raster conversion', () => {
-  test('page rangeは1-3,5,8を1-based pageに展開し、重複は最初の出現だけを保持する', () => {
+describe('Headless PDF→raster conversion', () => {
+  it('page rangeは1-3,5,8を1-based pageに展開し、重複は最初の出現だけを保持する', () => {
     assert.deepStrictEqual(resolvePdfRasterPages({ kind: 'range', value: '1-3,5,8,3' }, 8), {
       ok: true,
       pages: [1, 2, 3, 5, 8],
@@ -29,7 +29,7 @@ suite('Headless PDF→raster conversion', () => {
     assert.deepStrictEqual(resolvePdfRasterPages({ kind: 'all' }, 3), { ok: true, pages: [1, 2, 3] });
   });
 
-  test('page rangeの空、降順、範囲外、page count 0を明示的に拒否する', () => {
+  it('page rangeの空、降順、範囲外、page count 0を明示的に拒否する', () => {
     assert.deepStrictEqual(resolvePdfRasterPages({ kind: 'range', value: '' }, 3), {
       ok: false,
       kind: 'required',
@@ -52,7 +52,7 @@ suite('Headless PDF→raster conversion', () => {
     });
   });
 
-  test('選択pageと既存output templateからpage付きRasterInputだけを計画する', async () => {
+  it('選択pageと既存output templateからpage付きRasterInputだけを計画する', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-plan-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
@@ -72,7 +72,7 @@ suite('Headless PDF→raster conversion', () => {
     );
   });
 
-  test('PDFをPNG変換し、staging artifactを返す', async () => {
+  it('PDFをPNG変換し、staging artifactを返す', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-convert-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
@@ -103,7 +103,7 @@ suite('Headless PDF→raster conversion', () => {
     assert.strictEqual(result.artifacts[0]?.rootPath, output.stagingRootPath);
   });
 
-  test('変換開始前のAbortSignalを既存operationへ伝搬し、出力をcommitしない', async () => {
+  it('変換開始前のAbortSignalを既存operationへ伝搬し、出力をcommitしない', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-cancel-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);
@@ -128,7 +128,7 @@ suite('Headless PDF→raster conversion', () => {
     await assert.rejects(access(plan.inputs[0]?.outputPath ?? 'missing-output'));
   });
 
-  test('競合出力のoverwrite後にcommit layerが.previous backupを作成する', async () => {
+  it('競合出力のoverwrite後にcommit layerが.previous backupを作成する', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-overwrite-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
     await copyFile(fixturePath, sourcePath);

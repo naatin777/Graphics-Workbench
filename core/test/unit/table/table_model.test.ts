@@ -12,8 +12,8 @@ import {
   updateCellText,
 } from '@graphics-workbench/core/table';
 
-suite('TableModel', () => {
-  test('createTableModelは指定サイズの空テーブルを作る', () => {
+describe('TableModel', () => {
+  it('createTableModelは指定サイズの空テーブルを作る', () => {
     const model = createTableModel(2, 3, 1);
     assert.strictEqual(model.rows.length, 2);
     assert.strictEqual(model.columns.length, 3);
@@ -21,7 +21,7 @@ suite('TableModel', () => {
     assert.ok(model.rows.every((row) => row.cells.length === 3 && row.cells.every((cell) => cell.text === '')));
   });
 
-  test('tableModelFromRowsは列数が足りない行を空セルで補完する', () => {
+  it('tableModelFromRowsは列数が足りない行を空セルで補完する', () => {
     const model = tableModelFromRows([['a', 'b'], ['c']], 0);
     assert.deepEqual(
       model.rows.map((row) => row.cells.map((cell) => cell.text)),
@@ -34,7 +34,7 @@ suite('TableModel', () => {
     assert.ok(model.columns.every((column) => column.alignment === 'left'));
   });
 
-  test('updateCellTextは指定セルのtextだけを変更する', () => {
+  it('updateCellTextは指定セルのtextだけを変更する', () => {
     const model = updateCellText(tableModelFromRows([['a', 'b']], 0), 0, 1, 'x');
     assert.deepEqual(
       model.rows[0]?.cells.map((cell) => cell.text),
@@ -42,7 +42,7 @@ suite('TableModel', () => {
     );
   });
 
-  test('行の追加と削除', () => {
+  it('行の追加と削除', () => {
     const model = addTableRow(tableModelFromRows([['a']], 0));
     assert.strictEqual(model.rows.length, 2);
     assert.deepEqual(
@@ -55,7 +55,7 @@ suite('TableModel', () => {
     assert.strictEqual(removed.rows[0]?.cells[0]?.text, '');
   });
 
-  test('列の追加と削除', () => {
+  it('列の追加と削除', () => {
     const model = addTableColumn(tableModelFromRows([['a'], ['b']], 0));
     assert.strictEqual(model.columns.length, 2);
     assert.ok(model.rows.every((row) => row.cells.length === 2));
@@ -68,7 +68,7 @@ suite('TableModel', () => {
     );
   });
 
-  test('列ごとのalignmentとheaderRowsを設定する', () => {
+  it('列ごとのalignmentとheaderRowsを設定する', () => {
     const model = setColumnAlignment(tableModelFromRows([['a']], 1), 0, 'right');
     assert.strictEqual(model.columns[0]?.alignment, 'right');
 

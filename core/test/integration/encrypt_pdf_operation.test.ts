@@ -11,14 +11,14 @@ import { access, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/prom
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, operationPdfInputDirectory } from '@graphics-workbench/core/testing';
+import { operationPdfInputDirectory, createPdfFixture } from '@graphics-workbench/core/testing';
 
 import { encryptPdfFiles, loadMupdf } from '@graphics-workbench/core/pdf';
 
 const password = 'secret-password';
 
-suite('PDFのパスワード暗号化', () => {
-  test('multi-page-table.pdfを指定パスワードでmupdfにより暗号化して出力し、needsPassword=trueで正しいパスワードでのみ認証できるPDFになっていることを検証する', async () => {
+describe('PDFのパスワード暗号化', () => {
+  it('multi-page-table.pdfを指定パスワードでmupdfにより暗号化して出力し、needsPassword=trueで正しいパスワードでのみ認証できるPDFになっていることを検証する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-test-'));
     const sourcePath = path.join(workspacePath, 'multi-page-table.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -53,7 +53,7 @@ suite('PDFのパスワード暗号化', () => {
     }
   });
 
-  test('MuPDF option parserが扱えないカンマまたは等号を含むパスワードは暗号化を開始せず明示的に拒否する', async () => {
+  it('MuPDF option parserが扱えないカンマまたは等号を含むパスワードは暗号化を開始せず明示的に拒否する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-encrypt-password-validation-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -78,9 +78,8 @@ suite('PDFのパスワード暗号化', () => {
 });
 
 async function writePdf(filePath: string): Promise<void> {
-  const document = await PDFDocument.create();
-  document.addPage([100, 200]);
-  await writeFile(filePath, await document.save());
+  const bytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 100, 200] }] });
+  await writeFile(filePath, bytes);
 }
 
 function fixturePath(fileName: string): string {

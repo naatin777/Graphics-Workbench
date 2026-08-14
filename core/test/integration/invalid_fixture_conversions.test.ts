@@ -25,14 +25,19 @@ const invalidCases = [
   { directory: 'webp', fileName: 'truncated.webp', outputFormat: 'png' },
 ] as const;
 
-suite('不正なテスト入力の実変換エラー', () => {
+describe('不正なテスト入力の実変換エラー', () => {
   for (const [index, invalidCase] of invalidCases.entries()) {
-    test(`${invalidCase.directory}/${invalidCase.fileName}を実際に${invalidCase.outputFormat.toUpperCase()}へ変換すると変換失敗となり、出力ファイルを生成しない`, async () => {
+    it(`${invalidCase.directory}/${invalidCase.fileName}を実際に${invalidCase.outputFormat.toUpperCase()}へ変換すると変換失敗となり、出力ファイルを生成しない`, async (ctx) => {
+      const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
+      // SVG→PNGはDraw.io CLI経由のため、Draw.ioが注入されていない環境ではskipする。
+      if (invalidCase.directory === 'svg' && drawioTools.drawioPath === '') {
+        ctx.skip();
+        return;
+      }
       await withTestWorkspace(async (workspacePath) => {
-        const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
         const inputPath = path.join(testInputDirectory, 'invalid', invalidCase.directory, invalidCase.fileName);
         const destinationPath = workspaceDestinationPath(invalidCase.fileName, index);
-        const sourcePath = await copyInputToWorkspace(inputPath, destinationPath);
+        const sourcePath = await copyInputToWorkspace(inputPath, workspacePath, destinationPath);
 
         const outputPath = path.join(workspacePath, 'invalid input outputs', `${index}.${invalidCase.outputFormat}`);
         const input = executeRasterConversion({

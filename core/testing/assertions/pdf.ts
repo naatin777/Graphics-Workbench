@@ -6,7 +6,7 @@ import sharp from 'sharp';
 
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
 
-import { PDFDocument } from '../document.js';
+import { readPdfPages } from '../fixtures/pdf.js';
 import { assertRasterMatches } from './raster.js';
 import type { RasterComparisonOptions } from './raster_content.js';
 
@@ -48,17 +48,17 @@ export async function assertPdfMatches(
   options: RasterComparisonOptions = {},
 ): Promise<void> {
   const [actual, expected] = await Promise.all([
-    PDFDocument.load(await readFile(actualPath)),
-    PDFDocument.load(await readFile(expectedPath)),
+    readPdfPages(await readFile(actualPath)),
+    readPdfPages(await readFile(expectedPath)),
   ]);
-  assert.strictEqual(actual.getPageCount(), expected.getPageCount(), label);
+  assert.strictEqual(actual.length, expected.length, label);
 
   await mkdir(renderDirectory, { recursive: true });
-  for (let page = 1; page <= actual.getPageCount(); page += 1) {
+  for (let page = 1; page <= actual.length; page += 1) {
     const actualPagePath = path.join(renderDirectory, `actual-${page}.png`);
     const expectedPagePath = path.join(renderDirectory, `expected-${page}.png`);
-    const actualPageSize = actual.getPage(page - 1)?.getSize();
-    const expectedPageSize = expected.getPage(page - 1)?.getSize();
+    const actualPageSize = actual[page - 1]?.mediaBox;
+    const expectedPageSize = expected[page - 1]?.mediaBox;
     if (options.rendererVariance) {
       assert.ok(actualPageSize !== undefined && expectedPageSize !== undefined, `${label} page ${page}`);
       assert.ok(

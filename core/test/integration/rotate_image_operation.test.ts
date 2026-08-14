@@ -16,8 +16,8 @@ import sharp from 'sharp';
 
 import { rotateImageFiles } from '@graphics-workbench/core/conversion';
 
-suite('ラスタ画像の回転', () => {
-  test('4x2のPNGを90度回転すると、2x4のPNGとして出力される', async () => {
+describe('ラスタ画像の回転', () => {
+  it('4x2のPNGを90度回転すると、2x4のPNGとして出力される', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.png');
@@ -42,7 +42,7 @@ suite('ラスタ画像の回転', () => {
     }
   });
 
-  test('4x2のPNGを180度回転すると、4x2のまま出力される', async () => {
+  it('4x2のPNGを180度回転すると、4x2のまま出力される', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.png');
@@ -65,7 +65,7 @@ suite('ラスタ画像の回転', () => {
     }
   });
 
-  test('4x2のPNGを270度回転すると、2x4のPNGとして出力される', async () => {
+  it('4x2のPNGを270度回転すると、2x4のPNGとして出力される', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.png');
@@ -88,7 +88,7 @@ suite('ラスタ画像の回転', () => {
     }
   });
 
-  test('SVGなど非ラスタの入力は拒否される', async () => {
+  it('SVGなど非ラスタの入力は拒否される', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const sourcePath = path.join(workspacePath, 'source.svg');
     const outputPath = path.join(workspacePath, 'output.svg');
@@ -104,7 +104,7 @@ suite('ラスタ画像の回転', () => {
     );
   });
 
-  test('出力拡張子がラスタ形式でない場合は拒否される', async () => {
+  it('出力拡張子がラスタ形式でない場合は拒否される', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.txt');
@@ -120,7 +120,7 @@ suite('ラスタ画像の回転', () => {
     );
   });
 
-  test('画素上限を超える入力は拒否され、出力ファイルは作成されない', async () => {
+  it('画素上限を超える入力は拒否され、出力ファイルは作成されない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const sourcePath = path.join(workspacePath, 'source.png');
     const outputPath = path.join(workspacePath, 'output.png');

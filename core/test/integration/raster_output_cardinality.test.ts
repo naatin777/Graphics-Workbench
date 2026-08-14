@@ -3,7 +3,7 @@ import { mkdtempDisposable, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
+import { requireValue, readPdfPages } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
 
 import {
@@ -19,8 +19,8 @@ const outputFormats = ['pdf', 'png', 'jpeg', 'webp', 'avif', 'gif', 'tiff'] as c
 function stubRunPdfToPng(): never {
   throw new Error('PDF to PNG rendering must not run in this test.');
 }
-suite('GIF/TIFFを各出力形式へ変換する', () => {
-  test('2フレームのGIF/TIFFをPDFへ変換すると全フレームを2ページへ展開し、他のラスター出力へは先頭フレームだけを4x4の赤画像として出力する', async () => {
+describe('GIF/TIFFを各出力形式へ変換する', () => {
+  it('2フレームのGIF/TIFFをPDFへ変換すると全フレームを2ページへ展開し、他のラスター出力へは先頭フレームだけを4x4の赤画像として出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-additional-image-output-'));
 
     for (const inputFormat of inputFormats) {
@@ -107,11 +107,11 @@ async function assertOutput(
 ): Promise<void> {
   if (outputFormat === 'pdf') {
     // アニメーションの全フレームが1つのPDFの各ページへ展開される。
-    const document = await PDFDocument.load(await readFile(filePath));
-    assert.strictEqual(document.getPageCount(), 2);
-    for (const page of document.getPages()) {
-      assert.strictEqual(page.getWidth(), 4);
-      assert.strictEqual(page.getHeight(), 4);
+    const pages = await readPdfPages(await readFile(filePath));
+    assert.strictEqual(pages.length, 2);
+    for (const page of pages) {
+      assert.strictEqual(page.mediaBox.width, 4);
+      assert.strictEqual(page.mediaBox.height, 4);
     }
     return;
   }

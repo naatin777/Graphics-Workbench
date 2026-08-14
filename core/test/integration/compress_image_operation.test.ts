@@ -21,8 +21,8 @@ import sharp from 'sharp';
 import { compressImageFiles } from '@graphics-workbench/core/conversion';
 import { operationPngInputPath, testInputDirectory } from '@graphics-workbench/core/testing';
 
-suite('画像圧縮処理', () => {
-  test('JPEG入力をqualityで再圧縮し、読み込み可能なより小さなJPEGを出力する', async () => {
+describe('画像圧縮処理', () => {
+  it('JPEG入力をqualityで再圧縮し、読み込み可能なより小さなJPEGを出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.jpg');
@@ -47,7 +47,7 @@ suite('画像圧縮処理', () => {
     assert.ok((await stat(outputPath)).size < (await stat(sourcePath)).size);
   });
 
-  test('PNG入力をlossless最適化で再圧縮し、読み込み可能なPNGを出力する', async () => {
+  it('PNG入力をlossless最適化で再圧縮し、読み込み可能なPNGを出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.png');
@@ -72,7 +72,7 @@ suite('画像圧縮処理', () => {
     assert.ok(metadata.height && metadata.height > 0);
   });
 
-  test('アニメーションGIFをフレーム設定を保持して再圧縮し、pages=2・delay・loopのメタデータを保持して出力する', async () => {
+  it('アニメーションGIFをフレーム設定を保持して再圧縮し、pages=2・delay・loopのメタデータを保持して出力する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
@@ -103,7 +103,7 @@ suite('画像圧縮処理', () => {
     assert.strictEqual(metadata.loop, 3);
   });
 
-  test('ページ寸法が異なる4ページTIFFを圧縮しても、4ページの内容を保持する', async () => {
+  it('ページ寸法が異なる4ページTIFFを圧縮しても、4ページの内容を保持する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-tiff-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.tiff');
@@ -156,7 +156,7 @@ suite('画像圧縮処理', () => {
     );
   });
 
-  test('multipage TIFFの総pixelがmaxAnimationPixelsを超える場合はstaging前に失敗し、最終出力を作成しない（core所有のinvariant）', async () => {
+  it('multipage TIFFの総pixelがmaxAnimationPixelsを超える場合はstaging前に失敗し、最終出力を作成しない（core所有のinvariant）', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-limit-'));
 
     const sourcePath = path.join(workspacePath.path, 'multi.tiff');
@@ -186,7 +186,7 @@ suite('画像圧縮処理', () => {
     await assert.rejects(readFile(outputPath));
   });
 
-  test('非対応入力では変換を失敗させ、最終出力を作成せず一時作業ディレクトリを削除する', async () => {
+  it('非対応入力では変換を失敗させ、最終出力を作成せず一時作業ディレクトリを削除する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-compress-image-failure-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.txt');

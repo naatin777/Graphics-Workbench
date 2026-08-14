@@ -54,17 +54,17 @@ const invalidCases = [
   { fileName: 'truncated-embedded-image.drawio.png', workspaceSourcePath: 'broken/élément 🚧.drawio.png' },
 ] as const;
 
-suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
+describe('Draw.io fixtureの実変換と固定正解データの比較', () => {
   for (const fixtureCase of validCases) {
-    test(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async function convertsFixtureToExpectedOutputs() {
+    it(`${fixtureCase.inputFileName}を実Draw.ioでPNG・SVG・PDFへ変換し、各出力を固定正解データ（expected.png・expected.svgのレンダリング・expected.pdf）と比較して一致することを検証する`, async (ctx) => {
       const configuredTools = readConfiguredConversionTools();
       const { drawioPath } = configuredTools.drawioTools;
       if (drawioPath === '') {
-        this.skip();
+        ctx.skip();
         return;
       }
       if (configuredTools.rsvgConvertPath === '') {
-        this.skip();
+        ctx.skip();
         return;
       }
 
@@ -72,7 +72,7 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
 
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'valid', 'drawio', fixtureCase.inputFileName);
-        const sourcePath = await copyInputToWorkspace(inputPath, fixtureCase.workspaceSourcePath);
+        const sourcePath = await copyInputToWorkspace(inputPath, workspacePath, fixtureCase.workspaceSourcePath);
         const outputDirectory = path.join(workspacePath, fixtureCase.outputDirectory);
         await mkdir(outputDirectory, { recursive: true });
 
@@ -150,16 +150,16 @@ suite('Draw.io fixtureの実変換と固定正解データの比較', () => {
   }
 
   for (const [index, invalidCase] of invalidCases.entries()) {
-    test(`invalid/drawio/${invalidCase.fileName}を実Draw.ioでPDFへ実変換すると失敗し、出力PDFを作成しない`, async function expectsInvalidFixtureToFailWithoutOutput() {
+    it(`invalid/drawio/${invalidCase.fileName}を実Draw.ioでPDFへ実変換すると失敗し、出力PDFを作成しない`, async (ctx) => {
       const { drawioPath } = readConfiguredConversionTools().drawioTools;
       if (drawioPath === '') {
-        this.skip();
+        ctx.skip();
         return;
       }
 
       await withTestWorkspace(async (workspacePath) => {
         const inputPath = path.join(testInputDirectory, 'invalid', 'drawio', invalidCase.fileName);
-        const sourcePath = await copyInputToWorkspace(inputPath, invalidCase.workspaceSourcePath);
+        const sourcePath = await copyInputToWorkspace(inputPath, workspacePath, invalidCase.workspaceSourcePath);
         const input = convertDrawioToSinglePdf({
           inputs: [
             {
