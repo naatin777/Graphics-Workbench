@@ -82,7 +82,9 @@ jobs:
     name: Extension Host coverage (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
-    if: github.event_name != 'pull_request'
+    # PRs run the Linux leg (including the coverage verifier) so bootstrap and
+    # provisioning changes are validated before merge; main runs all three OS.
+    if: ${{ github.event_name != 'pull_request' || matrix.os == 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
