@@ -1,0 +1,20 @@
+name: Setup Node and npm
+
+description: >-
+  Install the pinned Node/npm versions without installing dependencies.
+  Lightweight jobs (coverage aggregation, scripts) use this directly;
+  dependency-requiring jobs use ./.github/actions/setup on top of it.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      with:
+        node-version: "24.15.0"
+        package-manager-cache: false
+
+    - run: npm install -g npm@12.0.1
+      shell: bash
+
+    - run: node --version && npm --version
+      shell: bash

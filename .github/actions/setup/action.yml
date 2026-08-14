@@ -23,13 +23,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
-      with:
-        node-version: "24.15.0"
-        package-manager-cache: false
-
-    - run: npm install -g npm@12.0.1
-      shell: bash
+    - uses: ./.github/actions/setup-node
 
     - id: npm_cache
       name: Locate npm cache
@@ -52,9 +46,6 @@ runs:
         key: npm-${{ steps.cache_key_segment.outputs.value }}-node-24.15.0-npm-12.0.1-${{ hashFiles('package-lock.json') }}
         restore-keys: |
           npm-${{ steps.cache_key_segment.outputs.value }}-node-24.15.0-npm-12.0.1-
-
-    - run: node --version && npm --version
-      shell: bash
 
     - run: ${{ inputs.npm-install-command }}
       shell: bash
