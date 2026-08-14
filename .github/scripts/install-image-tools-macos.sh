@@ -6,7 +6,7 @@ set -euo pipefail
 # progress goes to stderr so stdout stays machine-parseable.
 
 echo "Installing librsvg via Homebrew..." >&2
-brew install librsvg
+brew install librsvg >&2
 
 rsvg_convert_path="$(command -v rsvg-convert)"
 chrome_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -28,12 +28,12 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 	mount_dir="$(mktemp -d -t drawio-mount)"
 	trap 'rm -f "${drawio_dmg}"; hdiutil detach "${mount_dir}" >/dev/null 2>&1 || true; rm -rf "${mount_dir}"' EXIT
 
-	curl -L --fail --retry 3 -o "${drawio_dmg}" "${drawio_url}"
-	hdiutil attach "${drawio_dmg}" -nobrowse -mountpoint "${mount_dir}"
+	curl -L --fail --retry 3 -o "${drawio_dmg}" "${drawio_url}" >&2
+	hdiutil attach "${drawio_dmg}" -nobrowse -mountpoint "${mount_dir}" >&2
 
 	drawio_app="/Applications/draw.io.app"
 	rm -rf "${drawio_app}"
-	cp -R "${mount_dir}/draw.io.app" "/Applications/"
+	cp -R "${mount_dir}/draw.io.app" "/Applications/" >&2
 	xattr -dr com.apple.quarantine "${drawio_app}/Contents/MacOS/draw.io" >/dev/null 2>&1 || true
 
 	drawio_path="${drawio_app}/Contents/MacOS/draw.io"

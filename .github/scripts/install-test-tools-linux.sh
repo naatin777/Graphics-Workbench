@@ -11,8 +11,8 @@ if command -v sudo >/dev/null 2>&1; then
 	apt_prefix=(sudo)
 fi
 
-"${apt_prefix[@]}" apt-get update
-"${apt_prefix[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+"${apt_prefix[@]}" apt-get update >&2
+"${apt_prefix[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y >&2 \
 	librsvg2-bin \
 	xvfb \
 	fonts-liberation \
@@ -43,8 +43,8 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 	drawio_deb="$(mktemp --suffix=.deb)"
 	trap 'rm -f "${drawio_deb}"' EXIT
 
-	curl -L --fail --retry 3 -o "${drawio_deb}" "${drawio_url}"
-	"${apt_prefix[@]}" apt-get install -y "${drawio_deb}"
+	curl -L --fail --retry 3 -o "${drawio_deb}" "${drawio_url}" >&2
+	"${apt_prefix[@]}" apt-get install -y "${drawio_deb}" >&2
 
 	drawio_path="$(command -v drawio || true)"
 	if [ -z "${drawio_path}" ]; then
