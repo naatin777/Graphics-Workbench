@@ -22,7 +22,13 @@ export function normalizeExtensionHostSourcePath(sourcePath) {
       return normalized;
     }
   }
-  return normalized.replace(/^(?:[A-Za-z]:)?\/+|^\.\//u, '');
+  const cleaned = normalized.replace(/^(?:[A-Za-z]:)?\/+|^\.\//u, '');
+  // Extension sources are reported relative to the extension package
+  // (src/...) because the Extension Host runs with that working directory.
+  if (cleaned.startsWith('src/')) {
+    return `vscode/extension/${cleaned}`;
+  }
+  return cleaned;
 }
 
 export function isExtensionHostSourcePath(sourcePath) {
