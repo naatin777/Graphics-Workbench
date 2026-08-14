@@ -54,18 +54,12 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - name: Install conversion tools with pinned versions
-        run: INSTALL_DRAWIO=1 bash .github/scripts/install-test-tools-linux.sh
-        shell: bash
-
-      - name: Inject tool paths
-        shell: bash
+      - name: Install conversion tools and inject their paths
         run: |
-          {
-            echo "GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=$(command -v rsvg-convert)"
-            echo "GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH=$(command -v drawio)"
-            echo "GRAPHICS_WORKBENCH_TEST_CHROME_PATH=$(command -v google-chrome)"
-          } >> "$GITHUB_ENV"
+          TOOL_PATHS="$(INSTALL_DRAWIO=1 bash .github/scripts/install-test-tools-linux.sh)"
+          printf '%s\n' "$TOOL_PATHS" | grep '^GRAPHICS_WORKBENCH_TEST_' >> "$GITHUB_ENV"
+          printf '%s\n' "$TOOL_PATHS"
+        shell: bash
 
       - name: Run Core external-tool integration tests (with Xvfb for Draw.io)
         run: xvfb-run -a npm run test:external -w core
@@ -112,15 +106,23 @@ jobs:
         shell: bash
 
       - if: matrix.os == 'ubuntu-latest'
-        run: bash .github/scripts/install-test-tools-linux.sh
+        run: |
+          TOOL_PATHS="$(bash .github/scripts/install-test-tools-linux.sh)"
+          printf '%s\n' "$TOOL_PATHS" | grep '^GRAPHICS_WORKBENCH_TEST_' >> "$GITHUB_ENV"
+          printf '%s\n' "$TOOL_PATHS"
         shell: bash
 
       - if: matrix.os == 'macos-latest'
-        run: bash .github/scripts/install-image-tools-macos.sh
+        run: |
+          TOOL_PATHS="$(bash .github/scripts/install-image-tools-macos.sh)"
+          printf '%s\n' "$TOOL_PATHS" | grep '^GRAPHICS_WORKBENCH_TEST_' >> "$GITHUB_ENV"
+          printf '%s\n' "$TOOL_PATHS"
         shell: bash
 
       - if: matrix.os == 'windows-latest'
-        run: .github/scripts/install-image-tools-windows.ps1
+        run: |
+          $toolPaths = & .github/scripts/install-image-tools-windows.ps1
+          $toolPaths | Where-Object { $_ -like 'GRAPHICS_WORKBENCH_TEST_*' } | Add-Content -Path $env:GITHUB_ENV
         shell: pwsh
 
       - if: matrix.os != 'windows-latest'

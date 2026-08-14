@@ -1,6 +1,9 @@
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
+# Installs the image conversion tools and prints GRAPHICS_WORKBENCH_TEST_*
+# lines to stdout for the workflow to inject via $GITHUB_ENV.
+
 $rsvgDir = Join-Path $env:RUNNER_TEMP 'rsvg'
 New-Item -ItemType Directory -Force -Path $rsvgDir | Out-Null
 $rsvgConvert = Join-Path $rsvgDir 'rsvg-convert.exe'
@@ -19,13 +22,8 @@ if (-not $chrome) {
 	throw 'Chrome executable was not found.'
 }
 
-$settingsDir = 'vscode/test/support/vscode-settings'
-New-Item -ItemType Directory -Force -Path $settingsDir | Out-Null
-$settingsPath = Join-Path $settingsDir 'settings.json'
-$settings = [ordered]@{
-	'graphics-workbench.execPath.rsvgConvert' = $rsvgConvert
-	'graphics-workbench.execPath.chrome' = $chrome
-}
+Write-Output "GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=$rsvgConvert"
+Write-Output "GRAPHICS_WORKBENCH_TEST_CHROME_PATH=$chrome"
 
 # Draw.io CLI is only needed by the packaged Playwright Draw.io -> PDF smoke,
 # not by the Extension Host suite (whose Draw.io oracle tests skip without it).
@@ -58,8 +56,5 @@ if ($env:INSTALL_DRAWIO -eq '1') {
 	if (-not $drawio) {
 		throw 'draw.io.exe not found after installing Draw.io'
 	}
-	$settings['graphics-workbench.execPath.drawio'] = $drawio.FullName
+	Write-Output "GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH=$($drawio.FullName)"
 }
-
-$settings | ConvertTo-Json | Set-Content $settingsPath -Encoding utf8
-Get-Content $settingsPath

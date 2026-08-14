@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# e2e tools used by conversion tests on macOS.
-brew install librsvg
+# Installs the image conversion tools and prints GRAPHICS_WORKBENCH_TEST_*
+# lines to stdout for the workflow to inject via $GITHUB_ENV. Human-readable
+# progress goes to stderr so stdout stays machine-parseable.
+
+echo "Installing librsvg via Homebrew..." >&2
+brew install librsvg >&2
 
 rsvg_convert_path="$(command -v rsvg-convert)"
 chrome_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -12,14 +16,8 @@ if [[ ! -x "${chrome_path}" ]]; then
 	exit 1
 fi
 
-settings_dir="vscode/test/support/vscode-settings"
-mkdir -p "$settings_dir"
-cat > "$settings_dir/settings.json" <<EOF
-{
-    "graphics-workbench.execPath.rsvgConvert": "${rsvg_convert_path}",
-    "graphics-workbench.execPath.chrome": "${chrome_path}"
-}
-EOF
+printf 'GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=%s\n' "${rsvg_convert_path}"
+printf 'GRAPHICS_WORKBENCH_TEST_CHROME_PATH=%s\n' "${chrome_path}"
 
 # Draw.io CLI is only needed by the packaged Playwright Draw.io -> PDF smoke,
 # not by the Extension Host suite (whose Draw.io oracle tests skip without it).
@@ -30,12 +28,12 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 	mount_dir="$(mktemp -d -t drawio-mount)"
 	trap 'rm -f "${drawio_dmg}"; hdiutil detach "${mount_dir}" >/dev/null 2>&1 || true; rm -rf "${mount_dir}"' EXIT
 
-	curl -L --fail --retry 3 -o "${drawio_dmg}" "${drawio_url}"
-	hdiutil attach "${drawio_dmg}" -nobrowse -mountpoint "${mount_dir}"
+	curl -L --fail --retry 3 -o "${drawio_dmg}" "${drawio_url}" >&2
+	hdiutil attach "${drawio_dmg}" -nobrowse -mountpoint "${mount_dir}" >&2
 
 	drawio_app="/Applications/draw.io.app"
 	rm -rf "${drawio_app}"
-	cp -R "${mount_dir}/draw.io.app" "/Applications/"
+	cp -R "${mount_dir}/draw.io.app" "/Applications/" >&2
 	xattr -dr com.apple.quarantine "${drawio_app}/Contents/MacOS/draw.io" >/dev/null 2>&1 || true
 
 	drawio_path="${drawio_app}/Contents/MacOS/draw.io"
@@ -44,9 +42,5 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 		exit 1
 	fi
 
-	node -e "const fs = require('node:fs'); const p = '${settings_dir}/settings.json'; const s = JSON.parse(fs.readFileSync(p, 'utf8')); s['graphics-workbench.execPath.drawio'] = process.argv[1]; fs.writeFileSync(p, JSON.stringify(s, null, 4) + '\n');" "${drawio_path}"
-
-	echo "Draw.io: ${drawio_path}"
+	printf 'GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH=%s\n' "${drawio_path}"
 fi
-
-cat "$settings_dir/settings.json"

@@ -539,8 +539,8 @@ export const customEditorContributions = {
 function createConfigurationInternal(configurationReader: ConfigurationReader) {
   return {
     execPath: {
-      drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', ''),
-      rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', ''),
+      drawio: defineConfiguration<string>(configurationReader, 'execPath.drawio', 'drawio'),
+      rsvgConvert: defineConfiguration<string>(configurationReader, 'execPath.rsvgConvert', 'rsvg-convert'),
       chrome: defineConfiguration<string>(configurationReader, 'execPath.chrome', ''),
     },
     externalTools: {

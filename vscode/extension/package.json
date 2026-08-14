@@ -571,13 +571,13 @@
       "properties": {
         "graphics-workbench.execPath.drawio": {
           "type": "string",
-          "default": "",
+          "default": "drawio",
           "scope": "machine",
           "description": "%config.execPath.drawio%"
         },
         "graphics-workbench.execPath.rsvgConvert": {
           "type": "string",
-          "default": "",
+          "default": "rsvg-convert",
           "scope": "machine",
           "description": "%config.execPath.rsvgConvert%"
         },

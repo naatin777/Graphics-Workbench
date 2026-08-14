@@ -91,9 +91,9 @@ describe('変換出力を一時領域へ書き出し、全件成功後に最終�
       resolveSecondStarted = resolve;
     });
     let thirdStarted = false;
-    let releaseSecond!: () => void;
-    const secondFinished = new Promise<void>((resolve) => {
-      releaseSecond = resolve;
+    let resolveSecondStopped!: () => void;
+    const secondStopped = new Promise<void>((resolve) => {
+      resolveSecondStopped = resolve;
     });
     let batch: Promise<unknown> | undefined;
 
@@ -107,7 +107,7 @@ describe('変換出力を一時領域へ書き出し、全件成功後に最終�
         operationName: 'fixture-raster',
         runtime: {},
         runId: 'abort-run',
-        stage: async (_job, index) => {
+        stage: async (_job, index, _runId, runtime) => {
           await mkdir(stagingRootPath, { recursive: true });
 
           if (index === 0) {
@@ -116,9 +116,16 @@ describe('変換出力を一時領域へ書き出し、全件成功後に最終�
           }
 
           if (index === 1) {
+            // 1つ目のstageの失敗（abort）を確認してから自分の失敗を発生させる。
+            // これによりroot causeが「時間的に最初の失敗」であることを決定的にする。
+            // abortはstage0のI/O完了後に発火し得るため、listenerは最初に登録する。
+            const siblingFailed = new Promise<void>((resolve) => {
+              runtime.signal?.addEventListener('abort', () => resolve(), { once: true });
+            });
             await writeFile(path.join(stagingRootPath, 'second'), 'in progress');
             resolveSecondStarted();
-            await secondFinished;
+            await siblingFailed;
+            resolveSecondStopped();
             throw new Error('second stage stopped');
           }
 
@@ -135,12 +142,16 @@ describe('変換出力を一時領域へ書き出し、全件成功後に最終�
       ]);
       assert.strictEqual(thirdStarted, false);
       await assert.doesNotReject(access(path.join(stagingRootPath, 'second')));
-      releaseSecond();
+      await Promise.race([
+        secondStopped,
+        new Promise<never>((_resolve, reject) =>
+          setTimeout(() => reject(new Error('second stage did not stop after sibling failure')), 1000),
+        ),
+      ]);
 
       await assert.rejects(batch, /injected stage failure/);
       await assert.rejects(access(stagingRootPath));
     } finally {
-      releaseSecond();
       await batch?.catch(() => undefined);
     }
   });

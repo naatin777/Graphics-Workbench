@@ -21,11 +21,11 @@ suite('生成された設定スキーマ検証', () => {
     assert.throws(() => configuration.cropPdf.marginOptions(), /Invalid configuration/);
   });
 
-  test('設定を何も与えない場合、各execPathは空文字を返す（未設定＝missing）', () => {
+  test('設定を何も与えない場合、Draw.io command・rsvg-convert commandのmanifest既定値とChromeの空文字既定値を返す', () => {
     const configuration = fakeConfiguration();
 
-    assert.strictEqual(configuration.execPath.drawio(), '');
-    assert.strictEqual(configuration.execPath.rsvgConvert(), '');
+    assert.strictEqual(configuration.execPath.drawio(), 'drawio');
+    assert.strictEqual(configuration.execPath.rsvgConvert(), 'rsvg-convert');
     assert.strictEqual(configuration.execPath.chrome(), '');
     assert.strictEqual(configuration.preview.maxCanvasPixels(), 40_000_000);
     assert.strictEqual(configuration.preview.maxDevicePixelRatio(), 2);

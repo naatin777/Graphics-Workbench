@@ -1,31 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Verifies the tools injected as GRAPHICS_WORKBENCH_TEST_* by the workflow.
+# The environment variables are the single source of tool paths; this script
+# never probes PATH or reads settings files.
+
 echo "Verifying image conversion tools..."
 
-settings_path="vscode/test/support/vscode-settings/settings.json"
+: "${GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH:?GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH is required}"
+: "${GRAPHICS_WORKBENCH_TEST_CHROME_PATH:?GRAPHICS_WORKBENCH_TEST_CHROME_PATH is required}"
 
-read_setting() {
-	local key="$1"
-	node -e "const fs = require('node:fs'); const settings = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); const value = settings[process.argv[2]]; if (!value) process.exit(1); process.stdout.write(value);" "${settings_path}" "${key}"
-}
-
-rsvg_convert_path="$(read_setting "graphics-workbench.execPath.rsvgConvert")"
-chrome_path="$(read_setting "graphics-workbench.execPath.chrome")"
+rsvg_convert_path="${GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH}"
+chrome_path="${GRAPHICS_WORKBENCH_TEST_CHROME_PATH}"
 test -x "${rsvg_convert_path}"
 test -x "${chrome_path}"
 
 if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
-	drawio_path="$(read_setting "graphics-workbench.execPath.drawio")"
+	: "${GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH:?GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH is required}"
+	drawio_path="${GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH}"
 	test -x "${drawio_path}"
-	echo "Draw.io from settings.json: ${drawio_path}"
-	"${drawio_path}" --version 2>&1 | head -1 || true
+	echo "Draw.io: ${drawio_path}"
+	xvfb-run -a "${drawio_path}" --version 2>&1 | head -1 || true
 fi
 
 echo "rsvg-convert: ${rsvg_convert_path}"
 "${rsvg_convert_path}" --version
 
-echo "Chrome from settings.json: ${chrome_path}"
+echo "Chrome: ${chrome_path}"
 "${chrome_path}" --version
 
 work_dir="$(mktemp -d)"

@@ -1,13 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { executeRasterConversion, rasterFormatSpecs } from '@graphics-workbench/core/conversion';
+import {
+  executeRasterConversion,
+  rasterFormatSpecs,
+  createPdfRenderBackend,
+} from '@graphics-workbench/core/conversion';
 import {
   assertRasterMatches,
   createTestRuntime,
   copyInputToWorkspace,
   listInputFixturePathsSync,
-  readConfiguredConversionTools,
   testInputDirectory,
   testOutputDirectory,
   withTestWorkspace,
@@ -20,7 +23,7 @@ describe('PDFテスト入力の全ページPNG変換結果が、各ページの�
   ).entries()) {
     it(`pdf/${path.basename(fixturePath)}を読み取ったページ数分だけページごとにPNG変換し、各ページの出力が固定正解PNGと一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
-        const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
+        const pdfRenderTools = createPdfRenderBackend();
         const sourcePath = await copyInputToWorkspace(
           fixturePath,
           workspacePath,
@@ -39,7 +42,6 @@ describe('PDFテスト入力の全ページPNG変換結果が、各ページの�
           maxInputPixels: 1_000_000_000,
           inputs: cases.map(({ outputPath, page }) => ({ sourcePath, outputPath, workspacePath, page })),
           pdfRenderTools,
-          drawioTools,
           runtime: createTestRuntime().runtime,
           runId: `pdf-${index}`,
         });

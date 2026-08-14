@@ -1,26 +1,31 @@
 $ErrorActionPreference = 'Stop'
 
+# Verifies the tools injected as GRAPHICS_WORKBENCH_TEST_* by the workflow.
+# The environment variables are the single source of tool paths; this script
+# never probes PATH or reads settings files.
+
 Write-Host 'Verifying image conversion tools...'
 
-$settingsPath = Join-Path 'vscode/test/support/vscode-settings' 'settings.json'
-$settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+if (-not $env:GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH) { throw 'GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH is required' }
+if (-not $env:GRAPHICS_WORKBENCH_TEST_CHROME_PATH) { throw 'GRAPHICS_WORKBENCH_TEST_CHROME_PATH is required' }
 
-$rsvgConvert = $settings.'graphics-workbench.execPath.rsvgConvert'
-$chrome = $settings.'graphics-workbench.execPath.chrome'
+$rsvgConvert = $env:GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH
+$chrome = $env:GRAPHICS_WORKBENCH_TEST_CHROME_PATH
 
 if (-not (Test-Path $rsvgConvert)) { throw "missing rsvg-convert: $rsvgConvert" }
-if (-not (Test-Path $chrome)) { throw "missing Chrome from settings.json: $chrome" }
+if (-not (Test-Path $chrome)) { throw "missing Chrome: $chrome" }
 
 if ($env:INSTALL_DRAWIO -eq '1') {
-	$drawio = $settings.'graphics-workbench.execPath.drawio'
-	if (-not (Test-Path $drawio)) { throw "missing Draw.io from settings.json: $drawio" }
+	if (-not $env:GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH) { throw 'GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH is required' }
+	$drawio = $env:GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH
+	if (-not (Test-Path $drawio)) { throw "missing Draw.io: $drawio" }
 	Write-Host "Draw.io: $drawio"
 }
 
 Write-Host "rsvg-convert: $rsvgConvert"
 & $rsvgConvert --version | Out-Host
 
-Write-Host "Chrome from settings.json: $chrome"
+Write-Host "Chrome: $chrome"
 $chromeVersion = (Get-Item $chrome).VersionInfo.ProductVersion
 Write-Host "Chrome file version: $chromeVersion"
 

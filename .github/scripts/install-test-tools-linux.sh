@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Installs the conversion tools and prints GRAPHICS_WORKBENCH_TEST_* lines to
+# stdout for the workflow to inject via $GITHUB_ENV. Human-readable progress
+# goes to stderr so stdout stays machine-parseable.
+
 # e2e tools used by conversion tests on Linux.
 apt_prefix=()
 if command -v sudo >/dev/null 2>&1; then
 	apt_prefix=(sudo)
 fi
 
-"${apt_prefix[@]}" apt-get update
-"${apt_prefix[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+"${apt_prefix[@]}" apt-get update >&2
+"${apt_prefix[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y >&2 \
 	librsvg2-bin \
 	xvfb \
 	fonts-liberation \
@@ -28,14 +32,8 @@ if [ -z "${chrome_path}" ]; then
 	exit 1
 fi
 
-settings_dir="vscode/test/support/vscode-settings"
-mkdir -p "$settings_dir"
-cat > "$settings_dir/settings.json" <<EOF
-{
-    "graphics-workbench.execPath.rsvgConvert": "${rsvg_convert_path}",
-    "graphics-workbench.execPath.chrome": "${chrome_path}"
-}
-EOF
+printf 'GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=%s\n' "${rsvg_convert_path}"
+printf 'GRAPHICS_WORKBENCH_TEST_CHROME_PATH=%s\n' "${chrome_path}"
 
 # Draw.io CLI is only needed by the packaged Playwright Draw.io -> PDF smoke,
 # not by the Extension Host suite (whose Draw.io oracle tests skip without it).
@@ -45,8 +43,8 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 	drawio_deb="$(mktemp --suffix=.deb)"
 	trap 'rm -f "${drawio_deb}"' EXIT
 
-	curl -L --fail --retry 3 -o "${drawio_deb}" "${drawio_url}"
-	"${apt_prefix[@]}" apt-get install -y "${drawio_deb}"
+	curl -L --fail --retry 3 -o "${drawio_deb}" "${drawio_url}" >&2
+	"${apt_prefix[@]}" apt-get install -y "${drawio_deb}" >&2
 
 	drawio_path="$(command -v drawio || true)"
 	if [ -z "${drawio_path}" ]; then
@@ -62,10 +60,5 @@ if [ "${INSTALL_DRAWIO:-}" = "1" ]; then
 		exit 1
 	fi
 
-	node -e "const fs = require('node:fs'); const p = '${settings_dir}/settings.json'; const s = JSON.parse(fs.readFileSync(p, 'utf8')); s['graphics-workbench.execPath.drawio'] = process.argv[1]; fs.writeFileSync(p, JSON.stringify(s, null, 4) + '\n');" "${drawio_path}"
-
-	echo "Draw.io: ${drawio_path}"
-	xvfb-run -a "${drawio_path}" --version 2>&1 | head -1 || true
+	printf 'GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH=%s\n' "${drawio_path}"
 fi
-
-cat "$settings_dir/settings.json"

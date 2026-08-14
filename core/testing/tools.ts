@@ -37,29 +37,12 @@ export function requireConfiguredTool(environmentVariable: string, toolName: str
   return configured;
 }
 
-/**
- * The single environment→product-settings bootstrap for integration tests.
- * The env variables are the only source of external tool paths; production
- * code never reads them. Values already set in the process environment take
- * precedence over .env.test.local (loaded via --env-file-if-exists).
- */
-export function readExternalTestSettings(): Record<string, string> {
-  return {
-    'graphics-workbench.execPath.rsvgConvert': requireConfiguredTool(
-      'GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH',
-      'rsvg-convert',
-    ),
-    'graphics-workbench.execPath.drawio': requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io'),
-    'graphics-workbench.execPath.chrome': requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_CHROME_PATH', 'Chrome'),
-  };
-}
-
 export function readConfiguredConversionTools(): ConfiguredConversionTools {
   return {
     pdfRenderTools: createPdfRenderBackend(),
-    rsvgConvertPath: process.env.GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH ?? '',
+    rsvgConvertPath: requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH', 'rsvg-convert'),
     drawioTools: {
-      drawioPath: process.env.GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH ?? '',
+      drawioPath: requireConfiguredTool('GRAPHICS_WORKBENCH_TEST_DRAWIO_PATH', 'Draw.io'),
       runDrawio: executeDrawio,
     },
   };

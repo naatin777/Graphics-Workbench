@@ -11,6 +11,16 @@ import { operationPdfInputDirectory, operationPngInputPath } from '../support/he
 import { extensionIdentity } from '../../src/generated/extension_manifest.js';
 
 suite('拡張機能のactivateとworkspace内ファイルへの変換コマンド実行', () => {
+  let sandbox: ReturnType<typeof createSandbox>;
+
+  setup(() => {
+    sandbox = createSandbox();
+  });
+
+  teardown(() => {
+    sandbox.restore();
+  });
+
   test('拡張機能をactivateするとcropPdf.autoやsplitPdf.allPagesなどの代表commandが登録される', async () => {
     const extension = vscode.extensions.getExtension(extensionIdentity.id);
 
@@ -39,76 +49,61 @@ suite('拡張機能のactivateとworkspace内ファイルへの変換コマン�
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(
       path.join(workspaceFolder.uri.fsPath, 'gw-extension-test-'),
     );
 
-    try {
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
-      const sourcePath = path.join(temporaryDirectory.path, 'source.png');
-      const outputPath = path.join(temporaryDirectory.path, 'source.pdf');
-      await copyFile(operationPngInputPath, sourcePath);
+    const sourcePath = path.join(temporaryDirectory.path, 'source.png');
+    const outputPath = path.join(temporaryDirectory.path, 'source.pdf');
+    await copyFile(operationPngInputPath, sourcePath);
 
-      await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
+    await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(sourcePath));
 
-      const pdfPages = await readPdfPages(await readFile(outputPath));
-      assert.strictEqual(pdfPages.length, 1);
-    } finally {
-      sandbox.restore();
-    }
+    const pdfPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(pdfPages.length, 1);
   });
 
   test('workspace内の2ページPDFにcropPdf.autoコマンドを実行すると、margin 0で自動クロップした2ページのdocument-crop.pdfが生成される', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-crop-auto-'));
 
-    try {
-      const selectedMargin = { label: '0 pt', description: '', margin: 0 };
-      sandbox.stub(vscode.window, 'showQuickPick').resolves(selectedMargin);
-      sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    const selectedMargin = { label: '0 pt', description: '', margin: 0 };
+    sandbox.stub(vscode.window, 'showQuickPick').resolves(selectedMargin);
+    sandbox.stub(vscode.window, 'showErrorMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
-      const sourcePath = path.join(temporaryDirectory.path, 'document.pdf');
-      await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
+    const sourcePath = path.join(temporaryDirectory.path, 'document.pdf');
+    await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
-      await vscode.commands.executeCommand('graphics-workbench.cropPdf.auto', vscode.Uri.file(sourcePath));
+    await vscode.commands.executeCommand('graphics-workbench.cropPdf.auto', vscode.Uri.file(sourcePath));
 
-      const croppedPath = path.join(temporaryDirectory.path, 'document-crop.pdf');
-      const pdfPages = await readPdfPages(await readFile(croppedPath));
-      assert.strictEqual(pdfPages.length, 2);
-    } finally {
-      sandbox.restore();
-    }
+    const croppedPath = path.join(temporaryDirectory.path, 'document-crop.pdf');
+    const pdfPages = await readPdfPages(await readFile(croppedPath));
+    assert.strictEqual(pdfPages.length, 2);
   });
 
   test('workspace内の2ページPDFにsplitPdf.allPagesコマンドを実行すると、split-testディレクトリ配下へページごとに1ページのPDF（1.pdfと2.pdf）が生成される', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder);
 
-    const sandbox = createSandbox();
     await using temporaryDirectory = await mkdtempDisposable(path.join(workspaceFolder.uri.fsPath, 'gw-split-all-'));
 
-    try {
-      sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
-      sandbox.stub(vscode.window, 'showWarningMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+    sandbox.stub(vscode.window, 'showWarningMessage').resolves(undefined);
 
-      const sourcePath = path.join(temporaryDirectory.path, 'split-test.pdf');
-      await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
+    const sourcePath = path.join(temporaryDirectory.path, 'split-test.pdf');
+    await copyFile(path.join(operationPdfInputDirectory, 'multi-page-table.pdf'), sourcePath);
 
-      await vscode.commands.executeCommand('graphics-workbench.splitPdf.allPages', vscode.Uri.file(sourcePath));
+    await vscode.commands.executeCommand('graphics-workbench.splitPdf.allPages', vscode.Uri.file(sourcePath));
 
-      const splitOutputDir = path.join(temporaryDirectory.path, 'split-test');
-      for (const page of [1, 2]) {
-        const pagePath = path.join(splitOutputDir, `${page}.pdf`);
-        assert.strictEqual((await readPdfPages(await readFile(pagePath))).length, 1);
-      }
-    } finally {
-      sandbox.restore();
+    const splitOutputDir = path.join(temporaryDirectory.path, 'split-test');
+    for (const page of [1, 2]) {
+      const pagePath = path.join(splitOutputDir, `${page}.pdf`);
+      assert.strictEqual((await readPdfPages(await readFile(pagePath))).length, 1);
     }
   });
 });
