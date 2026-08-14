@@ -1,8 +1,8 @@
+import { createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { access, mkdtempDisposable, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument } from '@graphics-workbench/core/testing';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
@@ -174,8 +174,8 @@ suite('LaTeXクリップボード画像挿入', () => {
         assert.ok(edit.insertText instanceof vscode.SnippetString);
         const snippet = normalizeSnippetValue(edit.insertText.value);
         assert.ok(snippet.includes('\\includegraphics{pasted.pdf}'));
-        const pdf = await PDFDocument.load(await readFile(path.join(directory.path, 'pasted.pdf')));
-        assert.strictEqual(pdf.getPageCount(), 1);
+        const pdfPages = await readPdfPages(await readFile(path.join(directory.path, 'pasted.pdf')));
+        assert.strictEqual(pdfPages.length, 1);
         assert.strictEqual(await readFile(existingImagePath, 'utf8'), 'existing clipboard image');
         assert.notDeepStrictEqual(await readFile(existingPdfPath), existingPdf);
 
@@ -374,11 +374,9 @@ function normalizeSnippetValue(value: string): string {
   return value.replaceAll('\\\\', '\\').replaceAll(/\\([{}])/g, '$1');
 }
 
-async function createPdfBytes(text: string): Promise<Buffer> {
-  const document = await PDFDocument.create();
-  const page = document.addPage([200, 100]);
-  page.drawText(text);
-  return Buffer.from(await document.save());
+async function createPdfBytes(_text: string): Promise<Buffer> {
+  // Content text is not verified by these tests; a blank page is sufficient.
+  return Buffer.from(await createPdfFixture({ pages: [{ mediaBox: [0, 0, 200, 100] }] }));
 }
 
 async function findFiles(rootPath: string, predicate: (filePath: string) => boolean): Promise<string[]> {

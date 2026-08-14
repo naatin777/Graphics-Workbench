@@ -1,9 +1,9 @@
+import { readPdfPages } from '@graphics-workbench/core/testing';
 import { cp, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { expect, test, type TestInfo } from '@playwright/test';
 import sharp from 'sharp';
-import { PDFDocument } from '@graphics-workbench/core/testing';
 
 import { cropConfigureFixture } from '../../support/helpers/crop_configure_fixture.js';
 import { operationDrawioInputDirectory } from '../../support/helpers/fixture_paths.js';
@@ -126,18 +126,18 @@ test('package済みVSIXのCrop ConfigureからHost bridgeを通してPDFを変�
     await expect
       .poll(async () => {
         try {
-          return (await PDFDocument.load(await readFile(env!.files.outputPath))).getPageCount();
+          return (await readPdfPages(await readFile(env!.files.outputPath))).length;
         } catch {
           return 0;
         }
       })
       .toBe(2);
-    const outputDocument = await PDFDocument.load(await readFile(env.files.outputPath));
-    const inputDocument = await PDFDocument.load(await readFile(env.files.inputPath));
-    expect(outputDocument.getPageCount()).toBe(2);
-    for (const [index, page] of outputDocument.getPages().entries()) {
-      expect(page.getMediaBox()).toEqual(inputDocument.getPage(index).getMediaBox());
-      expect(page.getCropBox()).toEqual({
+    const outputPages = await readPdfPages(await readFile(env.files.outputPath));
+    const inputPages = await readPdfPages(await readFile(env.files.inputPath));
+    expect(outputPages.length).toBe(2);
+    for (const [index, page] of outputPages.entries()) {
+      expect(page.mediaBox).toEqual(inputPages[index]?.mediaBox);
+      expect(page.cropBox).toEqual({
         x: cropConfigureFixture.cropBox.left,
         y: cropConfigureFixture.cropBox.bottom,
         width: cropConfigureFixture.cropBox.right - cropConfigureFixture.cropBox.left,
@@ -201,8 +201,7 @@ test('package済みVSIXからMuPDFでPDFをJPEGへ変換できる', async ({ pla
     const unicodeInputPath = join(env.directories.workspacePath, unicodePdfFileName);
     await cp(env.files.inputPath, unicodeInputPath);
 
-    const sourceDocument = await PDFDocument.load(await readFile(unicodeInputPath));
-    const expectedPageCount = sourceDocument.getPageCount();
+    const expectedPageCount = (await readPdfPages(await readFile(unicodeInputPath))).length;
     await convertPdfToJpeg(env.app.window, unicodePdfFileName);
 
     await expect(
@@ -275,8 +274,8 @@ test('package済みVSIXからDraw.io CLIでDraw.ioをPDFへ変換できる', asy
       .poll(
         async () => {
           try {
-            const outputDocument = await PDFDocument.load(await readFile(outputPath));
-            return outputDocument.getPageCount() === expectedDrawioPageCount;
+            const outputPages = await readPdfPages(await readFile(outputPath));
+            return outputPages.length === expectedDrawioPageCount;
           } catch {
             return false;
           }
@@ -284,8 +283,8 @@ test('package済みVSIXからDraw.io CLIでDraw.ioをPDFへ変換できる', asy
         { timeout: 60_000 },
       )
       .toBe(true);
-    const outputDocument = await PDFDocument.load(await readFile(outputPath));
-    expect(outputDocument.getPageCount()).toBe(expectedDrawioPageCount);
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    expect(outputPages.length).toBe(expectedDrawioPageCount);
     await env.app.window.keyboard.press('Escape');
   } catch (error) {
     await runWithDiagnostics(testInfo, env, consoleMessages, error);

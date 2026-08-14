@@ -1,12 +1,10 @@
 import assert from 'node:assert/strict';
 
-import { suite, test } from 'mocha';
-
 import { createMockChannel } from '@graphics-workbench/vscode-protocol/typed-protocol';
 import { previewProtocol } from '@graphics-workbench/vscode-protocol/preview-protocol';
 
-suite('typed Webview protocol transport', () => {
-  test('derives directional senders and validates incoming messages', () => {
+describe('typed Webview protocol transport', () => {
+  it('derives directional senders and validates incoming messages', () => {
     const channel = createMockChannel(previewProtocol);
     const received: string[] = [];
     const hostReceived: unknown[] = [];
@@ -28,7 +26,7 @@ suite('typed Webview protocol transport', () => {
     assert.deepEqual(received, ['failed']);
   });
 
-  test('rejects invalid outgoing payloads before they reach the transport', () => {
+  it('rejects invalid outgoing payloads before they reach the transport', () => {
     const channel = createMockChannel(previewProtocol);
     const received: unknown[] = [];
     const unsubscribe = channel.host.subscribe((message) => received.push(message));

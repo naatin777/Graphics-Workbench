@@ -8,12 +8,11 @@
 // - VS Codeのcommand UI
 // - withProgressの表示
 
+import { createPdfFixture, fillRectangle, readPdfPages } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-
-import { PDFDocument, degrees, rgb } from '@graphics-workbench/core/testing';
 
 import { cropPdfFiles } from '../../../src/adapters/crop/crop_pdf_auto.js';
 
@@ -31,21 +30,21 @@ suite('PDF自動crop処理', () => {
       runId: 'run',
     });
 
-    const outputDocument = await PDFDocument.load(await readFile(outputPath));
-    assert.strictEqual(outputDocument.getPageCount(), 2);
-    assert.deepStrictEqual(outputDocument.getPage(0).getMediaBox(), {
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(outputPages.length, 2);
+    assert.deepStrictEqual(outputPages[0]?.mediaBox, {
       x: 5,
       y: 15,
       width: 110,
       height: 110,
     });
-    assert.deepStrictEqual(outputDocument.getPage(0).getCropBox(), {
+    assert.deepStrictEqual(outputPages[0]?.cropBox, {
       x: 5,
       y: 15,
       width: 110,
       height: 110,
     });
-    assert.deepStrictEqual(outputDocument.getPage(1).getMediaBox(), {
+    assert.deepStrictEqual(outputPages[1]?.mediaBox, {
       x: 35,
       y: 45,
       width: 210,
@@ -61,9 +60,7 @@ suite('PDF自動crop処理', () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-test-'));
     const sourcePath = path.join(workspacePath, 'blank.pdf');
     const outputPath = path.join(workspacePath, 'blank-crop.pdf');
-    const document = await PDFDocument.create();
-    document.addPage([320, 180]);
-    await writeFile(sourcePath, await document.save());
+    await writeFile(sourcePath, await createPdfFixture({ pages: [{ mediaBox: [0, 0, 320, 180] }] }));
 
     await cropPdfFiles({
       inputs: [{ sourcePath, workspacePath, outputPath }],
@@ -71,14 +68,14 @@ suite('PDF自動crop処理', () => {
       runtime: {},
     });
 
-    const outputDocument = await PDFDocument.load(await readFile(outputPath));
-    assert.deepStrictEqual(outputDocument.getPage(0).getMediaBox(), {
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.deepStrictEqual(outputPages[0]?.mediaBox, {
       x: 0,
       y: 0,
       width: 320,
       height: 180,
     });
-    assert.deepStrictEqual(outputDocument.getPage(0).getCropBox(), {
+    assert.deepStrictEqual(outputPages[0]?.cropBox, {
       x: 0,
       y: 0,
       width: 320,
@@ -90,12 +87,18 @@ suite('PDF自動crop処理', () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-crop-geometry-test-'));
     const sourcePath = path.join(workspacePath, 'geometry.pdf');
     const outputPath = path.join(workspacePath, 'geometry-crop.pdf');
-    const document = await PDFDocument.create();
-    const page = document.addPage([400, 300]);
-    page.setMediaBox(100, 200, 400, 300);
-    page.setRotation(degrees(90));
-    page.drawRectangle({ x: 135.25, y: 247.5, width: 80.5, height: 41.25, color: rgb(0, 0, 0) });
-    await writeFile(sourcePath, await document.save());
+    await writeFile(
+      sourcePath,
+      await createPdfFixture({
+        pages: [
+          {
+            mediaBox: [100, 200, 500, 500],
+            rotation: 90,
+            contents: [fillRectangle({ x: 135.25, y: 247.5, width: 80.5, height: 41.25 })],
+          },
+        ],
+      }),
+    );
 
     await cropPdfFiles({
       inputs: [{ sourcePath, workspacePath, outputPath }],
@@ -103,8 +106,9 @@ suite('PDF自動crop処理', () => {
       runtime: {},
     });
 
-    const outputDocument = await PDFDocument.load(await readFile(outputPath));
-    const bounds = outputDocument.getPage(0).getMediaBox();
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    const bounds = outputPages[0]?.mediaBox;
+    assert.ok(bounds !== undefined);
     assert.ok(Math.abs(bounds.x - 135.25) <= 1);
     assert.ok(Math.abs(bounds.y - 247.5) <= 1);
     assert.ok(Math.abs(bounds.width - 80.5) <= 1);
@@ -133,8 +137,8 @@ suite('PDF自動crop処理', () => {
     });
 
     for (const input of inputs) {
-      const outputDocument = await PDFDocument.load(await readFile(input.outputPath));
-      assert.strictEqual(outputDocument.getPageCount(), 1);
+      const outputPages = await readPdfPages(await readFile(input.outputPath));
+      assert.strictEqual(outputPages.length, 1);
     }
   });
 
@@ -224,17 +228,29 @@ suite('PDF自動crop処理', () => {
 });
 
 async function writeFixturePdf(filePath: string): Promise<void> {
-  const document = await PDFDocument.create();
-  const firstPage = document.addPage([300, 200]);
-  firstPage.drawRectangle({ x: 10, y: 20, width: 100, height: 100, color: rgb(1, 0, 0) });
-  const secondPage = document.addPage([400, 300]);
-  secondPage.drawRectangle({ x: 40, y: 50, width: 200, height: 150, color: rgb(0, 0, 1) });
-  await writeFile(filePath, await document.save());
+  const bytes = await createPdfFixture({
+    pages: [
+      {
+        mediaBox: [0, 0, 300, 200],
+        contents: [fillRectangle({ x: 10, y: 20, width: 100, height: 100, color: [1, 0, 0] })],
+      },
+      {
+        mediaBox: [0, 0, 400, 300],
+        contents: [fillRectangle({ x: 40, y: 50, width: 200, height: 150, color: [0, 0, 1] })],
+      },
+    ],
+  });
+  await writeFile(filePath, bytes);
 }
 
 async function writeSinglePagePdf(filePath: string): Promise<void> {
-  const document = await PDFDocument.create();
-  const page = document.addPage([100, 100]);
-  page.drawRectangle({ x: 10, y: 10, width: 80, height: 80, color: rgb(1, 0, 0) });
-  await writeFile(filePath, await document.save());
+  const bytes = await createPdfFixture({
+    pages: [
+      {
+        mediaBox: [0, 0, 100, 100],
+        contents: [fillRectangle({ x: 10, y: 10, width: 80, height: 80, color: [1, 0, 0] })],
+      },
+    ],
+  });
+  await writeFile(filePath, bytes);
 }

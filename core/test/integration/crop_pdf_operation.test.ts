@@ -5,9 +5,9 @@ import path from 'node:path';
 
 import { cropPdfFile, type CropPdfFileWriter } from '@graphics-workbench/core/pdf';
 import {
-  PDFDocument,
   invalidPreflightInputDirectory,
   operationPdfInputDirectory,
+  readPdfPages,
 } from '@graphics-workbench/core/testing';
 
 const multilingualFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
@@ -33,8 +33,8 @@ function assertBoxEquals(
   );
 }
 
-suite('PDFのCropBox更新', () => {
-  test('全ページCropでは各ページのCropBoxだけを更新してMediaBoxを維持する', async () => {
+describe('PDFのCropBox更新', () => {
+  it('全ページCropでは各ページのCropBoxだけを更新してMediaBoxを維持する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-crop-operation-'));
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
@@ -44,13 +44,13 @@ suite('PDFのCropBox更新', () => {
     const cropBox = { left: 20, bottom: 30, right: 200, top: 280 };
     await cropPdfFile({ sourcePath, stagedOutputPath, cropBox, target: { type: 'all' } });
 
-    const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
-    const outputDocument = await PDFDocument.load(await readFile(stagedOutputPath));
-    assert.strictEqual(outputDocument.getPageCount(), sourceDocument.getPageCount());
-    for (const [index, page] of outputDocument.getPages().entries()) {
-      const sourcePage = sourceDocument.getPage(index);
-      assertBoxEquals(page.getMediaBox(), sourcePage.getMediaBox());
-      assertBoxEquals(page.getCropBox(), {
+    const sourcePages = await readPdfPages(await readFile(sourcePath));
+    const outputPages = await readPdfPages(await readFile(stagedOutputPath));
+    assert.strictEqual(outputPages.length, sourcePages.length);
+    for (const [index, page] of outputPages.entries()) {
+      const sourcePage = sourcePages[index];
+      assertBoxEquals(page.mediaBox, sourcePage?.mediaBox ?? { x: 0, y: 0, width: 0, height: 0 });
+      assertBoxEquals(page.cropBox, {
         x: cropBox.left,
         y: cropBox.bottom,
         width: cropBox.right - cropBox.left,
@@ -59,7 +59,7 @@ suite('PDFのCropBox更新', () => {
     }
   });
 
-  test('選択ページだけのCropでは対象外ページのCropBoxと全ページのMediaBoxを維持する', async () => {
+  it('選択ページだけのCropでは対象外ページのCropBoxと全ページのMediaBoxを維持する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-crop-selected-'));
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
@@ -74,26 +74,26 @@ suite('PDFのCropBox更新', () => {
       target: { type: 'selected', pages: [1] },
     });
 
-    const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
-    const outputDocument = await PDFDocument.load(await readFile(stagedOutputPath));
-    assert.strictEqual(outputDocument.getPageCount(), sourceDocument.getPageCount());
-    for (const [index, page] of outputDocument.getPages().entries()) {
-      const sourcePage = sourceDocument.getPage(index);
-      assertBoxEquals(page.getMediaBox(), sourcePage.getMediaBox());
+    const sourcePages = await readPdfPages(await readFile(sourcePath));
+    const outputPages = await readPdfPages(await readFile(stagedOutputPath));
+    assert.strictEqual(outputPages.length, sourcePages.length);
+    for (const [index, page] of outputPages.entries()) {
+      const sourcePage = sourcePages[index];
+      assertBoxEquals(page.mediaBox, sourcePage?.mediaBox ?? { x: 0, y: 0, width: 0, height: 0 });
       if (index === 0) {
-        assertBoxEquals(page.getCropBox(), {
+        assertBoxEquals(page.cropBox, {
           x: cropBox.left,
           y: cropBox.bottom,
           width: cropBox.right - cropBox.left,
           height: cropBox.top - cropBox.bottom,
         });
       } else {
-        assertBoxEquals(page.getCropBox(), sourcePage.getCropBox());
+        assertBoxEquals(page.cropBox, sourcePage?.cropBox ?? { x: 0, y: 0, width: 0, height: 0 });
       }
     }
   });
 
-  test('壊れたPDFは解析エラーで失敗して出力を作成しない', async () => {
+  it('壊れたPDFは解析エラーで失敗して出力を作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-crop-invalid-'));
     const sourcePath = path.join(workspacePath.path, 'invalid.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
@@ -113,7 +113,7 @@ suite('PDFのCropBox更新', () => {
     assert.strictEqual(await pathExists(`${stagedOutputPath}.partial`), false);
   });
 
-  test('存在しない入力ファイルはENOENTで失敗して出力を作成しない', async () => {
+  it('存在しない入力ファイルはENOENTで失敗して出力を作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-crop-missing-'));
     const sourcePath = path.join(workspacePath.path, 'missing.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
@@ -132,7 +132,7 @@ suite('PDFのCropBox更新', () => {
     assert.strictEqual(await pathExists(`${stagedOutputPath}.partial`), false);
   });
 
-  test('出力先pathが既存directoryの場合はrenameに失敗して.partialを残さない', async () => {
+  it('出力先pathが既存directoryの場合はrenameに失敗して.partialを残さない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-crop-rename-'));
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
@@ -152,7 +152,7 @@ suite('PDFのCropBox更新', () => {
     assert.strictEqual(await pathExists(`${stagedOutputPath}.partial`), false);
   });
 
-  test('writeFileがENOSPCで失敗するとrenameせず.partialを削除して失敗する', async () => {
+  it('writeFileがENOSPCで失敗するとrenameせず.partialを削除して失敗する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-crop-enospc-'));
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');

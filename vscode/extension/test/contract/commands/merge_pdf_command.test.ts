@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PDFDocument, assertRenderedPdfPagesSimilar } from '@graphics-workbench/core/testing';
+import { assertRenderedPdfPagesSimilar, readPdfPages } from '@graphics-workbench/core/testing';
 import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
@@ -52,14 +52,14 @@ suite('PDF結合コマンド', () => {
 
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const mergedPdf = await PDFDocument.load(await readFile(outputPath));
-      const firstPdf = await PDFDocument.load(await readFile(firstPdfPath));
-      const secondPdf = await PDFDocument.load(await readFile(secondPdfPath));
-      const expectedPageSizes = [...firstPdf.getPages(), ...secondPdf.getPages()].map((page) => page.getSize());
+      const mergedPages = await readPdfPages(await readFile(outputPath));
+      const firstPages = await readPdfPages(await readFile(firstPdfPath));
+      const secondPages = await readPdfPages(await readFile(secondPdfPath));
+      const expectedPageSizes = [...firstPages, ...secondPages].map((page) => page.mediaBox);
 
-      assert.strictEqual(mergedPdf.getPageCount(), expectedPageSizes.length);
+      assert.strictEqual(mergedPages.length, expectedPageSizes.length);
       assert.deepStrictEqual(
-        mergedPdf.getPages().map((page) => page.getSize()),
+        mergedPages.map((page) => page.mediaBox),
         expectedPageSizes,
       );
       assert.ok((await stat(outputPath)).size > 0);
@@ -69,8 +69,8 @@ suite('PDF結合コマンド', () => {
 
       let outputPageNumber = 1;
       for (const [sourceIndex, sourcePath] of [firstPdfPath, secondPdfPath].entries()) {
-        const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
-        for (let sourcePageNumber = 1; sourcePageNumber <= sourceDocument.getPageCount(); sourcePageNumber += 1) {
+        const sourcePageCount = (await readPdfPages(await readFile(sourcePath))).length;
+        for (let sourcePageNumber = 1; sourcePageNumber <= sourcePageCount; sourcePageNumber += 1) {
           await assertRenderedPdfPagesSimilar({
             expectedPdfPath: sourcePath,
             expectedPageNumber: sourcePageNumber,
@@ -115,8 +115,8 @@ suite('PDF結合コマンド', () => {
 
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const mergedPdf = await PDFDocument.load(await readFile(outputPath));
-      assert.strictEqual(mergedPdf.getPageCount(), 17);
+      const mergedPages = await readPdfPages(await readFile(outputPath));
+      assert.strictEqual(mergedPages.length, 17);
       assert.ok((await stat(outputPath)).size > 0);
     } finally {
       sandbox.restore();
@@ -291,8 +291,8 @@ suite('PDF結合コマンド', () => {
 
       await runCommandAndClearNotificationsUntilDone(commandExecution);
 
-      const mergedPdf = await PDFDocument.load(await readFile(outputPath));
-      assert.strictEqual(mergedPdf.getPageCount(), 4);
+      const mergedPages = await readPdfPages(await readFile(outputPath));
+      assert.strictEqual(mergedPages.length, 4);
       assert.ok((await stat(outputPath)).size > 0);
     } finally {
       sandbox.restore();

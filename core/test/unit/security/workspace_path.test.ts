@@ -17,8 +17,8 @@ import path from 'node:path';
 
 import { assertExistingPathInWorkspace, assertWritablePathInWorkspace } from '@graphics-workbench/core/security';
 
-suite('workspaceパスの安全性', () => {
-  test('workspace配下の既存ファイルは論理パス判定と実体パス(realpath)判定の両方を通過して許可する', async () => {
+describe('workspaceパスの安全性', () => {
+  it('workspace配下の既存ファイルは論理パス判定と実体パス(realpath)判定の両方を通過して許可する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const sourcePath = path.join(workspacePath, 'figures', 'sample.pdf');
     await mkdir(path.dirname(sourcePath), { recursive: true });
@@ -27,14 +27,14 @@ suite('workspaceパスの安全性', () => {
     await assert.doesNotReject(assertExistingPathInWorkspace(sourcePath, workspacePath));
   });
 
-  test('未作成の書き込み先はworkspace内の最も近い既存親ディレクトリの実体パスを検証して通過し、未作成の新規ファイル自体も許可する', async () => {
+  it('未作成の書き込み先はworkspace内の最も近い既存親ディレクトリの実体パスを検証して通過し、未作成の新規ファイル自体も許可する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const outputPath = path.join(workspacePath, 'generated', 'nested', 'sample.pdf');
 
     await assert.doesNotReject(assertWritablePathInWorkspace(outputPath, workspacePath));
   });
 
-  test('workspace外の既存ファイルは相対パスが../で始まり論理判定で外側とみなされ、outside the workspaceエラーで拒否する', async () => {
+  it('workspace外の既存ファイルは相対パスが../で始まり論理判定で外側とみなされ、outside the workspaceエラーで拒否する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const outsidePath = path.join(await mkdtemp(path.join(os.tmpdir(), 'gw-outside-')), 'sample.pdf');
     await writeFile(outsidePath, 'pdf');
@@ -42,14 +42,14 @@ suite('workspaceパスの安全性', () => {
     await assert.rejects(assertExistingPathInWorkspace(outsidePath, workspacePath), /outside the workspace/);
   });
 
-  test('未作成の書き込み先の親がworkspace外にある場合は最も近い既存親の実体パスが外側と判定され、outside the workspaceエラーで拒否する', async () => {
+  it('未作成の書き込み先の親がworkspace外にある場合は最も近い既存親の実体パスが外側と判定され、outside the workspaceエラーで拒否する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const outsidePath = path.join(await mkdtemp(path.join(os.tmpdir(), 'gw-outside-')), 'new', 'sample.pdf');
 
     await assert.rejects(assertWritablePathInWorkspace(outsidePath, workspacePath), /outside the workspace/);
   });
 
-  test('workspaceと同名prefixを共有する兄弟ディレクトリ（project vs project-backup）は相対パスが../project-backupで始まり論理判定で外側とみなされ拒否する', async () => {
+  it('workspaceと同名prefixを共有する兄弟ディレクトリ（project vs project-backup）は相対パスが../project-backupで始まり論理判定で外側とみなされ拒否する', async () => {
     const parentPath = await mkdtemp(path.join(os.tmpdir(), 'gw-prefix-'));
     const workspacePath = path.join(parentPath, 'project');
     const siblingPath = path.join(parentPath, 'project-backup', 'sample.pdf');
@@ -60,7 +60,7 @@ suite('workspaceパスの安全性', () => {
     await assert.rejects(assertExistingPathInWorkspace(siblingPath, workspacePath), /outside the workspace/);
   });
 
-  test('workspace内のディレクトリsymlinkがworkspace外の実体を指す場合、論理パスは内側でもrealpath後の実体パスが外側となり読み込みを拒否する', async () => {
+  it('workspace内のディレクトリsymlinkがworkspace外の実体を指す場合、論理パスは内側でもrealpath後の実体パスが外側となり読み込みを拒否する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-outside-'));
     const outsideFile = path.join(outsideDirectory, 'sample.pdf');
@@ -74,7 +74,7 @@ suite('workspaceパスの安全性', () => {
     );
   });
 
-  test('未作成の書き込み先の親がworkspace外へのsymlinkである場合、最も近い既存親の実体パスが外側となり書き込みを拒否する', async () => {
+  it('未作成の書き込み先の親がworkspace外へのsymlinkである場合、最も近い既存親の実体パスが外側となり書き込みを拒否する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const outsideDirectory = await mkdtemp(path.join(os.tmpdir(), 'gw-outside-'));
     const linkedDirectory = path.join(workspacePath, 'linked');
@@ -86,7 +86,7 @@ suite('workspaceパスの安全性', () => {
     );
   });
 
-  test('workspace自体がsymlinkで実体が別ディレクトリでも、workspaceの実体と対象の実体が同じworkspace内なら許可する', async () => {
+  it('workspace自体がsymlinkで実体が別ディレクトリでも、workspaceの実体と対象の実体が同じworkspace内なら許可する', async () => {
     const actualWorkspace = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-'));
     const symlinkParent = await mkdtemp(path.join(os.tmpdir(), 'gw-workspace-link-'));
     const workspacePath = path.join(symlinkParent, 'project');

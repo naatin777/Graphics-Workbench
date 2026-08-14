@@ -27,8 +27,17 @@ jobs:
       - run: bash .github/scripts/install-test-tools-linux.sh
         shell: bash
 
+      - name: Inject installed conversion tool paths
+        shell: bash
+        run: |
+          echo "GRAPHICS_WORKBENCH_TEST_RSVG_CONVERT_PATH=$(command -v rsvg-convert)" >> "$GITHUB_ENV"
+
       - name: Run Core unit and integration tests
         run: npm run test -w core
+        shell: bash
+
+      - name: Run Core tests in shuffled order
+        run: npm run test:shuffle -w core
         shell: bash
 
   protocol:

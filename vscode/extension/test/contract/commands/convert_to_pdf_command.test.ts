@@ -27,7 +27,7 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
@@ -250,9 +250,7 @@ suite('PDFに変換コマンド', () => {
 
     try {
       const pdfPath = path.join(temporaryDirectory, 'source.pdf');
-      const pdf = await PDFDocument.create();
-      pdf.addPage([120, 80]);
-      await writeFile(pdfPath, await pdf.save());
+      await writeFile(pdfPath, await createPdfFixture({ pages: [{ mediaBox: [0, 0, 120, 80] }] }));
 
       await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(pdfPath));
     } finally {
@@ -300,9 +298,9 @@ async function writeTestSvg(filePath: string, width: number, height: number): Pr
 }
 
 async function assertReadablePdfWithAtLeastOnePage(pdfPath: string): Promise<void> {
-  const pdf = await PDFDocument.load(await readFile(pdfPath));
+  const pages = await readPdfPages(await readFile(pdfPath));
 
-  assert.ok(pdf.getPageCount() >= 1);
+  assert.ok(pages.length >= 1);
 }
 
 async function assertFixtureConvertsToPdf(format: string, fixtureFileName: string): Promise<void> {
@@ -326,13 +324,12 @@ async function assertFixtureConvertsToPdf(format: string, fixtureFileName: strin
 }
 
 async function assertPdfPageSize(pdfPath: string, expectedWidth: number, expectedHeight: number): Promise<void> {
-  const pdf = await PDFDocument.load(await readFile(pdfPath));
-  assert.strictEqual(pdf.getPageCount(), 1);
+  const pages = await readPdfPages(await readFile(pdfPath));
+  assert.strictEqual(pages.length, 1);
 
-  const page = pdf.getPage(0);
-  const { width, height } = page.getSize();
-  assertApproximatelyEqual(width, expectedWidth, 0.01);
-  assertApproximatelyEqual(height, expectedHeight, 0.01);
+  const page = pages[0];
+  assertApproximatelyEqual(page?.mediaBox.width ?? 0, expectedWidth, 0.01);
+  assertApproximatelyEqual(page?.mediaBox.height ?? 0, expectedHeight, 0.01);
 }
 
 function replaceExtension(filePath: string, extension: string): string {

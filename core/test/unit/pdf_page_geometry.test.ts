@@ -1,23 +1,18 @@
 import assert from 'node:assert/strict';
 
-import { degrees, PDFDocument } from '@graphics-workbench/core/testing';
-
 import { getPdfPageGeometry, openPdfDocument } from '@graphics-workbench/core/pdf';
+import { createPdfFixture } from '@graphics-workbench/core/testing';
 
-suite('PDFページのジオメトリ取得', () => {
-  test('負のオフセットや90/270度回転を持つPDFページから、絶対座標のMediaBox/CropBoxと正規化されない回転角をそのまま返す', async () => {
-    const document = await PDFDocument.create();
-    const page = document.addPage([600, 800]);
-    page.setMediaBox(100, 200, 600, 800);
-    page.setCropBox(120, 220, 500, 700);
-    page.setRotation(degrees(90));
+describe('PDFページのジオメトリ取得', () => {
+  it('負のオフセットや90/270度回転を持つPDFページから、絶対座標のMediaBox/CropBoxと正規化されない回転角をそのまま返す', async () => {
+    const bytes = await createPdfFixture({
+      pages: [
+        { mediaBox: [100, 200, 700, 1000], cropBox: [120, 220, 620, 920], rotation: 90 },
+        { mediaBox: [-10, -20, 390, 280], cropBox: [-5, -10, 195, 140], rotation: 270 },
+      ],
+    });
 
-    const secondPage = document.addPage([400, 300]);
-    secondPage.setMediaBox(-10, -20, 400, 300);
-    secondPage.setCropBox(-5, -10, 200, 150);
-    secondPage.setRotation(degrees(270));
-
-    const reloaded = await openPdfDocument(await document.save());
+    const reloaded = await openPdfDocument(bytes);
     try {
       assert.deepStrictEqual(getPdfPageGeometry(reloaded.loadPage(0), 1), {
         page: 1,

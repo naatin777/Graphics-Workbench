@@ -4,13 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { mergePdf } from '@graphics-workbench/core/pdf';
-import { PDFDocument, operationPdfInputDirectory } from '@graphics-workbench/core/testing';
+import { operationPdfInputDirectory, readPdfPages } from '@graphics-workbench/core/testing';
 
 const firstFixturePath = path.join(operationPdfInputDirectory, 'multi-page-table.pdf');
 const secondFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
 
-suite('複数PDFのheadless結合', () => {
-  test('複数PDFを入力順に結合し、各入力ページを保持した1つのPDFを生成する', async () => {
+describe('複数PDFのheadless結合', () => {
+  it('複数PDFを入力順に結合し、各入力ページを保持した1つのPDFを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-operation-'));
     const firstPath = path.join(workspacePath.path, 'first.pdf');
     const secondPath = path.join(workspacePath.path, 'second.pdf');
@@ -27,13 +27,13 @@ suite('複数PDFのheadless結合', () => {
     });
 
     assert.strictEqual(outputs.length, 1);
-    const outputDocument = await PDFDocument.load(await readFile(outputPath));
-    const firstDocument = await PDFDocument.load(await readFile(firstPath));
-    const secondDocument = await PDFDocument.load(await readFile(secondPath));
-    assert.strictEqual(outputDocument.getPageCount(), firstDocument.getPageCount() + secondDocument.getPageCount());
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    const firstPages = await readPdfPages(await readFile(firstPath));
+    const secondPages = await readPdfPages(await readFile(secondPath));
+    assert.strictEqual(outputPages.length, firstPages.length + secondPages.length);
   });
 
-  test('入力PDFが2つ未満の場合は結合を開始せず拒否する', async () => {
+  it('入力PDFが2つ未満の場合は結合を開始せず拒否する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-merge-validation-'));
     const inputPath = path.join(workspacePath.path, 'input.pdf');
     await copyFile(firstFixturePath, inputPath);

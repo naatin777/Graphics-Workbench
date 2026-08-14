@@ -5,8 +5,8 @@ import path from 'node:path';
 
 import { filesHaveEqualContents, hashFile } from '@graphics-workbench/core/runtime';
 
-suite('大きなファイルの内容ハッシュ比較', () => {
-  test('同一内容の2ファイルはhashFileが一致してfilesHaveEqualContentsがtrueになり、末尾が異なるファイルに対してはfalseを返し、元ファイルは変更しない', async () => {
+describe('大きなファイルの内容ハッシュ比較', () => {
+  it('同一内容の2ファイルはhashFileが一致してfilesHaveEqualContentsがtrueになり、末尾が異なるファイルに対してはfalseを返し、元ファイルは変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-hash-test-'));
     const firstPath = path.join(workspacePath, 'first.bin');
     const secondPath = path.join(workspacePath, 'second.bin');

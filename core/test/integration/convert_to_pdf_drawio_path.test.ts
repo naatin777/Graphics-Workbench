@@ -12,15 +12,15 @@ import { copyFile, mkdtempDisposable, mkdir, readFile, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, testInputDirectory } from '@graphics-workbench/core/testing';
+import { testInputDirectory, readPdfPages, createPdfFixture } from '@graphics-workbench/core/testing';
 
 import { convertToPdfFiles, type DrawioBackend } from '@graphics-workbench/core/conversion';
 import { hashFile } from '@graphics-workbench/core/runtime';
 
 const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 
-suite('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io画像のPDF変換', () => {
-  test('空白とUnicodeを含むフォルダ名・ファイル名のfixtureを、入力pathと一時作業ディレクトリ内の中間PDF出力pathをそのままDraw.io実行関数へ渡して3ページPDFへ変換し、元fixtureファイルを変更しない', async () => {
+describe('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io画像のPDF変換', () => {
+  it('空白とUnicodeを含むフォルダ名・ファイル名のfixtureを、入力pathと一時作業ディレクトリ内の中間PDF出力pathをそのままDraw.io実行関数へ渡して3ページPDFへ変換し、元fixtureファイルを変更しない', async () => {
     await using testRootPath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-drawio-complex-path-'));
     const workspacePath = path.join(
       testRootPath.path,
@@ -84,23 +84,21 @@ suite('空白とUnicodeを含むフォルダ名・ファイル名でのDraw.io�
     assert.strictEqual(drawioCalls[0]?.args[5], sourcePath);
     assert.deepStrictEqual(await readFile(sourcePath), originalSourceBytes);
 
-    const actualPdf = await PDFDocument.load(await readFile(outputPath));
-    const expectedPdf = await PDFDocument.load(await writeDrawioPdf(path.join(testRootPath.path, 'expected.pdf'), 3));
-    assert.strictEqual(actualPdf.getPageCount(), 3);
-    assert.strictEqual(actualPdf.getPageCount(), expectedPdf.getPageCount());
+    const actualPages = await readPdfPages(await readFile(outputPath));
+    const expectedPages = await readPdfPages(await writeDrawioPdf(path.join(testRootPath.path, 'expected.pdf'), 3));
+    assert.strictEqual(actualPages.length, 3);
+    assert.strictEqual(actualPages.length, expectedPages.length);
     assert.deepStrictEqual(
-      actualPdf.getPages().map((page) => page.getSize()),
-      expectedPdf.getPages().map((page) => page.getSize()),
+      actualPages.map((page) => page.mediaBox),
+      expectedPages.map((page) => page.mediaBox),
     );
   });
 });
 
 async function writeDrawioPdf(filePath: string, pageCount: number): Promise<Uint8Array> {
-  const document = await PDFDocument.create();
-  for (let page = 1; page <= pageCount; page += 1) {
-    document.addPage([200, 200]);
-  }
-  const bytes = await document.save();
+  const bytes = await createPdfFixture({
+    pages: Array.from({ length: pageCount }, () => ({ mediaBox: [0, 0, 200, 200] })),
+  });
   await writeFile(filePath, bytes);
   return bytes;
 }

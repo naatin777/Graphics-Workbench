@@ -18,8 +18,8 @@ const expectedSourceFixtureCounts: Partial<Record<SourceFormat, number>> = {
   webp: 2,
 };
 
-suite('変換用テスト入力の、形式ごとの件数が期待値テーブルと一致する', () => {
-  test('validテスト入力ディレクトリを形式ごとに走査し、sourceFormatForPathで判定した形式別の件数が期待値テーブルと一致する', async () => {
+describe('変換用テスト入力の、形式ごとの件数が期待値テーブルと一致する', () => {
+  it('validテスト入力ディレクトリを形式ごとに走査し、sourceFormatForPathで判定した形式別の件数が期待値テーブルと一致する', async () => {
     const sourcePaths = (
       await Promise.all(
         [...new Set(Object.keys(expectedSourceFixtureCounts).map(inputDirectoryForFormat))].map((format) =>

@@ -31,12 +31,12 @@ const supportedRasterFixturePaths = rasterFixtureFormats
       ),
   );
 
-suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () => {
+describe('ラスターfixtureのPNG変換内容を固定正解と比較する', () => {
   for (const [index, fixturePath] of supportedRasterFixturePaths.entries()) {
-    test(`${path.relative(rasterInputDirectory, fixturePath)}をworkspaceへコピーし、複数フレームなら2ページ目を指定してPNGへ変換すると、fixture固定のexpected.pngと内容が一致する`, async () => {
+    it(`${path.relative(rasterInputDirectory, fixturePath)}をworkspaceへコピーし、複数フレームなら2ページ目を指定してPNGへ変換すると、fixture固定のexpected.pngと内容が一致する`, async () => {
       await withTestWorkspace(async (workspacePath) => {
         const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
-        const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index);
+        const sourcePath = await copyInputFixtureToWorkspace(fixturePath, index, workspacePath);
         const outputPath = path.join(workspacePath, 'converted outputs', `${index}.png`);
         const sourceFormat = sourceFormatForPath(fixturePath);
         assert.notStrictEqual(sourceFormat, undefined, fixturePath);
@@ -67,12 +67,12 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
     });
   }
 
-  test('avif/animated-swirl.avifをPNGへ変換するとunsupported image formatエラーで失敗し、出力ファイルも作成しない', async () => {
+  it('avif/animated-swirl.avifをPNGへ変換するとunsupported image formatエラーで失敗し、出力ファイルも作成しない', async () => {
     const fixturePath = path.join(testInputDirectory, 'valid', unsupportedRasterFixtureRelativePaths[0] ?? '');
 
     await withTestWorkspace(async (workspacePath) => {
       const { pdfRenderTools, drawioTools } = readConfiguredConversionTools();
-      const sourcePath = await copyInputToWorkspace(fixturePath, 'unsupported sequence.avif');
+      const sourcePath = await copyInputToWorkspace(fixturePath, workspacePath, 'unsupported sequence.avif');
       const outputPath = path.join(workspacePath, 'unsupported-output.png');
 
       await assert.rejects(
@@ -92,14 +92,14 @@ suite('ラスターfixtureのPNG変換内容を固定正解と比較する', () 
   });
 });
 
-async function copyInputFixtureToWorkspace(fixturePath: string, index: number): Promise<string> {
+async function copyInputFixtureToWorkspace(fixturePath: string, index: number, workspacePath: string): Promise<string> {
   const destinationPath =
     index % 3 === 0
       ? `raster root input ${index}${path.extname(fixturePath)}`
       : index % 3 === 1
         ? `nested directory/diagram français 🚀 ${index}${path.extname(fixturePath)}`
         : `nested/δεδομένα/source.final ${index}${path.extname(fixturePath)}`;
-  const sourcePath = await copyInputToWorkspace(fixturePath, destinationPath);
+  const sourcePath = await copyInputToWorkspace(fixturePath, workspacePath, destinationPath);
   return sourcePath;
 }
 

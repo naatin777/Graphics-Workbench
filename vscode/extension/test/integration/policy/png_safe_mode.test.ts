@@ -18,7 +18,7 @@ import { access, copyFile, mkdtemp, readFile, readdir, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
 
 import { convertToPdfFiles, type PdfInput, type RunDrawio } from '@graphics-workbench/core/conversion';
 import { createConversionUndoRecord, undoConversionOutputs } from '../../../src/policy/undo_last_conversion.js';
@@ -40,8 +40,8 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     assert.strictEqual(outputs.length, 2);
 
     for (const input of inputs) {
-      const pdf = await PDFDocument.load(await readFile(input.outputPath));
-      assert.strictEqual(pdf.getPageCount(), 1);
+      const pdfPages = await readPdfPages(await readFile(input.outputPath));
+      assert.strictEqual(pdfPages.length, 1);
     }
 
     const stagedRoot = path.join(workspacePath, '.graphics-workbench', 'convert-to-pdf', 'batch-success');
@@ -177,8 +177,8 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
     assert.deepStrictEqual(new Set(calls.map((args) => args.at(-1))), new Set(inputs.map((input) => input.sourcePath)));
 
     for (const input of inputs) {
-      const pdf = await PDFDocument.load(await readFile(input.outputPath));
-      assert.strictEqual(pdf.getPageCount(), 1);
+      const pdfPages = await readPdfPages(await readFile(input.outputPath));
+      assert.strictEqual(pdfPages.length, 1);
     }
   });
 
@@ -205,8 +205,8 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
       [keptOutputPath],
     );
     assert.strictEqual(await readFile(originalOutputPath, 'utf8'), 'old output');
-    const pdf = await PDFDocument.load(await readFile(keptOutputPath));
-    assert.strictEqual(pdf.getPageCount(), 1);
+    const pdfPages = await readPdfPages(await readFile(keptOutputPath));
+    assert.strictEqual(pdfPages.length, 1);
   });
 
   test('編集可能なDraw.io画像の出力を上書きした際の元ファイルをバックアップし、undo操作で上書き前の内容を復元する', async () => {
@@ -279,8 +279,7 @@ function createPdfWritingDrawioRunner(calls: string[][] = []): RunDrawio {
     calls.push(args);
     const outputPath = args[args.indexOf('-o') + 1];
     assert.ok(outputPath);
-    const document = await PDFDocument.create();
-    document.addPage([120, 80]);
-    await writeFile(outputPath, await document.save());
+    const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 120, 80] }] });
+    await writeFile(outputPath, pdfBytes);
   };
 }

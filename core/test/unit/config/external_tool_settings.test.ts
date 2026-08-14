@@ -15,8 +15,8 @@ function timeoutConfiguration(values: Partial<Record<'drawio' | 'rsvgConvert', n
   } satisfies ExternalToolTimeoutConfiguration;
 }
 
-suite('外部ツールタイムアウト設定', () => {
-  test('設定未指定の既定タイムアウトはdrawioがundefinedで、timeoutMillisecondsは0をundefinedのままにし86400秒を86,400,000ミリ秒へ変換する', () => {
+describe('外部ツールタイムアウト設定', () => {
+  it('設定未指定の既定タイムアウトはdrawioがundefinedで、timeoutMillisecondsは0をundefinedのままにし86400秒を86,400,000ミリ秒へ変換する', () => {
     const timeouts = readExternalToolTimeouts(timeoutConfiguration({}));
 
     assert.strictEqual(timeouts.drawio, undefined);
@@ -24,7 +24,7 @@ suite('外部ツールタイムアウト設定', () => {
     assert.strictEqual(timeoutMilliseconds(86_400), 86_400_000);
   });
 
-  test('rsvgConvertのtimeoutSecondsが0なら無期限(undefined)として読み取る', () => {
+  it('rsvgConvertのtimeoutSecondsが0なら無期限(undefined)として読み取る', () => {
     const timeouts = readExternalToolTimeouts(timeoutConfiguration({ rsvgConvert: 0 }));
 
     assert.strictEqual(timeouts.rsvgConvert, undefined);

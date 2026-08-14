@@ -14,8 +14,8 @@ type ResolveOutputPathWithPlatform = (
 // Implementation Phaseで追加するplatform注入契約を、失敗テスト段階でも型安全に呼び出す。
 const resolveOutputPathWithPlatform = resolveOutputPath as ResolveOutputPathWithPlatform;
 
-suite('出力パスのテンプレート解決', () => {
-  test("元PDFパスから${fileDirname}・${fileBasenameNoExtension}・${fileExtname}を展開し、workspace/figures配下に'sample-crop.pdf'の出力パスを生成する", () => {
+describe('出力パスのテンプレート解決', () => {
+  it("元PDFパスから${fileDirname}・${fileBasenameNoExtension}・${fileExtname}を展開し、workspace/figures配下に'sample-crop.pdf'の出力パスを生成する", () => {
     const workspacePath = path.resolve(path.sep, 'workspace');
     const sourcePath = path.join(workspacePath, 'figures', 'sample.pdf');
 
@@ -29,7 +29,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.strictEqual(result, path.join(workspacePath, 'figures', 'sample-crop.pdf'));
   });
 
-  test("相対テンプレート'generated/${relativeFileDirname}/${fileBasename}'をworkspaceパス基準の絶対パス'workspace/generated/figures/sample.pdf'へ解決する", () => {
+  it("相対テンプレート'generated/${relativeFileDirname}/${fileBasename}'をworkspaceパス基準の絶対パス'workspace/generated/figures/sample.pdf'へ解決する", () => {
     const workspacePath = path.resolve(path.sep, 'workspace');
     const sourcePath = path.join(workspacePath, 'figures', 'sample.pdf');
 
@@ -42,7 +42,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.strictEqual(result, path.join(workspacePath, 'generated', 'figures', 'sample.pdf'));
   });
 
-  test("ソースファイル名に含まれる'${fileExtname}'リテラルを基底名として展開した結果に現れるテンプレート構文を再展開せず、そのままの文字列として出力パスに残す", () => {
+  it("ソースファイル名に含まれる'${fileExtname}'リテラルを基底名として展開した結果に現れるテンプレート構文を再展開せず、そのままの文字列として出力パスに残す", () => {
     const workspacePath = path.resolve(path.sep, 'workspace');
     const sourcePath = path.join(workspacePath, 'figures', '${fileExtname}.pdf');
 
@@ -55,7 +55,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.strictEqual(result, path.join(workspacePath, '${fileExtname}-crop.pdf'));
   });
 
-  test("未対応のテンプレート変数${unknown}を含む場合は、パス解決を開始せず'Unsupported output path variable'の例外を投げる", () => {
+  it("未対応のテンプレート変数${unknown}を含む場合は、パス解決を開始せず'Unsupported output path variable'の例外を投げる", () => {
     const workspacePath = path.resolve(path.sep, 'workspace');
 
     assert.throws(
@@ -69,7 +69,7 @@ suite('出力パスのテンプレート解決', () => {
     );
   });
 
-  test('${random}を16進数8桁のランダム文字列へ展開し、workspaceFolder基準の結合PDFパスを生成する', () => {
+  it('${random}を16進数8桁のランダム文字列へ展開し、workspaceFolder基準の結合PDFパスを生成する', () => {
     const workspacePath = path.resolve(path.sep, 'workspace');
 
     const result = resolveOutputPath('${workspaceFolder}/combined-${random}.pdf', {
@@ -84,7 +84,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.match(basename, /^combined-[0-9a-f]{8}$/u);
   });
 
-  test('context.randomを指定すると${random}をその値へ展開する', () => {
+  it('context.randomを指定すると${random}をその値へ展開する', () => {
     const workspacePath = path.resolve(path.sep, 'workspace');
 
     const result = resolveOutputPath('${workspaceFolder}/combined-${random}.pdf', {
@@ -97,7 +97,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.strictEqual(result, path.join(workspacePath, 'combined-a83f2c91.pdf'));
   });
 
-  test("Windowsでpath componentに予約文字(< > : \" | ? *)のいずれかを含む場合は、'reserved character'エラーで拒否する", () => {
+  it("Windowsでpath componentに予約文字(< > : \" | ? *)のいずれかを含む場合は、'reserved character'エラーで拒否する", () => {
     for (const character of ['<', '>', ':', '"', '|', '?', '*']) {
       assert.throws(
         () =>
@@ -109,7 +109,7 @@ suite('出力パスのテンプレート解決', () => {
     }
   });
 
-  test("WindowsでパスにNUL文字または制御文字(U+0001〜U+001F)を含む場合は、'control character|NUL'エラーで拒否する", () => {
+  it("WindowsでパスにNUL文字または制御文字(U+0001〜U+001F)を含む場合は、'control character|NUL'エラーで拒否する", () => {
     for (const character of ['\u0000', '\u0001', '\u001f']) {
       assert.throws(
         () =>
@@ -121,7 +121,7 @@ suite('出力パスのテンプレート解決', () => {
     }
   });
 
-  test("WindowsでCON・NUL・COM1・LPT9等の予約デバイス名を、拡張子付き・大文字小文字違い・¹³などの数字置換を含む形でも'reserved name'エラーで拒否する", () => {
+  it("WindowsでCON・NUL・COM1・LPT9等の予約デバイス名を、拡張子付き・大文字小文字違い・¹³などの数字置換を含む形でも'reserved name'エラーで拒否する", () => {
     for (const fileName of ['CON', 'con.pdf', 'NUL.tar.gz', 'COM1.pdf', 'com¹.log', 'LPT9.pdf', 'lpt³.txt']) {
       assert.throws(
         () =>
@@ -133,7 +133,7 @@ suite('出力パスのテンプレート解決', () => {
     }
   });
 
-  test("Windowsでpath componentの先頭半角空白・末尾半角空白・末尾ピリオドを含む場合は、それぞれ'leading ASCII space'等の理由で拒否する", () => {
+  it("Windowsでpath componentの先頭半角空白・末尾半角空白・末尾ピリオドを含む場合は、それぞれ'leading ASCII space'等の理由で拒否する", () => {
     const cases = [
       { template: 'output/ result.pdf', reason: /leading ASCII space/ },
       { template: 'output/result.pdf ', reason: /trailing ASCII space/ },
@@ -152,7 +152,7 @@ suite('出力パスのテンプレート解決', () => {
     }
   });
 
-  test("Windowsで'${workspaceFolder}\\output\\result.pdf'を解決し、drive letterとバックスラッシュ区切りの絶対パス'C:\\workspace\\output\\result.pdf'を返す", () => {
+  it("Windowsで'${workspaceFolder}\\output\\result.pdf'を解決し、drive letterとバックスラッシュ区切りの絶対パス'C:\\workspace\\output\\result.pdf'を返す", () => {
     const result = resolveOutputPathWithPlatform('${workspaceFolder}\\output\\result.pdf', windowsContext(), {
       platform: 'win32',
     });
@@ -160,7 +160,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.strictEqual(result, 'C:\\workspace\\output\\result.pdf');
   });
 
-  test('Windowsで多言語・絵文字・全角文字・全角空白を含むファイル名を一切変更せず、そのままの文字列で出力パスを返す', () => {
+  it('Windowsで多言語・絵文字・全角文字・全角空白を含むファイル名を一切変更せず、そのままの文字列で出力パスを返す', () => {
     const fileName = '　日本語 English 한국어 中文 العربية हिन्दी ไทย עברית Ελληνικά Русский 🌹 ＡＢＣ１２３①.pdf';
     // Intentional literal ${} syntax.
     const result = resolveOutputPathWithPlatform(`\${workspaceFolder}\\output\\${fileName}`, windowsContext(), {
@@ -170,7 +170,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.strictEqual(result, `C:\\workspace\\output\\${fileName}`);
   });
 
-  test("POSIXではWindows専用の禁止文字と予約名'CON?:*'を含むパスをそのまま許可し、スラッシュ区切りの絶対パスで返す", () => {
+  it("POSIXではWindows専用の禁止文字と予約名'CON?:*'を含むパスをそのまま許可し、スラッシュ区切りの絶対パスで返す", () => {
     const result = resolveOutputPathWithPlatform('${workspaceFolder}/output/CON?:*.pdf', posixContext(), {
       platform: 'posix',
     });
@@ -178,7 +178,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.strictEqual(result, '/workspace/output/CON?:*.pdf');
   });
 
-  test("POSIXでもパスにNUL文字を含む場合は、'Invalid output path for POSIX:.*NUL'エラーで拒否する", () => {
+  it("POSIXでもパスにNUL文字を含む場合は、'Invalid output path for POSIX:.*NUL'エラーで拒否する", () => {
     assert.throws(
       () =>
         resolveOutputPathWithPlatform('output/result\u0000.pdf', posixContext(), {
@@ -188,7 +188,7 @@ suite('出力パスのテンプレート解決', () => {
     );
   });
 
-  test('許容拡張子として.pngのみ指定された場合、.pdfの出力は拡張子エラーで拒否し、大文字の.PNGは許可する', () => {
+  it('許容拡張子として.pngのみ指定された場合、.pdfの出力は拡張子エラーで拒否し、大文字の.PNGは許可する', () => {
     assert.throws(
       () => resolveOutputPath('output/result.pdf', posixContext(), { allowedExtensions: ['.png'] }),
       /Invalid output extension.*\.pdf/,
@@ -196,7 +196,7 @@ suite('出力パスのテンプレート解決', () => {
     assert.doesNotThrow(() => resolveOutputPath('output/result.PNG', posixContext(), { allowedExtensions: ['.png'] }));
   });
 
-  test("Draw.io compoundソース名'diagram.drawio.png'を論理名'diagram'として展開し、出力テンプレートを'/workspace/figures/diagram.png'へ解決する", () => {
+  it("Draw.io compoundソース名'diagram.drawio.png'を論理名'diagram'として展開し、出力テンプレートを'/workspace/figures/diagram.png'へ解決する", () => {
     const result = resolveOutputPathWithPlatform(
       '${fileDirname}/${fileBasenameNoExtension}.png',
       {

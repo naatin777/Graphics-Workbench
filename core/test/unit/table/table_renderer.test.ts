@@ -16,8 +16,8 @@ const SAMPLE_ROWS = [
   ['B', '10.8', '94.5'],
 ] as const;
 
-suite('テーブルrenderer', () => {
-  test('同一TableModelからLaTeXを生成する', () => {
+describe('テーブルrenderer', () => {
+  it('同一TableModelからLaTeXを生成する', () => {
     const model = tableModelFromRows(SAMPLE_ROWS, 1);
     const aligned = setColumnAlignment(
       setColumnAlignment(setColumnAlignment(model, 0, 'left'), 1, 'right'),
@@ -39,7 +39,7 @@ suite('テーブルrenderer', () => {
     );
   });
 
-  test('LaTeXのbooktabs無効時は\\hlineを使う', () => {
+  it('LaTeXのbooktabs無効時は\\hlineを使う', () => {
     const model = tableModelFromRows(SAMPLE_ROWS, 1);
     assert.strictEqual(
       renderLatexTable(model, { booktabs: false }),
@@ -56,7 +56,7 @@ suite('テーブルrenderer', () => {
     );
   });
 
-  test('LaTeXはheader行がない場合も全行を出力する', () => {
+  it('LaTeXはheader行がない場合も全行を出力する', () => {
     const model = tableModelFromRows(SAMPLE_ROWS.slice(1), 0);
     assert.strictEqual(
       renderLatexTable(model, { booktabs: true }),
@@ -71,7 +71,7 @@ suite('テーブルrenderer', () => {
     );
   });
 
-  test('LaTeXの特殊文字をescapeする', () => {
+  it('LaTeXの特殊文字をescapeする', () => {
     const model = tableModelFromRows([['a&b_100%', 'c{d}e']], 0);
     assert.strictEqual(
       renderLatexTable(model, { booktabs: false }),
@@ -79,7 +79,7 @@ suite('テーブルrenderer', () => {
     );
   });
 
-  test('同一TableModelからTypstを生成する', () => {
+  it('同一TableModelからTypstを生成する', () => {
     const model = tableModelFromRows(SAMPLE_ROWS, 1);
     const aligned = setColumnAlignment(
       setColumnAlignment(setColumnAlignment(model, 0, 'left'), 1, 'right'),
@@ -100,7 +100,7 @@ suite('テーブルrenderer', () => {
     );
   });
 
-  test('Typstはheader行がない場合にtable.headerを出力しない', () => {
+  it('Typstはheader行がない場合にtable.headerを出力しない', () => {
     const model = tableModelFromRows(SAMPLE_ROWS.slice(1), 0);
     assert.strictEqual(
       renderTypstTable(model),
@@ -115,7 +115,7 @@ suite('テーブルrenderer', () => {
     );
   });
 
-  test('Typstはセル文字列をtext stringへ入れてmarkup記号・括弧・改行をデータとして保持する', () => {
+  it('Typstはセル文字列をtext stringへ入れてmarkup記号・括弧・改行をデータとして保持する', () => {
     const model = tableModelFromRows([['A | B *bold* [link]', 'line\nnext']], 1);
     assert.strictEqual(
       renderTypstTable(model),
@@ -130,7 +130,7 @@ suite('テーブルrenderer', () => {
     assert.strictEqual(escapeTypstTableCell('quote " \\ tab\t'), 'quote \\" \\\\ tab\\t');
   });
 
-  test('同一TableModelからQuarkdownを生成する', () => {
+  it('同一TableModelからQuarkdownを生成する', () => {
     const model = tableModelFromRows(SAMPLE_ROWS, 1);
     const aligned = setColumnAlignment(
       setColumnAlignment(setColumnAlignment(model, 0, 'left'), 1, 'right'),
@@ -143,7 +143,7 @@ suite('テーブルrenderer', () => {
     );
   });
 
-  test('Quarkdownはheader行がない場合に空ヘッダー行を出力する', () => {
+  it('Quarkdownはheader行がない場合に空ヘッダー行を出力する', () => {
     const model = tableModelFromRows(SAMPLE_ROWS.slice(1), 0);
     assert.strictEqual(
       renderQuarkdownTable(model),
@@ -151,7 +151,7 @@ suite('テーブルrenderer', () => {
     );
   });
 
-  test('Quarkdownはpipe・markup記号・改行をセル境界の外へ出さない', () => {
+  it('Quarkdownはpipe・markup記号・改行をセル境界の外へ出さない', () => {
     const model = tableModelFromRows([['A | B', 'line\nnext [x] *bold*']], 1);
     assert.strictEqual(
       renderQuarkdownTable(model),

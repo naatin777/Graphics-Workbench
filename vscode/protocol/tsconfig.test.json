@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist-test",
-    "types": ["node", "mocha"]
+    "types": ["node", "vitest/globals"]
   },
   "include": ["test/**/*"],
   "exclude": ["dist", "dist-test", "node_modules"]

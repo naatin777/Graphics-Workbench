@@ -1,14 +1,12 @@
 import assert from 'node:assert/strict';
 
-import { suite, test } from 'mocha';
-
 import { mergePdfProtocol } from '@graphics-workbench/vscode-protocol/merge-pdf-protocol';
 
 const acceptsHostMessage = (value: unknown): boolean => mergePdfProtocol.parseHostToWebview(value) !== undefined;
 const acceptsWebviewMessage = (value: unknown): boolean => mergePdfProtocol.parseWebviewToHost(value) !== undefined;
 
-suite('Merge PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/apply/ready）', () => {
-  test('2つ以上のsources（各sourceId/fileName/vscode-resource URI）とpreview・labelsを持つinitメッセージと、非空sourceIdsを持つapplyメッセージを受け入れ、requestId付きreadyと空typeを拒否する', () => {
+describe('Merge PDFのWebviewとホスト間で送受信するメッセージ形式の判定（init/apply/ready）', () => {
+  it('2つ以上のsources（各sourceId/fileName/vscode-resource URI）とpreview・labelsを持つinitメッセージと、非空sourceIdsを持つapplyメッセージを受け入れ、requestId付きreadyと空typeを拒否する', () => {
     assert.equal(
       acceptsHostMessage({
         type: 'init',
@@ -55,7 +53,7 @@ suite('Merge PDFのWebviewとホスト間で送受信するメッセージ形式
     assert.equal(acceptsWebviewMessage({ type: '' }), false);
   });
 
-  test('pdfSrcがvscode-resourceでないファイルシステムパスを持つinitと、sourceIds以外にpathsを持つapplyと、message以外のcodeを持つpreviewLoadFailedを拒否する', () => {
+  it('pdfSrcがvscode-resourceでないファイルシステムパスを持つinitと、sourceIds以外にpathsを持つapplyと、message以外のcodeを持つpreviewLoadFailedを拒否する', () => {
     assert.equal(
       acceptsHostMessage({
         type: 'init',

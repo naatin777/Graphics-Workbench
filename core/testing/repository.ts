@@ -1,6 +1,13 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
+/**
+ * Locates the repository root by walking up until the marker layout is found.
+ * The testing kit is consumed from the built `dist/testing` layout by tests,
+ * while typechecking reads the `testing` source layout, so the distance to
+ * the repository root is not a constant; the marker-based walk keeps both
+ * layouts working.
+ */
 export function findRepositoryRoot(startDirectory: string): string {
   let currentDirectory = path.resolve(startDirectory);
 

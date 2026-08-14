@@ -14,7 +14,7 @@ import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, type PDFPage, RecordingOutputChannel } from '@graphics-workbench/core/testing';
+import { RecordingOutputChannel, readPdfPages } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
 
 import { renderPdfPageToPng } from '@graphics-workbench/core/pdf';
@@ -70,12 +70,12 @@ suite('PDF configure crop処理', () => {
       },
     ]);
 
-    const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
-    const outputDocument = await PDFDocument.load(await readFile(outputPath));
-    assert.strictEqual(outputDocument.getPageCount(), 2);
-    for (const [index, page] of outputDocument.getPages().entries()) {
-      assertCropBox(page, cropBox);
-      assert.deepStrictEqual(page.getMediaBox(), sourceDocument.getPage(index)?.getMediaBox());
+    const sourcePages = await readPdfPages(await readFile(sourcePath));
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(outputPages.length, 2);
+    for (const [index, page] of outputPages.entries()) {
+      assertCropBox(page.cropBox, cropBox);
+      assert.deepStrictEqual(page.mediaBox, sourcePages[index]?.mediaBox);
     }
 
     const after = await captureWorkspaceSnapshot(workspacePath);
@@ -126,13 +126,13 @@ suite('PDF configure crop処理', () => {
       createRunId: () => asRunId('selected-pages'),
     });
 
-    const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
-    const outputDocument = await PDFDocument.load(await readFile(outputPath));
-    assert.strictEqual(outputDocument.getPageCount(), 2);
-    assertCropBox(outputDocument.getPage(0), cropBox);
-    assert.deepStrictEqual(outputDocument.getPage(0).getMediaBox(), sourceDocument.getPage(0).getMediaBox());
-    assert.deepStrictEqual(outputDocument.getPage(1).getMediaBox(), sourceDocument.getPage(1).getMediaBox());
-    assert.deepStrictEqual(outputDocument.getPage(1).getCropBox(), sourceDocument.getPage(1).getCropBox());
+    const sourcePages = await readPdfPages(await readFile(sourcePath));
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(outputPages.length, 2);
+    assertCropBox(outputPages[0]?.cropBox ?? { x: 0, y: 0, width: 0, height: 0 }, cropBox);
+    assert.deepStrictEqual(outputPages[0]?.mediaBox, sourcePages[0]?.mediaBox);
+    assert.deepStrictEqual(outputPages[1]?.mediaBox, sourcePages[1]?.mediaBox);
+    assert.deepStrictEqual(outputPages[1]?.cropBox, sourcePages[1]?.cropBox);
 
     await assertRenderedCropMatchesSource({
       sourcePath,
@@ -266,8 +266,8 @@ suite('PDF configure crop処理', () => {
 
         assert.strictEqual(outputs[0]?.outputPath, expectedPath);
         await access(expectedPath);
-        const document = await PDFDocument.load(await readFile(expectedPath));
-        assert.strictEqual(document.getPageCount(), 1);
+        const expectedPages = await readPdfPages(await readFile(expectedPath));
+        assert.strictEqual(expectedPages.length, 1);
 
         outputPaths.push(outputPath);
       } catch (error) {
@@ -314,7 +314,7 @@ async function copyFixtureToWorkspace(
   return destination;
 }
 
-function assertCropBox(page: PDFPage, cropBox: CropBox): void {
+function assertCropBox(page: { x: number; y: number; width: number; height: number }, cropBox: CropBox): void {
   const expected = {
     x: cropBox.left,
     y: cropBox.bottom,
@@ -322,7 +322,7 @@ function assertCropBox(page: PDFPage, cropBox: CropBox): void {
     height: cropBox.top - cropBox.bottom,
   };
 
-  assert.deepStrictEqual(page.getCropBox(), expected);
+  assert.deepStrictEqual(page, expected);
 }
 
 async function assertRenderedCropMatchesSource(params: {
@@ -333,8 +333,8 @@ async function assertRenderedCropMatchesSource(params: {
   temporaryDirectory: string;
 }): Promise<void> {
   const { sourcePath, outputPath, pageNumber, cropBox, temporaryDirectory } = params;
-  const sourceDocument = await PDFDocument.load(await readFile(sourcePath));
-  const mediaBox = sourceDocument.getPage(pageNumber - 1).getMediaBox();
+  const sourcePages = await readPdfPages(await readFile(sourcePath));
+  const mediaBox = sourcePages[pageNumber - 1]?.mediaBox ?? { x: 0, y: 0, width: 0, height: 0 };
   const sourcePngPath = await renderPdfPage(
     sourcePath,
     pageNumber,

@@ -16,13 +16,13 @@ import {
   type DrawioBackend,
   type RasterInput,
 } from '@graphics-workbench/core/conversion';
-import { buildPdfFixture, requireValue } from '@graphics-workbench/core/testing';
+import { createPdfFixture, requireValue } from '@graphics-workbench/core/testing';
 
 function stubRunPdfToPng(): never {
   throw new Error('PDF to PNG rendering must not run in this test.');
 }
-suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', () => {
-  test('GIF・アニメーションWebP・TIFFの2フレームをフレームごとの個別PNGへ変換し、1フレーム目は赤系・2フレーム目は青系の内容のPNGを生成する', async () => {
+describe('アニメーション画像とDraw.io画像をPNGへ変換する処理', () => {
+  it('GIF・アニメーションWebP・TIFFの2フレームをフレームごとの個別PNGへ変換し、1フレーム目は赤系・2フレーム目は青系の内容のPNGを生成する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-png-frames-'));
 
     for (const format of ['gif', 'webp', 'tiff'] as const) {
@@ -55,7 +55,7 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
     }
   });
 
-  test('編集可能なDraw.io画像をDraw.io CLIへ-f pdfオプションでPDF出力を要求し、そのPDFを1ページ目PNGへ描画してから読み取り可能なPNGを最終出力へ反映する', async () => {
+  it('編集可能なDraw.io画像をDraw.io CLIへ-f pdfオプションでPDF出力を要求し、そのPDFを1ページ目PNGへ描画してから読み取り可能なPNGを最終出力へ反映する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-png-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
@@ -70,7 +70,7 @@ suite('アニメーション画像とDraw.io画像をPNGへ変換する処理', 
         assert.ok(outputFlagIndex >= 0);
         const pdfPath = args[outputFlagIndex + 1];
         assert.ok(pdfPath);
-        await writeFile(pdfPath, await buildPdfFixture([{ width: 32, height: 24 }]));
+        await writeFile(pdfPath, await createPdfFixture({ pages: [{ mediaBox: [0, 0, 32, 24] }] }));
       },
     };
     const job: RasterInput = {

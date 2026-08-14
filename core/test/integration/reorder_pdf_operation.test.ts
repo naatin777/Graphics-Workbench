@@ -12,12 +12,11 @@ import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument } from '@graphics-workbench/core/testing';
-
 import { reorderPdfFiles } from '@graphics-workbench/core/pdf';
+import { createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
 
-suite('PDFページ並び替え', () => {
-  test('3ページのPDFへページ順[3,1,2]を指定すると、出力PDFは3ページを保ちながら元の3・1・2ページ目の順に並ぶ', async () => {
+describe('PDFページ並び替え', () => {
+  it('3ページのPDFへページ順[3,1,2]を指定すると、出力PDFは3ページを保ちながら元の3・1・2ページ目の順に並ぶ', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -31,15 +30,15 @@ suite('PDFページ並び替え', () => {
       });
       assert.strictEqual(outputs.length, 1);
 
-      const output = await PDFDocument.load(await readFile(outputPath));
-      assert.strictEqual(output.getPageCount(), 3);
-      assert.deepStrictEqual(readPageWidths(output), [102, 100, 101]);
+      const outputPages = await readPdfPages(await readFile(outputPath));
+      assert.strictEqual(outputPages.length, 3);
+      assert.deepStrictEqual(readPageWidths(outputPages), [102, 100, 101]);
     } finally {
       await rm(workspacePath, { recursive: true, force: true });
     }
   });
 
-  test('3ページのPDFにページ順[1,2]や[1,1,2]のように全ページをちょうど1回ずつ含まない順列以外を指定すると、ページ数不一致や重複として失敗する', async () => {
+  it('3ページのPDFにページ順[1,2]や[1,1,2]のように全ページをちょうど1回ずつ含まない順列以外を指定すると、ページ数不一致や重複として失敗する', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -62,7 +61,7 @@ suite('PDFページ並び替え', () => {
     );
   });
 
-  test('出力先ファイルが既に存在する場合は並び替えを開始せず、既存の出力ファイルも変更しない', async () => {
+  it('出力先ファイルが既に存在する場合は並び替えを開始せず、既存の出力ファイルも変更しない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -80,7 +79,7 @@ suite('PDFページ並び替え', () => {
     assert.strictEqual(await readFile(outputPath, 'utf8'), 'existing');
   });
 
-  test('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
+  it('事前にabortしたAbortSignalを渡すと、処理を開始せずAbortErrorで拒否され、出力ファイルは作成されない', async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), 'gw-reorder-test-'));
     const sourcePath = path.join(workspacePath, 'source.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
@@ -101,13 +100,12 @@ suite('PDFページ並び替え', () => {
 });
 
 async function writePdf(filePath: string, pageCount: number): Promise<void> {
-  const document = await PDFDocument.create();
-  for (let index = 0; index < pageCount; index++) {
-    document.addPage([100 + index, 200]);
-  }
-  await writeFile(filePath, await document.save());
+  const bytes = await createPdfFixture({
+    pages: Array.from({ length: pageCount }, (_, index) => ({ mediaBox: [0, 0, 100 + index, 200] })),
+  });
+  await writeFile(filePath, bytes);
 }
 
-function readPageWidths(document: PDFDocument): number[] {
-  return document.getPages().map((page) => page.getSize().width);
+function readPageWidths(pages: { mediaBox: { width: number } }[]): number[] {
+  return pages.map((page) => page.mediaBox.width);
 }

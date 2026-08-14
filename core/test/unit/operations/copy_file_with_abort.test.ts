@@ -6,8 +6,8 @@ import path from 'node:path';
 
 import { copyFileWithAbort } from '@graphics-workbench/core/runtime';
 
-suite('abort可能なファイルcopy処理', () => {
-  test('copyFileWithAbortでソースの内容をcopyして宛先と一致することを確認し、COPYFILE_EXCL指定で既存宛先へのcopyがEEXISTエラーで失敗することを確認する', async () => {
+describe('abort可能なファイルcopy処理', () => {
+  it('copyFileWithAbortでソースの内容をcopyして宛先と一致することを確認し、COPYFILE_EXCL指定で既存宛先へのcopyがEEXISTエラーで失敗することを確認する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-copy-abort-'));
     const sourcePath = path.join(workspacePath.path, 'source.bin');
     const destinationPath = path.join(workspacePath.path, 'destination.bin');
@@ -22,7 +22,7 @@ suite('abort可能なファイルcopy処理', () => {
     );
   });
 
-  test('copy開始前にabort済みのsignalを渡すとcopyを開始せずcancelledエラーで失敗し、宛先ファイルを作成しない', async () => {
+  it('copy開始前にabort済みのsignalを渡すとcopyを開始せずcancelledエラーで失敗し、宛先ファイルを作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-copy-abort-'));
     const sourcePath = path.join(workspacePath.path, 'source.bin');
     const destinationPath = path.join(workspacePath.path, 'destination.bin');

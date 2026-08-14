@@ -13,7 +13,7 @@ import { access, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises
 import os from 'node:os';
 import path from 'node:path';
 
-import { PDFDocument, requireValue } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfFixture } from '@graphics-workbench/core/testing';
 
 import { convertToSvgFiles, executeDrawio } from '@graphics-workbench/core/conversion';
 
@@ -21,8 +21,8 @@ function stubRunPdfToSvg(sourcePath: string, outputPath: string, _page: number, 
   throw new Error(`PDF to SVG must not run in this test: ${sourcePath} -> ${outputPath}`);
 }
 
-suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
-  test('編集可能なDraw.io画像をDraw.io CLIへ-f svgオプションで一時作業ファイルへ出力させ、その結果を最終出力先へ反映する', async () => {
+describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
+  it('編集可能なDraw.io画像をDraw.io CLIへ-f svgオプションで一時作業ファイルへ出力させ、その結果を最終出力先へ反映する', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-svg-operation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
@@ -65,7 +65,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
     assert.match(await readFile(outputPath, 'utf8'), /<svg[\s>]/);
   });
 
-  test('Draw.io CLIが成功終了しても非SVG内容を書き出した場合はnon-SVG outputエラーで失敗とし、最終出力を作成しない', async () => {
+  it('Draw.io CLIが成功終了しても非SVG内容を書き出した場合はnon-SVG outputエラーで失敗とし、最終出力を作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-svg-invalid-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
@@ -91,7 +91,7 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('Draw.io CLIの起動がspawn drawio ENOENTで失敗すると、stderr内容を添えたDraw.io CLI failedエラーに包んで変換を失敗させる', async () => {
+  it('Draw.io CLIの起動がspawn drawio ENOENTで失敗すると、stderr内容を添えたDraw.io CLI failedエラーに包んで変換を失敗させる', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-svg-operation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
@@ -123,14 +123,13 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
     );
   });
 
-  test('PDF→SVG変換が成功終了しても空ファイルを書き出した場合はempty outputエラーで失敗とし、最終出力を作成しない', async () => {
+  it('PDF→SVG変換が成功終了しても空ファイルを書き出した場合はempty outputエラーで失敗とし、最終出力を作成しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-svg-empty-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const outputPath = path.join(workspacePath.path, 'source.svg');
-    const pdfDoc = await PDFDocument.create();
-    pdfDoc.addPage([595, 842]);
-    await writeFile(sourcePath, await pdfDoc.save());
+    const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
+    await writeFile(sourcePath, pdfBytes);
 
     await assert.rejects(
       convertToSvgFiles({
@@ -148,14 +147,13 @@ suite('Draw.io画像とPDFをSVGへ変換する処理', () => {
     await assert.rejects(access(outputPath));
   });
 
-  test('PDF→SVG変換がCommand failedで失敗すると、stderr内容を添えたPDF to SVG input failedエラーに包んで変換を失敗させる', async () => {
+  it('PDF→SVG変換がCommand failedで失敗すると、stderr内容を添えたPDF to SVG input failedエラーに包んで変換を失敗させる', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-svg-operation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const outputPath = path.join(workspacePath.path, 'source-1.svg');
-    const pdfDoc = await PDFDocument.create();
-    pdfDoc.addPage([595, 842]);
-    await writeFile(sourcePath, await pdfDoc.save());
+    const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
+    await writeFile(sourcePath, pdfBytes);
 
     await assert.rejects(
       convertToSvgFiles({
