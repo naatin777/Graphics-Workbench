@@ -12,8 +12,16 @@ const coreDirectory = path.dirname(fileURLToPath(import.meta.url));
  */
 export const coreSourceAlias = [
   {
-    find: /^@graphics-workbench\/core\/(conversion|pdf|formats|runtime|security|output|external-tools|table|crop-worker)$/u,
+    find: /^@graphics-workbench\/core\/(conversion|pdf|formats|runtime|security|output|table)$/u,
     replacement: path.join(coreDirectory, 'src/public/$1.ts'),
+  },
+  {
+    find: /^@graphics-workbench\/core\/external-tools$/u,
+    replacement: path.join(coreDirectory, 'src/public/external_tools.ts'),
+  },
+  {
+    find: /^@graphics-workbench\/core\/crop-worker$/u,
+    replacement: path.join(coreDirectory, 'src/public/crop_worker.ts'),
   },
   {
     find: /^@graphics-workbench\/core\/testing$/u,
@@ -41,8 +49,6 @@ export default defineConfig({
       reportsDirectory: '../coverage/core',
       include: ['src/**/*.ts'],
     },
-    resolve: {
-      alias: coreSourceAlias,
-    },
+    alias: coreSourceAlias,
   },
 });

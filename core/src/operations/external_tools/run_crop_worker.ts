@@ -1,5 +1,6 @@
 import { fork } from 'node:child_process';
 import type { EventEmitter } from 'node:events';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -140,7 +141,7 @@ export async function runCropWorker(
     throw new OperationCancelledError('Crop processing was cancelled.');
   }
 
-  const workerPath = options.workerPath ?? path.join(path.dirname(fileURLToPath(import.meta.url)), 'crop_worker.js');
+  const workerPath = options.workerPath ?? resolveCropWorkerPath();
   const launcher = options.launcher ?? defaultLauncher;
 
   log('operation-started');
@@ -237,6 +238,20 @@ export async function runCropWorker(
       finish(asError(error));
     }
   });
+}
+
+/**
+ * The crop worker is a separate process entry, so it must run as built
+ * JavaScript. The vitest suites execute the source via the package alias;
+ * in that layout the compiled worker lives under the package dist.
+ */
+function resolveCropWorkerPath(): string {
+  const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
+  const adjacentWorker = path.join(moduleDirectory, 'crop_worker.js');
+  if (existsSync(adjacentWorker)) {
+    return adjacentWorker;
+  }
+  return path.join(moduleDirectory, '..', '..', '..', 'dist', 'operations', 'external_tools', 'crop_worker.js');
 }
 
 function defaultLauncher(workerPath: string): CropWorkerChild {

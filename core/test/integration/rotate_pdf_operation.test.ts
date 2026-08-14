@@ -22,21 +22,18 @@ describe('PDFページ回転', () => {
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
 
-    try {
-      const outputs = await rotatePdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
-        runtime: {},
-        runId: 'run',
-      });
-      assert.strictEqual(outputs.length, 1);
-      assert.strictEqual(outputs[0]?.outputPath, outputPath);
+    const outputs = await rotatePdfFiles({
+      inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+      runtime: {},
+      runId: 'run',
+    });
+    assert.strictEqual(outputs.length, 1);
+    assert.strictEqual(outputs[0]?.outputPath, outputPath);
 
-      const outputPages = await readPdfPages(await readFile(outputPath));
-      assert.strictEqual(outputPages.length, 3);
-      for (const page of outputPages) {
-        assert.strictEqual(page.rotation, 90);
-      }
-    } finally {
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(outputPages.length, 3);
+    for (const page of outputPages) {
+      assert.strictEqual(page.rotation, 90);
     }
   });
 
@@ -47,18 +44,15 @@ describe('PDFページ回転', () => {
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 1, 90);
 
-    try {
-      await rotatePdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
-        runtime: {},
-        runId: 'run',
-      });
+    await rotatePdfFiles({
+      inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+      runtime: {},
+      runId: 'run',
+    });
 
-      const outputPages = await readPdfPages(await readFile(outputPath));
-      assert.strictEqual(outputPages.length, 1);
-      assert.strictEqual(outputPages[0]?.rotation, 180);
-    } finally {
-    }
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(outputPages.length, 1);
+    assert.strictEqual(outputPages[0]?.rotation, 180);
   });
 
   it('3ページのPDFで2番目のページだけに角度180を指定すると、2番目のページだけ回転角180度になり他のページは0度のままになる', async () => {
@@ -68,19 +62,16 @@ describe('PDFページ回転', () => {
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
 
-    try {
-      await rotatePdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 180, pageIndices: [1] }],
-        runtime: {},
-        runId: 'run',
-      });
+    await rotatePdfFiles({
+      inputs: [{ sourcePath, workspacePath, outputPath, angle: 180, pageIndices: [1] }],
+      runtime: {},
+      runId: 'run',
+    });
 
-      const outputPages = await readPdfPages(await readFile(outputPath));
-      assert.strictEqual(outputPages[0]?.rotation, 0);
-      assert.strictEqual(outputPages[1]?.rotation, 180);
-      assert.strictEqual(outputPages[2]?.rotation, 0);
-    } finally {
-    }
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(outputPages[0]?.rotation, 0);
+    assert.strictEqual(outputPages[1]?.rotation, 180);
+    assert.strictEqual(outputPages[2]?.rotation, 0);
   });
 
   it('出力先ファイルが既に存在する場合は回転を開始せず、既存の出力ファイルも変更しない', async () => {

@@ -26,25 +26,22 @@ describe('パスワード付きPDFの復号化', () => {
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
     await encryptWithMupdf(sourcePath, password);
 
+    await decryptPdfFiles({
+      inputs: [{ sourcePath, workspacePath, outputPath }],
+      password,
+      runtime: {},
+      runId: 'run',
+    });
+
+    const decryptedPages = await readPdfPages(await readFile(outputPath));
+    assert.ok(decryptedPages.length >= 1);
+
+    const mupdf = await loadMupdf();
+    const decryptedDocument = mupdf.Document.openDocument(await readFile(outputPath));
     try {
-      await decryptPdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath }],
-        password,
-        runtime: {},
-        runId: 'run',
-      });
-
-      const decryptedPages = await readPdfPages(await readFile(outputPath));
-      assert.ok(decryptedPages.length >= 1);
-
-      const mupdf = await loadMupdf();
-      const decryptedDocument = mupdf.Document.openDocument(await readFile(outputPath));
-      try {
-        assert.equal(decryptedDocument.needsPassword(), false);
-      } finally {
-        decryptedDocument.destroy();
-      }
+      assert.equal(decryptedDocument.needsPassword(), false);
     } finally {
+      decryptedDocument.destroy();
     }
   });
 

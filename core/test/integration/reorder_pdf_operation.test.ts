@@ -23,19 +23,16 @@ describe('PDFページ並び替え', () => {
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath, 3);
 
-    try {
-      const outputs = await reorderPdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, pageOrder: [3, 1, 2] }],
-        runtime: {},
-        runId: 'run',
-      });
-      assert.strictEqual(outputs.length, 1);
+    const outputs = await reorderPdfFiles({
+      inputs: [{ sourcePath, workspacePath, outputPath, pageOrder: [3, 1, 2] }],
+      runtime: {},
+      runId: 'run',
+    });
+    assert.strictEqual(outputs.length, 1);
 
-      const outputPages = await readPdfPages(await readFile(outputPath));
-      assert.strictEqual(outputPages.length, 3);
-      assert.deepStrictEqual(readPageWidths(outputPages), [102, 100, 101]);
-    } finally {
-    }
+    const outputPages = await readPdfPages(await readFile(outputPath));
+    assert.strictEqual(outputPages.length, 3);
+    assert.deepStrictEqual(readPageWidths(outputPages), [102, 100, 101]);
   });
 
   it('3ページのPDFにページ順[1,2]や[1,1,2]のように全ページをちょうど1回ずつ含まない順列以外を指定すると、ページ数不一致や重複として失敗する', async () => {

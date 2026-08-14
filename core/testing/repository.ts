@@ -15,8 +15,6 @@ export function findRepositoryRoot(startDirectory: string): string {
     if (
       existsSync(path.join(currentDirectory, 'package.json')) &&
       existsSync(path.join(currentDirectory, 'core', 'package.json')) &&
-      existsSync(path.join(currentDirectory, 'vscode', 'extension', 'package.json')) &&
-      existsSync(path.join(currentDirectory, 'vscode', 'webview', 'package.json')) &&
       existsSync(path.join(currentDirectory, 'test', 'input'))
     ) {
       return currentDirectory;

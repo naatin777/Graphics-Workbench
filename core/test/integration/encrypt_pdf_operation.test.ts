@@ -25,31 +25,28 @@ describe('PDFのパスワード暗号化', () => {
     const outputPath = path.join(workspacePath, 'output.pdf');
     await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
 
+    await encryptPdfFiles({
+      inputs: [{ sourcePath, workspacePath, outputPath }],
+      password,
+      runtime: {},
+      runId: 'run',
+    });
+
+    const mupdf = await loadMupdf();
+    const encrypted = mupdf.Document.openDocument(await readFile(outputPath));
     try {
-      await encryptPdfFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath }],
-        password,
-        runtime: {},
-        runId: 'run',
-      });
-
-      const mupdf = await loadMupdf();
-      const encrypted = mupdf.Document.openDocument(await readFile(outputPath));
-      try {
-        assert.equal(encrypted.needsPassword(), true);
-        assert.equal(encrypted.authenticatePassword(password) === 0, false);
-        assert.match(encrypted.getMetaData('encryption') ?? '', /AES|Standard/);
-      } finally {
-        encrypted.destroy();
-      }
-
-      const wrongPasswordDocument = mupdf.Document.openDocument(await readFile(outputPath));
-      try {
-        assert.equal(wrongPasswordDocument.authenticatePassword('wrong-password'), 0);
-      } finally {
-        wrongPasswordDocument.destroy();
-      }
+      assert.equal(encrypted.needsPassword(), true);
+      assert.equal(encrypted.authenticatePassword(password) === 0, false);
+      assert.match(encrypted.getMetaData('encryption') ?? '', /AES|Standard/);
     } finally {
+      encrypted.destroy();
+    }
+
+    const wrongPasswordDocument = mupdf.Document.openDocument(await readFile(outputPath));
+    try {
+      assert.equal(wrongPasswordDocument.authenticatePassword('wrong-password'), 0);
+    } finally {
+      wrongPasswordDocument.destroy();
     }
   });
 
@@ -62,19 +59,16 @@ describe('PDFのパスワード暗号化', () => {
     const outputPath = path.join(workspacePath, 'output.pdf');
     await writePdf(sourcePath);
 
-    try {
-      for (const invalidPassword of ['bad,password', 'bad=password']) {
-        await assert.rejects(
-          encryptPdfFiles({
-            inputs: [{ sourcePath, workspacePath, outputPath }],
-            password: invalidPassword,
-            runtime: {},
-          }),
-          /passwords cannot contain/iu,
-        );
-        await assert.rejects(access(outputPath));
-      }
-    } finally {
+    for (const invalidPassword of ['bad,password', 'bad=password']) {
+      await assert.rejects(
+        encryptPdfFiles({
+          inputs: [{ sourcePath, workspacePath, outputPath }],
+          password: invalidPassword,
+          runtime: {},
+        }),
+        /passwords cannot contain/iu,
+      );
+      await assert.rejects(access(outputPath));
     }
   });
 });

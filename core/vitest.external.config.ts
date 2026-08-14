@@ -12,8 +12,6 @@ export default defineConfig({
     globals: true,
     include: ['test/external/**/*.test.ts'],
     testTimeout: 60000,
-    resolve: {
-      alias: coreSourceAlias,
-    },
+    alias: coreSourceAlias,
   },
 });
