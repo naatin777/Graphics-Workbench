@@ -64,7 +64,8 @@
     "test:coverage": "npm run build && vitest run --coverage",
     "test:shuffle": "npm run build && vitest run --sequence.shuffle --sequence.seed=1",
     "test:external": "npm run build && node --env-file-if-exists=../.env.test.local ../node_modules/vitest/vitest.mjs run --config vitest.external.config.ts",
-    "test:shuffle:seed": "npm run build && vitest run --sequence.shuffle --sequence.seed=$SEED"
+    "test:shuffle:seed": "npm run build && vitest run --sequence.shuffle --sequence.seed=$SEED",
+    "test:package-exports": "npm run build && node --test test/package-exports-smoke.test.mjs"
   },
   "dependencies": {
     "fast-xml-parser": "5.10.1",

@@ -40,7 +40,7 @@
     "check:nls": "node scripts/check-nls.mjs",
     "check:webview-warnings": "npm run check:warnings -w @graphics-workbench/webview",
     "check:unused": "knip",
-    "test:scripts": "node --test scripts/*.test.mjs && npm run test:module-mocks -w core",
+    "test:scripts": "node --test scripts/*.test.mjs && npm run test:module-mocks -w core && npm run test:package-exports -w core",
     "generate:test-output": "npm run generate:test-output -w core",
     "check:all": "npm run check && npm run check:extension-meta && npm run check:nls && npm run check:unused && npm run check:webview-warnings && npm run test:scripts",
     "check:fix": "npm run lint:fix && npm run format:fix",
