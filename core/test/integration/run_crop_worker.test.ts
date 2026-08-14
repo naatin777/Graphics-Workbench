@@ -10,6 +10,8 @@ import {
   parseCropWorkerRequest,
   parseCropWorkerResult,
   runCropWorker,
+  CropWorkerCancelledError,
+  CropWorkerFailedError,
   type CropWorkerChild,
 } from '@graphics-workbench/core/crop-worker';
 import {
@@ -19,9 +21,9 @@ import {
   readPdfPages,
 } from '@graphics-workbench/core/testing';
 
-const fixtureRunnerPath = path.join(
+const testDataRunnerPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../fixtures/crop_process_fixture_runner.ts',
+  '../testdata/crop_process_testdata_runner.ts',
 );
 
 // mupdf re-serializes page boxes with limited float precision, so compare
@@ -112,7 +114,8 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
           undefined,
           { outputChannel: logs },
         );
-        assert.strictEqual(result, undefined);
+        assert.ok(result.isOk());
+        assert.strictEqual(result.value, undefined);
 
         const outputPages = await readPdfPages(await readFile(stagedOutputPath));
         assert.strictEqual(outputPages.length, 2);
@@ -141,7 +144,9 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
         const sourcePath = path.join(workspacePath, 'input.pdf');
         await copyFile(path.join(operationPdfInputDirectory, 'multilingual-text.pdf'), sourcePath);
 
-        const metadata = await runCropWorker({ type: 'inspect', filePath: sourcePath });
+        const metadataResult = await runCropWorker({ type: 'inspect', filePath: sourcePath });
+        assert.ok(metadataResult.isOk());
+        const metadata = metadataResult.value;
         assert.ok(metadata !== undefined);
         assert.strictEqual(metadata.pageCount, 2);
         assert.strictEqual(metadata.pages.length, 2);
@@ -163,22 +168,22 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
         await copyFile(path.join(invalidPreflightInputDirectory, 'not-a-pdf.pdf'), sourcePath);
 
         const logs = new RecordingOutputChannel();
-        await assert.rejects(
-          runCropWorker(
-            {
-              type: 'crop',
-              request: {
-                sourcePath,
-                stagedOutputPath,
-                cropBox: { left: 1, bottom: 1, right: 100, top: 100 },
-                target: { type: 'all' },
-              },
+        const result = await runCropWorker(
+          {
+            type: 'crop',
+            request: {
+              sourcePath,
+              stagedOutputPath,
+              cropBox: { left: 1, bottom: 1, right: 100, top: 100 },
+              target: { type: 'all' },
             },
-            undefined,
-            { outputChannel: logs },
-          ),
-          /PDF|parse|invalid/iu,
+          },
+          undefined,
+          { outputChannel: logs },
         );
+        assert.ok(result.isErr());
+        assert.ok(result.error instanceof CropWorkerFailedError);
+        assert.match(result.error.message, /PDF|parse|invalid/iu);
 
         assert.ok(logs.hasLine('operation-failed'));
         assertNoLog(logs, /process-completed|operation-completed/iu);
@@ -186,7 +191,7 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       });
     });
 
-    it('hang-with-descendant fixture実行中にAbortSignalでcancelすると、子プロセスと子孫をまとめて終了させてOperationCancelledErrorで止まり、一時出力を作成しない', async () => {
+    it('hang-with-descendant テストデータ実行中にAbortSignalでcancelすると、子プロセスと子孫をまとめて終了させてOperationCancelledErrorで止まり、一時出力を作成しない', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const pidFile = path.join(workspacePath, 'descendant.pid');
         const controller = new AbortController();
@@ -197,15 +202,17 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
           { type: 'crop', request: createTestRequest(workspacePath, stagedOutputPath) },
           controller.signal,
           {
-            workerPath: fixtureRunnerPath,
-            launcher: createFixtureLauncher('hang-with-descendant', pidFile),
+            workerPath: testDataRunnerPath,
+            launcher: createTestDataLauncher('hang-with-descendant', pidFile),
             outputChannel: logs,
           },
         );
         const descendantPid = await waitForPid(pidFile);
         controller.abort();
 
-        await assert.rejects(operation, { name: 'OperationCancelledError' });
+        const result = await operation;
+        assert.ok(result.isErr());
+        assert.ok(result.error instanceof CropWorkerCancelledError);
         await waitForProcessExit(descendantPid);
         assert.ok(logs.hasLine('operation-cancelled'));
         assertNoLog(logs, /result-received|process-completed/iu);
@@ -213,20 +220,24 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       });
     });
 
-    it('request受信後にexit code 23で終了するfixtureは異常終了として扱い、一時出力を作成せず失敗する', async () => {
+    it('request受信後にexit code 23で終了するテストデータは異常終了として扱い、一時出力を作成せず失敗する', async () => {
       await withTemporaryWorkspace(async (workspacePath) => {
         const stagedOutputPath = path.join(workspacePath, 'staging', 'result.pdf');
         await mkdir(path.dirname(stagedOutputPath), { recursive: true });
         const logs = new RecordingOutputChannel();
 
-        await assert.rejects(
-          runCropWorker({ type: 'crop', request: createTestRequest(workspacePath, stagedOutputPath) }, undefined, {
-            workerPath: fixtureRunnerPath,
-            launcher: createFixtureLauncher('exit-23'),
+        const result = await runCropWorker(
+          { type: 'crop', request: createTestRequest(workspacePath, stagedOutputPath) },
+          undefined,
+          {
+            workerPath: testDataRunnerPath,
+            launcher: createTestDataLauncher('exit-23'),
             outputChannel: logs,
-          }),
-          /exited without a result/iu,
+          },
         );
+        assert.ok(result.isErr());
+        assert.ok(result.error instanceof CropWorkerFailedError);
+        assert.match(result.error.message, /exited without a result/iu);
         assert.ok(logs.hasLine('operation-failed'));
         assertNoLog(logs, /result-received|process-completed/iu);
         assert.strictEqual(await pathExists(stagedOutputPath), false);
@@ -245,7 +256,9 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       );
       child.emitMessage({ ok: true });
 
-      assert.strictEqual(await operation, undefined);
+      const result = await operation;
+      assert.ok(result.isOk());
+      assert.strictEqual(result.value, undefined);
       assert.strictEqual(child.sentMessages.length, 1);
       assert.strictEqual(child.listenerCount('message'), 0);
       assert.strictEqual(child.listenerCount('exit'), 0);
@@ -260,22 +273,25 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       });
       child.emitMessage({ ok: false, error: 'child failed' });
 
-      await assert.rejects(operation, /child failed/iu);
+      const result = await operation;
+      assert.ok(result.isErr());
+      assert.ok(result.error instanceof CropWorkerFailedError);
+      assert.match(result.error.message, /child failed/iu);
     });
 
     it('プロセス起動が失敗した場合はrequest送信前に1回だけchild-spawn-failedを記録して失敗する', async () => {
       const logs = new RecordingOutputChannel();
       let launcherCalls = 0;
-      await assert.rejects(
-        runCropWorker({ type: 'inspect', filePath: '/workspace/input.pdf' }, undefined, {
-          launcher: () => {
-            launcherCalls += 1;
-            throw new Error('spawn crop worker ENOENT');
-          },
-          outputChannel: logs,
-        }),
-        /ENOENT/iu,
-      );
+      const result = await runCropWorker({ type: 'inspect', filePath: '/workspace/input.pdf' }, undefined, {
+        launcher: () => {
+          launcherCalls += 1;
+          throw new Error('spawn crop worker ENOENT');
+        },
+        outputChannel: logs,
+      });
+      assert.ok(result.isErr());
+      assert.ok(result.error instanceof CropWorkerFailedError);
+      assert.match(result.error.message, /ENOENT/iu);
       assert.strictEqual(launcherCalls, 1);
       assert.ok(logs.hasLine('child-spawn-failed'));
       assertNoLog(logs, /request-sent|result-received|process-completed|operation-cancelled/iu);
@@ -288,7 +304,10 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       });
       child.emitError(new Error('child crashed'));
 
-      await assert.rejects(operation, /child crashed/iu);
+      const result = await operation;
+      assert.ok(result.isErr());
+      assert.ok(result.error instanceof CropWorkerFailedError);
+      assert.match(result.error.message, /child crashed/iu);
     });
 
     it('結果メッセージなしでexitした場合はexited without a resultとして失敗する', async () => {
@@ -300,7 +319,10 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       );
       child.emitExit(23, null);
 
-      await assert.rejects(operation, /exited without a result/iu);
+      const result = await operation;
+      assert.ok(result.isErr());
+      assert.ok(result.error instanceof CropWorkerFailedError);
+      assert.match(result.error.message, /exited without a result/iu);
     });
 
     it('不正な結果メッセージを受信した場合はprotocol errorとして失敗し、監視を解放して秘密payloadをログへ出さない', async () => {
@@ -313,7 +335,10 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       );
       child.emitMessage({ type: 'failure', error: 'secret pdf content' });
 
-      await assert.rejects(operation, /protocol error/iu);
+      const result = await operation;
+      assert.ok(result.isErr());
+      assert.ok(result.error instanceof CropWorkerFailedError);
+      assert.match(result.error.message, /protocol error/iu);
       assertNoLog(logs, /secret pdf|password|full payload/iu);
       assert.strictEqual(child.listenerCount('message'), 0);
       assert.strictEqual(child.listenerCount('exit'), 0);
@@ -330,7 +355,9 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       );
       controller.abort();
 
-      await assert.rejects(operation, { name: 'OperationCancelledError' });
+      const result = await operation;
+      assert.ok(result.isErr());
+      assert.ok(result.error instanceof CropWorkerCancelledError);
       assert.ok(child.killCalls >= 1);
       assert.ok(logs.hasLine('operation-cancelled'));
       assert.strictEqual(child.listenerCount('message'), 0);
@@ -343,15 +370,14 @@ describe('Crop workerで単一リクエストを処理してIPCの結果を確�
       controller.abort();
       let launcherCalls = 0;
 
-      await assert.rejects(
-        runCropWorker({ type: 'inspect', filePath: '/workspace/input.pdf' }, controller.signal, {
-          launcher: () => {
-            launcherCalls += 1;
-            return new FakeCropWorkerChild();
-          },
-        }),
-        { name: 'OperationCancelledError' },
-      );
+      const result = await runCropWorker({ type: 'inspect', filePath: '/workspace/input.pdf' }, controller.signal, {
+        launcher: () => {
+          launcherCalls += 1;
+          return new FakeCropWorkerChild();
+        },
+      });
+      assert.ok(result.isErr());
+      assert.ok(result.error instanceof CropWorkerCancelledError);
       assert.strictEqual(launcherCalls, 0);
     });
   });
@@ -399,7 +425,7 @@ function createTestRequest(workspacePath: string, stagedOutputPath: string) {
   };
 }
 
-function createFixtureLauncher(behavior: string, pidFile?: string): (workerPath: string) => CropWorkerChild {
+function createTestDataLauncher(behavior: string, pidFile?: string): (workerPath: string) => CropWorkerChild {
   return (workerPath) =>
     fork(workerPath, [], {
       detached: process.platform !== 'win32',
@@ -452,11 +478,11 @@ async function waitForPid(pidFile: string): Promise<number> {
         return pid;
       }
     } catch {
-      // The fixture writes its pid after the message is received.
+      // The テストデータ writes its pid after the message is received.
     }
     await new Promise<void>((resolve) => setTimeout(resolve, 10));
   }
-  throw new Error(`Timed out waiting for fixture pid file: ${pidFile}`);
+  throw new Error(`Timed out waiting for テストデータ pid file: ${pidFile}`);
 }
 
 async function isProcessAlive(pid: number): Promise<boolean> {
@@ -475,7 +501,7 @@ async function waitForProcessExit(pid: number): Promise<void> {
     }
     await new Promise<void>((resolve) => setTimeout(resolve, 10));
   }
-  throw new Error(`Timed out waiting for fixture descendant process to exit: ${pid}`);
+  throw new Error(`Timed out waiting for テストデータ descendant process to exit: ${pid}`);
 }
 
 function isProcessNotFoundError(error: unknown): boolean {

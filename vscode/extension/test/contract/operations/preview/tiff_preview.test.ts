@@ -4,7 +4,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 import { readTiffPreviewPageCount, renderTiffPreviewPage } from '../../../../src/adapters/preview/tiff_preview.js';
-import { testInputDirectory } from '../../../support/helpers/fixture_paths.js';
+import { testInputDirectory } from '../../../support/helpers/testdata_paths.js';
 
 const heatmapTiffPath = path.join(testInputDirectory, 'valid', 'tiff', 'heatmap.tiff');
 const truncatedTiffPath = path.join(testInputDirectory, 'invalid', 'tiff', 'truncated.tiff');

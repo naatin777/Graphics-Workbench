@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import type { Configuration } from '../../generated/extension_manifest.js';
 
 import {
-  isEditableDrawioImagePath,
+  isDrawioImagePath,
   isNativeDrawioPath,
   logicalSourcePathForOutputTemplate,
 } from '@graphics-workbench/core/formats';
@@ -66,7 +66,7 @@ async function planSvgInputs(
   const sourcePath = sourceUri.fsPath;
   const extension = path.extname(sourcePath).toLowerCase();
 
-  if (extension === '.svg' && !isEditableDrawioImagePath(sourcePath)) {
+  if (extension === '.svg' && !isDrawioImagePath(sourcePath)) {
     throw new Error(`Unsupported input for SVG input: ${sourcePath}`);
   }
 
@@ -89,7 +89,7 @@ async function planSvgInputs(
     return [{ sourcePath, workspacePath: workspace.uri.fsPath, outputPath }];
   }
 
-  const page = isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
+  const page = isDrawioImagePath(sourcePath) ? '1' : undefined;
   const outputTemplate = configuration.outputPath.single.svg();
   const outputPath = resolveOutputPath(
     outputTemplate,

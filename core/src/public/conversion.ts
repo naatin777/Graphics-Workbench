@@ -49,12 +49,16 @@ export {
   type PdfRasterSource,
   type PdfRasterTarget,
 } from '../operations/conversion/pdf_raster_conversion.js';
-export { planPdfPageJobs, type PdfPageInput, type PdfPageSource } from '../operations/conversion/plan_pdf_page_jobs.js';
+export {
+  planPdfPageItems,
+  type PdfPageInput,
+  type PdfPageSource,
+} from '../operations/conversion/plan_pdf_page_items.js';
 export {
   planPdfPageConversionInputs,
   planRasterConversionInputs,
-  planRasterFrameJobs,
-  planRasterFrameJobsFromMetadata,
+  planRasterFrameItems,
+  planRasterFrameItemsFromMetadata,
   planRasterSourceConversionInputs,
   type PlanRasterConversionInputsOptions,
   type PlanRasterSourceConversionInputsOptions,

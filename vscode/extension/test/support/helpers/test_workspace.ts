@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { copyFile, mkdir, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
-import { testWorkspaceDirectory } from './fixture_paths.js';
+import { testWorkspaceDirectory } from './testdata_paths.js';
 
 const workspacePlaceholderName = '.gitkeep';
 

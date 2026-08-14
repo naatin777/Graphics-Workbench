@@ -1,4 +1,4 @@
-import { createPdfFixture } from '@graphics-workbench/core/testing';
+import { createPdfTestData } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdtempDisposable, rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -213,7 +213,7 @@ function normalizeSnippetValue(value: string): string {
 }
 
 async function writePdf(uri: vscode.Uri): Promise<void> {
-  const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 120, 80] }] });
+  const pdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 120, 80] }] });
   await vscode.workspace.fs.writeFile(uri, pdfBytes);
 }
 

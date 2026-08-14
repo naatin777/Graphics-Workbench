@@ -10,18 +10,18 @@ export {
 } from './assertions/raster_content.js';
 export { assertSvgStructureMatches } from './assertions/svg.js';
 export {
-  createPdfFixture,
+  createPdfTestData,
   fillRectangle,
   readPdfPages,
-  type PdfFixtureOptions,
-  type PdfFixturePage,
-  type PdfFixturePageGeometry,
-} from './fixtures/pdf.js';
-export { listFixtureFilePaths, listFixtureFilePathsSync } from './fixture_files.js';
+  type PdfTestDataOptions,
+  type PdfTestDataPage,
+  type PdfTestDataPageGeometry,
+} from './testdata/pdf_testdata.js';
+export { listTestDataFilePaths, listTestDataFilePathsSync } from './testdata_files.js';
 export {
   invalidPreflightInputDirectory,
-  listInputFixturePaths,
-  listInputFixturePathsSync,
+  listInputTestDataPaths,
+  listInputTestDataPathsSync,
   operationDrawioInputDirectory,
   operationPdfInputDirectory,
   operationPngInputPath,
@@ -29,7 +29,7 @@ export {
   repositoryRootDirectory,
   testInputDirectory,
   testOutputDirectory,
-} from './fixtures/paths.js';
+} from './testdata/path_definitions.js';
 export { RecordingOutputChannel } from './output_channel.js';
 export { findRepositoryRoot } from './repository.js';
 export { requireValue } from './required.js';

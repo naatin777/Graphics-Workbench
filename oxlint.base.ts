@@ -807,7 +807,7 @@ export default defineConfig({
         'eslint/no-promise-executor-return': 'off',
         'eslint/no-unreachable-loop': 'off',
         'typescript/no-explicit-any': 'off',
-        // Tests exercise untyped mocks, fixtures, and host/webview payloads.
+        // Tests exercise untyped mocks, test data, and host/webview payloads.
         'typescript/no-restricted-types': 'off',
         'typescript/no-empty-function': 'off',
         'typescript/explicit-function-return-type': 'off',

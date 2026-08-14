@@ -2,7 +2,7 @@
 // - 1件以上のPDFを1ページごとまたはページグループごとに分割し、全成功後に出力すること
 // - ページ式の解析が入力順の展開・重複保持・不正式の拒否を正しく行うこと
 // - 既存出力、出力重複、キャンセル時に出力を反映しないこと
-// - 固定fixtureの各分割ページが元PDFの対応ページと同じ描画内容であること
+// - 固定テストデータの各分割ページが元PDFの対応ページと同じ描画内容であること
 //
 // Mocked:
 // - なし。mupdfと実ファイルを使用する
@@ -16,7 +16,7 @@ import {
   invalidPreflightInputDirectory,
   operationPdfInputDirectory,
   assertRenderedPdfPagesSimilar,
-  createPdfFixture,
+  createPdfTestData,
   readPdfPages,
 } from '@graphics-workbench/core/testing';
 
@@ -29,7 +29,7 @@ describe('PDF全ページ分割', () => {
     const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'multi-page-table.pdf');
     const outputDirectory = path.join(workspacePath, 'source');
-    await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
+    await copyFile(testDataPath('multi-page-table.pdf'), sourcePath);
 
     await splitPdfAllPages({
       inputs: [
@@ -70,7 +70,7 @@ describe('PDF全ページ分割', () => {
       path.join(workspacePath, fileName),
     );
 
-    await Promise.all(sourcePaths.map((sourcePath) => copyFile(fixturePath(path.basename(sourcePath)), sourcePath)));
+    await Promise.all(sourcePaths.map((sourcePath) => copyFile(testDataPath(path.basename(sourcePath)), sourcePath)));
 
     await splitPdfAllPages({
       inputs: sourcePaths.map((sourcePath) => ({
@@ -298,17 +298,17 @@ describe('PDFページグループ分割', () => {
 });
 
 async function writePdf(filePath: string, pageCount: number): Promise<void> {
-  const bytes = await createPdfFixture({
+  const bytes = await createPdfTestData({
     pages: Array.from({ length: pageCount }, (_, index) => ({ mediaBox: [0, 0, 100 + index + 1, 200 + index + 1] })),
   });
   await writeFile(filePath, bytes);
 }
 
 async function writePdfWithWidths(filePath: string, widths: readonly number[]): Promise<void> {
-  const bytes = await createPdfFixture({ pages: widths.map((width) => ({ mediaBox: [0, 0, width, 200] })) });
+  const bytes = await createPdfTestData({ pages: widths.map((width) => ({ mediaBox: [0, 0, width, 200] })) });
   await writeFile(filePath, bytes);
 }
 
-function fixturePath(fileName: string): string {
+function testDataPath(fileName: string): string {
   return path.join(operationPdfInputDirectory, fileName);
 }

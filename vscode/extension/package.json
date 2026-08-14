@@ -45,6 +45,7 @@
   "dependencies": {
     "@graphics-workbench/core": "0.0.1",
     "@graphics-workbench/vscode-protocol": "0.0.1",
+    "better-result": "^3.0.1",
     "valibot": "1.4.2"
   },
   "devDependencies": {

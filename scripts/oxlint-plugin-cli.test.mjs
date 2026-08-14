@@ -10,7 +10,7 @@ const worktreeRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 const oxlintEntry = path.join(worktreeRoot, 'node_modules', 'oxlint', 'bin', 'oxlint');
 const oxlintConfig = path.join(worktreeRoot, 'oxlint.config.ts');
 
-const fixtures = {
+const testData = {
   'conditional_spreads.ts': `declare const hasTitle: boolean;
 declare const hasMeta: boolean;
 
@@ -216,9 +216,9 @@ export function registerListener(): void {
 `,
 };
 
-function writeFixtures(root) {
+function writeTestData(root) {
   const files = [];
-  for (const [relative, content] of Object.entries(fixtures)) {
+  for (const [relative, content] of Object.entries(testData)) {
     const absolute = path.join(root, relative);
     mkdirSync(path.dirname(absolute), { recursive: true });
     writeFileSync(absolute, content);
@@ -249,22 +249,22 @@ function ruleIdOf(diagnostic) {
   return match === null ? diagnostic.code : match[1];
 }
 
-const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'oxlint-plugin-cli-'));
+const testDataRoot = mkdtempSync(path.join(tmpdir(), 'oxlint-plugin-cli-'));
 
 let diagnostics;
 try {
-  diagnostics = runOxlint(writeFixtures(fixtureRoot));
+  diagnostics = runOxlint(writeTestData(testDataRoot));
 } catch (error) {
-  rmSync(fixtureRoot, { recursive: true, force: true });
-  throw new Error(`oxlint fixture setup or run failed: ${String(error)}`, { cause: error });
+  rmSync(testDataRoot, { recursive: true, force: true });
+  throw new Error(`oxlint testData setup or run failed: ${String(error)}`, { cause: error });
 }
 
 after(() => {
-  rmSync(fixtureRoot, { recursive: true, force: true });
+  rmSync(testDataRoot, { recursive: true, force: true });
 });
 
 function projectRuleLines(relativeFile, ruleId) {
-  const absolute = path.resolve(fixtureRoot, relativeFile);
+  const absolute = path.resolve(testDataRoot, relativeFile);
   return diagnostics
     .filter((diagnostic) => path.resolve(diagnostic.filename) === absolute && ruleIdOf(diagnostic) === ruleId)
     .flatMap((diagnostic) => diagnostic.labels.map((label) => label.span.line))

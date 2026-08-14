@@ -13,7 +13,7 @@ import {
 } from '@graphics-workbench/core/conversion';
 import { operationPdfInputDirectory } from '@graphics-workbench/core/testing';
 
-const fixturePath = path.join(operationPdfInputDirectory, 'single-page-document.pdf');
+const testDataPath = path.join(operationPdfInputDirectory, 'single-page-document.pdf');
 const maxInputPixels = 268_402_689;
 const splitOutputTemplate = {
   jpeg: '${fileDirname}/${fileBasenameNoExtension}/${page}.jpeg',
@@ -55,7 +55,7 @@ describe('Headless PDF→raster conversion', () => {
   it('選択pageと既存output templateからpage付きRasterInputだけを計画する', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-plan-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
-    await copyFile(fixturePath, sourcePath);
+    await copyFile(testDataPath, sourcePath);
     const source = await inspectPdfRasterSource({ sourcePath });
     const outputTemplate = splitOutputTemplate.jpeg;
 
@@ -75,7 +75,7 @@ describe('Headless PDF→raster conversion', () => {
   it('PDFをPNG変換し、staging artifactを返す', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-convert-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
-    await copyFile(fixturePath, sourcePath);
+    await copyFile(testDataPath, sourcePath);
     const source = await inspectPdfRasterSource({ sourcePath });
     const plan = planPdfRasterConversion({
       source,
@@ -106,7 +106,7 @@ describe('Headless PDF→raster conversion', () => {
   it('変換開始前のAbortSignalを既存operationへ伝搬し、出力をcommitしない', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-cancel-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
-    await copyFile(fixturePath, sourcePath);
+    await copyFile(testDataPath, sourcePath);
     const source = await inspectPdfRasterSource({ sourcePath });
     const plan = planPdfRasterConversion({
       source,
@@ -131,7 +131,7 @@ describe('Headless PDF→raster conversion', () => {
   it('競合出力のoverwrite後にcommit layerが.previous backupを作成する', async () => {
     await using workspace = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-pdf-raster-overwrite-'));
     const sourcePath = path.join(workspace.path, 'paper.pdf');
-    await copyFile(fixturePath, sourcePath);
+    await copyFile(testDataPath, sourcePath);
     const source = await inspectPdfRasterSource({ sourcePath });
     const plan = planPdfRasterConversion({
       source,

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { hasPdfPageContent, renderPdfPageToPng, renderPdfPageToSvg } from '@graphics-workbench/core/pdf';
-import { createPdfFixture, fillRectangle } from '@graphics-workbench/core/testing';
+import { createPdfTestData, fillRectangle } from '@graphics-workbench/core/testing';
 
 const pageCount = 12;
 const renderIterations = 200;
@@ -36,7 +36,7 @@ async function renderOnePage(bytes: Uint8Array, page: number): Promise<void> {
 }
 
 async function createMultiPagePdf(pageCountValue: number): Promise<Uint8Array> {
-  return createPdfFixture({
+  return createPdfTestData({
     pages: Array.from({ length: pageCountValue }, () => ({
       mediaBox: [0, 0, 200, 200],
       contents: [fillRectangle({ x: 20, y: 20, width: 100, height: 100 })],

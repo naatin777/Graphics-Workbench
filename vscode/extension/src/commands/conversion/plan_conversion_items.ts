@@ -8,7 +8,7 @@ import {
   type RasterFormatSpec,
   type RasterInput,
 } from '@graphics-workbench/core/conversion';
-import { isEditableDrawioImagePath } from '@graphics-workbench/core/formats';
+import { isDrawioImagePath } from '@graphics-workbench/core/formats';
 import type { ConversionExecutionContext } from '@graphics-workbench/core/runtime';
 
 import type { LocaleKeyType } from '../../locale_map.js';
@@ -24,7 +24,7 @@ export interface PlanRasterConversionOptions {
   runtime?: ConversionExecutionContext;
 }
 
-export async function planRasterConversionJobs(
+export async function planRasterConversionItems(
   sourceUri: vscode.Uri,
   spec: RasterFormatSpec,
   options: PlanRasterConversionOptions,
@@ -46,7 +46,7 @@ export async function planRasterConversionJobs(
     splitOutputTemplate: resolveRasterOutputTemplate('split', spec.target, options.configuration),
     frameMode: options.frameMode ?? 'first',
     maxInputPixels: options.maxInputPixels,
-    isEditableDrawioImagePath,
+    isDrawioImagePath,
   };
   if (options.maxAnimationPixels !== undefined) {
     inputOptions.maxAnimationPixels = options.maxAnimationPixels;

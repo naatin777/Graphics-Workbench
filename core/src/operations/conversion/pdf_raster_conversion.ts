@@ -14,7 +14,7 @@ import {
   type RasterInput,
   type RasterConversionTarget,
 } from './raster_conversion.js';
-import { planPdfPageJobs } from './plan_pdf_page_jobs.js';
+import { planPdfPageItems } from './plan_pdf_page_items.js';
 
 export type PdfRasterTarget = RasterConversionTarget;
 
@@ -104,7 +104,7 @@ export function planPdfRasterConversion<Target extends PdfRasterTarget>(options:
     target: options.target,
     source: options.source,
     outputTemplate: options.outputTemplate,
-    inputs: planPdfPageJobs(
+    inputs: planPdfPageItems(
       options.source,
       options.source.pageCount,
       options.outputTemplate,

@@ -6,6 +6,7 @@ import { validatePdfPathInputs, type CropBox, type CropTarget } from '@graphics-
 import {
   copyFileWithAbort,
   isAbortError,
+  OperationCancelledError,
   runStagedConversionBatch,
   stagingRootPathFor,
   type CommittedConversionOutput,
@@ -16,6 +17,7 @@ import {
 } from '@graphics-workbench/core/runtime';
 
 import { runCropWorker } from '@graphics-workbench/core/crop-worker';
+import { matchError } from 'better-result';
 
 export type { CropBox } from '@graphics-workbench/core/pdf';
 
@@ -87,7 +89,7 @@ async function prepareConfiguredCropOutput(
   runtime.signal.throwIfAborted();
   await assertWritablePathInWorkspace(stagedOutputPath, input.workspacePath);
   runtime.signal.throwIfAborted();
-  await runCropWorker(
+  const cropResult = await runCropWorker(
     {
       type: 'crop',
       request: {
@@ -100,6 +102,12 @@ async function prepareConfiguredCropOutput(
     runtime.signal,
     runtime.outputChannel === undefined ? undefined : { outputChannel: runtime.outputChannel },
   );
+  if (cropResult.isErr()) {
+    throw matchError(cropResult.error, {
+      CropWorkerCancelledError: (error) => new OperationCancelledError(error.message),
+      CropWorkerFailedError: (error) => error,
+    });
+  }
   runtime.signal.throwIfAborted();
   await assertExistingPathInWorkspace(stagedOutputPath, input.workspacePath);
   runtime.outputChannel?.appendLine('[crop-pdf-configure] staging-validated');

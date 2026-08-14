@@ -5,8 +5,8 @@ import { findRepositoryRoot } from '@graphics-workbench/core/testing';
 
 export {
   invalidPreflightInputDirectory,
-  listInputFixturePaths,
-  listInputFixturePathsSync,
+  listInputTestDataPaths,
+  listInputTestDataPathsSync,
   operationDrawioInputDirectory,
   operationPdfInputDirectory,
   operationPngInputPath,

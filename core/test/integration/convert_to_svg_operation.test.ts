@@ -13,7 +13,9 @@ import { access, mkdtempDisposable, readFile, writeFile, copyFile } from 'node:f
 import os from 'node:os';
 import path from 'node:path';
 
-import { requireValue, createPdfFixture, testInputDirectory } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfTestData, testInputDirectory } from '@graphics-workbench/core/testing';
+import { Result } from 'better-result';
+import { ExternalToolSpawnError } from '@graphics-workbench/core/external-tools';
 
 import { convertToSvgFiles, executeDrawio } from '@graphics-workbench/core/conversion';
 
@@ -47,6 +49,7 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
           const outputIndex = args.indexOf('-o') + 1;
           assert.ok(outputIndex > 0);
           await writeFile(requireValue(args[outputIndex]), '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+          return Result.ok();
         },
       },
       runId: 'test-run',
@@ -80,6 +83,7 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
           drawioPath: 'drawio',
           runDrawio: async (_executable, args) => {
             await writeFile(requireValue(args[args.indexOf('-o') + 1]), '<html>not svg</html>');
+            return Result.ok();
           },
         },
         runId: 'invalid-output',
@@ -91,7 +95,7 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
     await assert.rejects(access(outputPath));
   });
 
-  it('Draw.io CLIの起動がspawn drawio ENOENTで失敗すると、stderr内容を添えたDraw.io CLI failedエラーに包んで変換を失敗させる', async () => {
+  it('Draw.io CLIの起動がspawn drawio ENOENTで失敗すると、Draw.io CLI failedエラーに包んで変換を失敗させる', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-convert-to-svg-operation-'));
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio.png');
@@ -111,15 +115,20 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
         runtime: {},
         drawioTools: {
           drawioPath: 'drawio',
-          runDrawio: async () => {
-            throw errorWithStderr('spawn drawio ENOENT', 'drawio missing');
-          },
+          runDrawio: async () =>
+            Result.err(
+              new ExternalToolSpawnError({
+                message: 'spawn drawio ENOENT',
+                code: 'ENOENT',
+                cause: errorWithStderr('spawn drawio ENOENT', 'drawio missing'),
+              }),
+            ),
         },
         runId: 'test-run',
         runPdfToSvg: stubRunPdfToSvg,
         maxInputPixels: 1_000_000_000,
       }),
-      /Draw\.io CLI failed: spawn drawio ENOENT\ndrawio missing/,
+      /Draw\.io CLI failed: spawn drawio ENOENT/,
     );
   });
 
@@ -128,7 +137,7 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const outputPath = path.join(workspacePath.path, 'source.svg');
-    const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
+    const pdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
     await writeFile(sourcePath, pdfBytes);
 
     await assert.rejects(
@@ -152,7 +161,7 @@ describe('Draw.io画像とPDFをSVGへ変換する処理', () => {
 
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const outputPath = path.join(workspacePath.path, 'source-1.svg');
-    const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
+    const pdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 300, 200] }] });
     await writeFile(sourcePath, pdfBytes);
 
     await assert.rejects(

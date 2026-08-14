@@ -6,7 +6,7 @@ export function isWebviewUri(value: unknown): value is string {
 
   try {
     const { protocol } = new URL(value);
-    // http: はVite dev serverから配信されるbrowser開発用fixtureでのみ使われる。
+    // http: はVite dev serverから配信されるbrowser開発用testDataでのみ使われる。
     // ProductionのExtension Hostは常にvscode-resource:を送るため、緩和はdev専用。
     return (
       protocol === 'vscode-resource:' ||

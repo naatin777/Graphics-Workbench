@@ -17,7 +17,7 @@ import path from 'node:path';
 import { createSandbox, match } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPdfInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPdfInputDirectory } from '../../support/helpers/testdata_paths.js';
 import { requireValue } from '@graphics-workbench/core/testing';
 import { stubWebviewPanel, waitFor } from '../../support/helpers/webview_panel.js';
 

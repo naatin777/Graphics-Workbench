@@ -15,7 +15,7 @@
 // - VS Codeのprogress notificationの画面表示
 // - cancellation tokenのUI操作
 
-import { createPdfFixture } from '@graphics-workbench/core/testing';
+import { createPdfTestData } from '@graphics-workbench/core/testing';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -108,7 +108,7 @@ async function removeTemporaryDirectory(directoryPath: string): Promise<void> {
 }
 
 async function writeTwoPagePdf(filePath: string): Promise<void> {
-  const bytes = await createPdfFixture({
+  const bytes = await createPdfTestData({
     pages: [{ mediaBox: [0, 0, 72, 36] }, { mediaBox: [0, 0, 36, 72] }],
   });
   await writeFile(filePath, bytes);

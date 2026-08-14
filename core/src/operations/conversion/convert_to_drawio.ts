@@ -91,7 +91,7 @@ async function stageDrawio(
   await writeFile(xmlPath, xml);
   await (drawioExtension(composeInput.outputPath) === '.drawio'
     ? writeFile(stagedOutputPath, xml)
-    : exportEditableDrawioImage({
+    : exportDrawioImage({
         xmlPath,
         outputPath: stagedOutputPath,
         workspacePath: composeInput.workspacePath,
@@ -167,7 +167,7 @@ function drawioExtension(outputPath: string): string {
   return '.drawio';
 }
 
-async function exportEditableDrawioImage(options: {
+async function exportDrawioImage(options: {
   xmlPath: string;
   outputPath: string;
   workspacePath: string;

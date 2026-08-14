@@ -6,7 +6,7 @@ import path from 'node:path';
 import { convertDrawioToSinglePdf, executeDrawio } from '@graphics-workbench/core/conversion';
 import { readPdfPages, requireConfiguredTool, testInputDirectory } from '@graphics-workbench/core/testing';
 
-const drawioFixturePath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
+const drawioTestDataPath = path.join(testInputDirectory, 'valid', 'drawio', 'unicode-page-names.drawio');
 
 describe('実Draw.io CLIによる全ページPDF変換', () => {
   it('設定されたDraw.io CLIを実際に起動し、全ページを3ページの1つのPDFへ変換する', async () => {
@@ -16,7 +16,7 @@ describe('実Draw.io CLIによる全ページPDF変換', () => {
 
     const sourcePath = path.join(workspacePath.path, 'source.drawio');
     const outputPath = path.join(workspacePath.path, 'all-pages.pdf');
-    await copyFile(drawioFixturePath, sourcePath);
+    await copyFile(drawioTestDataPath, sourcePath);
 
     const outputs = await convertDrawioToSinglePdf({
       inputs: [

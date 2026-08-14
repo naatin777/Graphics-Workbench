@@ -23,7 +23,7 @@ describe('パスワード付きPDFの復号化', () => {
     const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
-    await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
+    await copyFile(testDataPath('multi-page-table.pdf'), sourcePath);
     await encryptWithMupdf(sourcePath, password);
 
     await decryptPdfFiles({
@@ -50,7 +50,7 @@ describe('パスワード付きPDFの復号化', () => {
     const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'encrypted.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
-    await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
+    await copyFile(testDataPath('multi-page-table.pdf'), sourcePath);
     await encryptWithMupdf(sourcePath, password);
 
     await assert.rejects(
@@ -78,6 +78,6 @@ async function encryptWithMupdf(sourcePath: string, pdfPassword: string): Promis
   }
 }
 
-function fixturePath(fileName: string): string {
+function testDataPath(fileName: string): string {
   return path.join(operationPdfInputDirectory, fileName);
 }

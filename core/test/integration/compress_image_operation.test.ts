@@ -77,7 +77,7 @@ describe('画像圧縮処理', () => {
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
     const outputPath = path.join(workspacePath.path, 'source_compressed.gif');
-    await writeAnimatedGifFixture(sourcePath);
+    await writeAnimatedGifTestData(sourcePath);
 
     await compressImageFiles({
       inputs: [
@@ -208,7 +208,7 @@ describe('画像圧縮処理', () => {
   });
 });
 
-async function writeAnimatedGifFixture(filePath: string): Promise<void> {
+async function writeAnimatedGifTestData(filePath: string): Promise<void> {
   const frames = await Promise.all([
     sharp({ create: { width: 12, height: 8, channels: 4, background: '#285078' } })
       .png()

@@ -16,7 +16,7 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
     const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const lines: string[] = [];
 
-    await writeFixture(path.join(rootPath, 'result.pdf'));
+    await writeTestData(path.join(rootPath, 'result.pdf'));
 
     const result = await cleanupConversionArtifacts([{ rootPath, workspacePath: workspacePath.path }], {
       appendLine: (line) => lines.push(line),
@@ -55,7 +55,7 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
     const controller = new AbortController();
 
     await writeFile(outputPath, 'original');
-    await writeFixture(stagedOutputPath);
+    await writeTestData(stagedOutputPath);
 
     await assert.rejects(
       withStagingCleanup([{ rootPath, workspacePath: workspacePath.path }], () =>
@@ -83,7 +83,7 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
       },
     );
 
-    assert.strictEqual(await readFile(outputPath, 'utf8'), 'fixture');
+    assert.strictEqual(await readFile(outputPath, 'utf8'), 'テストデータ');
     assert.strictEqual(await readFile(`${stagedOutputPath}.previous`, 'utf8'), 'original');
     await assert.rejects(access(stagedOutputPath));
   });
@@ -92,7 +92,7 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-cleanup-workspace-'));
     const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
 
-    await writeFixture(path.join(rootPath, 'result.pdf.previous'));
+    await writeTestData(path.join(rootPath, 'result.pdf.previous'));
 
     await assert.rejects(
       withStagingCleanup([{ rootPath, workspacePath: workspacePath.path }], async () => {
@@ -112,7 +112,7 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
     let copyCount = 0;
 
     await writeFile(outputPath, 'original');
-    await writeFixture(stagedOutputPath);
+    await writeTestData(stagedOutputPath);
 
     await assert.rejects(
       withStagingCleanup([{ rootPath, workspacePath: workspacePath.path }], () =>
@@ -145,9 +145,9 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
     const sourcePath = path.join(rootPath, 'source.pdf');
     const backupPath = path.join(rootPath, 'result.pdf.previous');
 
-    await writeFixture(resultPath);
-    await writeFixture(sourcePath);
-    await writeFixture(backupPath);
+    await writeTestData(resultPath);
+    await writeTestData(sourcePath);
+    await writeTestData(backupPath);
 
     await cleanupConversionArtifacts([{ rootPath, workspacePath: workspacePath.path, preservePaths: [backupPath] }]);
 
@@ -162,7 +162,7 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
     const outsideFile = path.join(outsidePath.path, 'keep.txt');
     const symlinkPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
 
-    await writeFixture(outsideFile);
+    await writeTestData(outsideFile);
     await mkdir(path.dirname(symlinkPath), { recursive: true });
     await symlink(outsidePath.path, symlinkPath);
 
@@ -178,7 +178,7 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
     const outputPath = path.join(workspacePath.path, 'output.pdf');
     const symlinkPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
 
-    await writeFixture(outputPath);
+    await writeTestData(outputPath);
     await mkdir(path.dirname(symlinkPath), { recursive: true });
     await symlink(outsidePath.path, symlinkPath);
 
@@ -197,11 +197,11 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
     const outsideFile = path.join(outsidePath.path, 'keep.txt');
     const symlinkPath = path.join(workspacePath.path, '.graphics-workbench', 'link');
 
-    await writeFixture(path.join(currentRoot, 'result.pdf'));
-    await writeFixture(activePath);
-    await writeFixture(unknownPath);
-    await writeFixture(harnessLogPath);
-    await writeFixture(outsideFile);
+    await writeTestData(path.join(currentRoot, 'result.pdf'));
+    await writeTestData(activePath);
+    await writeTestData(unknownPath);
+    await writeTestData(harnessLogPath);
+    await writeTestData(outsideFile);
     await mkdir(path.dirname(symlinkPath), { recursive: true });
     await symlink(outsidePath.path, symlinkPath);
 
@@ -216,7 +216,7 @@ describe('変換結果を一時保存した作業ディレクトリの削除と�
   });
 });
 
-async function writeFixture(filePath: string): Promise<void> {
+async function writeTestData(filePath: string): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, 'fixture');
+  await writeFile(filePath, 'テストデータ');
 }

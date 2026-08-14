@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { reorderPdfFiles } from '@graphics-workbench/core/pdf';
-import { createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
+import { createPdfTestData, readPdfPages } from '@graphics-workbench/core/testing';
 
 describe('PDFページ並び替え', () => {
   it('3ページのPDFへページ順[3,1,2]を指定すると、出力PDFは3ページを保ちながら元の3・1・2ページ目の順に並ぶ', async () => {
@@ -100,7 +100,7 @@ describe('PDFページ並び替え', () => {
 });
 
 async function writePdf(filePath: string, pageCount: number): Promise<void> {
-  const bytes = await createPdfFixture({
+  const bytes = await createPdfTestData({
     pages: Array.from({ length: pageCount }, (_, index) => ({ mediaBox: [0, 0, 100 + index, 200] })),
   });
   await writeFile(filePath, bytes);

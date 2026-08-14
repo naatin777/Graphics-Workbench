@@ -1,6 +1,8 @@
 import { resolveChromeExecutablePath } from '../../config/rendering/chrome_cli_options.js';
 import type { Configuration } from '../../generated/extension_manifest.js';
+import { OperationCancelledError } from '@graphics-workbench/core/runtime';
 import { runExternalTool } from '@graphics-workbench/core/external-tools';
+import { matchError } from 'better-result';
 
 import { userMessage } from './user_messages.js';
 
@@ -35,7 +37,15 @@ const defaultProbe: ProbeTool = async (probe) => {
   if (timeoutMs !== undefined) {
     options.timeoutMs = timeoutMs;
   }
-  await runExternalTool(options);
+  const result = await runExternalTool(options);
+  if (result.isErr()) {
+    throw matchError(result.error, {
+      ExternalToolCancelledError: (error) => new OperationCancelledError(error.message),
+      ExternalToolTimedOutError: (error) => error,
+      ExternalToolFailedError: (error) => error,
+      ExternalToolSpawnError: (error) => error,
+    });
+  }
 };
 
 export const environmentProbe: ProbeTool = defaultProbe;

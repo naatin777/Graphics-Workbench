@@ -11,12 +11,13 @@ import os from 'node:os';
 import path from 'node:path';
 
 import sharp from 'sharp';
+import { Result } from 'better-result';
 import {
   operationPngInputPath,
   testInputDirectory,
   requireValue,
   readPdfPages,
-  createPdfFixture,
+  createPdfTestData,
 } from '@graphics-workbench/core/testing';
 
 import { convertToPdfFiles, executeDrawio } from '@graphics-workbench/core/conversion';
@@ -160,6 +161,7 @@ describe('入力画像をPDFへ変換する処理', () => {
             drawioPath: 'drawio',
             runDrawio: async (_executable, args) => {
               await writeFile(requireValue(args[args.indexOf('-o') + 1]), 'not a PDF');
+              return Result.ok();
             },
           },
         },
@@ -231,10 +233,11 @@ describe('入力画像をPDFへ変換する処理', () => {
           },
           runChrome: async (executable, args) => {
             calls.push({ executable, args });
-            const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 7, 11] }] });
+            const pdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 7, 11] }] });
             const outputArgument = args.find((argument) => argument.startsWith('--print-to-pdf='));
             assert.ok(outputArgument);
             await writeFile(outputArgument.slice('--print-to-pdf='.length), pdfBytes);
+            return Result.ok();
           },
         },
       },

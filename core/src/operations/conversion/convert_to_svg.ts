@@ -2,9 +2,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { XMLParser } from 'fast-xml-parser';
+import { matchError } from 'better-result';
 
 import {
-  isEditableDrawioImagePath,
+  isDrawioImagePath,
   isNativeDrawioPath,
   isSameSourceFormat,
   sourceFormatForPath,
@@ -14,7 +15,8 @@ import {
 import { assertWritablePathInWorkspace } from '../../security/workspace_path.js';
 import { renderPdfPageToSvg } from '../pdf/mupdf.js';
 import { validatePdfPathInputs } from '../pdf/pdf_path_validation.js';
-import { toErrorMessage, isAbortError } from '../../shared/error.js';
+import { toErrorMessage, isAbortError, OperationCancelledError } from '../../shared/error.js';
+import type { ExternalToolError } from '../external_tools/run_external_tool.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
@@ -142,7 +144,7 @@ async function writeSourceAsSvg({ input, outputPath, tools, signal }: WriteSourc
   const { drawioTools, runPdfToSvg } = tools;
   const extension = path.extname(input.sourcePath).toLowerCase();
 
-  if (isEditableDrawioImagePath(input.sourcePath) || isNativeDrawioPath(input.sourcePath)) {
+  if (isDrawioImagePath(input.sourcePath) || isNativeDrawioPath(input.sourcePath)) {
     await writeDrawioAsSvg(input.sourcePath, outputPath, input.workspacePath, drawioTools, signal);
     return;
   }
@@ -174,15 +176,19 @@ async function writeDrawioAsSvg(
   await mkdir(path.dirname(outputPath), { recursive: true });
   signal.throwIfAborted();
 
-  try {
-    await drawio.runDrawio(drawio.drawioPath, ['-x', '-f', 'svg', '-o', outputPath, sourcePath], signal);
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw error instanceof Error ? error : new Error(String(error));
-    }
-
-    throw new Error(`Draw.io CLI failed: ${toErrorMessage(error)}`, { cause: error });
+  const result = await drawio.runDrawio(drawio.drawioPath, ['-x', '-f', 'svg', '-o', outputPath, sourcePath], signal);
+  if (result.isErr()) {
+    throw matchError(result.error, {
+      ExternalToolCancelledError: (error) => new OperationCancelledError(error.message),
+      ExternalToolTimedOutError: wrapDrawioCliFailure,
+      ExternalToolFailedError: wrapDrawioCliFailure,
+      ExternalToolSpawnError: wrapDrawioCliFailure,
+    });
   }
+}
+
+function wrapDrawioCliFailure(error: ExternalToolError): Error {
+  return new Error(`Draw.io CLI failed: ${toErrorMessage(error)}`, { cause: error });
 }
 
 async function writePdfPageAsSvg({
@@ -239,7 +245,7 @@ function validateConversions(inputs: SvgInput[]): void {
 
   for (const input of inputs) {
     if (
-      !isEditableDrawioImagePath(input.sourcePath) &&
+      !isDrawioImagePath(input.sourcePath) &&
       !isNativeDrawioPath(input.sourcePath) &&
       isSameSourceFormat(input.sourcePath, '.svg')
     ) {
@@ -252,7 +258,7 @@ function validateConversions(inputs: SvgInput[]): void {
   }
 }
 
-const supportedSvgInputFormats = new Set<SourceFormat>(['pdf', 'drawio', 'editable-drawio-png', 'editable-drawio-svg']);
+const supportedSvgInputFormats = new Set<SourceFormat>(['pdf', 'drawio', 'drawio-png', 'drawio-svg']);
 
 function isSupportedSourcePath(sourcePath: string): boolean {
   const format = sourceFormatForPath(sourcePath);

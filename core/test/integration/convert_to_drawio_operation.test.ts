@@ -3,9 +3,10 @@ import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
+import { Result } from 'better-result';
 
 import { convertToDrawioFiles, createDrawioXml, parseSvgSize } from '@graphics-workbench/core/conversion';
-import { requireValue, createPdfFixture } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfTestData } from '@graphics-workbench/core/testing';
 
 describe('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () => {
   it('XML生成で各画像を1つのshape=imageオブジェクトにし、同名ページをnameとname-2へ連番化する', () => {
@@ -34,7 +35,7 @@ describe('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () =
     await sharp({ create: { width: 20, height: 10, channels: 4, background: 'red' } })
       .png()
       .toFile(imagePath);
-    const pdfBytes = await createPdfFixture({
+    const pdfBytes = await createPdfTestData({
       pages: [{ mediaBox: [0, 0, 100, 50] }, { mediaBox: [0, 0, 80, 40] }],
     });
     await writeFile(pdfPath, pdfBytes);
@@ -140,6 +141,7 @@ describe('複数の入力画像・PDFを1つのDraw.io XMLへ集約する', () =
             } else {
               await writeFile(generatedOutputPath, '<svg width="20" height="10"><metadata>mxfile</metadata></svg>');
             }
+            return Result.ok();
           },
         },
         runId: extension.slice(1),

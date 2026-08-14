@@ -14,7 +14,7 @@ const source: PdfRasterSource = {
 
 const successfulResult: TerminalUiConversionResult = {
   artifacts: [],
-  outputs: [{ outputPath: '/tmp/paper/1.png', workspacePath: '/tmp', sha256: 'fixture' }],
+  outputs: [{ outputPath: '/tmp/paper/1.png', workspacePath: '/tmp', sha256: 'testdata' }],
   cleanup: { attempted: 1, succeeded: 1, failures: [] },
 };
 

@@ -1,3 +1,4 @@
+// oxlint-disable eslint/max-classes-per-file -- CropWorkerErrorの各TaggedErrorは同一のcrop worker失敗領域を表し、1ファイルに集約する。
 import { fork } from 'node:child_process';
 import type { EventEmitter } from 'node:events';
 import { existsSync } from 'node:fs';
@@ -5,8 +6,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import * as v from 'valibot';
+import { Result, TaggedError } from 'better-result';
 
-import { asError, OperationCancelledError } from '../../shared/error.js';
+import { asError } from '../../shared/error.js';
 import { terminateProcessTree } from './run_external_tool.js';
 import type { LineOutputChannel } from './external_tool_ascii_scratch.js';
 import type { CropPdfFileRequest } from '../pdf/crop_pdf_core.js';
@@ -20,6 +22,21 @@ export interface CropPdfMetadata {
 export type CropWorkerRequest = { type: 'inspect'; filePath: string } | { type: 'crop'; request: CropPdfFileRequest };
 
 export type CropWorkerResult = { ok: true; value: CropPdfMetadata | undefined } | { ok: false; error: string };
+
+/** The crop operation was cancelled before or during execution. */
+// oxlint-disable-next-line unicorn/throw-new-error -- better-resultのTaggedErrorファクトリはnew不要でクラスを返す。
+export class CropWorkerCancelledError extends TaggedError('CropWorkerCancelledError')<{
+  message: string;
+}> {}
+
+/** The crop worker failed for any non-cancellation reason. */
+// oxlint-disable-next-line unicorn/throw-new-error -- better-resultのTaggedErrorファクトリはnew不要でクラスを返す。
+export class CropWorkerFailedError extends TaggedError('CropWorkerFailedError')<{
+  message: string;
+  cause: Error | undefined;
+}> {}
+
+export type CropWorkerError = CropWorkerCancelledError | CropWorkerFailedError;
 
 const CropBoxSchema = v.strictObject({
   left: v.pipe(v.number(), v.finite()),
@@ -129,7 +146,7 @@ export async function runCropWorker(
   request: CropWorkerRequest,
   signal?: AbortSignal,
   options: RunCropWorkerOptions = {},
-): Promise<CropPdfMetadata | undefined> {
+): Promise<Result<CropPdfMetadata | undefined, CropWorkerError>> {
   const { outputChannel } = options;
   const log = (event: string, details = ''): void => {
     const suffix = details === '' ? '' : ` ${details}`;
@@ -138,7 +155,7 @@ export async function runCropWorker(
 
   if (signal?.aborted === true) {
     log('operation-cancelled-before-start');
-    throw new OperationCancelledError('Crop processing was cancelled.');
+    return Result.err(new CropWorkerCancelledError({ message: 'Crop processing was cancelled.' }));
   }
 
   const workerPath = options.workerPath ?? resolveCropWorkerPath();
@@ -146,14 +163,14 @@ export async function runCropWorker(
 
   log('operation-started');
 
-  return new Promise<CropPdfMetadata | undefined>((resolve, reject) => {
+  return new Promise<Result<CropPdfMetadata | undefined, CropWorkerError>>((resolve) => {
     let child: CropWorkerChild;
     try {
       child = launcher(workerPath);
     } catch (error) {
       const normalized = asError(error);
       log('child-spawn-failed', `error=${formatLogValue(normalized.message)}`);
-      reject(normalized);
+      resolve(Result.err(new CropWorkerFailedError({ message: normalized.message, cause: normalized })));
       return;
     }
 
@@ -166,7 +183,7 @@ export async function runCropWorker(
       child.removeListener('exit', onExit);
     };
 
-    const finish = (error: Error | undefined, value?: CropPdfMetadata): void => {
+    const finish = (error: CropWorkerError | undefined, value?: CropPdfMetadata): void => {
       if (settled) {
         return;
       }
@@ -174,14 +191,14 @@ export async function runCropWorker(
       cleanup();
       if (error !== undefined) {
         log(
-          isCancellationError(error) ? 'operation-cancelled' : 'operation-failed',
+          error instanceof CropWorkerCancelledError ? 'operation-cancelled' : 'operation-failed',
           `error=${formatLogValue(error.message)}`,
         );
-        reject(error);
+        resolve(Result.err(error));
         return;
       }
       log('process-completed');
-      resolve(value);
+      resolve(Result.ok(value));
     };
 
     const abort = (): void => {
@@ -189,7 +206,7 @@ export async function runCropWorker(
         return;
       }
       terminateProcessTree(child);
-      finish(new OperationCancelledError('Crop processing was cancelled.'));
+      finish(new CropWorkerCancelledError({ message: 'Crop processing was cancelled.' }));
     };
 
     // oxlint-disable-next-line typescript/no-restricted-types -- 子プロセスIPC境界の未検証メッセージ。
@@ -201,23 +218,30 @@ export async function runCropWorker(
       try {
         result = parseCropWorkerResult(message);
       } catch {
-        finish(new Error('Crop worker protocol error: invalid result message.'));
+        finish(
+          new CropWorkerFailedError({
+            message: 'Crop worker protocol error: invalid result message.',
+            cause: undefined,
+          }),
+        );
         return;
       }
       log('result-received');
       if (result.ok) {
         finish(undefined, result.value);
       } else {
-        finish(new Error(result.error));
+        finish(new CropWorkerFailedError({ message: result.error, cause: undefined }));
       }
     };
 
     const onError = (error: Error): void => {
-      finish(error);
+      finish(new CropWorkerFailedError({ message: error.message, cause: error }));
     };
 
     const onExit = (code: number | null): void => {
-      finish(new Error(`Crop worker exited without a result (code ${code}).`));
+      finish(
+        new CropWorkerFailedError({ message: `Crop worker exited without a result (code ${code}).`, cause: undefined }),
+      );
     };
 
     child.on('message', onMessage);
@@ -235,7 +259,7 @@ export async function runCropWorker(
     try {
       child.send(request);
     } catch (error) {
-      finish(asError(error));
+      finish(new CropWorkerFailedError({ message: asError(error).message, cause: asError(error) }));
     }
   });
 }
@@ -260,10 +284,6 @@ function defaultLauncher(workerPath: string): CropWorkerChild {
     execArgv: withoutInlineScriptArgs(process.execArgv),
     stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
   });
-}
-
-function isCancellationError(error: Error): boolean {
-  return error instanceof OperationCancelledError || error.name === 'AbortError';
 }
 
 function formatLogValue(value: string): string {

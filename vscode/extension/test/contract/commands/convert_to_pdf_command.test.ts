@@ -27,7 +27,7 @@ import assert from 'node:assert/strict';
 import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { requireValue, createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfTestData, readPdfPages } from '@graphics-workbench/core/testing';
 import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
@@ -37,11 +37,11 @@ import { getExtensionConfiguration } from '../../../src/config/extension_configu
 
 import { logicalSourcePathForOutputTemplate } from '@graphics-workbench/core/formats';
 
-import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../../support/helpers/testdata_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
 import { withWorkspaceSettings } from '../../support/helpers/workspace_settings.js';
 
-const fixturePngPath = operationPngInputPath;
+const testDataPngPath = operationPngInputPath;
 const generatedImageWidth = 17;
 const generatedImageHeight = 13;
 const generatedSvgWidth = 31;
@@ -100,7 +100,7 @@ suite('PDFに変換コマンド', () => {
           return sourcePath;
         }),
       );
-      await copyFile(fixturePngPath, pngPath);
+      await copyFile(testDataPngPath, pngPath);
       const sourcePaths = [pngPath, ...imagePaths];
 
       const commandExecution = vscode.commands.executeCommand(
@@ -141,11 +141,11 @@ suite('PDFに変換コマンド', () => {
   });
 
   test('GIFのテスト入力ファイルを変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
-    await assertFixtureConvertsToPdf('gif', 'swirl-gradient.gif');
+    await assertTestDataConvertsToPdf('gif', 'swirl-gradient.gif');
   });
 
   test('TIFFのテスト入力ファイルを変換したPDFが1ページ以上の読み取り可能なPDFになる', async () => {
-    await assertFixtureConvertsToPdf('tiff', 'heatmap.tiff');
+    await assertTestDataConvertsToPdf('tiff', 'heatmap.tiff');
   });
 
   test('拡張子が大文字のraster.PNGでも変換でき、raster.pdfが入力画像と同じpixelサイズになる', async () => {
@@ -154,7 +154,7 @@ suite('PDFに変換コマンド', () => {
     try {
       const pngPath = path.join(temporaryDirectory, 'raster.PNG');
 
-      await copyFile(fixturePngPath, pngPath);
+      await copyFile(testDataPngPath, pngPath);
 
       const commandExecution = vscode.commands.executeCommand(
         'graphics-workbench.convertToPdf',
@@ -210,8 +210,8 @@ suite('PDFに変換コマンド', () => {
     try {
       const firstSourcePath = path.join(temporaryDirectory, 'first.png');
       const secondSourcePath = path.join(temporaryDirectory, 'second.png');
-      await copyFile(fixturePngPath, firstSourcePath);
-      await copyFile(fixturePngPath, secondSourcePath);
+      await copyFile(testDataPngPath, firstSourcePath);
+      await copyFile(testDataPngPath, secondSourcePath);
 
       await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(firstSourcePath), [
         vscode.Uri.file(firstSourcePath),
@@ -231,7 +231,7 @@ suite('PDFに変換コマンド', () => {
     try {
       const pngPath = path.join(temporaryDirectory, 'source.png');
       const unsupportedPath = path.join(temporaryDirectory, 'source.txt');
-      await copyFile(fixturePngPath, pngPath);
+      await copyFile(testDataPngPath, pngPath);
       await writeFile(unsupportedPath, 'not an image');
 
       await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(pngPath), [
@@ -250,7 +250,7 @@ suite('PDFに変換コマンド', () => {
 
     try {
       const pdfPath = path.join(temporaryDirectory, 'source.pdf');
-      await writeFile(pdfPath, await createPdfFixture({ pages: [{ mediaBox: [0, 0, 120, 80] }] }));
+      await writeFile(pdfPath, await createPdfTestData({ pages: [{ mediaBox: [0, 0, 120, 80] }] }));
 
       await vscode.commands.executeCommand('graphics-workbench.convertToPdf', vscode.Uri.file(pdfPath));
     } finally {
@@ -303,13 +303,13 @@ async function assertReadablePdfWithAtLeastOnePage(pdfPath: string): Promise<voi
   assert.ok(pages.length >= 1);
 }
 
-async function assertFixtureConvertsToPdf(format: string, fixtureFileName: string): Promise<void> {
+async function assertTestDataConvertsToPdf(format: string, testDataFileName: string): Promise<void> {
   const temporaryDirectory = await createTemporaryWorkspaceDirectory();
 
   try {
-    const sourcePath = path.join(temporaryDirectory, fixtureFileName);
-    const sourceFixturePath = path.join(testInputDirectory, 'valid', format, fixtureFileName);
-    await copyFile(sourceFixturePath, sourcePath);
+    const sourcePath = path.join(temporaryDirectory, testDataFileName);
+    const sourceTestDataPath = path.join(testInputDirectory, 'valid', format, testDataFileName);
+    await copyFile(sourceTestDataPath, sourcePath);
 
     const commandExecution = vscode.commands.executeCommand(
       'graphics-workbench.convertToPdf',

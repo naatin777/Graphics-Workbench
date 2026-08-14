@@ -6,12 +6,12 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../../support/helpers/testdata_paths.js';
 import { requireValue } from '@graphics-workbench/core/testing';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
 import { withWorkspaceSettings } from '../../support/helpers/workspace_settings.js';
 
-const fixturePngPath = operationPngInputPath;
+const testDataPngPath = operationPngInputPath;
 
 const rasterCommandMatrix = [
   { commandId: 'graphics-workbench.convertToPng', inputExtension: 'jpeg', extension: 'png', sharpFormat: 'png' },
@@ -52,9 +52,9 @@ suite('ラスター変換commandのrouting smoke', () => {
       );
       const sourcePath = path.join(workspacePath.path, `source.${inputExtension}`);
       if (inputExtension === 'png') {
-        await copyFile(fixturePngPath, sourcePath);
+        await copyFile(testDataPngPath, sourcePath);
       } else {
-        await sharp(await readFile(fixturePngPath))
+        await sharp(await readFile(testDataPngPath))
           .jpeg()
           .toFile(sourcePath);
       }
@@ -77,7 +77,7 @@ suite('ラスター変換commandのrouting smoke', () => {
       path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-raster-smoke-reject-'),
     );
     const sourcePath = path.join(workspacePath.path, 'source.png');
-    await copyFile(fixturePngPath, sourcePath);
+    await copyFile(testDataPngPath, sourcePath);
     const originalContent = await readFile(sourcePath);
 
     await vscode.commands.executeCommand('graphics-workbench.convertToPng', vscode.Uri.file(sourcePath));
@@ -92,7 +92,7 @@ suite('ラスター変換commandのrouting smoke', () => {
       path.join(requireValue(vscode.workspace.workspaceFolders?.[0]).uri.fsPath, 'gw-raster-smoke-config-'),
     );
     const sourcePath = path.join(workspacePath.path, 'source.jpeg');
-    await sharp(await readFile(fixturePngPath))
+    await sharp(await readFile(testDataPngPath))
       .jpeg()
       .toFile(sourcePath);
 

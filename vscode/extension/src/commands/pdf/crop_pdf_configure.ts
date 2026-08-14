@@ -15,12 +15,14 @@ import { readPdfPreviewSettings } from '../../config/pdf_preview.js';
 import { localeCatalog, localeMap } from '../../locale_map.js';
 import {
   isAbortError,
+  OperationCancelledError,
   type CommittedConversionOutput,
   type ConversionExecutionContext,
 } from '@graphics-workbench/core/runtime';
 import { cropPdfWithConfiguredBox } from '../../adapters/crop/crop_pdf_configure.js';
 import { createPdfJsResources } from '../../presentation/webview/pdfjs_assets.js';
 import { runCropWorker, type CropPdfMetadata } from '@graphics-workbench/core/crop-worker';
+import { matchError } from 'better-result';
 
 import type { CommandDependencies } from '../shared/command_dependencies.js';
 import { runSinglePdfConfigureCommand } from '../lifecycle/run_single_pdf_configure.js';
@@ -54,7 +56,14 @@ export async function cropPdfConfigureCommand(
       },
       prepare: async ({ inputUri, signal, report }) => {
         report(userMessage('message.progress.prepareConversion', 'PDF'));
-        const pdf = await runCropWorker({ type: 'inspect', filePath: inputUri.fsPath }, signal);
+        const inspectResult = await runCropWorker({ type: 'inspect', filePath: inputUri.fsPath }, signal);
+        if (inspectResult.isErr()) {
+          throw matchError(inspectResult.error, {
+            CropWorkerCancelledError: (error) => new OperationCancelledError(error.message),
+            CropWorkerFailedError: (error) => error,
+          });
+        }
+        const pdf = inspectResult.value;
 
         if (pdf === undefined) {
           throw new Error('Crop Configure metadata inspection returned no result.');

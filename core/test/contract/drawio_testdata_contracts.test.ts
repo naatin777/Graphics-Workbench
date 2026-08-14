@@ -6,43 +6,43 @@ import { XMLParser } from 'fast-xml-parser';
 import sharp from 'sharp';
 
 import { isDrawioPath, sourceFormatForPath } from '@graphics-workbench/core/formats';
-import { listInputFixturePaths, testInputDirectory, requireValue } from '@graphics-workbench/core/testing';
+import { listInputTestDataPaths, testInputDirectory, requireValue } from '@graphics-workbench/core/testing';
 
 const xmlParser = new XMLParser({ ignoreAttributes: false });
 
-describe('Draw.io fixtureの保存形式契約', () => {
-  it('valid/drawio配下のfixtureを列挙し、native drawioはmxfileで始まるXMLと3つのdiagram・絵文字を、埋め込みPNGは355x515のPNGにmxfileコメントとdata:image/pngのXMLを、埋め込みSVGは312x525のSVGにcontent属性内のXMLを保持していることを検証する', async () => {
+describe('Draw.io テストデータの保存形式契約', () => {
+  it('valid/drawio配下のテストデータを列挙し、native drawioはmxfileで始まるXMLと3つのdiagram・絵文字を、埋め込みPNGは355x515のPNGにmxfileコメントとdata:image/pngのXMLを、埋め込みSVGは312x525のSVGにcontent属性内のXMLを保持していることを検証する', async () => {
     const drawioDirectory = path.join(testInputDirectory, 'valid', 'drawio');
-    const fixturePaths = (await listInputFixturePaths(drawioDirectory)).filter(isDrawioPath);
+    const testDataPaths = (await listInputTestDataPaths(drawioDirectory)).filter(isDrawioPath);
     assert.deepStrictEqual(
-      fixturePaths.map((fixturePath) => path.relative(drawioDirectory, fixturePath)),
+      testDataPaths.map((testDataPath) => path.relative(drawioDirectory, testDataPath)),
       ['embedded-diagram.drawio.svg', 'empty.drawio', 'multi-object-diagram.drawio.png', 'unicode-page-names.drawio'],
     );
 
-    for (const fixturePath of fixturePaths) {
-      const format = sourceFormatForPath(fixturePath);
+    for (const testDataPath of testDataPaths) {
+      const format = sourceFormatForPath(testDataPath);
       if (format === 'drawio') {
-        await assertNativeDrawioFixture(fixturePath);
-      } else if (format === 'editable-drawio-png') {
-        await assertEmbeddedPngFixture(fixturePath);
-      } else if (format === 'editable-drawio-svg') {
-        await assertEmbeddedSvgFixture(fixturePath);
+        await assertNativeDrawioTestData(testDataPath);
+      } else if (format === 'drawio-png') {
+        await assertEmbeddedPngTestData(testDataPath);
+      } else if (format === 'drawio-svg') {
+        await assertEmbeddedSvgTestData(testDataPath);
       } else {
-        assert.fail(`Unexpected Draw.io fixture format: ${fixturePath}`);
+        assert.fail(`Unexpected Draw.io テストデータ format: ${testDataPath}`);
       }
     }
   });
 });
 
-async function assertNativeDrawioFixture(fixturePath: string): Promise<void> {
-  const source = await readFile(fixturePath, 'utf8');
+async function assertNativeDrawioTestData(testDataPath: string): Promise<void> {
+  const source = await readFile(testDataPath, 'utf8');
   xmlParser.parse(source);
 
   assert.match(source, /^\s*<mxfile\b/u);
   assert.ok(source.includes('<mxCell'));
 
   if (!source.includes('vertex="1"') && !source.includes('edge="1"')) {
-    // Empty page fixture: only the default root cells, no content to crop.
+    // Empty page テストデータ: only the default root cells, no content to crop.
     return;
   }
 
@@ -50,8 +50,8 @@ async function assertNativeDrawioFixture(fixturePath: string): Promise<void> {
   assert.ok(source.includes('😀'));
 }
 
-async function assertEmbeddedPngFixture(fixturePath: string): Promise<void> {
-  const metadata = await sharp(fixturePath).metadata();
+async function assertEmbeddedPngTestData(testDataPath: string): Promise<void> {
+  const metadata = await sharp(testDataPath).metadata();
   assert.strictEqual(metadata.format, 'png');
   assert.strictEqual(metadata.width, 355);
   assert.strictEqual(metadata.height, 515);
@@ -63,11 +63,11 @@ async function assertEmbeddedPngFixture(fixturePath: string): Promise<void> {
   assert.match(embeddedXml, /image=data:image\/png,/u);
 }
 
-async function assertEmbeddedSvgFixture(fixturePath: string): Promise<void> {
-  const source = await readFile(fixturePath, 'utf8');
+async function assertEmbeddedSvgTestData(testDataPath: string): Promise<void> {
+  const source = await readFile(testDataPath, 'utf8');
   xmlParser.parse(source);
 
-  const metadata = await sharp(fixturePath).metadata();
+  const metadata = await sharp(testDataPath).metadata();
   assert.strictEqual(metadata.format, 'svg');
   assert.strictEqual(metadata.width, 312);
   assert.strictEqual(metadata.height, 525);

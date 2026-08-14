@@ -1,12 +1,18 @@
+import { Result } from 'better-result';
+
 import type { LineOutputChannel } from '../../external_tools/external_tool_ascii_scratch.js';
-import { runExternalTool } from '../../external_tools/run_external_tool.js';
+import {
+  runExternalTool,
+  ExternalToolSpawnError,
+  type ExternalToolError,
+} from '../../external_tools/run_external_tool.js';
 
 export type RunDrawio = (
   executable: string,
   args: string[],
   signal: AbortSignal,
   outputChannel?: LineOutputChannel,
-) => Promise<void>;
+) => Promise<Result<void, ExternalToolError>>;
 
 export interface DrawioBackend {
   drawioPath: string;
@@ -18,9 +24,15 @@ export async function executeDrawio(
   args: string[],
   signal: AbortSignal,
   outputChannel?: LineOutputChannel,
-): Promise<void> {
+): Promise<Result<void, ExternalToolError>> {
   if (executable.trim() === '') {
-    throw new Error('Draw.io executable is not configured. Set graphics-workbench.execPath.drawio.');
+    return Result.err(
+      new ExternalToolSpawnError({
+        message: 'Draw.io executable is not configured. Set graphics-workbench.execPath.drawio.',
+        code: undefined,
+        cause: undefined,
+      }),
+    );
   }
   const toolOptions: Parameters<typeof runExternalTool>[0] = {
     toolId: 'drawio',
@@ -32,5 +44,5 @@ export async function executeDrawio(
   if (outputChannel !== undefined) {
     toolOptions.outputChannel = outputChannel;
   }
-  await runExternalTool(toolOptions);
+  return (await runExternalTool(toolOptions)).map(() => undefined);
 }

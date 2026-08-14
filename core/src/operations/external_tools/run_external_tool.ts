@@ -1,7 +1,11 @@
+// oxlint-disable eslint/max-classes-per-file -- ExternalToolErrorの各TaggedErrorは同一の外部ツール実行失敗領域を表し、1ファイルに集約する。
 import { spawn, type ChildProcess, type ChildProcessByStdio } from 'node:child_process';
 import type { Readable } from 'node:stream';
 
+import { Result, TaggedError, matchError } from 'better-result';
+
 import { getExternalToolTimeoutMs, type ExternalToolId } from '../../config/external_tools/external_tool_settings.js';
+import { OperationCancelledError } from '../../shared/error.js';
 import type { LineOutputChannel } from './external_tool_ascii_scratch.js';
 
 // Only the trailing portion of captured stdout/stderr is retained in memory.
@@ -45,6 +49,60 @@ export interface ExternalToolResult {
   stderr: string;
 }
 
+/** The external tool was cancelled before or during execution. */
+// oxlint-disable-next-line unicorn/throw-new-error -- better-resultのTaggedErrorファクトリはnew不要でクラスを返す。
+export class ExternalToolCancelledError extends TaggedError('ExternalToolCancelledError')<{
+  message: string;
+}> {}
+
+/** The external tool did not finish within its timeout budget. */
+// oxlint-disable-next-line unicorn/throw-new-error -- better-resultのTaggedErrorファクトリはnew不要でクラスを返す。
+export class ExternalToolTimedOutError extends TaggedError('ExternalToolTimedOutError')<{
+  message: string;
+}> {}
+
+/** The external tool exited with a non-zero status. */
+// oxlint-disable-next-line unicorn/throw-new-error -- better-resultのTaggedErrorファクトリはnew不要でクラスを返す。
+export class ExternalToolFailedError extends TaggedError('ExternalToolFailedError')<{
+  message: string;
+  stderr: string;
+  exitCode: number | undefined;
+  signal: string | undefined;
+}> {}
+
+/** The external tool could not be spawned (e.g. the executable is missing). */
+// oxlint-disable-next-line unicorn/throw-new-error -- better-resultのTaggedErrorファクトリはnew不要でクラスを返す。
+export class ExternalToolSpawnError extends TaggedError('ExternalToolSpawnError')<{
+  message: string;
+  code: string | undefined;
+  cause: Error | undefined;
+}> {}
+
+export type ExternalToolError =
+  | ExternalToolCancelledError
+  | ExternalToolTimedOutError
+  | ExternalToolFailedError
+  | ExternalToolSpawnError;
+
+/**
+ * Unwraps an external tool Result, preserving the caller-facing error
+ * contract: a cancelled run throws {@link OperationCancelledError} so
+ * {@link isAbortError} keeps recognizing it, while any other failure throws
+ * the underlying tagged error itself (which carries stderr and the spawn
+ * error code).
+ */
+export function throwExternalToolResult<Value>(result: Result<Value, ExternalToolError>): Value {
+  if (result.isOk()) {
+    return result.value;
+  }
+  throw matchError(result.error, {
+    ExternalToolCancelledError: (error) => new OperationCancelledError(error.message),
+    ExternalToolTimedOutError: (error) => error,
+    ExternalToolFailedError: (error) => error,
+    ExternalToolSpawnError: (error) => error,
+  });
+}
+
 interface RunExternalToolOptions {
   /** Stable timeout identity; `toolName` remains the user-facing label. */
   toolId?: ExternalToolId;
@@ -59,13 +117,15 @@ interface RunExternalToolOptions {
 }
 
 /** Runs a tool with cancellation, a bounded wait, and process-tree cleanup. */
-export async function runExternalTool(options: RunExternalToolOptions): Promise<ExternalToolResult> {
+export async function runExternalTool(
+  options: RunExternalToolOptions,
+): Promise<Result<ExternalToolResult, ExternalToolError>> {
   const loggedArgs = options.args.map((argument, index) => options.redactArgument?.(argument, index) ?? argument);
   options.outputChannel?.appendLine(`[${options.toolName}] executable: ${options.executable}`);
   options.outputChannel?.appendLine(`[${options.toolName}] arguments: ${loggedArgs.join(' ')}`);
 
   if (options.signal?.aborted === true) {
-    throw createAbortError();
+    return Result.err(new ExternalToolCancelledError({ message: CANCELLED_MESSAGE }));
   }
 
   const timeoutMs =
@@ -73,13 +133,13 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
       ? undefined
       : (options.timeoutMs ?? (options.toolId === undefined ? undefined : getExternalToolTimeoutMs(options.toolId)));
 
-  return new Promise<ExternalToolResult>((resolve, reject) => {
+  return new Promise<Result<ExternalToolResult, ExternalToolError>>((resolve) => {
     // The abort callback is declared before spawn so it can handle a signal during startup.
     // oxlint-disable-next-line prefer-const
     let child: ChildProcessByStdio<null, Readable, Readable> | undefined;
     let timer: NodeJS.Timeout | undefined;
     let terminationWatchdog: NodeJS.Timeout | undefined;
-    let terminationReason: Error | undefined;
+    let terminationReason: ExternalToolError | undefined;
     let settled = false;
 
     const stdoutAccumulator = createOutputAccumulator();
@@ -95,7 +155,7 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
       options.signal?.removeEventListener('abort', abort);
     };
 
-    const finishFailure = (error: Error): void => {
+    const finishFailure = (error: ExternalToolError): void => {
       if (settled) {
         return;
       }
@@ -104,17 +164,19 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
       options.outputChannel?.appendLine(
         `[${options.toolName}] failure: ${decodeOutput(stderrAccumulator).trim() || error.message}`,
       );
-      reject(error);
+      resolve(Result.err(error));
     };
 
-    const requestTermination = (reason: Error): void => {
+    const requestTermination = (reason: ExternalToolError): void => {
       if (settled) {
         return;
       }
       terminationReason ??= reason;
       terminateProcessTree(child);
       terminationWatchdog ??= setTimeout(() => {
-        finishFailure(terminationReason ?? new Error(`${options.toolName} did not terminate`));
+        finishFailure(
+          terminationReason ?? new ExternalToolTimedOutError({ message: `${options.toolName} did not terminate` }),
+        );
       }, TERMINATION_WATCHDOG_MS);
     };
 
@@ -122,7 +184,7 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
       if (settled) {
         return;
       }
-      requestTermination(createAbortError());
+      requestTermination(new ExternalToolCancelledError({ message: CANCELLED_MESSAGE }));
     };
 
     const runningChild = (child = spawn(options.executable, options.args, {
@@ -144,7 +206,7 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
       appendBounded(stderrAccumulator, chunk);
     });
     runningChild.on('error', (error) => {
-      finishFailure(terminationReason ?? error);
+      finishFailure(terminationReason ?? spawnErrorToExternalToolError(error));
     });
     runningChild.on('close', (code, signal) => {
       if (terminationReason !== undefined) {
@@ -152,17 +214,20 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
         return;
       }
       if (code !== 0) {
-        const error = Object.assign(
-          new Error(`${options.toolName} failed (exited with code ${code ?? 'unknown'}, signal ${signal ?? 'none'})`),
-          { stderr: decodeOutput(stderrAccumulator) },
+        finishFailure(
+          new ExternalToolFailedError({
+            message: `${options.toolName} failed (exited with code ${code ?? 'unknown'}, signal ${signal ?? 'none'})`,
+            stderr: decodeOutput(stderrAccumulator),
+            exitCode: code ?? undefined,
+            signal: signal ?? undefined,
+          }),
         );
-        finishFailure(error);
         return;
       }
       if (!settled) {
         settled = true;
         cleanup();
-        resolve({ stdout: decodeOutput(stdoutAccumulator), stderr: decodeOutput(stderrAccumulator) });
+        resolve(Result.ok({ stdout: decodeOutput(stdoutAccumulator), stderr: decodeOutput(stderrAccumulator) }));
       }
     });
 
@@ -175,16 +240,23 @@ export async function runExternalTool(options: RunExternalToolOptions): Promise<
         if (settled) {
           return;
         }
-        requestTermination(new Error(`${options.toolName} timed out after ${timeoutMs}ms`));
+        requestTermination(
+          new ExternalToolTimedOutError({ message: `${options.toolName} timed out after ${timeoutMs}ms` }),
+        );
       }, timeoutMs);
     }
   });
 }
 
-function createAbortError(): Error {
-  const error = new Error('External tool execution was cancelled.');
-  error.name = 'AbortError';
-  return error;
+const CANCELLED_MESSAGE = 'External tool execution was cancelled.';
+
+function spawnErrorToExternalToolError(error: Error): ExternalToolError {
+  const code = isErrnoCode(error) ? error.code : undefined;
+  return new ExternalToolSpawnError({ message: error.message, code, cause: error });
+}
+
+function isErrnoCode(error: Error): error is NodeJS.ErrnoException {
+  return 'code' in error && typeof error.code === 'string';
 }
 
 // Declared as a structural subset so unit tests can pass a fake child.

@@ -18,17 +18,18 @@ import { access, copyFile, mkdtemp, readFile, readdir, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 
-import { requireValue, createPdfFixture, readPdfPages } from '@graphics-workbench/core/testing';
+import { requireValue, createPdfTestData, readPdfPages } from '@graphics-workbench/core/testing';
+import { Result } from 'better-result';
 
 import { convertToPdfFiles, type PdfInput, type RunDrawio } from '@graphics-workbench/core/conversion';
 import { createConversionUndoRecord, undoConversionOutputs } from '../../../src/policy/undo_last_conversion.js';
-import { operationPngInputPath } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath } from '../../support/helpers/testdata_paths.js';
 
-const fixturePath = operationPngInputPath;
+const testDataPath = operationPngInputPath;
 
 suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）', () => {
   test('2件のPNG→PDF変換を実行すると、各結果を一時フォルダに作成してから出力PDFへ反映し、一時作業ディレクトリにはジョブごとのresult.pdfが残る', async () => {
-    const { workspacePath, inputs } = await createJobs(['first', 'second']);
+    const { workspacePath, inputs } = await createItems(['first', 'second']);
 
     const outputs = await convertToPdfFiles({
       inputs,
@@ -51,7 +52,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 
   test('2件の出力先がすべて競合するまとめ変換で競合解決を1回だけ呼び、両方残すを選ぶと既存出力を変更せずfirst-2.pdfとsecond-1.pdfとして保存する', async () => {
-    const { workspacePath, inputs } = await createJobs(['first', 'second']);
+    const { workspacePath, inputs } = await createItems(['first', 'second']);
     await writeFile(requireValue(inputs[0]).outputPath, 'old-first');
     await writeFile(requireValue(inputs[1]).outputPath, 'old-second');
     await writeFile(path.join(workspacePath, 'first-1.pdf'), 'reserved');
@@ -79,7 +80,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 
   test('競合解決でキャンセルを選ぶと変換全体を中止し、既存の出力ファイルは変更せず未作成の出力も作成しない', async () => {
-    const { inputs } = await createJobs(['first', 'second']);
+    const { inputs } = await createItems(['first', 'second']);
     await writeFile(requireValue(inputs[0]).outputPath, 'old-first');
 
     await assert.rejects(
@@ -96,7 +97,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 
   test('後続ジョブのPNGが不正で変換が失敗すると、先行ジョブの出力も含めてどの出力ファイルも作成しない', async () => {
-    const { workspacePath, inputs } = await createJobs(['first', 'second']);
+    const { workspacePath, inputs } = await createItems(['first', 'second']);
     const invalidSourcePath = path.join(workspacePath, 'invalid.png');
     await writeFile(invalidSourcePath, 'not a PNG');
     inputs[1] = {
@@ -116,7 +117,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 
   test('上書きした各出力の元ファイルをバックアップし、undo操作で上書き前の内容へ復元する', async () => {
-    const { inputs } = await createJobs(['first', 'second']);
+    const { inputs } = await createItems(['first', 'second']);
     await writeFile(requireValue(inputs[0]).outputPath, 'old-first');
     await writeFile(requireValue(inputs[1]).outputPath, 'old-second');
 
@@ -135,7 +136,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 
   test('変換開始前にabort済みsignalを渡すとAbortErrorで失敗し、どの出力ファイルも作成しない', async () => {
-    const { inputs } = await createJobs(['first', 'second']);
+    const { inputs } = await createItems(['first', 'second']);
     const abortController = new AbortController();
     abortController.abort();
 
@@ -155,7 +156,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 
   test('編集可能なDraw.io PNG/SVGを入力として、注入したDraw.io runnerで各ソースを1ページPDFへ変換する', async () => {
-    const { inputs } = await createEditableDrawioJobs([
+    const { inputs } = await createDrawioImageItems([
       ['source.drawio.png', 'source.pdf'],
       ['diagram.dio.svg', 'diagram.pdf'],
     ]);
@@ -183,7 +184,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 
   test('編集可能なDraw.io画像の出力先が既存の場合に両方残すを選ぶと、既存出力を変更せずsource-1.pdfとして保存する', async () => {
-    const { inputs, workspacePath } = await createEditableDrawioJobs([['source.drawio.png', 'source.pdf']]);
+    const { inputs, workspacePath } = await createDrawioImageItems([['source.drawio.png', 'source.pdf']]);
     const originalOutputPath = requireValue(inputs[0]).outputPath;
     const keptOutputPath = path.join(workspacePath, 'source-1.pdf');
     await writeFile(originalOutputPath, 'old output');
@@ -210,7 +211,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 
   test('編集可能なDraw.io画像の出力を上書きした際の元ファイルをバックアップし、undo操作で上書き前の内容を復元する', async () => {
-    const { inputs } = await createEditableDrawioJobs([['source.drawio.png', 'source.pdf']]);
+    const { inputs } = await createDrawioImageItems([['source.drawio.png', 'source.pdf']]);
     await writeFile(requireValue(inputs[0]).outputPath, 'old output');
 
     const outputs = await convertToPdfFiles({
@@ -232,7 +233,7 @@ suite('PNG→PDF変換での既存出力の競合処理と復元（Safe Mode）'
   });
 });
 
-async function createJobs(names: string[]): Promise<{
+async function createItems(names: string[]): Promise<{
   workspacePath: string;
   inputs: PdfInput[];
 }> {
@@ -240,7 +241,7 @@ async function createJobs(names: string[]): Promise<{
   const inputs = await Promise.all(
     names.map(async (name) => {
       const sourcePath = path.join(workspacePath, `${name}.png`);
-      await copyFile(fixturePath, sourcePath);
+      await copyFile(testDataPath, sourcePath);
 
       return {
         sourcePath,
@@ -253,7 +254,7 @@ async function createJobs(names: string[]): Promise<{
   return { workspacePath, inputs };
 }
 
-async function createEditableDrawioJobs(entries: [sourceName: string, outputName: string][]): Promise<{
+async function createDrawioImageItems(entries: [sourceName: string, outputName: string][]): Promise<{
   workspacePath: string;
   inputs: PdfInput[];
 }> {
@@ -279,7 +280,8 @@ function createPdfWritingDrawioRunner(calls: string[][] = []): RunDrawio {
     calls.push(args);
     const outputPath = args[args.indexOf('-o') + 1];
     assert.ok(outputPath);
-    const pdfBytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 120, 80] }] });
+    const pdfBytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 120, 80] }] });
     await writeFile(outputPath, pdfBytes);
+    return Result.ok();
   };
 }

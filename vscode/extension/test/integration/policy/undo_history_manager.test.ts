@@ -31,8 +31,8 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const firstBackupPath = path.join(firstRoot, 'first.previous');
     const secondBackupPath = path.join(secondRoot, 'second.previous');
 
-    await writeFixture(firstOutputPath, 'generated-first');
-    await writeFixture(firstBackupPath, 'original-first');
+    await writeTestData(firstOutputPath, 'generated-first');
+    await writeTestData(firstBackupPath, 'original-first');
     await manager.record([
       {
         outputPath: firstOutputPath,
@@ -43,8 +43,8 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     ]);
     await assert.doesNotReject(access(firstBackupPath));
 
-    await writeFixture(secondOutputPath, 'generated-second');
-    await writeFixture(secondBackupPath, 'original-second');
+    await writeTestData(secondOutputPath, 'generated-second');
+    await writeTestData(secondBackupPath, 'original-second');
     await manager.record([
       {
         outputPath: secondOutputPath,
@@ -65,9 +65,9 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const newOutputPath = path.join(workspacePath.path, 'new.pdf');
     const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const previousFilePath = path.join(rootPath, 'overwritten.previous');
-    await writeFixture(overwrittenOutputPath, 'generated-overwrite');
-    await writeFixture(previousFilePath, 'original-overwrite');
-    await writeFixture(newOutputPath, 'generated-new');
+    await writeTestData(overwrittenOutputPath, 'generated-overwrite');
+    await writeTestData(previousFilePath, 'original-overwrite');
+    await writeTestData(newOutputPath, 'generated-new');
 
     await manager.record([
       {
@@ -91,8 +91,8 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const secondOutputPath = path.join(workspacePath.path, 'second.pdf');
     const firstRoot = path.join(workspacePath.path, '.graphics-workbench', 'first');
     const secondRoot = path.join(workspacePath.path, '.graphics-workbench', 'second');
-    await writeFixture(firstOutputPath, 'first');
-    await writeFixture(secondOutputPath, 'second');
+    await writeTestData(firstOutputPath, 'first');
+    await writeTestData(secondOutputPath, 'second');
 
     await manager.record([
       { outputPath: firstOutputPath, workspacePath: workspacePath.path, stagingRootPath: firstRoot },
@@ -114,8 +114,8 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const manager = new UndoHistoryManager();
     const firstOutputPath = path.join(workspacePath.path, 'first.pdf');
     const secondOutputPath = path.join(workspacePath.path, 'second.pdf');
-    await writeFixture(firstOutputPath, 'first');
-    await writeFixture(secondOutputPath, 'second');
+    await writeTestData(firstOutputPath, 'first');
+    await writeTestData(secondOutputPath, 'second');
 
     const firstRecordId = await manager.record([
       {
@@ -148,7 +148,7 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const records: (ConversionOutput & { previousFilePath: string })[] = [];
 
     for (let index = 1; index <= 11; index += 1) {
-      const record = await makeRecordFixture(workspacePath.path, `record-${index}`);
+      const record = await makeRecordTestData(workspacePath.path, `record-${index}`);
       records.push(record);
       await manager.record([record]);
     }
@@ -158,7 +158,7 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
       await assert.doesNotReject(access(records[index]?.previousFilePath ?? ''));
     }
 
-    const twelfth = await makeRecordFixture(workspacePath.path, 'record-12');
+    const twelfth = await makeRecordTestData(workspacePath.path, 'record-12');
     await manager.record([twelfth]);
 
     await assert.rejects(access(records[0]?.previousFilePath ?? ''));
@@ -172,7 +172,7 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const records: (ConversionOutput & { previousFilePath: string })[] = [];
 
     for (let index = 1; index <= 11; index += 1) {
-      const record = await makeRecordFixture(workspacePath.path, `record-${index}`);
+      const record = await makeRecordTestData(workspacePath.path, `record-${index}`);
       records.push(record);
       await manager.record([record]);
     }
@@ -190,7 +190,7 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const records: (ConversionOutput & { previousFilePath: string })[] = [];
 
     for (let index = 1; index <= 3; index += 1) {
-      const record = await makeRecordFixture(workspacePath.path, `record-${index}`);
+      const record = await makeRecordTestData(workspacePath.path, `record-${index}`);
       records.push(record);
       await manager.record([record]);
     }
@@ -206,14 +206,14 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const records: (ConversionOutput & { previousFilePath: string })[] = [];
 
     for (let index = 1; index <= 4; index += 1) {
-      const record = await makeRecordFixture(workspacePath.path, `record-${index}`);
+      const record = await makeRecordTestData(workspacePath.path, `record-${index}`);
       records.push(record);
       await manager.record([record]);
     }
     await assert.doesNotReject(access(records[0]?.previousFilePath ?? ''));
 
     manager.setMaxRecords(2);
-    const fifth = await makeRecordFixture(workspacePath.path, 'record-5');
+    const fifth = await makeRecordTestData(workspacePath.path, 'record-5');
     await manager.record([fifth]);
 
     await assert.rejects(access(records[0]?.previousFilePath ?? ''));
@@ -233,7 +233,7 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
 
   test('新しく生成したUndoHistoryManagerには、前のマネージャのUndo履歴が存在しない', async () => {
     await using workspacePath = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-undo-history-workspace-'));
-    const first = await makeRecordFixture(workspacePath.path, 'first');
+    const first = await makeRecordTestData(workspacePath.path, 'first');
     const manager = new UndoHistoryManager();
     await manager.record([first]);
 
@@ -247,8 +247,8 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const outputPath = path.join(workspacePath.path, 'output.pdf');
     const rootPath = path.join(workspacePath.path, '.graphics-workbench', 'run');
     const previousFilePath = path.join(rootPath, 'output.previous');
-    await writeFixture(outputPath, 'generated');
-    await writeFixture(previousFilePath, 'original');
+    await writeTestData(outputPath, 'generated');
+    await writeTestData(previousFilePath, 'original');
     const manager = new UndoHistoryManager();
 
     const recordId = await manager.record([
@@ -263,8 +263,8 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     await using stagingRoot = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-secure-undo-root-'));
     const outputPath = path.join(workspacePath.path, 'output.pdf');
     const previousFilePath = path.join(stagingRoot.path, 'output.previous');
-    await writeFixture(outputPath, 'generated');
-    await writeFixture(previousFilePath, 'original');
+    await writeTestData(outputPath, 'generated');
+    await writeTestData(previousFilePath, 'original');
     const manager = new UndoHistoryManager();
 
     const recordId = await manager.record([
@@ -289,10 +289,10 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const previousFilePath = path.join(stagingRoot.path, 'output.previous');
     const manifestPath = path.join(stagingRoot.path, 'manifest.json');
     const generatedArtifactPath = path.join(stagingRoot.path, 'generated.pdf');
-    await writeFixture(outputPath, 'generated');
-    await writeFixture(previousFilePath, 'original');
-    await writeFixture(manifestPath, '{"operation":"decrypt"}');
-    await writeFixture(generatedArtifactPath, 'temporary generated artifact');
+    await writeTestData(outputPath, 'generated');
+    await writeTestData(previousFilePath, 'original');
+    await writeTestData(manifestPath, '{"operation":"decrypt"}');
+    await writeTestData(generatedArtifactPath, 'temporary generated artifact');
     const manager = new UndoHistoryManager();
 
     const recordId = await manager.record([
@@ -318,10 +318,10 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
     const previousFilePath = path.join(rootPath, 'output.previous');
     const manifestPath = path.join(rootPath, 'manifest.json');
     const generatedArtifactPath = path.join(rootPath, 'result.pdf');
-    await writeFixture(outputPath, 'generated');
-    await writeFixture(previousFilePath, 'original');
-    await writeFixture(manifestPath, '{"operation":"test"}');
-    await writeFixture(generatedArtifactPath, 'temporary generated artifact');
+    await writeTestData(outputPath, 'generated');
+    await writeTestData(previousFilePath, 'original');
+    await writeTestData(manifestPath, '{"operation":"test"}');
+    await writeTestData(generatedArtifactPath, 'temporary generated artifact');
     const manager = new UndoHistoryManager();
 
     await assert.rejects(
@@ -343,19 +343,19 @@ suite('Undo履歴マネージャの記録・保持・取り消し', () => {
   });
 });
 
-async function makeRecordFixture(
+async function makeRecordTestData(
   workspacePath: string,
   name: string,
 ): Promise<ConversionOutput & { previousFilePath: string }> {
   const stagingRootPath = path.join(workspacePath, '.graphics-workbench', name);
   const outputPath = path.join(workspacePath, `${name}.pdf`);
   const previousFilePath = path.join(stagingRootPath, `${name}.previous`);
-  await writeFixture(outputPath, `generated-${name}`);
-  await writeFixture(previousFilePath, `original-${name}`);
+  await writeTestData(outputPath, `generated-${name}`);
+  await writeTestData(previousFilePath, `original-${name}`);
   return { outputPath, workspacePath, previousFilePath, stagingRootPath };
 }
 
-async function writeFixture(filePath: string, contents: string): Promise<void> {
+async function writeTestData(filePath: string, contents: string): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, contents);
 }

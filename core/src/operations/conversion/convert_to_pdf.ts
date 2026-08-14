@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 import { pathToFileURL } from 'node:url';
+import type { Result } from 'better-result';
 import { toErrorMessage } from '../../shared/error.js';
 import {
   loadMupdf,
@@ -13,7 +14,7 @@ import {
 } from '../pdf/mupdf.js';
 
 import {
-  isEditableDrawioImagePath,
+  isDrawioImagePath,
   isSupportedPdfConversionSource,
   isRasterImagePath,
   isSameSourceFormat,
@@ -32,7 +33,11 @@ import { validatePdfPathInputs } from '../pdf/pdf_path_validation.js';
 
 import type { CommittedConversionOutput, PreparedConversionOutput } from '../lifecycle/commit_conversion_outputs.js';
 import type { ConversionExecutionContext } from '../lifecycle/conversion_runtime.js';
-import { runExternalTool } from '../external_tools/run_external_tool.js';
+import {
+  runExternalTool,
+  throwExternalToolResult,
+  type ExternalToolError,
+} from '../external_tools/run_external_tool.js';
 import {
   runRsvgConvertWithAsciiScratch,
   type RsvgToolScratchOptions,
@@ -222,7 +227,7 @@ export async function writeSourceAsPdf(options: WriteSourceAsPdfOptions): Promis
     return;
   }
 
-  if (isEditableDrawioImagePath(sourcePath)) {
+  if (isDrawioImagePath(sourcePath)) {
     await writeDrawioAsPdf(sourcePath, outputPath, workspacePath, signal, drawioTools);
     return;
   }
@@ -264,7 +269,9 @@ async function writeDrawioAsPdf(
   await mkdir(path.dirname(outputPath), { recursive: true });
   signal.throwIfAborted();
 
-  await drawio.runDrawio(drawio.drawioPath, ['-x', '-f', 'pdf', '-o', outputPath, sourcePath], signal);
+  throwExternalToolResult(
+    await drawio.runDrawio(drawio.drawioPath, ['-x', '-f', 'pdf', '-o', outputPath, sourcePath], signal),
+  );
 }
 
 async function writeRasterImageAsPdf({
@@ -485,14 +492,20 @@ async function writeSvgAsPdfWithRsvgConvert(
   });
 }
 
-export async function executeRsvgConvert(executable: string, args: string[], signal: AbortSignal): Promise<void> {
-  await runExternalTool({
-    toolId: 'rsvgConvert',
-    toolName: 'rsvg-convert',
-    executable,
-    args,
-    signal,
-  });
+export async function executeRsvgConvert(
+  executable: string,
+  args: string[],
+  signal: AbortSignal,
+): Promise<Result<void, ExternalToolError>> {
+  return (
+    await runExternalTool({
+      toolId: 'rsvgConvert',
+      toolName: 'rsvg-convert',
+      executable,
+      args,
+      signal,
+    })
+  ).map(() => undefined);
 }
 
 async function writeSvgAsPdfWithChrome({
@@ -524,23 +537,31 @@ async function writeSvgAsPdfWithChrome({
   try {
     await writeFile(htmlPath, html);
     signal.throwIfAborted();
-    await options.runChrome(
-      options.chromePath,
-      ['--headless', '--no-pdf-header-footer', `--print-to-pdf=${outputPath}`, pathToFileURL(htmlPath).href],
-      signal,
+    throwExternalToolResult(
+      await options.runChrome(
+        options.chromePath,
+        ['--headless', '--no-pdf-header-footer', `--print-to-pdf=${outputPath}`, pathToFileURL(htmlPath).href],
+        signal,
+      ),
     );
   } finally {
     await rm(htmlPath, { force: true });
   }
 }
 
-export async function executeChrome(executable: string, args: string[], signal: AbortSignal): Promise<void> {
-  await runExternalTool({
-    toolName: 'chrome',
-    executable,
-    args,
-    signal,
-  });
+export async function executeChrome(
+  executable: string,
+  args: string[],
+  signal: AbortSignal,
+): Promise<Result<void, ExternalToolError>> {
+  return (
+    await runExternalTool({
+      toolName: 'chrome',
+      executable,
+      args,
+      signal,
+    })
+  ).map(() => undefined);
 }
 
 export async function validateGeneratedPdf(outputPath: string): Promise<void> {

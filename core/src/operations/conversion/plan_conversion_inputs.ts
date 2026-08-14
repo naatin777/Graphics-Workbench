@@ -7,7 +7,7 @@ import { resolveOutputPath } from '../../config/output/resolve_output_path.js';
 import { assertExistingPathInWorkspace } from '../../security/workspace_path.js';
 import { isRasterImagePath, logicalSourcePathForOutputTemplate } from '../../shared/source_format.js';
 import { countPdfPages } from '../pdf/mupdf.js';
-import { planPdfPageJobs } from './plan_pdf_page_jobs.js';
+import { planPdfPageItems } from './plan_pdf_page_items.js';
 import type { RasterFormatSpec, RasterInput } from './raster_conversion.js';
 import { closeRasterPipeline, openRasterInput, readRasterAnimationMetadata } from './raster_input.js';
 
@@ -27,7 +27,7 @@ export interface RasterFrameAnalysis {
   pageHeight: number;
 }
 
-export function planRasterFrameJobsFromMetadata(
+export function planRasterFrameItemsFromMetadata(
   options: RasterFramePlanOptions,
   analysis: RasterFrameAnalysis,
 ): RasterInput[] {
@@ -64,7 +64,7 @@ export function planRasterFrameJobsFromMetadata(
   });
 }
 
-export async function planRasterFrameJobs(options: {
+export async function planRasterFrameItems(options: {
   sourcePath: string;
   workspacePath: string;
   workspaceName: string;
@@ -103,7 +103,7 @@ export async function planRasterFrameJobs(options: {
     planOptions.maxAnimationPixels = options.maxAnimationPixels;
   }
 
-  return planRasterFrameJobsFromMetadata(planOptions, { pages, width, pageHeight });
+  return planRasterFrameItemsFromMetadata(planOptions, { pages, width, pageHeight });
 }
 
 export interface PlanRasterSourceConversionInputsOptions {
@@ -115,15 +115,15 @@ export interface PlanRasterSourceConversionInputsOptions {
   page?: string;
   maxInputPixels: number;
   signal?: AbortSignal;
-  isEditableDrawioImagePath: (path: string) => boolean;
+  isDrawioImagePath: (path: string) => boolean;
 }
 
 export async function planRasterSourceConversionInputs(
   options: PlanRasterSourceConversionInputsOptions,
 ): Promise<RasterInput[]> {
-  const page = options.page ?? (options.isEditableDrawioImagePath(options.sourcePath) ? '1' : undefined);
+  const page = options.page ?? (options.isDrawioImagePath(options.sourcePath) ? '1' : undefined);
   if (isRasterImagePath(options.sourcePath)) {
-    return planRasterFrameJobs(options);
+    return planRasterFrameItems(options);
   }
 
   options.signal?.throwIfAborted();
@@ -160,7 +160,7 @@ export interface PlanRasterConversionInputsOptions {
   frameMode: 'first' | 'all';
   maxInputPixels: number;
   maxAnimationPixels?: number;
-  isEditableDrawioImagePath: (path: string) => boolean;
+  isDrawioImagePath: (path: string) => boolean;
   signal?: AbortSignal;
   report?: (message: string) => void;
 }
@@ -170,7 +170,7 @@ export async function planRasterConversionInputs(options: PlanRasterConversionIn
   const { sourcePath } = source;
   const extension = path.extname(sourcePath).toLowerCase();
 
-  if (spec.extensions.includes(extension) && !options.isEditableDrawioImagePath(sourcePath)) {
+  if (spec.extensions.includes(extension) && !options.isDrawioImagePath(sourcePath)) {
     throw new Error(`Unsupported input for ${spec.label} input: ${sourcePath}`);
   }
 
@@ -222,13 +222,13 @@ export async function planRasterConversionInputs(options: PlanRasterConversionIn
       animatedInputExtension: spec.animatedInputExtension,
       frameMode: options.frameMode,
       ...(options.signal !== undefined && { signal: options.signal }),
-      isEditableDrawioImagePath: options.isEditableDrawioImagePath,
+      isDrawioImagePath: options.isDrawioImagePath,
     });
     if (inputs !== undefined) {
       return inputs;
     }
 
-    const page = options.isEditableDrawioImagePath(sourcePath) ? '1' : undefined;
+    const page = options.isDrawioImagePath(sourcePath) ? '1' : undefined;
     options.signal?.throwIfAborted();
     return [
       {
@@ -257,7 +257,7 @@ export async function planRasterConversionInputs(options: PlanRasterConversionIn
     allowedExtensions: spec.extensions,
     maxInputPixels: options.maxInputPixels,
     ...(options.signal !== undefined && { signal: options.signal }),
-    isEditableDrawioImagePath: options.isEditableDrawioImagePath,
+    isDrawioImagePath: options.isDrawioImagePath,
   });
 }
 
@@ -306,7 +306,7 @@ async function planAnimationRasterSourceInputs(
     ];
   }
 
-  return planRasterFrameJobs({
+  return planRasterFrameItems({
     sourcePath: options.sourcePath,
     workspacePath: options.workspacePath,
     workspaceName: options.workspaceName,
@@ -334,7 +334,7 @@ export async function planPdfPageConversionInputs<Conversion>(options: {
   options.signal?.throwIfAborted();
 
   const inputs: Conversion[] = [];
-  for (const { page, outputPath } of planPdfPageJobs(
+  for (const { page, outputPath } of planPdfPageItems(
     {
       sourcePath: options.sourcePath,
       workspacePath: options.workspacePath,

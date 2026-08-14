@@ -10,9 +10,9 @@ import {
   readPdfPages,
 } from '@graphics-workbench/core/testing';
 
-const multilingualFixturePath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
-const mixedContentFixturePath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
-const brokenFixturePath = path.join(invalidPreflightInputDirectory, 'not-a-pdf.pdf');
+const multilingualTestDataPath = path.join(operationPdfInputDirectory, 'multilingual-text.pdf');
+const mixedContentTestDataPath = path.join(operationPdfInputDirectory, 'multi-page-mixed-content.pdf');
+const brokenTestDataPath = path.join(invalidPreflightInputDirectory, 'not-a-pdf.pdf');
 
 // mupdf re-serializes page boxes with limited float precision, so compare
 // against the source within a small tolerance instead of exact equality.
@@ -39,7 +39,7 @@ describe('PDFのCropBox更新', () => {
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
-    await copyFile(multilingualFixturePath, sourcePath);
+    await copyFile(multilingualTestDataPath, sourcePath);
 
     const cropBox = { left: 20, bottom: 30, right: 200, top: 280 };
     await cropPdfFile({ sourcePath, stagedOutputPath, cropBox, target: { type: 'all' } });
@@ -64,7 +64,7 @@ describe('PDFのCropBox更新', () => {
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
-    await copyFile(mixedContentFixturePath, sourcePath);
+    await copyFile(mixedContentTestDataPath, sourcePath);
 
     const cropBox = { left: 10, bottom: 10, right: 200, top: 200 };
     await cropPdfFile({
@@ -98,7 +98,7 @@ describe('PDFのCropBox更新', () => {
     const sourcePath = path.join(workspacePath.path, 'invalid.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
-    await copyFile(brokenFixturePath, sourcePath);
+    await copyFile(brokenTestDataPath, sourcePath);
 
     await assert.rejects(
       cropPdfFile({
@@ -137,7 +137,7 @@ describe('PDFのCropBox更新', () => {
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
-    await copyFile(multilingualFixturePath, sourcePath);
+    await copyFile(multilingualTestDataPath, sourcePath);
     await mkdir(stagedOutputPath);
 
     await assert.rejects(
@@ -157,7 +157,7 @@ describe('PDFのCropBox更新', () => {
     const sourcePath = path.join(workspacePath.path, 'source.pdf');
     const stagedOutputPath = path.join(workspacePath.path, 'staging', 'result.pdf');
     await mkdir(path.dirname(stagedOutputPath), { recursive: true });
-    await copyFile(multilingualFixturePath, sourcePath);
+    await copyFile(multilingualTestDataPath, sourcePath);
     const removedPaths: string[] = [];
     let renameCalled = false;
     const writer: CropPdfFileWriter = {

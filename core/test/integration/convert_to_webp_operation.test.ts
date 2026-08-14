@@ -25,7 +25,7 @@ describe('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
 
     const sourcePath = path.join(workspacePath.path, 'source.gif');
     const outputPath = path.join(workspacePath.path, 'source.webp');
-    await writeAnimatedGifFixture(sourcePath);
+    await writeAnimatedGifTestData(sourcePath);
 
     await executeRasterConversion({
       spec: rasterFormatSpecs.webp,
@@ -78,7 +78,7 @@ describe('GIF・Draw.io画像・PDFをWebPへ変換する処理', () => {
   });
 });
 
-async function writeAnimatedGifFixture(filePath: string): Promise<void> {
+async function writeAnimatedGifTestData(filePath: string): Promise<void> {
   const frames = await Promise.all([
     sharp({ create: { width: 12, height: 8, channels: 4, background: '#285078' } })
       .png()

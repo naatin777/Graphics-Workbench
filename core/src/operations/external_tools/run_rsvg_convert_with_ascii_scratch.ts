@@ -1,5 +1,7 @@
 import { lstat } from 'node:fs/promises';
 
+import type { Result } from 'better-result';
+
 import {
   createAsciiInputOutputScratch,
   defaultWindowsScratchBaseCandidates,
@@ -9,6 +11,7 @@ import {
   type LineOutputChannel,
 } from '../external_tools/external_tool_ascii_scratch.js';
 import { copyFileWithAbort } from '../lifecycle/copy_file_with_abort.js';
+import { throwExternalToolResult, type ExternalToolError } from './run_external_tool.js';
 
 export interface RsvgToolScratchOptions {
   platform?: NodeJS.Platform;
@@ -16,7 +19,11 @@ export interface RsvgToolScratchOptions {
   outputChannel?: LineOutputChannel;
 }
 
-export type RunRsvgConvert = (executable: string, args: string[], signal: AbortSignal) => Promise<void>;
+export type RunRsvgConvert = (
+  executable: string,
+  args: string[],
+  signal: AbortSignal,
+) => Promise<Result<void, ExternalToolError>>;
 
 export async function runRsvgConvertWithAsciiScratch(options: {
   executable: string;
@@ -27,7 +34,9 @@ export async function runRsvgConvertWithAsciiScratch(options: {
   signal: AbortSignal;
 }): Promise<void> {
   if (options.scratch.platform !== 'win32') {
-    await options.run(options.executable, rsvgConvertArgs(options.sourcePath, options.outputPath), options.signal);
+    throwExternalToolResult(
+      await options.run(options.executable, rsvgConvertArgs(options.sourcePath, options.outputPath), options.signal),
+    );
     await validateNonEmptyRegularFile(options.outputPath);
     return;
   }
@@ -55,7 +64,9 @@ export async function runRsvgConvertWithAsciiScratch(options: {
     options.scratch.outputChannel?.appendLine(`[scratch] tool output: ${scratch.outputPath}`);
     options.scratch.outputChannel?.appendLine(`[scratch] staged output: ${options.outputPath}`);
 
-    await options.run(options.executable, rsvgConvertArgs(scratch.inputPath, scratch.outputPath), options.signal);
+    throwExternalToolResult(
+      await options.run(options.executable, rsvgConvertArgs(scratch.inputPath, scratch.outputPath), options.signal),
+    );
     options.signal.throwIfAborted();
     await validateAsciiScratchOutput(scratch);
     options.signal.throwIfAborted();

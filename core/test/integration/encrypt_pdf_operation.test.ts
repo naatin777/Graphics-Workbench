@@ -11,7 +11,7 @@ import { access, copyFile, mkdtempDisposable, readFile, writeFile } from 'node:f
 import os from 'node:os';
 import path from 'node:path';
 
-import { operationPdfInputDirectory, createPdfFixture } from '@graphics-workbench/core/testing';
+import { operationPdfInputDirectory, createPdfTestData } from '@graphics-workbench/core/testing';
 
 import { encryptPdfFiles, loadMupdf } from '@graphics-workbench/core/pdf';
 
@@ -23,7 +23,7 @@ describe('PDFのパスワード暗号化', () => {
     const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'multi-page-table.pdf');
     const outputPath = path.join(workspacePath, 'output.pdf');
-    await copyFile(fixturePath('multi-page-table.pdf'), sourcePath);
+    await copyFile(testDataPath('multi-page-table.pdf'), sourcePath);
 
     await encryptPdfFiles({
       inputs: [{ sourcePath, workspacePath, outputPath }],
@@ -74,10 +74,10 @@ describe('PDFのパスワード暗号化', () => {
 });
 
 async function writePdf(filePath: string): Promise<void> {
-  const bytes = await createPdfFixture({ pages: [{ mediaBox: [0, 0, 100, 200] }] });
+  const bytes = await createPdfTestData({ pages: [{ mediaBox: [0, 0, 100, 200] }] });
   await writeFile(filePath, bytes);
 }
 
-function fixturePath(fileName: string): string {
+function testDataPath(fileName: string): string {
   return path.join(operationPdfInputDirectory, fileName);
 }

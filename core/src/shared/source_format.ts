@@ -8,8 +8,8 @@ export type SourceFormat =
   | 'tiff'
   | 'svg'
   | 'drawio'
-  | 'editable-drawio-png'
-  | 'editable-drawio-svg';
+  | 'drawio-png'
+  | 'drawio-svg';
 
 export const SOURCE_FORMATS = [
   'pdf',
@@ -21,16 +21,13 @@ export const SOURCE_FORMATS = [
   'tiff',
   'svg',
   'drawio',
-  'editable-drawio-png',
-  'editable-drawio-svg',
+  'drawio-png',
+  'drawio-svg',
 ] as const satisfies readonly SourceFormat[];
 
 export const RASTER_FORMATS = ['png', 'jpeg', 'webp', 'avif', 'gif', 'tiff'] as const satisfies readonly SourceFormat[];
 
-export const EDITABLE_DRAWIO_FORMATS = [
-  'editable-drawio-png',
-  'editable-drawio-svg',
-] as const satisfies readonly SourceFormat[];
+export const DRAWIO_IMAGE_FORMATS = ['drawio-png', 'drawio-svg'] as const satisfies readonly SourceFormat[];
 
 export const sourceFormatExtensions = {
   pdf: ['pdf'],
@@ -42,8 +39,8 @@ export const sourceFormatExtensions = {
   tiff: ['tif', 'tiff'],
   svg: ['svg'],
   drawio: ['drawio', 'dio'],
-  'editable-drawio-png': ['drawio.png', 'dio.png'],
-  'editable-drawio-svg': ['drawio.svg', 'dio.svg'],
+  'drawio-png': ['drawio.png', 'dio.png'],
+  'drawio-svg': ['drawio.svg', 'dio.svg'],
 } as const satisfies Record<SourceFormat, readonly string[]>;
 
 const compoundSourceFormatSuffixes = Object.entries(sourceFormatExtensions).flatMap(([format, extensions]) =>
@@ -114,9 +111,17 @@ export function isSameSourceFormat(sourcePath: string, outputExtension: string):
   return sourceFormat === outputFormat;
 }
 
-export function isEditableDrawioImagePath(sourcePath: string): boolean {
+export function isDrawioPngPath(sourcePath: string): boolean {
+  return sourceFormatForPath(sourcePath) === 'drawio-png';
+}
+
+export function isDrawioSvgPath(sourcePath: string): boolean {
+  return sourceFormatForPath(sourcePath) === 'drawio-svg';
+}
+
+export function isDrawioImagePath(sourcePath: string): boolean {
   const format = sourceFormatForPath(sourcePath);
-  return format === 'editable-drawio-png' || format === 'editable-drawio-svg';
+  return format === 'drawio-png' || format === 'drawio-svg';
 }
 
 export function isNativeDrawioPath(sourcePath: string): boolean {
@@ -124,11 +129,11 @@ export function isNativeDrawioPath(sourcePath: string): boolean {
 }
 
 export function isDrawioPath(sourcePath: string): boolean {
-  return isNativeDrawioPath(sourcePath) || isEditableDrawioImagePath(sourcePath);
+  return isNativeDrawioPath(sourcePath) || isDrawioImagePath(sourcePath);
 }
 
 export function logicalSourcePathForOutputTemplate(sourcePath: string): string {
-  if (!isEditableDrawioImagePath(sourcePath)) {
+  if (!isDrawioImagePath(sourcePath)) {
     return sourcePath;
   }
 

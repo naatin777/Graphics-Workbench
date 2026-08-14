@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { findRepositoryRoot } from '../repository.js';
 
 export {
-  listFixtureFilePaths as listInputFixturePaths,
-  listFixtureFilePathsSync as listInputFixturePathsSync,
-} from '../fixture_files.js';
+  listTestDataFilePaths as listInputTestDataPaths,
+  listTestDataFilePathsSync as listInputTestDataPathsSync,
+} from '../testdata_files.js';
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 

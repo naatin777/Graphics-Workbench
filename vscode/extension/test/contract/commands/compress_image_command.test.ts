@@ -17,11 +17,11 @@ import sharp from 'sharp';
 import { createSandbox } from 'sinon';
 import * as vscode from 'vscode';
 
-import { operationPngInputPath, testInputDirectory } from '../../support/helpers/fixture_paths.js';
+import { operationPngInputPath, testInputDirectory } from '../../support/helpers/testdata_paths.js';
 import { runCommandAndClearNotificationsUntilDone } from '../../support/helpers/vscode_command.js';
 import { requireValue } from '@graphics-workbench/core/testing';
 
-const fixturePngPath = operationPngInputPath;
+const testDataPngPath = operationPngInputPath;
 
 suite('画像圧縮コマンド', () => {
   let sandbox: sinon.SinonSandbox;
@@ -46,10 +46,10 @@ suite('画像圧縮コマンド', () => {
     const avifPath = path.join(workspacePath.path, 'source.avif');
     const tiffPath = path.join(workspacePath.path, 'source.tiff');
     await Promise.all([
-      copyFile(fixturePngPath, pngPath),
-      writeImageFixture(jpegPath, 'jpeg'),
-      writeImageFixture(webpPath, 'webp'),
-      writeImageFixture(avifPath, 'avif'),
+      copyFile(testDataPngPath, pngPath),
+      writeImageTestData(jpegPath, 'jpeg'),
+      writeImageTestData(webpPath, 'webp'),
+      writeImageTestData(avifPath, 'avif'),
       copyFile(path.join(testInputDirectory, 'valid', 'tiff', 'heatmap.tiff'), tiffPath),
     ]);
     const sourcePaths = [pngPath, jpegPath, webpPath, avifPath, tiffPath];
@@ -71,9 +71,9 @@ suite('画像圧縮コマンド', () => {
   });
 });
 
-async function writeImageFixture(filePath: string, extension: string): Promise<void> {
-  const fixtureBuffer = await readFile(fixturePngPath);
-  const image = sharp(fixtureBuffer);
+async function writeImageTestData(filePath: string, extension: string): Promise<void> {
+  const testDataBuffer = await readFile(testDataPngPath);
+  const image = sharp(testDataBuffer);
 
   if (extension === 'jpeg') {
     await image.jpeg().toFile(filePath);
@@ -90,7 +90,7 @@ async function writeImageFixture(filePath: string, extension: string): Promise<v
     return;
   }
 
-  throw new Error(`Unsupported generated fixture extension: ${extension}`);
+  throw new Error(`Unsupported generated テストデータ extension: ${extension}`);
 }
 
 async function assertReadableImage(filePath: string, expectedFormat: string): Promise<void> {
