@@ -8,84 +8,79 @@
 // - なし。sharpと実ファイルを使用する
 //
 import assert from 'node:assert/strict';
-import { access, mkdtempDisposable, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdtempDisposable } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import sharp from 'sharp';
 
 import { rotateImageFiles } from '@graphics-workbench/core/conversion';
+import { operationPngInputPath, testInputDirectory } from '@graphics-workbench/core/testing';
+
+interface SourcePng {
+  sourcePath: string;
+  width: number;
+  height: number;
+}
 
 describe('ラスタ画像の回転', () => {
-  it('4x2のPNGを90度回転すると、2x4のPNGとして出力される', async () => {
+  it('transparent-shapes.png（320x200）を90度回転すると、200x320のPNGとして出力される', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const workspacePath = workspacePathDisposable.path;
-    const sourcePath = path.join(workspacePath, 'source.png');
+    const source = await copySourcePng(workspacePath);
     const outputPath = path.join(workspacePath, 'output.png');
-    await writeImage(sourcePath, 4, 2);
 
-    try {
-      const outputs = await rotateImageFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
-        runtime: {},
-        runId: 'run',
-        maxInputPixels: 1000,
-      });
-      assert.strictEqual(outputs.length, 1);
-      assert.strictEqual(outputs[0]?.outputPath, outputPath);
+    const outputs = await rotateImageFiles({
+      inputs: [{ sourcePath: source.sourcePath, workspacePath, outputPath, angle: 90 }],
+      runtime: {},
+      runId: 'run',
+      maxInputPixels: 1_000_000,
+    });
+    assert.strictEqual(outputs.length, 1);
+    assert.strictEqual(outputs[0]?.outputPath, outputPath);
 
-      const metadata = await sharp(outputPath).metadata();
-      assert.strictEqual(metadata.format, 'png');
-      assert.strictEqual(metadata.width, 2);
-      assert.strictEqual(metadata.height, 4);
-    } finally {
-    }
+    const metadata = await sharp(outputPath).metadata();
+    assert.strictEqual(metadata.format, 'png');
+    assert.strictEqual(metadata.width, source.height);
+    assert.strictEqual(metadata.height, source.width);
   });
 
-  it('4x2のPNGを180度回転すると、4x2のまま出力される', async () => {
+  it('transparent-shapes.png（320x200）を180度回転すると、320x200のまま出力される', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const workspacePath = workspacePathDisposable.path;
-    const sourcePath = path.join(workspacePath, 'source.png');
+    const source = await copySourcePng(workspacePath);
     const outputPath = path.join(workspacePath, 'output.png');
-    await writeImage(sourcePath, 4, 2);
 
-    try {
-      await rotateImageFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 180 }],
-        runtime: {},
-        runId: 'run',
-        maxInputPixels: 1000,
-      });
+    await rotateImageFiles({
+      inputs: [{ sourcePath: source.sourcePath, workspacePath, outputPath, angle: 180 }],
+      runtime: {},
+      runId: 'run',
+      maxInputPixels: 1_000_000,
+    });
 
-      const metadata = await sharp(outputPath).metadata();
-      assert.strictEqual(metadata.format, 'png');
-      assert.strictEqual(metadata.width, 4);
-      assert.strictEqual(metadata.height, 2);
-    } finally {
-    }
+    const metadata = await sharp(outputPath).metadata();
+    assert.strictEqual(metadata.format, 'png');
+    assert.strictEqual(metadata.width, source.width);
+    assert.strictEqual(metadata.height, source.height);
   });
 
-  it('4x2のPNGを270度回転すると、2x4のPNGとして出力される', async () => {
+  it('transparent-shapes.png（320x200）を270度回転すると、200x320のPNGとして出力される', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const workspacePath = workspacePathDisposable.path;
-    const sourcePath = path.join(workspacePath, 'source.png');
+    const source = await copySourcePng(workspacePath);
     const outputPath = path.join(workspacePath, 'output.png');
-    await writeImage(sourcePath, 4, 2);
 
-    try {
-      await rotateImageFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 270 }],
-        runtime: {},
-        runId: 'run',
-        maxInputPixels: 1000,
-      });
+    await rotateImageFiles({
+      inputs: [{ sourcePath: source.sourcePath, workspacePath, outputPath, angle: 270 }],
+      runtime: {},
+      runId: 'run',
+      maxInputPixels: 1_000_000,
+    });
 
-      const metadata = await sharp(outputPath).metadata();
-      assert.strictEqual(metadata.format, 'png');
-      assert.strictEqual(metadata.width, 2);
-      assert.strictEqual(metadata.height, 4);
-    } finally {
-    }
+    const metadata = await sharp(outputPath).metadata();
+    assert.strictEqual(metadata.format, 'png');
+    assert.strictEqual(metadata.width, source.height);
+    assert.strictEqual(metadata.height, source.width);
   });
 
   it('SVGなど非ラスタの入力は拒否される', async () => {
@@ -93,13 +88,13 @@ describe('ラスタ画像の回転', () => {
     const workspacePath = workspacePathDisposable.path;
     const sourcePath = path.join(workspacePath, 'source.svg');
     const outputPath = path.join(workspacePath, 'output.svg');
-    await writeFile(sourcePath, '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+    await copyFile(path.join(testInputDirectory, 'valid', 'svg', 'solid-rect-31x19.svg'), sourcePath);
 
     await assert.rejects(
       rotateImageFiles({
         inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
         runtime: {},
-        maxInputPixels: 1000,
+        maxInputPixels: 1_000_000,
       }),
       /Only raster image files can be rotated/,
     );
@@ -108,15 +103,14 @@ describe('ラスタ画像の回転', () => {
   it('出力拡張子がラスタ形式でない場合は拒否される', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const workspacePath = workspacePathDisposable.path;
-    const sourcePath = path.join(workspacePath, 'source.png');
+    const source = await copySourcePng(workspacePath);
     const outputPath = path.join(workspacePath, 'output.txt');
-    await writeImage(sourcePath, 4, 2);
 
     await assert.rejects(
       rotateImageFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        inputs: [{ sourcePath: source.sourcePath, workspacePath, outputPath, angle: 90 }],
         runtime: {},
-        maxInputPixels: 1000,
+        maxInputPixels: 1_000_000,
       }),
       /Invalid output extension/,
     );
@@ -125,13 +119,12 @@ describe('ラスタ画像の回転', () => {
   it('画素上限を超える入力は拒否され、出力ファイルは作成されない', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-rotate-image-test-'));
     const workspacePath = workspacePathDisposable.path;
-    const sourcePath = path.join(workspacePath, 'source.png');
+    const source = await copySourcePng(workspacePath);
     const outputPath = path.join(workspacePath, 'output.png');
-    await writeImage(sourcePath, 4, 2);
 
     await assert.rejects(
       rotateImageFiles({
-        inputs: [{ sourcePath, workspacePath, outputPath, angle: 90 }],
+        inputs: [{ sourcePath: source.sourcePath, workspacePath, outputPath, angle: 90 }],
         runtime: {},
         maxInputPixels: 7,
       }),
@@ -142,15 +135,11 @@ describe('ラスタ画像の回転', () => {
   });
 });
 
-async function writeImage(filePath: string, width: number, height: number): Promise<void> {
-  await sharp({
-    create: {
-      width,
-      height,
-      channels: 3,
-      background: { r: 255, g: 0, b: 0 },
-    },
-  })
-    .png()
-    .toFile(filePath);
+async function copySourcePng(workspacePath: string): Promise<SourcePng> {
+  const sourcePath = path.join(workspacePath, 'source.png');
+  await copyFile(operationPngInputPath, sourcePath);
+
+  const metadata = await sharp(sourcePath).metadata();
+  assert.ok(metadata.width !== undefined && metadata.height !== undefined, 'source png metadata size');
+  return { sourcePath, width: metadata.width, height: metadata.height };
 }

@@ -15,13 +15,13 @@ import { combineImagesToPdf, type SvgToPdfBackend } from '@graphics-workbench/co
 const VALID_PNG = operationPngInputPath;
 
 const supportedInputFixtures = [
-  { format: 'png', width: 320, height: 200 },
-  { format: 'jpeg', width: 11, height: 7 },
-  { format: 'webp', width: 13, height: 9 },
-  { format: 'avif', width: 17, height: 11 },
-  { format: 'gif', width: 19, height: 13 },
-  { format: 'tiff', width: 23, height: 15 },
-  { format: 'svg', width: 29, height: 17 },
+  { format: 'png', relativePath: 'valid/png/transparent-shapes.png' },
+  { format: 'jpeg', relativePath: 'valid/jpeg/color-map.jpeg' },
+  { format: 'webp', relativePath: 'valid/webp/heatmap.webp' },
+  { format: 'avif', relativePath: 'valid/avif/vortex-vector-field.avif' },
+  { format: 'gif', relativePath: 'valid/gif/rotating-vector-field.gif' },
+  { format: 'tiff', relativePath: 'valid/tiff/heatmap.tiff' },
+  { format: 'svg', relativePath: 'valid/svg/solid-rect-31x19.svg' },
 ] as const;
 
 type SupportedInputFormat = (typeof supportedInputFixtures)[number]['format'];
@@ -29,8 +29,7 @@ type SupportedInputFormat = (typeof supportedInputFixtures)[number]['format'];
 interface InputFixture {
   format: SupportedInputFormat;
   sourcePath: string;
-  width: number;
-  height: number;
+  pageSizes: { width: number; height: number }[];
 }
 
 async function copyFixtureTo(workspacePath: string, name: string): Promise<string> {
@@ -200,11 +199,11 @@ describe('複数の画像を1つのPDFへ結合する', () => {
         platform: process.platform,
       });
 
-      await assertPdfPageSizes(outputPath, expectedPdfFixtures([fixture]));
+      await assertPdfPageSizes(outputPath, expectedPdfPageSizes([fixture]));
     }
   });
 
-  it('全対応形式の混在バッチを入力順に結合し、GIF/TIFFは2フレームを各2ページへ展開した上で各ページサイズを保持する', async () => {
+  it('全対応形式の混在バッチを入力順に結合し、GIF/TIFFは全フレームを各ページへ展開した上で各ページサイズを保持する', async () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
@@ -223,7 +222,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
       platform: process.platform,
     });
 
-    await assertPdfPageSizes(outputPath, expectedPdfFixtures(fixtures));
+    await assertPdfPageSizes(outputPath, expectedPdfPageSizes(fixtures));
   });
 
   it('画像が0件の場合は「No images」エラーを返す', async () => {
@@ -247,7 +246,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     const workspacePath = workspacePathDisposable.path;
 
     const sourcePath = path.join(workspacePath, 'bad.png');
-    await writeFile(sourcePath, 'not a png');
+    await copyFile(path.join(testInputDirectory, 'invalid', 'png', 'truncated.png'), sourcePath);
 
     await assert.rejects(
       combineImagesToPdf({
@@ -257,7 +256,7 @@ describe('複数の画像を1つのPDFへ結合する', () => {
         runtime: {},
         maxInputPixels: 1_000_000_000,
       }),
-      /unsupported image format|Input file contains|not a valid|invalid/i,
+      /unsupported image format|Input file contains|not a valid|invalid|corrupt header/i,
     );
   });
 
@@ -265,9 +264,14 @@ describe('複数の画像を1つのPDFへ結合する', () => {
     await using workspacePathDisposable = await mkdtempDisposable(path.join(os.tmpdir(), 'gw-combine-'));
     const workspacePath = workspacePathDisposable.path;
 
-    for (const fileName of ['diagram.drawio.png', 'document.pdf']) {
+    const rejectionCases = [
+      ['diagram.drawio.png', 'valid/drawio/multi-object-diagram.drawio.png'],
+      ['document.pdf', 'valid/pdf/single-page-document.pdf'],
+    ] as const;
+
+    for (const [fileName, relativePath] of rejectionCases) {
       const sourcePath = path.join(workspacePath, fileName);
-      await writeFile(sourcePath, 'unsupported');
+      await copyFile(path.join(testInputDirectory, relativePath), sourcePath);
 
       await assert.rejects(
         combineImagesToPdf({
@@ -288,79 +292,21 @@ async function writeSupportedInputFixtures(workspacePath: string): Promise<Input
 
   for (const fixture of supportedInputFixtures) {
     const sourcePath = path.join(workspacePath, `source-${fixture.format}.${fixture.format}`);
+    await copyFile(path.join(testInputDirectory, fixture.relativePath), sourcePath);
 
-    if (fixture.format === 'png') {
-      await copyFile(VALID_PNG, sourcePath);
-    } else if (fixture.format === 'jpeg' || fixture.format === 'webp' || fixture.format === 'avif') {
-      await writeRasterFixture(sourcePath, fixture.format, fixture.width, fixture.height);
-    } else if (fixture.format === 'gif' || fixture.format === 'tiff') {
-      await writeAnimatedImageFixture(sourcePath, fixture.format, fixture.width, fixture.height);
-    } else if (fixture.format === 'svg') {
-      await writeFile(
-        sourcePath,
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${fixture.width}" height="${fixture.height}" viewBox="0 0 ${fixture.width} ${fixture.height}"><rect width="${fixture.width}" height="${fixture.height}" /></svg>`,
-      );
+    const metadata = await sharp(sourcePath).metadata();
+    assert.ok(metadata.width !== undefined && metadata.height !== undefined, `${fixture.format} metadata size`);
+    const pageSizes: { width: number; height: number }[] = [];
+    for (let page = 0; page < (metadata.pages ?? 1); page += 1) {
+      const pageMetadata = await sharp(sourcePath, { page }).metadata();
+      assert.ok(pageMetadata.width !== undefined && pageMetadata.height !== undefined, `${fixture.format} page size`);
+      pageSizes.push({ width: pageMetadata.width, height: pageMetadata.height });
     }
 
-    fixtures.push({ ...fixture, sourcePath });
+    fixtures.push({ ...fixture, sourcePath, pageSizes });
   }
 
   return fixtures;
-}
-
-async function writeRasterFixture(
-  filePath: string,
-  format: 'jpeg' | 'webp' | 'avif',
-  width: number,
-  height: number,
-): Promise<void> {
-  const image = sharp({
-    create: {
-      width,
-      height,
-      channels: 3,
-      background: { r: 40, g: 80, b: 120 },
-    },
-  });
-
-  if (format === 'jpeg') {
-    await image.jpeg().toFile(filePath);
-  } else if (format === 'webp') {
-    await image.webp().toFile(filePath);
-  } else {
-    await image.avif().toFile(filePath);
-  }
-}
-
-async function writeAnimatedImageFixture(
-  filePath: string,
-  format: 'gif' | 'tiff',
-  width: number,
-  height: number,
-): Promise<void> {
-  const red = await sharp({
-    create: {
-      width,
-      height,
-      channels: 4,
-      background: { r: 255, g: 0, b: 0, alpha: 1 },
-    },
-  })
-    .png()
-    .toBuffer();
-  const blue = await sharp({
-    create: {
-      width,
-      height,
-      channels: 4,
-      background: { r: 0, g: 0, b: 255, alpha: 1 },
-    },
-  })
-    .png()
-    .toBuffer();
-
-  const output = sharp([red, blue], { join: { animated: true } });
-  await (format === 'gif' ? output.gif() : output.tiff()).toFile(filePath);
 }
 
 function createStubSvgToPdfOptions(): SvgToPdfBackend {
@@ -382,21 +328,22 @@ function createStubSvgToPdfOptions(): SvgToPdfBackend {
   };
 }
 
-async function assertPdfPageSizes(pdfPath: string, fixtures: InputFixture[]): Promise<void> {
+async function assertPdfPageSizes(
+  pdfPath: string,
+  expectedPageSizes: { width: number; height: number }[],
+): Promise<void> {
   const pages = await readPdfPages(await readFile(pdfPath));
-  assert.strictEqual(pages.length, fixtures.length);
+  assert.strictEqual(pages.length, expectedPageSizes.length);
 
-  for (const [index, fixture] of fixtures.entries()) {
+  for (const [index, expected] of expectedPageSizes.entries()) {
     const page = pages[index];
     assert.deepStrictEqual(
       { width: page?.mediaBox.width, height: page?.mediaBox.height },
-      { width: fixture.width, height: fixture.height },
+      { width: expected.width, height: expected.height },
     );
   }
 }
 
-function expectedPdfFixtures(fixtures: InputFixture[]): InputFixture[] {
-  return fixtures.flatMap((fixture) =>
-    fixture.format === 'gif' || fixture.format === 'tiff' ? [fixture, fixture] : [fixture],
-  );
+function expectedPdfPageSizes(fixtures: InputFixture[]): { width: number; height: number }[] {
+  return fixtures.flatMap((fixture) => fixture.pageSizes);
 }
