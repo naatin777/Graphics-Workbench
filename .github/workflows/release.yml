@@ -207,7 +207,7 @@ jobs:
               run: node scripts/verify-vsix.mjs --vsix "graphics-workbench-${{ matrix.target }}.vsix" --target "${{ matrix.target }}"
               shell: bash
 
-            - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: vsix-${{ matrix.target }}
                   path: graphics-workbench-${{ matrix.target }}.vsix
@@ -313,7 +313,7 @@ jobs:
               shell: bash
 
             - if: failure()
-              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: webview-browser-playwright-${{ matrix.artifact_suffix }}
                   path: |
@@ -322,14 +322,14 @@ jobs:
                   if-no-files-found: ignore
 
             - if: success()
-              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: release-smoke-vsix-${{ matrix.artifact_suffix }}
                   path: graphics-workbench-${{ matrix.label }}.vsix
                   if-no-files-found: error
 
             - if: always()
-              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: release-visual-review-${{ matrix.artifact_suffix }}
                   path: artifacts/visual-review/
