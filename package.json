@@ -75,7 +75,7 @@
     "@commitlint/config-conventional": "^21.2.0",
     "@types/node": "^24.13.3",
     "@vscode/vsce": "^3.9.2",
-    "knip": "^6.32.0",
+    "knip": "^6.32.2",
     "lefthook": "2.1.10",
     "ovsx": "^1.1.0",
     "oxfmt": "^0.62.0",
