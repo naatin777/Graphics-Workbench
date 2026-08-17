@@ -155,14 +155,14 @@ jobs:
       - uses: ./.github/actions/setup-node
 
       - name: Download Extension Host coverage reports
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           pattern: vscode-extension-host-coverage-*
           path: coverage-input
           merge-multiple: false
 
       - name: Download Webview coverage report
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: webview-vitest-coverage
           path: coverage-input/webview-vitest-coverage
